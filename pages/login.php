@@ -1,5 +1,5 @@
 <?php /* pages/login.php */ ?>
-<div class="min-h-screen flex bg-white text-gray-900 font-sans overflow-hidden">
+<div class="min-h-screen flex bg-white text-gray-900 font-sans overflow-hidden relative">
   
   <style>
     /* Keyframes untuk pergerakan meteor */
@@ -82,7 +82,11 @@
         </div>
 
         <div>
-          <label class="block text-sm font-bold text-gray-700 mb-1">Password</label>
+          <div class="flex justify-between items-center mb-1">
+              <label class="block text-sm font-bold text-gray-700">Password</label>
+              <!-- 🔥 TOMBOL LUPA PASSWORD 🔥 -->
+              <button type="button" id="btnOpenForgot" class="text-xs font-bold text-blue-600 hover:text-blue-800 focus:outline-none">Lupa Password?</button>
+          </div>
           <div class="relative">
             <input type="password" id="password" 
                    class="w-full rounded-lg border-gray-300 bg-white text-gray-900 placeholder-gray-400 shadow-sm focus:border-blue-600 focus:ring-blue-600 py-3 px-4 pr-10"
@@ -109,6 +113,56 @@
       </form>
     </div>
   </div>
+
+  <!-- 🔥 MODAL RESET PASSWORD (3 STEP) 🔥 -->
+  <div id="forgotModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50 backdrop-blur-sm px-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden relative">
+      <!-- Header -->
+      <div class="bg-blue-50 px-6 py-4 border-b border-blue-100 flex justify-between items-center">
+        <h3 class="text-lg font-bold text-blue-900" id="modalTitle">Reset Password</h3>
+        <button type="button" id="btnCloseModal" class="text-gray-400 hover:text-gray-700">
+          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+
+      <!-- Alert Pesan (Error/Success di dalam Modal) -->
+      <div id="modalAlert" class="hidden mx-6 mt-4 p-3 rounded text-sm font-medium"></div>
+
+      <!-- STEP 1: Masukkan Email -->
+      <div id="step1" class="p-6">
+        <p class="text-sm text-gray-600 mb-4">Masukkan email yang terdaftar di sistem. Kami akan mengirimkan 6 digit kode OTP.</p>
+        <form id="formStep1">
+          <input type="email" id="forgotEmail" class="w-full rounded-lg border-gray-300 bg-gray-50 text-gray-900 py-3 px-4 focus:ring-blue-600 focus:border-blue-600 mb-4" placeholder="Alamat Email" required>
+          <button type="submit" id="btnStep1" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-lg flex justify-center transition">
+             <span id="textStep1">Kirim OTP</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- STEP 2: Verifikasi OTP -->
+      <div id="step2" class="hidden p-6">
+        <p class="text-sm text-gray-600 mb-4">Cek kotak masuk email Anda. Masukkan 6 digit kode OTP yang baru saja kami kirimkan.</p>
+        <form id="formStep2">
+          <input type="text" id="forgotOtp" class="w-full rounded-lg border-gray-300 text-center tracking-widest text-2xl font-bold bg-gray-50 text-gray-900 py-3 px-4 focus:ring-blue-600 focus:border-blue-600 mb-4" placeholder="• • • • • •" maxlength="6" required>
+          <button type="submit" id="btnStep2" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-lg flex justify-center transition">
+             <span id="textStep2">Verifikasi OTP</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- STEP 3: Buat Password Baru -->
+      <div id="step3" class="hidden p-6">
+        <p class="text-sm text-gray-600 mb-4">Kode OTP valid! Silakan buat password baru Anda sekarang.</p>
+        <form id="formStep3">
+          <input type="password" id="forgotNewPass" class="w-full rounded-lg border-gray-300 bg-gray-50 text-gray-900 py-3 px-4 focus:ring-blue-600 focus:border-blue-600 mb-4" placeholder="Password Baru" required>
+          <button type="submit" id="btnStep3" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg flex justify-center transition">
+             <span id="textStep3">Simpan Password Baru</span>
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
 </div>
 
 <script>
@@ -122,16 +176,23 @@
   }
   const BASE_APP = window.BASE_APP || location.origin + getBasePath();
   
-  // 1. DETEKSI ENVIRONMENT (Lokal vs Production) 
+  // 1. DETEKSI ENVIRONMENT 
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  
-  // Kalau lokal, nembak ke rest_api_sso di lokal. Kalau prod, nembak ke server web.
   const API_SSO_BASE = isLocal ? 'http://localhost/rest_api_sso' : 'https://apisso.bkkjateng.co.id';
   
   const API_LOGIN = `${API_SSO_BASE}/api/auth/login`;
   const API_WHOAMI = `${API_SSO_BASE}/api/auth/whoami`;
+  
+  // 🔥 API SSO RESET PASSWORD 🔥
+  const API_FORGOT = `${API_SSO_BASE}/api/auth/forgot-password`;
+  const API_VERIFY = `${API_SSO_BASE}/api/auth/verify-otp`;
+  const API_RESET  = `${API_SSO_BASE}/api/auth/reset-password`;
 
-  // 2. FUNGSI SET COOKIE UNTUK SSO YANG LEBIH AMAN DI LOCALHOST
+  // STATE UNTUK TOKEN SEMENTARA
+  let tempOtpToken = "";
+  let tempResetToken = "";
+
+  // 2. FUNGSI SET COOKIE SSO
   function setSSOCookie(name, value, days) {
       let expires = "";
       if (days) {
@@ -139,12 +200,10 @@
           date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
           expires = "; expires=" + date.toUTCString();
       }
-      // Khusus localhost tidak usah pakai 'domain=' agar cookie tidak ditolak browser
       const domainStr = isLocal ? "" : "domain=.bkkjateng.co.id;";
       document.cookie = name + "=" + (value || "")  + expires + "; path=/; " + domainStr + " SameSite=Lax"; 
   }
 
-  // Utils
   const saveToken = (t) => {
       localStorage.setItem('dpk_token', t); 
       setSSOCookie('sso_token', t, 1);      
@@ -167,7 +226,6 @@
     const errBox = document.getElementById('err');
     const errMsg = document.getElementById('errMsg');
 
-    // Reset UI
     errBox.classList.add('hidden');
     btn.disabled = true;
     spin.classList.remove('hidden');
@@ -177,72 +235,190 @@
     const pass  = document.getElementById('password').value;
 
     try {
-        // Tembak API Login (pastikan body pakai id_peg sesuai format sistem/swagger)
         const res = await fetch(API_LOGIN, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                id_peg: empId, 
-                password: pass,
-                app: "monbis" 
-            })
+            body: JSON.stringify({ id_peg: empId, password: pass, app: "monbis" })
         });
-        
         if (!res.ok) throw new Error(`HTTP Error: ${res.status} - Gagal koneksi ke server.`);
-        
         const json = await res.json();
 
         if (json?.status !== 200 || !json?.data?.token) {
             throw new Error(json?.message || 'ID Pegawai atau Password salah.');
         }
 
-        // Simpan token ke LocalStorage & Cookie SSO
         saveToken(json.data.token);
         
         try {
-            // Tembak API Whoami pakai Bearer token
             const r2 = await fetch(API_WHOAMI, { 
                 headers: { 'Authorization': `Bearer ${json.data.token}` }
             });
-            
             if (r2.ok) {
                 const j2 = await r2.json();
-                
                 if(j2?.data) {
                     let userData = j2.data;
-                    
-                    // 3. LOGIK PENAMBAHAN ROLE 'DEV'
-                    // Cek apakah posisi atau unit kerja ada kata 'Divisi Operasional'
                     if (userData.job_position === "Divisi Operasional" || userData.unit_kerja === "Divisi Operasional") {
                         userData.role = "dev";
                     } else {
-                        userData.role = "user"; // Role default untuk staf lainnya
+                        userData.role = "user"; 
                     }
-                    
                     saveUser(userData);
                 }
-            } else {
-                 console.error("Gagal get profile, HTTP Status:", r2.status);
             }
         } catch (err) {
             console.error("Error mengambil data user (whoami):", err);
         }
 
-        // Redirect ke Dashboard setelah sukses
         location.href = `${BASE_APP}/dashboard`;
 
     } catch (error) {
-        console.error("Login Error:", error);
-        
-        // Tampilkan error
         errMsg.textContent = error.message.includes("Failed to fetch") 
             ? "Gagal terhubung ke server SSO. Pastikan API berjalan." 
             : error.message;
-
         errBox.classList.remove('hidden');
         btn.disabled = false;
         spin.classList.add('hidden');
         btnText.textContent = 'Verifikasi & Masuk';
     }
+  });
+
+  // ==========================================
+  // 🔥 SCRIPT LOGIC MODAL RESET PASSWORD 🔥
+  // ==========================================
+  const modal = document.getElementById('forgotModal');
+  const modalAlert = document.getElementById('modalAlert');
+  
+  const step1 = document.getElementById('step1');
+  const step2 = document.getElementById('step2');
+  const step3 = document.getElementById('step3');
+
+  function showModalAlert(msg, isError = true) {
+      modalAlert.classList.remove('hidden', 'bg-red-100', 'text-red-800', 'bg-green-100', 'text-green-800');
+      modalAlert.classList.add(isError ? 'bg-red-100' : 'bg-green-100', isError ? 'text-red-800' : 'text-green-800');
+      modalAlert.textContent = msg;
+  }
+
+  // Buka Modal
+  document.getElementById('btnOpenForgot').addEventListener('click', () => {
+      modal.classList.remove('hidden');
+      step1.classList.remove('hidden');
+      step2.classList.add('hidden');
+      step3.classList.add('hidden');
+      modalAlert.classList.add('hidden');
+      document.getElementById('forgotEmail').value = "";
+      document.getElementById('forgotOtp').value = "";
+      document.getElementById('forgotNewPass').value = "";
+  });
+
+  // Tutup Modal
+  document.getElementById('btnCloseModal').addEventListener('click', () => {
+      modal.classList.add('hidden');
+  });
+
+  // ACTION STEP 1: KIRIM EMAIL -> DAPAT OTP TOKEN
+  document.getElementById('formStep1').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnStep1');
+      const txt = document.getElementById('textStep1');
+      const email = document.getElementById('forgotEmail').value.trim();
+
+      btn.disabled = true;
+      txt.textContent = "Mengirim...";
+      modalAlert.classList.add('hidden');
+
+      try {
+          const res = await fetch(API_FORGOT, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email: email })
+          });
+          const json = await res.json();
+
+          if (res.status !== 200) throw new Error(json.message || 'Gagal mengirim OTP');
+
+          tempOtpToken = json.data.otp_token; // Simpan token OTP di variabel JS
+
+          showModalAlert("Kode OTP berhasil dikirim ke email Anda!", false);
+          step1.classList.add('hidden');
+          step2.classList.remove('hidden'); // Lanjut Step 2
+      } catch (error) {
+          showModalAlert(error.message);
+      } finally {
+          btn.disabled = false;
+          txt.textContent = "Kirim OTP";
+      }
+  });
+
+  // ACTION STEP 2: VERIFIKASI OTP -> DAPAT RESET TOKEN
+  document.getElementById('formStep2').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnStep2');
+      const txt = document.getElementById('textStep2');
+      const otpCode = document.getElementById('forgotOtp').value.trim();
+
+      btn.disabled = true;
+      txt.textContent = "Mengecek...";
+      modalAlert.classList.add('hidden');
+
+      try {
+          const res = await fetch(API_VERIFY, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ otp_token: tempOtpToken, otp_code: otpCode })
+          });
+          const json = await res.json();
+
+          if (res.status !== 200) throw new Error(json.message || 'OTP tidak valid');
+
+          tempResetToken = json.data.reset_token; // Simpan Token Reset
+
+          showModalAlert("OTP Valid! Silakan buat password baru.", false);
+          step2.classList.add('hidden');
+          step3.classList.remove('hidden'); // Lanjut Step 3
+      } catch (error) {
+          showModalAlert(error.message);
+      } finally {
+          btn.disabled = false;
+          txt.textContent = "Verifikasi OTP";
+      }
+  });
+
+  // ACTION STEP 3: SUBMIT PASSWORD BARU
+  document.getElementById('formStep3').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById('btnStep3');
+      const txt = document.getElementById('textStep3');
+      const newPass = document.getElementById('forgotNewPass').value;
+
+      btn.disabled = true;
+      txt.textContent = "Menyimpan...";
+      modalAlert.classList.add('hidden');
+
+      try {
+          const res = await fetch(API_RESET, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ reset_token: tempResetToken, new_password: newPass })
+          });
+          const json = await res.json();
+
+          if (res.status !== 200) throw new Error(json.message || 'Gagal reset password');
+
+          // Berhasil total!
+          step3.innerHTML = `
+              <div class="text-center py-6">
+                 <svg class="mx-auto h-16 w-16 text-green-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                 </svg>
+                 <h4 class="text-xl font-bold text-gray-900 mb-2">Berhasil!</h4>
+                 <p class="text-gray-600 mb-6">Password akun Anda telah berhasil diubah.</p>
+                 <button type="button" onclick="document.getElementById('forgotModal').classList.add('hidden')" class="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-3 rounded-lg transition">Selesai & Login</button>
+              </div>
+          `;
+      } catch (error) {
+          showModalAlert(error.message);
+          btn.disabled = false;
+          txt.textContent = "Simpan Password Baru";
+      }
   });
 </script>

@@ -158,7 +158,7 @@
 
           <!-- Dropdown Profile di set ke z-[90] biar gak kalah sama header tabel -->
           <div id="dropdownProfileMenu" class="hidden absolute right-0 top-[2.75rem] mt-2 w-40 bg-white border border-slate-100 rounded-lg shadow-lg py-1 z-[90]">
-            <a href="#" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 font-medium">My Profile</a>
+            <a href="profile" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 hover:text-blue-600 font-medium">My Profile</a>
             <div class="border-t border-slate-100 my-1"></div>
             <a href="#" id="linkLogoutDesk" onclick="logoutSSO(event)" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium">Logout</a>
           </div>
