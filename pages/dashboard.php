@@ -2,13 +2,25 @@
 
 <div class="max-w-[1400px] mx-auto px-2 md:px-4 py-4 md:py-6 bg-gray-50 min-h-screen font-sans">
   
+  <!-- HEADER & FILTER SECTION -->
   <div class="flex flex-col md:flex-row justify-between md:items-end mb-4 md:mb-6 gap-3">
-    <div>
-      <h1 class="text-xl md:text-3xl font-extrabold text-gray-800 tracking-tight flex items-center gap-2">📊 Executive Dashboard</h1>
-      <p class="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1 font-medium">Pusat Komando Portofolio & Kinerja Bisnis</p>
+    
+    <!-- Title & Mobile Toggle Button -->
+    <div class="flex justify-between items-center w-full md:w-auto">
+      <div>
+        <h1 class="text-xl md:text-3xl font-extrabold text-gray-800 tracking-tight flex items-center gap-2">📊 Executive Dashboard</h1>
+        <p class="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1 font-medium">Pusat Komando Portofolio & Kinerja Bisnis</p>
+      </div>
+      
+      <!-- 🚀 UPDATE: Tombol Toggle Filter (Hanya muncul di Mobile) -->
+      <button type="button" id="btnToggleFilter" class="md:hidden flex items-center gap-1.5 bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-transform">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+        Filter
+      </button>
     </div>
 
-    <form id="formFilterMaster" class="flex flex-col md:flex-row items-end gap-2.5 md:gap-3 bg-white p-2.5 md:p-3 rounded-xl shadow-sm border border-gray-200 w-full md:w-auto">
+    <!-- 🚀 UPDATE: Tambah class "hidden md:flex" agar di mobile tertutup by default -->
+    <form id="formFilterMaster" class="hidden md:flex flex-col md:flex-row items-end gap-2.5 md:gap-3 bg-white p-2.5 md:p-3 rounded-xl shadow-sm border border-gray-200 w-full md:w-auto">
       
       <div class="flex w-full md:w-auto gap-2 shrink-0">
           <div class="flex flex-col flex-1 min-w-0 md:w-[130px]">
@@ -97,7 +109,6 @@
             </select>
           </div>
         </div>
-        <!-- 🚀 UPDATE: Tambah min-h-[300px] md:min-h-[400px] untuk Chart -->
         <div class="relative flex-grow min-h-[300px] md:min-h-[400px] w-full mt-2">
           <div id="loadingChartTren" class="absolute inset-0 flex justify-center items-center bg-white bg-opacity-80 z-10 hidden">
             <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
@@ -116,7 +127,6 @@
             <span id="label_total_realisasi_produk" class="text-xs md:text-sm font-black text-indigo-600">Rp 0</span>
           </div>
         </div>
-        <!-- 🚀 UPDATE: Tambah scroll dan kunci min-max height -->
         <div id="box_realisasi_produk" class="space-y-3 flex-grow overflow-y-auto custom-scrollbar pr-2 min-h-[300px] max-h-[300px] md:min-h-[400px] md:max-h-[400px]"></div>
       </div>
     </div>
@@ -318,6 +328,16 @@
   const apiCall = (url, opt={}) => (window.apiFetch ? window.apiFetch(url, opt) : fetch(url, opt));
 
   // ==========================================
+  // 🚀 UPDATE: EVENT LISTENER UNTUK TOGGLE FILTER
+  // ==========================================
+  document.getElementById('btnToggleFilter').addEventListener('click', function() {
+      const filterForm = document.getElementById('formFilterMaster');
+      // Switch class hidden & flex biar bisa expand/collapse di mobile
+      filterForm.classList.toggle('hidden');
+      filterForm.classList.toggle('flex');
+  });
+
+  // ==========================================
   // 2. INIT & DATA FETCHING
   // ==========================================
   async function getLastHarianData() {
@@ -370,6 +390,12 @@
         fetchTrenPortofolio(),
         fetchTrenRunoff()
     ]);
+    
+    // Auto-tutup filter setelah submit kalau di HP biar langsung kelihatan hasilnya
+    if(window.innerWidth < 768) {
+        document.getElementById('formFilterMaster').classList.add('hidden');
+        document.getElementById('formFilterMaster').classList.remove('flex');
+    }
   });
 
   document.getElementById('filter_tren').addEventListener('change', () => { fetchTrenPortofolio(); });
