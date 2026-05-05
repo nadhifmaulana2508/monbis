@@ -97,7 +97,8 @@
             </select>
           </div>
         </div>
-        <div class="relative flex-grow min-h-[220px] w-full mt-2">
+        <!-- 🚀 UPDATE: Tambah min-h-[300px] md:min-h-[400px] untuk Chart -->
+        <div class="relative flex-grow min-h-[300px] md:min-h-[400px] w-full mt-2">
           <div id="loadingChartTren" class="absolute inset-0 flex justify-center items-center bg-white bg-opacity-80 z-10 hidden">
             <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
           </div>
@@ -115,7 +116,8 @@
             <span id="label_total_realisasi_produk" class="text-xs md:text-sm font-black text-indigo-600">Rp 0</span>
           </div>
         </div>
-        <div id="box_realisasi_produk" class="space-y-3 flex-grow"></div>
+        <!-- 🚀 UPDATE: Tambah scroll dan kunci min-max height -->
+        <div id="box_realisasi_produk" class="space-y-3 flex-grow overflow-y-auto custom-scrollbar pr-2 min-h-[300px] max-h-[300px] md:min-h-[400px] md:max-h-[400px]"></div>
       </div>
     </div>
 
@@ -764,8 +766,9 @@
     let kantor = document.getElementById('filter_kantor').value;
     let currDate = document.getElementById('filter_harian').value;
     
-    // 🔥 TRIK SAKTI H-1 Pindah ke sini
-    if (isH1) {
+    // 🔥 TRIK SAKTI H-1: Hanya terapkan H-1 JIKA tanggal di filter masih sama dengan tanggal awal (default).
+    // Jika user sudah mengganti tanggal (misal mau ngecek 2026-04-30), maka jalankan actual date.
+    if (isH1 && currDate === initialHarianDate) {
         currDate = getH1Date(currDate);
     }
 

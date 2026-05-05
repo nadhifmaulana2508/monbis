@@ -1704,8 +1704,6 @@ class DashboardController{
     }
 
 
-
-
     public function getPerkembanganDeposito($input) {
         $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian_date  = $input['harian_date']  ?? date('Y-m-d');
