@@ -1,3 +1,35 @@
+<?php
+// ==========================================
+// BAGIAN API PHP (WAJIB DI BARIS PALING ATAS)
+// ==========================================
+$dataFile = 'tracker_data.json';
+
+// Cek apakah request datang dari Fetch API JS kita
+if (isset($_GET['api']) && $_GET['api'] == 'true') {
+    header('Content-Type: application/json');
+    header('Access-Control-Allow-Origin: *');
+
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        if (file_exists($dataFile)) {
+            echo file_get_contents($dataFile);
+        } else {
+            echo json_encode([]);
+        }
+    } 
+    elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $input = file_get_contents('php://input');
+        if (json_decode($input) !== null) {
+            file_put_contents($dataFile, $input);
+            echo json_encode(['status' => 'success']);
+        } else {
+            http_response_code(400);
+            echo json_encode(['status' => 'error']);
+        }
+    }
+    // WAJIB EXIT: Supaya kode HTML di bawah tidak ikut terkirim sebagai JSON
+    exit; 
+}
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -8,86 +40,68 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
-        
-        /* Styling untuk transisi details (catatan) */
         details > summary { list-style: none; }
         details > summary::-webkit-details-marker { display: none; }
     </style>
 </head>
 <body class="bg-[#f8fafc] text-slate-900 min-h-screen">
 
-    <!-- Header Section -->
     <nav class="bg-white border-b border-slate-200 sticky top-0 z-30 py-3 px-4 md:py-4 md:px-6 mb-4 md:mb-6 shadow-sm">
-        <div class="max-w-7xl mx-auto flex flex-row items-center justify-between gap-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
                 <h1 class="text-lg md:text-xl font-bold text-blue-700 flex items-center gap-2">
                     <span class="bg-blue-600 text-white p-1 rounded text-sm md:text-base">MB</span> 
-                    <span class="hidden sm:inline">Monbis Dev Tracker</span>
-                    <span class="sm:hidden">Monbis Tracker</span>
+                    <span>Monbis Dev Tracker</span>
                 </h1>
-                <p class="text-[10px] md:text-xs text-slate-500 hidden sm:block">Monitoring Fitur & Progres Menu</p>
+                <p class="text-[10px] md:text-xs text-slate-500 hidden sm:block mt-1">Live Server Sync 🟢</p>
             </div>
             
-            <div class="flex items-center gap-4">
-                <!-- Indikator Realtime -->
-                <div class="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full" title="Otomatis sinkron dengan tab lain">
-                    <span class="relative flex h-2.5 w-2.5">
-                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-                    </span>
-                    <span class="text-[10px] font-bold text-slate-500 tracking-wide uppercase">Realtime Sync</span>
-                </div>
-
-                <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all shadow-md shadow-blue-200">
-                    <span class="hidden sm:inline">+ Tambah Sub-Menu</span>
-                    <span class="sm:hidden">+ Tambah</span>
+            <div class="flex flex-wrap items-center gap-2 md:gap-3">
+                <button onclick="openLegendModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold transition-all border border-indigo-200 flex items-center gap-1">
+                    ℹ️ <span class="hidden sm:inline">Panduan</span>
+                </button>
+                <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all shadow-md shadow-blue-200 ml-2">
+                    + <span class="hidden sm:inline">Tambah Menu</span>
                 </button>
             </div>
         </div>
     </nav>
 
     <main class="max-w-7xl mx-auto px-3 md:px-4 pb-20">
-        
-        <!-- SECTION REKAPITULASI -->
-        <div class="mb-4 md:mb-6">
-            <h2 class="text-base md:text-lg font-bold text-slate-800 mb-3 md:mb-4 flex items-center gap-2">
-                📊 Dashboard Rekapitulasi
+        <div class="mb-6 md:mb-8">
+            <h2 class="text-base md:text-lg font-bold text-slate-800 mb-3 md:mb-4 flex items-center justify-between gap-2">
+                <span>📊 Dashboard Rekapitulasi</span>
+                <span id="sync-status" class="text-xs text-slate-400 font-normal">Sinkronisasi...</span>
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4" id="rekap-area">
                 <!-- Di-render oleh JS -->
             </div>
         </div>
 
-        <!-- SECTION PANDUAN PENILAIAN (BARU) -->
-        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 md:mb-8 shadow-sm">
-            <h3 class="text-xs md:text-sm font-bold text-blue-800 mb-2 flex items-center gap-2">
-                ℹ️ Panduan Penilaian Indikator (Total 100%, masing-masing 25%)
-            </h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
-                <div class="text-[11px] md:text-xs text-blue-800 leading-tight">
-                    <strong class="bg-green-100 text-green-700 border border-green-200 px-1.5 py-0.5 rounded mr-1">BE READY</strong> 
-                    Query Database (SQL) & API Endpoint di Backend sudah selesai dan siap dikonsumsi.
-                </div>
-                <div class="text-[11px] md:text-xs text-blue-800 leading-tight">
-                    <strong class="bg-blue-100 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded mr-1">FE READY</strong> 
-                    Slicing UI Frontend dan proses integrasi tarik data dari Backend sudah berjalan lancar.
-                </div>
-                <div class="text-[11px] md:text-xs text-blue-800 leading-tight">
-                    <strong class="bg-purple-100 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded mr-1">FILTER</strong> 
-                    Sistem filter data (Kode Kantor, Hierarki AO, Tanggal, dll) sudah berfungsi dengan valid.
-                </div>
-                <div class="text-[11px] md:text-xs text-blue-800 leading-tight">
-                    <strong class="bg-orange-100 text-orange-700 border border-orange-200 px-1.5 py-0.5 rounded mr-1">RESPONSIVE</strong> 
-                    Tampilan UI aman, rapi, dan tabel tidak menumpuk saat dibuka di perangkat Mobile/HP.
-                </div>
-            </div>
-        </div>
-
-        <!-- SECTION LIST MENU -->
         <div id="content-area" class="space-y-6 md:space-y-8">
             <!-- Data rendered here -->
         </div>
     </main>
+
+    <!-- MODAL PANDUAN PENILAIAN -->
+    <div id="legend-modal" class="fixed inset-0 bg-slate-900/60 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
+            <div class="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center shrink-0 bg-indigo-50">
+                <h2 class="text-base md:text-lg font-bold text-indigo-800 flex items-center gap-2">ℹ️ Panduan Penilaian Indikator</h2>
+                <button onclick="closeLegendModal()" class="text-indigo-400 hover:text-indigo-600 p-1 font-bold text-xl">✕</button>
+            </div>
+            <div class="overflow-y-auto p-4 md:p-6 space-y-4 text-sm text-slate-700">
+                <p class="font-medium mb-2">Setiap indikator memiliki bobot 25%. Total 100% jika semua siap.</p>
+                <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg"><strong class="bg-green-100 text-green-700 border border-green-200 px-2 py-0.5 rounded mr-2 text-xs">BE READY</strong> Query Database (SQL) & API Endpoint di Backend sudah selesai dan siap dikonsumsi.</div>
+                <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg"><strong class="bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded mr-2 text-xs">FE READY</strong> Slicing UI Frontend dan proses integrasi tarik data dari Backend sudah berjalan lancar.</div>
+                <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg"><strong class="bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded mr-2 text-xs">FILTER</strong> Sistem filter data (Kode Kantor, Hierarki AO, Tanggal, dll) sudah berfungsi dengan valid.</div>
+                <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg"><strong class="bg-orange-100 text-orange-700 border border-orange-200 px-2 py-0.5 rounded mr-2 text-xs">RESPONSIVE</strong> Tampilan UI aman, rapi, dan tabel tidak menumpuk saat dibuka di perangkat Mobile/HP.</div>
+            </div>
+            <div class="p-4 border-t border-slate-100 flex justify-end">
+                <button onclick="closeLegendModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors">Tutup Panduan</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal Tambah Sub-Menu -->
     <div id="modal" class="fixed inset-0 bg-slate-900/60 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -139,7 +153,7 @@
                     </div>
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
                         <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-medium text-sm transition-colors">Batal</button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors">Update Catatan</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors">Update Server</button>
                     </div>
                 </form>
             </div>
@@ -152,31 +166,66 @@
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
             <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
         </span>
-        <span id="toast-msg" class="font-medium">Data diperbarui secara realtime!</span>
+        <span id="toast-msg" class="font-medium">Tersimpan ke Server Database!</span>
     </div>
 
     <script>
-        // Data Default Simulasi
+        let menuData = [];
+        
+        // PENTING: Perhatikan penambahan "?api=true" di URL
+        const API_URL = 'index.php?api=true'; 
+        
         const defaultData = [
             {
-                id: 1, parent: "Pemasaran", name: "Realisasi Kredit", 
-                user: "Syaifun Nadhif", notes: "Data sudah sesuai, testing di server dev aman.",
+                id: 1, parent: "Pemasaran", name: "Realisasi Kredit (Sample)", 
+                user: "Syaifun Nadhif", notes: "Data contoh awal, testing di server dev aman.",
                 be: true, fe: true, filter: true, responsif: true, progress: 100,
-                created_at: "06/05/2026, 09:00", updated_at: "06/05/2026, 10:30"
-            },
-            {
-                id: 2, parent: "Pemasaran", name: "Realisasi Kredit AO", 
-                user: "Syaifun Nadhif", notes: "- Filter hierarki AO (Manager -> SPV -> AO) belum jalan sempurna di Backend.\n- Query butuh optimasi biar nggak berat.",
-                be: false, fe: true, filter: true, responsif: false, progress: 50,
-                created_at: "06/05/2026, 09:05", updated_at: "06/05/2026, 11:00"
+                created_at: new Date().toLocaleString('id-ID'), updated_at: new Date().toLocaleString('id-ID')
             }
         ];
 
-        let menuData = JSON.parse(localStorage.getItem('monbis_progres_v4'));
-        if (!menuData || menuData.length === 0) {
-            menuData = defaultData;
-            localStorage.setItem('monbis_progres_v4', JSON.stringify(menuData));
+        // --- FUNGSI AMBIL DATA DARI SERVER (GET) ---
+        async function fetchFromServer() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                
+                if (data.length === 0) {
+                    menuData = defaultData;
+                    saveToServer(true); 
+                } else {
+                    if(JSON.stringify(menuData) !== JSON.stringify(data)){
+                        menuData = data;
+                        renderApp();
+                    }
+                }
+                document.getElementById('sync-status').innerHTML = '🟢 Terhubung Server';
+            } catch (error) {
+                console.error("Gagal konek ke server API:", error);
+                document.getElementById('sync-status').innerHTML = '🔴 Server Offline';
+            }
         }
+
+        // --- FUNGSI SIMPAN DATA KE SERVER (POST) ---
+        async function saveToServer(isSilently = false) {
+            try {
+                renderApp(); 
+                
+                await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(menuData)
+                });
+
+                if(!isSilently) showToast("Tersimpan ke Server Database!");
+            } catch (error) {
+                console.error("Gagal simpan ke server:", error);
+                alert("Koneksi bermasalah! Data gagal disimpan ke server.");
+            }
+        }
+
+        fetchFromServer();
+        setInterval(fetchFromServer, 3000); 
 
         // --- FUNGSI TOAST NOTIFIKASI ---
         let toastTimeout;
@@ -184,28 +233,14 @@
             const toast = document.getElementById('toast');
             document.getElementById('toast-msg').innerText = message;
             toast.classList.remove('translate-y-24', 'opacity-0');
-            
             clearTimeout(toastTimeout);
             toastTimeout = setTimeout(() => {
                 toast.classList.add('translate-y-24', 'opacity-0');
             }, 3000);
         }
 
-        // --- EVENT LISTENER CROSS-TAB REALTIME ---
-        window.addEventListener('storage', function(e) {
-            if(e.key === 'monbis_progres_v4') {
-                menuData = JSON.parse(e.newValue);
-                renderApp();
-                showToast("Berhasil tersinkronisasi dengan update terbaru!");
-            }
-        });
-
-        // --- CORE FUNCTIONS ---
-        function saveData(isSilently = false) {
-            localStorage.setItem('monbis_progres_v4', JSON.stringify(menuData));
-            renderApp();
-            if(!isSilently) showToast("Perubahan berhasil disimpan secara realtime!");
-        }
+        function openLegendModal() { document.getElementById('legend-modal').classList.remove('hidden'); }
+        function closeLegendModal() { document.getElementById('legend-modal').classList.add('hidden'); }
 
         function openModal() { document.getElementById('modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('modal').classList.add('hidden'); document.getElementById('menu-form').reset(); }
@@ -223,7 +258,7 @@
                 progress: 0, created_at: now, updated_at: now
             };
             menuData.push(newItem);
-            saveData();
+            saveToServer();
             closeModal();
         };
 
@@ -250,7 +285,7 @@
             if(idx !== -1) {
                 menuData[idx].notes = newNote;
                 menuData[idx].updated_at = new Date().toLocaleString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'});
-                saveData();
+                saveToServer();
                 closeEditModal();
             }
         };
@@ -267,20 +302,19 @@
             menuData[idx].progress = prog;
             
             menuData[idx].updated_at = new Date().toLocaleString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'});
-            saveData();
+            saveToServer();
         }
 
         function deleteItem(id) {
             const password = prompt('Masukkan password administrator untuk menghapus sub-menu ini:');
             if (password === 'oke123') {
                 menuData = menuData.filter(i => i.id !== id);
-                saveData();
+                saveToServer();
             } else if (password !== null) {
                 alert('Password salah! Data tidak dihapus.');
             }
         }
 
-        // --- RENDER FUNCTIONS ---
         function renderRekap() {
             const total = menuData.length;
             if (total === 0) {
@@ -299,7 +333,6 @@
             const responsifCount = menuData.filter(item => item.responsif).length;
 
             const rekapHtml = `
-                <!-- Card 1: Rata-rata Progres -->
                 <div class="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
                     <div>
                         <p class="text-xs md:text-sm text-slate-500 font-medium mb-1">Rata-rata Progres</p>
@@ -311,7 +344,6 @@
                     </div>
                 </div>
 
-                <!-- Card 2: Status Penyelesaian -->
                 <div class="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
                     <p class="text-xs md:text-sm text-slate-500 font-medium mb-2 md:mb-3">Status Penyelesaian</p>
                     <div class="flex gap-3 md:gap-4">
@@ -326,7 +358,6 @@
                     </div>
                 </div>
 
-                <!-- Card 3: Detail Indikator -->
                 <div class="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
                     <p class="text-xs md:text-sm text-slate-500 font-medium mb-2">Kesiapan Indikator</p>
                     <div class="space-y-2">
@@ -391,7 +422,6 @@
                     html += `
                         <div class="p-4 md:p-5 flex flex-col lg:flex-row gap-4 md:gap-6 items-start lg:items-center hover:bg-slate-50/50 transition-colors">
                             
-                            <!-- INFO SUB-MENU (Kiri) -->
                             <div class="flex-1 w-full">
                                 <div class="flex items-center gap-2 mb-1 md:mb-2">
                                     <h4 class="text-base md:text-lg font-bold text-slate-800 leading-tight">${item.name}</h4>
@@ -407,7 +437,6 @@
                                     
                                     <div class="mt-2 text-xs md:text-sm text-slate-700 bg-yellow-50 p-2 md:p-3 rounded-lg border border-yellow-100 shadow-inner relative group/note">
                                         <div class="pr-8 whitespace-pre-line">${item.notes || 'Tidak ada catatan.'}</div>
-                                        
                                         <button onclick="openEditModal(${item.id})" class="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all opacity-70 hover:opacity-100" title="Edit Catatan">
                                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
@@ -417,15 +446,13 @@
                                 </details>
 
                                 <div class="flex flex-wrap gap-x-3 gap-y-1 text-[10px] md:text-[11px] text-slate-500 font-medium">
-                                    <span>🕒 Dibuat: ${item.created_at}</span>
-                                    <span class="text-blue-600">🔄 Update: ${item.updated_at}</span>
+                                    <span>🕒 ${item.created_at}</span>
+                                    <span class="text-blue-600">🔄 ${item.updated_at}</span>
                                     <span class="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">👤 ${item.user}</span>
                                 </div>
                             </div>
                             
-                            <!-- AREA KANAN: Indikator & Aksi (Responsif) -->
                             <div class="w-full lg:w-auto flex flex-col sm:flex-row lg:flex-row gap-4 lg:gap-6 items-start sm:items-center">
-                                
                                 <div class="grid grid-cols-2 md:flex md:flex-wrap gap-2 w-full sm:w-auto shrink-0">
                                     <button onclick="toggleIndicator(${item.id}, 'be')" class="w-full md:w-auto px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold border md:border-2 transition-all ${item.be ? 'bg-green-100 border-green-500 text-green-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}">
                                         ${item.be ? '✓ BE READY' : 'BE WAIT'}
@@ -455,7 +482,6 @@
                                         </svg>
                                     </button>
                                 </div>
-
                             </div>
                         </div>
                     `;
@@ -466,8 +492,6 @@
                 container.appendChild(section);
             }
         }
-
-        renderApp();
     </script>
 </body>
 </html>
