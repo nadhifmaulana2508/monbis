@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monbis Dev Tracker - BKK Jateng</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Styling untuk transisi details (catatan) */
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-slate-900 min-h-screen">
+
+    <!-- Header Section -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-30 py-3 px-4 md:py-4 md:px-6 mb-4 md:mb-6 shadow-sm">
+        <div class="max-w-7xl mx-auto flex flex-row items-center justify-between gap-4">
+            <div>
+                <h1 class="text-lg md:text-xl font-bold text-blue-700 flex items-center gap-2">
+                    <span class="bg-blue-600 text-white p-1 rounded text-sm md:text-base">MB</span> 
+                    <span class="hidden sm:inline">Monbis Dev Tracker</span>
+                    <span class="sm:hidden">Monbis Tracker</span>
+                </h1>
+                <p class="text-[10px] md:text-xs text-slate-500 hidden sm:block">Monitoring Fitur & Progres Menu</p>
+            </div>
+            
+            <div>
+                <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all shadow-md shadow-blue-200">
+                    <span class="hidden sm:inline">+ Tambah Sub-Menu</span>
+                    <span class="sm:hidden">+ Tambah</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-3 md:px-4 pb-20">
+        
+        <!-- SECTION REKAPITULASI -->
+        <div class="mb-6 md:mb-8">
+            <h2 class="text-base md:text-lg font-bold text-slate-800 mb-3 md:mb-4 flex items-center gap-2">
+                📊 Dashboard Rekapitulasi
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4" id="rekap-area">
+                <!-- Di-render oleh JS -->
+            </div>
+        </div>
+
+        <!-- SECTION LIST MENU -->
+        <div id="content-area" class="space-y-6 md:space-y-8">
+            <!-- Data rendered here -->
+        </div>
+    </main>
+
+    <!-- Modal Tambah/Edit -->
+    <div id="modal" class="fixed inset-0 bg-slate-900/60 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
+            <div class="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
+                <h2 class="text-base md:text-lg font-bold">Input Sub-Menu Baru</h2>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1">✕</button>
+            </div>
+            <div class="overflow-y-auto p-4 md:p-6">
+                <form id="menu-form" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Menu Utama</label>
+                        <input type="text" id="m_parent" placeholder="ex: Pemasaran, NPL, Laporan..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Sub-Menu</label>
+                        <input type="text" id="m_name" placeholder="ex: Realisasi Kredit AO" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Dikerjakan Oleh</label>
+                        <input type="text" id="m_user" value="Syaifun Nadhif" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Catatan Kekurangan</label>
+                        <textarea id="m_notes" rows="3" placeholder="Catatan bug atau fitur yang kurang..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
+                        <button type="button" onclick="closeModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-medium text-sm transition-colors">Batal</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors">Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Default Simulasi
+        const defaultData = [
+            {
+                id: 1, parent: "Pemasaran", name: "Realisasi Kredit", 
+                user: "Syaifun Nadhif", notes: "Data sudah sesuai, testing di server dev aman.",
+                be: true, fe: true, filter: true, responsif: true, progress: 100,
+                created_at: "06/05/2026, 09:00", updated_at: "06/05/2026, 10:30"
+            },
+            {
+                id: 2, parent: "Pemasaran", name: "Realisasi Kredit AO", 
+                user: "Syaifun Nadhif", notes: "Filter hierarki AO (Manager -> SPV -> AO) belum jalan sempurna di Backend. Query butuh optimasi biar nggak berat.",
+                be: false, fe: true, filter: true, responsif: false, progress: 50,
+                created_at: "06/05/2026, 09:05", updated_at: "06/05/2026, 11:00"
+            },
+            {
+                id: 3, parent: "Pemasaran", name: "Ontime Payment", 
+                user: "Syaifun Nadhif", notes: "Tabel responsif masih tumpuk kalau dibuka lewat HP, perlu benerin class CSS.",
+                be: true, fe: true, filter: true, responsif: false, progress: 75,
+                created_at: "06/05/2026, 09:10", updated_at: "06/05/2026, 11:15"
+            },
+            {
+                id: 4, parent: "NPL", name: "Dashboard NPL", 
+                user: "Tim IT", notes: "Query narik data dari database pusat masih sangat lambat. UI belum menyesuaikan mock-up terbaru.",
+                be: true, fe: false, filter: false, responsif: false, progress: 25,
+                created_at: "06/05/2026, 09:20", updated_at: "06/05/2026, 11:20"
+            }
+        ];
+
+        let menuData = JSON.parse(localStorage.getItem('monbis_progres_v4'));
+        if (!menuData || menuData.length === 0) {
+            menuData = defaultData;
+            localStorage.setItem('monbis_progres_v4', JSON.stringify(menuData));
+        }
+
+        function saveData() {
+            localStorage.setItem('monbis_progres_v4', JSON.stringify(menuData));
+            renderApp();
+        }
+
+        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); document.getElementById('menu-form').reset(); }
+
+        document.getElementById('menu-form').onsubmit = (e) => {
+            e.preventDefault();
+            const now = new Date().toLocaleString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'});
+            const newItem = {
+                id: Date.now(),
+                parent: document.getElementById('m_parent').value,
+                name: document.getElementById('m_name').value,
+                user: document.getElementById('m_user').value,
+                notes: document.getElementById('m_notes').value,
+                be: false, fe: false, filter: false, responsif: false,
+                progress: 0, created_at: now, updated_at: now
+            };
+            menuData.push(newItem);
+            saveData();
+            closeModal();
+        };
+
+        function toggleIndicator(id, type) {
+            const idx = menuData.findIndex(i => i.id === id);
+            menuData[idx][type] = !menuData[idx][type];
+            
+            // Kalkulasi: Tiap indikator bernilai 25%
+            let prog = 0;
+            if(menuData[idx].be) prog += 25;
+            if(menuData[idx].fe) prog += 25;
+            if(menuData[idx].filter) prog += 25;
+            if(menuData[idx].responsif) prog += 25;
+            menuData[idx].progress = prog;
+            
+            menuData[idx].updated_at = new Date().toLocaleString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'});
+            saveData();
+        }
+
+        function deleteItem(id) {
+            const password = prompt('Masukkan password administrator untuk menghapus sub-menu ini:');
+            if (password === 'oke123') {
+                menuData = menuData.filter(i => i.id !== id);
+                saveData();
+            } else if (password !== null) {
+                alert('Password salah! Data tidak dihapus.');
+            }
+        }
+
+        function renderRekap() {
+            const total = menuData.length;
+            if (total === 0) {
+                document.getElementById('rekap-area').innerHTML = '<p class="text-slate-500 text-sm">Belum ada data untuk direkap.</p>';
+                return;
+            }
+
+            const totalProgress = menuData.reduce((sum, item) => sum + item.progress, 0);
+            const avgProgress = Math.round(totalProgress / total);
+            const doneCount = menuData.filter(item => item.progress === 100).length;
+            const progressCount = total - doneCount;
+
+            const beCount = menuData.filter(item => item.be).length;
+            const feCount = menuData.filter(item => item.fe).length;
+            const filterCount = menuData.filter(item => item.filter).length;
+            const responsifCount = menuData.filter(item => item.responsif).length;
+
+            const rekapHtml = `
+                <!-- Card 1: Rata-rata Progres -->
+                <div class="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs md:text-sm text-slate-500 font-medium mb-1">Rata-rata Progres</p>
+                        <h3 class="text-2xl md:text-3xl font-black text-blue-600">${avgProgress}%</h3>
+                        <p class="text-[10px] md:text-xs text-slate-400 mt-1">Dari total ${total} Sub-Menu</p>
+                    </div>
+                    <div class="w-12 h-12 md:w-16 md:h-16 rounded-full border-[3px] md:border-4 ${avgProgress === 100 ? 'border-green-500' : 'border-blue-500'} flex items-center justify-center shrink-0">
+                        <span class="text-lg md:text-xl font-bold ${avgProgress === 100 ? 'text-green-500' : 'text-blue-500'}">📊</span>
+                    </div>
+                </div>
+
+                <!-- Card 2: Status Penyelesaian -->
+                <div class="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-xs md:text-sm text-slate-500 font-medium mb-2 md:mb-3">Status Penyelesaian</p>
+                    <div class="flex gap-3 md:gap-4">
+                        <div class="flex-1 bg-green-50 rounded-lg p-2 md:p-3 border border-green-100 flex flex-col justify-center">
+                            <p class="text-[10px] md:text-xs text-green-600 font-bold mb-0.5">SELESAI</p>
+                            <h4 class="text-xl md:text-2xl font-black text-green-700">${doneCount}</h4>
+                        </div>
+                        <div class="flex-1 bg-yellow-50 rounded-lg p-2 md:p-3 border border-yellow-100 flex flex-col justify-center">
+                            <p class="text-[10px] md:text-xs text-yellow-600 font-bold mb-0.5">PROGRES</p>
+                            <h4 class="text-xl md:text-2xl font-black text-yellow-700">${progressCount}</h4>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card 3: Detail Indikator -->
+                <div class="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
+                    <p class="text-xs md:text-sm text-slate-500 font-medium mb-2">Kesiapan Indikator</p>
+                    <div class="space-y-2">
+                        <div>
+                            <div class="flex justify-between items-center text-[11px] md:text-sm mb-1">
+                                <span class="text-slate-600">Backend (BE)</span>
+                                <span class="font-bold text-slate-800">${beCount}/${total}</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-green-500 h-full" style="width: ${(beCount/total)*100}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <div class="flex justify-between items-center text-[11px] md:text-sm mb-1">
+                                <span class="text-slate-600">Frontend (FE)</span>
+                                <span class="font-bold text-slate-800">${feCount}/${total}</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div class="bg-blue-500 h-full" style="width: ${(feCount/total)*100}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center text-[11px] md:text-sm pt-1">
+                            <span class="text-slate-600">Filter & Responsif</span>
+                            <span class="font-bold text-slate-800">${filterCount}/${total} & ${responsifCount}/${total}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.getElementById('rekap-area').innerHTML = rekapHtml;
+        }
+
+        function renderApp() {
+            renderRekap(); 
+
+            const container = document.getElementById('content-area');
+            container.innerHTML = '';
+
+            const grouped = menuData.reduce((acc, item) => {
+                if (!acc[item.parent]) acc[item.parent] = [];
+                acc[item.parent].push(item);
+                return acc;
+            }, {});
+
+            for (const parent in grouped) {
+                const section = document.createElement('div');
+                section.className = "bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden";
+                
+                let html = `
+                    <div class="bg-slate-50 border-b border-slate-200 p-3 md:p-4 flex items-center justify-between">
+                        <div class="flex items-center gap-2 md:gap-3">
+                            <div class="w-1.5 h-5 md:w-2 md:h-6 bg-blue-600 rounded-full"></div>
+                            <h2 class="text-base md:text-lg font-bold text-slate-800">${parent}</h2>
+                        </div>
+                        <span class="bg-blue-100 text-blue-700 text-[10px] md:text-xs px-2 py-1 md:px-3 rounded-full font-bold">${grouped[parent].length} Item</span>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                `;
+
+                grouped[parent].forEach(item => {
+                    html += `
+                        <div class="p-4 md:p-5 flex flex-col lg:flex-row gap-4 md:gap-6 items-start lg:items-center hover:bg-slate-50/50 transition-colors">
+                            
+                            <!-- INFO SUB-MENU (Kiri) -->
+                            <div class="flex-1 w-full">
+                                <div class="flex items-center gap-2 mb-1 md:mb-2">
+                                    <h4 class="text-base md:text-lg font-bold text-slate-800 leading-tight">${item.name}</h4>
+                                </div>
+                                
+                                <details class="mb-2 md:mb-3 cursor-pointer group">
+                                    <summary class="text-[11px] md:text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 focus:outline-none w-fit">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 md:h-4 md:w-4 group-open:rotate-90 transition-transform" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                        </svg>
+                                        Lihat Catatan
+                                    </summary>
+                                    <div class="mt-2 text-xs md:text-sm text-slate-700 bg-yellow-50 p-2 md:p-3 rounded-lg border border-yellow-100 shadow-inner">
+                                        ${item.notes || 'Tidak ada catatan.'}
+                                    </div>
+                                </details>
+
+                                <div class="flex flex-wrap gap-x-3 gap-y-1 text-[10px] md:text-[11px] text-slate-500 font-medium">
+                                    <span>🕒 ${item.created_at}</span>
+                                    <span class="text-blue-600">🔄 ${item.updated_at}</span>
+                                    <span class="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">👤 ${item.user}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- AREA KANAN: Indikator & Aksi (Responsif) -->
+                            <div class="w-full lg:w-auto flex flex-col sm:flex-row lg:flex-row gap-4 lg:gap-6 items-start sm:items-center">
+                                
+                                <!-- 4 Indikator Grid untuk HP -->
+                                <div class="grid grid-cols-2 md:flex md:flex-wrap gap-2 w-full sm:w-auto shrink-0">
+                                    <button onclick="toggleIndicator(${item.id}, 'be')" class="w-full md:w-auto px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold border md:border-2 transition-all ${item.be ? 'bg-green-100 border-green-500 text-green-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}">
+                                        ${item.be ? '✓ BE READY' : 'BE WAIT'}
+                                    </button>
+                                    <button onclick="toggleIndicator(${item.id}, 'fe')" class="w-full md:w-auto px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold border md:border-2 transition-all ${item.fe ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}">
+                                        ${item.fe ? '✓ FE READY' : 'FE WAIT'}
+                                    </button>
+                                    <button onclick="toggleIndicator(${item.id}, 'filter')" class="w-full md:w-auto px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold border md:border-2 transition-all ${item.filter ? 'bg-purple-100 border-purple-500 text-purple-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}">
+                                        ${item.filter ? '✓ FILTER' : 'NO FILTER'}
+                                    </button>
+                                    <button onclick="toggleIndicator(${item.id}, 'responsif')" class="w-full md:w-auto px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold border md:border-2 transition-all ${item.responsif ? 'bg-orange-100 border-orange-500 text-orange-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}">
+                                        ${item.responsif ? '✓ RESPONSIVE' : 'NO RESPONSIVE'}
+                                    </button>
+                                </div>
+                                
+                                <!-- Progress Bar & Hapus -->
+                                <div class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-3 sm:pt-0 border-t border-slate-100 sm:border-none shrink-0">
+                                    <div class="flex flex-row sm:flex-col items-center sm:justify-center gap-3 sm:gap-0 w-full sm:w-[80px]">
+                                        <span class="text-xl md:text-2xl font-black ${item.progress === 100 ? 'text-green-500' : 'text-slate-700'}">${item.progress}%</span>
+                                        <div class="flex-1 sm:w-full h-1.5 bg-slate-200 rounded-full sm:mt-1 overflow-hidden">
+                                            <div class="h-full ${item.progress === 100 ? 'bg-green-500' : 'bg-blue-500'} transition-all duration-300" style="width: ${item.progress}%"></div>
+                                        </div>
+                                    </div>
+
+                                    <button onclick="deleteItem(${item.id})" class="p-1.5 md:p-2 text-slate-400 hover:text-white hover:bg-red-500 rounded-lg transition-colors border border-slate-200 hover:border-red-500 shrink-0" title="Hapus">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += `</div>`;
+                section.innerHTML = html;
+                container.appendChild(section);
+            }
+        }
+
+        renderApp();
+    </script>
+</body>
+</html>
