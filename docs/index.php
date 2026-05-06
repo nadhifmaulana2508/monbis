@@ -126,7 +126,7 @@ if (isset($_GET['api']) && $_GET['api'] == 'true') {
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Dikerjakan Oleh</label>
-                        <input type="text" id="m_user" value="Syaifun Nadhif" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm" required>
+                        <input type="text" id="m_user" value="Tim IT" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm" required>
                     </div>
                     <div>
                         <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Catatan Kekurangan</label>
