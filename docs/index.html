@@ -28,7 +28,16 @@
                 <p class="text-[10px] md:text-xs text-slate-500 hidden sm:block">Monitoring Fitur & Progres Menu</p>
             </div>
             
-            <div>
+            <div class="flex items-center gap-4">
+                <!-- Indikator Realtime -->
+                <div class="hidden md:flex items-center gap-2 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-full" title="Otomatis sinkron dengan tab lain">
+                    <span class="relative flex h-2.5 w-2.5">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+                    </span>
+                    <span class="text-[10px] font-bold text-slate-500 tracking-wide uppercase">Realtime Sync</span>
+                </div>
+
                 <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all shadow-md shadow-blue-200">
                     <span class="hidden sm:inline">+ Tambah Sub-Menu</span>
                     <span class="sm:hidden">+ Tambah</span>
@@ -40,12 +49,37 @@
     <main class="max-w-7xl mx-auto px-3 md:px-4 pb-20">
         
         <!-- SECTION REKAPITULASI -->
-        <div class="mb-6 md:mb-8">
+        <div class="mb-4 md:mb-6">
             <h2 class="text-base md:text-lg font-bold text-slate-800 mb-3 md:mb-4 flex items-center gap-2">
                 📊 Dashboard Rekapitulasi
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4" id="rekap-area">
                 <!-- Di-render oleh JS -->
+            </div>
+        </div>
+
+        <!-- SECTION PANDUAN PENILAIAN (BARU) -->
+        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 md:mb-8 shadow-sm">
+            <h3 class="text-xs md:text-sm font-bold text-blue-800 mb-2 flex items-center gap-2">
+                ℹ️ Panduan Penilaian Indikator (Total 100%, masing-masing 25%)
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
+                <div class="text-[11px] md:text-xs text-blue-800 leading-tight">
+                    <strong class="bg-green-100 text-green-700 border border-green-200 px-1.5 py-0.5 rounded mr-1">BE READY</strong> 
+                    Query Database (SQL) & API Endpoint di Backend sudah selesai dan siap dikonsumsi.
+                </div>
+                <div class="text-[11px] md:text-xs text-blue-800 leading-tight">
+                    <strong class="bg-blue-100 text-blue-700 border border-blue-200 px-1.5 py-0.5 rounded mr-1">FE READY</strong> 
+                    Slicing UI Frontend dan proses integrasi tarik data dari Backend sudah berjalan lancar.
+                </div>
+                <div class="text-[11px] md:text-xs text-blue-800 leading-tight">
+                    <strong class="bg-purple-100 text-purple-700 border border-purple-200 px-1.5 py-0.5 rounded mr-1">FILTER</strong> 
+                    Sistem filter data (Kode Kantor, Hierarki AO, Tanggal, dll) sudah berfungsi dengan valid.
+                </div>
+                <div class="text-[11px] md:text-xs text-blue-800 leading-tight">
+                    <strong class="bg-orange-100 text-orange-700 border border-orange-200 px-1.5 py-0.5 rounded mr-1">RESPONSIVE</strong> 
+                    Tampilan UI aman, rapi, dan tabel tidak menumpuk saat dibuka di perangkat Mobile/HP.
+                </div>
             </div>
         </div>
 
@@ -55,7 +89,7 @@
         </div>
     </main>
 
-    <!-- Modal Tambah/Edit -->
+    <!-- Modal Tambah Sub-Menu -->
     <div id="modal" class="fixed inset-0 bg-slate-900/60 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
             <div class="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
@@ -82,11 +116,43 @@
                     </div>
                     <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
                         <button type="button" onclick="closeModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-medium text-sm transition-colors">Batal</button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors">Simpan</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors">Simpan Data</button>
                     </div>
                 </form>
             </div>
         </div>
+    </div>
+
+    <!-- MODAL EDIT CATATAN -->
+    <div id="edit-modal" class="fixed inset-0 bg-slate-900/60 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
+            <div class="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
+                <h2 class="text-base md:text-lg font-bold text-blue-700">Update Catatan</h2>
+                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 p-1">✕</button>
+            </div>
+            <div class="overflow-y-auto p-4 md:p-6">
+                <form id="edit-form" class="space-y-4">
+                    <input type="hidden" id="edit_id"> 
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Detail Kekurangan / Bug</label>
+                        <textarea id="edit_notes" rows="6" placeholder="Ketik catatan di sini..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
+                        <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-medium text-sm transition-colors">Batal</button>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors">Update Catatan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION REALTIME -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-2xl transform translate-y-24 opacity-0 transition-all duration-300 z-50 text-xs md:text-sm flex items-center gap-3 border border-slate-700">
+        <span class="relative flex h-2.5 w-2.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
+        </span>
+        <span id="toast-msg" class="font-medium">Data diperbarui secara realtime!</span>
     </div>
 
     <script>
@@ -100,21 +166,9 @@
             },
             {
                 id: 2, parent: "Pemasaran", name: "Realisasi Kredit AO", 
-                user: "Syaifun Nadhif", notes: "Filter hierarki AO (Manager -> SPV -> AO) belum jalan sempurna di Backend. Query butuh optimasi biar nggak berat.",
+                user: "Syaifun Nadhif", notes: "- Filter hierarki AO (Manager -> SPV -> AO) belum jalan sempurna di Backend.\n- Query butuh optimasi biar nggak berat.",
                 be: false, fe: true, filter: true, responsif: false, progress: 50,
                 created_at: "06/05/2026, 09:05", updated_at: "06/05/2026, 11:00"
-            },
-            {
-                id: 3, parent: "Pemasaran", name: "Ontime Payment", 
-                user: "Syaifun Nadhif", notes: "Tabel responsif masih tumpuk kalau dibuka lewat HP, perlu benerin class CSS.",
-                be: true, fe: true, filter: true, responsif: false, progress: 75,
-                created_at: "06/05/2026, 09:10", updated_at: "06/05/2026, 11:15"
-            },
-            {
-                id: 4, parent: "NPL", name: "Dashboard NPL", 
-                user: "Tim IT", notes: "Query narik data dari database pusat masih sangat lambat. UI belum menyesuaikan mock-up terbaru.",
-                be: true, fe: false, filter: false, responsif: false, progress: 25,
-                created_at: "06/05/2026, 09:20", updated_at: "06/05/2026, 11:20"
             }
         ];
 
@@ -124,9 +178,33 @@
             localStorage.setItem('monbis_progres_v4', JSON.stringify(menuData));
         }
 
-        function saveData() {
+        // --- FUNGSI TOAST NOTIFIKASI ---
+        let toastTimeout;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = message;
+            toast.classList.remove('translate-y-24', 'opacity-0');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('translate-y-24', 'opacity-0');
+            }, 3000);
+        }
+
+        // --- EVENT LISTENER CROSS-TAB REALTIME ---
+        window.addEventListener('storage', function(e) {
+            if(e.key === 'monbis_progres_v4') {
+                menuData = JSON.parse(e.newValue);
+                renderApp();
+                showToast("Berhasil tersinkronisasi dengan update terbaru!");
+            }
+        });
+
+        // --- CORE FUNCTIONS ---
+        function saveData(isSilently = false) {
             localStorage.setItem('monbis_progres_v4', JSON.stringify(menuData));
             renderApp();
+            if(!isSilently) showToast("Perubahan berhasil disimpan secara realtime!");
         }
 
         function openModal() { document.getElementById('modal').classList.remove('hidden'); }
@@ -149,11 +227,38 @@
             closeModal();
         };
 
+        function openEditModal(id) {
+            const idx = menuData.findIndex(i => i.id === id);
+            if(idx !== -1) {
+                document.getElementById('edit_id').value = id;
+                document.getElementById('edit_notes').value = menuData[idx].notes;
+                document.getElementById('edit-modal').classList.remove('hidden');
+            }
+        }
+
+        function closeEditModal() { 
+            document.getElementById('edit-modal').classList.add('hidden'); 
+            document.getElementById('edit-form').reset(); 
+        }
+
+        document.getElementById('edit-form').onsubmit = (e) => {
+            e.preventDefault();
+            const id = parseInt(document.getElementById('edit_id').value);
+            const newNote = document.getElementById('edit_notes').value;
+            
+            const idx = menuData.findIndex(i => i.id === id);
+            if(idx !== -1) {
+                menuData[idx].notes = newNote;
+                menuData[idx].updated_at = new Date().toLocaleString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'});
+                saveData();
+                closeEditModal();
+            }
+        };
+
         function toggleIndicator(id, type) {
             const idx = menuData.findIndex(i => i.id === id);
             menuData[idx][type] = !menuData[idx][type];
             
-            // Kalkulasi: Tiap indikator bernilai 25%
             let prog = 0;
             if(menuData[idx].be) prog += 25;
             if(menuData[idx].fe) prog += 25;
@@ -175,6 +280,7 @@
             }
         }
 
+        // --- RENDER FUNCTIONS ---
         function renderRekap() {
             const total = menuData.length;
             if (total === 0) {
@@ -298,14 +404,21 @@
                                         </svg>
                                         Lihat Catatan
                                     </summary>
-                                    <div class="mt-2 text-xs md:text-sm text-slate-700 bg-yellow-50 p-2 md:p-3 rounded-lg border border-yellow-100 shadow-inner">
-                                        ${item.notes || 'Tidak ada catatan.'}
+                                    
+                                    <div class="mt-2 text-xs md:text-sm text-slate-700 bg-yellow-50 p-2 md:p-3 rounded-lg border border-yellow-100 shadow-inner relative group/note">
+                                        <div class="pr-8 whitespace-pre-line">${item.notes || 'Tidak ada catatan.'}</div>
+                                        
+                                        <button onclick="openEditModal(${item.id})" class="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all opacity-70 hover:opacity-100" title="Edit Catatan">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                            </svg>
+                                        </button>
                                     </div>
                                 </details>
 
                                 <div class="flex flex-wrap gap-x-3 gap-y-1 text-[10px] md:text-[11px] text-slate-500 font-medium">
-                                    <span>🕒 ${item.created_at}</span>
-                                    <span class="text-blue-600">🔄 ${item.updated_at}</span>
+                                    <span>🕒 Dibuat: ${item.created_at}</span>
+                                    <span class="text-blue-600">🔄 Update: ${item.updated_at}</span>
                                     <span class="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">👤 ${item.user}</span>
                                 </div>
                             </div>
@@ -313,7 +426,6 @@
                             <!-- AREA KANAN: Indikator & Aksi (Responsif) -->
                             <div class="w-full lg:w-auto flex flex-col sm:flex-row lg:flex-row gap-4 lg:gap-6 items-start sm:items-center">
                                 
-                                <!-- 4 Indikator Grid untuk HP -->
                                 <div class="grid grid-cols-2 md:flex md:flex-wrap gap-2 w-full sm:w-auto shrink-0">
                                     <button onclick="toggleIndicator(${item.id}, 'be')" class="w-full md:w-auto px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold border md:border-2 transition-all ${item.be ? 'bg-green-100 border-green-500 text-green-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}">
                                         ${item.be ? '✓ BE READY' : 'BE WAIT'}
@@ -329,7 +441,6 @@
                                     </button>
                                 </div>
                                 
-                                <!-- Progress Bar & Hapus -->
                                 <div class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-3 sm:pt-0 border-t border-slate-100 sm:border-none shrink-0">
                                     <div class="flex flex-row sm:flex-col items-center sm:justify-center gap-3 sm:gap-0 w-full sm:w-[80px]">
                                         <span class="text-xl md:text-2xl font-black ${item.progress === 100 ? 'text-green-500' : 'text-slate-700'}">${item.progress}%</span>
