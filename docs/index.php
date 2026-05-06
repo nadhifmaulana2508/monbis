@@ -1,10 +1,9 @@
 <?php
 // ==========================================
-// BAGIAN API PHP (WAJIB DI BARIS PALING ATAS)
+// BAGIAN API PHP 
 // ==========================================
 $dataFile = 'tracker_data.json';
 
-// Cek apakah request datang dari Fetch API JS kita
 if (isset($_GET['api']) && $_GET['api'] == 'true') {
     header('Content-Type: application/json');
     header('Access-Control-Allow-Origin: *');
@@ -19,14 +18,19 @@ if (isset($_GET['api']) && $_GET['api'] == 'true') {
     elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $input = file_get_contents('php://input');
         if (json_decode($input) !== null) {
-            file_put_contents($dataFile, $input);
-            echo json_encode(['status' => 'success']);
+            // CEK APAKAH BERHASIL DITULIS KE SERVER
+            $result = file_put_contents($dataFile, $input);
+            if ($result !== false) {
+                echo json_encode(['status' => 'success']);
+            } else {
+                http_response_code(500); // Server error
+                echo json_encode(['status' => 'error', 'message' => 'Permission Denied! File tidak bisa ditulis.']);
+            }
         } else {
             http_response_code(400);
-            echo json_encode(['status' => 'error']);
+            echo json_encode(['status' => 'error', 'message' => 'Format JSON tidak valid']);
         }
     }
-    // WAJIB EXIT: Supaya kode HTML di bawah tidak ikut terkirim sebagai JSON
     exit; 
 }
 ?>
@@ -169,10 +173,14 @@ if (isset($_GET['api']) && $_GET['api'] == 'true') {
         <span id="toast-msg" class="font-medium">Tersimpan ke Server Database!</span>
     </div>
 
+    <!-- TOAST ERROR (BARU) -->
+    <div id="toast-error" class="fixed bottom-4 right-4 bg-red-600 text-white px-4 py-3 rounded-lg shadow-2xl transform translate-y-24 opacity-0 transition-all duration-300 z-50 text-xs md:text-sm flex items-center gap-3 border border-red-700">
+        <span class="font-bold text-lg">⚠️</span>
+        <span id="toast-error-msg" class="font-medium">Gagal menyimpan ke Server! Cek File Permission.</span>
+    </div>
+
     <script>
         let menuData = [];
-        
-        // PENTING: Perhatikan penambahan "?api=true" di URL
         const API_URL = 'index.php?api=true'; 
         
         const defaultData = [
@@ -206,21 +214,26 @@ if (isset($_GET['api']) && $_GET['api'] == 'true') {
             }
         }
 
-        // --- FUNGSI SIMPAN DATA KE SERVER (POST) ---
+        // --- FUNGSI SIMPAN DATA KE SERVER DENGAN ERROR DETECTION (POST) ---
         async function saveToServer(isSilently = false) {
             try {
                 renderApp(); 
                 
-                await fetch(API_URL, {
+                const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(menuData)
                 });
 
+                // Cek kalau server nolak (misal permission gagal)
+                if (!response.ok) {
+                    throw new Error("Permission Denied Server");
+                }
+
                 if(!isSilently) showToast("Tersimpan ke Server Database!");
             } catch (error) {
                 console.error("Gagal simpan ke server:", error);
-                alert("Koneksi bermasalah! Data gagal disimpan ke server.");
+                showErrorToast("Gagal simpan! Cek Permission folder/file (chmod 777)");
             }
         }
 
@@ -234,14 +247,20 @@ if (isset($_GET['api']) && $_GET['api'] == 'true') {
             document.getElementById('toast-msg').innerText = message;
             toast.classList.remove('translate-y-24', 'opacity-0');
             clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => {
-                toast.classList.add('translate-y-24', 'opacity-0');
-            }, 3000);
+            toastTimeout = setTimeout(() => { toast.classList.add('translate-y-24', 'opacity-0'); }, 3000);
+        }
+
+        let errorToastTimeout;
+        function showErrorToast(message) {
+            const toastError = document.getElementById('toast-error');
+            document.getElementById('toast-error-msg').innerText = message;
+            toastError.classList.remove('translate-y-24', 'opacity-0');
+            clearTimeout(errorToastTimeout);
+            errorToastTimeout = setTimeout(() => { toastError.classList.add('translate-y-24', 'opacity-0'); }, 5000);
         }
 
         function openLegendModal() { document.getElementById('legend-modal').classList.remove('hidden'); }
         function closeLegendModal() { document.getElementById('legend-modal').classList.add('hidden'); }
-
         function openModal() { document.getElementById('modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('modal').classList.add('hidden'); document.getElementById('menu-form').reset(); }
 
