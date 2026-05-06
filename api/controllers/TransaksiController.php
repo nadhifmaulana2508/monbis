@@ -502,464 +502,458 @@ class TransaksiController {
         }
     }
 
-/**
-     * 11. SUMMARY CARDS DASHBOARD TRANSAKSI
-     * Menampilkan semua data (Keseluruhan, VA, Branchless, QRIS, Mandiri, Permata).
-     * Bebas Bug HY093 & Fix Bug Tanggal PHP strtotime('-1 month') pada tanggal 31.
-     */
+    /**
+         * 11. SUMMARY CARDS DASHBOARD TRANSAKSI
+         * Menampilkan semua data (Keseluruhan, VA, Branchless, QRIS, Mandiri, Permata).
+         * Bebas Bug HY093 & Fix Bug Tanggal PHP strtotime('-1 month') pada tanggal 31.
+         */
     public function getSummaryCardsTransaksi($input = null) {
-        set_time_limit(300); ini_set('memory_limit', '1024M');
+            // 🔥 VAKSIN: Matikan print warning/notice HTML yang bisa bikin JSON rusak (Unexpected token '<')
+            error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
+            set_time_limit(300); ini_set('memory_limit', '1024M');
 
-        $b = is_array($input) ? $input : [];
-        $harian  = $b['harian_date'] ?? date('Y-m-d');
-        $kode_kantor = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
-        $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
+            $b = is_array($input) ? $input : [];
+            $harian  = $b['harian_date'] ?? date('Y-m-d');
+            $kode_kantor = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+            $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
 
-        if (!$harian) return sendResponse(400, "Tanggal Actual (Harian) wajib diisi.", null);
+            if (!$harian) return sendResponse(400, "Tanggal Actual (Harian) wajib diisi.", null);
 
-        $ts_harian = strtotime($harian);
+            $ts_harian = strtotime($harian);
+            $y = (int)date('Y', $ts_harian);
+            $m = (int)date('m', $ts_harian);
+            $d = (int)date('d', $ts_harian);
 
-        // 🔥 FIX BUG TANGGAL: Perhitungan aman untuk Harian Bulan Lalu (MTD)
-        $y = (int)date('Y', $ts_harian);
-        $m = (int)date('m', $ts_harian);
-        $d = (int)date('d', $ts_harian);
-        
-        $prev_m = $m - 1;
-        $prev_y = $y;
-        if ($prev_m == 0) { 
-            $prev_m = 12; 
-            $prev_y--; 
-        }
-        
-        // Mencegah error jika tanggal 31 mundur ke bulan yang hanya ada 30/28 hari
-        $max_days = cal_days_in_month(CAL_GREGORIAN, $prev_m, $prev_y);
-        $prev_d = min($d, $max_days);
-        $prev_harian = sprintf("%04d-%02d-%02d", $prev_y, $prev_m, $prev_d);
+            // 🔥 LOGIKA TANGGAL BULLETPROOF MENGGUNAKAN mktime()
+            $prev_month_ts = mktime(0, 0, 0, $m - 1, 1, $y);
+            $prev_y = date('Y', $prev_month_ts);
+            $prev_m = date('m', $prev_month_ts);
+            $max_days = date('t', $prev_month_ts);
+            
+            $prev_d = min($d, $max_days);
+            $prev_harian = sprintf("%04d-%02d-%02d", $prev_y, $prev_m, $prev_d);
 
-        // 🔥 FIX BUG TANGGAL: Perhitungan aman untuk Prev Closing
-        if (!empty($b['closing_date'])) {
-            $closing_date = $b['closing_date'];
-        } else {
-            $closing_date = date('Y-m-t', strtotime(sprintf("%04d-%02d-01", $y, $m) . ' -1 day'));
-        }
-        
-        // Cara paling aman mundur 1 bulan untuk akhir bulan: 
-        // Ambil tanggal 1 closing, mundurin 1 bulan, lalu ambil tanggal akhirnya ('t')
-        $prev_closing = date('Y-m-t', strtotime(date('Y-m-01', strtotime($closing_date)) . ' -1 month'));
-
-        $label_periode = date('M Y', $ts_harian);
-        $prev_label_periode = date('M Y', strtotime($prev_harian));
-
-        $sqlFilter = "";
-        $params = [
-            ':s_closing'  => $closing_date, ':s_harian'   => $harian,
-            ':s_pclosing' => $prev_closing, ':s_pharian'  => $prev_harian,
-            ':w_closing'  => $closing_date, ':w_harian'   => $harian,
-            ':w_pclosing' => $prev_closing, ':w_pharian'  => $prev_harian
-        ];
-
-        if ($kode_kantor && $kode_kantor !== '000') {
-            $sqlFilter .= " AND t.kantor = :kode_kantor "; $params[':kode_kantor'] = $kode_kantor;
-        } elseif ($korwil) {
-            $kw_start = null; $kw_end = null;
-            switch ($korwil) {
-                case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
-                case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
-                case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
-                case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
+            if (!empty($b['closing_date'])) {
+                $closing_date = $b['closing_date'];
+            } else {
+                $closing_date = date('Y-m-t', strtotime(sprintf("%04d-%02d-01", $y, $m) . ' -1 day'));
             }
-            if ($kw_start && $kw_end) {
-                $sqlFilter .= " AND t.kantor BETWEEN :kw_start AND :kw_end ";
-                $params[':kw_start'] = $kw_start; $params[':kw_end'] = $kw_end;
-            }
-        }
+            
+            $prev_closing = date('Y-m-t', strtotime(date('Y-m-01', strtotime($closing_date)) . ' -1 month'));
 
-        $sql = "
-            SELECT 
-                SUM(CASE WHEN is_curr=1 THEN jumlah ELSE 0 END) as curr_nom_all,
-                SUM(CASE WHEN is_curr=1 THEN 1 ELSE 0 END) as curr_trx_all,
-                
-                SUM(CASE WHEN is_curr=1 AND is_va=1 THEN jumlah ELSE 0 END) as curr_nom_va,
-                SUM(CASE WHEN is_curr=1 AND is_va=1 THEN 1 ELSE 0 END) as curr_trx_va,
-                
-                SUM(CASE WHEN is_curr=1 AND is_mandiri=1 THEN jumlah ELSE 0 END) as curr_nom_mandiri,
-                SUM(CASE WHEN is_curr=1 AND is_mandiri=1 THEN 1 ELSE 0 END) as curr_trx_mandiri,
-                
-                SUM(CASE WHEN is_curr=1 AND is_permata=1 THEN jumlah ELSE 0 END) as curr_nom_permata,
-                SUM(CASE WHEN is_curr=1 AND is_permata=1 THEN 1 ELSE 0 END) as curr_trx_permata,
-                
-                SUM(CASE WHEN is_curr=1 AND is_br=1 THEN jumlah ELSE 0 END) as curr_nom_br,
-                SUM(CASE WHEN is_curr=1 AND is_br=1 THEN 1 ELSE 0 END) as curr_trx_br,
+            $label_periode = date('M Y', $ts_harian);
+            $prev_label_periode = date('M Y', strtotime($prev_harian));
 
-                SUM(CASE WHEN is_curr=1 AND is_qris=1 THEN jumlah ELSE 0 END) as curr_nom_qris,
-                SUM(CASE WHEN is_curr=1 AND is_qris=1 THEN 1 ELSE 0 END) as curr_trx_qris,
-
-                SUM(CASE WHEN is_prev=1 THEN jumlah ELSE 0 END) as prev_nom_all,
-                SUM(CASE WHEN is_prev=1 THEN 1 ELSE 0 END) as prev_trx_all,
-
-                SUM(CASE WHEN is_prev=1 AND is_va=1 THEN jumlah ELSE 0 END) as prev_nom_va,
-                SUM(CASE WHEN is_prev=1 AND is_va=1 THEN 1 ELSE 0 END) as prev_trx_va,
-                
-                SUM(CASE WHEN is_prev=1 AND is_mandiri=1 THEN jumlah ELSE 0 END) as prev_nom_mandiri,
-                SUM(CASE WHEN is_prev=1 AND is_mandiri=1 THEN 1 ELSE 0 END) as prev_trx_mandiri, 
-                
-                SUM(CASE WHEN is_prev=1 AND is_permata=1 THEN jumlah ELSE 0 END) as prev_nom_permata,
-                SUM(CASE WHEN is_prev=1 AND is_permata=1 THEN 1 ELSE 0 END) as prev_trx_permata, 
-                
-                SUM(CASE WHEN is_prev=1 AND is_br=1 THEN jumlah ELSE 0 END) as prev_nom_br,
-                SUM(CASE WHEN is_prev=1 AND is_br=1 THEN 1 ELSE 0 END) as prev_trx_br,
-
-                SUM(CASE WHEN is_prev=1 AND is_qris=1 THEN jumlah ELSE 0 END) as prev_nom_qris,
-                SUM(CASE WHEN is_prev=1 AND is_qris=1 THEN 1 ELSE 0 END) as prev_trx_qris
-            FROM (
-                SELECT 
-                    t.jumlah,
-                    CASE WHEN t.tgl_transaksi > :s_closing AND t.tgl_transaksi <= :s_harian THEN 1 ELSE 0 END as is_curr,
-                    CASE WHEN t.tgl_transaksi > :s_pclosing AND t.tgl_transaksi <= :s_pharian THEN 1 ELSE 0 END as is_prev,
-                    CASE WHEN TRIM(t.kode_transaksi) = '320' THEN 1 ELSE 0 END as is_va,
-                    CASE WHEN TRIM(t.kode_transaksi) = '320' AND t.norek_aba LIKE '%0001000001' THEN 1 ELSE 0 END as is_mandiri,
-                    CASE WHEN TRIM(t.kode_transaksi) = '320' AND t.norek_aba LIKE '%0001000004' THEN 1 ELSE 0 END as is_permata,
-                    CASE WHEN TRIM(t.kode_transaksi) IN ('150', '152') THEN 1 ELSE 0 END as is_br,
-                    CASE WHEN TRIM(t.kode_transaksi) IN ('140', '16', '162') THEN 1 ELSE 0 END as is_qris
-                FROM va t
-                WHERE ((t.tgl_transaksi > :w_closing AND t.tgl_transaksi <= :w_harian) 
-                   OR (t.tgl_transaksi > :w_pclosing AND t.tgl_transaksi <= :w_pharian))
-                AND TRIM(t.kode_transaksi) IN ('320', '150', '152', '140', '16', '162')
-                $sqlFilter
-            ) as mapped_data
-        ";
-
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
-            $stmt->execute();
-            $d = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            $calcGrowth = function($curr, $prev) {
-                if ($prev > 0) return round((($curr - $prev) / $prev) * 100, 1);
-                return $curr > 0 ? 100 : 0;
-            };
-
-            $fmtNominal = function($num) {
-                if ($num >= 1000000000) return 'Rp ' . round($num / 1000000000, 2) . ' M';
-                if ($num >= 1000000) return 'Rp ' . round($num / 1000000, 1) . ' jt';
-                return 'Rp ' . number_format($num, 0, ',', '.');
-            };
-
-            $cards = [
-                [
-                    'title' => 'TOTAL DIGITAL (Semua Channel)',
-                    'value' => $fmtNominal($d['curr_nom_all'] ?? 0),
-                    'subtitle' => number_format($d['curr_trx_all'] ?? 0, 0, ',', '.') . ' transaksi (' . $label_periode . ')',
-                    'growth' => $calcGrowth($d['curr_nom_all'] ?? 0, $d['prev_nom_all'] ?? 0),
-                    'prev_nominal' => $fmtNominal($d['prev_nom_all'] ?? 0),
-                    'prev_trx' => number_format($d['prev_trx_all'] ?? 0, 0, ',', '.'),
-                    'prev_label' => $prev_label_periode
-                ],
-                [
-                    'title' => 'TOTAL VIRTUAL ACCOUNT (VA)',
-                    'value' => $fmtNominal($d['curr_nom_va'] ?? 0),
-                    'subtitle' => number_format($d['curr_trx_va'] ?? 0, 0, ',', '.') . ' transaksi (' . $label_periode . ')',
-                    'growth' => $calcGrowth($d['curr_nom_va'] ?? 0, $d['prev_nom_va'] ?? 0),
-                    'prev_nominal' => $fmtNominal($d['prev_nom_va'] ?? 0),
-                    'prev_trx' => number_format($d['prev_trx_va'] ?? 0, 0, ',', '.'),
-                    'prev_label' => $prev_label_periode
-                ],
-                [
-                    'title' => 'BANK MANDIRI (VA)',
-                    'value' => $fmtNominal($d['curr_nom_mandiri'] ?? 0),
-                    'subtitle' => number_format($d['curr_trx_mandiri'] ?? 0, 0, ',', '.') . ' transaksi (' . $label_periode . ')',
-                    'growth' => $calcGrowth($d['curr_nom_mandiri'] ?? 0, $d['prev_nom_mandiri'] ?? 0),
-                    'prev_nominal' => $fmtNominal($d['prev_nom_mandiri'] ?? 0),
-                    'prev_trx' => number_format($d['prev_trx_mandiri'] ?? 0, 0, ',', '.'),
-                    'prev_label' => $prev_label_periode
-                ],
-                [
-                    'title' => 'BANK PERMATA (VA)',
-                    'value' => $fmtNominal($d['curr_nom_permata'] ?? 0),
-                    'subtitle' => number_format($d['curr_trx_permata'] ?? 0, 0, ',', '.') . ' transaksi (' . $label_periode . ')',
-                    'growth' => $calcGrowth($d['curr_nom_permata'] ?? 0, $d['prev_nom_permata'] ?? 0),
-                    'prev_nominal' => $fmtNominal($d['prev_nom_permata'] ?? 0),
-                    'prev_trx' => number_format($d['prev_trx_permata'] ?? 0, 0, ',', '.'),
-                    'prev_label' => $prev_label_periode
-                ],
-                [
-                    'title' => 'TOTAL BRANCHLESS',
-                    'value' => $fmtNominal($d['curr_nom_br'] ?? 0),
-                    'subtitle' => number_format($d['curr_trx_br'] ?? 0, 0, ',', '.') . ' transaksi (' . $label_periode . ')',
-                    'growth' => $calcGrowth($d['curr_nom_br'] ?? 0, $d['prev_nom_br'] ?? 0),
-                    'prev_nominal' => $fmtNominal($d['prev_nom_br'] ?? 0),
-                    'prev_trx' => number_format($d['prev_trx_br'] ?? 0, 0, ',', '.'),
-                    'prev_label' => $prev_label_periode
-                ],
-                [
-                    'title' => 'TOTAL QRIS',
-                    'value' => $fmtNominal($d['curr_nom_qris'] ?? 0),
-                    'subtitle' => number_format($d['curr_trx_qris'] ?? 0, 0, ',', '.') . ' transaksi (' . $label_periode . ')',
-                    'growth' => $calcGrowth($d['curr_nom_qris'] ?? 0, $d['prev_nom_qris'] ?? 0),
-                    'prev_nominal' => $fmtNominal($d['prev_nom_qris'] ?? 0),
-                    'prev_trx' => number_format($d['prev_trx_qris'] ?? 0, 0, ',', '.'),
-                    'prev_label' => $prev_label_periode
-                ]
+            $sqlFilter = "";
+            $params = [
+                ':s_closing'  => $closing_date, ':s_harian'   => $harian,
+                ':s_pclosing' => $prev_closing, ':s_pharian'  => $prev_harian,
+                ':w_closing'  => $closing_date, ':w_harian'   => $harian,
+                ':w_pclosing' => $prev_closing, ':w_pharian'  => $prev_harian
             ];
 
-            return sendResponse(200, "Berhasil ambil Summary Cards", [
-                'meta' => ['harian_date' => $harian, 'closing_date' => $closing_date],
-                'cards' => $cards
-            ]);
+            if ($kode_kantor && $kode_kantor !== '000') {
+                $sqlFilter .= " AND t.kantor = :kode_kantor "; $params[':kode_kantor'] = $kode_kantor;
+            } elseif ($korwil) {
+                $kw_start = null; $kw_end = null;
+                switch ($korwil) {
+                    case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
+                    case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
+                    case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
+                    case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
+                }
+                if ($kw_start && $kw_end) {
+                    $sqlFilter .= " AND t.kantor BETWEEN :kw_start AND :kw_end ";
+                    $params[':kw_start'] = $kw_start; $params[':kw_end'] = $kw_end;
+                }
+            }
 
-        } catch (PDOException $e) { 
-            return sendResponse(500, "PDO Error: " . $e->getMessage(), null); 
+            $sql = "
+                SELECT 
+                    SUM(CASE WHEN is_curr=1 THEN jumlah ELSE 0 END) as curr_nom_all,
+                    SUM(CASE WHEN is_curr=1 THEN 1 ELSE 0 END) as curr_trx_all,
+                    
+                    SUM(CASE WHEN is_curr=1 AND is_va=1 THEN jumlah ELSE 0 END) as curr_nom_va,
+                    SUM(CASE WHEN is_curr=1 AND is_va=1 THEN 1 ELSE 0 END) as curr_trx_va,
+                    
+                    SUM(CASE WHEN is_curr=1 AND is_mandiri=1 THEN jumlah ELSE 0 END) as curr_nom_mandiri,
+                    SUM(CASE WHEN is_curr=1 AND is_mandiri=1 THEN 1 ELSE 0 END) as curr_trx_mandiri,
+                    
+                    SUM(CASE WHEN is_curr=1 AND is_permata=1 THEN jumlah ELSE 0 END) as curr_nom_permata,
+                    SUM(CASE WHEN is_curr=1 AND is_permata=1 THEN 1 ELSE 0 END) as curr_trx_permata,
+                    
+                    SUM(CASE WHEN is_curr=1 AND is_br=1 THEN jumlah ELSE 0 END) as curr_nom_br,
+                    SUM(CASE WHEN is_curr=1 AND is_br=1 THEN 1 ELSE 0 END) as curr_trx_br,
+
+                    SUM(CASE WHEN is_curr=1 AND is_qris=1 THEN jumlah ELSE 0 END) as curr_nom_qris,
+                    SUM(CASE WHEN is_curr=1 AND is_qris=1 THEN 1 ELSE 0 END) as curr_trx_qris,
+
+                    SUM(CASE WHEN is_prev=1 THEN jumlah ELSE 0 END) as prev_nom_all,
+                    SUM(CASE WHEN is_prev=1 THEN 1 ELSE 0 END) as prev_trx_all,
+
+                    SUM(CASE WHEN is_prev=1 AND is_va=1 THEN jumlah ELSE 0 END) as prev_nom_va,
+                    SUM(CASE WHEN is_prev=1 AND is_va=1 THEN 1 ELSE 0 END) as prev_trx_va,
+                    
+                    SUM(CASE WHEN is_prev=1 AND is_mandiri=1 THEN jumlah ELSE 0 END) as prev_nom_mandiri,
+                    SUM(CASE WHEN is_prev=1 AND is_mandiri=1 THEN 1 ELSE 0 END) as prev_trx_mandiri, 
+                    
+                    SUM(CASE WHEN is_prev=1 AND is_permata=1 THEN jumlah ELSE 0 END) as prev_nom_permata,
+                    SUM(CASE WHEN is_prev=1 AND is_permata=1 THEN 1 ELSE 0 END) as prev_trx_permata, 
+                    
+                    SUM(CASE WHEN is_prev=1 AND is_br=1 THEN jumlah ELSE 0 END) as prev_nom_br,
+                    SUM(CASE WHEN is_prev=1 AND is_br=1 THEN 1 ELSE 0 END) as prev_trx_br,
+
+                    SUM(CASE WHEN is_prev=1 AND is_qris=1 THEN jumlah ELSE 0 END) as prev_nom_qris,
+                    SUM(CASE WHEN is_prev=1 AND is_qris=1 THEN 1 ELSE 0 END) as prev_trx_qris
+                FROM (
+                    SELECT 
+                        t.jumlah,
+                        CASE WHEN t.tgl_transaksi > :s_closing AND t.tgl_transaksi <= :s_harian THEN 1 ELSE 0 END as is_curr,
+                        CASE WHEN t.tgl_transaksi > :s_pclosing AND t.tgl_transaksi <= :s_pharian THEN 1 ELSE 0 END as is_prev,
+                        CASE WHEN TRIM(t.kode_transaksi) = '320' THEN 1 ELSE 0 END as is_va,
+                        CASE WHEN TRIM(t.kode_transaksi) = '320' AND t.norek_aba LIKE '%0001000001' THEN 1 ELSE 0 END as is_mandiri,
+                        CASE WHEN TRIM(t.kode_transaksi) = '320' AND t.norek_aba LIKE '%0001000004' THEN 1 ELSE 0 END as is_permata,
+                        CASE WHEN TRIM(t.kode_transaksi) IN ('150', '152') THEN 1 ELSE 0 END as is_br,
+                        CASE WHEN TRIM(t.kode_transaksi) IN ('140', '16', '162') THEN 1 ELSE 0 END as is_qris
+                    FROM va t
+                    WHERE ((t.tgl_transaksi > :w_closing AND t.tgl_transaksi <= :w_harian) 
+                    OR (t.tgl_transaksi > :w_pclosing AND t.tgl_transaksi <= :w_pharian))
+                    AND TRIM(t.kode_transaksi) IN ('320', '150', '152', '140', '16', '162')
+                    $sqlFilter
+                ) as mapped_data
+            ";
+
+            try {
+                $stmt = $this->pdo->prepare($sql);
+                foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
+                $stmt->execute();
+                $d = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $calcGrowth = function($curr, $prev) {
+                    if ($prev > 0) return round((($curr - $prev) / $prev) * 100, 1);
+                    return $curr > 0 ? 100 : 0;
+                };
+
+                $fmtNominal = function($num) {
+                    if ($num >= 1000000000) return 'Rp ' . round($num / 1000000000, 2) . ' M';
+                    if ($num >= 1000000) return 'Rp ' . round($num / 1000000, 1) . ' jt';
+                    return 'Rp ' . number_format($num, 0, ',', '.');
+                };
+
+                $cards = [
+                    [
+                        'title' => 'TOTAL DIGITAL (Semua Channel)',
+                        'value' => $fmtNominal($d['curr_nom_all'] ?? 0),
+                        'subtitle' => number_format($d['curr_trx_all'] ?? 0, 0, ',', '.') . ' transaksi (' . $label_periode . ')',
+                        'growth' => $calcGrowth($d['curr_nom_all'] ?? 0, $d['prev_nom_all'] ?? 0),
+                        'prev_nominal' => $fmtNominal($d['prev_nom_all'] ?? 0),
+                        'prev_trx' => number_format($d['prev_trx_all'] ?? 0, 0, ',', '.'),
+                        'prev_label' => $prev_label_periode
+                    ],
+                    [
+                        'title' => 'TOTAL VIRTUAL ACCOUNT (VA)',
+                        'value' => $fmtNominal($d['curr_nom_va'] ?? 0),
+                        'subtitle' => number_format($d['curr_trx_va'] ?? 0, 0, ',', '.') . ' transaksi (' . $label_periode . ')',
+                        'growth' => $calcGrowth($d['curr_nom_va'] ?? 0, $d['prev_nom_va'] ?? 0),
+                        'prev_nominal' => $fmtNominal($d['prev_nom_va'] ?? 0),
+                        'prev_trx' => number_format($d['prev_trx_va'] ?? 0, 0, ',', '.'),
+                        'prev_label' => $prev_label_periode
+                    ],
+                    [
+                        'title' => 'BANK MANDIRI (VA)',
+                        'value' => $fmtNominal($d['curr_nom_mandiri'] ?? 0),
+                        'subtitle' => number_format($d['curr_trx_mandiri'] ?? 0, 0, ',', '.') . ' transaksi (' . $label_periode . ')',
+                        'growth' => $calcGrowth($d['curr_nom_mandiri'] ?? 0, $d['prev_nom_mandiri'] ?? 0),
+                        'prev_nominal' => $fmtNominal($d['prev_nom_mandiri'] ?? 0),
+                        'prev_trx' => number_format($d['prev_trx_mandiri'] ?? 0, 0, ',', '.'),
+                        'prev_label' => $prev_label_periode
+                    ],
+                    [
+                        'title' => 'BANK PERMATA (VA)',
+                        'value' => $fmtNominal($d['curr_nom_permata'] ?? 0),
+                        'subtitle' => number_format($d['curr_trx_permata'] ?? 0, 0, ',', '.') . ' transaksi (' . $label_periode . ')',
+                        'growth' => $calcGrowth($d['curr_nom_permata'] ?? 0, $d['prev_nom_permata'] ?? 0),
+                        'prev_nominal' => $fmtNominal($d['prev_nom_permata'] ?? 0),
+                        'prev_trx' => number_format($d['prev_trx_permata'] ?? 0, 0, ',', '.'),
+                        'prev_label' => $prev_label_periode
+                    ],
+                    [
+                        'title' => 'TOTAL BRANCHLESS',
+                        'value' => $fmtNominal($d['curr_nom_br'] ?? 0),
+                        'subtitle' => number_format($d['curr_trx_br'] ?? 0, 0, ',', '.') . ' transaksi (' . $label_periode . ')',
+                        'growth' => $calcGrowth($d['curr_nom_br'] ?? 0, $d['prev_nom_br'] ?? 0),
+                        'prev_nominal' => $fmtNominal($d['prev_nom_br'] ?? 0),
+                        'prev_trx' => number_format($d['prev_trx_br'] ?? 0, 0, ',', '.'),
+                        'prev_label' => $prev_label_periode
+                    ],
+                    [
+                        'title' => 'TOTAL QRIS',
+                        'value' => $fmtNominal($d['curr_nom_qris'] ?? 0),
+                        'subtitle' => number_format($d['curr_trx_qris'] ?? 0, 0, ',', '.') . ' transaksi (' . $label_periode . ')',
+                        'growth' => $calcGrowth($d['curr_nom_qris'] ?? 0, $d['prev_nom_qris'] ?? 0),
+                        'prev_nominal' => $fmtNominal($d['prev_nom_qris'] ?? 0),
+                        'prev_trx' => number_format($d['prev_trx_qris'] ?? 0, 0, ',', '.'),
+                        'prev_label' => $prev_label_periode
+                    ]
+                ];
+
+                return sendResponse(200, "Berhasil ambil Summary Cards", [
+                    'meta' => ['harian_date' => $harian, 'closing_date' => $closing_date],
+                    'cards' => $cards
+                ]);
+
+            } catch (PDOException $e) { 
+                return sendResponse(500, "PDO Error: " . $e->getMessage(), null); 
+            }
         }
-    }
+
+        /**
+         * 12. DETAIL BREAKDOWN TRANSAKSI (Hierarki)
+         * Membandingkan Current vs Previous Month.
+         * Bebas Bug HY093 (Duplicate Named Parameters).
+         */
+        public function getDetailBreakdownTransaksi($input = null) {
+            set_time_limit(300); ini_set('memory_limit', '1024M');
+
+            $b = is_array($input) ? $input : [];
+            $harian  = $b['harian_date'] ?? date('Y-m-d');
+            $kode_kantor = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+            $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
+            $kankas  = !empty($b['kode_kankas']) ? $b['kode_kankas'] : null;
+            $channel = !empty($b['channel']) ? strtoupper($b['channel']) : 'ALL'; 
+
+            if (!$harian) return sendResponse(400, "Tanggal Actual (Harian) wajib diisi.", null);
+
+            // --- 1. LOGIC PERIODE (Bulan Ini vs Bulan Lalu) ---
+            $ts_harian = strtotime($harian);
+            $prev_harian = date('Y-m-d', strtotime('-1 month', $ts_harian));
+
+            if (!empty($b['closing_date'])) {
+                $closing_date = $b['closing_date'];
+                $prev_closing = date('Y-m-d', strtotime('-1 month', strtotime($closing_date)));
+            } else {
+                $closing_date = date('Y-m-t', strtotime(date('Y-m-01', $ts_harian) . ' -1 day'));
+                $prev_closing = date('Y-m-t', strtotime(date('Y-m-01', strtotime($prev_harian)) . ' -1 day'));
+            }
+
+            // --- 2. BUILD FILTER QUERY & AMAN DARI HY093 ---
+            $sqlFilter = "";
+            $params = [
+                ':s_closing'  => $closing_date, ':s_harian'   => $harian,
+                ':s_pclosing' => $prev_closing, ':s_pharian'  => $prev_harian,
+                ':w_closing'  => $closing_date, ':w_harian'   => $harian,
+                ':w_pclosing' => $prev_closing, ':w_pharian'  => $prev_harian
+            ];
+
+            $mode_hirarki = 'KONSOLIDASI';
+
+            if ($kode_kantor && $kode_kantor !== '000') {
+                $sqlFilter .= " AND t.kantor = :kode_kantor ";
+                $params[':kode_kantor'] = $kode_kantor;
+                $mode_hirarki = 'CABANG';
+            } elseif ($korwil) {
+                $kw_start = null; $kw_end = null;
+                switch ($korwil) {
+                    case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
+                    case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
+                    case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
+                    case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
+                }
+                if ($kw_start && $kw_end) {
+                    $sqlFilter .= " AND t.kantor BETWEEN :kw_start AND :kw_end ";
+                    $params[':kw_start'] = $kw_start;
+                    $params[':kw_end'] = $kw_end;
+                }
+                $mode_hirarki = 'KORWIL';
+            }
+
+            if ($kankas) {
+                $sqlFilter .= " AND TRIM(t.kankas) = :kode_kankas ";
+                $params[':kode_kankas'] = $kankas;
+                $mode_hirarki = 'KANKAS';
+            }
+
+            // Filter Channel
+            $chanFilter = "";
+            if ($channel === 'VA') {
+                $chanFilter = " AND TRIM(t.kode_transaksi) = '320' ";
+            } elseif ($channel === 'BRANCHLESS') {
+                $chanFilter = " AND TRIM(t.kode_transaksi) IN ('150', '152') ";
+            } elseif ($channel === 'QRIS') {
+                $chanFilter = " AND TRIM(t.kode_transaksi) IN ('140', '16', '162') ";
+            } else {
+                $chanFilter = " AND TRIM(t.kode_transaksi) IN ('320', '150', '152', '140', '16', '162') ";
+            }
+
+            // --- 3. MAIN QUERY (SUBQUERY MAPPING ANTI HY093) ---
+            $sql = "
+                SELECT 
+                    kantor,
+                    nama_kantor,
+                    kankas,
+                    nama_kankas,
+                    SUM(CASE WHEN is_curr = 1 THEN jumlah ELSE 0 END) as curr_nom,
+                    SUM(CASE WHEN is_curr = 1 THEN 1 ELSE 0 END) as curr_trx,
+                    SUM(CASE WHEN is_prev = 1 THEN jumlah ELSE 0 END) as prev_nom,
+                    SUM(CASE WHEN is_prev = 1 THEN 1 ELSE 0 END) as prev_trx
+                FROM (
+                    SELECT 
+                        t.kantor,
+                        kk.nama_kantor,
+                        TRIM(t.kankas) as kankas,
+                        kn.deskripsi_group1 as nama_kankas,
+                        t.jumlah,
+                        CASE WHEN t.tgl_transaksi > :s_closing AND t.tgl_transaksi <= :s_harian THEN 1 ELSE 0 END as is_curr,
+                        CASE WHEN t.tgl_transaksi > :s_pclosing AND t.tgl_transaksi <= :s_pharian THEN 1 ELSE 0 END as is_prev
+                    FROM va t
+                    LEFT JOIN kode_kantor kk ON t.kantor = kk.kode_kantor
+                    LEFT JOIN kankas kn ON TRIM(t.kankas) = TRIM(kn.kode_group1)
+                    WHERE ((t.tgl_transaksi > :w_closing AND t.tgl_transaksi <= :w_harian) 
+                    OR (t.tgl_transaksi > :w_pclosing AND t.tgl_transaksi <= :w_pharian))
+                    $chanFilter
+                    $sqlFilter
+                ) as mapped_data
+                GROUP BY kantor, nama_kantor, kankas, nama_kankas
+            ";
+
+            try {
+                $stmt = $this->pdo->prepare($sql);
+                foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
+                $stmt->execute();
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                // --- 4. PROCESSING & HIERARCHY MAPPING ---
+                $getKorwil = function($cabang) {
+                    $c = (int)$cabang;
+                    if ($c >= 1 && $c <= 7) return 'KORWIL SEMARANG';
+                    if ($c >= 8 && $c <= 14) return 'KORWIL SOLO';
+                    if ($c >= 15 && $c <= 21) return 'KORWIL BANYUMAS';
+                    if ($c >= 22 && $c <= 28) return 'KORWIL PEKALONGAN';
+                    return 'PUSAT / LAINNYA';
+                };
+
+                $calcGrowth = function($curr, $prev) {
+                    if ($prev > 0) return round((($curr - $prev) / $prev) * 100, 2);
+                    return $curr > 0 ? 100 : 0;
+                };
+
+                $grandTotal = ['curr_nom' => 0, 'curr_trx' => 0, 'prev_nom' => 0, 'prev_trx' => 0];
+                $resultData = [];
+
+                // JIKA LOGIN / FILTER CABANG -> Tampilkan Breakdown Kankas
+                if ($mode_hirarki === 'CABANG' || $mode_hirarki === 'KANKAS') {
+                    $kankasMap = [];
+                    foreach ($rows as $r) {
+                        $kKey = $r['kankas'] ?: '000000';
+                        if (!isset($kankasMap[$kKey])) {
+                            $kankasMap[$kKey] = [
+                                'kode' => $kKey,
+                                'nama' => $r['nama_kankas'] ?: 'Pusat / Operasional',
+                                'curr_nom' => 0, 'curr_trx' => 0, 'prev_nom' => 0, 'prev_trx' => 0
+                            ];
+                        }
+                        $kankasMap[$kKey]['curr_nom'] += (float)$r['curr_nom'];
+                        $kankasMap[$kKey]['curr_trx'] += (int)$r['curr_trx'];
+                        $kankasMap[$kKey]['prev_nom'] += (float)$r['prev_nom'];
+                        $kankasMap[$kKey]['prev_trx'] += (int)$r['prev_trx'];
+
+                        $grandTotal['curr_nom'] += (float)$r['curr_nom'];
+                        $grandTotal['curr_trx'] += (int)$r['curr_trx'];
+                        $grandTotal['prev_nom'] += (float)$r['prev_nom'];
+                        $grandTotal['prev_trx'] += (int)$r['prev_trx'];
+                    }
+
+                    // Hitung Growth Kankas
+                    foreach ($kankasMap as &$k) {
+                        $k['growth_nom'] = $calcGrowth($k['curr_nom'], $k['prev_nom']);
+                        $k['growth_trx'] = $calcGrowth($k['curr_trx'], $k['prev_trx']);
+                    }
+
+                    $resultData = array_values($kankasMap);
+                    usort($resultData, function($a, $b) { return $b['curr_nom'] <=> $a['curr_nom']; });
+
+                } 
+                // JIKA KONSOLIDASI / KORWIL -> Tampilkan Breakdown Korwil > Cabang
+                else {
+                    $korwilMap = [];
+                    foreach ($rows as $r) {
+                        $cab = $r['kantor'] ?: '000';
+                        $kw = $getKorwil($cab);
+                        
+                        if (!isset($korwilMap[$kw])) {
+                            $korwilMap[$kw] = [
+                                'korwil' => $kw,
+                                'curr_nom' => 0, 'curr_trx' => 0, 'prev_nom' => 0, 'prev_trx' => 0,
+                                'cabang' => []
+                            ];
+                        }
+                        
+                        if (!isset($korwilMap[$kw]['cabang'][$cab])) {
+                            $korwilMap[$kw]['cabang'][$cab] = [
+                                'kode' => $cab,
+                                'nama' => $r['nama_kantor'] ?: "Cabang $cab",
+                                'curr_nom' => 0, 'curr_trx' => 0, 'prev_nom' => 0, 'prev_trx' => 0
+                            ];
+                        }
+                        
+                        // Inject Cabang
+                        $korwilMap[$kw]['cabang'][$cab]['curr_nom'] += (float)$r['curr_nom'];
+                        $korwilMap[$kw]['cabang'][$cab]['curr_trx'] += (int)$r['curr_trx'];
+                        $korwilMap[$kw]['cabang'][$cab]['prev_nom'] += (float)$r['prev_nom'];
+                        $korwilMap[$kw]['cabang'][$cab]['prev_trx'] += (int)$r['prev_trx'];
+                        
+                        // Inject Korwil
+                        $korwilMap[$kw]['curr_nom'] += (float)$r['curr_nom'];
+                        $korwilMap[$kw]['curr_trx'] += (int)$r['curr_trx'];
+                        $korwilMap[$kw]['prev_nom'] += (float)$r['prev_nom'];
+                        $korwilMap[$kw]['prev_trx'] += (int)$r['prev_trx'];
+
+                        // Inject Grand Total
+                        $grandTotal['curr_nom'] += (float)$r['curr_nom'];
+                        $grandTotal['curr_trx'] += (int)$r['curr_trx'];
+                        $grandTotal['prev_nom'] += (float)$r['prev_nom'];
+                        $grandTotal['prev_trx'] += (int)$r['prev_trx'];
+                    }
+
+                    // Kalkulasi Growth & Re-index
+                    foreach ($korwilMap as &$kwData) {
+                        $kwData['growth_nom'] = $calcGrowth($kwData['curr_nom'], $kwData['prev_nom']);
+                        $kwData['growth_trx'] = $calcGrowth($kwData['curr_trx'], $kwData['prev_trx']);
+                        
+                        $kwData['cabang'] = array_values($kwData['cabang']);
+                        foreach ($kwData['cabang'] as &$cb) {
+                            $cb['growth_nom'] = $calcGrowth($cb['curr_nom'], $cb['prev_nom']);
+                            $cb['growth_trx'] = $calcGrowth($cb['curr_trx'], $cb['prev_trx']);
+                        }
+                        usort($kwData['cabang'], function($a, $b) { return $b['curr_nom'] <=> $a['curr_nom']; });
+                    }
+
+                    $resultData = array_values($korwilMap);
+                    usort($resultData, function($a, $b) { return $b['curr_nom'] <=> $a['curr_nom']; });
+                }
+
+                // Hitung Growth Grand Total
+                $grandTotal['growth_nom'] = $calcGrowth($grandTotal['curr_nom'], $grandTotal['prev_nom']);
+                $grandTotal['growth_trx'] = $calcGrowth($grandTotal['curr_trx'], $grandTotal['prev_trx']);
+
+                return sendResponse(200, "Berhasil ambil Breakdown Transaksi", [
+                    'meta' => [
+                        'hierarki_aktif' => $mode_hirarki,
+                        'channel_aktif'  => $channel,
+                        'periode_curr'   => ['start' => $closing_date, 'end' => $harian],
+                        'periode_prev'   => ['start' => $prev_closing, 'end' => $prev_harian]
+                    ],
+                    'grand_total' => $grandTotal,
+                    'data' => $resultData
+                ]);
+
+            } catch (PDOException $e) { 
+                error_log("Error Breakdown Transaksi: " . $e->getMessage());
+                return sendResponse(500, "PDO Error: " . $e->getMessage(), null); 
+            }
+        }
 
     /**
-     * 12. DETAIL BREAKDOWN TRANSAKSI (Hierarki)
-     * Membandingkan Current vs Previous Month.
-     * Bebas Bug HY093 (Duplicate Named Parameters).
-     */
-    public function getDetailBreakdownTransaksi($input = null) {
-        set_time_limit(300); ini_set('memory_limit', '1024M');
-
-        $b = is_array($input) ? $input : [];
-        $harian  = $b['harian_date'] ?? date('Y-m-d');
-        $kode_kantor = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
-        $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
-        $kankas  = !empty($b['kode_kankas']) ? $b['kode_kankas'] : null;
-        $channel = !empty($b['channel']) ? strtoupper($b['channel']) : 'ALL'; 
-
-        if (!$harian) return sendResponse(400, "Tanggal Actual (Harian) wajib diisi.", null);
-
-        // --- 1. LOGIC PERIODE (Bulan Ini vs Bulan Lalu) ---
-        $ts_harian = strtotime($harian);
-        $prev_harian = date('Y-m-d', strtotime('-1 month', $ts_harian));
-
-        if (!empty($b['closing_date'])) {
-            $closing_date = $b['closing_date'];
-            $prev_closing = date('Y-m-d', strtotime('-1 month', strtotime($closing_date)));
-        } else {
-            $closing_date = date('Y-m-t', strtotime(date('Y-m-01', $ts_harian) . ' -1 day'));
-            $prev_closing = date('Y-m-t', strtotime(date('Y-m-01', strtotime($prev_harian)) . ' -1 day'));
-        }
-
-        // --- 2. BUILD FILTER QUERY & AMAN DARI HY093 ---
-        $sqlFilter = "";
-        $params = [
-            ':s_closing'  => $closing_date, ':s_harian'   => $harian,
-            ':s_pclosing' => $prev_closing, ':s_pharian'  => $prev_harian,
-            ':w_closing'  => $closing_date, ':w_harian'   => $harian,
-            ':w_pclosing' => $prev_closing, ':w_pharian'  => $prev_harian
-        ];
-
-        $mode_hirarki = 'KONSOLIDASI';
-
-        if ($kode_kantor && $kode_kantor !== '000') {
-            $sqlFilter .= " AND t.kantor = :kode_kantor ";
-            $params[':kode_kantor'] = $kode_kantor;
-            $mode_hirarki = 'CABANG';
-        } elseif ($korwil) {
-            $kw_start = null; $kw_end = null;
-            switch ($korwil) {
-                case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
-                case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
-                case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
-                case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
-            }
-            if ($kw_start && $kw_end) {
-                $sqlFilter .= " AND t.kantor BETWEEN :kw_start AND :kw_end ";
-                $params[':kw_start'] = $kw_start;
-                $params[':kw_end'] = $kw_end;
-            }
-            $mode_hirarki = 'KORWIL';
-        }
-
-        if ($kankas) {
-            $sqlFilter .= " AND TRIM(t.kankas) = :kode_kankas ";
-            $params[':kode_kankas'] = $kankas;
-            $mode_hirarki = 'KANKAS';
-        }
-
-        // Filter Channel
-        $chanFilter = "";
-        if ($channel === 'VA') {
-            $chanFilter = " AND TRIM(t.kode_transaksi) = '320' ";
-        } elseif ($channel === 'BRANCHLESS') {
-            $chanFilter = " AND TRIM(t.kode_transaksi) IN ('150', '152') ";
-        } elseif ($channel === 'QRIS') {
-            $chanFilter = " AND TRIM(t.kode_transaksi) IN ('140', '16', '162') ";
-        } else {
-            $chanFilter = " AND TRIM(t.kode_transaksi) IN ('320', '150', '152', '140', '16', '162') ";
-        }
-
-        // --- 3. MAIN QUERY (SUBQUERY MAPPING ANTI HY093) ---
-        $sql = "
-            SELECT 
-                kantor,
-                nama_kantor,
-                kankas,
-                nama_kankas,
-                SUM(CASE WHEN is_curr = 1 THEN jumlah ELSE 0 END) as curr_nom,
-                SUM(CASE WHEN is_curr = 1 THEN 1 ELSE 0 END) as curr_trx,
-                SUM(CASE WHEN is_prev = 1 THEN jumlah ELSE 0 END) as prev_nom,
-                SUM(CASE WHEN is_prev = 1 THEN 1 ELSE 0 END) as prev_trx
-            FROM (
-                SELECT 
-                    t.kantor,
-                    kk.nama_kantor,
-                    TRIM(t.kankas) as kankas,
-                    kn.deskripsi_group1 as nama_kankas,
-                    t.jumlah,
-                    CASE WHEN t.tgl_transaksi > :s_closing AND t.tgl_transaksi <= :s_harian THEN 1 ELSE 0 END as is_curr,
-                    CASE WHEN t.tgl_transaksi > :s_pclosing AND t.tgl_transaksi <= :s_pharian THEN 1 ELSE 0 END as is_prev
-                FROM va t
-                LEFT JOIN kode_kantor kk ON t.kantor = kk.kode_kantor
-                LEFT JOIN kankas kn ON TRIM(t.kankas) = TRIM(kn.kode_group1)
-                WHERE ((t.tgl_transaksi > :w_closing AND t.tgl_transaksi <= :w_harian) 
-                   OR (t.tgl_transaksi > :w_pclosing AND t.tgl_transaksi <= :w_pharian))
-                $chanFilter
-                $sqlFilter
-            ) as mapped_data
-            GROUP BY kantor, nama_kantor, kankas, nama_kankas
-        ";
-
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
-            $stmt->execute();
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            // --- 4. PROCESSING & HIERARCHY MAPPING ---
-            $getKorwil = function($cabang) {
-                $c = (int)$cabang;
-                if ($c >= 1 && $c <= 7) return 'KORWIL SEMARANG';
-                if ($c >= 8 && $c <= 14) return 'KORWIL SOLO';
-                if ($c >= 15 && $c <= 21) return 'KORWIL BANYUMAS';
-                if ($c >= 22 && $c <= 28) return 'KORWIL PEKALONGAN';
-                return 'PUSAT / LAINNYA';
-            };
-
-            $calcGrowth = function($curr, $prev) {
-                if ($prev > 0) return round((($curr - $prev) / $prev) * 100, 2);
-                return $curr > 0 ? 100 : 0;
-            };
-
-            $grandTotal = ['curr_nom' => 0, 'curr_trx' => 0, 'prev_nom' => 0, 'prev_trx' => 0];
-            $resultData = [];
-
-            // JIKA LOGIN / FILTER CABANG -> Tampilkan Breakdown Kankas
-            if ($mode_hirarki === 'CABANG' || $mode_hirarki === 'KANKAS') {
-                $kankasMap = [];
-                foreach ($rows as $r) {
-                    $kKey = $r['kankas'] ?: '000000';
-                    if (!isset($kankasMap[$kKey])) {
-                        $kankasMap[$kKey] = [
-                            'kode' => $kKey,
-                            'nama' => $r['nama_kankas'] ?: 'Pusat / Operasional',
-                            'curr_nom' => 0, 'curr_trx' => 0, 'prev_nom' => 0, 'prev_trx' => 0
-                        ];
-                    }
-                    $kankasMap[$kKey]['curr_nom'] += (float)$r['curr_nom'];
-                    $kankasMap[$kKey]['curr_trx'] += (int)$r['curr_trx'];
-                    $kankasMap[$kKey]['prev_nom'] += (float)$r['prev_nom'];
-                    $kankasMap[$kKey]['prev_trx'] += (int)$r['prev_trx'];
-
-                    $grandTotal['curr_nom'] += (float)$r['curr_nom'];
-                    $grandTotal['curr_trx'] += (int)$r['curr_trx'];
-                    $grandTotal['prev_nom'] += (float)$r['prev_nom'];
-                    $grandTotal['prev_trx'] += (int)$r['prev_trx'];
-                }
-
-                // Hitung Growth Kankas
-                foreach ($kankasMap as &$k) {
-                    $k['growth_nom'] = $calcGrowth($k['curr_nom'], $k['prev_nom']);
-                    $k['growth_trx'] = $calcGrowth($k['curr_trx'], $k['prev_trx']);
-                }
-
-                $resultData = array_values($kankasMap);
-                usort($resultData, function($a, $b) { return $b['curr_nom'] <=> $a['curr_nom']; });
-
-            } 
-            // JIKA KONSOLIDASI / KORWIL -> Tampilkan Breakdown Korwil > Cabang
-            else {
-                $korwilMap = [];
-                foreach ($rows as $r) {
-                    $cab = $r['kantor'] ?: '000';
-                    $kw = $getKorwil($cab);
-                    
-                    if (!isset($korwilMap[$kw])) {
-                        $korwilMap[$kw] = [
-                            'korwil' => $kw,
-                            'curr_nom' => 0, 'curr_trx' => 0, 'prev_nom' => 0, 'prev_trx' => 0,
-                            'cabang' => []
-                        ];
-                    }
-                    
-                    if (!isset($korwilMap[$kw]['cabang'][$cab])) {
-                        $korwilMap[$kw]['cabang'][$cab] = [
-                            'kode' => $cab,
-                            'nama' => $r['nama_kantor'] ?: "Cabang $cab",
-                            'curr_nom' => 0, 'curr_trx' => 0, 'prev_nom' => 0, 'prev_trx' => 0
-                        ];
-                    }
-                    
-                    // Inject Cabang
-                    $korwilMap[$kw]['cabang'][$cab]['curr_nom'] += (float)$r['curr_nom'];
-                    $korwilMap[$kw]['cabang'][$cab]['curr_trx'] += (int)$r['curr_trx'];
-                    $korwilMap[$kw]['cabang'][$cab]['prev_nom'] += (float)$r['prev_nom'];
-                    $korwilMap[$kw]['cabang'][$cab]['prev_trx'] += (int)$r['prev_trx'];
-                    
-                    // Inject Korwil
-                    $korwilMap[$kw]['curr_nom'] += (float)$r['curr_nom'];
-                    $korwilMap[$kw]['curr_trx'] += (int)$r['curr_trx'];
-                    $korwilMap[$kw]['prev_nom'] += (float)$r['prev_nom'];
-                    $korwilMap[$kw]['prev_trx'] += (int)$r['prev_trx'];
-
-                    // Inject Grand Total
-                    $grandTotal['curr_nom'] += (float)$r['curr_nom'];
-                    $grandTotal['curr_trx'] += (int)$r['curr_trx'];
-                    $grandTotal['prev_nom'] += (float)$r['prev_nom'];
-                    $grandTotal['prev_trx'] += (int)$r['prev_trx'];
-                }
-
-                // Kalkulasi Growth & Re-index
-                foreach ($korwilMap as &$kwData) {
-                    $kwData['growth_nom'] = $calcGrowth($kwData['curr_nom'], $kwData['prev_nom']);
-                    $kwData['growth_trx'] = $calcGrowth($kwData['curr_trx'], $kwData['prev_trx']);
-                    
-                    $kwData['cabang'] = array_values($kwData['cabang']);
-                    foreach ($kwData['cabang'] as &$cb) {
-                        $cb['growth_nom'] = $calcGrowth($cb['curr_nom'], $cb['prev_nom']);
-                        $cb['growth_trx'] = $calcGrowth($cb['curr_trx'], $cb['prev_trx']);
-                    }
-                    usort($kwData['cabang'], function($a, $b) { return $b['curr_nom'] <=> $a['curr_nom']; });
-                }
-
-                $resultData = array_values($korwilMap);
-                usort($resultData, function($a, $b) { return $b['curr_nom'] <=> $a['curr_nom']; });
-            }
-
-            // Hitung Growth Grand Total
-            $grandTotal['growth_nom'] = $calcGrowth($grandTotal['curr_nom'], $grandTotal['prev_nom']);
-            $grandTotal['growth_trx'] = $calcGrowth($grandTotal['curr_trx'], $grandTotal['prev_trx']);
-
-            return sendResponse(200, "Berhasil ambil Breakdown Transaksi", [
-                'meta' => [
-                    'hierarki_aktif' => $mode_hirarki,
-                    'channel_aktif'  => $channel,
-                    'periode_curr'   => ['start' => $closing_date, 'end' => $harian],
-                    'periode_prev'   => ['start' => $prev_closing, 'end' => $prev_harian]
-                ],
-                'grand_total' => $grandTotal,
-                'data' => $resultData
-            ]);
-
-        } catch (PDOException $e) { 
-            error_log("Error Breakdown Transaksi: " . $e->getMessage());
-            return sendResponse(500, "PDO Error: " . $e->getMessage(), null); 
-        }
-    }
-
-/**
      * 13. REKAP TRANSAKSI BRANCHLESS BERDASARKAN DEVICE
      * Syarat: kode_transaksi IN ('150', '152')
      */
