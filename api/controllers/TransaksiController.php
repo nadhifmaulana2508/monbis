@@ -151,7 +151,7 @@ class TransaksiController {
     /**
      * 9. TREN NOMINAL & TRX (Chart Line)
      * Filter Dinamis Berdasarkan Channel (VA, Branchless, QRIS)
-     * Menampilkan 1 Garis Total Gabungan
+     * Menampilkan 1 Garis Total Gabungan (Bebas Bug Bulan PHP)
      */
     public function getTrenNominalVa($input = null) {
         set_time_limit(300); ini_set('memory_limit', '1024M');
@@ -202,14 +202,26 @@ class TransaksiController {
 
         } else {
             // Default: bulanan (6 Bulan Terakhir dari harian_date)
+            // 🔥 FIX BUG: Loop bulan mundur menggunakan matematika murni (anti-bug tgl 31 PHP)
+            $y = (int)date('Y', $ts_harian);
+            $m = (int)date('m', $ts_harian);
+
             for ($i = 5; $i >= 0; $i--) {
-                $d = date('Y-m', strtotime("-$i month", $ts_harian));
+                $target_m = $m - $i;
+                $target_y = $y;
+                
+                // Jika bulan <= 0, mundur tahunnya
+                while ($target_m <= 0) {
+                    $target_m += 12;
+                    $target_y--;
+                }
+                
+                $d = sprintf("%04d-%02d", $target_y, $target_m);
                 $keys[] = $d; 
                 $labels[] = date('M Y', strtotime($d . '-01'));
             }
-            // 🔥 FIX: Tarik Start Date dari awal bulan (tanggal 1) pada 6 bulan lalu
+            
             $startDate = $keys[0] . "-01 00:00:00"; 
-            // 🔥 FIX: End Date tepat di harian_date (jam 23:59:59) agar tidak kelebihan/kepotong
             $endDate   = $harian_date . " 23:59:59"; 
             $sqlGroup  = "DATE_FORMAT(t.tgl_transaksi, '%Y-%m')";
         }

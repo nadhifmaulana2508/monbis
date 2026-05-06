@@ -1,3 +1,4 @@
+<!-- Load Library ApexCharts -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <style>
@@ -34,6 +35,7 @@
 
 <div class="max-w-[1600px] mx-auto px-3 md:px-4 py-4 flex flex-col gap-5">
   
+  <!-- ================= HEADER & GLOBAL FILTER ================= -->
   <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-4 rounded-xl card-shadow border border-slate-100">
     <div>
         <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
@@ -75,77 +77,93 @@
     </form>
   </div>
 
+  <!-- ================= SUMMARY CARDS ================= -->
   <div class="relative rounded-xl min-h-[100px]">
       <div id="loadSummary" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
       <div id="summaryCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
-          </div>
-  </div>
-
-  <div class="flex justify-center md:justify-start mt-2">
-      <div class="flex gap-2 bg-slate-200/60 p-1.5 rounded-2xl shadow-inner overflow-x-auto custom-scrollbar">
-          <button onclick="changeChannel('VA')" id="tab_VA" class="tab-btn active">Virtual Account (VA)</button>
-          <button onclick="changeChannel('BRANCHLESS')" id="tab_BRANCHLESS" class="tab-btn">Branchless</button>
-          <button onclick="changeChannel('QRIS')" id="tab_QRIS" class="tab-btn">QRIS</button>
+          <!-- JS Inject -->
       </div>
   </div>
 
-  <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 mt-2">
-      <div class="xl:col-span-7 bg-white rounded-xl card-shadow p-5 flex flex-col relative h-[430px] border border-slate-100">
-          <div id="loadTrend" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
-          <div class="flex justify-between items-center mb-2 border-b border-slate-100 pb-2">
-              <h2 class="font-bold text-slate-800" id="titleTrend">Tren Transaksi VA</h2>
-              <select id="trendPeriode" class="inp h-8 text-[11px] w-[140px]" onchange="fetchTrend()">
-                  <option value="bulanan">6 Bulan Terakhir</option>
-                  <option value="7_hari">7 Hari Terakhir</option>
-                  <option value="30_hari">30 Hari Terakhir</option>
-                  <option value="tahunan">Tahunan</option>
-              </select>
+  <!-- ================= WRAPPER DETAIL TRANSAKSI (NEW) ================= -->
+  <div class="bg-white rounded-2xl card-shadow border border-slate-100 p-4 md:p-6 flex flex-col gap-5 mt-2">
+      
+      <!-- MASTER TABS CHANNEL -->
+      <div class="flex justify-center md:justify-start">
+          <div class="flex gap-2 bg-slate-100 border border-slate-200 p-1.5 rounded-xl overflow-x-auto custom-scrollbar">
+              <button onclick="changeChannel('VA')" id="tab_VA" class="tab-btn active">Virtual Account (VA)</button>
+              <button onclick="changeChannel('BRANCHLESS')" id="tab_BRANCHLESS" class="tab-btn">Branchless</button>
+              <button onclick="changeChannel('QRIS')" id="tab_QRIS" class="tab-btn">QRIS</button>
           </div>
-          <div id="chartTrend" class="w-full mt-2"></div>
       </div>
 
-      <div class="xl:col-span-5 bg-white rounded-xl card-shadow p-5 flex flex-col relative h-[430px] border border-slate-100">
-          <div id="loadDist" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
-          
-          <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-              <h2 class="font-bold text-slate-800" id="titleDistribusi">Distribusi per Wilayah (VA)</h2>
+      <!-- GRAFIK AREA -->
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+          <!-- KIRI: TREND CHART -->
+          <!-- 🔥 Shadow dihapus, diganti border rapi agar menyatu dengan Wrapper Utama -->
+          <div class="xl:col-span-7 bg-white rounded-xl border border-slate-200 p-5 flex flex-col relative h-[430px]">
+              <div id="loadTrend" class="local-loader hidden rounded-xl"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
+              <div class="flex justify-between items-center mb-2 border-b border-slate-100 pb-2">
+                  <h2 class="font-bold text-slate-800" id="titleTrend">Tren Transaksi VA</h2>
+                  <select id="trendPeriode" class="inp h-8 text-[11px] w-[140px]" onchange="fetchTrend()">
+                      <option value="bulanan">6 Bulan Terakhir</option>
+                      <option value="7_hari">7 Hari Terakhir</option>
+                      <option value="30_hari">30 Hari Terakhir</option>
+                      <option value="tahunan">Tahunan</option>
+                  </select>
+              </div>
+              <div id="chartTrend" class="w-full mt-2"></div>
           </div>
 
-          <div class="flex-1 flex flex-col md:flex-row gap-4">
-              <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-4 h-full" id="listTop5"></div>
+          <!-- KANAN: TOP 5 & DONUT -->
+          <div class="xl:col-span-5 bg-white rounded-xl border border-slate-200 p-5 flex flex-col relative h-[430px]">
+              <div id="loadDist" class="local-loader hidden rounded-xl"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
               
-              <div class="w-full md:w-[220px] flex items-center justify-center shrink-0 h-full pb-2">
-                  <div id="chartDonut" class="w-full"></div>
+              <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
+                  <h2 class="font-bold text-slate-800" id="titleDistribusi">Distribusi per Wilayah (VA)</h2>
+              </div>
+
+              <div class="flex-1 flex flex-col md:flex-row gap-4">
+                  <!-- TOP 5 CABANG -->
+                  <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-4 h-full" id="listTop5"></div>
+                  
+                  <!-- PIE CHART -->
+                  <div class="w-full md:w-[220px] flex items-center justify-center shrink-0 h-full pb-2">
+                      <div id="chartDonut" class="w-full"></div>
+                  </div>
               </div>
           </div>
       </div>
-  </div>
 
-  <div class="bg-white rounded-xl card-shadow flex flex-col overflow-hidden mt-2 border border-slate-100 relative min-h-[200px]">
-      <div id="loadTable" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
-      
-      <div class="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h2 class="text-base font-black text-slate-800">Breakdown Transaksi Area</h2>
-      </div>
+      <!-- TABEL BREAKDOWN -->
+      <div class="bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden relative min-h-[200px]">
+          <div id="loadTable" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
+          
+          <div class="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+              <h2 class="text-base font-black text-slate-800">Breakdown Transaksi Area</h2>
+          </div>
 
-      <div class="overflow-x-auto custom-scrollbar max-h-[500px]">
-          <table class="w-full text-left">
-              <thead class="sticky top-0 z-10">
-                  <tr>
-                      <th class="w-[250px] pl-4">NAMA AREA</th>
-                      <th class="text-right">NOMINAL BULAN INI</th>
-                      <th class="text-right">NOMINAL LALU</th>
-                      <th class="text-center w-[100px]">GROWTH (RP)</th>
-                      <th class="text-right">TRX BULAN INI</th>
-                      <th class="text-right">TRX LALU</th>
-                      <th class="text-center w-[100px] pr-4">GROWTH (TRX)</th>
-                  </tr>
-              </thead>
-              <tbody id="bodyBreakdown" class="divide-y divide-slate-100">
+          <div class="overflow-x-auto custom-scrollbar max-h-[500px]">
+              <table class="w-full text-left">
+                  <thead class="sticky top-0 z-10">
+                      <tr>
+                          <th class="w-[250px] pl-4">NAMA AREA</th>
+                          <th class="text-right">NOMINAL BULAN INI</th>
+                          <th class="text-right">NOMINAL LALU</th>
+                          <th class="text-center w-[100px]">GROWTH (RP)</th>
+                          <th class="text-right">TRX BULAN INI</th>
+                          <th class="text-right">TRX LALU</th>
+                          <th class="text-center w-[100px] pr-4">GROWTH (TRX)</th>
+                      </tr>
+                  </thead>
+                  <tbody id="bodyBreakdown" class="divide-y divide-slate-100">
+                      <!-- JS Inject -->
                   </tbody>
-          </table>
+              </table>
+          </div>
       </div>
-  </div>
+
+  </div> <!-- End Wrapper Detail -->
 
 </div>
 
@@ -317,12 +335,12 @@
   // 2. GRAFIK TREN & PIE
   // ==========================================
   function initCharts() {
-      // 🔥 FIX TREN CHART: Fix pixel height & padding bottom ditarik ke dalam
+      // 🔥 TREN CHART
       chartTrendObj = new ApexCharts(document.querySelector("#chartTrend"), {
           series: [], 
           chart: { 
               type: 'area', 
-              height: 340, // Paksa tinggi fix 340px agar tidak overflow flex container
+              height: 340, 
               parentHeightOffset: 0,
               toolbar: { show: false } 
           },
@@ -332,13 +350,13 @@
           stroke: { curve: 'smooth', width: 3 },
           fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05, stops: [0, 100] } },
           grid: { 
-              padding: { bottom: 15, left: 10, right: 10 } // Memberi bantalan agar label x-axis masuk
+              padding: { bottom: 15, left: 10, right: 10 } 
           },
           xaxis: { 
               categories: [], 
               labels: { 
                   style: { fontSize: '10px' }, 
-                  offsetY: -5 // Menarik text bulan ke atas sedikit agar aman
+                  offsetY: -5
               },
               tooltip: { enabled: false }
           },
@@ -356,12 +374,12 @@
       });
       chartTrendObj.render();
 
-      // 🔥 FIX PIE CHART: Fix height
+      // 🔥 PIE CHART
       chartDonutObj = new ApexCharts(document.querySelector("#chartDonut"), {
           series: [], 
           chart: { 
               type: 'donut', 
-              height: 330, // Paksa tinggi fix
+              height: 330,
               parentHeightOffset: 0 
           }, 
           labels: [],

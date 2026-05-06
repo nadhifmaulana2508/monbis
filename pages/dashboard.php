@@ -12,14 +12,12 @@
         <p class="text-xs md:text-sm text-gray-500 mt-0.5 md:mt-1 font-medium">Pusat Komando Portofolio & Kinerja Bisnis</p>
       </div>
       
-      <!-- 🚀 UPDATE: Tombol Toggle Filter (Hanya muncul di Mobile) -->
       <button type="button" id="btnToggleFilter" class="md:hidden flex items-center gap-1.5 bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-transform">
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
         Filter
       </button>
     </div>
 
-    <!-- 🚀 UPDATE: Tambah class "hidden md:flex" agar di mobile tertutup by default -->
     <form id="formFilterMaster" class="hidden md:flex flex-col md:flex-row items-end gap-2.5 md:gap-3 bg-white p-2.5 md:p-3 rounded-xl shadow-sm border border-gray-200 w-full md:w-auto">
       
       <div class="flex w-full md:w-auto gap-2 shrink-0">
@@ -328,11 +326,10 @@
   const apiCall = (url, opt={}) => (window.apiFetch ? window.apiFetch(url, opt) : fetch(url, opt));
 
   // ==========================================
-  // 🚀 UPDATE: EVENT LISTENER UNTUK TOGGLE FILTER
+  // EVENT LISTENER UNTUK TOGGLE FILTER
   // ==========================================
   document.getElementById('btnToggleFilter').addEventListener('click', function() {
       const filterForm = document.getElementById('formFilterMaster');
-      // Switch class hidden & flex biar bisa expand/collapse di mobile
       filterForm.classList.toggle('hidden');
       filterForm.classList.toggle('flex');
   });
@@ -391,7 +388,6 @@
         fetchTrenRunoff()
     ]);
     
-    // Auto-tutup filter setelah submit kalau di HP biar langsung kelihatan hasilnya
     if(window.innerWidth < 768) {
         document.getElementById('formFilterMaster').classList.add('hidden');
         document.getElementById('formFilterMaster').classList.remove('flex');
@@ -792,8 +788,6 @@
     let kantor = document.getElementById('filter_kantor').value;
     let currDate = document.getElementById('filter_harian').value;
     
-    // 🔥 TRIK SAKTI H-1: Hanya terapkan H-1 JIKA tanggal di filter masih sama dengan tanggal awal (default).
-    // Jika user sudah mengganti tanggal (misal mau ngecek 2026-04-30), maka jalankan actual date.
     if (isH1 && currDate === initialHarianDate) {
         currDate = getH1Date(currDate);
     }
@@ -827,13 +821,11 @@
   }
 
   function fetchDashboardUtama() {
-    // 1. Langsung tampilkan kerangka dashboard, sembunyikan spinner raksasa
     document.getElementById('loadingDash').classList.add('hidden'); 
     document.getElementById('contentDash').classList.remove('hidden');
 
     let kantorMode = document.getElementById('filter_kantor').value;
 
-    // 2. TEMBAK SEMUA REQUEST SECARA BERSAMAAN (PARALEL)
     const pSaldoBank    = fetchWidgetData('saldo_bank');
     const pRealProduk   = fetchWidgetData('realisasi_by_produk');
     const pTrenNpl      = fetchWidgetData('test tren npl');
@@ -843,14 +835,8 @@
     const pTopReal      = fetchWidgetData('test top realisasi');
     const pTopNpl       = fetchWidgetData('test top bottom npl');
     const pDeltaNpl     = fetchWidgetData('test delta npl');
-    
-    // 🔥 Panggil fungsi dengan parameter tambahan `true` khusus DPK agar dikurangi 1 hari
     const pDeposito     = fetchWidgetData('test perkembangan deposito');
     const pTabungan     = fetchWidgetData('test perkembangan tabungan', true);
-
-    // =========================================================
-    // 3. RENDER WIDGET BEGITU DATANYA SELESAI (TIDAK SALING TUNGGU)
-    // =========================================================
 
     // WIDGET A: SALDO BANK
     pSaldoBank.then(sb => {
@@ -914,34 +900,39 @@
       }
     });
 
-    // WIDGET D: GRAFIK KORWIL (Bar Horizontal)
+    // 🚀 UPDATE: WIDGET D: GRAFIK KORWIL (Total Ditampilkan & Scrollbar Dihapus)
     Promise.all([pRunoffKorwil, pFlowKorwil]).then(([roRaw, flowRaw]) => {
       let ro = roRaw?.runoff_vs_realisasi || roRaw || null;
       let flow = flowRaw?.flow_vs_recovery_npl || flowRaw || null;
 
-      let hideGrandTotal = (kantorMode !== '000');
       let isKorwilFilter = ['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'].includes(kantorMode);
+      // 🔥 Tampilkan total JIKA Konsolidasi ATAU Korwil
+      let hideGrandTotal = (kantorMode !== '000' && !isKorwilFilter);
 
       const boxRunoff = document.getElementById('box_runoff_realisasi');
       const boxFlow = document.getElementById('box_flow_recovery');
 
-      if (isKorwilFilter) {
-          boxRunoff.style.maxHeight = '200px'; boxRunoff.classList.add('overflow-y-auto', 'custom-scrollbar', 'pr-1');
-          boxFlow.style.maxHeight = '200px'; boxFlow.classList.add('overflow-y-auto', 'custom-scrollbar', 'pr-1');
-      } else {
-          boxRunoff.style.maxHeight = 'none'; boxRunoff.classList.remove('overflow-y-auto', 'custom-scrollbar', 'pr-1');
-          boxFlow.style.maxHeight = 'none'; boxFlow.classList.remove('overflow-y-auto', 'custom-scrollbar', 'pr-1');
-      }
-      
+      // 🔥 Hapus batas max-height biar datanya memanjang ke bawah mengisi space yang kosong
+      boxRunoff.style.maxHeight = 'none'; boxRunoff.classList.remove('overflow-y-auto', 'custom-scrollbar', 'pr-1');
+      boxFlow.style.maxHeight = 'none'; boxFlow.classList.remove('overflow-y-auto', 'custom-scrollbar', 'pr-1');
+
       if(ro && ro.detail_korwil) {
-        let runoffData = [...ro.detail_korwil]; 
-        if(ro.grand_total && !hideGrandTotal) runoffData.push(ro.grand_total);
+        let runoffData = [...ro.detail_korwil];
+        if(ro.grand_total && !hideGrandTotal) {
+            let totalData = {...ro.grand_total};
+            if(isKorwilFilter) totalData.nama_korwil = `TOTAL KORWIL ${kantorMode}`;
+            runoffData.push(totalData);
+        }
         renderKorwilCompare('box_runoff_realisasi', runoffData, 'realisasi', 'total_runoff', 'bg-green-400', 'bg-red-400');
       }
 
       if(flow && flow.detail_korwil) {
-        let flowData = [...flow.detail_korwil]; 
-        if(flow.grand_total && !hideGrandTotal) flowData.push(flow.grand_total);
+        let flowData = [...flow.detail_korwil];
+        if(flow.grand_total && !hideGrandTotal) {
+             let totalData = {...flow.grand_total};
+             if(isKorwilFilter) totalData.nama_korwil = `TOTAL KORWIL ${kantorMode}`;
+             flowData.push(totalData);
+        }
         renderKorwilCompare('box_flow_recovery', flowData, 'flow_npl', 'total_recovery', 'bg-red-400', 'bg-green-400');
       }
     });
@@ -997,7 +988,6 @@
     });
 
     // WIDGET F: DANA PIHAK KETIGA (DPK)
-    // 🔥 PERBAIKAN EXTRA AMAN UNTUK DEPOSITO & TABUNGAN 🔥
     Promise.all([pDeposito, pTabungan]).then(([depRaw, tabRaw]) => {
       let dep = depRaw?.perkembangan_deposito || depRaw || {};
       let tab = tabRaw?.perkembangan_tabungan || tabRaw || {};
@@ -1038,7 +1028,7 @@
     let maxVal = Math.max(...dataArray.flatMap(o => [Number(o[keyA]), Number(o[keyB])])); if(maxVal === 0) maxVal = 1;
     dataArray.forEach(k => {
       let vA = Number(k[keyA]); let vB = Number(k[keyB]); let pctA = (vA / maxVal) * 100; let pctB = (vB / maxVal) * 100;
-      let titleClass = k.nama_korwil.includes("KONSOLIDASI") ? "text-gray-900 font-black" : "text-gray-700 font-bold";
+      let titleClass = k.nama_korwil.includes("KONSOLIDASI") || k.nama_korwil.includes("TOTAL") ? "text-gray-900 font-black" : "text-gray-700 font-bold";
       box.innerHTML += `<div class="mb-2 md:mb-3"><div class="flex justify-between text-[10px] md:text-[11px] ${titleClass} mb-1"><span>${k.nama_korwil}</span></div><div class="flex flex-col gap-1 md:gap-0.5 relative"><div class="w-full bg-gray-100 h-1.5 md:h-2 rounded-r-full flex relative"><div class="${colorA} h-1.5 md:h-2 rounded-r-full bar-fill z-10" style="width: ${pctA}%"></div><span class="absolute right-0 -top-3.5 md:-top-4 text-[9px] md:text-[10px] text-gray-500 font-medium">${fmtB(vA)}</span></div><div class="w-full bg-gray-100 h-1.5 md:h-2 rounded-r-full flex relative"><div class="${colorB} h-1.5 md:h-2 rounded-r-full bar-fill z-10" style="width: ${pctB}%"></div><span class="absolute right-0 -bottom-3.5 md:-bottom-4 text-[9px] md:text-[10px] text-gray-500 font-medium">${fmtB(vB)}</span></div></div></div>`;
     });
   }
