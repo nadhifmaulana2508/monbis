@@ -85,7 +85,7 @@
       </div>
   </div>
 
-  <!-- ================= WRAPPER DETAIL TRANSAKSI (NEW) ================= -->
+  <!-- ================= WRAPPER DETAIL TRANSAKSI ================= -->
   <div class="bg-white rounded-2xl card-shadow border border-slate-100 p-4 md:p-6 flex flex-col gap-5 mt-2">
       
       <!-- MASTER TABS CHANNEL -->
@@ -99,8 +99,6 @@
 
       <!-- GRAFIK AREA -->
       <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
-          <!-- KIRI: TREND CHART -->
-          <!-- 🔥 Shadow dihapus, diganti border rapi agar menyatu dengan Wrapper Utama -->
           <div class="xl:col-span-7 bg-white rounded-xl border border-slate-200 p-5 flex flex-col relative h-[430px]">
               <div id="loadTrend" class="local-loader hidden rounded-xl"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
               <div class="flex justify-between items-center mb-2 border-b border-slate-100 pb-2">
@@ -115,19 +113,13 @@
               <div id="chartTrend" class="w-full mt-2"></div>
           </div>
 
-          <!-- KANAN: TOP 5 & DONUT -->
           <div class="xl:col-span-5 bg-white rounded-xl border border-slate-200 p-5 flex flex-col relative h-[430px]">
               <div id="loadDist" class="local-loader hidden rounded-xl"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
-              
               <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
                   <h2 class="font-bold text-slate-800" id="titleDistribusi">Distribusi per Wilayah (VA)</h2>
               </div>
-
               <div class="flex-1 flex flex-col md:flex-row gap-4">
-                  <!-- TOP 5 CABANG -->
                   <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-4 h-full" id="listTop5"></div>
-                  
-                  <!-- PIE CHART -->
                   <div class="w-full md:w-[220px] flex items-center justify-center shrink-0 h-full pb-2">
                       <div id="chartDonut" class="w-full"></div>
                   </div>
@@ -138,11 +130,9 @@
       <!-- TABEL BREAKDOWN -->
       <div class="bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden relative min-h-[200px]">
           <div id="loadTable" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
-          
           <div class="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
               <h2 class="text-base font-black text-slate-800">Breakdown Transaksi Area</h2>
           </div>
-
           <div class="overflow-x-auto custom-scrollbar max-h-[500px]">
               <table class="w-full text-left">
                   <thead class="sticky top-0 z-10">
@@ -156,15 +146,12 @@
                           <th class="text-center w-[100px] pr-4">GROWTH (TRX)</th>
                       </tr>
                   </thead>
-                  <tbody id="bodyBreakdown" class="divide-y divide-slate-100">
-                      <!-- JS Inject -->
-                  </tbody>
+                  <tbody id="bodyBreakdown" class="divide-y divide-slate-100"></tbody>
               </table>
           </div>
       </div>
 
-  </div> <!-- End Wrapper Detail -->
-
+  </div> <!-- End Wrapper -->
 </div>
 
 <script>
@@ -187,9 +174,6 @@
       catch { return null; }
   }
 
-  // ==========================================
-  // INISIALISASI AWAL
-  // ==========================================
   window.addEventListener('DOMContentLoaded', async () => {
     const user = (window.getUser && window.getUser()) || null;
     let uKode = user?.kode ? String(user.kode).padStart(3,'0') : '000';
@@ -274,7 +258,7 @@
   }
 
   // ==========================================
-  // 1. SUMMARY CARDS 
+  // 1. SUMMARY CARDS (BULLETPROOF FIX)
   // ==========================================
   async function fetchSummaryCards() {
       showLoad('loadSummary');
@@ -286,27 +270,38 @@
           kode_kantor: area.kode_kantor,
           korwil: area.korwil
       };
+      
       try {
           const res = await fetch(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
           const j = await res.json();
-          if(j.status === 200) {
-              document.getElementById('lbl_periode_aktif').innerHTML = `Periode: <span class="text-blue-700 font-bold">${j.data.meta.closing_date} s/d ${j.data.meta.harian_date}</span>`;
+          
+          // Mengecek dengan super aman apakah response Backend sukses dan data valid
+          if(j.status === 200 && j.data && j.data.cards) {
+              
+              if(j.data.meta) {
+                  document.getElementById('lbl_periode_aktif').innerHTML = `Periode: <span class="text-blue-700 font-bold">${j.data.meta.closing_date} s/d ${j.data.meta.harian_date}</span>`;
+              }
+              
               const container = document.getElementById('summaryCardsContainer');
               container.innerHTML = '';
               
-              const filteredCards = j.data.cards.filter(c => 
-                  !c.title.toUpperCase().includes('SEMUA CHANNEL') && 
-                  !c.title.toUpperCase().includes('TOTAL DIGITAL')
-              );
+              // Filter super aman agar tidak crash jika title string rusak
+              const filteredCards = j.data.cards.filter(c => {
+                  if(!c || !c.title) return false;
+                  const t = String(c.title).toUpperCase();
+                  return !t.includes('SEMUA CHANNEL') && !t.includes('TOTAL DIGITAL');
+              });
 
-              filteredCards.forEach((c, idx) => {
-                  const isUp = parseFloat(c.growth) >= 0;
+              filteredCards.forEach((c) => {
+                  const growthVal = parseFloat(c.growth || 0);
+                  const isUp = growthVal >= 0;
                   const bColor = isUp ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
                   const arrow = isUp ? '▲' : '▼';
                   
+                  const cTitleStr = String(c.title);
                   let bTop = 'border-t-4 border-t-slate-200';
-                  if (c.title.includes('VA') && !c.title.includes('BANK')) bTop = 'border-t-4 border-t-blue-600';
-                  else if (c.title.includes('MANDIRI')) bTop = 'border-t-4 border-t-blue-400';
+                  if (cTitleStr.includes('VA') && !cTitleStr.includes('BANK')) bTop = 'border-t-4 border-t-blue-600';
+                  else if (cTitleStr.includes('MANDIRI')) bTop = 'border-t-4 border-t-blue-400';
 
                   const pLabel = c.prev_label || 'Bulan Lalu';
                   const pNominal = c.prev_nominal || 'Rp -';
@@ -315,11 +310,11 @@
                       <div class="bg-white rounded-xl card-shadow p-3.5 flex flex-col justify-between ${bTop}">
                           <div>
                               <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">${c.title}</p>
-                              <h3 class="text-xl font-black text-slate-800 leading-tight">${c.value}</h3>
-                              <p class="text-[10px] font-bold text-slate-500 mt-0.5">${c.subtitle}</p>
+                              <h3 class="text-xl font-black text-slate-800 leading-tight">${c.value || 'Rp 0'}</h3>
+                              <p class="text-[10px] font-bold text-slate-500 mt-0.5">${c.subtitle || ''}</p>
                           </div>
                           <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
-                              <span class="${bColor} px-2 py-0.5 rounded font-bold text-[11px]">${arrow} ${Math.abs(c.growth)}%</span>
+                              <span class="${bColor} px-2 py-0.5 rounded font-bold text-[11px]">${arrow} ${Math.abs(growthVal)}%</span>
                               <div class="text-right leading-tight">
                                   <span class="text-[9px] text-slate-400">${pLabel}</span><br>
                                   <span class="text-[10px] font-bold text-slate-600">${pNominal}</span>
@@ -327,39 +322,32 @@
                           </div>
                       </div>`;
               });
+          } else {
+              // Jika server mengembalikan 500 (misal kena bug PHP tgl 31 bulan di Server)
+              document.getElementById('lbl_periode_aktif').innerHTML = `<span class="text-red-500 font-bold ml-1">Gagal Muat Server: ${j.message || 'Error'}</span>`;
           }
-      } catch (e) {} finally { hideLoad('loadSummary'); }
+      } catch (e) {
+          // Jika terjadi error javascript
+          document.getElementById('lbl_periode_aktif').innerHTML = `<span class="text-red-500 font-bold ml-1">Koneksi Terputus: ${e.message}</span>`;
+      } finally { 
+          hideLoad('loadSummary'); 
+      }
   }
 
   // ==========================================
   // 2. GRAFIK TREN & PIE
   // ==========================================
   function initCharts() {
-      // 🔥 TREN CHART
       chartTrendObj = new ApexCharts(document.querySelector("#chartTrend"), {
           series: [], 
-          chart: { 
-              type: 'area', 
-              height: 340, 
-              parentHeightOffset: 0,
-              toolbar: { show: false } 
-          },
+          chart: { type: 'area', height: 340, parentHeightOffset: 0, toolbar: { show: false } },
           colors: ['#0284c7'], 
           dataLabels: { enabled: false }, 
           legend: { show: false }, 
           stroke: { curve: 'smooth', width: 3 },
           fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05, stops: [0, 100] } },
-          grid: { 
-              padding: { bottom: 15, left: 10, right: 10 } 
-          },
-          xaxis: { 
-              categories: [], 
-              labels: { 
-                  style: { fontSize: '10px' }, 
-                  offsetY: -5
-              },
-              tooltip: { enabled: false }
-          },
+          grid: { padding: { bottom: 15, left: 10, right: 10 } },
+          xaxis: { categories: [], labels: { style: { fontSize: '10px' }, offsetY: -5 }, tooltip: { enabled: false } },
           yaxis: { labels: { formatter: (val) => val >= 1000000000 ? (val/1000000000).toFixed(1)+' M' : (val >= 1000000 ? (val/1000000).toFixed(0)+' Jt' : val) } },
           tooltip: {
               theme: 'light',
@@ -374,27 +362,14 @@
       });
       chartTrendObj.render();
 
-      // 🔥 PIE CHART
       chartDonutObj = new ApexCharts(document.querySelector("#chartDonut"), {
           series: [], 
-          chart: { 
-              type: 'donut', 
-              height: 330,
-              parentHeightOffset: 0 
-          }, 
+          chart: { type: 'donut', height: 330, parentHeightOffset: 0 }, 
           labels: [],
           colors: ['#8b5cf6', '#0ea5e9', '#10b981', '#f59e0b', '#f43f5e', '#64748b'],
           plotOptions: { donut: { size: '70%' } }, 
           dataLabels: { enabled: false }, 
-          legend: { 
-              show: true, 
-              position: 'bottom', 
-              fontSize: '9.5px',
-              fontFamily: 'Inter',
-              offsetY: -5,
-              markers: { width: 8, height: 8, radius: 2 },
-              itemMargin: { horizontal: 5, vertical: 2 } 
-          },
+          legend: { show: true, position: 'bottom', fontSize: '9.5px', fontFamily: 'Inter', offsetY: -5, markers: { width: 8, height: 8, radius: 2 }, itemMargin: { horizontal: 5, vertical: 2 } },
           tooltip: {
               custom: function({series, seriesIndex, dataPointIndex, w}) {
                   const val = series[seriesIndex];
@@ -420,7 +395,7 @@
       try {
           const r = await fetch(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
           const j = await r.json();
-          if(j.status === 200 && j.data.chart_nominal) {
+          if(j.status === 200 && j.data && j.data.chart_nominal) {
               chartTrendObj.updateOptions({ xaxis: { categories: j.data.chart_nominal.labels } });
               chartTrendObj.updateSeries(j.data.chart_nominal.series);
           }
@@ -435,7 +410,7 @@
       try {
           const r = await fetch(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
           const j = await r.json();
-          if(j.status === 200) {
+          if(j.status === 200 && j.data) {
               const d = j.data;
               
               chartDonutObj.updateOptions({ labels: d.donut_chart.labels, customTrx: d.donut_chart.trx });
@@ -443,7 +418,7 @@
 
               const listC = document.getElementById('listTop5'); listC.innerHTML = '';
               const colors = ['bg-violet-500', 'bg-sky-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500'];
-              if(d.top_5.length === 0) { listC.innerHTML = '<p class="text-xs text-slate-400">Data kosong</p>'; hideLoad('loadDist'); return; }
+              if(!d.top_5 || d.top_5.length === 0) { listC.innerHTML = '<p class="text-xs text-slate-400">Data kosong</p>'; hideLoad('loadDist'); return; }
               const maxNom = d.top_5[0].nominal;
               
               d.top_5.forEach((t, i) => {
@@ -477,7 +452,7 @@
           const tbody = document.getElementById('bodyBreakdown');
           tbody.innerHTML = '';
 
-          if(j.status !== 200 || !j.data.data.length) { tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6">Data kosong.</td></tr>`; hideLoad('loadTable'); return; }
+          if(j.status !== 200 || !j.data || !j.data.data.length) { tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6">Data kosong.</td></tr>`; hideLoad('loadTable'); return; }
 
           const dt = j.data.data;
           const optAreaVal = document.getElementById('opt_area').value;
