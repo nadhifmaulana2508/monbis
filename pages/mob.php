@@ -58,33 +58,40 @@
   #tableExportMob thead th { height: 46px; background-color: #f1f5f9 !important; box-shadow: inset 0 -1px 0 #cbd5e1, 0 1px 0 #cbd5e1; top: 0 !important; position: sticky !important; z-index: 40 !important; }
   @media (min-width: 768px) { #tableExportMob thead th { height: 48px; } }
 
-  /* Body Data Normal nyungsep ke bawah */
-  #bodyModalDetail td { position: relative; z-index: 10 !important; }
+  /* Body Data Normal nyungsep ke bawah (Dihilangkan !important agar bisa ditimpa sticky class) */
+  #bodyModalDetail td { position: relative; z-index: 10; }
 
-  /* Kunci Lebar Modal Sticky (Responsif) - Pakai class yang sama untuk TH dan TD */
-  .mod-td-rek { position: sticky !important; left: 0 !important; z-index: 30 !important; background-color: #fff !important; box-shadow: inset -1px 0 0 #e2e8f0; min-width: 100px; max-width: 100px;}
-  .mod-td-nas { position: sticky !important; left: 0 !important; z-index: 30 !important; background-color: #fff !important; box-shadow: 2px 0 4px -2px rgba(0,0,0,0.1); min-width: 160px; max-width: 160px;}
-  .mod-td-nas-lunas { position: sticky !important; left: 0 !important; z-index: 30 !important; background-color: #fff !important; box-shadow: 2px 0 4px -2px rgba(0,0,0,0.1); min-width: 160px; max-width: 160px;}
+  /* Kunci Lebar Modal Sticky (Diperkuat Selector-nya agar tak kalah prioritas) */
+  #tableExportMob th.mod-td-rek, 
+  #bodyModalDetail td.mod-td-rek { 
+      position: sticky !important; left: 0 !important; z-index: 31 !important; 
+      background-color: #fff !important; box-shadow: inset -1px 0 0 #e2e8f0; 
+      min-width: 100px; max-width: 100px;
+  }
+  
+  #tableExportMob th.mod-td-nas, 
+  #bodyModalDetail td.mod-td-nas { 
+      position: sticky !important; left: 0 !important; z-index: 30 !important; 
+      background-color: #fff !important; box-shadow: 2px 0 4px -2px rgba(0,0,0,0.1); 
+      min-width: 160px; max-width: 160px;
+  }
   
   @media (min-width: 768px) { 
-      .mod-td-rek { min-width: 120px; max-width: 120px; }
-      /* Di PC, Nasabah geser ke kanan karena ada Rekening di sebelahnya */
-      .mod-td-nas { left: 120px !important; min-width: 250px; max-width: 250px; } 
-      .mod-td-nas-lunas { left: 0 !important; min-width: 250px; max-width: 250px; }
+      #tableExportMob th.mod-td-rek, #bodyModalDetail td.mod-td-rek { min-width: 120px; max-width: 120px; }
+      /* Di PC, Nasabah geser ke kanan karena Rekening visible di left 0 */
+      #tableExportMob th.mod-td-nas, #bodyModalDetail td.mod-td-nas { left: 120px !important; min-width: 250px; max-width: 250px; } 
   }
 
   /* Perpotongan Header & Kiri (Z-Index Paling Dewa) */
   #tableExportMob thead th.mod-td-rek, 
-  #tableExportMob thead th.mod-td-nas, 
-  #tableExportMob thead th.mod-td-nas-lunas { 
+  #tableExportMob thead th.mod-td-nas { 
       z-index: 60 !important; background-color: #e2e8f0 !important; 
   }
 
   /* Hover Effect Modal Detail */
   #bodyModalDetail tr:hover td { background-color: #f8fafc !important; }
   #bodyModalDetail tr:hover td.mod-td-rek, 
-  #bodyModalDetail tr:hover td.mod-td-nas, 
-  #bodyModalDetail tr:hover td.mod-td-nas-lunas { filter: brightness(0.98); }
+  #bodyModalDetail tr:hover td.mod-td-nas { filter: brightness(0.98); background-color: #f8fafc !important; }
 
   /* Form Inputs */
   .inp { border:1px solid #cbd5e1; border-radius:6px; padding:0 8px; background:#fff; outline:none; transition: border 0.2s;}
@@ -541,7 +548,7 @@ function renderModalHeaderMigrasi() {
             <th class="mod-td-rek hidden md:table-cell px-2 md:px-3 py-1.5 md:py-2 border-b border-r border-slate-300 rounded-tl-xl text-blue-900 text-left md:text-center">Rekening</th>
             <th class="mod-td-nas px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 text-blue-900 text-left md:text-center">Nama Nasabah</th>
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[180px] md:w-[250px] text-center">Alamat</th>
-            <th class="px-2 md:px-3 py-1.5 md:py-2 border-b border-r border-slate-300 w-[110px] md:w-[130px] text-center">No HP (WA)</th>
+            <th class="px-2 md:px-3 py-1.5 md:py-2 border-b border-r border-slate-300 w-[110px] md:w-[130px] text-center">No HP</th>
             <th class="px-2 md:px-3 py-1.5 md:py-2 border-b border-r border-slate-300 w-[100px] md:w-[120px] text-center">Kankas</th>
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[110px] md:w-[140px] text-center text-blue-700">Tgl Realisasi</th>
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[110px] md:w-[140px] text-right text-blue-700">Plafond</th>
@@ -629,7 +636,7 @@ async function fetchDetailMob(){
             // 🔥 NOMINAL DETAIL TETAP ASLI (MURNI), TIDAK DIBAGI 1000 🔥
             // 🔥 KUNCI FREEZE MODAL DI BODY (class mod-td-rek & mod-td-nas) 🔥
             html += `
-                <tr class="hover:bg-slate-50/50 border-b border-slate-100 transition h-[40px] md:h-[48px] group">
+                <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[40px] md:h-[48px] group">
                     <td class="mod-td-rek hidden md:table-cell px-2 md:px-3 py-1.5 md:py-2 font-mono text-[9.5px] md:text-[11px] text-slate-500 border-r border-slate-100">${row.no_rekening}</td>
                     <td class="mod-td-nas px-2 md:px-4 py-1.5 md:py-2 font-bold text-[9.5px] md:text-[11px] text-slate-700 truncate border-r border-slate-100" title="${row.nama_nasabah}">${row.nama_nasabah}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 text-slate-500 text-[9.5px] md:text-[11px] border-r border-slate-100 whitespace-nowrap text-center" title="${alamatLengkap}">${alamatPendek}</td>
@@ -704,28 +711,11 @@ window.exportExcelDetailMob = async function() {
     finally { btn.innerHTML = txt; btn.disabled = false; }
 }
 
-function formatWA(phone) {
-    if (!phone) return null;
-    let cleaned = phone.replace(/\D/g, ''); 
-    if (cleaned.startsWith('0')) { cleaned = '62' + cleaned.substring(1); } 
-    else if (cleaned.startsWith('8')) { cleaned = '62' + cleaned; }
-    if (cleaned.length < 10) return null;
-    return cleaned;
-}
-
 function createWABtn(phone) {
-    const formatted = formatWA(phone);
-    if (!formatted) return `<span class="text-slate-400 font-mono text-[9px] md:text-xs">${phone || '-'}</span>`;
+    if (!phone) return `<span class="text-slate-400 font-mono text-[9px] md:text-xs">-</span>`;
     
-    // 🔥 Pesan WA dihilangkan, direct WA Murni 🔥
-    const waUrl = `https://wa.me/${formatted}`;
-    
-    return `
-        <a href="${waUrl}" target="_blank" class="inline-flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1 bg-emerald-50 hover:bg-emerald-500 hover:text-white text-emerald-600 rounded-md md:rounded-lg border border-emerald-200 transition font-bold text-[9px] md:text-xs" title="Hubungi via WhatsApp">
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor" class="md:w-[14px] md:h-[14px]"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.319-.883-.665-1.479-1.488-1.653-1.787-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
-            <span class="hidden sm:inline ml-1.5">WA</span>
-        </a>
-    `;
+    // Hanya menampilkan teks biasa, tanpa link ke WA
+    return `<span class="text-slate-700 font-mono font-medium text-[9px] md:text-[11px]">${phone}</span>`;
 }
 
 window.closeModalMob = function(){ document.getElementById('modalDetailMob').classList.add('hidden'); }

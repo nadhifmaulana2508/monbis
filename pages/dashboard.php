@@ -79,7 +79,7 @@
       </div>
       <div class="bg-white p-3.5 md:p-4 rounded-xl md:rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden col-span-1 md:col-span-1">
         <div class="absolute top-0 left-0 w-1.5 h-full bg-purple-500 rounded-l-2xl"></div>
-        <p class="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5 md:mb-1 truncate">Total DPK (H-1)</p>
+        <p class="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5 md:mb-1 truncate">Total Simpanan (H-1)</p>
         <h3 id="kpi_dpk" class="text-lg md:text-xl xl:text-2xl font-black text-purple-700 tracking-tight whitespace-nowrap mb-1.5 md:mb-2.5">Rp 0</h3>
         <div id="kpi_dpk_pill"></div>
       </div>
@@ -240,7 +240,7 @@
       <div class="flex items-center gap-2.5 md:gap-3 mb-4 md:mb-6 border-b border-gray-100 pb-3 md:pb-4">
         <div class="bg-purple-100 p-1.5 md:p-2 rounded-lg"><span class="text-xl md:text-3xl">💰</span></div>
         <div>
-          <h2 class="text-lg md:text-2xl font-extrabold text-gray-900 tracking-tight">Dana Pihak Ketiga (DPK)</h2>
+          <h2 class="text-lg md:text-2xl font-extrabold text-gray-900 tracking-tight">Simpanan</h2>
           <p class="text-[10px] md:text-sm text-gray-500 font-medium">Rekapitulasi Deposito & Tabungan (H-1)</p>
         </div>
       </div>
