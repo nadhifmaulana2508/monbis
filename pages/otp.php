@@ -14,10 +14,9 @@
   .animate-scale-up { animation: scaleUp 0.2s ease-out forwards; }
 
   /* ========================================================
-     🔥 MAGIC STICKY TABLE (FIX OVERLAP & FREEZE) 🔥
+     🔥 MAGIC STICKY TABLE UTAMA (FIX OVERLAP & FREEZE) 🔥
      ======================================================== */
-  
-  #tabelUtama th, #tableDetail th, #tabelRekapRR th, #tableExportRR th { position: sticky !important; z-index: 10; }
+  #tabelUtama th, #tabelRekapRR th { position: sticky !important; z-index: 10; }
   
   /* --- Tabel Utama RR --- */
   #tabelRekapRR thead th.head-row { cursor: pointer; transition: background 0.2s; }
@@ -47,41 +46,37 @@
   #tabelRekapRR td.sticky.left-0 { position: sticky !important; left: 0; z-index: 20; background-color: #f8fafc; box-shadow: 1px 0 0 #cbd5e1; }
   #tabelRekapRR tr.sticky-total th.sticky.left-0 { z-index: 45 !important; background-color: #e2e8f0 !important; }
 
-  /* --- Tabel Modal Detail RR --- */
-  .mod-row-1 { height: 40px; }
-  .mod-row-tot { height: 40px; }
-  @media (min-width: 768px) {
-      .mod-row-1 { height: 46px; }
-      .mod-row-tot { height: 46px; }
+  /* ========================================================
+     🔥 TABEL MODAL DETAIL RR (FIX FREEZE DEWA) 🔥
+     ======================================================== */
+  #tableExportRR { border-collapse: separate; border-spacing: 0; min-width: 100%; }
+  #tableExportRR th, #tableExportRR td { background-clip: padding-box; background-color: #fff; }
+
+  /* Thead menempel kuat di atas */
+  #tableExportRR thead th { 
+      position: sticky !important; 
+      top: 0 !important; 
+      z-index: 40 !important; 
+      background-color: #f1f5f9 !important; 
+      box-shadow: inset 0 -2px 0 #cbd5e1; 
   }
 
-  #tableExportRR th { background-color: #f1f5f9 !important; box-shadow: inset 0 -1px 0 #cbd5e1; cursor: pointer; transition: background 0.2s; }
-  #tableExportRR th:hover { background-color: #e2e8f0 !important; }
+  /* Setting Kolom Kiri (Rekening & Nasabah) */
+  .mod-col-rek { position: sticky !important; left: 0 !important; min-width: 100px; max-width: 100px; box-shadow: inset -1px 0 0 #e2e8f0; }
+  .mod-col-nas { position: sticky !important; left: 0 !important; min-width: 160px; max-width: 160px; box-shadow: 2px 0 4px -2px rgba(0,0,0,0.1), inset -1px 0 0 #e2e8f0; }
   
-  #tableExportRR thead tr.modal-head-1 th { top: 0 !important; z-index: 30; }
-  #tableExportRR thead tr.modal-head-2 th { top: 40px !important; z-index: 40 !important; }
-  @media (min-width: 768px) {
-      #tableExportRR thead tr.modal-head-2 th { top: 46px !important; }
+  @media (min-width: 768px) { 
+      .mod-col-rek { min-width: 120px; max-width: 120px; }
+      .mod-col-nas { left: 120px !important; min-width: 250px; max-width: 250px; } 
   }
 
-  /* Lebar Kolom Sticky Modal */
-  .mod-freeze-rek { position: sticky !important; left: 0 !important; z-index: 32 !important; box-shadow: inset -1px 0 0 #e2e8f0; background-color: #f1f5f9 !important; min-width: 100px; max-width: 100px;}
-  .mod-freeze-nas { position: sticky !important; left: 0 !important; z-index: 30 !important; box-shadow: inset -1px 0 0 #e2e8f0; background-color: #f1f5f9 !important; min-width: 160px; max-width: 160px;}
-  @media (min-width: 768px) { 
-      .mod-freeze-rek { min-width: 120px; max-width: 120px; }
-      .mod-freeze-nas { left: 120px !important; z-index: 30 !important; min-width: 250px; max-width: 250px;} 
-  }
-
-  .mod-td-rekening { position: sticky !important; left: 0 !important; z-index: 22 !important; background-color: #fff; box-shadow: 1px 0 0 #f1f5f9; min-width: 100px; max-width: 100px;}
-  .mod-td-nasabah { position: sticky !important; left: 0 !important; z-index: 20 !important; background-color: #fff; box-shadow: 2px 0 4px -2px rgba(0,0,0,0.1); min-width: 160px; max-width: 160px;}
-  @media (min-width: 768px) { 
-      .mod-td-rekening { min-width: 120px; max-width: 120px; }
-      .mod-td-nasabah { left: 120px !important; z-index: 21 !important; min-width: 250px; max-width: 250px;} 
-  }
+  /* Z-Index Tumpukan Silang (Pojok Kiri Atas) */
+  #bodyModalRR td.mod-col-rek, #bodyModalRR td.mod-col-nas { z-index: 20 !important; background-color: #fff !important; }
+  #headModalRR th.mod-col-rek, #headModalRR th.mod-col-nas { z-index: 50 !important; background-color: #e2e8f0 !important; }
 
   /* Hover Effects */
   tbody tr:hover td { background-color: #f8fafc !important; }
-  tbody tr:hover td.mod-td-rekening, tbody tr:hover td.mod-td-nasabah { filter: brightness(0.98); }
+  #bodyModalRR tr:hover td.mod-col-rek, #bodyModalRR tr:hover td.mod-col-nas { filter: brightness(0.98); }
   tbody.group-tbody tr:hover td.sticky { filter: brightness(0.95); }
 
   /* Form Inputs */
@@ -226,13 +221,13 @@
     </div>
 
     <div class="flex-1 overflow-auto bg-slate-50 relative p-0 md:p-3 custom-scrollbar">
-      <div id="loadingModalRR" class="hidden absolute inset-0 bg-white/90 z-40 flex flex-col items-center justify-center text-blue-600 backdrop-blur-sm">
+      <div id="loadingModalRR" class="hidden absolute inset-0 bg-white/90 z-[60] flex flex-col items-center justify-center text-blue-600 backdrop-blur-sm">
          <div class="animate-spin h-8 w-8 md:h-10 md:w-10 border-4 border-blue-200 border-t-blue-600 rounded-full mb-2 md:mb-3"></div>
          <span class="text-[10px] md:text-sm font-bold uppercase tracking-widest">Memuat Detail...</span>
       </div>
       
-      <table class="w-max min-w-full text-center md:text-left text-slate-700 border-separate border-spacing-0 md:border border-slate-200 md:rounded-xl shadow-sm bg-white table-fixed" id="tableExportRR">
-        <thead id="headModalRR" class="text-[9px] md:text-xs text-slate-600 uppercase bg-slate-100 font-bold tracking-wider select-none"></thead>
+      <table class="w-max min-w-full text-center md:text-left text-slate-700 md:rounded-xl shadow-sm bg-white table-fixed" id="tableExportRR">
+        <thead id="headModalRR" class="text-[9px] md:text-xs text-slate-600 uppercase font-bold tracking-wider select-none"></thead>
         <tbody id="bodyModalRR" class="divide-y divide-slate-100 bg-white modal-tbody text-[9.5px] md:text-xs"></tbody>
       </table>
     </div>
@@ -401,7 +396,7 @@
 
   document.getElementById('formFilterRR').addEventListener('submit', e => { e.preventDefault(); fetchRekapRR(); });
 
-  // 🔥 RENDER THEAD UTAMA (SESUAI GAMBAR, NO TOT) 🔥
+  // 🔥 RENDER THEAD UTAMA 🔥
   function renderMainHeaderRR() {
       const head = document.getElementById('headRR');
       head.innerHTML = `
@@ -513,7 +508,6 @@
     } finally { l.classList.add('hidden'); }
   }
 
-  // 🔥 FORMAT TABEL UTAMA (TEXT-CENTER, NOA DI BAWAH, TOTAL BISA DIKLIK) 🔥
   function renderTableRR(rows, gt) {
       const tb = document.getElementById('bodyRR'); 
       const trTotal = document.getElementById('rowTotalRRAtas');
@@ -521,7 +515,6 @@
       tb.innerHTML = '';
       if(rows.length === 0){ tb.innerHTML = `<tr><td colspan="8" class="py-20 text-center text-slate-500 text-xs md:text-base">Tidak ada data penagihan.</td></tr>`; return; }
 
-      // GRAND TOTAL BISA DIKLIK JUGA YAA (Kirim tgl = 'ALL')
       if(gt && trTotal) {
         trTotal.innerHTML = `
             <th class="px-2 sticky left-0 text-center uppercase tracking-widest shadow-[1px_0_0_#cbd5e1] text-[10px] md:text-[13px] text-slate-700 bg-slate-200/50">TOTAL</th>
@@ -560,7 +553,6 @@
           const clkTgh = `<a href="javascript:void(0)" onclick="initModalDetail('${r.tgl}','MENUNGGAK')" class="font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer block mb-0.5 text-[10px] md:text-sm">${fmt(r.macet_os)}</a>`;
           const clkLns = `<a href="javascript:void(0)" onclick="initModalLunas('${r.tgl}')" class="font-bold text-slate-700 hover:text-blue-700 hover:underline cursor-pointer block mb-0.5 text-[10px] md:text-sm">${fmt(r.lunas_os)}</a>`;
           
-          // 🔥 PENAMBAHAN AGAR TOTAL BAYAR BISA DIKLIK 🔥
           const clkAng = `<a href="javascript:void(0)" onclick="initModalDetail('${r.tgl}','ANGSURAN')" class="font-bold text-slate-600 hover:text-blue-700 hover:underline cursor-pointer block text-[10px] md:text-sm">${fmt(r.angsuran)}</a>`;
           const clkTotByr = `<a href="javascript:void(0)" onclick="initModalDetail('${r.tgl}','TOTAL_BAYAR')" class="font-bold text-purple-700 hover:text-purple-800 hover:underline cursor-pointer block text-[10px] md:text-sm">${fmt(r.total_bayar)}</a>`;
 
@@ -617,50 +609,31 @@
   // ==========================================
   // 🔥 MODAL DETAIL LOGIC + SORTING 🔥
   // ==========================================
-  function formatWA(phone) {
-      if (!phone) return null;
-      let cleaned = phone.replace(/\D/g, ''); 
-      if (cleaned.startsWith('0')) { cleaned = '62' + cleaned.substring(1); } 
-      else if (cleaned.startsWith('8')) { cleaned = '62' + cleaned; }
-      if (cleaned.length < 10) return null;
-      return cleaned;
+
+  // Hapus WA Redirect dan kembalikan hanya string angka murni
+  function createWABtn(phone) {
+      if (!phone || phone.trim() === '') return `<span class="text-slate-400 font-mono text-[9px] md:text-sm">-</span>`;
+      return `<span class="text-slate-700 font-mono font-medium text-[9px] md:text-[11px]">${phone}</span>`;
   }
 
-  function createWABtn(phone, nama, norek, totung) {
-      const formatted = formatWA(phone);
-      if (!formatted) return `<span class="text-slate-400 font-mono text-[9px] md:text-sm">${phone || '-'}</span>`;
-      
-      // 🔥 PESAN WA DI-COMMENT SESUAI PERMINTAAN, KLIK LANGSUNG KE KONTAK 🔥
-      // const msg = `Yth. Bapak/Ibu *${nama}*,\n\nKami menginformasikan bahwa terdapat tagihan angsuran kredit pada rekening *${norek}* dengan total tunggakan sebesar *Rp ${fmt(totung)}*.\n\nMohon untuk segera melakukan pembayaran angsuran.\n\n_(Jika Bapak/Ibu sudah melakukan pembayaran, mohon abaikan pesan ini)_\n\nTerima kasih.`;
-      // const waUrl = `https://wa.me/${formatted}?text=${encodeURIComponent(msg)}`;
-      
-      const waUrl = `https://wa.me/${formatted}`;
-      
-      return `
-          <a href="${waUrl}" target="_blank" class="inline-flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1 md:py-1.5 bg-emerald-50 hover:bg-emerald-500 hover:text-white text-emerald-600 rounded-md md:rounded-lg border border-emerald-200 transition font-bold text-[10px] md:text-xs" title="Hubungi WhatsApp">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" class="md:w-[16px] md:h-[16px]"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.319-.883-.665-1.479-1.488-1.653-1.787-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
-              WA
-          </a>
-      `;
-  }
-
+  // 🔥 MENGGUNAKAN THEAD STICKY BARU YANG KOKOH 🔥
   function renderModalHeaderRR() {
       const mHead = document.getElementById('headModalRR');
       
       if (currentMode === 'NORMAL') {
           mHead.innerHTML = `
-              <tr class="modal-head-1 mod-row-1">
-                  <th class="mod-freeze-rek hidden md:table-cell px-2 md:px-3 border-b border-r border-slate-300 rounded-tl-lg text-left md:text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('no_rekening', 'string')">
+              <tr>
+                  <th class="mod-col-rek hidden md:table-cell px-2 md:px-3 border-b border-r border-slate-300 rounded-tl-lg text-left md:text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('no_rekening', 'string')">
                       <div class="flex items-center justify-start md:justify-center">REKENING ${getSortIcon('no_rekening', sortDetailCol, sortDetailAsc)}</div>
                   </th>
-                  <th class="mod-freeze-nas px-2 md:px-4 border-b border-r border-slate-300 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] text-left md:text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('nama_nasabah', 'string')">
+                  <th class="mod-col-nas px-2 md:px-4 border-b border-r border-slate-300 text-left md:text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('nama_nasabah', 'string')">
                       <div class="flex items-center justify-start md:justify-center">NAMA NASABAH ${getSortIcon('nama_nasabah', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-4 border-b border-r border-slate-300 w-[200px] md:w-[350px] text-left md:text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('alamat', 'string')">
                       <div class="flex items-center justify-start md:justify-center">ALAMAT ${getSortIcon('alamat', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[90px] md:w-[130px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('no_hp', 'string')">
-                      <div class="flex items-center justify-center">NO HP (WA) ${getSortIcon('no_hp', sortDetailCol, sortDetailAsc)}</div>
+                      <div class="flex items-center justify-center">NO HP ${getSortIcon('no_hp', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[80px] md:w-[120px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('kankas', 'string')">
                       <div class="flex items-center justify-center">KANKAS ${getSortIcon('kankas', sortDetailCol, sortDetailAsc)}</div>
@@ -696,12 +669,11 @@
                       <div class="flex items-center justify-center">DLL ${getSortIcon('status_ket', sortDetailCol, sortDetailAsc)}</div>
                   </th>
               </tr>
-              <tr id="rowTotalDetailAtas" class="modal-head-2 mod-row-tot"></tr>
           `;
       } else {
           mHead.innerHTML = `
-              <tr class="modal-head-1 mod-row-1">
-                  <th class="mod-freeze-nas px-2 md:px-4 border-b border-r border-slate-300 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] text-left md:text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('nama_nasabah', 'string')">
+              <tr>
+                  <th class="mod-col-nas px-2 md:px-4 border-b border-r border-slate-300 text-left md:text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('nama_nasabah', 'string')">
                       <div class="flex items-center justify-start md:justify-center">NAMA NASABAH ${getSortIcon('nama_nasabah', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-4 border-b border-r border-slate-300 w-[200px] md:w-[350px] text-left md:text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('alamat', 'string')">
@@ -732,7 +704,6 @@
                       <div class="flex items-center justify-center">TGL REALISASI ${getSortIcon('tgl_baru', sortDetailCol, sortDetailAsc)}</div>
                   </th>
               </tr>
-              <tr id="rowTotalDetailAtas" class="modal-head-2 mod-row-tot"></tr>
           `;
       }
   }
@@ -905,12 +876,12 @@
           const aoName = (r.nama_ao || '-').split(' ').slice(0, 2).join(' ');
 
           if(currentMode === 'NORMAL') {
-              const btnWa = createWABtn(r.no_hp, r.nama_nasabah, r.no_rekening, r.totung);
+              const btnWa = createWABtn(r.no_hp);
               const alamatLengkap = r.alamat || '-';
 
               h += `<tr class="transition border-b border-slate-100 h-[40px] md:h-[48px]">
-                    <td class="mod-td-rekening hidden md:table-cell px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 font-mono text-[9.5px] md:text-sm text-slate-600 shadow-[1px_0_0_#f1f5f9]">${r.no_rekening}</td>
-                    <td class="mod-td-nasabah px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 font-bold text-slate-700 truncate shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] text-[9.5px] md:text-sm" title="${r.nama_nasabah}">${r.nama_nasabah}</td>
+                    <td class="mod-col-rek hidden md:table-cell px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 font-mono text-[9.5px] md:text-sm text-slate-600">${r.no_rekening}</td>
+                    <td class="mod-col-nas px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 font-bold text-slate-700 truncate text-[9.5px] md:text-sm" title="${r.nama_nasabah}">${r.nama_nasabah}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-slate-500 text-[9.5px] md:text-sm truncate max-w-[200px] md:max-w-[350px]" title="${alamatLengkap}">${alamatLengkap}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center">${btnWa}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-mono text-slate-500 text-[9px] md:text-sm">${r.kankas||'-'}</td>
@@ -932,7 +903,7 @@
               if(r.status_lunas === 'REFINANCING / Top Up') badge = `<span class="text-[9px] md:text-xs font-bold text-green-700">REFINANCING</span>`;
 
               h += `<tr class="transition border-b border-slate-100 h-[40px] md:h-[48px]">
-                    <td class="mod-td-nasabah px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 font-bold text-slate-700 truncate shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] text-[9.5px] md:text-sm">
+                    <td class="mod-col-nas px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 font-bold text-slate-700 truncate text-[9.5px] md:text-sm">
                         ${r.nama_nasabah}
                         <div class="text-[8px] md:text-xs text-slate-400 font-mono mt-0.5 font-normal">ID: ${r.nasabah_id}</div>
                     </td>
