@@ -66,7 +66,7 @@
 
   /* MODAL DETAIL SCROLLER */
   #modalScroll { --colRek: 130px; --colNama: 180px; }
-  #modalTablePO { width: 100%; min-width: 1800px; }
+  #modalTablePO { width: 100%; min-width: 1900px; }
   #modalTablePO th { position: sticky; top: 0; z-index: 30; background: #f8fafc; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; }
   #modalTablePO td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; font-size: 11px; }
   
@@ -178,17 +178,17 @@
 </div>
 
 <div id="modalDebiturPotensi" class="fixed inset-0 hidden bg-slate-900/60 backdrop-blur-sm items-center justify-center z-[9999] px-2 md:px-4">
-  <div id="modalCardPO" class="bg-white rounded-xl shadow-2xl flex flex-col w-full max-w-[1600px] h-[95vh] overflow-hidden animate-scale-up">
+  <div id="modalCardPO" class="bg-white rounded-xl shadow-2xl flex flex-col w-full max-w-[1700px] h-[95vh] overflow-hidden animate-scale-up">
     
-    <div class="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border-b border-slate-100 bg-slate-50 shrink-0 gap-3">
-      <div>
+    <div class="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border-b border-slate-100 bg-slate-50 shrink-0 gap-3 overflow-x-auto no-scrollbar">
+      <div class="shrink-0">
         <h3 class="font-bold text-slate-800 text-base md:text-xl flex items-center gap-2">
             📄 <span id="modalTitlePotensi" class="truncate max-w-[250px] md:max-w-none">Detail Potensi NPL</span>
         </h3>
         <p class="text-[10px] md:text-xs text-slate-500 mt-1" id="modalSubtitlePO">Posisi: -</p>
       </div>
       
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 shrink-0 w-full md:w-auto">
           <select id="modalFilterStatus" class="inp !h-9 !py-0 text-xs w-[130px] md:w-[150px] font-medium text-slate-700 shadow-sm" onchange="renderDetailRows()">
               <option value="ALL">Semua Status</option>
               <option value="AMAN">Aman / Lunas</option>
@@ -197,15 +197,19 @@
               <option value="MASIH POTENSI">Masih Potensi</option>
           </select>
           
-          <select id="modalFilterKankas" class="inp !h-9 !py-0 text-xs w-[130px] md:w-[150px] font-medium text-slate-700 shadow-sm" onchange="fetchDetailPotensiNpl()">
+          <select id="modalFilterKankas" class="inp !h-9 !py-0 text-xs w-[120px] md:w-[140px] font-medium text-slate-700 shadow-sm" onchange="fetchDetailPotensiNpl()">
               <option value="">Semua Kankas</option>
           </select>
 
-          <button onclick="exportDetailPotensiExcel()" class="flex items-center justify-center w-9 h-9 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm transition" title="Export Excel Detail">
+          <select id="modalFilterAo" class="inp !h-9 !py-0 text-xs w-[120px] md:w-[140px] font-medium text-slate-700 shadow-sm" onchange="fetchDetailPotensiNpl()">
+              <option value="">Semua AO</option>
+          </select>
+
+          <button onclick="exportDetailPotensiExcel()" class="flex items-center justify-center w-9 h-9 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm transition shrink-0" title="Export Excel Detail">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
           </button>
 
-          <button id="btnClosePO" class="flex items-center justify-center w-9 h-9 bg-slate-200 hover:bg-red-100 text-slate-600 hover:text-red-600 rounded-lg shadow-sm transition font-bold">✕</button>
+          <button id="btnClosePO" class="flex items-center justify-center w-9 h-9 bg-slate-200 hover:bg-red-100 text-slate-600 hover:text-red-600 rounded-lg shadow-sm transition font-bold shrink-0">✕</button>
       </div>
     </div>
     
@@ -216,6 +220,7 @@
                     <th class="modal-freeze-1 text-center">No Rekening</th>
                     <th class="modal-freeze-2 text-left">Nama Nasabah</th>
                     <th class="text-left w-[200px]">Alamat</th>
+                    <th class="text-left w-[150px]">AO</th>
                     <th class="text-center w-[120px]">Status Saat Ini</th>
                     <th class="text-center w-[60px]">Kol C</th>
                     <th class="text-right w-[110px]">BD Closing</th>
@@ -355,7 +360,7 @@
           optKantor.value = userKode;
           optKantor.disabled = true;
           optKantor.classList.add('bg-slate-100', 'cursor-not-allowed');
-          return; // Stop eksekusi agar tidak fetch semua cabang
+          return; 
       }
 
       // JIKA PUSAT -> BUKA SEMUA OPSI
@@ -452,7 +457,7 @@
     }
   }
 
-  // --- RENDER TOTAL BARIS (SEMUA NOA BISA DIKLIK BERDASARKAN STATUS) ---
+  // --- RENDER TOTAL BARIS ---
   function renderTotal(tot){
       const el = document.getElementById('poTotalRow');
       if(!tot) return;
@@ -677,6 +682,23 @@
           selKankas.classList.add('hidden');
       }
 
+      // 🔥 POPULATE DROPDOWN AO DI DALAM MODAL 🔥
+      const selAo = document.getElementById('modalFilterAo');
+      selAo.innerHTML = '<option value="">Semua AO</option>';
+      if(targetCabang !== '000') {
+          selAo.classList.remove('hidden');
+          try {
+              const r = await fetch('./api/kode/', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_ao_kredit', kode_kantor:targetCabang}) });
+              const j = await r.json();
+              (j.data||[]).forEach(k => {
+                  const namaAo = k.nama_ao || k.kode_group2;
+                  selAo.innerHTML += `<option value="${k.kode_group2}">${namaAo}</option>`; 
+              });
+          } catch(e){}
+      } else {
+          selAo.classList.add('hidden');
+      }
+
       fetchDetailPotensiNpl();
   }
 
@@ -684,17 +706,19 @@
       const tbody = document.getElementById('modalBodyRowsPO');
       const ttot  = document.getElementById('modalTotalRowPO');
       const kankas = document.getElementById('modalFilterKankas')?.value || ''; 
+      const aoFilter = document.getElementById('modalFilterAo')?.value || ''; 
 
-      tbody.innerHTML = `<tr><td colspan="18" class="p-12 text-center"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mx-auto mb-3"></div><span class="text-slate-500 font-medium">Sedang mengambil data detail...</span></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="19" class="p-12 text-center"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mx-auto mb-3"></div><span class="text-slate-500 font-medium">Sedang mengambil data detail...</span></td></tr>`;
       ttot.innerHTML = '';
 
       try {
-          console.log("Request Detail Potensi NPL:", currentDetailKode, "Kankas:", kankas);
+          console.log("Request Detail Potensi NPL:", currentDetailKode, "Kankas:", kankas, "AO:", aoFilter);
           
           const payload = { 
-              type: 'Debitur Potensi NPL', // STRING INI SUDAH BENAR & SINKRON DENGAN BACKEND
+              type: 'Debitur Potensi NPL', 
               kode_kantor: currentDetailKode === '000' ? '' : currentDetailKode, 
               kode_kankas: kankas,             
+              kode_ao: aoFilter,             
               closing_date: currentFilter.closing, 
               harian_date: currentFilter.harian 
           };
@@ -708,12 +732,11 @@
           
           console.log("Berhasil load detail:", detailPoRaw.length, "baris");
 
-          // Render memanggil function yang bisa menyaring Dropdown Status
           renderDetailRows(); 
 
       } catch(e){
           console.error("Error saat fetch Detail Potensi:", e); 
-          tbody.innerHTML = `<tr><td colspan="18" class="p-10 text-center text-red-500">Gagal memuat data detail. ${e.message}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="19" class="p-10 text-center text-red-500">Gagal memuat data detail. ${e.message}</td></tr>`;
       }
   }
 
@@ -725,7 +748,6 @@
       const statusEl = document.getElementById('modalFilterStatus');
       const statusFilter = statusEl ? statusEl.value : 'ALL';
 
-      // Lakukan Penyaringan Data Array Javascript sesuai value Dropdown Status
       let filteredData = detailPoRaw;
       if(statusFilter !== 'ALL') {
           filteredData = detailPoRaw.filter(d => {
@@ -735,7 +757,7 @@
       }
 
       if(filteredData.length === 0){ 
-          tbody.innerHTML = `<tr><td colspan="18" class="p-10 text-center text-slate-400">Data tidak ditemukan pada filter ini.</td></tr>`; 
+          tbody.innerHTML = `<tr><td colspan="19" class="p-10 text-center text-slate-400">Data tidak ditemukan pada filter ini.</td></tr>`; 
           ttot.innerHTML = '';
           return; 
       }
@@ -747,7 +769,7 @@
           totals.bd_h += num(d.baki_debet_harian);
           totals.tp   += num(d.tunggakan_pokok);
           totals.tb   += num(d.tunggakan_bunga);
-          totals.sa   += num(d.saldo_akhir); // Menjumlahkan Saldo Tabungan
+          totals.sa   += num(d.saldo_akhir); 
           totals.ap   += num(d.angsuran_pokok);
           totals.ab   += num(d.angsuran_bunga);
           
@@ -768,6 +790,7 @@
                 <td class="modal-freeze-2 font-medium text-xs text-slate-700" title="${d.nama_nasabah}">${d.nama_nasabah}</td>
                 
                 <td class="text-left text-xs text-slate-600 truncate max-w-[200px]" title="${d.alamat || '-'}">${d.alamat || '-'}</td>
+                <td class="text-left text-xs text-slate-600 truncate max-w-[150px]" title="${d.nama_ao || '-'}">${d.nama_ao || '-'}</td>
                 <td class="text-center text-[10px]">${spanStatus}</td>
                 <td class="text-center text-[10px] text-slate-500">${d.kolek_closing || '-'}</td>
                 <td class="text-right text-xs text-slate-600">${fmtNom(d.baki_debet_closing)}</td>
@@ -794,20 +817,14 @@
         <tr class="modal-total-row">
             <td class="modal-freeze-1">TOTAL</td>
             <td class="modal-freeze-2">${filteredData.length} Debitur</td>
-            <td class="text-center">-</td>
-            <td class="text-center">-</td>
-            <td class="text-center">-</td>
-            <td class="text-right">${fmtNom(totals.bd_c)}</td>
-            <td class="text-center">-</td>
-            <td class="text-right text-red-700 bg-red-50/50">${fmtNom(totals.bd_h)}</td>
+            <td class="text-center">-</td> <td class="text-center">-</td> <td class="text-center">-</td> <td class="text-center">-</td> <td class="text-right">${fmtNom(totals.bd_c)}</td>
+            <td class="text-center">-</td> <td class="text-right text-red-700 bg-red-50/50">${fmtNom(totals.bd_h)}</td>
             <td class="text-right">${fmtNom(totals.tp)}</td>
             <td class="text-right">${fmtNom(totals.tb)}</td>
             <td class="text-right text-green-700">${fmtNom(totals.sa)}</td>
-            <td colspan="4"></td>
-            <td class="text-right">${fmtNom(totals.ap)}</td>
+            <td colspan="4"></td> <td class="text-right">${fmtNom(totals.ap)}</td>
             <td class="text-right">${fmtNom(totals.ab)}</td>
-            <td></td>
-        </tr>
+            <td></td> </tr>
       `;
       tbody.innerHTML = rowsHtml;
   }
@@ -833,6 +850,7 @@
                   <th style="background-color:#f1f5f9;">NO REKENING</th>
                   <th style="background-color:#f1f5f9;">NAMA NASABAH</th>
                   <th style="background-color:#f1f5f9;">ALAMAT</th>
+                  <th style="background-color:#f1f5f9;">NAMA AO</th>
                   <th style="background-color:#f1f5f9;">STATUS SAAT INI</th>
                   <th style="background-color:#f1f5f9;">KOL CLOSING</th>
                   <th style="background-color:#f1f5f9;">BD CLOSING</th>
@@ -857,6 +875,7 @@
               <td style="mso-number-format:'\\@'">${d.no_rekening}</td>
               <td>${d.nama_nasabah}</td>
               <td>${d.alamat || ''}</td>
+              <td>${d.nama_ao || ''}</td>
               <td>${d.status_potensi || ''}</td>
               <td>${d.kolek_closing || ''}</td>
               <td>${d.baki_debet_closing}</td>

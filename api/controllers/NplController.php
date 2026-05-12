@@ -632,14 +632,14 @@ public function getTop25NplPerCabang($input) {
         }
     }
 
-
-public function getDetailPotensiNpl($input = [])
+    public function getDetailPotensiNpl($input = [])
     {
         $kode_kantor = isset($input['kode_kantor']) && $input['kode_kantor'] !== ''
             ? str_pad($input['kode_kantor'], 3, '0', STR_PAD_LEFT)
             : null;
             
         $kode_kankas = $input['kode_kankas'] ?? '';
+        $kode_ao = $input['kode_ao'] ?? '';
 
         $harian_date = !empty($input['harian_date'])
             ? date('Y-m-d', strtotime($input['harian_date']))
@@ -663,6 +663,8 @@ public function getDetailPotensiNpl($input = [])
 
         $filterKantorClosing = $kode_kantor && $kode_kantor !== '000' ? " AND n.kode_cabang = :kode_kantor_c " : "";
         $filterKankasClosing = $kode_kankas !== '' ? " AND n.kode_group1 = :kode_kankas " : "";
+        $filterAoClosing     = $kode_ao !== '' ? " AND n.kode_group2 = :kode_ao " : "";
+        
         $filterKantorTrx     = $kode_kantor && $kode_kantor !== '000' ? " AND t.kode_kantor = :kode_kantor_trx " : "";
 
         $sql = "
@@ -671,6 +673,7 @@ public function getDetailPotensiNpl($input = [])
                     n.no_rekening,
                     n.kode_cabang,
                     n.kode_group1,
+                    n.kode_group2,
                     n.nama_nasabah,
                     n.alamat,
                     n.kolektibilitas AS kolek_closing,
@@ -685,6 +688,7 @@ public function getDetailPotensiNpl($input = [])
                 AND n.kolektibilitas IN ('L','DP')
                 {$filterKantorClosing}
                 {$filterKankasClosing}
+                {$filterAoClosing}
                 AND (
                         (COALESCE(n.hari_menunggak,0)       + :jml_hari1) >= 90
                     OR (COALESCE(n.hari_menunggak_pokok,0) + :jml_hari2) >= 90
@@ -703,7 +707,7 @@ public function getDetailPotensiNpl($input = [])
                     COALESCE(h.hari_menunggak_pokok,0)  AS hmp_harian,
                     COALESCE(h.hari_menunggak_bunga,0)  AS hmb_harian,
                     h.tgl_jatuh_tempo AS jt_harian,
-                    h.norek_tabungan   -- <===== INI DITAMBAHKAN AGAR BISA DIJOIN
+                    h.norek_tabungan
                 FROM nominatif h
                 WHERE h.created = :harian_date
             ),
@@ -726,6 +730,7 @@ public function getDetailPotensiNpl($input = [])
                 kd.no_rekening,
                 kd.nama_nasabah,
                 kd.alamat,
+                a.nama_ao, -- 🔥 Ambil Nama AO dari tabel ao_kredit
                 kd.kolek_closing,
                 kd.baki_debet_closing,
                 COALESCE(h.kolek_harian, 'Lunas') AS kolek_harian,
@@ -737,7 +742,7 @@ public function getDetailPotensiNpl($input = [])
                 h.hmp_harian,
                 h.hmb_harian,
                 h.jt_harian,
-                tb.saldo_akhir,    -- <===== OUTPUT SALDO TABUNGAN
+                tb.saldo_akhir,
                 CASE 
                     WHEN h.no_rekening IS NULL OR h.baki_debet_harian = 0 THEN 'LUNAS / AMAN'
                     WHEN h.kolek_harian IN ('KL','D','M') THEN 'FLOW KOLEK'
@@ -754,7 +759,8 @@ public function getDetailPotensiNpl($input = [])
             LEFT JOIN trx    tr ON kd.no_rekening = tr.no_rekening
             LEFT JOIN kode_kantor kk ON kd.kode_cabang = kk.kode_kantor
             LEFT JOIN kankas kas ON kd.kode_group1 = kas.kode_group1
-            LEFT JOIN tabungan tb ON tb.no_rekening = h.norek_tabungan  -- <===== JOIN TABUNGAN
+            LEFT JOIN tabungan tb ON tb.no_rekening = h.norek_tabungan
+            LEFT JOIN ao_kredit a ON kd.kode_group2 = a.kode_group2 AND kd.kode_cabang = a.kode_kantor -- 🔥 JOIN ke tabel ao_kredit
             WHERE kk.kode_kantor <> '000'
             ORDER BY kd.baki_debet_closing DESC, kd.no_rekening
         ";
@@ -786,14 +792,16 @@ public function getDetailPotensiNpl($input = [])
             if ($kode_kankas !== '') {
                 $st->bindValue(':kode_kankas', $kode_kankas);
             }
+            if ($kode_ao !== '') {
+                $st->bindValue(':kode_ao', $kode_ao);
+            }
 
             $st->execute();
             $rows = $st->fetchAll(PDO::FETCH_ASSOC);
             
-            // Format Output agar angka masuk sebagai numeric (bukan string) untuk JS
             $numericFields = [
                 'baki_debet_closing', 'baki_debet_harian', 'tunggakan_pokok', 'tunggakan_bunga', 
-                'total_tunggakan', 'hm_harian', 'hmp_harian', 'hmb_harian', 'angsuran_pokok', 'angsuran_bunga', 'saldo_akhir' // Tambah saldo_akhir
+                'total_tunggakan', 'hm_harian', 'hmp_harian', 'hmb_harian', 'angsuran_pokok', 'angsuran_bunga', 'saldo_akhir'
             ];
             foreach ($rows as &$r) {
                 foreach ($numericFields as $f) {
@@ -807,6 +815,9 @@ public function getDetailPotensiNpl($input = [])
             sendResponse(500, 'Gagal ambil detail potensi NPL: '.$e->getMessage());
         }
     }
+
+
+ 
 
 
     public function getBucket($input = [])
