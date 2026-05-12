@@ -1298,50 +1298,62 @@ private function fetchCkpnM1MapExact(string $closing, ?string $kc, array $accs):
 /*********************** DISPATCHER ***********************/
 public function getMigrasiBucketDetail($input = null)
 {
-  $b = is_array($input)?$input:(json_decode(file_get_contents('php://input'),true) ?: []);
+  $b = is_array($input) ? $input : (json_decode(file_get_contents('php://input'), true) ?: []);
 
   $closing = $this->asDate($b['closing_date'] ?? null);
   $harian  = $this->asDate($b['harian_date']  ?? null);
   $fb      = strtoupper(trim($b['from_bucket'] ?? ''));
   $tb      = strtoupper(trim($b['to_bucket']   ?? ''));
   $kc_raw  = $b['kode_kantor'] ?? null;
-  $kc      = ($kc_raw===null || $kc_raw==='') ? null : str_pad((string)$kc_raw,3,'0',STR_PAD_LEFT);
+  $kc      = ($kc_raw === null || $kc_raw === '') ? null : str_pad((string)$kc_raw, 3, '0', STR_PAD_LEFT);
 
-  if (!$closing || !$harian) return sendResponse(400,"closing_date & harian_date wajib (YYYY-MM-DD)");
+  // Ambil request filter
+  $kankas = $b['kankas'] ?? null;
+  $ao     = $b['ao_kredit'] ?? null;
+  $search = $b['search'] ?? null;
+
+  if (!$closing || !$harian) return sendResponse(400, "closing_date & harian_date wajib (YYYY-MM-DD)");
 
   $VALID = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N'];
 
   // REALISASI — wajib cabang spesifik (bukan konsolidasi)
   if ($fb === 'REALISASI') {
-    if ($kc===null || $kc==='000') return sendResponse(400,"Realisasi: kode_kantor wajib (tidak boleh konsolidasi).");
-    $tbFilter = ($tb!=='' && in_array($tb,$VALID,true)) ? $tb : null;
-    return $this->getMigrasiBucketDetailRealisasi($closing,$harian,$kc,$tbFilter);
+    if ($kc === null || $kc === '000') return sendResponse(400, "Realisasi: kode_kantor wajib (tidak boleh konsolidasi).");
+    $tbFilter = ($tb !== '' && in_array($tb, $VALID, true)) ? $tb : null;
+    return $this->getMigrasiBucketDetailRealisasi($closing, $harian, $kc, $tbFilter, $kankas, $ao, $search);
   }
 
   // O_LUNAS — wajib from_bucket (A..N)
   if ($tb === 'O' || $tb === 'O_LUNAS') {
-    if (!in_array($fb,$VALID,true)) return sendResponse(400,"O_LUNAS: from_bucket wajib A..N.");
-    return $this->getMigrasiBucketDetailOLunas($closing,$harian,$kc,$fb);
+    if (!in_array($fb, $VALID, true)) return sendResponse(400, "O_LUNAS: from_bucket wajib A..N.");
+    return $this->getMigrasiBucketDetailOLunas($closing, $harian, $kc, $fb, $kankas, $ao, $search);
   }
 
   // ACTUAL — A..N → A..N
-  if (!in_array($fb,$VALID,true) || !in_array($tb,$VALID,true))
-    return sendResponse(400,"Actual: from_bucket & to_bucket wajib A..N.");
+  if (!in_array($fb, $VALID, true) || !in_array($tb, $VALID, true))
+    return sendResponse(400, "Actual: from_bucket & to_bucket wajib A..N.");
 
-  return $this->getMigrasiBucketDetailActual($closing,$harian,$kc,$fb,$tb);
+  return $this->getMigrasiBucketDetailActual($closing, $harian, $kc, $fb, $tb, $kankas, $ao, $search);
 }
 
 
-
-
 /*********************** REALISASI (akun baru) ***********************/
-public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, string $kc, ?string $tbFilter=null)
+public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, string $kc, ?string $tbFilter = null, ?string $kankas = null, ?string $ao = null, ?string $search = null)
 {
-  [$dsH,$deH] = $this->dayRange($harian);
+  [$dsH, $deH] = $this->dayRange($harian);
+
+  $whereFilter = "";
+  if ($kankas) $whereFilter .= " AND nh.kode_group1 = :kankas ";
+  if ($ao)     $whereFilter .= " AND nh.kode_group2 = :ao ";
+  if ($search) $whereFilter .= " AND (nh.nama_nasabah LIKE :search OR nh.no_rekening LIKE :search) ";
 
   $sql = "
     SELECT
       LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') AS kode_cabang,
+      nh.kode_group1      AS kankas_kode,
+      kks.deskripsi_group1 AS kankas,   -- NAMA KANKAS
+      nh.kode_group2      AS ao_kredit_kode,
+      aok.nama_ao         AS ao_kredit, -- NAMA AO
       nh.no_rekening,
       nh.nama_nasabah,
       NULL                AS alamat,
@@ -1358,6 +1370,7 @@ public function getMigrasiBucketDetailRealisasi(string $closing, string $harian,
       nh.saldo_bank,
       nh.tgl_jatuh_tempo,
       nh.tgl_realisasi,
+      nh.nilai_ckpn,
 
       NULL AS angsuran_pokok,
       NULL AS angsuran_bunga,
@@ -1370,11 +1383,14 @@ public function getMigrasiBucketDetailRealisasi(string $closing, string $harian,
     JOIN ref_dpd_bucket rb2
       ON nh.hari_menunggak >= rb2.min_day
      AND (rb2.max_day IS NULL OR nh.hari_menunggak <= rb2.max_day)
+    LEFT JOIN kankas kks ON kks.kode_group1 = nh.kode_group1
+    LEFT JOIN ao_kredit aok ON aok.kode_group2 = nh.kode_group2
     WHERE nh.created >= :dsH1 AND nh.created < :deH1
       AND LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') = :kcH
       AND nh.tgl_realisasi >  :cld
       AND nh.tgl_realisasi <= :hrd
       " . ($tbFilter ? " AND rb2.dpd_code = :tb " : "") . "
+      $whereFilter
     ORDER BY nh.baki_debet DESC
   ";
 
@@ -1385,6 +1401,9 @@ public function getMigrasiBucketDetailRealisasi(string $closing, string $harian,
   $st->bindValue(':cld',  $closing);
   $st->bindValue(':hrd',  $harian);
   if ($tbFilter) $st->bindValue(':tb', $tbFilter);
+  if ($kankas)   $st->bindValue(':kankas', $kankas);
+  if ($ao)       $st->bindValue(':ao', $ao);
+  if ($search)   $st->bindValue(':search', "%$search%");
 
   $st->execute();
   $rows = $st->fetchAll(PDO::FETCH_ASSOC);
@@ -1392,7 +1411,7 @@ public function getMigrasiBucketDetailRealisasi(string $closing, string $harian,
   $num = [
     'baki_debet','tunggakan_pokok','tunggakan_bunga',
     'hari_menunggak','hari_menunggak_pokok','hari_menunggak_bunga',
-    'saldo_bank','os_curr'
+    'saldo_bank','os_curr','nilai_ckpn'
   ];
   foreach ($rows as &$r){ foreach ($num as $f){ if (array_key_exists($f,$r) && $r[$f]!==null && $r[$f]!=='') $r[$f]=0+$r[$f]; } }
   unset($r);
@@ -1402,7 +1421,8 @@ public function getMigrasiBucketDetailRealisasi(string $closing, string $harian,
 
 
 /*********************** ACTUAL A..N → A..N (FAST + BUCKET INFO) ***********************/
-public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb){
+public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null)
+{
   if ($kc===null || $kc==='000') {
     return sendResponse(400, "Pilih kode_kantor spesifik (CHAR(3), mis. '004') untuk detail ACTUAL.");
   }
@@ -1411,9 +1431,18 @@ public function getMigrasiBucketDetailActual(string $closing, string $harian, ?s
   [$dsC,$deC] = $this->dayRange($closing);
   [$dsH,$deH] = $this->dayRange($harian);
 
+  $whereFilter = "";
+  if ($kankas) $whereFilter .= " AND h.kode_group1 = :kankas ";
+  if ($ao)     $whereFilter .= " AND h.kode_group2 = :ao ";
+  if ($search) $whereFilter .= " AND (h.nama_nasabah LIKE :search OR h.no_rekening LIKE :search) ";
+
   $sql = "
     SELECT
       h.kode_cabang,
+      h.kode_group1 AS kankas_kode,
+      kks.deskripsi_group1 AS kankas,   -- NAMA KANKAS
+      h.kode_group2 AS ao_kredit_kode,
+      aok.nama_ao AS ao_kredit,         -- NAMA AO
       h.no_rekening,
       h.nama_nasabah,
       h.alamat,
@@ -1440,6 +1469,7 @@ public function getMigrasiBucketDetailActual(string $closing, string $harian, ?s
       h.hari_menunggak_bunga,
       h.saldo_bank,
       h.tgl_jatuh_tempo,
+      h.nilai_ckpn,
 
       c.baki_debet  AS os_m1,
       h.baki_debet  AS os_curr,
@@ -1460,8 +1490,11 @@ public function getMigrasiBucketDetailActual(string $closing, string $harian, ?s
       ON h.hari_menunggak >= rbt.min_day
      AND (rbt.max_day IS NULL OR h.hari_menunggak <= rbt.max_day)
      AND rbt.dpd_code = :tb
+    LEFT JOIN kankas kks ON kks.kode_group1 = h.kode_group1
+    LEFT JOIN ao_kredit aok ON aok.kode_group2 = h.kode_group2
     WHERE c.created >= :dsC AND c.created < :deC
       AND c.kode_cabang = :kcC
+      $whereFilter
     ORDER BY h.baki_debet DESC
   ";
 
@@ -1472,6 +1505,11 @@ public function getMigrasiBucketDetailActual(string $closing, string $harian, ?s
   $st->bindValue(':dsC', $dsC); $st->bindValue(':deC', $deC);
   $st->bindValue(':fb',  $fb);
   $st->bindValue(':tb',  $tb);
+  
+  if ($kankas) $st->bindValue(':kankas', $kankas);
+  if ($ao)     $st->bindValue(':ao', $ao);
+  if ($search) $st->bindValue(':search', "%$search%");
+
   $st->execute();
   $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
@@ -1479,10 +1517,9 @@ public function getMigrasiBucketDetailActual(string $closing, string $harian, ?s
 }
 
 
-
-
 /*********************** O_LUNAS (M-1 → O) — FAST + BUCKET INFO ***********************/
-public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket){
+public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null)
+{
   if ($kc===null || $kc==='000') {
     return sendResponse(400, "Pilih kode_kantor spesifik (CHAR(3), mis. '004') untuk detail O_LUNAS.");
   }
@@ -1491,9 +1528,19 @@ public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?s
   [$dsC,$deC] = $this->dayRange($closing);
   [$dsH,$deH] = $this->dayRange($harian);
 
+  // Karena nasabah sudah lunas (h = null), ambil group dari (c)
+  $whereFilter = "";
+  if ($kankas) $whereFilter .= " AND c.kode_group1 = :kankas ";
+  if ($ao)     $whereFilter .= " AND c.kode_group2 = :ao ";
+  if ($search) $whereFilter .= " AND (c.nama_nasabah LIKE :search OR c.no_rekening LIKE :search) ";
+
   $sql = "
     SELECT
       c.kode_cabang,
+      c.kode_group1 AS kankas_kode,
+      kks.deskripsi_group1 AS kankas,   -- NAMA KANKAS
+      c.kode_group2 AS ao_kredit_kode,
+      aok.nama_ao AS ao_kredit,         -- NAMA AO
       c.no_rekening,
       c.nama_nasabah,
       c.alamat,
@@ -1520,6 +1567,7 @@ public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?s
       c.hari_menunggak_bunga,
       c.saldo_bank,
       c.tgl_jatuh_tempo,
+      c.nilai_ckpn,
 
       c.baki_debet  AS os_m1,
       NULL          AS os_curr,
@@ -1536,9 +1584,12 @@ public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?s
       ON c.hari_menunggak >= rbf.min_day
      AND (rbf.max_day IS NULL OR c.hari_menunggak <= rbf.max_day)
      AND rbf.dpd_code = :fb
+    LEFT JOIN kankas kks ON kks.kode_group1 = c.kode_group1
+    LEFT JOIN ao_kredit aok ON aok.kode_group2 = c.kode_group2
     WHERE c.created >= :dsC AND c.created < :deC
       AND c.kode_cabang = :kcC
       AND h.no_rekening IS NULL
+      $whereFilter
     ORDER BY c.baki_debet DESC
   ";
 
@@ -1548,6 +1599,11 @@ public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?s
   $st->bindValue(':dsH', $dsH); $st->bindValue(':deH', $deH);
   $st->bindValue(':dsC', $dsC); $st->bindValue(':deC', $deC);
   $st->bindValue(':fb',  $fromBucket);
+  
+  if ($kankas) $st->bindValue(':kankas', $kankas);
+  if ($ao)     $st->bindValue(':ao', $ao);
+  if ($search) $st->bindValue(':search', "%$search%");
+
   $st->execute();
   $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
@@ -1592,17 +1648,20 @@ private function attachCkpnAndCast(array $rows, string $harian, string $closing,
     }
   } unset($r);
 
+  // nilai_ckpn ditambahkan ke array num agar otomatis di-cast menjadi number
   $num = [
     'baki_debet','tunggakan_pokok','tunggakan_bunga',
     'hari_menunggak','hari_menunggak_pokok','hari_menunggak_bunga',
     'saldo_bank','angsuran_pokok','angsuran_bunga','os_m1','os_curr',
-    'ckpn_actual','ckpn_m1'
+    'ckpn_actual','ckpn_m1', 'nilai_ckpn'
   ];
   foreach ($rows as &$r){ foreach ($num as $f){ if (array_key_exists($f,$r) && $r[$f]!==null && $r[$f]!=='') $r[$f]=0+$r[$f]; } }
   unset($r);
 
   return sendResponse(200,"OK ($mode detail)", $rows);
 }
+
+
 
 }
 

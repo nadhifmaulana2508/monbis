@@ -31,6 +31,7 @@
           <option value="">Konsolidasi (Semua Cabang)</option>
         </select>
       </div>
+
       <div class="flex gap-2 mt-2 lg:mt-auto w-full lg:w-auto justify-end">
           <button id="MB_btnFilter" type="submit" class="btn-icon h-9 w-[42px] bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition flex items-center justify-center shrink-0" title="Terapkan Filter">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
@@ -81,13 +82,20 @@
         <p id="MB_modalSubtitle" class="text-[10px] lg:text-[11px] text-slate-500 font-mono mt-0.5"></p>
       </div>
       
-      <div class="flex items-center gap-1.5 lg:gap-2 self-end md:self-auto w-full md:w-auto">
-        <div class="relative flex-1 md:w-[220px] shrink-0">
+      <div class="flex items-center gap-1.5 lg:gap-2 self-end md:self-auto w-full md:w-auto overflow-x-auto no-scrollbar pb-1 md:pb-0">
+        <div class="relative flex-1 min-w-[130px] md:w-[180px] shrink-0">
             <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
                 <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             </div>
             <input type="text" id="MB_searchDetail" oninput="MB_filterDetail()" class="w-full pl-8 pr-3 py-1.5 h-8 lg:h-9 bg-white border border-slate-200 rounded-lg text-[10px] lg:text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 transition-all placeholder-slate-400" placeholder="Cari Norek/Nama/Alamat...">
         </div>
+        
+        <select id="MB_modKankas" onchange="MB_filterDetail()" class="w-24 md:w-32 px-2 py-1.5 h-8 lg:h-9 bg-white border border-slate-200 rounded-lg text-[10px] lg:text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 transition-all text-slate-600 shrink-0 cursor-pointer">
+            <option value="">Semua Kankas</option>
+        </select>
+        <select id="MB_modAo" onchange="MB_filterDetail()" class="w-24 md:w-32 px-2 py-1.5 h-8 lg:h-9 bg-white border border-slate-200 rounded-lg text-[10px] lg:text-xs outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 transition-all text-slate-600 shrink-0 cursor-pointer">
+            <option value="">Semua AO</option>
+        </select>
         
         <button onclick="MB_exportDetail()" class="flex items-center justify-center gap-1.5 lg:gap-2 px-3 lg:px-4 h-8 lg:h-9 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition shrink-0">
           <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lg:w-[16px] lg:h-[16px]"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
@@ -244,7 +252,6 @@
 <script>
 (() => {
   // ===== HELPERS =====
-  // Fungsi penahan NaN. Mengubah data null, undefined, atau string "NaN" menjadi 0 murni.
   const getNum = v => isNaN(Number(v)) ? 0 : Number(v);
   
   const nfID = new Intl.NumberFormat('id-ID');
@@ -276,6 +283,7 @@
   const elClosing = $('#MB_closing');
   const elHarian = $('#MB_harian');
   const elKantor = $('#MB_optKantor');
+  
   const elHead = $('#MB_thead');
   const elBody = $('#MB_tbody');
   const elLoad = $('#MB_loading');
@@ -346,6 +354,7 @@
     }
   }
 
+  // FETCH REKAP MATRIX UTAMA
   async function fetchBucket(closing_date, harian_date, kode_kantor){
     if(ABORT) ABORT.abort();
     ABORT = new AbortController();
@@ -465,21 +474,27 @@
     return `<a href="#" class="cell-link" onclick="return MB_openDetail('${from_bucket}','${to_bucket}')">${numHTML(n)}</a>`;
   }
 
-  // ===== FILTER PENCARIAN CLIENT SIDE =====
+  // ===== FILTER PENCARIAN & KANKAS/AO CLIENT SIDE =====
   window.MB_filterDetail = function() {
-      const input = document.getElementById("MB_searchDetail").value.toLowerCase();
+      const searchInput = document.getElementById("MB_searchDetail").value.toLowerCase();
+      const kankasInput = document.getElementById("MB_modKankas").value.toLowerCase();
+      const aoInput     = document.getElementById("MB_modAo").value.toLowerCase();
+
       if (!currentDetailData) return;
       
-      if (input.trim() === '') {
-        renderDetailTable(currentDetailData);
-        return;
-      }
-
       const filtered = currentDetailData.filter(d => {
-        const rek = String(d.no_rekening || '').toLowerCase();
+        const rek  = String(d.no_rekening || '').toLowerCase();
         const nama = String(d.nama_nasabah || '').toLowerCase();
         const almt = String(d.alamat || '').toLowerCase();
-        return rek.includes(input) || nama.includes(input) || almt.includes(input);
+        const knk  = String(d.kankas || '').toLowerCase();
+        const aok  = String(d.ao_kredit || '').toLowerCase();
+        
+        // Pengecekan Filter Dropdown (Exact match/includes)
+        const matchSearch = searchInput === '' || rek.includes(searchInput) || nama.includes(searchInput) || almt.includes(searchInput);
+        const matchKankas = kankasInput === '' || knk === kankasInput;
+        const matchAo     = aoInput === '' || aok === aoInput;
+
+        return matchSearch && matchKankas && matchAo;
       });
       
       renderDetailTable(filtered);
@@ -500,7 +515,7 @@
     elModTitle.innerHTML = `Detail Migrasi <span class="bg-blue-100 text-blue-800 text-[10px] lg:text-xs px-2 py-1 rounded-md font-mono border border-blue-200 ml-1.5 lg:ml-2">${fLabel} ➔ ${tLabel}</span>`;
     $('#MB_modalSubtitle').textContent = `Posisi: ${closing} vs ${harian}`;
     
-    // Reset Form Pencarian Tiap Buka Modal Baru
+    // Reset Form Pencarian
     const searchInput = document.getElementById('MB_searchDetail');
     if(searchInput) searchInput.value = '';
 
@@ -510,7 +525,14 @@
     elModTbody.innerHTML = `<tr><td class="p-12 text-center text-slate-400 font-bold uppercase tracking-widest"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mx-auto mb-3"></div>Menarik Data Nasabah...</td></tr>`;
 
     try{
-      const payload = { type:'detail debutir migrasi', closing_date:closing, harian_date:harian, from_bucket: from_raw, to_bucket: to_raw };
+      // Tarik SEMUA data nasabah untuk bucket tersebut
+      const payload = { 
+        type: 'detail debutir migrasi', 
+        closing_date: closing, 
+        harian_date: harian, 
+        from_bucket: from_raw, 
+        to_bucket: to_raw
+      };
       if(kode) payload.kode_kantor = kode;
       
       const f = (window.apiFetch || fetch);
@@ -528,6 +550,24 @@
         return { ...d, tgl_tagih: t && !isNaN(t) ? t.getDate() : null };
       });
 
+      // ISI DATA DROPDOWN FILTER KANKAS & AO
+      const uniqueKankas = [...new Set(currentDetailData.map(d => d.kankas).filter(Boolean))].sort();
+      const uniqueAo = [...new Set(currentDetailData.map(d => d.ao_kredit).filter(Boolean))].sort();
+
+      const modKankas = document.getElementById('MB_modKankas');
+      if (modKankas) {
+          modKankas.innerHTML = '<option value="">Semua Kankas</option>' + 
+              uniqueKankas.map(k => `<option value="${k}">${k}</option>`).join('');
+          modKankas.value = ''; // reset value
+      }
+
+      const modAo = document.getElementById('MB_modAo');
+      if (modAo) {
+          modAo.innerHTML = '<option value="">Semua AO</option>' + 
+              uniqueAo.map(a => `<option value="${a}">${a}</option>`).join('');
+          modAo.value = ''; // reset value
+      }
+
       renderDetailTable(currentDetailData);
     }catch(e){
       if(e.name!=='AbortError') elModTbody.innerHTML = `<tr><td class="px-4 py-8 text-center text-red-500 font-bold">Gagal menarik data.</td></tr>`;
@@ -539,11 +579,11 @@
       const nf = new Intl.NumberFormat('id-ID');
       const sum = k => list.reduce((s,d)=> s + getNum(d?.[k]), 0);
       
-      // Total yang dilindungi getNum dari ancaman NaN
       const total = {
         noa: list.length,
         os_m1: sum('os_m1'),
         os_curr: sum('os_curr'),
+        ckpn: sum('nilai_ckpn'),
         angs_p: sum('angsuran_pokok'),
         angs_b: sum('angsuran_bunga'),
         tung_p: sum('tunggakan_pokok'),
@@ -555,17 +595,20 @@
         <div class="px-3 py-1.5 bg-blue-50 text-blue-900 border border-blue-100 rounded-lg min-w-[90px] lg:min-w-[100px]"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-blue-600 mb-0.5">Total NOA</span><b class="text-xs lg:text-sm">${nf.format(total.noa)}</b></div>
         <div class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg min-w-[120px] lg:min-w-[130px] shadow-sm"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-slate-500 mb-0.5">Total OS M-1</span><b class="text-xs lg:text-sm">${nf.format(total.os_m1)}</b></div>
         <div class="px-3 py-1.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-lg min-w-[120px] lg:min-w-[130px] shadow-sm"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-emerald-600 mb-0.5">Total OS Actual</span><b class="text-xs lg:text-sm">${nf.format(total.os_curr)}</b></div>
+        <div class="px-3 py-1.5 bg-purple-50 text-purple-900 border border-purple-200 rounded-lg min-w-[120px] lg:min-w-[130px] shadow-sm"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-purple-600 mb-0.5">Total CKPN</span><b class="text-xs lg:text-sm">${nf.format(total.ckpn)}</b></div>
         <div class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg min-w-[110px] lg:min-w-[120px] shadow-sm"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-slate-500 mb-0.5">Angs. Pokok</span><b class="text-xs lg:text-sm">${nf.format(total.angs_p)}</b></div>
         <div class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg min-w-[110px] lg:min-w-[120px] shadow-sm"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-slate-500 mb-0.5">Angs. Bunga</span><b class="text-xs lg:text-sm">${nf.format(total.angs_b)}</b></div>
       `;
 
-      // Kolom KC DIHAPUS, Kolom OS_CURR DIPINDAH KANAN KOL
       const cols = [
         ['no_rekening','Norek','md','text', 'mod-col-rek hidden md:table-cell'],
         ['nama_nasabah','Nama Nasabah','lg','text', 'mod-col-nas'],
+        ['kankas','Kankas','md','text'],        
+        ['ao_kredit','AO Kredit','md','text'],  
         ['alamat','Alamat','lgA','text'],
         ['kolektibilitas','KOL','sm','text'],
-        ['os_curr','OS Act','md','num'], // <- Dipindah ke sini
+        ['os_curr','OS Act','md','num'],
+        ['nilai_ckpn','Nilai CKPN','md','num'], 
         ['tunggakan_pokok','T.Pokok','md','num'],
         ['tunggakan_bunga','T.Bunga','md','num'],
         ['hari_menunggak','HM','sm','num'],
@@ -578,14 +621,13 @@
         ['angsuran_bunga','AngsB','md','num']
       ];
 
-      // Baris "Total" dipindah langsung ke Thead agar ngikut freeze utuh
       const totalCells = cols.map(([key,label,sz,type,xtraClass])=>{
         let v = '';
         let isNum = false;
         if (key==='no_rekening') v = `<span class="hidden md:inline font-bold text-slate-700">TOTAL</span>`; 
         else if (key==='nama_nasabah') v = `<span class="md:hidden font-bold text-slate-700">TOTAL</span> <span class="font-bold text-blue-700 md:ml-1">(${nf.format(total.noa)} Akun)</span>`;
-        else if (['os_m1','os_curr','angsuran_pokok','angsuran_bunga','tunggakan_pokok','tunggakan_bunga'].includes(key)){
-          const mapKey = ({os_m1:'os_m1',os_curr:'os_curr',angsuran_pokok:'angs_p',angsuran_bunga:'angs_b',tunggakan_pokok:'tung_p',tunggakan_bunga:'tung_b'})[key];
+        else if (['os_m1','os_curr','nilai_ckpn','angsuran_pokok','angsuran_bunga','tunggakan_pokok','tunggakan_bunga'].includes(key)){
+          const mapKey = ({os_m1:'os_m1',os_curr:'os_curr',nilai_ckpn:'ckpn',angsuran_pokok:'angs_p',angsuran_bunga:'angs_b',tunggakan_pokok:'tung_p',tunggakan_bunga:'tung_b'})[key];
           v = nf.format(total[mapKey]);
           isNum = true;
         }
@@ -698,9 +740,6 @@
 
   // --- DOWNLOAD EXCEL DETAIL MURNI TANPA BAGI 1000 ---
   window.MB_exportDetail = function() {
-      // Kita export dari `currentDetailData` yang utuh, atau mau hasil filternya aja?
-      // Umumnya Excel mengambil hasil yang difilter, tapi ini saya buat mengambil data asli utuh
-      // agar gampang jika butuh data semuanya di excel.
       if(!currentDetailData || currentDetailData.length === 0) {
           alert("Tidak ada data detail untuk di-download.");
           return;
@@ -709,9 +748,12 @@
       let html = `<table border="1"><thead><tr>
         <th style="background:#f1f5f9">NO REKENING</th>
         <th style="background:#f1f5f9">NAMA NASABAH</th>
+        <th style="background:#f1f5f9">KANKAS</th>
+        <th style="background:#f1f5f9">AO KREDIT</th>
         <th style="background:#f1f5f9">ALAMAT</th>
         <th style="background:#f1f5f9">KOL</th>
         <th style="background:#dcfce7">OS ACTUAL</th>
+        <th style="background:#f3e8ff">NILAI CKPN</th>
         <th style="background:#f1f5f9">TUNGG. POKOK</th>
         <th style="background:#f1f5f9">TUNGG. BUNGA</th>
         <th style="background:#fee2e2">HM</th>
@@ -724,13 +766,33 @@
         <th style="background:#f1f5f9">ANGS. BUNGA</th>
       </tr></thead><tbody>`;
 
-      currentDetailData.forEach(d => {
+      // Ekspor data yang difilter aja
+      const searchInput = document.getElementById("MB_searchDetail").value.toLowerCase();
+      const kankasInput = document.getElementById("MB_modKankas").value.toLowerCase();
+      const aoInput     = document.getElementById("MB_modAo").value.toLowerCase();
+
+      const filtered = currentDetailData.filter(d => {
+        const rek  = String(d.no_rekening || '').toLowerCase();
+        const nama = String(d.nama_nasabah || '').toLowerCase();
+        const almt = String(d.alamat || '').toLowerCase();
+        const knk  = String(d.kankas || '').toLowerCase();
+        const aok  = String(d.ao_kredit || '').toLowerCase();
+        
+        return (searchInput === '' || rek.includes(searchInput) || nama.includes(searchInput) || almt.includes(searchInput)) &&
+               (kankasInput === '' || knk === kankasInput) &&
+               (aoInput === '' || aok === aoInput);
+      });
+
+      filtered.forEach(d => {
           html += `<tr>
               <td style="mso-number-format:'\\@'">${d.no_rekening||''}</td>
               <td>${d.nama_nasabah||''}</td>
+              <td>${d.kankas||''}</td>
+              <td>${d.ao_kredit||''}</td>
               <td>${d.alamat||''}</td>
               <td>${d.kolektibilitas||''}</td>
               <td>${getNum(d.os_curr)}</td>
+              <td>${getNum(d.nilai_ckpn)}</td>
               <td>${getNum(d.tunggakan_pokok)}</td>
               <td>${getNum(d.tunggakan_bunga)}</td>
               <td>${getNum(d.hari_menunggak)}</td>
