@@ -228,107 +228,104 @@ class FlowParController {
 
     public function searchDebiturKredit($input) {
     // --- 1. AMBIL PARAMETER ---
-    $user_login_kode = $input['user_kode'] ?? '000'; 
-    $kc_input = $input['kode_kantor'] ?? '';
+        $user_login_kode = $input['user_kode'] ?? '000'; 
+        $kc_input = $input['kode_kantor'] ?? '';
 
-    if ($user_login_kode !== '000' && $user_login_kode !== '') {
-        $kode_kantor = str_pad($user_login_kode, 3, '0', STR_PAD_LEFT);
-    } else {
-        $kode_kantor = ($kc_input !== '') ? str_pad($kc_input, 3, '0', STR_PAD_LEFT) : '';
-    }
+        if ($user_login_kode !== '000' && $user_login_kode !== '') {
+            $kode_kantor = str_pad($user_login_kode, 3, '0', STR_PAD_LEFT);
+        } else {
+            $kode_kantor = ($kc_input !== '') ? str_pad($kc_input, 3, '0', STR_PAD_LEFT) : '';
+        }
 
-    $kolek  = $input['kolek'] ?? 'Semua';
-    $search = trim($input['search'] ?? '');
-    
-    // Ambil totung dan pastikan tipenya float/angka
-    $totung = (isset($input['totung']) && $input['totung'] !== '') ? (float)$input['totung'] : null;
-    
-    // Ambil tanggal harian terakhir dari input atau default H-1
-    $tanggal_h1 = $input['tanggal'] ?? date('Y-m-d', strtotime('-1 days'));
-
-    $page   = isset($input['page']) ? (int)$input['page'] : 1;
-    $limit  = isset($input['limit']) ? (int)$input['limit'] : 50;
-    $offset = ($page - 1) * $limit;
-
-    // WHERE AWAL: Batasi berdasarkan tanggal created
-    $where = " WHERE n.created = :tanggal_h1 ";
-    $params = [':tanggal_h1' => $tanggal_h1];
-
-    // --- 2. LOGIC FILTERING ---
-    if ($kode_kantor !== '' && $kode_kantor !== '000') {
-        $where .= " AND n.kode_cabang = :kode_kantor ";
-        $params[':kode_kantor'] = $kode_kantor;
-    }
-
-    if ($kolek !== 'Semua' && $kolek !== '') {
-        $where .= " AND n.kolektibilitas = :kolek ";
-        $params[':kolek'] = $kolek;
-    }
-
-    // 🔥 FIX: Tambah filter pencarian untuk alamat
-    if ($search !== '') {
-        $where .= " AND (n.no_rekening LIKE :search OR n.nama_nasabah LIKE :search_nama OR n.alamat LIKE :search_alamat) ";
-        $params[':search'] = "%$search%";
-        $params[':search_nama'] = "%$search%";
-        $params[':search_alamat'] = "%$search%";
-    }
-
-    // --- FIX LOGIC TOTUNG SESUAI REQUEST ---
-    // totung > 0 DAN totung <= nilai_input
-    if ($totung !== null) {
-        $where .= " AND (COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)) > 0 ";
-        $where .= " AND (COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)) <= :totung ";
-        $params[':totung'] = $totung;
-    }
-
-    try {
-        // --- 3. COUNT & SUMMARY ---
-        $sqlSum = "SELECT COUNT(n.no_rekening) as total_data, SUM(n.baki_debet) AS sum_bd FROM nominatif n $where";
-        $stmtSum = $this->pdo->prepare($sqlSum);
-        foreach ($params as $key => $val) { $stmtSum->bindValue($key, $val); }
-        $stmtSum->execute();
-        $summary = $stmtSum->fetch(PDO::FETCH_ASSOC);
+        $kolek  = $input['kolek'] ?? 'Semua';
+        $search = trim($input['search'] ?? '');
         
-        $totalData  = (int)($summary['total_data'] ?? 0);
-        $totalPages = ceil($totalData / $limit);
+        // Ambil totung dan pastikan tipenya float/angka
+        $totung = (isset($input['totung']) && $input['totung'] !== '') ? (float)$input['totung'] : null;
+        
+        // 🔥 FIX: Default pakai data HARI INI (karena DB update tiap 30 menit)
+        $tanggal_hari_ini = $input['tanggal'] ?? date('Y-m-d');
 
-        // --- 4. QUERY DATA UTAMA ---
-        // 🔥 FIX: Tambah n.alamat, n.tunggakan_pokok, n.tunggakan_bunga di SELECT
-        $sqlData = "
-            SELECT 
-                n.kode_cabang, n.nama_nasabah, n.no_rekening, n.norek_tabungan, n.kode_produk, n.alamat,
-                n.kolektibilitas AS kolek, n.hari_menunggak AS dpd,
-                n.hari_menunggak_pokok AS hmp, n.hari_menunggak_bunga AS hmb,
-                n.tgl_jatuh_tempo, n.baki_debet,
-                n.tunggakan_pokok, n.tunggakan_bunga,
-                (COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)) AS totung,
-                COALESCE(tb.saldo_akhir, 0) AS saldo_tabungan
-            FROM nominatif n
-            LEFT JOIN tabungan tb ON n.norek_tabungan = tb.no_rekening
-            $where
-            ORDER BY n.baki_debet DESC
-            LIMIT $limit OFFSET $offset
-        ";
+        $page   = isset($input['page']) ? (int)$input['page'] : 1;
+        $limit  = isset($input['limit']) ? (int)$input['limit'] : 50;
+        $offset = ($page - 1) * $limit;
 
-        $stmtData = $this->pdo->prepare($sqlData);
-        foreach ($params as $key => $val) { $stmtData->bindValue($key, $val); }
-        $stmtData->execute();
-        $data = $stmtData->fetchAll(PDO::FETCH_ASSOC);
+        // WHERE AWAL: Batasi berdasarkan tanggal created hari ini
+        $where = " WHERE n.created = :tanggal_hari_ini ";
+        $params = [':tanggal_hari_ini' => $tanggal_hari_ini];
 
-        sendResponse(200, "Sukses", [
-            'summary' => ['noa' => $totalData, 'bd_act' => $summary['sum_bd'] ?? 0],
-            'pagination' => [
-                'total_data'   => $totalData,
-                'total_page'   => $totalPages,
-                'current_page' => $page,
-                'limit'        => $limit
-            ],
-            'data' => $data
-        ]);
-    } catch (Exception $e) {
-        sendResponse(500, "Error BE: " . $e->getMessage());
+        // --- 2. LOGIC FILTERING ---
+        if ($kode_kantor !== '' && $kode_kantor !== '000') {
+            $where .= " AND n.kode_cabang = :kode_kantor ";
+            $params[':kode_kantor'] = $kode_kantor;
+        }
+
+        if ($kolek !== 'Semua' && $kolek !== '') {
+            $where .= " AND n.kolektibilitas = :kolek ";
+            $params[':kolek'] = $kolek;
+        }
+
+        if ($search !== '') {
+            $where .= " AND (n.no_rekening LIKE :search OR n.nama_nasabah LIKE :search_nama OR n.alamat LIKE :search_alamat) ";
+            $params[':search'] = "%$search%";
+            $params[':search_nama'] = "%$search%";
+            $params[':search_alamat'] = "%$search%";
+        }
+
+        // totung > 0 DAN totung <= nilai_input
+        if ($totung !== null) {
+            $where .= " AND (COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)) > 0 ";
+            $where .= " AND (COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)) <= :totung ";
+            $params[':totung'] = $totung;
+        }
+
+        try {
+            // --- 3. COUNT & SUMMARY ---
+            $sqlSum = "SELECT COUNT(n.no_rekening) as total_data, SUM(n.baki_debet) AS sum_bd FROM nominatif n $where";
+            $stmtSum = $this->pdo->prepare($sqlSum);
+            foreach ($params as $key => $val) { $stmtSum->bindValue($key, $val); }
+            $stmtSum->execute();
+            $summary = $stmtSum->fetch(PDO::FETCH_ASSOC);
+            
+            $totalData  = (int)($summary['total_data'] ?? 0);
+            $totalPages = ceil($totalData / $limit);
+
+            // --- 4. QUERY DATA UTAMA ---
+            $sqlData = "
+                SELECT 
+                    n.kode_cabang, n.nama_nasabah, n.no_rekening, n.norek_tabungan, n.kode_produk, n.alamat,
+                    n.kolektibilitas AS kolek, n.hari_menunggak AS dpd,
+                    n.hari_menunggak_pokok AS hmp, n.hari_menunggak_bunga AS hmb,
+                    n.tgl_jatuh_tempo, n.baki_debet,
+                    n.tunggakan_pokok, n.tunggakan_bunga,
+                    (COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)) AS totung,
+                    COALESCE(tb.saldo_akhir, 0) AS saldo_tabungan
+                FROM nominatif n
+                LEFT JOIN tabungan tb ON n.norek_tabungan = tb.no_rekening
+                $where
+                ORDER BY n.baki_debet DESC
+                LIMIT $limit OFFSET $offset
+            ";
+
+            $stmtData = $this->pdo->prepare($sqlData);
+            foreach ($params as $key => $val) { $stmtData->bindValue($key, $val); }
+            $stmtData->execute();
+            $data = $stmtData->fetchAll(PDO::FETCH_ASSOC);
+
+            sendResponse(200, "Sukses", [
+                'summary' => ['noa' => $totalData, 'bd_act' => $summary['sum_bd'] ?? 0],
+                'pagination' => [
+                    'total_data'   => $totalData,
+                    'total_page'   => $totalPages,
+                    'current_page' => $page,
+                    'limit'        => $limit
+                ],
+                'data' => $data
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, "Error BE: " . $e->getMessage());
+        }
     }
-}
 
     public function getPotensiNplRekap($input = [])
     {
