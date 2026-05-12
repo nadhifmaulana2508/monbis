@@ -226,7 +226,7 @@ class FlowParController {
         }
     }
 
-public function searchDebiturKredit($input) {
+    public function searchDebiturKredit($input) {
     // --- 1. AMBIL PARAMETER ---
     $user_login_kode = $input['user_kode'] ?? '000'; 
     $kc_input = $input['kode_kantor'] ?? '';
@@ -265,10 +265,12 @@ public function searchDebiturKredit($input) {
         $params[':kolek'] = $kolek;
     }
 
+    // 🔥 FIX: Tambah filter pencarian untuk alamat
     if ($search !== '') {
-        $where .= " AND (n.no_rekening LIKE :search OR n.nama_nasabah LIKE :search_nama) ";
+        $where .= " AND (n.no_rekening LIKE :search OR n.nama_nasabah LIKE :search_nama OR n.alamat LIKE :search_alamat) ";
         $params[':search'] = "%$search%";
         $params[':search_nama'] = "%$search%";
+        $params[':search_alamat'] = "%$search%";
     }
 
     // --- FIX LOGIC TOTUNG SESUAI REQUEST ---
@@ -291,12 +293,14 @@ public function searchDebiturKredit($input) {
         $totalPages = ceil($totalData / $limit);
 
         // --- 4. QUERY DATA UTAMA ---
+        // 🔥 FIX: Tambah n.alamat, n.tunggakan_pokok, n.tunggakan_bunga di SELECT
         $sqlData = "
             SELECT 
-                n.kode_cabang, n.nama_nasabah, n.no_rekening, n.norek_tabungan, n.kode_produk,
+                n.kode_cabang, n.nama_nasabah, n.no_rekening, n.norek_tabungan, n.kode_produk, n.alamat,
                 n.kolektibilitas AS kolek, n.hari_menunggak AS dpd,
                 n.hari_menunggak_pokok AS hmp, n.hari_menunggak_bunga AS hmb,
                 n.tgl_jatuh_tempo, n.baki_debet,
+                n.tunggakan_pokok, n.tunggakan_bunga,
                 (COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)) AS totung,
                 COALESCE(tb.saldo_akhir, 0) AS saldo_tabungan
             FROM nominatif n
