@@ -33,8 +33,8 @@ class RepaymentRateController {
         return $effectiveDay;
     }
 
-    /**
-     * 1. REKAP UTAMA (Summary Per Tanggal)
+/**
+     * 1. REKAP UTAMA (Summary Per Tanggal) (OTP RR)
      */
     public function getRepaymentRate($input = null) {
         set_time_limit(300); ini_set('memory_limit', '1024M');
@@ -43,6 +43,10 @@ class RepaymentRateController {
         $closing = $b['closing_date'] ?? null;
         $harian  = $b['harian_date'] ?? null;
         $kc      = $b['kode_kantor'] ?? null;
+        
+        // 🔥 Tangkap parameter include_127 dari FE
+        $include127 = filter_var($b['include_127'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $whereProduk = !$include127 ? "AND kode_produk != '127'" : "";
 
         if (!$closing || !$harian) return $this->send(400, "Tanggal wajib diisi.");
 
@@ -53,12 +57,14 @@ class RepaymentRateController {
         $curMonth = date('n', $curTime);
         $curYear  = date('Y', $curTime);
 
+        // 🔥 Terapkan $whereProduk
         $sqlM1 = "SELECT no_rekening, baki_debet, DAY(tgl_jatuh_tempo) as tgl_ori 
                   FROM nominatif 
                   WHERE created BETWEEN :s1 AND :e1 
                   AND kolektibilitas = 'L' 
                   AND baki_debet > 0
-                  AND hari_menunggak = 0"; 
+                  AND hari_menunggak = 0
+                  $whereProduk"; 
 
         if ($kc) $sqlM1 .= " AND kode_cabang = :kc";
 
@@ -144,7 +150,7 @@ class RepaymentRateController {
         if ($grandTotal['target_os'] > 0) $grandTotal['persen'] = round(($gtPerformance / $grandTotal['target_os']) * 100, 2);
 
         $this->send(200, "Sukses Rekap RR", [
-            'meta' => ['m1' => $closing, 'cur' => $harian],
+            'meta' => ['m1' => $closing, 'cur' => $harian, 'include_127' => $include127],
             'grand_total' => $grandTotal,
             'data' => array_values($report)
         ]);
@@ -152,39 +158,47 @@ class RepaymentRateController {
 
     /**
      * 2. DETAIL DATA
-     * Menampilkan data Lancar & Menunggak
+     * Menampilkan data Lancar & Menunggak (OTP  RR)
      */
     public function getDetailRepaymentRate($input = null) {
         $b = is_array($input) ? $input : [];
         $closing = $b['closing_date'] ?? null;
         $harian  = $b['harian_date'] ?? null;
         $kc      = $b['kode_kantor'] ?? null;
-        $kankas  = $b['kode_kankas'] ?? null; // Filter Kankas
-        $ao      = $b['kode_ao'] ?? null;     // 🔥 Menangkap Filter AO
-        $tglMap  = isset($b['tgl_tagih']) ? (int)$b['tgl_tagih'] : null;
-        $status  = $b['status'] ?? 'ALL';
+        $kankas  = $b['kode_kankas'] ?? null; 
+        $ao      = $b['kode_ao'] ?? null;     
+        
+        $tglTagih = $b['tgl_tagih'] ?? 'ALL'; 
+        $status  = strtoupper($b['status'] ?? 'ALL');
         $page    = $b['page'] ?? 1;
         $limit   = $b['limit'] ?? 10;
         $offset  = ($page - 1) * $limit;
 
-        if (!$closing || !$harian || !$tglMap) return $this->send(400, "Data kurang lengkap.");
+        // 🔥 Tangkap parameter include_127 dari FE
+        $include127 = filter_var($b['include_127'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $whereProduk = !$include127 ? "AND t1.kode_produk != '127'" : "";
+
+        if (!$closing || !$harian) return $this->send(400, "Data kurang lengkap.");
 
         [$s1, $e1] = $this->getDayRange($closing);
         [$s2, $e2] = $this->getDayRange($harian);
 
-        $curTime  = strtotime($harian);
-        $month = date('n', $curTime); $year = date('Y', $curTime);
-        
-        $includedDays = [];
-        for ($d = 1; $d <= 31; $d++) {
-            if ($this->getMappedDay($d, $month, $year) == $tglMap) {
-                $includedDays[] = $d;
+        $daysStr = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31";
+        if ($tglTagih !== 'ALL') {
+            $tglMap = (int)$tglTagih;
+            $curTime  = strtotime($harian);
+            $month = date('n', $curTime); $year = date('Y', $curTime);
+            
+            $includedDays = [];
+            for ($d = 1; $d <= 31; $d++) {
+                if ($this->getMappedDay($d, $month, $year) == $tglMap) {
+                    $includedDays[] = $d;
+                }
             }
+            if (empty($includedDays)) $includedDays = [$tglMap];
+            $daysStr = implode(',', $includedDays);
         }
-        if (empty($includedDays)) $includedDays = [$tglMap];
-        $daysStr = implode(',', $includedDays);
 
-        // Filter Logic Status Akhir
         $joinType = "LEFT JOIN";
         $whereStatus = "";
         if ($status === 'LUNAS') {
@@ -195,10 +209,14 @@ class RepaymentRateController {
         } elseif ($status === 'MENUNGGAK') {
             $joinType = "JOIN";
             $whereStatus = "AND t2.baki_debet > 0 AND t2.hari_menunggak > 0";
+        } elseif ($status === 'ANGSURAN') {
+            $joinType = "JOIN";
+            $whereStatus = "AND t2.baki_debet > 0 AND t2.baki_debet < t1.baki_debet";
+        } elseif ($status === 'TOTAL_BAYAR') {
+            $whereStatus = "AND (t2.no_rekening IS NULL OR t2.baki_debet <= 0 OR t2.baki_debet < t1.baki_debet)";
         }
 
-        // Base Query Dengan Relasi Tabungan dan Kankas
-        // 🔥 FIX: Tambah LEFT JOIN kankas
+        // 🔥 Terapkan $whereProduk ke Base Query
         $baseQuery = "FROM nominatif t1 
                       $joinType nominatif t2 ON t1.no_rekening = t2.no_rekening 
                           AND (t2.created BETWEEN :s2 AND :e2)
@@ -210,23 +228,22 @@ class RepaymentRateController {
                       AND t1.baki_debet > 0
                       AND t1.hari_menunggak = 0 
                       AND DAY(t1.tgl_jatuh_tempo) IN ($daysStr)
-                      $whereStatus";
+                      $whereStatus
+                      $whereProduk";
         
         if ($kc) $baseQuery .= " AND t1.kode_cabang = :kc";
         if ($kankas) $baseQuery .= " AND t1.kode_group1 = :kankas"; 
-        if ($ao) $baseQuery .= " AND t1.kode_group2 = :ao"; // 🔥 Terapkan query Filter AO
+        if ($ao) $baseQuery .= " AND t1.kode_group2 = :ao";
 
-        // Count
         $stmtCnt = $this->pdo->prepare("SELECT COUNT(1) $baseQuery");
         $stmtCnt->bindValue(':s1', $s1); $stmtCnt->bindValue(':e1', $e1);
         $stmtCnt->bindValue(':s2', $s2); $stmtCnt->bindValue(':e2', $e2);
         if ($kc) $stmtCnt->bindValue(':kc', $kc);
         if ($kankas) $stmtCnt->bindValue(':kankas', $kankas); 
-        if ($ao) $stmtCnt->bindValue(':ao', $ao); // 🔥 Bind nilai AO
+        if ($ao) $stmtCnt->bindValue(':ao', $ao); 
         $stmtCnt->execute();
         $total = $stmtCnt->fetchColumn();
 
-        // 🔥 FIX KANKAS: Ambil nama dari kn.deskripsi_group1 dengan alias kankas
         $cols = "t1.no_rekening, t1.nama_nasabah, 
                  t1.alamat, t1.hp as no_hp, 
                  COALESCE(kn.deskripsi_group1, t1.kode_group1) as kankas,
@@ -244,7 +261,7 @@ class RepaymentRateController {
         $stmt->bindValue(':s2', $s2); $stmt->bindValue(':e2', $e2);
         if ($kc) $stmt->bindValue(':kc', $kc);
         if ($kankas) $stmt->bindValue(':kankas', $kankas); 
-        if ($ao) $stmt->bindValue(':ao', $ao); // 🔥 Bind nilai AO
+        if ($ao) $stmt->bindValue(':ao', $ao); 
         $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -261,7 +278,6 @@ class RepaymentRateController {
             $r['os_m1']=$osM1; $r['os_curr']=$osCur; 
             $r['bayar_pokok'] = ($osM1 > $osCur) ? ($osM1 - $osCur) : 0;
 
-            // LOGIC STATUS TABUNGAN (0.015 adalah 1.5%)
             if (($tabungan * 0.015) > $totung) {
                 $r['status_tabungan'] = 'Aman';
             } else {

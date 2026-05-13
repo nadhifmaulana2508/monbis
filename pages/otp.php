@@ -138,6 +138,16 @@
                     </select>
                 </div>
                 
+            
+                <!-- 🔥 TOGGLE PRODUK 127 🔥 -->
+                <div class="flex items-center gap-1.5 shrink-0 h-[30px] md:h-[38px] px-2 md:px-3 bg-slate-100 border border-slate-200 rounded-md md:rounded-lg cursor-pointer hover:bg-slate-200 transition" onclick="document.getElementById('chk_127').click()">
+                    
+                    <!-- Tambahkan onchange="fetchRekapRR()" di sini 👇 -->
+                    <input type="checkbox" id="chk_127" class="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500 cursor-pointer" onclick="event.stopPropagation()" onchange="fetchRekapRR()">
+                    
+                    <span class="text-[9px] md:text-xs font-bold text-slate-700 uppercase tracking-wide select-none">KPP</span>
+                </div>
+
                 <div class="flex items-center gap-1 h-[30px] md:h-[38px] shrink-0">
                     <button type="submit" id="btn-cari" class="btn-icon h-full w-[36px] md:w-[80px] bg-blue-600 hover:bg-blue-700 text-white rounded-md md:rounded-lg shadow-sm" title="Cari Data">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="md:w-[16px] md:h-[16px]"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -270,7 +280,6 @@
   let currentMode = 'NORMAL'; 
   const detailLimit = 20;
 
-  // 🔥 STATE SORTING 🔥
   let sortMainCol = '';
   let sortMainAsc = true;
   let sortDetailCol = '';
@@ -281,26 +290,21 @@
       return asc ? '<span class="text-blue-600 ml-1 text-[10px] md:text-[11px] font-sans">▲</span>' : '<span class="text-blue-600 ml-1 text-[10px] md:text-[11px] font-sans">▼</span>';
   };
 
-  // 🔥 FUNGSI TOGGLE FILTER HP (BEBAS BUG) 🔥
   function toggleMainFilter() {
       const el = document.getElementById('filterWrapperMain');
       if(el.classList.contains('hidden')) {
-          el.classList.remove('hidden');
-          el.classList.add('block');
+          el.classList.remove('hidden'); el.classList.add('block');
       } else {
-          el.classList.add('hidden');
-          el.classList.remove('block');
+          el.classList.add('hidden'); el.classList.remove('block');
       }
   }
 
   function toggleModalFilter() {
       const el = document.getElementById('modalFilterWrapper');
       if(el.classList.contains('hidden')) {
-          el.classList.remove('hidden');
-          el.classList.add('block');
+          el.classList.remove('hidden'); el.classList.add('block');
       } else {
-          el.classList.add('hidden');
-          el.classList.remove('block');
+          el.classList.add('hidden'); el.classList.remove('block');
       }
   }
 
@@ -311,14 +315,17 @@
     
     await populateKantor(uKode);
 
+    // Default ke H-1 karena history institusi biasanya H-1
     const d = await getLastHarianData(); 
     if(d) {
         document.getElementById('closing_date').value = d.last_closing;
         document.getElementById('harian_date').value  = d.last_created;
     } else {
-        const now = new Date().toISOString().split('T')[0];
-        document.getElementById('closing_date').value = now;
-        document.getElementById('harian_date').value  = now;
+        const now = new Date();
+        now.setDate(now.getDate() - 1); // fallback h-1
+        const strH1 = now.toISOString().split('T')[0];
+        document.getElementById('closing_date').value = strH1;
+        document.getElementById('harian_date').value  = strH1;
     }
     
     fetchRekapRR();
@@ -340,8 +347,7 @@
         } catch(e) {
             el.innerHTML = `<option value="${uKode}">CABANG ${uKode}</option>`; 
         }
-        el.value = uKode;
-        el.disabled = true; 
+        el.value = uKode; el.disabled = true; 
         return; 
     }
     try {
@@ -364,7 +370,6 @@
           const payload = { type: 'kode_kankas', kode_kantor: branch };
           const r = await fetch(API_KODE_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
           const j = await r.json();
-          
           let h = '<option value="">Semua Kankas</option>';
           if(j.data && Array.isArray(j.data)) {
               j.data.forEach(x => { h += `<option value="${x.kode_group1}">${x.deskripsi_group1 || x.kode_group1}</option>`; });
@@ -382,7 +387,6 @@
           const payload = { type: 'kode_ao_kredit', kode_kantor: kode_cabang };
           const r = await fetch(API_KODE_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
           const j = await r.json();
-          
           let h = '<option value="">Semua AO</option>';
           if(j.data && Array.isArray(j.data)) {
               j.data.forEach(x => { 
@@ -394,9 +398,6 @@
       } catch(err) { }
   }
 
-  document.getElementById('formFilterRR').addEventListener('submit', e => { e.preventDefault(); fetchRekapRR(); });
-
-  // 🔥 RENDER THEAD UTAMA 🔥
   function renderMainHeaderRR() {
       const head = document.getElementById('headRR');
       head.innerHTML = `
@@ -436,33 +437,22 @@
 
   window.sortMainRR = function(col, type) {
       if (!rekapDataRaw || rekapDataRaw.length === 0) return;
-
-      if (sortMainCol === col) {
-          sortMainAsc = !sortMainAsc;
-      } else {
-          sortMainCol = col;
-          sortMainAsc = true;
-      }
+      if (sortMainCol === col) sortMainAsc = !sortMainAsc;
+      else { sortMainCol = col; sortMainAsc = true; }
 
       rekapDataRaw.sort((a, b) => {
-          let valA = a[col];
-          let valB = b[col];
-
+          let valA = a[col]; let valB = b[col];
           if (type === 'number') {
-              valA = parseFloat(valA) || 0;
-              valB = parseFloat(valB) || 0;
+              valA = parseFloat(valA) || 0; valB = parseFloat(valB) || 0;
               return sortMainAsc ? valA - valB : valB - valA;
           } else {
-              valA = String(valA || '').toLowerCase();
-              valB = String(valB || '').toLowerCase();
+              valA = String(valA || '').toLowerCase(); valB = String(valB || '').toLowerCase();
               if (valA < valB) return sortMainAsc ? -1 : 1;
               if (valA > valB) return sortMainAsc ? 1 : -1;
               return 0;
           }
       });
-
-      renderMainHeaderRR();
-      renderTableRR(rekapDataRaw, rekapGtRaw);
+      renderMainHeaderRR(); renderTableRR(rekapDataRaw, rekapGtRaw);
   }
 
   async function fetchRekapRR(){
@@ -470,23 +460,19 @@
     const tb = document.getElementById('bodyRR');
     const trTotal = document.getElementById('rowTotalRRAtas'); 
     
-    if(abortRR) abortRR.abort();
-    abortRR = new AbortController();
-
+    if(abortRR) abortRR.abort(); abortRR = new AbortController();
     l.classList.remove('hidden'); 
     tb.innerHTML = `<tr><td colspan="8" class="py-20 text-center text-slate-400 italic text-xs md:text-base">Sedang mengambil data...</td></tr>`;
     if(trTotal) trTotal.innerHTML = '';
-    rekapDataRaw = [];
-    rekapGtRaw = null;
-    sortMainCol = ''; 
-    sortMainAsc = true;
+    rekapDataRaw = []; rekapGtRaw = null; sortMainCol = ''; sortMainAsc = true;
 
     try {
         const payload = { 
             type: 'rekap_rr', 
             closing_date: document.getElementById('closing_date').value, 
             harian_date: document.getElementById('harian_date').value, 
-            kode_kantor: document.getElementById('opt_kantor').value || null
+            kode_kantor: document.getElementById('opt_kantor').value || null,
+            include_127: document.getElementById('chk_127').checked // 🔥 KIRIM KE BE
         };
         
         const res = await apiCall(API_RR_URL, { 
@@ -498,9 +484,7 @@
         rekapDataRaw = res.json.data.data || [];
         rekapGtRaw = res.json.data.grand_total;
 
-        renderMainHeaderRR();
-        renderTableRR(rekapDataRaw, rekapGtRaw);
-        
+        renderMainHeaderRR(); renderTableRR(rekapDataRaw, rekapGtRaw);
     } catch(err) {
         if(err.name !== 'AbortError') {
             tb.innerHTML=`<tr><td colspan="8" class="py-16 text-center text-red-500 font-bold uppercase tracking-widest text-[10px] md:text-sm">Error: ${err.message}</td></tr>`;
@@ -547,12 +531,10 @@
       let h = '';
       rows.forEach(r => {
           const bg = (r.persen < 50 && r.target_os > 0) ? 'bg-red-50/20' : '';
-          
           const clkAll = `<a href="javascript:void(0)" onclick="initModalDetail('${r.tgl}','ALL')" class="font-bold text-blue-700 hover:text-blue-800 hover:underline cursor-pointer block mb-0.5 text-[10px] md:text-sm">${fmt(r.target_os)}</a>`;
           const clkLcr = `<a href="javascript:void(0)" onclick="initModalDetail('${r.tgl}','LANCAR')" class="font-bold text-green-600 hover:text-green-700 hover:underline cursor-pointer block mb-0.5 text-[10px] md:text-sm">${fmt(r.lancar_os)}</a>`;
           const clkTgh = `<a href="javascript:void(0)" onclick="initModalDetail('${r.tgl}','MENUNGGAK')" class="font-bold text-red-600 hover:text-red-700 hover:underline cursor-pointer block mb-0.5 text-[10px] md:text-sm">${fmt(r.macet_os)}</a>`;
           const clkLns = `<a href="javascript:void(0)" onclick="initModalLunas('${r.tgl}')" class="font-bold text-slate-700 hover:text-blue-700 hover:underline cursor-pointer block mb-0.5 text-[10px] md:text-sm">${fmt(r.lunas_os)}</a>`;
-          
           const clkAng = `<a href="javascript:void(0)" onclick="initModalDetail('${r.tgl}','ANGSURAN')" class="font-bold text-slate-600 hover:text-blue-700 hover:underline cursor-pointer block text-[10px] md:text-sm">${fmt(r.angsuran)}</a>`;
           const clkTotByr = `<a href="javascript:void(0)" onclick="initModalDetail('${r.tgl}','TOTAL_BAYAR')" class="font-bold text-purple-700 hover:text-purple-800 hover:underline cursor-pointer block text-[10px] md:text-sm">${fmt(r.total_bayar)}</a>`;
 
@@ -606,17 +588,11 @@
       a.click();
   }
 
-  // ==========================================
-  // 🔥 MODAL DETAIL LOGIC + SORTING 🔥
-  // ==========================================
-
-  // Hapus WA Redirect dan kembalikan hanya string angka murni
   function createWABtn(phone) {
       if (!phone || phone.trim() === '') return `<span class="text-slate-400 font-mono text-[9px] md:text-sm">-</span>`;
       return `<span class="text-slate-700 font-mono font-medium text-[9px] md:text-[11px]">${phone}</span>`;
   }
 
-  // 🔥 MENGGUNAKAN THEAD STICKY BARU YANG KOKOH 🔥
   function renderModalHeaderRR() {
       const mHead = document.getElementById('headModalRR');
       
@@ -710,33 +686,22 @@
 
   window.sortDetailRR = function(col, type) {
       if (!detailDataCache || detailDataCache.length === 0) return;
-
-      if (sortDetailCol === col) {
-          sortDetailAsc = !sortDetailAsc;
-      } else {
-          sortDetailCol = col;
-          sortDetailAsc = true;
-      }
+      if (sortDetailCol === col) sortDetailAsc = !sortDetailAsc;
+      else { sortDetailCol = col; sortDetailAsc = true; }
 
       detailDataCache.sort((a, b) => {
-          let valA = a[col];
-          let valB = b[col];
-
+          let valA = a[col]; let valB = b[col];
           if (type === 'number') {
-              valA = parseFloat(valA) || 0;
-              valB = parseFloat(valB) || 0;
+              valA = parseFloat(valA) || 0; valB = parseFloat(valB) || 0;
               return sortDetailAsc ? valA - valB : valB - valA;
           } else {
-              valA = String(valA || '').toLowerCase();
-              valB = String(valB || '').toLowerCase();
+              valA = String(valA || '').toLowerCase(); valB = String(valB || '').toLowerCase();
               if (valA < valB) return sortDetailAsc ? -1 : 1;
               if (valA > valB) return sortDetailAsc ? 1 : -1;
               return 0;
           }
       });
-
-      renderModalHeaderRR();
-      renderTableDetailBodyRR(detailDataCache);
+      renderModalHeaderRR(); renderTableDetailBodyRR(detailDataCache);
   }
 
   async function initModalDetail(tgl, status) {
@@ -758,6 +723,7 @@
           kode_ao: ao,
           tgl_tagih: tgl, 
           status: status, 
+          include_127: document.getElementById('chk_127').checked, // 🔥 KIRIM KE BE
           limit: detailLimit 
       };
 
@@ -767,9 +733,7 @@
       
       document.getElementById('search_nasabah').value = '';
       sortDetailCol = ''; sortDetailAsc = true;
-      renderModalHeaderRR();
-
-      loadDetailPage(1);
+      renderModalHeaderRR(); loadDetailPage(1);
   }
 
   async function initModalLunas(tgl) {
@@ -790,6 +754,7 @@
           kode_kankas: kankas,
           kode_ao: ao,
           tgl_tagih: tgl, 
+          include_127: document.getElementById('chk_127').checked, // 🔥 KIRIM KE BE
           limit: detailLimit 
       };
 
@@ -799,9 +764,7 @@
       
       document.getElementById('search_nasabah').value = '';
       sortDetailCol = ''; sortDetailAsc = true;
-      renderModalHeaderRR();
-
-      loadDetailPage(1);
+      renderModalHeaderRR(); loadDetailPage(1);
   }
 
   window.filterTableDetail = function() {
@@ -834,9 +797,7 @@
           currentDetailParams.kode_kankas = kankasModal;
 
           const aoModal = document.getElementById('opt_ao_modal');
-          if(aoModal) {
-              currentDetailParams.kode_ao = aoModal.value;
-          }
+          if(aoModal) currentDetailParams.kode_ao = aoModal.value;
 
           const payload = { ...currentDetailParams, page: page };
           const res = await apiCall(API_RR_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
@@ -853,11 +814,7 @@
               info.innerText = `0 Data`;
           } else {
               sortDetailCol = ''; sortDetailAsc = true;
-              renderModalHeaderRR();
-              renderTableDetailBodyRR(detailDataCache);
-
-              const start = ((page - 1) * detailLimit) + 1;
-              const end = Math.min(page * detailLimit, meta.total_records);
+              renderModalHeaderRR(); renderTableDetailBodyRR(detailDataCache);
               info.innerText = `Hal ${page} dari ${meta.total_pages} (${fmt(meta.total_records)} Data)`;
           }
           document.getElementById('btnPrevRR').disabled = page <= 1;
@@ -898,7 +855,6 @@
                 </tr>`;
           } else {
               const alamatLengkap = r.alamat || '-';
-              
               let badge = `<span class="text-[9px] md:text-xs font-bold text-blue-700">PROSPEK</span>`;
               if(r.status_lunas === 'REFINANCING / Top Up') badge = `<span class="text-[9px] md:text-xs font-bold text-green-700">REFINANCING</span>`;
 
