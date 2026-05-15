@@ -583,7 +583,9 @@
         noa: list.length,
         os_m1: sum('os_m1'),
         os_curr: sum('os_curr'),
-        ckpn: sum('nilai_ckpn'),
+        ckpn_m1: sum('ckpn_m1'),
+        ckpn_actual: sum('ckpn_actual'),
+        pemulihan: sum('pemulihan_pembentukan'),
         angs_p: sum('angsuran_pokok'),
         angs_b: sum('angsuran_bunga'),
         tung_p: sum('tunggakan_pokok'),
@@ -594,8 +596,10 @@
       elModTotals.innerHTML = `
         <div class="px-3 py-1.5 bg-blue-50 text-blue-900 border border-blue-100 rounded-lg min-w-[90px] lg:min-w-[100px]"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-blue-600 mb-0.5">Total NOA</span><b class="text-xs lg:text-sm">${nf.format(total.noa)}</b></div>
         <div class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg min-w-[120px] lg:min-w-[130px] shadow-sm"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-slate-500 mb-0.5">Total OS M-1</span><b class="text-xs lg:text-sm">${nf.format(total.os_m1)}</b></div>
+        <div class="px-3 py-1.5 bg-purple-50 text-purple-900 border border-purple-200 rounded-lg min-w-[120px] lg:min-w-[130px] shadow-sm"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-purple-600 mb-0.5">CKPN M-1</span><b class="text-xs lg:text-sm">${nf.format(total.ckpn_m1)}</b></div>
         <div class="px-3 py-1.5 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded-lg min-w-[120px] lg:min-w-[130px] shadow-sm"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-emerald-600 mb-0.5">Total OS Actual</span><b class="text-xs lg:text-sm">${nf.format(total.os_curr)}</b></div>
-        <div class="px-3 py-1.5 bg-purple-50 text-purple-900 border border-purple-200 rounded-lg min-w-[120px] lg:min-w-[130px] shadow-sm"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-purple-600 mb-0.5">Total CKPN</span><b class="text-xs lg:text-sm">${nf.format(total.ckpn)}</b></div>
+        <div class="px-3 py-1.5 bg-fuchsia-50 text-fuchsia-900 border border-fuchsia-200 rounded-lg min-w-[120px] lg:min-w-[130px] shadow-sm"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-fuchsia-600 mb-0.5">CKPN Actual</span><b class="text-xs lg:text-sm">${nf.format(total.ckpn_actual)}</b></div>
+        <div class="px-3 py-1.5 bg-orange-50 text-orange-900 border border-orange-200 rounded-lg min-w-[120px] lg:min-w-[130px] shadow-sm"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-orange-600 mb-0.5">+/- CKPN</span><b class="text-xs lg:text-sm">${nf.format(total.pemulihan)}</b></div>
         <div class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg min-w-[110px] lg:min-w-[120px] shadow-sm"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-slate-500 mb-0.5">Angs. Pokok</span><b class="text-xs lg:text-sm">${nf.format(total.angs_p)}</b></div>
         <div class="px-3 py-1.5 bg-white border border-slate-200 rounded-lg min-w-[110px] lg:min-w-[120px] shadow-sm"><span class="block text-[9px] lg:text-[10px] uppercase font-bold text-slate-500 mb-0.5">Angs. Bunga</span><b class="text-xs lg:text-sm">${nf.format(total.angs_b)}</b></div>
       `;
@@ -607,8 +611,13 @@
         ['ao_kredit','AO Kredit','md','text'],  
         ['alamat','Alamat','lgA','text'],
         ['kolektibilitas','KOL','sm','text'],
+        ['os_m1','OS M-1','md','num'],
+        ['ckpn_m1','CKPN M-1','md','num'],
         ['os_curr','OS Act','md','num'],
-        ['nilai_ckpn','Nilai CKPN','md','num'], 
+        ['ckpn_actual','CKPN Act','md','num'],
+        ['pemulihan_pembentukan','+/- CKPN','md','num'],
+        ['pd_actual','PD (%)','sm','num'],
+        ['lgd_actual','LGD (%)','sm','num'],
         ['tunggakan_pokok','T.Pokok','md','num'],
         ['tunggakan_bunga','T.Bunga','md','num'],
         ['hari_menunggak','HM','sm','num'],
@@ -616,7 +625,7 @@
         ['hari_menunggak_bunga','HMB','sm','num'],
         ['tgl_jatuh_tempo','JtTmp','md','text'],
         ['tgl_tagih','TglTg','sm','num'],
-        ['os_m1','OS M-1','md','num'],
+        ['tgl_trans_terakhir','Tgl Trans','md','text'],
         ['angsuran_pokok','AngsP','md','num'],
         ['angsuran_bunga','AngsB','md','num']
       ];
@@ -626,11 +635,15 @@
         let isNum = false;
         if (key==='no_rekening') v = `<span class="hidden md:inline font-bold text-slate-700">TOTAL</span>`; 
         else if (key==='nama_nasabah') v = `<span class="md:hidden font-bold text-slate-700">TOTAL</span> <span class="font-bold text-blue-700 md:ml-1">(${nf.format(total.noa)} Akun)</span>`;
-        else if (['os_m1','os_curr','nilai_ckpn','angsuran_pokok','angsuran_bunga','tunggakan_pokok','tunggakan_bunga'].includes(key)){
-          const mapKey = ({os_m1:'os_m1',os_curr:'os_curr',nilai_ckpn:'ckpn',angsuran_pokok:'angs_p',angsuran_bunga:'angs_b',tunggakan_pokok:'tung_p',tunggakan_bunga:'tung_b'})[key];
+        else if (['os_m1','os_curr','ckpn_m1','ckpn_actual','pemulihan_pembentukan','angsuran_pokok','angsuran_bunga','tunggakan_pokok','tunggakan_bunga'].includes(key)){
+          const mapKey = ({os_m1:'os_m1',os_curr:'os_curr',ckpn_m1:'ckpn_m1',ckpn_actual:'ckpn_actual',pemulihan_pembentukan:'pemulihan',angsuran_pokok:'angs_p',angsuran_bunga:'angs_b',tunggakan_pokok:'tung_p',tunggakan_bunga:'tung_b'})[key];
           v = nf.format(total[mapKey]);
           isNum = true;
         }
+        else if (['pd_actual', 'lgd_actual'].includes(key)) {
+          v = ''; 
+        }
+        
         let customClass = xtraClass ? xtraClass : `col-${sz}`;
         let alignClass = isNum ? 'text-right' : 'text-left';
         return `<td class="px-2 border-r border-blue-200 ${customClass} nowrap ${alignClass} font-bold text-blue-900" style="height:34px; box-sizing:border-box;">${String(v)}</td>`;
@@ -657,10 +670,18 @@
             if (key==='alamat')       v = cut(v,30);
             
             const raw = (type==='num') ? getNum(d[key]) : String(d[key]||'');
-            const shown = (type==='num') ? nf.format(raw) : String(v);
+            let shown = (type==='num') ? nf.format(raw) : String(v);
             
+            // Tambahin tanda persen buat PD dan LGD biar enak dibaca
+            if (key === 'pd_actual' || key === 'lgd_actual') {
+                shown = d[key] != null ? d[key] + '%' : '';
+            }
+
             let alignClass = type === 'num' ? 'text-right' : 'text-left';
             if(key === 'kolektibilitas') alignClass = 'text-center font-bold text-slate-600';
+            if(key === 'pemulihan_pembentukan') {
+                alignClass += raw > 0 ? ' text-red-600 font-bold' : (raw < 0 ? ' text-emerald-600 font-bold' : ''); 
+            }
 
             let customClass = xtraClass ? xtraClass : `col-${sz}`;
 
@@ -752,8 +773,13 @@
         <th style="background:#f1f5f9">AO KREDIT</th>
         <th style="background:#f1f5f9">ALAMAT</th>
         <th style="background:#f1f5f9">KOL</th>
+        <th style="background:#fef08a">OS M-1</th>
+        <th style="background:#fef08a">CKPN M-1</th>
         <th style="background:#dcfce7">OS ACTUAL</th>
-        <th style="background:#f3e8ff">NILAI CKPN</th>
+        <th style="background:#dcfce7">CKPN ACTUAL</th>
+        <th style="background:#ffedd5">+/- CKPN</th>
+        <th style="background:#f1f5f9">PD (%)</th>
+        <th style="background:#f1f5f9">LGD (%)</th>
         <th style="background:#f1f5f9">TUNGG. POKOK</th>
         <th style="background:#f1f5f9">TUNGG. BUNGA</th>
         <th style="background:#fee2e2">HM</th>
@@ -761,7 +787,7 @@
         <th style="background:#f1f5f9">HMB</th>
         <th style="background:#f1f5f9">JATUH TEMPO</th>
         <th style="background:#f1f5f9">TGL TAGIH</th>
-        <th style="background:#fef08a">OS M-1</th>
+        <th style="background:#f1f5f9">TGL TRANS. TERAKHIR</th>
         <th style="background:#f1f5f9">ANGS. POKOK</th>
         <th style="background:#f1f5f9">ANGS. BUNGA</th>
       </tr></thead><tbody>`;
@@ -791,8 +817,13 @@
               <td>${d.ao_kredit||''}</td>
               <td>${d.alamat||''}</td>
               <td>${d.kolektibilitas||''}</td>
+              <td>${getNum(d.os_m1)}</td>
+              <td>${getNum(d.ckpn_m1)}</td>
               <td>${getNum(d.os_curr)}</td>
-              <td>${getNum(d.nilai_ckpn)}</td>
+              <td>${getNum(d.ckpn_actual)}</td>
+              <td>${getNum(d.pemulihan_pembentukan)}</td>
+              <td>${d.pd_actual!=null ? d.pd_actual : ''}</td>
+              <td>${d.lgd_actual!=null ? d.lgd_actual : ''}</td>
               <td>${getNum(d.tunggakan_pokok)}</td>
               <td>${getNum(d.tunggakan_bunga)}</td>
               <td>${getNum(d.hari_menunggak)}</td>
@@ -800,7 +831,7 @@
               <td>${getNum(d.hari_menunggak_bunga)}</td>
               <td>${d.tgl_jatuh_tempo||''}</td>
               <td>${d.tgl_tagih||''}</td>
-              <td>${getNum(d.os_m1)}</td>
+              <td>${d.tgl_trans_terakhir||''}</td>
               <td>${getNum(d.angsuran_pokok)}</td>
               <td>${getNum(d.angsuran_bunga)}</td>
           </tr>`;

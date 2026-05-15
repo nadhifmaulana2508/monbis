@@ -1,7 +1,6 @@
 <?php
 
 require_once __DIR__ . '/../helpers/response.php';
-require_once __DIR__ . '/../helpers/perhitungan_ckpn_actual.php';
 
 class KolekController {
     private $pdo;
@@ -9,6 +8,8 @@ class KolekController {
     public function __construct($pdo) {
         $this->pdo = $pdo;
     }
+
+
 
   public function getRekapKolektabilitas($input = []) {
     // -------- 1) Parse & validasi --------
@@ -126,8 +127,8 @@ class KolekController {
     $LM       = ['L','DP','KL','D','M'];
     $NPL_SET  = ['KL','D','M'];
 
-    $tot_m1_noa = 0;   $tot_m1_os = 0.0;             // hanya L..M (M-1)
-    $tot_h_noa_lm = 0; $tot_h_os_lm = 0.0;           // hanya L..M (Actual, tanpa Realisasi)
+    $tot_m1_noa = 0;   $tot_m1_os = 0.0;            // hanya L..M (M-1)
+    $tot_h_noa_lm = 0; $tot_h_os_lm = 0.0;          // hanya L..M (Actual, tanpa Realisasi)
     $realisasi_noa = 0; $realisasi_os = 0.0;        // baris Realisasi
 
     $byKol = [];
@@ -897,6 +898,8 @@ class KolekController {
   }
 
 
+
+
   public function migrasiBucketOsc($input=null){
     // ---- Params
     $b = is_array($input)?$input:(json_decode(file_get_contents('php://input'),true) ?: []);
@@ -964,7 +967,7 @@ class KolekController {
       $matrix[$from][$to]['noa']++;
       $matrix[$from][$to]['os_curr'] += $os_cur;
       $matrix[$from][$to]['os_m1']   += $os_m1;
-      $matrix[$from][$to]['os_used'] += $os_used;            // inilah yang dipakai untuk % per FROM
+      $matrix[$from][$to]['os_used'] += $os_used;           // inilah yang dipakai untuk % per FROM
     }
 
     // ===== REALISASI (akun baru di CURRENT yang tidak ada di M-1)
@@ -1042,15 +1045,12 @@ class KolekController {
     $t = strtotime($s);
     return $t ? date('Y-m-d', $t) : null;
   }
-  
   private function snapshotExists($table, $created) {
     $st = $this->pdo->prepare("SELECT 1 FROM {$table} WHERE created = ? LIMIT 1");
     $st->execute([$created]);
     return (bool)$st->fetchColumn();
   }
-
-  // DIUBAH JADI PUBLIC agar bisa diakses helper external
-  public function loadBuckets(): array {
+  private function loadBuckets(): array {
     $rows = $this->pdo->query("
       SELECT dpd_code, dpd_name, min_day, max_day, status_tag
       FROM ref_dpd_bucket ORDER BY min_day
@@ -1067,17 +1067,14 @@ class KolekController {
     }
     return [$def,$name,$tag];
   }
-
-  // DIUBAH JADI PUBLIC agar bisa diakses helper external
-  public function dpdToCode(int $dpd, array $defs): ?string {
+  private function dpdToCode(int $dpd, array $defs): ?string {
     foreach ($defs as $b) {
       if ($dpd >= $b['min'] && ($b['max']===null || $dpd <= $b['max'])) return $b['code'];
     }
     return null;
   }
   
-  // DIUBAH JADI PUBLIC agar bisa diakses helper external
-  public function dayRange(string $d): array {
+  private function dayRange(string $d): array {
     return [$d." 00:00:00", date('Y-m-d', strtotime("$d +1 day"))." 00:00:00"];
   }
 
@@ -1168,450 +1165,504 @@ class KolekController {
     } catch (PDOException $e) { return false; }
   }
 
+  /* ====== Tambahan helper untuk CKPN per akun ====== */
 
-  /* ===================== CKPN HELPERS ===================== */
+/* ===================== CKPN HELPERS ===================== */
 
-  private function fetchIndivCkpnMap(string $d, array $accs): array {
-    if (!$accs) return [];
-    $out = [];
-    foreach (array_chunk($accs, 500) as $chunk){
-      $ph = implode(',', array_fill(0, count($chunk), '?'));
-      $sql = "SELECT ci.no_rekening, ci.nilai_ckpn
-              FROM ckpn_individual ci
-              JOIN (
-                SELECT no_rekening, MAX(created) AS created
-                FROM ckpn_individual
-                WHERE created <= ? AND no_rekening IN ($ph)
-                GROUP BY no_rekening
-              ) x ON x.no_rekening=ci.no_rekening AND x.created=ci.created";
-      $params = array_merge([$d], $chunk);
-      $st = $this->pdo->prepare($sql); $st->execute($params);
-      while($r=$st->fetch(PDO::FETCH_ASSOC)) $out[$r['no_rekening']] = (float)$r['nilai_ckpn'];
-    }
-    return $out;
+/*********************** CKPN HELPERS ***********************/
+private function fetchSnapCkpnMap(string $d, ?string $kc, array $accs): array {
+  if (!$accs) return [];
+  [$ds,$de] = $this->dayRange($d);
+  $out = [];
+  foreach (array_chunk($accs, 500) as $chunk) {
+    $ph = implode(',', array_fill(0, count($chunk), '?'));
+    $sql = "SELECT no_rekening, nilai_ckpn
+            FROM nominatif_ckpn
+            WHERE created >= ? AND created < ? AND no_rekening IN ($ph)";
+    $params = array_merge([$ds,$de], $chunk);
+    if ($kc !== null && $kc !== '000') { $sql .= " AND LPAD(CAST(kode_cabang AS CHAR),3,'0') = ?"; $params[]=$kc; }
+    else { $sql .= " AND LPAD(CAST(kode_cabang AS CHAR),3,'0') <> '000'"; }
+    $st = $this->pdo->prepare($sql); $st->execute($params);
+    while($r = $st->fetch(PDO::FETCH_ASSOC)) $out[$r['no_rekening']] = (float)$r['nilai_ckpn'];
   }
+  return $out;
+}
 
-  private function fetchRestrukSet(string $d, array $accs): array {
-    if (!$accs) return [];
-    $set = [];
-    foreach (array_chunk($accs, 500) as $chunk){
-      $ph = implode(',', array_fill(0, count($chunk), '?'));
-      $sql = "SELECT nr.no_rekening
-              FROM nom_restruk nr
-              JOIN (
-                SELECT no_rekening, MAX(created) AS created
-                FROM nom_restruk
-                WHERE created <= ? AND no_rekening IN ($ph)
-                GROUP BY no_rekening
-              ) x ON x.no_rekening=nr.no_rekening AND x.created=nr.created";
-      $params = array_merge([$d], $chunk);
-      $st = $this->pdo->prepare($sql); $st->execute($params);
-      while($r=$st->fetch(PDO::FETCH_ASSOC)) $set[$r['no_rekening']] = true;
-    }
-    return $set;
+private function fetchIndivCkpnMap(string $d, array $accs): array {
+  if (!$accs) return [];
+  $out = [];
+  foreach (array_chunk($accs, 500) as $chunk){
+    $ph = implode(',', array_fill(0, count($chunk), '?'));
+    $sql = "SELECT ci.no_rekening, ci.nilai_ckpn
+            FROM ckpn_individual ci
+            JOIN (
+              SELECT no_rekening, MAX(created) AS created
+              FROM ckpn_individual
+              WHERE created <= ? AND no_rekening IN ($ph)
+              GROUP BY no_rekening
+            ) x ON x.no_rekening=ci.no_rekening AND x.created=ci.created";
+    $params = array_merge([$d], $chunk);
+    $st = $this->pdo->prepare($sql); $st->execute($params);
+    while($r=$st->fetch(PDO::FETCH_ASSOC)) $out[$r['no_rekening']] = (float)$r['nilai_ckpn'];
   }
-
-  private function fetchAngsuranMap(string $closing, string $harian, ?string $kc, array $accs): array {
-    if (!$accs) return [];
-    $out = [];
-    foreach (array_chunk($accs, 500) as $chunk) {
-      $ph = implode(',', array_fill(0, count($chunk), '?'));
-      $sql = "SELECT no_rekening,
-                     COALESCE(SUM(angsuran_pokok),0) AS sum_pokok,
-                     COALESCE(SUM(angsuran_bunga),0) AS sum_bunga,
-                     MAX(tgl_trans) AS last_tgl_trans
-              FROM transaksi_kredit
-              WHERE tgl_trans > ? AND tgl_trans <= ?
-                AND no_rekening IN ($ph)";
-      $params = array_merge([$closing,$harian], $chunk);
-      if ($kc !== null && $kc !== '000') { $sql .= " AND LPAD(CAST(kode_kantor AS CHAR),3,'0') = ?"; $params[]=$kc; }
-      $sql .= " GROUP BY no_rekening";
-      $st = $this->pdo->prepare($sql);
-      $st->execute($params);
-      while ($r = $st->fetch(PDO::FETCH_ASSOC)) {
-        $out[$r['no_rekening']] = [
-          'pokok' => (int)round($r['sum_pokok'] ?? 0),
-          'bunga' => (int)round($r['sum_bunga'] ?? 0),
-          'last_tgl_trans' => $r['last_tgl_trans'] ?? null
-        ];
-      }
-    }
-    return $out;
+  return $out;
+}
+private function fetchRestrukSet(string $d, array $accs): array {
+  if (!$accs) return [];
+  $set = [];
+  foreach (array_chunk($accs, 500) as $chunk){
+    $ph = implode(',', array_fill(0, count($chunk), '?'));
+    $sql = "SELECT nr.no_rekening
+            FROM nom_restruk nr
+            JOIN (
+              SELECT no_rekening, MAX(created) AS created
+              FROM nom_restruk
+              WHERE created <= ? AND no_rekening IN ($ph)
+              GROUP BY no_rekening
+            ) x ON x.no_rekening=nr.no_rekening AND x.created=nr.created";
+    $params = array_merge([$d], $chunk);
+    $st = $this->pdo->prepare($sql); $st->execute($params);
+    while($r=$st->fetch(PDO::FETCH_ASSOC)) $set[$r['no_rekening']] = true;
   }
+  return $set;
+}
 
+private function computeCkpnForRow(array $row, string $d, array $pdMap, float $LGD,
+                                   array $indivMap, array $restrukSet, $snapVal) : int {
+  if ($snapVal !== null) return (int)round((float)$snapVal);
+  $acc  = $row['no_rekening'] ?? null;
+  if ($acc && isset($indivMap[$acc])) return (int)round((float)$indivMap[$acc]);
 
-  /*********************** DISPATCHER ***********************/
-  public function getMigrasiBucketDetail($input = null)
-  {
-    $b = is_array($input) ? $input : (json_decode(file_get_contents('php://input'), true) ?: []);
+  $ead  = (float)($row['saldo_bank'] ?? 0);
+  $dpd  = (int)($row['hari_menunggak'] ?? 0);
+  $prod = isset($row['kode_produk']) && $row['kode_produk']!=='' ? (int)$row['kode_produk'] : null;
 
-    $closing = $this->asDate($b['closing_date'] ?? null);
-    $harian  = $this->asDate($b['harian_date']  ?? null);
-    $fb      = strtoupper(trim($b['from_bucket'] ?? ''));
-    $tb      = strtoupper(trim($b['to_bucket']   ?? ''));
-    $kc_raw  = $b['kode_kantor'] ?? null;
-    $kc      = ($kc_raw === null || $kc_raw === '') ? null : str_pad((string)$kc_raw, 3, '0', STR_PAD_LEFT);
+  $bucket = $row['to_bucket'] ?? $row['from_bucket'] ?? null;
+  if (!$bucket) { [$defs] = $this->loadBuckets(); $bucket = $this->dpdToCode($dpd, $defs) ?? 'A'; }
 
-    // Ambil request filter
-    $kankas = $b['kankas'] ?? null;
-    $ao     = $b['ao_kredit'] ?? null;
-    $search = $b['search'] ?? null;
+  $isRestruk = $acc ? isset($restrukSet[$acc]) : false;
+  if ($dpd <= 7 && !$isRestruk) return 0;
 
-    if (!$closing || !$harian) return sendResponse(400, "closing_date & harian_date wajib (YYYY-MM-DD)");
+  $pd = 0.0;
+  if ($prod !== null && isset($pdMap[$prod][$bucket])) $pd = (float)$pdMap[$prod][$bucket];
+  return (int)round($ead * ($pd/100.0) * ($LGD/100.0));
+}
 
-    $VALID = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N'];
-
-    // REALISASI — wajib cabang spesifik (bukan konsolidasi)
-    if ($fb === 'REALISASI') {
-      if ($kc === null || $kc === '000') return sendResponse(400, "Realisasi: kode_kantor wajib (tidak boleh konsolidasi).");
-      $tbFilter = ($tb !== '' && in_array($tb, $VALID, true)) ? $tb : null;
-      return $this->getMigrasiBucketDetailRealisasi($closing, $harian, $kc, $tbFilter, $kankas, $ao, $search);
-    }
-
-    // O_LUNAS — wajib from_bucket (A..N)
-    if ($tb === 'O' || $tb === 'O_LUNAS') {
-      if (!in_array($fb, $VALID, true)) return sendResponse(400, "O_LUNAS: from_bucket wajib A..N.");
-      return $this->getMigrasiBucketDetailOLunas($closing, $harian, $kc, $fb, $kankas, $ao, $search);
-    }
-
-    // ACTUAL — A..N → A..N
-    if (!in_array($fb, $VALID, true) || !in_array($tb, $VALID, true))
-      return sendResponse(400, "Actual: from_bucket & to_bucket wajib A..N.");
-
-    return $this->getMigrasiBucketDetailActual($closing, $harian, $kc, $fb, $tb, $kankas, $ao, $search);
-  }
-
-
-  /*********************** REALISASI (akun baru) ***********************/
-  public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, string $kc, ?string $tbFilter = null, ?string $kankas = null, ?string $ao = null, ?string $search = null)
-  {
-    [$dsH, $deH] = $this->dayRange($harian);
-
-    $whereFilter = "";
-    if ($kankas) $whereFilter .= " AND nh.kode_group1 = :kankas ";
-    if ($ao)     $whereFilter .= " AND nh.kode_group2 = :ao ";
-    if ($search) $whereFilter .= " AND (nh.nama_nasabah LIKE :search OR nh.no_rekening LIKE :search) ";
-
-    $sql = "
-      SELECT
-        LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') AS kode_cabang,
-        nh.kode_group1      AS kankas_kode,
-        kks.deskripsi_group1 AS kankas,   -- NAMA KANKAS
-        nh.kode_group2      AS ao_kredit_kode,
-        aok.nama_ao         AS ao_kredit, -- NAMA AO
-        nh.no_rekening,
-        nh.nama_nasabah,
-        NULL                AS alamat,
-        'REALISASI'         AS from_bucket,
-        rb2.dpd_code        AS to_bucket,
-        nh.baki_debet       AS baki_debet,
-        nh.kolektibilitas,
-        nh.kode_produk,
-        nh.tunggakan_pokok,
-        nh.tunggakan_bunga,
-        nh.hari_menunggak,
-        nh.hari_menunggak_pokok,
-        nh.hari_menunggak_bunga,
-        nh.saldo_bank,
-        nh.tgl_jatuh_tempo,
-        nh.tgl_realisasi,
-        nh.nilai_ckpn,
-
-        NULL AS angsuran_pokok,
-        NULL AS angsuran_bunga,
-        NULL AS os_m1,
-        nh.baki_debet AS os_curr,
-        NULL AS ckpn_actual,
-        NULL AS ckpn_m1,
-        NULL AS tgl_trans_terakhir
-      FROM nominatif nh
-      JOIN ref_dpd_bucket rb2
-        ON nh.hari_menunggak >= rb2.min_day
-       AND (rb2.max_day IS NULL OR nh.hari_menunggak <= rb2.max_day)
-      LEFT JOIN kankas kks ON kks.kode_group1 = nh.kode_group1
-      LEFT JOIN ao_kredit aok ON aok.kode_group2 = nh.kode_group2
-      WHERE nh.created >= :dsH1 AND nh.created < :deH1
-        AND LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') = :kcH
-        AND nh.tgl_realisasi >  :cld
-        AND nh.tgl_realisasi <= :hrd
-        " . ($tbFilter ? " AND rb2.dpd_code = :tb " : "") . "
-        $whereFilter
-      ORDER BY nh.baki_debet DESC
-    ";
-
+/* ====== NEW: angsuran & CKPN M-1 exact ====== */
+private function fetchAngsuranMap(string $closing, string $harian, ?string $kc, array $accs): array {
+  if (!$accs) return [];
+  $out = [];
+  foreach (array_chunk($accs, 500) as $chunk) {
+    $ph = implode(',', array_fill(0, count($chunk), '?'));
+    $sql = "SELECT no_rekening,
+                   COALESCE(SUM(angsuran_pokok),0) AS sum_pokok,
+                   COALESCE(SUM(angsuran_bunga),0) AS sum_bunga,
+                   MAX(tgl_trans) AS last_tgl_trans
+            FROM transaksi_kredit
+            WHERE tgl_trans > ? AND tgl_trans <= ?
+              AND no_rekening IN ($ph)";
+    $params = array_merge([$closing,$harian], $chunk);
+    if ($kc !== null && $kc !== '000') { $sql .= " AND LPAD(CAST(kode_kantor AS CHAR),3,'0') = ?"; $params[]=$kc; }
+    $sql .= " GROUP BY no_rekening";
     $st = $this->pdo->prepare($sql);
-    $st->bindValue(':dsH1', $dsH);
-    $st->bindValue(':deH1', $deH);
-    $st->bindValue(':kcH',  $kc);
-    $st->bindValue(':cld',  $closing);
-    $st->bindValue(':hrd',  $harian);
-    if ($tbFilter) $st->bindValue(':tb', $tbFilter);
-    if ($kankas)   $st->bindValue(':kankas', $kankas);
-    if ($ao)       $st->bindValue(':ao', $ao);
-    if ($search)   $st->bindValue(':search', "%$search%");
-
-    $st->execute();
-    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
-
-    return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'realisasi');
-  }
-
-
-  /*********************** ACTUAL A..N → A..N (FAST + BUCKET INFO) ***********************/
-  public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null)
-  {
-    if ($kc===null || $kc==='000') {
-      return sendResponse(400, "Pilih kode_kantor spesifik (CHAR(3), mis. '004') untuk detail ACTUAL.");
+    $st->execute($params);
+    while ($r = $st->fetch(PDO::FETCH_ASSOC)) {
+      $out[$r['no_rekening']] = [
+        'pokok' => (int)round($r['sum_pokok'] ?? 0),
+        'bunga' => (int)round($r['sum_bunga'] ?? 0),
+        'last_tgl_trans' => $r['last_tgl_trans'] ?? null
+      ];
     }
-    $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
-
-    [$dsC,$deC] = $this->dayRange($closing);
-    [$dsH,$deH] = $this->dayRange($harian);
-
-    $whereFilter = "";
-    if ($kankas) $whereFilter .= " AND h.kode_group1 = :kankas ";
-    if ($ao)     $whereFilter .= " AND h.kode_group2 = :ao ";
-    if ($search) $whereFilter .= " AND (h.nama_nasabah LIKE :search OR h.no_rekening LIKE :search) ";
-
-    $sql = "
-      SELECT
-        h.kode_cabang,
-        h.kode_group1 AS kankas_kode,
-        kks.deskripsi_group1 AS kankas,   -- NAMA KANKAS
-        h.kode_group2 AS ao_kredit_kode,
-        aok.nama_ao AS ao_kredit,         -- NAMA AO
-        h.no_rekening,
-        h.nama_nasabah,
-        h.alamat,
-
-        rbf.dpd_code  AS from_bucket,
-        rbf.dpd_name  AS from_bucket_name,
-        rbf.status_tag AS from_status_tag,
-        rbf.min_day   AS from_min_day,
-        rbf.max_day   AS from_max_day,
-
-        rbt.dpd_code  AS to_bucket,
-        rbt.dpd_name  AS to_bucket_name,
-        rbt.status_tag AS to_status_tag,
-        rbt.min_day   AS to_min_day,
-        rbt.max_day   AS to_max_day,
-
-        h.baki_debet  AS baki_debet,
-        h.kolektibilitas,
-        h.kode_produk,
-        h.tunggakan_pokok,
-        h.tunggakan_bunga,
-        h.hari_menunggak,
-        h.hari_menunggak_pokok,
-        h.hari_menunggak_bunga,
-        h.saldo_bank,
-        h.tgl_jatuh_tempo,
-        h.nilai_ckpn,
-
-        c.baki_debet  AS os_m1,
-        h.baki_debet  AS os_curr,
-
-        NULL AS angsuran_pokok,
-        NULL AS angsuran_bunga,
-        NULL AS tgl_trans_terakhir
-      FROM nominatif c
-      JOIN nominatif h
-        ON h.no_rekening = c.no_rekening
-       AND h.created >= :dsH AND h.created < :deH
-       AND h.kode_cabang = :kcH
-      JOIN ref_dpd_bucket rbf
-        ON c.hari_menunggak >= rbf.min_day
-       AND (rbf.max_day IS NULL OR c.hari_menunggak <= rbf.max_day)
-       AND rbf.dpd_code = :fb
-      JOIN ref_dpd_bucket rbt
-        ON h.hari_menunggak >= rbt.min_day
-       AND (rbt.max_day IS NULL OR h.hari_menunggak <= rbt.max_day)
-       AND rbt.dpd_code = :tb
-      LEFT JOIN kankas kks ON kks.kode_group1 = h.kode_group1
-      LEFT JOIN ao_kredit aok ON aok.kode_group2 = h.kode_group2
-      WHERE c.created >= :dsC AND c.created < :deC
-        AND c.kode_cabang = :kcC
-        $whereFilter
-      ORDER BY h.baki_debet DESC
-    ";
-
-    $st = $this->pdo->prepare($sql);
-    $st->bindValue(':kcH', $kc);
-    $st->bindValue(':kcC', $kc);
-    $st->bindValue(':dsH', $dsH); $st->bindValue(':deH', $deH);
-    $st->bindValue(':dsC', $dsC); $st->bindValue(':deC', $deC);
-    $st->bindValue(':fb',  $fb);
-    $st->bindValue(':tb',  $tb);
-    
-    if ($kankas) $st->bindValue(':kankas', $kankas);
-    if ($ao)     $st->bindValue(':ao', $ao);
-    if ($search) $st->bindValue(':search', "%$search%");
-
-    $st->execute();
-    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
-
-    return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'actual');
   }
+  return $out;
+}
 
-
-  /*********************** O_LUNAS (M-1 → O) — FAST + BUCKET INFO ***********************/
-  public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null)
-  {
-    if ($kc===null || $kc==='000') {
-      return sendResponse(400, "Pilih kode_kantor spesifik (CHAR(3), mis. '004') untuk detail O_LUNAS.");
+private function fetchCkpnM1MapExact(string $closing, ?string $kc, array $accs): array {
+  if (!$accs) return [];
+  $out = [];
+  foreach (array_chunk($accs, 500) as $chunk) {
+    $ph = implode(',', array_fill(0, count($chunk), '?'));
+    $sql = "SELECT no_rekening, nilai_ckpn
+            FROM nominatif_ckpn
+            WHERE created = ? AND no_rekening IN ($ph)";
+    $params = array_merge([$closing], $chunk);
+    if ($kc !== null && $kc !== '000') { $sql .= " AND LPAD(CAST(kode_cabang AS CHAR),3,'0') = ?"; $params[]=$kc; }
+    $st = $this->pdo->prepare($sql); $st->execute($params);
+    while ($r = $st->fetch(PDO::FETCH_ASSOC)) {
+      $out[$r['no_rekening']] = (int)round($r['nilai_ckpn'] ?? 0);
     }
-    $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
+  }
+  return $out;
+}
 
-    [$dsC,$deC] = $this->dayRange($closing);
-    [$dsH,$deH] = $this->dayRange($harian);
+/*********************** DISPATCHER ***********************/
+public function getMigrasiBucketDetail($input = null)
+{
+  $b = is_array($input) ? $input : (json_decode(file_get_contents('php://input'), true) ?: []);
 
-    // Karena nasabah sudah lunas (h = null), ambil group dari (c)
-    $whereFilter = "";
-    if ($kankas) $whereFilter .= " AND c.kode_group1 = :kankas ";
-    if ($ao)     $whereFilter .= " AND c.kode_group2 = :ao ";
-    if ($search) $whereFilter .= " AND (c.nama_nasabah LIKE :search OR c.no_rekening LIKE :search) ";
+  $closing = $this->asDate($b['closing_date'] ?? null);
+  $harian  = $this->asDate($b['harian_date']  ?? null);
+  $fb      = strtoupper(trim($b['from_bucket'] ?? ''));
+  $tb      = strtoupper(trim($b['to_bucket']   ?? ''));
+  $kc_raw  = $b['kode_kantor'] ?? null;
+  $kc      = ($kc_raw === null || $kc_raw === '') ? null : str_pad((string)$kc_raw, 3, '0', STR_PAD_LEFT);
 
-    $sql = "
-      SELECT
-        c.kode_cabang,
-        c.kode_group1 AS kankas_kode,
-        kks.deskripsi_group1 AS kankas,   -- NAMA KANKAS
-        c.kode_group2 AS ao_kredit_kode,
-        aok.nama_ao AS ao_kredit,         -- NAMA AO
-        c.no_rekening,
-        c.nama_nasabah,
-        c.alamat,
+  // Ambil request filter
+  $kankas = $b['kankas'] ?? null;
+  $ao     = $b['ao_kredit'] ?? null;
+  $search = $b['search'] ?? null;
 
-        rbf.dpd_code  AS from_bucket,
-        rbf.dpd_name  AS from_bucket_name,
-        rbf.status_tag AS from_status_tag,
-        rbf.min_day   AS from_min_day,
-        rbf.max_day   AS from_max_day,
+  if (!$closing || !$harian) return sendResponse(400, "closing_date & harian_date wajib (YYYY-MM-DD)");
 
-        'O'           AS to_bucket,
-        'O_LUNAS'     AS to_bucket_name,
-        NULL          AS to_status_tag,
-        NULL          AS to_min_day,
-        NULL          AS to_max_day,
+  $VALID = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N'];
 
-        c.baki_debet  AS baki_debet,
-        c.kolektibilitas,
-        c.kode_produk,
-        c.tunggakan_pokok,
-        c.tunggakan_bunga,
-        c.hari_menunggak,
-        c.hari_menunggak_pokok,
-        c.hari_menunggak_bunga,
-        c.saldo_bank,
-        c.tgl_jatuh_tempo,
-        c.nilai_ckpn,
-
-        c.baki_debet  AS os_m1,
-        NULL          AS os_curr,
-
-        NULL AS angsuran_pokok,
-        NULL AS angsuran_bunga,
-        NULL AS tgl_trans_terakhir
-      FROM nominatif c
-      LEFT JOIN nominatif h
-        ON h.no_rekening = c.no_rekening
-       AND h.created >= :dsH AND h.created < :deH
-       AND h.kode_cabang = :kcH
-      JOIN ref_dpd_bucket rbf
-        ON c.hari_menunggak >= rbf.min_day
-       AND (rbf.max_day IS NULL OR c.hari_menunggak <= rbf.max_day)
-       AND rbf.dpd_code = :fb
-      LEFT JOIN kankas kks ON kks.kode_group1 = c.kode_group1
-      LEFT JOIN ao_kredit aok ON aok.kode_group2 = c.kode_group2
-      WHERE c.created >= :dsC AND c.created < :deC
-        AND c.kode_cabang = :kcC
-        AND h.no_rekening IS NULL
-        $whereFilter
-      ORDER BY c.baki_debet DESC
-    ";
-
-    $st = $this->pdo->prepare($sql);
-    $st->bindValue(':kcH', $kc);
-    $st->bindValue(':kcC', $kc);
-    $st->bindValue(':dsH', $dsH); $st->bindValue(':deH', $deH);
-    $st->bindValue(':dsC', $dsC); $st->bindValue(':deC', $deC);
-    $st->bindValue(':fb',  $fromBucket);
-    
-    if ($kankas) $st->bindValue(':kankas', $kankas);
-    if ($ao)     $st->bindValue(':ao', $ao);
-    if ($search) $st->bindValue(':search', "%$search%");
-
-    $st->execute();
-    $rows = $st->fetchAll(PDO::FETCH_ASSOC);
-
-    return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'o_lunas');
+  // REALISASI — wajib cabang spesifik (bukan konsolidasi)
+  if ($fb === 'REALISASI') {
+    if ($kc === null || $kc === '000') return sendResponse(400, "Realisasi: kode_kantor wajib (tidak boleh konsolidasi).");
+    $tbFilter = ($tb !== '' && in_array($tb, $VALID, true)) ? $tb : null;
+    return $this->getMigrasiBucketDetailRealisasi($closing, $harian, $kc, $tbFilter, $kankas, $ao, $search);
   }
 
+  // O_LUNAS — wajib from_bucket (A..N)
+  if ($tb === 'O' || $tb === 'O_LUNAS') {
+    if (!in_array($fb, $VALID, true)) return sendResponse(400, "O_LUNAS: from_bucket wajib A..N.");
+    return $this->getMigrasiBucketDetailOLunas($closing, $harian, $kc, $fb, $kankas, $ao, $search);
+  }
 
-  /*********************** ATTACH CKPN & CAST ***********************/
+  // ACTUAL — A..N → A..N
+  if (!in_array($fb, $VALID, true) || !in_array($tb, $VALID, true))
+    return sendResponse(400, "Actual: from_bucket & to_bucket wajib A..N.");
+
+  return $this->getMigrasiBucketDetailActual($closing, $harian, $kc, $fb, $tb, $kankas, $ao, $search);
+}
+
+
+/*********************** REALISASI (akun baru) ***********************/
+public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, string $kc, ?string $tbFilter = null, ?string $kankas = null, ?string $ao = null, ?string $search = null)
+{
+  [$dsH, $deH] = $this->dayRange($harian);
+
+  $whereFilter = "";
+  if ($kankas) $whereFilter .= " AND nh.kode_group1 = :kankas ";
+  if ($ao)     $whereFilter .= " AND nh.kode_group2 = :ao ";
+  if ($search) $whereFilter .= " AND (nh.nama_nasabah LIKE :search OR nh.no_rekening LIKE :search) ";
+
+  $sql = "
+    SELECT
+      LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') AS kode_cabang,
+      nh.kode_group1      AS kankas_kode,
+      kks.deskripsi_group1 AS kankas,   -- NAMA KANKAS
+      nh.kode_group2      AS ao_kredit_kode,
+      aok.nama_ao         AS ao_kredit, -- NAMA AO
+      nh.no_rekening,
+      nh.nama_nasabah,
+      NULL                AS alamat,
+      'REALISASI'         AS from_bucket,
+      rb2.dpd_code        AS to_bucket,
+      nh.baki_debet       AS baki_debet,
+      nh.kolektibilitas,
+      nh.kode_produk,
+      nh.tunggakan_pokok,
+      nh.tunggakan_bunga,
+      nh.hari_menunggak,
+      nh.hari_menunggak_pokok,
+      nh.hari_menunggak_bunga,
+      nh.saldo_bank,
+      nh.tgl_jatuh_tempo,
+      nh.tgl_realisasi,
+      nh.nilai_ckpn,
+
+      NULL AS angsuran_pokok,
+      NULL AS angsuran_bunga,
+      NULL AS os_m1,
+      nh.baki_debet AS os_curr,
+      NULL AS ckpn_actual,
+      NULL AS ckpn_m1,
+      NULL AS tgl_trans_terakhir
+    FROM nominatif nh
+    JOIN ref_dpd_bucket rb2
+      ON nh.hari_menunggak >= rb2.min_day
+     AND (rb2.max_day IS NULL OR nh.hari_menunggak <= rb2.max_day)
+    LEFT JOIN kankas kks ON kks.kode_group1 = nh.kode_group1
+    LEFT JOIN ao_kredit aok ON aok.kode_group2 = nh.kode_group2
+    WHERE nh.created >= :dsH1 AND nh.created < :deH1
+      AND LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') = :kcH
+      AND nh.tgl_realisasi >  :cld
+      AND nh.tgl_realisasi <= :hrd
+      " . ($tbFilter ? " AND rb2.dpd_code = :tb " : "") . "
+      $whereFilter
+    ORDER BY nh.baki_debet DESC
+  ";
+
+  $st = $this->pdo->prepare($sql);
+  $st->bindValue(':dsH1', $dsH);
+  $st->bindValue(':deH1', $deH);
+  $st->bindValue(':kcH',  $kc);
+  $st->bindValue(':cld',  $closing);
+  $st->bindValue(':hrd',  $harian);
+  if ($tbFilter) $st->bindValue(':tb', $tbFilter);
+  if ($kankas)   $st->bindValue(':kankas', $kankas);
+  if ($ao)       $st->bindValue(':ao', $ao);
+  if ($search)   $st->bindValue(':search', "%$search%");
+
+  $st->execute();
+  $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+
+  $num = [
+    'baki_debet','tunggakan_pokok','tunggakan_bunga',
+    'hari_menunggak','hari_menunggak_pokok','hari_menunggak_bunga',
+    'saldo_bank','os_curr','nilai_ckpn'
+  ];
+  foreach ($rows as &$r){ foreach ($num as $f){ if (array_key_exists($f,$r) && $r[$f]!==null && $r[$f]!=='') $r[$f]=0+$r[$f]; } }
+  unset($r);
+
+  return sendResponse(200,"OK (realisasi detail)", $rows);
+}
+
+
+/*********************** ACTUAL A..N → A..N (FAST + BUCKET INFO) ***********************/
+public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null)
+{
+  if ($kc===null || $kc==='000') {
+    return sendResponse(400, "Pilih kode_kantor spesifik (CHAR(3), mis. '004') untuk detail ACTUAL.");
+  }
+  $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
+
+  [$dsC,$deC] = $this->dayRange($closing);
+  [$dsH,$deH] = $this->dayRange($harian);
+
+  $whereFilter = "";
+  if ($kankas) $whereFilter .= " AND h.kode_group1 = :kankas ";
+  if ($ao)     $whereFilter .= " AND h.kode_group2 = :ao ";
+  if ($search) $whereFilter .= " AND (h.nama_nasabah LIKE :search OR h.no_rekening LIKE :search) ";
+
+  $sql = "
+    SELECT
+      h.kode_cabang,
+      h.kode_group1 AS kankas_kode,
+      kks.deskripsi_group1 AS kankas,   -- NAMA KANKAS
+      h.kode_group2 AS ao_kredit_kode,
+      aok.nama_ao AS ao_kredit,         -- NAMA AO
+      h.no_rekening,
+      h.nama_nasabah,
+      h.alamat,
+
+      rbf.dpd_code  AS from_bucket,
+      rbf.dpd_name  AS from_bucket_name,
+      rbf.status_tag AS from_status_tag,
+      rbf.min_day   AS from_min_day,
+      rbf.max_day   AS from_max_day,
+
+      rbt.dpd_code  AS to_bucket,
+      rbt.dpd_name  AS to_bucket_name,
+      rbt.status_tag AS to_status_tag,
+      rbt.min_day   AS to_min_day,
+      rbt.max_day   AS to_max_day,
+
+      h.baki_debet  AS baki_debet,
+      h.kolektibilitas,
+      h.kode_produk,
+      h.tunggakan_pokok,
+      h.tunggakan_bunga,
+      h.hari_menunggak,
+      h.hari_menunggak_pokok,
+      h.hari_menunggak_bunga,
+      h.saldo_bank,
+      h.tgl_jatuh_tempo,
+      h.nilai_ckpn,
+
+      c.baki_debet  AS os_m1,
+      h.baki_debet  AS os_curr,
+
+      NULL AS angsuran_pokok,
+      NULL AS angsuran_bunga,
+      NULL AS tgl_trans_terakhir
+    FROM nominatif c
+    JOIN nominatif h
+      ON h.no_rekening = c.no_rekening
+     AND h.created >= :dsH AND h.created < :deH
+     AND h.kode_cabang = :kcH
+    JOIN ref_dpd_bucket rbf
+      ON c.hari_menunggak >= rbf.min_day
+     AND (rbf.max_day IS NULL OR c.hari_menunggak <= rbf.max_day)
+     AND rbf.dpd_code = :fb
+    JOIN ref_dpd_bucket rbt
+      ON h.hari_menunggak >= rbt.min_day
+     AND (rbt.max_day IS NULL OR h.hari_menunggak <= rbt.max_day)
+     AND rbt.dpd_code = :tb
+    LEFT JOIN kankas kks ON kks.kode_group1 = h.kode_group1
+    LEFT JOIN ao_kredit aok ON aok.kode_group2 = h.kode_group2
+    WHERE c.created >= :dsC AND c.created < :deC
+      AND c.kode_cabang = :kcC
+      $whereFilter
+    ORDER BY h.baki_debet DESC
+  ";
+
+  $st = $this->pdo->prepare($sql);
+  $st->bindValue(':kcH', $kc);
+  $st->bindValue(':kcC', $kc);
+  $st->bindValue(':dsH', $dsH); $st->bindValue(':deH', $deH);
+  $st->bindValue(':dsC', $dsC); $st->bindValue(':deC', $deC);
+  $st->bindValue(':fb',  $fb);
+  $st->bindValue(':tb',  $tb);
+  
+  if ($kankas) $st->bindValue(':kankas', $kankas);
+  if ($ao)     $st->bindValue(':ao', $ao);
+  if ($search) $st->bindValue(':search', "%$search%");
+
+  $st->execute();
+  $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+
+  return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'actual');
+}
+
+
+/*********************** O_LUNAS (M-1 → O) — FAST + BUCKET INFO ***********************/
+public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null)
+{
+  if ($kc===null || $kc==='000') {
+    return sendResponse(400, "Pilih kode_kantor spesifik (CHAR(3), mis. '004') untuk detail O_LUNAS.");
+  }
+  $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
+
+  [$dsC,$deC] = $this->dayRange($closing);
+  [$dsH,$deH] = $this->dayRange($harian);
+
+  // Karena nasabah sudah lunas (h = null), ambil group dari (c)
+  $whereFilter = "";
+  if ($kankas) $whereFilter .= " AND c.kode_group1 = :kankas ";
+  if ($ao)     $whereFilter .= " AND c.kode_group2 = :ao ";
+  if ($search) $whereFilter .= " AND (c.nama_nasabah LIKE :search OR c.no_rekening LIKE :search) ";
+
+  $sql = "
+    SELECT
+      c.kode_cabang,
+      c.kode_group1 AS kankas_kode,
+      kks.deskripsi_group1 AS kankas,   -- NAMA KANKAS
+      c.kode_group2 AS ao_kredit_kode,
+      aok.nama_ao AS ao_kredit,         -- NAMA AO
+      c.no_rekening,
+      c.nama_nasabah,
+      c.alamat,
+
+      rbf.dpd_code  AS from_bucket,
+      rbf.dpd_name  AS from_bucket_name,
+      rbf.status_tag AS from_status_tag,
+      rbf.min_day   AS from_min_day,
+      rbf.max_day   AS from_max_day,
+
+      'O'           AS to_bucket,
+      'O_LUNAS'     AS to_bucket_name,
+      NULL          AS to_status_tag,
+      NULL          AS to_min_day,
+      NULL          AS to_max_day,
+
+      c.baki_debet  AS baki_debet,
+      c.kolektibilitas,
+      c.kode_produk,
+      c.tunggakan_pokok,
+      c.tunggakan_bunga,
+      c.hari_menunggak,
+      c.hari_menunggak_pokok,
+      c.hari_menunggak_bunga,
+      c.saldo_bank,
+      c.tgl_jatuh_tempo,
+      c.nilai_ckpn,
+
+      c.baki_debet  AS os_m1,
+      NULL          AS os_curr,
+
+      NULL AS angsuran_pokok,
+      NULL AS angsuran_bunga,
+      NULL AS tgl_trans_terakhir
+    FROM nominatif c
+    LEFT JOIN nominatif h
+      ON h.no_rekening = c.no_rekening
+     AND h.created >= :dsH AND h.created < :deH
+     AND h.kode_cabang = :kcH
+    JOIN ref_dpd_bucket rbf
+      ON c.hari_menunggak >= rbf.min_day
+     AND (rbf.max_day IS NULL OR c.hari_menunggak <= rbf.max_day)
+     AND rbf.dpd_code = :fb
+    LEFT JOIN kankas kks ON kks.kode_group1 = c.kode_group1
+    LEFT JOIN ao_kredit aok ON aok.kode_group2 = c.kode_group2
+    WHERE c.created >= :dsC AND c.created < :deC
+      AND c.kode_cabang = :kcC
+      AND h.no_rekening IS NULL
+      $whereFilter
+    ORDER BY c.baki_debet DESC
+  ";
+
+  $st = $this->pdo->prepare($sql);
+  $st->bindValue(':kcH', $kc);
+  $st->bindValue(':kcC', $kc);
+  $st->bindValue(':dsH', $dsH); $st->bindValue(':deH', $deH);
+  $st->bindValue(':dsC', $dsC); $st->bindValue(':deC', $deC);
+  $st->bindValue(':fb',  $fromBucket);
+  
+  if ($kankas) $st->bindValue(':kankas', $kankas);
+  if ($ao)     $st->bindValue(':ao', $ao);
+  if ($search) $st->bindValue(':search', "%$search%");
+
+  $st->execute();
+  $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+
+  return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'o_lunas');
+}
+
+
 /*********************** ATTACH CKPN & CAST ***********************/
-  private function attachCkpnAndCast(array $rows, string $harian, string $closing, ?string $kc, string $mode){
-    $accs = array_values(array_unique(array_filter(array_map(fn($r)=>$r['no_rekening'] ?? null, $rows))));
+private function attachCkpnAndCast(array $rows, string $harian, string $closing, ?string $kc, string $mode){
+  $accs = array_values(array_unique(array_filter(array_map(fn($r)=>$r['no_rekening'] ?? null, $rows))));
 
-    // Helper CKPN Class
-    $ckpnHelper = new PerhitunganCkpnActual($this->pdo, $this);
+  // 1) Angsuran periode (closing, harian]
+  $angsMap = $this->fetchAngsuranMap($closing, $harian, $kc, $accs);
 
-    // 1) Angsuran periode (closing, harian]
-    $angsMap = $this->fetchAngsuranMap($closing, $harian, $kc, $accs);
+  // 2) CKPN M-1 EXACT (created = closing_date) — untuk SEMUA mode
+  $ckpnM1Map = $this->fetchCkpnM1MapExact($closing, $kc, $accs);
 
-    // 2) CKPN M-1 EXACT dari tabel nominatif via Helper
-    $ckpnM1Map = $ckpnHelper->ambil_ckpn_nominatif($closing, $kc, $accs);
+  // 3) CKPN ACTUAL (mode != o_lunas) via snapshot/compute
+  $LGD   = $this->loadGlobalLGD($harian);
+  $pdMap = $this->loadPdMap($harian);
+  $snapMapH = ($mode!=='o_lunas') ? $this->fetchSnapCkpnMap($harian, $kc, $accs) : [];
+  $indivMap = $this->fetchIndivCkpnMap($harian, $accs);
+  $restruk  = $this->fetchRestrukSet($harian, $accs);
 
-    // 3) CKPN ACTUAL base nominatif (utk suplai individual)
-    $ckpnActualMap = $ckpnHelper->ambil_ckpn_nominatif($harian, $kc, $accs);
+  foreach ($rows as &$r){
+    $acc = $r['no_rekening'] ?? null;
 
-    $LGD      = $this->loadGlobalLGD($harian);
-    $pdMap    = $this->loadPdMap($harian);
-    $indivMap = $this->fetchIndivCkpnMap($harian, $accs);
-    $restruk  = $this->fetchRestrukSet($harian, $accs);
+    // Angsuran
+    $r['angsuran_pokok']     = isset($angsMap[$acc]) ? (int)$angsMap[$acc]['pokok'] : 0;
+    $r['angsuran_bunga']     = isset($angsMap[$acc]) ? (int)$angsMap[$acc]['bunga'] : 0;
+    $r['tgl_trans_terakhir'] = $angsMap[$acc]['last_tgl_trans'] ?? null;
 
-    foreach ($rows as &$r){
-      $acc = $r['no_rekening'] ?? null;
+    // CKPN M-1 (selalu isi dari nominatif_ckpn created = closing_date)
+    $r['ckpn_m1'] = (int)round($ckpnM1Map[$acc] ?? 0);
 
-      // Angsuran
-      $r['angsuran_pokok']     = isset($angsMap[$acc]) ? (int)$angsMap[$acc]['pokok'] : 0;
-      $r['angsuran_bunga']     = isset($angsMap[$acc]) ? (int)$angsMap[$acc]['bunga'] : 0;
-      $r['tgl_trans_terakhir'] = $angsMap[$acc]['last_tgl_trans'] ?? null;
+    // CKPN actual
+    if ($mode==='o_lunas'){
+      $r['ckpn_actual'] = 0;
+    } else {
+      $snap = $snapMapH[$acc] ?? null;
+      $r['ckpn_actual'] = $this->computeCkpnForRow($r, $harian, $pdMap, $LGD, $indivMap, $restruk, $snap);
+    }
+  } unset($r);
 
-      // CKPN M-1
-      $r['ckpn_m1'] = $ckpnM1Map[$acc] ?? 0;
+  // nilai_ckpn ditambahkan ke array num agar otomatis di-cast menjadi number
+  $num = [
+    'baki_debet','tunggakan_pokok','tunggakan_bunga',
+    'hari_menunggak','hari_menunggak_pokok','hari_menunggak_bunga',
+    'saldo_bank','angsuran_pokok','angsuran_bunga','os_m1','os_curr',
+    'ckpn_actual','ckpn_m1', 'nilai_ckpn'
+  ];
+  foreach ($rows as &$r){ foreach ($num as $f){ if (array_key_exists($f,$r) && $r[$f]!==null && $r[$f]!=='') $r[$f]=0+$r[$f]; } }
+  unset($r);
 
-      // CKPN actual + Tarik nilai PD dan LGD
-      if ($mode === 'o_lunas'){
-        $r['ckpn_actual'] = 0;
-        $r['pd_actual']   = null;
-        $r['lgd_actual']  = null;
-      } else {
-        $dbCkpnActual = $ckpnActualMap[$acc] ?? 0;
-        $kalkulasi = $ckpnHelper->hitung_ckpn_actual($r, $pdMap, $LGD, $indivMap, $restruk, $dbCkpnActual);
-        
-        $r['ckpn_actual'] = $kalkulasi['ckpn'];
-        $r['pd_actual']   = $kalkulasi['pd_actual'];
-        $r['lgd_actual']  = $kalkulasi['lgd_actual'];
-      }
+  return sendResponse(200,"OK ($mode detail)", $rows);
+}
 
-      // Pemulihan / Pembentukan
-      $r['pemulihan_pembentukan'] = $r['ckpn_actual'] - $r['ckpn_m1'];
-    } 
-    unset($r);
 
-    // Cast jadi int/float agar terbaca numerik di JSON (tambahkan pd_actual & lgd_actual)
-    $num = [
-      'baki_debet','tunggakan_pokok','tunggakan_bunga',
-      'hari_menunggak','hari_menunggak_pokok','hari_menunggak_bunga',
-      'saldo_bank','angsuran_pokok','angsuran_bunga','os_m1','os_curr',
-      'ckpn_actual','ckpn_m1', 'nilai_ckpn', 'pemulihan_pembentukan',
-      'pd_actual', 'lgd_actual'
-    ];
-    foreach ($rows as &$r){ foreach ($num as $f){ if (array_key_exists($f,$r) && $r[$f]!==null && $r[$f]!=='') $r[$f]=0+$r[$f]; } }
-    unset($r);
-
-    return sendResponse(200,"OK ($mode detail)", $rows);
-  }
 
 }
+
+
