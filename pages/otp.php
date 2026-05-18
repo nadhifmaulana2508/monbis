@@ -878,7 +878,7 @@
           harian_date: document.getElementById('harian_date').value, 
           kode_kantor: branch, 
           korwil: reqKorwil,
-          kode_kankas: reqKankas, // kirim kankas dari rekap ke API (bisa kosong = ALL)
+          kode_kankas: preselectKankas || reqKankas, // kirim kankas dari rekap ke API
           kode_ao: null,
           tgl_tagih: tgl, 
           status: status, 
@@ -946,7 +946,7 @@
           harian_date: document.getElementById('harian_date').value, 
           kode_kantor: branch, 
           korwil: reqKorwil,
-          kode_kankas: reqKankas, // kirim kankas dari rekap ke API (bisa kosong = ALL)
+          kode_kankas: preselectKankas || reqKankas, // kirim kankas dari rekap ke API
           kode_ao: null,
           tgl_tagih: tgl, 
           dpd_bucket: dpdBucket,
