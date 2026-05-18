@@ -42,7 +42,10 @@ class RepaymentRateController {
         $b = is_array($input) ? $input : [];
         $closing = $b['closing_date'] ?? null;
         $harian  = $b['harian_date'] ?? null;
-        $kc      = $b['kode_kantor'] ?? null;
+        $kc      = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+        $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
+        $kankas  = !empty($b['kode_kankas']) ? $b['kode_kankas'] : null;
+        $dpdBucket = $b['dpd_bucket'] ?? 'dpd0'; // dpd0 or dpd1-30
         
         // 🔥 Tangkap parameter include_127 dari FE
         $include127 = filter_var($b['include_127'] ?? false, FILTER_VALIDATE_BOOLEAN);
@@ -57,31 +60,54 @@ class RepaymentRateController {
         $curMonth = date('n', $curTime);
         $curYear  = date('Y', $curTime);
 
-        // 🔥 Terapkan $whereProduk
+        // 🔥 Filter DPD Bucket di M-1
+        $whereDpd = "AND hari_menunggak = 0"; // default DPD 0
+        if ($dpdBucket === 'dpd1-30') $whereDpd = "AND hari_menunggak BETWEEN 1 AND 30";
+
+        // 🔥 Korwil mapping
+        $kw_start = null; $kw_end = null;
+        if ($korwil) {
+            switch ($korwil) {
+                case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
+                case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
+                case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
+                case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
+            }
+        }
+
+        // 🔥 Terapkan $whereProduk + $whereDpd
         $sqlM1 = "SELECT no_rekening, baki_debet, DAY(tgl_jatuh_tempo) as tgl_ori 
                   FROM nominatif 
                   WHERE created BETWEEN :s1 AND :e1 
                   AND kolektibilitas = 'L' 
                   AND baki_debet > 0
-                  AND hari_menunggak = 0
+                  $whereDpd
                   $whereProduk"; 
 
-        if ($kc) $sqlM1 .= " AND kode_cabang = :kc";
+        if ($kc && $kc !== '000') $sqlM1 .= " AND kode_cabang = :kc";
+        elseif ($korwil && $kw_start && $kw_end) $sqlM1 .= " AND kode_cabang BETWEEN :kw_start AND :kw_end";
+        if ($kankas) $sqlM1 .= " AND kode_group1 = :kankas";
 
         $stmt1 = $this->pdo->prepare($sqlM1);
         $stmt1->bindValue(':s1', $s1); $stmt1->bindValue(':e1', $e1);
-        if ($kc) $stmt1->bindValue(':kc', $kc);
+        if ($kc && $kc !== '000') $stmt1->bindValue(':kc', $kc);
+        elseif ($korwil && $kw_start && $kw_end) { $stmt1->bindValue(':kw_start', $kw_start); $stmt1->bindValue(':kw_end', $kw_end); }
+        if ($kankas) $stmt1->bindValue(':kankas', $kankas);
         $stmt1->execute();
         $dataM1 = $stmt1->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
 
         $sqlCur = "SELECT no_rekening, baki_debet, hari_menunggak 
                    FROM nominatif 
                    WHERE created BETWEEN :s2 AND :e2";
-        if ($kc) $sqlCur .= " AND kode_cabang = :kc";
+        if ($kc && $kc !== '000') $sqlCur .= " AND kode_cabang = :kc";
+        elseif ($korwil && $kw_start && $kw_end) $sqlCur .= " AND kode_cabang BETWEEN :kw_start AND :kw_end";
+        if ($kankas) $sqlCur .= " AND kode_group1 = :kankas";
 
         $stmt2 = $this->pdo->prepare($sqlCur);
         $stmt2->bindValue(':s2', $s2); $stmt2->bindValue(':e2', $e2);
-        if ($kc) $stmt2->bindValue(':kc', $kc);
+        if ($kc && $kc !== '000') $stmt2->bindValue(':kc', $kc);
+        elseif ($korwil && $kw_start && $kw_end) { $stmt2->bindValue(':kw_start', $kw_start); $stmt2->bindValue(':kw_end', $kw_end); }
+        if ($kankas) $stmt2->bindValue(':kankas', $kankas);
         $stmt2->execute();
         $dataCur = $stmt2->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
 
@@ -150,7 +176,7 @@ class RepaymentRateController {
         if ($grandTotal['target_os'] > 0) $grandTotal['persen'] = round(($gtPerformance / $grandTotal['target_os']) * 100, 2);
 
         $this->send(200, "Sukses Rekap RR", [
-            'meta' => ['m1' => $closing, 'cur' => $harian, 'include_127' => $include127],
+            'meta' => ['m1' => $closing, 'cur' => $harian, 'include_127' => $include127, 'dpd_bucket' => $dpdBucket],
             'grand_total' => $grandTotal,
             'data' => array_values($report)
         ]);
@@ -164,9 +190,11 @@ class RepaymentRateController {
         $b = is_array($input) ? $input : [];
         $closing = $b['closing_date'] ?? null;
         $harian  = $b['harian_date'] ?? null;
-        $kc      = $b['kode_kantor'] ?? null;
+        $kc      = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+        $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
         $kankas  = $b['kode_kankas'] ?? null; 
         $ao      = $b['kode_ao'] ?? null;     
+        $dpdBucket = $b['dpd_bucket'] ?? 'dpd0'; // dpd0 or dpd1-30
         
         $tglTagih = $b['tgl_tagih'] ?? 'ALL'; 
         $status  = strtoupper($b['status'] ?? 'ALL');
@@ -182,6 +210,21 @@ class RepaymentRateController {
 
         [$s1, $e1] = $this->getDayRange($closing);
         [$s2, $e2] = $this->getDayRange($harian);
+
+        // 🔥 Filter DPD Bucket di M-1
+        $whereDpd = "AND t1.hari_menunggak = 0"; // default DPD 0
+        if ($dpdBucket === 'dpd1-30') $whereDpd = "AND t1.hari_menunggak BETWEEN 1 AND 30";
+
+        // 🔥 Korwil mapping
+        $kw_start = null; $kw_end = null;
+        if ($korwil) {
+            switch ($korwil) {
+                case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
+                case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
+                case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
+                case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
+            }
+        }
 
         $daysStr = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31";
         if ($tglTagih !== 'ALL') {
@@ -226,25 +269,27 @@ class RepaymentRateController {
                       WHERE (t1.created BETWEEN :s1 AND :e1)
                       AND t1.kolektibilitas = 'L' 
                       AND t1.baki_debet > 0
-                      AND t1.hari_menunggak = 0 
+                      $whereDpd 
                       AND DAY(t1.tgl_jatuh_tempo) IN ($daysStr)
                       $whereStatus
                       $whereProduk";
         
-        if ($kc) $baseQuery .= " AND t1.kode_cabang = :kc";
+        if ($kc && $kc !== '000') $baseQuery .= " AND t1.kode_cabang = :kc";
+        elseif ($korwil && $kw_start && $kw_end) $baseQuery .= " AND t1.kode_cabang BETWEEN :kw_start AND :kw_end";
         if ($kankas) $baseQuery .= " AND t1.kode_group1 = :kankas"; 
         if ($ao) $baseQuery .= " AND t1.kode_group2 = :ao";
 
         $stmtCnt = $this->pdo->prepare("SELECT COUNT(1) $baseQuery");
         $stmtCnt->bindValue(':s1', $s1); $stmtCnt->bindValue(':e1', $e1);
         $stmtCnt->bindValue(':s2', $s2); $stmtCnt->bindValue(':e2', $e2);
-        if ($kc) $stmtCnt->bindValue(':kc', $kc);
+        if ($kc && $kc !== '000') $stmtCnt->bindValue(':kc', $kc);
+        elseif ($korwil && $kw_start && $kw_end) { $stmtCnt->bindValue(':kw_start', $kw_start); $stmtCnt->bindValue(':kw_end', $kw_end); }
         if ($kankas) $stmtCnt->bindValue(':kankas', $kankas); 
         if ($ao) $stmtCnt->bindValue(':ao', $ao); 
         $stmtCnt->execute();
         $total = $stmtCnt->fetchColumn();
 
-        $cols = "t1.no_rekening, t1.nama_nasabah, 
+        $cols = "t1.no_rekening, t1.nama_nasabah, t1.kode_produk,
                  t1.alamat, t1.hp as no_hp, 
                  COALESCE(kn.deskripsi_group1, t1.kode_group1) as kankas,
                  COALESCE(tb.saldo_akhir, 0) as tabungan,
@@ -259,7 +304,8 @@ class RepaymentRateController {
         $stmt = $this->pdo->prepare($sqlData);
         $stmt->bindValue(':s1', $s1); $stmt->bindValue(':e1', $e1);
         $stmt->bindValue(':s2', $s2); $stmt->bindValue(':e2', $e2);
-        if ($kc) $stmt->bindValue(':kc', $kc);
+        if ($kc && $kc !== '000') $stmt->bindValue(':kc', $kc);
+        elseif ($korwil && $kw_start && $kw_end) { $stmt->bindValue(':kw_start', $kw_start); $stmt->bindValue(':kw_end', $kw_end); }
         if ($kankas) $stmt->bindValue(':kankas', $kankas); 
         if ($ao) $stmt->bindValue(':ao', $ao); 
         $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
