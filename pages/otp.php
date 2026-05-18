@@ -14,15 +14,13 @@
   .animate-scale-up { animation: scaleUp 0.2s ease-out forwards; }
 
   /* ========================================================
-     🔥 MAGIC STICKY TABLE UTAMA (FIX OVERLAP & FREEZE) 🔥
+     MAGIC STICKY TABLE UTAMA (FIX OVERLAP & FREEZE)
      ======================================================== */
   #tabelUtama th, #tabelRekapRR th { position: sticky !important; z-index: 10; }
   
-  /* --- Tabel Utama RR --- */
   #tabelRekapRR thead th.head-row { cursor: pointer; transition: background 0.2s; }
   #tabelRekapRR thead th.head-row:hover { filter: brightness(0.95); }
   
-  /* Kunci Tinggi Header biar presisi */
   .rr-row-1 { height: 36px; }
   .rr-row-2 { height: 34px; }
   .rr-row-tot { height: 42px; }
@@ -32,7 +30,6 @@
       .rr-row-tot { height: 48px; }
   }
 
-  /* Seting Top yang presisi sesuai tinggi */
   #tabelRekapRR thead tr:nth-child(1) th { top: 0 !important; z-index: 30; }
   #tabelRekapRR thead tr:nth-child(2) th { top: 36px !important; z-index: 29; }
   #tabelRekapRR thead tr.sticky-total th { top: 70px !important; z-index: 40 !important; box-shadow: 0 2px 4px -1px rgba(0,0,0,0.05); }
@@ -47,12 +44,11 @@
   #tabelRekapRR tr.sticky-total th.sticky.left-0 { z-index: 45 !important; background-color: #e2e8f0 !important; }
 
   /* ========================================================
-     🔥 TABEL MODAL DETAIL RR (FIX FREEZE DEWA) 🔥
+     TABEL MODAL DETAIL RR (FIX FREEZE)
      ======================================================== */
   #tableExportRR { border-collapse: separate; border-spacing: 0; min-width: 100%; }
   #tableExportRR th, #tableExportRR td { background-clip: padding-box; background-color: #fff; }
 
-  /* Thead menempel kuat di atas */
   #tableExportRR thead th { 
       position: sticky !important; 
       top: 0 !important; 
@@ -61,7 +57,6 @@
       box-shadow: inset 0 -2px 0 #cbd5e1; 
   }
 
-  /* Setting Kolom Kiri (Rekening & Nasabah) */
   .mod-col-rek { position: sticky !important; left: 0 !important; min-width: 100px; max-width: 100px; box-shadow: inset -1px 0 0 #e2e8f0; }
   .mod-col-nas { position: sticky !important; left: 0 !important; min-width: 160px; max-width: 160px; box-shadow: 2px 0 4px -2px rgba(0,0,0,0.1), inset -1px 0 0 #e2e8f0; }
   
@@ -70,11 +65,9 @@
       .mod-col-nas { left: 120px !important; min-width: 250px; max-width: 250px; } 
   }
 
-  /* Z-Index Tumpukan Silang (Pojok Kiri Atas) */
   #bodyModalRR td.mod-col-rek, #bodyModalRR td.mod-col-nas { z-index: 20 !important; background-color: #fff !important; }
   #headModalRR th.mod-col-rek, #headModalRR th.mod-col-nas { z-index: 50 !important; background-color: #e2e8f0 !important; }
 
-  /* Hover Effects */
   tbody tr:hover td { background-color: #f8fafc !important; }
   #bodyModalRR tr:hover td.mod-col-rek, #bodyModalRR tr:hover td.mod-col-nas { filter: brightness(0.98); }
   tbody.group-tbody tr:hover td.sticky { filter: brightness(0.95); }
@@ -93,54 +86,64 @@
   /* HIDE DATEPICKER ICON */
   input[type="date"]::-webkit-inner-spin-button, input[type="date"]::-webkit-calendar-picker-indicator { display: none; -webkit-appearance: none; }
   input[type="date"] { -moz-appearance: textfield; }
+
+  /* Filter toggle animation */
+  .filter-collapsed { max-height: 0; overflow: hidden; opacity: 0; padding-top: 0; padding-bottom: 0; margin-top: 0; }
+  .filter-expanded { max-height: 500px; overflow: visible; opacity: 1; }
+  .filter-transition { transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.2s ease, margin 0.2s ease; }
 </style>
 
-<div class="max-w-[1920px] mx-auto px-2 md:px-4 py-4 md:py-6 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
+<div class="max-w-[1920px] mx-auto px-2 md:px-4 py-3 md:py-6 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
   
-  <div class="flex-none mb-3 md:mb-4 flex flex-col xl:flex-row justify-between items-start xl:items-end gap-3 md:gap-4 w-full shrink-0">
+  <!-- HEADER + FILTER SECTION -->
+  <div class="flex-none mb-2 md:mb-4 flex flex-col w-full shrink-0">
     
-    <div class="flex items-center justify-between w-full xl:w-auto shrink-0">
-        <div class="flex flex-col gap-1 md:gap-1.5">
-          <h1 class="text-lg md:text-2xl font-bold flex items-center gap-1.5 md:gap-2 text-slate-800">
-            <span class="p-1 md:p-2 bg-blue-600 text-white rounded-lg shadow-sm text-xs md:text-sm">
-              <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+    <!-- Title row with toggle button -->
+    <div class="flex items-center justify-between w-full mb-2 md:mb-3">
+        <div class="flex flex-col gap-0.5 md:gap-1.5 min-w-0 flex-1">
+          <h1 class="text-base md:text-2xl font-bold flex items-center gap-1.5 md:gap-2 text-slate-800">
+            <span class="p-1 md:p-2 bg-blue-600 text-white rounded-lg shadow-sm text-xs md:text-sm shrink-0">
+              <svg class="w-3.5 h-3.5 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v10"></path></svg>
             </span>
-            <span id="otpTitle">Ontime Payment (OTP) - DPD 0</span>
+            <span id="otpTitle" class="truncate">Ontime Payment (OTP) - DPD 0</span>
           </h1>
-          <p class="text-[9px] md:text-xs text-slate-500 font-medium tracking-wide">*Data OTP = Target (M-1) / Total Bayar (Aktual)*</p>
+          <p class="text-[8px] md:text-xs text-slate-500 font-medium tracking-wide ml-0 md:ml-11">*Data OTP = Target (M-1) / Total Bayar (Aktual)*</p>
         </div>
 
-        <button type="button" onclick="toggleMainFilter()" class="xl:hidden h-[30px] px-3 bg-white border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm transition font-bold text-[10px] whitespace-nowrap ml-2 shrink-0">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-            Filter
+        <!-- Toggle Filter Button -->
+        <button type="button" id="btnToggleFilter" onclick="toggleMainFilter()" class="h-[30px] md:h-[34px] px-2.5 md:px-3 bg-white border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm transition font-bold text-[10px] md:text-xs whitespace-nowrap ml-2 shrink-0 hover:bg-slate-50">
+            <svg id="iconFilterToggle" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="transition-transform duration-200"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+            <span class="hidden sm:inline">Filter</span>
+            <svg id="iconChevron" class="w-3 h-3 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"></path></svg>
         </button>
     </div>
 
-    <div id="filterWrapperMain" class="hidden xl:block w-full xl:w-auto mt-2 xl:mt-0 transition-all duration-300 origin-top">
-        <form id="formFilterRR" class="bg-white p-2 md:p-2.5 rounded-lg md:rounded-xl border border-slate-200 shadow-sm flex flex-row items-end gap-2 md:gap-3 w-full overflow-x-auto no-scrollbar" onsubmit="event.preventDefault(); fetchRekapRR();">
+    <!-- Filter Form (collapsible) -->
+    <div id="filterWrapperMain" class="filter-transition w-full">
+        <form id="formFilterRR" class="bg-white p-2 md:p-2.5 rounded-lg md:rounded-xl border border-slate-200 shadow-sm w-full" onsubmit="event.preventDefault(); fetchRekapRR();">
             
-            <div class="flex flex-nowrap items-end gap-1.5 md:gap-2 w-full md:w-auto">
-                <div class="field flex-1 shrink-0 w-[110px] md:w-[130px]" id="wrap-closing">
+            <div class="flex flex-wrap items-end gap-1.5 md:gap-2 w-full">
+                <div class="field w-[calc(50%-4px)] sm:w-auto sm:flex-none" id="wrap-closing">
                     <label class="lbl text-blue-700">CLOSING (M-1)</label>
-                    <input type="date" id="closing_date" class="inp w-full text-[10px] md:text-sm font-semibold h-[30px] md:h-[38px] px-1 md:px-3 text-slate-700 cursor-pointer" required onclick="try{this.showPicker()}catch(e){}">
+                    <input type="date" id="closing_date" class="inp w-full sm:w-[130px] text-[10px] md:text-sm font-semibold h-[30px] md:h-[38px] px-1 md:px-3 text-slate-700 cursor-pointer" required onclick="try{this.showPicker()}catch(e){}">
                 </div>
-                <div class="field flex-1 shrink-0 w-[110px] md:w-[130px]">
+                <div class="field w-[calc(50%-4px)] sm:w-auto sm:flex-none">
                     <label class="lbl">ACTUAL (HARIAN)</label>
-                    <input type="date" id="harian_date" class="inp w-full text-[10px] md:text-sm font-semibold h-[30px] md:h-[38px] px-1 md:px-3 text-slate-700 cursor-pointer" required onclick="try{this.showPicker()}catch(e){}">
+                    <input type="date" id="harian_date" class="inp w-full sm:w-[130px] text-[10px] md:text-sm font-semibold h-[30px] md:h-[38px] px-1 md:px-3 text-slate-700 cursor-pointer" required onclick="try{this.showPicker()}catch(e){}">
                 </div>
                 
-                <div class="w-px h-6 bg-slate-200 shrink-0 mx-1 hidden md:block mb-1.5"></div>
+                <div class="w-px h-6 bg-slate-200 shrink-0 mx-0.5 hidden md:block mb-1.5"></div>
 
-                <div class="field shrink-0 w-[140px] md:w-[200px] transition-opacity duration-300">
+                <div class="field w-[calc(50%-4px)] sm:w-auto sm:flex-none">
                     <label class="lbl text-slate-600">CABANG</label>
-                    <select id="opt_kantor" class="inp border-slate-200 focus:border-blue-500 bg-slate-50/50 text-[10px] md:text-sm font-bold h-[30px] md:h-[38px] px-2 text-slate-700 cursor-pointer w-full truncate" onchange="handleCabangChangeOtp()">
+                    <select id="opt_kantor" class="inp border-slate-200 focus:border-blue-500 bg-slate-50/50 text-[10px] md:text-sm font-bold h-[30px] md:h-[38px] px-2 text-slate-700 cursor-pointer w-full sm:w-[200px] truncate" onchange="handleCabangChangeOtp()">
                         <option value="">Loading...</option>
                     </select>
                 </div>
 
-                <div class="field shrink-0 w-[120px] md:w-[150px]">
+                <div class="field w-[calc(50%-4px)] sm:w-auto sm:flex-none">
                     <label id="lbl_sub_otp" class="lbl text-slate-600">KORWIL</label>
-                    <select id="opt_sub_otp" class="inp border-slate-200 focus:border-blue-500 bg-slate-50/50 text-[10px] md:text-sm font-bold h-[30px] md:h-[38px] px-2 text-slate-700 cursor-pointer w-full truncate" onchange="fetchRekapRR()">
+                    <select id="opt_sub_otp" class="inp border-slate-200 focus:border-blue-500 bg-slate-50/50 text-[10px] md:text-sm font-bold h-[30px] md:h-[38px] px-2 text-slate-700 cursor-pointer w-full sm:w-[150px] truncate" onchange="fetchRekapRR()">
                         <option value="">ALL KORWIL</option>
                         <option value="SEMARANG">SEMARANG</option>
                         <option value="SOLO">SOLO</option>
@@ -149,31 +152,27 @@
                     </select>
                 </div>
 
-                <div class="field shrink-0 w-[100px] md:w-[120px]">
+                <div class="field w-[calc(50%-4px)] sm:w-auto sm:flex-none">
                     <label class="lbl text-blue-700">DPD BUCKET</label>
-                    <select id="opt_dpd_bucket" class="inp border-blue-200 focus:border-blue-500 bg-blue-50/50 text-[10px] md:text-sm font-bold h-[30px] md:h-[38px] px-2 text-blue-700 cursor-pointer w-full" onchange="fetchRekapRR()">
+                    <select id="opt_dpd_bucket" class="inp border-blue-200 focus:border-blue-500 bg-blue-50/50 text-[10px] md:text-sm font-bold h-[30px] md:h-[38px] px-2 text-blue-700 cursor-pointer w-full sm:w-[120px]" onchange="fetchRekapRR()">
                         <option value="dpd0">DPD 0</option>
                         <option value="dpd1-30">DPD 1-30</option>
                     </select>
                 </div>
                 
-            
-                <!-- 🔥 TOGGLE PRODUK 127 🔥 -->
+                <!-- TOGGLE PRODUK 127 -->
                 <div class="flex items-center gap-1.5 shrink-0 h-[30px] md:h-[38px] px-2 md:px-3 bg-slate-100 border border-slate-200 rounded-md md:rounded-lg cursor-pointer hover:bg-slate-200 transition" onclick="document.getElementById('chk_127').click()">
-                    
-                    <!-- Tambahkan onchange="fetchRekapRR()" di sini 👇 -->
                     <input type="checkbox" id="chk_127" class="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-600 bg-white border-slate-300 rounded focus:ring-blue-500 cursor-pointer" onclick="event.stopPropagation()" onchange="fetchRekapRR()">
-                    
                     <span class="text-[9px] md:text-xs font-bold text-slate-700 uppercase tracking-wide select-none">KPP</span>
                 </div>
 
-                <div class="flex items-center gap-1 h-[30px] md:h-[38px] shrink-0">
+                <div class="flex items-center gap-1 h-[30px] md:h-[38px] shrink-0 ml-auto sm:ml-0">
                     <button type="submit" id="btn-cari" class="btn-icon h-full w-[36px] md:w-[80px] bg-blue-600 hover:bg-blue-700 text-white rounded-md md:rounded-lg shadow-sm" title="Cari Data">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="md:w-[16px] md:h-[16px]"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                         <span class="hidden md:inline font-bold text-xs uppercase tracking-wider ml-1.5">CARI</span>
                     </button>
                     <button type="button" onclick="exportExcelRekapRR()" class="btn-icon h-full w-[36px] md:w-[40px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-md md:rounded-lg shadow-sm shrink-0" title="Download Excel">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="md:w-[18px] md:h-[18px]"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></line></svg>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="md:w-[18px] md:h-[18px]"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline></svg>
                     </button>
                 </div>
             </div>
@@ -182,6 +181,7 @@
     </div>
   </div>
 
+  <!-- TABLE SECTION -->
   <div class="flex-1 min-h-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm relative flex flex-col">
     
     <div id="loadingRR" class="hidden absolute inset-0 bg-white/80 z-[100] flex flex-col items-center justify-center text-blue-600 font-bold uppercase tracking-widest text-[10px] md:text-sm backdrop-blur-sm">
@@ -199,50 +199,52 @@
   </div>
 </div>
 
+<!-- MODAL DETAIL -->
 <div id="modalDetailRR" class="fixed inset-0 hidden z-[9999] flex items-end md:items-center justify-center p-0 sm:p-4">
   <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModalRR()"></div>
   <div class="relative bg-white w-full h-[95vh] md:h-[92vh] max-w-[1600px] rounded-t-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
     
     <div class="flex flex-col bg-white border-b shrink-0 w-full z-50">
-        <div class="flex flex-row items-center justify-between px-3 py-2.5 md:px-4 md:py-3 gap-2 w-full">
+        <div class="flex flex-row items-center justify-between px-3 py-2 md:px-4 md:py-3 gap-2 w-full">
             
             <div class="flex-1 min-w-0" id="modal-title-container">
-              <h3 class="font-bold text-slate-800 flex items-center gap-1.5 text-[12px] md:text-xl leading-none truncate">
+              <h3 class="font-bold text-slate-800 flex items-center gap-1.5 text-[11px] md:text-xl leading-tight truncate">
                   <span class="w-1.5 md:w-2 h-4 md:h-6 bg-blue-600 rounded-full hidden md:block shrink-0"></span> 
                   <span id="modalTitleRR" class="truncate">Detail Penagihan</span>
               </h3>
-              <p class="text-[9px] md:text-sm text-slate-500 mt-1 md:ml-4 font-mono font-medium leading-none truncate" id="modalSubTitleRR">...</p>
+              <p class="text-[8px] md:text-sm text-slate-500 mt-0.5 md:mt-1 md:ml-4 font-mono font-medium leading-none truncate" id="modalSubTitleRR">...</p>
             </div>
             
             <div class="flex flex-row items-center gap-1.5 md:gap-2 shrink-0">
-                <div class="relative w-[120px] md:w-[200px] shrink-0">
-                    <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <div class="relative w-[100px] md:w-[200px] shrink-0">
+                    <div class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                        <svg class="w-3 h-3 md:w-3.5 md:h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
-                    <input type="text" id="search_nasabah" onkeyup="filterTableDetail()" class="w-full pl-8 pr-3 py-1.5 h-[32px] bg-slate-50 border border-slate-200 rounded-lg text-[10px] md:text-xs outline-none focus:border-blue-500 focus:bg-white transition-all placeholder-slate-400 font-medium" placeholder="Cari nama...">
+                    <input type="text" id="search_nasabah" onkeyup="filterTableDetail()" class="w-full pl-7 md:pl-8 pr-2 md:pr-3 py-1.5 h-[28px] md:h-[32px] bg-slate-50 border border-slate-200 rounded-lg text-[9px] md:text-xs outline-none focus:border-blue-500 focus:bg-white transition-all placeholder-slate-400 font-medium" placeholder="Cari nama...">
                 </div>
                 
-                <button type="button" onclick="toggleModalFilter()" class="md:hidden h-[32px] w-[32px] bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg flex items-center justify-center transition shrink-0">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                <!-- Toggle filter modal -->
+                <button type="button" onclick="toggleModalFilter()" id="btnToggleModalFilter" class="md:hidden h-[28px] w-[28px] bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg flex items-center justify-center transition shrink-0">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
                 </button>
                 
-                <button onclick="closeModalRR()" class="w-[32px] h-[32px] flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-xl leading-none shrink-0">&times;</button>
+                <button onclick="closeModalRR()" class="w-[28px] h-[28px] md:w-[32px] md:h-[32px] flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-lg md:text-xl leading-none shrink-0">&times;</button>
             </div>
         </div>
 
         <div id="modalFilterWrapper" class="hidden md:block w-full border-t border-slate-100 md:border-none transition-all">
-            <div class="flex flex-row items-center justify-end gap-1.5 md:gap-2 px-3 pb-2.5 md:px-4 md:pb-3 overflow-x-auto no-scrollbar">
-                <select id="opt_kankas_modal" class="inp px-1 md:px-2 h-[32px] w-[100px] md:w-[130px] text-[10px] md:text-xs font-bold text-blue-800 bg-blue-50/50 border-blue-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)">
+            <div class="flex flex-row items-center justify-end gap-1.5 md:gap-2 px-3 py-2 md:px-4 md:pb-3 overflow-x-auto no-scrollbar">
+                <select id="opt_kankas_modal" class="inp px-1 md:px-2 h-[28px] md:h-[32px] w-[90px] md:w-[140px] text-[9px] md:text-xs font-bold text-blue-800 bg-blue-50/50 border-blue-200 outline-none shrink-0 cursor-pointer" onchange="onKankasModalChange()">
                     <option value="">Semua Kankas</option>
                 </select>
 
-                <select id="opt_ao_modal" class="inp px-1 md:px-2 h-[32px] w-[100px] md:w-[130px] text-[10px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)">
+                <select id="opt_ao_modal" class="inp px-1 md:px-2 h-[28px] md:h-[32px] w-[90px] md:w-[140px] text-[9px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)">
                     <option value="">Semua AO</option>
                 </select>
                 
-                <button onclick="downloadExcelFull()" class="btn-icon bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 md:px-3 h-[32px] rounded-lg shadow-sm shrink-0" title="Export Excel">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    <span class="ml-1.5 text-[10px] md:text-xs font-bold uppercase tracking-wider">Export</span>
+                <button onclick="downloadExcelFull()" class="btn-icon bg-emerald-600 hover:bg-emerald-700 text-white px-2 md:px-3 h-[28px] md:h-[32px] rounded-lg shadow-sm shrink-0" title="Export Excel">
+                    <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span class="ml-1 text-[9px] md:text-xs font-bold uppercase tracking-wider">Export</span>
                 </button>
             </div>
         </div>
@@ -261,15 +263,16 @@
       </table>
     </div>
 
-    <div class="px-3 py-2.5 md:px-5 md:py-4 border-t bg-white flex justify-between items-center shrink-0">
-      <span class="text-[9px] md:text-sm font-bold text-slate-600 bg-slate-100 px-2 md:px-3 py-1 rounded-md md:rounded-lg" id="pageInfoRR">0 Data</span>
+    <div class="px-3 py-2 md:px-5 md:py-4 border-t bg-white flex justify-between items-center shrink-0">
+      <span class="text-[8px] md:text-sm font-bold text-slate-600 bg-slate-100 px-2 md:px-3 py-1 rounded-md md:rounded-lg" id="pageInfoRR">0 Data</span>
       <div class="flex gap-1 md:gap-2">
-          <button id="btnPrevRR" onclick="changePageDetail(-1)" class="px-2.5 md:px-4 py-1.5 md:py-2 bg-white border border-slate-300 rounded-md md:rounded-lg text-[9px] md:text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 transition shadow-sm">« Prev</button>
-          <button id="btnNextRR" onclick="changePageDetail(1)" class="px-2.5 md:px-4 py-1.5 md:py-2 bg-white border border-slate-300 rounded-md md:rounded-lg text-[9px] md:text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 transition shadow-sm">Next »</button>
+          <button id="btnPrevRR" onclick="changePageDetail(-1)" class="px-2 md:px-4 py-1 md:py-2 bg-white border border-slate-300 rounded-md md:rounded-lg text-[9px] md:text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 transition shadow-sm">« Prev</button>
+          <button id="btnNextRR" onclick="changePageDetail(1)" class="px-2 md:px-4 py-1 md:py-2 bg-white border border-slate-300 rounded-md md:rounded-lg text-[9px] md:text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 transition shadow-sm">Next »</button>
       </div>
     </div>
   </div>
 </div>
+
 
 <script>
   /* CONFIGURATION */
@@ -281,6 +284,7 @@
   let rekapDataRaw = [];
   let rekapGtRaw = null;
   let detailDataCache = [];
+  let allDetailDataForDropdown = []; // cache semua data detail untuk populate dropdown
 
   const apiCall = async (url, opt = {}) => {
       const res = await fetch(url, opt);
@@ -305,16 +309,31 @@
   let sortDetailAsc = true;
 
   const getSortIcon = (col, currentCol, asc) => {
-      if (col !== currentCol) return '<span class="opacity-30 text-[8px] md:text-[10px] ml-1 font-sans">↕</span>';
-      return asc ? '<span class="text-blue-600 ml-1 text-[10px] md:text-[11px] font-sans">▲</span>' : '<span class="text-blue-600 ml-1 text-[10px] md:text-[11px] font-sans">▼</span>';
+      if (col !== currentCol) return '<span class="opacity-30 text-[8px] md:text-[10px] ml-1 font-sans">&#8597;</span>';
+      return asc ? '<span class="text-blue-600 ml-1 text-[10px] md:text-[11px] font-sans">&#9650;</span>' : '<span class="text-blue-600 ml-1 text-[10px] md:text-[11px] font-sans">&#9660;</span>';
   };
 
+  /* ============================
+     FILTER TOGGLE LOGIC
+     ============================ */
+  let mainFilterOpen = window.innerWidth >= 1280; // xl breakpoint: default open on desktop
+
   function toggleMainFilter() {
+      mainFilterOpen = !mainFilterOpen;
+      applyFilterState();
+  }
+
+  function applyFilterState() {
       const el = document.getElementById('filterWrapperMain');
-      if(el.classList.contains('hidden')) {
-          el.classList.remove('hidden'); el.classList.add('block');
+      const chevron = document.getElementById('iconChevron');
+      if(mainFilterOpen) {
+          el.classList.remove('filter-collapsed');
+          el.classList.add('filter-expanded');
+          if(chevron) chevron.style.transform = 'rotate(180deg)';
       } else {
-          el.classList.add('hidden'); el.classList.remove('block');
+          el.classList.remove('filter-expanded');
+          el.classList.add('filter-collapsed');
+          if(chevron) chevron.style.transform = 'rotate(0deg)';
       }
   }
 
@@ -327,27 +346,41 @@
       }
   }
 
+  /* ============================
+     INIT ON LOAD
+     ============================ */
   window.addEventListener('DOMContentLoaded', async () => {
+    // Set initial filter state based on viewport
+    mainFilterOpen = window.innerWidth >= 1280;
+    applyFilterState();
+
     const user = (window.getUser && window.getUser()) || null;
     let uKode = (user && user.kode) ? String(user.kode).padStart(3, '0') : '000';
     if(uKode === '099') uKode = '000';
     
     await populateKantor(uKode);
 
-    // Default ke H-1 karena history institusi biasanya H-1
     const d = await getLastHarianData(); 
     if(d) {
         document.getElementById('closing_date').value = d.last_closing;
         document.getElementById('harian_date').value  = d.last_created;
     } else {
         const now = new Date();
-        now.setDate(now.getDate() - 1); // fallback h-1
+        now.setDate(now.getDate() - 1);
         const strH1 = now.toISOString().split('T')[0];
         document.getElementById('closing_date').value = strH1;
         document.getElementById('harian_date').value  = strH1;
     }
     
     fetchRekapRR();
+  });
+
+  // Listen for resize to auto-expand filter on desktop
+  window.addEventListener('resize', () => {
+      if(window.innerWidth >= 1280 && !mainFilterOpen) {
+          mainFilterOpen = true;
+          applyFilterState();
+      }
   });
 
   async function getLastHarianData(){ 
@@ -367,7 +400,6 @@
             el.innerHTML = `<option value="${uKode}">CABANG ${uKode}</option>`; 
         }
         el.value = uKode; el.disabled = true;
-        // Untuk cabang non-pusat, langsung set sub ke KANKAS
         await handleCabangChangeOtp(true);
         return; 
     }
@@ -387,7 +419,6 @@
       const optSub = document.getElementById('opt_sub_otp');
 
       if (cabangVal === "" || cabangVal === "000") {
-          // Konsolidasi: tampilkan KORWIL
           lblSub.innerText = "KORWIL";
           optSub.innerHTML = `
               <option value="">ALL KORWIL</option>
@@ -397,7 +428,6 @@
               <option value="PEKALONGAN">PEKALONGAN</option>
           `;
       } else {
-          // Cabang dipilih: tampilkan KANKAS
           lblSub.innerText = "KANKAS";
           optSub.innerHTML = '<option value="">ALL KANKAS</option>';
           await loadKankasSubOtp(cabangVal);
@@ -417,45 +447,74 @@
       } catch(err) {}
   }
 
-  async function loadKankasModalDropdown() {
+
+  /* ============================
+     DROPDOWN MODAL - POPULATE FROM DATA
+     ============================ */
+  
+  // Populate kankas dropdown dari data detail yang sudah di-fetch (bukan master)
+  function populateKankasFromData(data, preselect) {
       const elKankas = document.getElementById('opt_kankas_modal');
-      const branch = document.getElementById('opt_kantor').value;
-      
-      elKankas.innerHTML = '<option value="">Semua Kankas</option>';
-      if(!branch || branch === '') return;
-
-      try {
-          const payload = { type: 'kode_kankas', kode_kantor: branch };
-          const r = await fetch(API_KODE_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-          const j = await r.json();
-          let h = '<option value="">Semua Kankas</option>';
-          if(j.data && Array.isArray(j.data)) {
-              j.data.forEach(x => { h += `<option value="${x.kode_group1}">${x.deskripsi_group1 || x.kode_group1}</option>`; });
-          }
-          elKankas.innerHTML = h;
-      } catch(err) { }
+      const kankasSet = new Set();
+      (data || []).forEach(r => {
+          if(r.kankas && r.kankas.trim() !== '' && r.kankas !== '-') kankasSet.add(r.kankas.trim());
+      });
+      let h = '<option value="">Semua Kankas</option>';
+      [...kankasSet].sort().forEach(k => { h += `<option value="${k}">${k}</option>`; });
+      elKankas.innerHTML = h;
+      if(preselect && kankasSet.has(preselect)) elKankas.value = preselect;
   }
 
-  async function loadAOModalDropdown(kode_cabang) {
+  // Populate AO dropdown dari data detail yang sudah di-fetch (bukan master)
+  function populateAOFromData(data, preselect) {
       const elAO = document.getElementById('opt_ao_modal');
-      elAO.innerHTML = '<option value="">Semua AO</option>';
-      if(!kode_cabang) return;
-
-      try {
-          const payload = { type: 'kode_ao_kredit', kode_kantor: kode_cabang };
-          const r = await fetch(API_KODE_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-          const j = await r.json();
-          let h = '<option value="">Semua AO</option>';
-          if(j.data && Array.isArray(j.data)) {
-              j.data.forEach(x => { 
-                  const rawName = x.nama_ao || x.kode_group2;
-                  h += `<option value="${x.kode_group2}">${rawName}</option>`; 
-              });
+      const aoMap = new Map(); // kode_ao -> nama_ao
+      (data || []).forEach(r => {
+          const aoKey = r.kode_ao || r.nama_ao || '';
+          const aoName = r.nama_ao || r.kode_ao || '';
+          if(aoKey && aoKey.trim() !== '' && aoKey !== '-') {
+              if(!aoMap.has(aoKey)) aoMap.set(aoKey, aoName);
           }
-          elAO.innerHTML = h;
-      } catch(err) { }
+      });
+      let h = '<option value="">Semua AO</option>';
+      [...aoMap.entries()].sort((a,b) => a[1].localeCompare(b[1])).forEach(([k, v]) => { 
+          h += `<option value="${k}">${v}</option>`; 
+      });
+      elAO.innerHTML = h;
+      if(preselect) elAO.value = preselect;
   }
 
+  // Ketika kankas berubah di modal, filter juga AO sesuai kankas yg dipilih
+  function onKankasModalChange() {
+      const selectedKankas = document.getElementById('opt_kankas_modal').value;
+      // Filter AO dropdown berdasarkan kankas yang dipilih
+      if(selectedKankas && allDetailDataForDropdown.length > 0) {
+          const filteredData = allDetailDataForDropdown.filter(r => r.kankas && r.kankas.trim() === selectedKankas);
+          populateAOFromData(filteredData, '');
+      } else {
+          populateAOFromData(allDetailDataForDropdown, '');
+      }
+      loadDetailPage(1);
+  }
+
+  // Fetch all data (tanpa limit) untuk populate dropdown secara akurat
+  async function fetchAllDetailForDropdown(params) {
+      try {
+          const payload = { ...params, page: 1, limit: 9999 };
+          // Hapus filter kankas & ao agar dapat semua data
+          delete payload.kode_kankas;
+          delete payload.kode_ao;
+          const res = await apiCall(API_RR_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          if(res.ok && res.json.status === 200) {
+              return res.json.data?.data || [];
+          }
+      } catch(e) {}
+      return [];
+  }
+
+  /* ============================
+     RENDER MAIN TABLE
+     ============================ */
   function renderMainHeaderRR() {
       const head = document.getElementById('headRR');
       head.innerHTML = `
@@ -513,6 +572,7 @@
       renderMainHeaderRR(); renderTableRR(rekapDataRaw, rekapGtRaw);
   }
 
+
   async function fetchRekapRR(){
     const l = document.getElementById('loadingRR');
     const tb = document.getElementById('bodyRR');
@@ -529,12 +589,10 @@
         const subVal = document.getElementById('opt_sub_otp').value;
         const dpdBucket = document.getElementById('opt_dpd_bucket').value;
 
-        // Tentukan korwil vs kankas berdasarkan cabang
         let reqKorwil = ""; let reqKankas = "";
         if (cabangVal === "" || cabangVal === "000") reqKorwil = subVal;
         else reqKankas = subVal;
 
-        // Update judul sesuai bucket
         const titleEl = document.getElementById('otpTitle');
         if(titleEl) titleEl.textContent = dpdBucket === 'dpd0' ? 'Ontime Payment (OTP) - DPD 0' : 'Ontime Payment (OTP) - DPD 1-30';
 
@@ -662,6 +720,10 @@
       a.click();
   }
 
+
+  /* ============================
+     MODAL DETAIL FUNCTIONS
+     ============================ */
   function createWABtn(phone) {
       if (!phone || phone.trim() === '') return `<span class="text-slate-400 font-mono text-[9px] md:text-sm">-</span>`;
       return `<span class="text-slate-700 font-mono font-medium text-[9px] md:text-[11px]">${phone}</span>`;
@@ -781,31 +843,37 @@
       renderModalHeaderRR(); renderTableDetailBodyRR(detailDataCache);
   }
 
+
+  /* ============================
+     INIT MODAL - KEY FIX: auto-filter from source
+     ============================ */
   async function initModalDetail(tgl, status) {
       currentMode = 'NORMAL';
       const branch = document.getElementById('opt_kantor').value || null;
       const subVal = document.getElementById('opt_sub_otp').value;
       const dpdBucket = document.getElementById('opt_dpd_bucket').value;
+      const lblSub = document.getElementById('lbl_sub_otp').innerText;
 
       // Tentukan korwil vs kankas
       let reqKorwil = ""; let reqKankas = "";
       if (branch === "" || branch === null || branch === "000") reqKorwil = subVal;
       else reqKankas = subVal;
-      
-      await loadKankasModalDropdown();
-      const kankas = document.getElementById('opt_kankas_modal').value || null; 
-      
-      await loadAOModalDropdown(branch);
-      const ao = document.getElementById('opt_ao_modal').value || null;
-      
+
+      // PERBAIKAN: Jika sumber data adalah KANKAS (filter kankas aktif di rekap),
+      // maka otomatis set filter kankas di modal detail
+      let preselectKankas = "";
+      if (lblSub === "KANKAS" && subVal && subVal !== "") {
+          preselectKankas = subVal;
+      }
+
       currentDetailParams = { 
           type: 'detail_rr', 
           closing_date: document.getElementById('closing_date').value, 
           harian_date: document.getElementById('harian_date').value, 
           kode_kantor: branch, 
           korwil: reqKorwil,
-          kode_kankas: kankas || reqKankas,
-          kode_ao: ao,
+          kode_kankas: preselectKankas || reqKankas,
+          kode_ao: null,
           tgl_tagih: tgl, 
           status: status, 
           dpd_bucket: dpdBucket,
@@ -820,7 +888,33 @@
       
       document.getElementById('search_nasabah').value = '';
       sortDetailCol = ''; sortDetailAsc = true;
-      renderModalHeaderRR(); loadDetailPage(1);
+      renderModalHeaderRR();
+
+      // Fetch semua data (tanpa filter) untuk populate dropdown dari data aktual
+      const baseParams = { 
+          type: 'detail_rr', 
+          closing_date: document.getElementById('closing_date').value, 
+          harian_date: document.getElementById('harian_date').value, 
+          kode_kantor: branch, 
+          korwil: reqKorwil,
+          kode_kankas: reqKankas, // kankas dari rekap (bisa kosong)
+          tgl_tagih: tgl, 
+          status: status, 
+          dpd_bucket: dpdBucket,
+          include_127: document.getElementById('chk_127').checked
+      };
+      allDetailDataForDropdown = await fetchAllDetailForDropdown(baseParams);
+      populateKankasFromData(allDetailDataForDropdown, preselectKankas);
+      
+      // Filter AO berdasarkan kankas yang dipilih
+      if(preselectKankas) {
+          const filteredForAO = allDetailDataForDropdown.filter(r => r.kankas && r.kankas.trim() === preselectKankas);
+          populateAOFromData(filteredForAO, '');
+      } else {
+          populateAOFromData(allDetailDataForDropdown, '');
+      }
+
+      loadDetailPage(1);
   }
 
   async function initModalLunas(tgl) {
@@ -828,17 +922,17 @@
       const branch = document.getElementById('opt_kantor').value || null;
       const subVal = document.getElementById('opt_sub_otp').value;
       const dpdBucket = document.getElementById('opt_dpd_bucket').value;
+      const lblSub = document.getElementById('lbl_sub_otp').innerText;
 
-      // Tentukan korwil vs kankas
       let reqKorwil = ""; let reqKankas = "";
       if (branch === "" || branch === null || branch === "000") reqKorwil = subVal;
       else reqKankas = subVal;
 
-      await loadKankasModalDropdown();
-      const kankas = document.getElementById('opt_kankas_modal').value || null;
-      
-      await loadAOModalDropdown(branch);
-      const ao = document.getElementById('opt_ao_modal').value || null;
+      // PERBAIKAN: auto-filter kankas dari sumber
+      let preselectKankas = "";
+      if (lblSub === "KANKAS" && subVal && subVal !== "") {
+          preselectKankas = subVal;
+      }
 
       currentDetailParams = { 
           type: 'detail_lunas_rr', 
@@ -846,8 +940,8 @@
           harian_date: document.getElementById('harian_date').value, 
           kode_kantor: branch, 
           korwil: reqKorwil,
-          kode_kankas: kankas || reqKankas,
-          kode_ao: ao,
+          kode_kankas: preselectKankas || reqKankas,
+          kode_ao: null,
           tgl_tagih: tgl, 
           dpd_bucket: dpdBucket,
           include_127: document.getElementById('chk_127').checked,
@@ -861,7 +955,31 @@
       
       document.getElementById('search_nasabah').value = '';
       sortDetailCol = ''; sortDetailAsc = true;
-      renderModalHeaderRR(); loadDetailPage(1);
+      renderModalHeaderRR();
+
+      // Fetch all for dropdown
+      const baseParams = { 
+          type: 'detail_lunas_rr', 
+          closing_date: document.getElementById('closing_date').value, 
+          harian_date: document.getElementById('harian_date').value, 
+          kode_kantor: branch, 
+          korwil: reqKorwil,
+          kode_kankas: reqKankas,
+          tgl_tagih: tgl, 
+          dpd_bucket: dpdBucket,
+          include_127: document.getElementById('chk_127').checked
+      };
+      allDetailDataForDropdown = await fetchAllDetailForDropdown(baseParams);
+      populateKankasFromData(allDetailDataForDropdown, preselectKankas);
+      
+      if(preselectKankas) {
+          const filteredForAO = allDetailDataForDropdown.filter(r => r.kankas && r.kankas.trim() === preselectKankas);
+          populateAOFromData(filteredForAO, '');
+      } else {
+          populateAOFromData(allDetailDataForDropdown, '');
+      }
+
+      loadDetailPage(1);
   }
 
   window.filterTableDetail = function() {
@@ -882,6 +1000,7 @@
           }
       }
   }
+
 
   async function loadDetailPage(page) {
       const l = document.getElementById('loadingModalRR'); 
@@ -975,6 +1094,7 @@
       });
       tb.innerHTML = h;
   }
+
 
   async function downloadExcelFull() {
       const btn = event.target.closest('button'); const txt = btn.innerHTML;
