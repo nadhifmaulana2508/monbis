@@ -869,7 +869,7 @@
       // maka otomatis set filter kankas di modal detail
       let preselectKankas = "";
       if (lblSub === "KANKAS" && subVal && subVal !== "") {
-          preselectKankas = subVal;
+          preselectKankas = subVal; // kode_group1 dari opt_sub_otp
       }
 
       currentDetailParams = { 
@@ -878,7 +878,7 @@
           harian_date: document.getElementById('harian_date').value, 
           kode_kantor: branch, 
           korwil: reqKorwil,
-          kode_kankas: preselectKankas || reqKankas,
+          kode_kankas: reqKankas, // kirim kankas dari rekap ke API (bisa kosong = ALL)
           kode_ao: null,
           tgl_tagih: tgl, 
           status: status, 
@@ -937,7 +937,7 @@
       // PERBAIKAN: auto-filter kankas dari sumber
       let preselectKankas = "";
       if (lblSub === "KANKAS" && subVal && subVal !== "") {
-          preselectKankas = subVal;
+          preselectKankas = subVal; // kode_group1 dari opt_sub_otp
       }
 
       currentDetailParams = { 
@@ -946,7 +946,7 @@
           harian_date: document.getElementById('harian_date').value, 
           kode_kantor: branch, 
           korwil: reqKorwil,
-          kode_kankas: preselectKankas || reqKankas,
+          kode_kankas: reqKankas, // kirim kankas dari rekap ke API (bisa kosong = ALL)
           kode_ao: null,
           tgl_tagih: tgl, 
           dpd_bucket: dpdBucket,
