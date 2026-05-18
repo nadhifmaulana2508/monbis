@@ -105,7 +105,7 @@
             <span class="p-1 md:p-2 bg-blue-600 text-white rounded-lg shadow-sm text-xs md:text-sm">
               <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
             </span>
-            <span>Ontime Payment (OTP)</span>
+            <span id="otpTitle">Ontime Payment (OTP) - DPD 0</span>
           </h1>
           <p class="text-[9px] md:text-xs text-slate-500 font-medium tracking-wide">*Data OTP = Target (M-1) / Total Bayar (Aktual)*</p>
         </div>
@@ -133,8 +133,27 @@
 
                 <div class="field shrink-0 w-[140px] md:w-[200px] transition-opacity duration-300">
                     <label class="lbl text-slate-600">CABANG</label>
-                    <select id="opt_kantor" class="inp border-slate-200 focus:border-blue-500 bg-slate-50/50 text-[10px] md:text-sm font-bold h-[30px] md:h-[38px] px-2 text-slate-700 cursor-pointer w-full truncate" onchange="fetchRekapRR()">
+                    <select id="opt_kantor" class="inp border-slate-200 focus:border-blue-500 bg-slate-50/50 text-[10px] md:text-sm font-bold h-[30px] md:h-[38px] px-2 text-slate-700 cursor-pointer w-full truncate" onchange="handleCabangChangeOtp()">
                         <option value="">Loading...</option>
+                    </select>
+                </div>
+
+                <div class="field shrink-0 w-[120px] md:w-[150px]">
+                    <label id="lbl_sub_otp" class="lbl text-slate-600">KORWIL</label>
+                    <select id="opt_sub_otp" class="inp border-slate-200 focus:border-blue-500 bg-slate-50/50 text-[10px] md:text-sm font-bold h-[30px] md:h-[38px] px-2 text-slate-700 cursor-pointer w-full truncate" onchange="fetchRekapRR()">
+                        <option value="">ALL KORWIL</option>
+                        <option value="SEMARANG">SEMARANG</option>
+                        <option value="SOLO">SOLO</option>
+                        <option value="BANYUMAS">BANYUMAS</option>
+                        <option value="PEKALONGAN">PEKALONGAN</option>
+                    </select>
+                </div>
+
+                <div class="field shrink-0 w-[100px] md:w-[120px]">
+                    <label class="lbl text-blue-700">DPD BUCKET</label>
+                    <select id="opt_dpd_bucket" class="inp border-blue-200 focus:border-blue-500 bg-blue-50/50 text-[10px] md:text-sm font-bold h-[30px] md:h-[38px] px-2 text-blue-700 cursor-pointer w-full" onchange="fetchRekapRR()">
+                        <option value="dpd0">DPD 0</option>
+                        <option value="dpd1-30">DPD 1-30</option>
                     </select>
                 </div>
                 
@@ -339,7 +358,7 @@
     const el = document.getElementById('opt_kantor'); if(!el) return;
     if (uKode !== '000') { 
         try {
-            const res = await apiCall(API_KODE_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_kantor'}) });
+            const res = await fetch(API_KODE_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_kantor'}) });
             const json = await res.json();
             const myKantor = (json.data||[]).find(x => String(x.kode_kantor).padStart(3,'0') === uKode);
             const nama = myKantor ? myKantor.nama_kantor : `CABANG ${uKode}`;
@@ -347,7 +366,9 @@
         } catch(e) {
             el.innerHTML = `<option value="${uKode}">CABANG ${uKode}</option>`; 
         }
-        el.value = uKode; el.disabled = true; 
+        el.value = uKode; el.disabled = true;
+        // Untuk cabang non-pusat, langsung set sub ke KANKAS
+        await handleCabangChangeOtp(true);
         return; 
     }
     try {
@@ -357,6 +378,43 @@
         if(j.data) j.data.filter(x => x.kode_kantor !== '000').forEach(x => { h += `<option value="${x.kode_kantor}">${x.kode_kantor} - ${x.nama_kantor}</option>`; });
         el.innerHTML = h;
     } catch { el.innerHTML = '<option value="">ALL | SEMUA CABANG (KONSOLIDASI)</option>'; }
+    await handleCabangChangeOtp(true);
+  }
+
+  async function handleCabangChangeOtp(isInit = false) {
+      const cabangVal = document.getElementById('opt_kantor').value;
+      const lblSub = document.getElementById('lbl_sub_otp');
+      const optSub = document.getElementById('opt_sub_otp');
+
+      if (cabangVal === "" || cabangVal === "000") {
+          // Konsolidasi: tampilkan KORWIL
+          lblSub.innerText = "KORWIL";
+          optSub.innerHTML = `
+              <option value="">ALL KORWIL</option>
+              <option value="SEMARANG">SEMARANG</option>
+              <option value="SOLO">SOLO</option>
+              <option value="BANYUMAS">BANYUMAS</option>
+              <option value="PEKALONGAN">PEKALONGAN</option>
+          `;
+      } else {
+          // Cabang dipilih: tampilkan KANKAS
+          lblSub.innerText = "KANKAS";
+          optSub.innerHTML = '<option value="">ALL KANKAS</option>';
+          await loadKankasSubOtp(cabangVal);
+      }
+      if (!isInit) fetchRekapRR();
+  }
+
+  async function loadKankasSubOtp(kodeCabang) {
+      const optSub = document.getElementById('opt_sub_otp');
+      try {
+          const payload = { type: 'kode_kankas', kode_kantor: kodeCabang };
+          const r = await fetch(API_KODE_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+          const j = await r.json();
+          let h = '<option value="">ALL KANKAS</option>';
+          if(j.data && Array.isArray(j.data)) j.data.forEach(x => { h += `<option value="${x.kode_group1}">${x.deskripsi_group1 || x.kode_group1}</option>`; });
+          optSub.innerHTML = h;
+      } catch(err) {}
   }
 
   async function loadKankasModalDropdown() {
@@ -467,12 +525,28 @@
     rekapDataRaw = []; rekapGtRaw = null; sortMainCol = ''; sortMainAsc = true;
 
     try {
+        const cabangVal = document.getElementById('opt_kantor').value;
+        const subVal = document.getElementById('opt_sub_otp').value;
+        const dpdBucket = document.getElementById('opt_dpd_bucket').value;
+
+        // Tentukan korwil vs kankas berdasarkan cabang
+        let reqKorwil = ""; let reqKankas = "";
+        if (cabangVal === "" || cabangVal === "000") reqKorwil = subVal;
+        else reqKankas = subVal;
+
+        // Update judul sesuai bucket
+        const titleEl = document.getElementById('otpTitle');
+        if(titleEl) titleEl.textContent = dpdBucket === 'dpd0' ? 'Ontime Payment (OTP) - DPD 0' : 'Ontime Payment (OTP) - DPD 1-30';
+
         const payload = { 
             type: 'rekap_rr', 
             closing_date: document.getElementById('closing_date').value, 
             harian_date: document.getElementById('harian_date').value, 
-            kode_kantor: document.getElementById('opt_kantor').value || null,
-            include_127: document.getElementById('chk_127').checked // 🔥 KIRIM KE BE
+            kode_kantor: cabangVal || null,
+            korwil: reqKorwil,
+            kode_kankas: reqKankas,
+            dpd_bucket: dpdBucket,
+            include_127: document.getElementById('chk_127').checked
         };
         
         const res = await apiCall(API_RR_URL, { 
@@ -605,6 +679,9 @@
                   <th class="mod-col-nas px-2 md:px-4 border-b border-r border-slate-300 text-left md:text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('nama_nasabah', 'string')">
                       <div class="flex items-center justify-start md:justify-center">NAMA NASABAH ${getSortIcon('nama_nasabah', sortDetailCol, sortDetailAsc)}</div>
                   </th>
+                  <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[60px] md:w-[80px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('kode_produk', 'string')">
+                      <div class="flex items-center justify-center">PRODUK ${getSortIcon('kode_produk', sortDetailCol, sortDetailAsc)}</div>
+                  </th>
                   <th class="px-2 md:px-4 border-b border-r border-slate-300 w-[200px] md:w-[350px] text-left md:text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('alamat', 'string')">
                       <div class="flex items-center justify-start md:justify-center">ALAMAT ${getSortIcon('alamat', sortDetailCol, sortDetailAsc)}</div>
                   </th>
@@ -627,7 +704,7 @@
                       <div class="flex items-center justify-end">TARGET (M-1) ${getSortIcon('os_m1', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-4 bg-green-50 text-green-700 border-b border-r border-green-200 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-green-100 transition select-none" onclick="sortDetailRR('os_curr', 'number')">
-                      <div class="flex items-center justify-end">ACTUAL (CURR) ${getSortIcon('os_curr', sortDetailCol, sortDetailAsc)}</div>
+                      <div class="flex items-center justify-end">BAKI DEBET ACTUAL ${getSortIcon('os_curr', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-4 bg-red-50 text-red-700 border-b border-r border-red-200 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-red-100 transition select-none" onclick="sortDetailRR('totung', 'number')">
                       <div class="flex items-center justify-end">TUNGGAKAN ${getSortIcon('totung', sortDetailCol, sortDetailAsc)}</div>
@@ -642,7 +719,7 @@
                       <div class="flex items-center justify-center">STAT TAB ${getSortIcon('status_tabungan', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-4 border-b border-slate-300 w-[100px] md:w-[120px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('status_ket', 'string')">
-                      <div class="flex items-center justify-center">DLL ${getSortIcon('status_ket', sortDetailCol, sortDetailAsc)}</div>
+                      <div class="flex items-center justify-center">STATUS ${getSortIcon('status_ket', sortDetailCol, sortDetailAsc)}</div>
                   </th>
               </tr>
           `;
@@ -707,6 +784,13 @@
   async function initModalDetail(tgl, status) {
       currentMode = 'NORMAL';
       const branch = document.getElementById('opt_kantor').value || null;
+      const subVal = document.getElementById('opt_sub_otp').value;
+      const dpdBucket = document.getElementById('opt_dpd_bucket').value;
+
+      // Tentukan korwil vs kankas
+      let reqKorwil = ""; let reqKankas = "";
+      if (branch === "" || branch === null || branch === "000") reqKorwil = subVal;
+      else reqKankas = subVal;
       
       await loadKankasModalDropdown();
       const kankas = document.getElementById('opt_kankas_modal').value || null; 
@@ -719,15 +803,18 @@
           closing_date: document.getElementById('closing_date').value, 
           harian_date: document.getElementById('harian_date').value, 
           kode_kantor: branch, 
-          kode_kankas: kankas,
+          korwil: reqKorwil,
+          kode_kankas: kankas || reqKankas,
           kode_ao: ao,
           tgl_tagih: tgl, 
           status: status, 
-          include_127: document.getElementById('chk_127').checked, // 🔥 KIRIM KE BE
+          dpd_bucket: dpdBucket,
+          include_127: document.getElementById('chk_127').checked,
           limit: detailLimit 
       };
 
-      document.getElementById('modalTitleRR').textContent = `Detail Penagihan (Tgl ${tgl})`;
+      const bucketLabel = dpdBucket === 'dpd0' ? 'DPD 0' : 'DPD 1-30';
+      document.getElementById('modalTitleRR').textContent = `Detail OTP ${bucketLabel} (Tgl ${tgl})`;
       document.getElementById('modalSubTitleRR').textContent = `Status: ${status}`;
       document.getElementById('modalDetailRR').classList.remove('hidden');
       
@@ -739,6 +826,13 @@
   async function initModalLunas(tgl) {
       currentMode = 'LUNAS';
       const branch = document.getElementById('opt_kantor').value || null;
+      const subVal = document.getElementById('opt_sub_otp').value;
+      const dpdBucket = document.getElementById('opt_dpd_bucket').value;
+
+      // Tentukan korwil vs kankas
+      let reqKorwil = ""; let reqKankas = "";
+      if (branch === "" || branch === null || branch === "000") reqKorwil = subVal;
+      else reqKankas = subVal;
 
       await loadKankasModalDropdown();
       const kankas = document.getElementById('opt_kankas_modal').value || null;
@@ -751,14 +845,17 @@
           closing_date: document.getElementById('closing_date').value, 
           harian_date: document.getElementById('harian_date').value, 
           kode_kantor: branch, 
-          kode_kankas: kankas,
+          korwil: reqKorwil,
+          kode_kankas: kankas || reqKankas,
           kode_ao: ao,
           tgl_tagih: tgl, 
-          include_127: document.getElementById('chk_127').checked, // 🔥 KIRIM KE BE
+          dpd_bucket: dpdBucket,
+          include_127: document.getElementById('chk_127').checked,
           limit: detailLimit 
       };
 
-      document.getElementById('modalTitleRR').textContent = `Detail Pelunasan (Tgl ${tgl})`;
+      const bucketLabel = dpdBucket === 'dpd0' ? 'DPD 0' : 'DPD 1-30';
+      document.getElementById('modalTitleRR').textContent = `Detail Pelunasan OTP ${bucketLabel} (Tgl ${tgl})`;
       document.getElementById('modalSubTitleRR').textContent = `Cek Refinancing vs Prospek`;
       document.getElementById('modalDetailRR').classList.remove('hidden');
       
@@ -810,7 +907,7 @@
           currentDetailPage = page; currentDetailTotalPages = meta.total_pages;
 
           if(detailDataCache.length === 0) {
-              tb.innerHTML = `<tr><td colspan="15" class="py-20 text-center text-slate-500 italic text-xs md:text-base">Tidak ada data detail.</td></tr>`;
+              tb.innerHTML = `<tr><td colspan="16" class="py-20 text-center text-slate-500 italic text-xs md:text-base">Tidak ada data detail.</td></tr>`;
               info.innerText = `0 Data`;
           } else {
               sortDetailCol = ''; sortDetailAsc = true;
@@ -821,7 +918,7 @@
           document.getElementById('btnNextRR').disabled = page >= meta.total_pages;
       } catch(err){ 
           console.error(err); 
-          tb.innerHTML = `<tr><td colspan="15" class="py-16 text-center text-red-500 font-bold tracking-widest uppercase text-[10px] md:text-sm">Gagal memuat detail</td></tr>`;
+          tb.innerHTML = `<tr><td colspan="16" class="py-16 text-center text-red-500 font-bold tracking-widest uppercase text-[10px] md:text-sm">Gagal memuat detail</td></tr>`;
       } finally { l.classList.add('hidden'); }
   }
 
@@ -839,6 +936,7 @@
               h += `<tr class="transition border-b border-slate-100 h-[40px] md:h-[48px]">
                     <td class="mod-col-rek hidden md:table-cell px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 font-mono text-[9.5px] md:text-sm text-slate-600">${r.no_rekening}</td>
                     <td class="mod-col-nas px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 font-bold text-slate-700 truncate text-[9.5px] md:text-sm" title="${r.nama_nasabah}">${r.nama_nasabah}</td>
+                    <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-mono text-[9px] md:text-sm text-slate-500">${r.kode_produk || '-'}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-slate-500 text-[9.5px] md:text-sm truncate max-w-[200px] md:max-w-[350px]" title="${alamatLengkap}">${alamatLengkap}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center">${btnWa}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-mono text-slate-500 text-[9px] md:text-sm">${r.kankas||'-'}</td>
@@ -899,9 +997,9 @@
 
           let csv = "";
           if(currentMode === 'NORMAL') {
-              csv = `No Rekening\tNama Nasabah\tAlamat\tNo HP\tKankas\tNama AO\tTgl JT\tPlafond\tTarget (M-1)\tActual (Curr)\tTot Tunggakan\tDPD\tSaldo Tabungan\tStatus Tabungan\tStatus Tagih\n`;
+              csv = `No Rekening\tNama Nasabah\tKode Produk\tAlamat\tNo HP\tKankas\tNama AO\tTgl JT\tPlafond\tTarget (M-1)\tBaki Debet Actual\tTot Tunggakan\tDPD\tSaldo Tabungan\tStatus Tabungan\tStatus Tagih\n`;
               rows.forEach(r => {
-                  csv += `'${r.no_rekening}\t${r.nama_nasabah}\t${r.alamat||''}\t'${r.no_hp||''}\t${r.kankas||''}\t${r.nama_ao}\t${r.tgl_jatuh_tempo}\t${Math.round(r.jml_pinjaman)}\t${Math.round(r.os_m1)}\t${Math.round(r.os_curr)}\t${Math.round(r.totung)}\t${r.dpd_curr}\t${Math.round(r.tabungan)}\t${r.status_tabungan}\t${r.status_ket}\n`;
+                  csv += `'${r.no_rekening}\t${r.nama_nasabah}\t${r.kode_produk||''}\t${r.alamat||''}\t'${r.no_hp||''}\t${r.kankas||''}\t${r.nama_ao}\t${r.tgl_jatuh_tempo}\t${Math.round(r.jml_pinjaman)}\t${Math.round(r.os_m1)}\t${Math.round(r.os_curr)}\t${Math.round(r.totung)}\t${r.dpd_curr}\t${Math.round(r.tabungan)}\t${r.status_tabungan}\t${r.status_ket}\n`;
               });
           } else {
               csv = `Nama Nasabah\tID Nasabah\tAlamat\tNama AO\tRek Lama\tPlafond Lama\tOS Lunas (M-1)\tStatus\tRek Baru\tPlafond Baru\tTgl Realisasi Baru\n`;
