@@ -656,6 +656,7 @@ class RepaymentRateController {
                 'backflow_noa' => 0, 'backflow_os' => 0, 'backflow_pct' => 0,
                 'stay_noa' => 0, 'stay_os' => 0, 'stay_pct' => 0,
                 'migrasi_noa' => 0, 'migrasi_os' => 0, 'migrasi_pct' => 0,
+                'angsuran_os' => 0,
                 'runoff_noa' => 0, 'runoff_os' => 0, 'runoff_pct' => 0
             ];
         }
@@ -665,6 +666,7 @@ class RepaymentRateController {
             'backflow_noa'=>0, 'backflow_os'=>0, 'backflow_pct'=>0,
             'stay_noa'=>0, 'stay_os'=>0, 'stay_pct'=>0,
             'migrasi_noa'=>0, 'migrasi_os'=>0, 'migrasi_pct'=>0,
+            'angsuran_os'=>0,
             'runoff_noa'=>0, 'runoff_os'=>0, 'runoff_pct'=>0
         ];
 
@@ -685,6 +687,7 @@ class RepaymentRateController {
             $grandTotal['m1_noa']++; $grandTotal['m1_os'] += $osM1;
 
             if (!isset($dataCur[$norek])) {
+                // Tidak ada di data harian = LUNAS
                 $report[$tglMap]['runoff_noa']++; $report[$tglMap]['runoff_os'] += $osM1;
                 $grandTotal['runoff_noa']++; $grandTotal['runoff_os'] += $osM1;
             } else {
@@ -692,21 +695,30 @@ class RepaymentRateController {
                 $dpdCur = (int)$dataCur[$norek]['hari_menunggak'];
 
                 if ($osCur <= 0) {
+                    // Baki debet = 0 = LUNAS
                     $report[$tglMap]['runoff_noa']++; $report[$tglMap]['runoff_os'] += $osM1;
                     $grandTotal['runoff_noa']++; $grandTotal['runoff_os'] += $osM1;
                 } else {
+                    // 🔥 FIX: Pakai osCur (actual) bukan osM1 untuk OS kolom migrasi
                     if ($dpdCur == 0) {
-                        $report[$tglMap]['btc_noa']++; $report[$tglMap]['btc_os'] += $osM1;
-                        $grandTotal['btc_noa']++; $grandTotal['btc_os'] += $osM1;
+                        $report[$tglMap]['btc_noa']++; $report[$tglMap]['btc_os'] += $osCur;
+                        $grandTotal['btc_noa']++; $grandTotal['btc_os'] += $osCur;
                     } elseif ($dpdCur > 0 && $dpdCur < $minB) {
-                        $report[$tglMap]['backflow_noa']++; $report[$tglMap]['backflow_os'] += $osM1;
-                        $grandTotal['backflow_noa']++; $grandTotal['backflow_os'] += $osM1;
+                        $report[$tglMap]['backflow_noa']++; $report[$tglMap]['backflow_os'] += $osCur;
+                        $grandTotal['backflow_noa']++; $grandTotal['backflow_os'] += $osCur;
                     } elseif ($dpdCur >= $minB && $dpdCur <= $maxB) {
-                        $report[$tglMap]['stay_noa']++; $report[$tglMap]['stay_os'] += $osM1;
-                        $grandTotal['stay_noa']++; $grandTotal['stay_os'] += $osM1;
+                        $report[$tglMap]['stay_noa']++; $report[$tglMap]['stay_os'] += $osCur;
+                        $grandTotal['stay_noa']++; $grandTotal['stay_os'] += $osCur;
                     } elseif ($dpdCur > $maxB) {
-                        $report[$tglMap]['migrasi_noa']++; $report[$tglMap]['migrasi_os'] += $osM1;
-                        $grandTotal['migrasi_noa']++; $grandTotal['migrasi_os'] += $osM1;
+                        $report[$tglMap]['migrasi_noa']++; $report[$tglMap]['migrasi_os'] += $osCur;
+                        $grandTotal['migrasi_noa']++; $grandTotal['migrasi_os'] += $osCur;
+                    }
+
+                    // 🔥 Kolom ANGSURAN = selisih (osM1 - osCur) jika ada pengurangan
+                    if ($osCur < $osM1) {
+                        $selisih = $osM1 - $osCur;
+                        $report[$tglMap]['angsuran_os'] += $selisih;
+                        $grandTotal['angsuran_os'] += $selisih;
                     }
                 }
             }
@@ -746,7 +758,8 @@ class RepaymentRateController {
         $kc      = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
         $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
         $kankas  = $b['kode_kankas'] ?? null; 
-        $ao      = $b['kode_ao'] ?? null;     
+        $ao      = $b['kode_ao'] ?? null;
+        $search  = trim($b['search'] ?? '');
         
         $tglMap  = isset($b['tgl_tagih']) ? (int)$b['tgl_tagih'] : null;
         $typeB   = $b['type_bucket'] ?? 'fe_all'; 
@@ -850,15 +863,17 @@ class RepaymentRateController {
         elseif ($korwil && $kw_start && $kw_end) $baseQuery .= " AND t1.kode_cabang BETWEEN :kw_start AND :kw_end";
         
         if ($kankas) $baseQuery .= " AND t1.kode_group1 = :kankas"; 
-        if ($ao) $baseQuery .= " AND t1.kode_group2 = :ao"; 
+        if ($ao) $baseQuery .= " AND t1.kode_group2 = :ao";
+        if ($search !== '') $baseQuery .= " AND (t1.no_rekening LIKE :search OR t1.nama_nasabah LIKE :search2)";
 
-        $bindParams = function($stmt) use ($s1, $e1, $s2, $e2, $kc, $korwil, $kw_start, $kw_end, $kankas, $ao) {
+        $bindParams = function($stmt) use ($s1, $e1, $s2, $e2, $kc, $korwil, $kw_start, $kw_end, $kankas, $ao, $search) {
             $stmt->bindValue(':s1', $s1); $stmt->bindValue(':e1', $e1);
             $stmt->bindValue(':s2', $s2); $stmt->bindValue(':e2', $e2);
             if ($kc && $kc !== '000') $stmt->bindValue(':kc', $kc);
             elseif ($korwil && $kw_start && $kw_end) { $stmt->bindValue(':kw_start', $kw_start); $stmt->bindValue(':kw_end', $kw_end); }
             if ($kankas) $stmt->bindValue(':kankas', $kankas); 
-            if ($ao) $stmt->bindValue(':ao', $ao); 
+            if ($ao) $stmt->bindValue(':ao', $ao);
+            if ($search !== '') { $stmt->bindValue(':search', "%$search%"); $stmt->bindValue(':search2', "%$search%"); }
         };
 
         // Count Total Row
