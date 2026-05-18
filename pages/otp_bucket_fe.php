@@ -76,11 +76,17 @@
       .col-kategori { left: 0 !important; z-index: 45 !important; min-width: 40px; font-size: 10px; padding: 4px 4px;}
       thead th.col-kategori { z-index: 70 !important; }
       .sticky-total td.col-kategori { z-index: 65 !important; }
-      .mod-freeze-nas, .mod-td-nas { left: 0 !important; box-shadow: inset -1px 0 0 #f1f5f9; min-width: 110px; max-width: 130px; font-size: 10px;}
+      .mod-freeze-nas, .mod-td-nas { left: 0 !important; box-shadow: inset -1px 0 0 #f1f5f9; min-width: 100px; max-width: 120px; font-size: 10px;}
       .mod-freeze-rek, .mod-td-rek { display: none !important; }
       table { font-size: 10px; }
       th, td { padding: 4px 5px; }
       #progScroller { -webkit-overflow-scrolling: touch; }
+
+      /* Modal detail mobile fixes */
+      #modalDetailProg > div:last-child { border-radius: 0.75rem 0.75rem 0 0; height: 100vh; max-height: 100vh; }
+      #tableDetailProg { font-size: 9px; }
+      #tableDetailProg th, #tableDetailProg td { padding: 3px 4px; white-space: nowrap; }
+      #tableDetailProg thead th { height: 30px; font-size: 8px; }
   }
 </style>
 
@@ -188,33 +194,36 @@
 
 <div id="modalDetailProg" class="fixed inset-0 hidden z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-2 md:p-4">
   <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModalProg()"></div>
-  <div class="relative bg-white w-full h-full sm:h-[95vh] md:h-[92vh] max-w-[1600px] sm:rounded-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
+  <div class="relative bg-white w-full h-[100dvh] sm:h-[95vh] md:h-[92vh] max-w-[1600px] rounded-t-xl sm:rounded-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
     
     <div class="flex flex-col bg-white border-b shrink-0 w-full z-50">
-        <div class="flex flex-row items-center justify-between px-3 py-2.5 md:px-4 md:py-3 gap-2 w-full">
-            <div class="flex-1 min-w-0">
-              <h3 class="font-bold text-slate-800 flex items-center gap-1.5 text-[11px] md:text-lg leading-none truncate">
-                  <span class="w-1.5 md:w-2 h-3 md:h-5 bg-emerald-600 rounded-full hidden md:block shrink-0"></span> 
-                  <span id="mdlTitleProg" class="truncate">Detail Debitur</span>
-              </h3>
-              <p class="text-[8px] md:text-xs text-slate-500 mt-1 md:ml-3 font-mono font-medium leading-none truncate" id="mdlSubTitleProg">...</p>
+        <div class="flex flex-col md:flex-row md:items-center justify-between px-3 py-2.5 md:px-4 md:py-3 gap-2 w-full">
+            <div class="flex items-center justify-between w-full md:w-auto md:flex-1 min-w-0">
+              <div class="flex-1 min-w-0">
+                <h3 class="font-bold text-slate-800 flex items-center gap-1.5 text-[11px] md:text-lg leading-none truncate">
+                    <span class="w-1.5 md:w-2 h-3 md:h-5 bg-emerald-600 rounded-full hidden md:block shrink-0"></span> 
+                    <span id="mdlTitleProg" class="truncate">Detail Debitur</span>
+                </h3>
+                <p class="text-[8px] md:text-xs text-slate-500 mt-1 md:ml-3 font-mono font-medium leading-none truncate" id="mdlSubTitleProg">...</p>
+              </div>
+              <button onclick="closeModalProg()" class="md:hidden w-[28px] h-[28px] flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-lg leading-none shrink-0">&times;</button>
             </div>
             
-            <div class="flex flex-row items-center gap-1 md:gap-2 shrink-0">
-                <input type="text" id="opt_search_prog_modal" class="inp px-2 h-[28px] md:h-[36px] w-[100px] md:w-[160px] text-[9px] md:text-xs text-slate-700 bg-slate-50 border-slate-200" placeholder="Cari nama/rek..." onkeydown="if(event.key==='Enter'){event.preventDefault();loadDetailProgPage(1);}">
+            <div class="flex flex-row items-center gap-1 md:gap-2 shrink-0 w-full md:w-auto overflow-x-auto">
+                <input type="text" id="opt_search_prog_modal" class="inp px-2 h-[28px] md:h-[36px] w-[90px] md:w-[160px] text-[9px] md:text-xs text-slate-700 bg-slate-50 border-slate-200 shrink-0" placeholder="Cari nama/rek..." onkeydown="if(event.key==='Enter'){event.preventDefault();loadDetailProgPage(1);}">
 
-                <select id="opt_ao_prog_modal" class="inp px-1 md:px-2 h-[28px] md:h-[36px] w-[80px] md:w-[130px] text-[9px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 cursor-pointer" onchange="loadDetailProgPage(1)">
+                <select id="opt_ao_prog_modal" class="inp px-1 md:px-2 h-[28px] md:h-[36px] w-[70px] md:w-[130px] text-[9px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 cursor-pointer shrink-0" onchange="loadDetailProgPage(1)">
                     <option value="">ALL AO</option>
                 </select>
 
-                <select id="opt_kankas_prog_modal" class="inp px-1 md:px-2 h-[28px] md:h-[36px] w-[80px] md:w-[130px] text-[9px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 cursor-pointer" onchange="loadDetailProgPage(1)">
+                <select id="opt_kankas_prog_modal" class="inp px-1 md:px-2 h-[28px] md:h-[36px] w-[80px] md:w-[130px] text-[9px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 cursor-pointer shrink-0" onchange="loadDetailProgPage(1)">
                     <option value="">ALL KANKAS</option>
                 </select>
 
                 <button onclick="exportDetailProgExcel()" class="btn-icon bg-indigo-600 hover:bg-indigo-700 text-white h-[28px] w-[28px] md:h-[36px] md:w-[36px] rounded-lg shadow-sm shrink-0 transition flex items-center justify-center" title="Export Excel Detail">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 </button>
-                <button onclick="closeModalProg()" class="w-[28px] h-[28px] md:w-[36px] md:h-[36px] flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-lg leading-none shrink-0">&times;</button>
+                <button onclick="closeModalProg()" class="hidden md:flex w-[28px] h-[28px] md:w-[36px] md:h-[36px] items-center justify-center rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-lg leading-none shrink-0">&times;</button>
             </div>
         </div>
     </div>
@@ -236,6 +245,7 @@
                 <th class="px-1 md:px-2 text-center w-[90px]">KANKAS</th>
                 <th class="px-1 md:px-2 text-center w-[90px]">AO</th>
                 <th class="px-1 md:px-2 text-center w-[70px]">TGL JT</th>
+                <th class="px-2 md:px-3 text-right w-[110px]">PLAFON</th>
                 <th class="px-2 md:px-3 text-right w-[110px]">OS (CURR)</th>
                 <th class="px-2 md:px-3 text-right w-[90px]">TABUNGAN</th>
                 <th class="px-2 md:px-3 text-right w-[90px]">TGK POKOK</th>
@@ -521,13 +531,32 @@
           }
       } catch(err) {}
 
-      // Load AO list
+      // Load AO list from actual detail data (fetch all without AO filter to get unique AOs)
       try {
-          const payload2 = { type: 'kode_ao', kode_kantor: kodeCabang };
-          const r2 = await fetch(API_KODE, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload2) });
-          const j2 = await r2.json();
+          const payloadAo = { 
+              ...currentProgDetailParams, 
+              kode_ao: '', 
+              search: '', 
+              page: 1, 
+              limit: 5000 
+          };
+          const rAo = await fetch(API_RR, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payloadAo) });
+          const jAo = await rAo.json();
           let h2 = '<option value="">ALL AO</option>';
-          if(j2.data) j2.data.forEach(x => { h2 += `<option value="${x.kode_group2}">${x.nama_ao || x.kode_group2}</option>`; });
+          if(jAo.status === 200 && jAo.data?.data) {
+              const aoMap = {};
+              jAo.data.data.forEach(row => {
+                  const kodeAo = row.kode_group2 || '';
+                  const namaAo = row.nama_ao || kodeAo;
+                  if(kodeAo && kodeAo !== '-' && !aoMap[kodeAo]) {
+                      aoMap[kodeAo] = namaAo;
+                  }
+              });
+              // Sort AO names alphabetically
+              Object.entries(aoMap).sort((a, b) => a[1].localeCompare(b[1])).forEach(([kode, nama]) => {
+                  h2 += `<option value="${kode}">${nama}</option>`;
+              });
+          }
           optAo.innerHTML = h2;
       } catch(err) {}
   }
@@ -592,7 +621,7 @@
           currentProgTotalPages = meta.total_pages;
 
           if(rows.length === 0) {
-              tbody.innerHTML = `<tr><td colspan="20" class="py-20 text-center text-slate-500 italic">Tidak ada data debitur.</td></tr>`;
+              tbody.innerHTML = `<tr><td colspan="21" class="py-20 text-center text-slate-500 italic">Tidak ada data debitur.</td></tr>`;
               info.innerText = `0 Data`;
           } else {
               let html = '';
@@ -626,6 +655,7 @@
                         <td class="px-1 md:px-2 text-center text-slate-600 border-r border-slate-100">${r.kankas || '-'}</td>
                         <td class="px-1 md:px-2 text-center text-slate-600 border-r border-slate-100">${r.nama_ao || '-'}</td>
                         <td class="px-1 md:px-2 text-center font-medium border-r border-slate-100">${r.tgl_jatuh_tempo}</td>
+                        <td class="px-2 md:px-3 text-right font-bold text-indigo-700 border-r border-slate-100">${fmt(r.jml_pinjaman)}</td>
                         <td class="px-2 md:px-3 text-right font-bold text-slate-800 border-r border-slate-100">${fmt(r.os_curr)}</td>
                         <td class="px-2 md:px-3 text-right text-slate-600 border-r border-slate-100">${txtTabungan}</td>
                         <td class="px-2 md:px-3 text-right text-slate-600 border-r border-slate-100">${fmt(r.tunggakan_pokok)}</td>
@@ -649,7 +679,7 @@
           document.getElementById('btnPrevProg').disabled = page <= 1;
           document.getElementById('btnNextProg').disabled = page >= meta.total_pages;
       } catch(err){ 
-          tbody.innerHTML = `<tr><td colspan="20" class="py-16 text-center text-red-500 font-bold">${err.message}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="21" class="py-16 text-center text-red-500 font-bold">${err.message}</td></tr>`;
       } finally { loading.classList.add('hidden'); }
   }
 
@@ -677,7 +707,7 @@
             <tr>
               <th>No Rekening</th><th>Nama Nasabah</th><th>Kolektibilitas</th><th>Alamat</th><th>No HP</th>
               <th>Kankas</th><th>Nama AO</th><th>Tgl Realisasi</th><th>Tgl Jatuh Tempo</th>
-              <th>OS (Baki Debet Curr)</th><th>Tabungan</th>
+              <th>Plafon</th><th>OS (Baki Debet Curr)</th><th>Tabungan</th>
               <th>Tgl Byr Lalu</th><th>Total Byr Lalu</th>
               <th>Tgl Byr Sekarang</th><th>Total Byr Sekarang</th>
               <th>Tunggakan Pokok</th><th>Tunggakan Bunga</th>
@@ -695,6 +725,7 @@
                 <td>${r.nama_ao || ''}</td>
                 <td>${r.tgl_realisasi || ''}</td>
                 <td>${r.tgl_jatuh_tempo || ''}</td>
+                <td>${r.jml_pinjaman || 0}</td>
                 <td>${r.os_curr}</td>
                 <td>${r.tabungan}</td>
                 <td>${r.tgl_trans_lalu || ''}</td>
