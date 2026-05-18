@@ -780,6 +780,12 @@
                   <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[70px] md:w-[100px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('status_tabungan', 'string')">
                       <div class="flex items-center justify-center">STAT TAB ${getSortIcon('status_tabungan', sortDetailCol, sortDetailAsc)}</div>
                   </th>
+                  <th class="px-2 md:px-4 bg-amber-50 text-amber-700 border-b border-r border-amber-200 w-[90px] md:w-[120px] text-right cursor-pointer hover:bg-amber-100 transition select-none" onclick="sortDetailRR('trx_bulan_lalu', 'number')">
+                      <div class="flex items-center justify-end">TRX BLN LALU ${getSortIcon('trx_bulan_lalu', sortDetailCol, sortDetailAsc)}</div>
+                  </th>
+                  <th class="px-2 md:px-4 bg-cyan-50 text-cyan-700 border-b border-r border-cyan-200 w-[90px] md:w-[120px] text-right cursor-pointer hover:bg-cyan-100 transition select-none" onclick="sortDetailRR('trx_bulan_ini', 'number')">
+                      <div class="flex items-center justify-end">TRX BLN INI ${getSortIcon('trx_bulan_ini', sortDetailCol, sortDetailAsc)}</div>
+                  </th>
                   <th class="px-2 md:px-4 border-b border-slate-300 w-[100px] md:w-[120px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('status_ket', 'string')">
                       <div class="flex items-center justify-center">STATUS ${getSortIcon('status_ket', sortDetailCol, sortDetailAsc)}</div>
                   </th>
@@ -1026,7 +1032,7 @@
           currentDetailPage = page; currentDetailTotalPages = meta.total_pages;
 
           if(detailDataCache.length === 0) {
-              tb.innerHTML = `<tr><td colspan="16" class="py-20 text-center text-slate-500 italic text-xs md:text-base">Tidak ada data detail.</td></tr>`;
+              tb.innerHTML = `<tr><td colspan="18" class="py-20 text-center text-slate-500 italic text-xs md:text-base">Tidak ada data detail.</td></tr>`;
               info.innerText = `0 Data`;
           } else {
               sortDetailCol = ''; sortDetailAsc = true;
@@ -1037,7 +1043,7 @@
           document.getElementById('btnNextRR').disabled = page >= meta.total_pages;
       } catch(err){ 
           console.error(err); 
-          tb.innerHTML = `<tr><td colspan="16" class="py-16 text-center text-red-500 font-bold tracking-widest uppercase text-[10px] md:text-sm">Gagal memuat detail</td></tr>`;
+          tb.innerHTML = `<tr><td colspan="18" class="py-16 text-center text-red-500 font-bold tracking-widest uppercase text-[10px] md:text-sm">Gagal memuat detail</td></tr>`;
       } finally { l.classList.add('hidden'); }
   }
 
@@ -1068,6 +1074,8 @@
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-bold text-slate-700 text-[9.5px] md:text-sm">${r.dpd_curr}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-right font-bold text-emerald-600 bg-emerald-50/10 text-[9.5px] md:text-sm">${fmt(r.tabungan)}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center text-[9px] md:text-xs">${r.status_tabungan === 'Aman' ? '<span class="text-green-600 font-bold">Aman</span>' : '<span class="text-red-500 font-bold">Belum Aman</span>'}</td>
+                    <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-amber-100 text-right font-bold text-amber-700 bg-amber-50/30 text-[9.5px] md:text-sm">${fmt(r.trx_bulan_lalu)}</td>
+                    <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-cyan-100 text-right font-bold text-cyan-700 bg-cyan-50/30 text-[9.5px] md:text-sm">${fmt(r.trx_bulan_ini)}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 text-center text-[9px] md:text-xs font-bold ${r.status_ket === 'LANCAR' ? 'text-green-600' : (r.status_ket === 'MENUNGGAK' ? 'text-red-600' : 'text-slate-600')}">${r.status_ket}</td>
                 </tr>`;
           } else {
@@ -1117,9 +1125,9 @@
 
           let csv = "";
           if(currentMode === 'NORMAL') {
-              csv = `No Rekening\tNama Nasabah\tKode Produk\tAlamat\tNo HP\tKankas\tNama AO\tTgl JT\tPlafond\tTarget (M-1)\tBaki Debet Actual\tTot Tunggakan\tDPD\tSaldo Tabungan\tStatus Tabungan\tStatus Tagih\n`;
+              csv = `No Rekening\tNama Nasabah\tKode Produk\tAlamat\tNo HP\tKankas\tNama AO\tTgl JT\tPlafond\tTarget (M-1)\tBaki Debet Actual\tTot Tunggakan\tDPD\tSaldo Tabungan\tStatus Tabungan\tTrx Bulan Lalu\tTrx Bulan Ini\tStatus Tagih\n`;
               rows.forEach(r => {
-                  csv += `'${r.no_rekening}\t${r.nama_nasabah}\t${r.kode_produk||''}\t${r.alamat||''}\t'${r.no_hp||''}\t${r.kankas||''}\t${r.nama_ao}\t${r.tgl_jatuh_tempo}\t${Math.round(r.jml_pinjaman)}\t${Math.round(r.os_m1)}\t${Math.round(r.os_curr)}\t${Math.round(r.totung)}\t${r.dpd_curr}\t${Math.round(r.tabungan)}\t${r.status_tabungan}\t${r.status_ket}\n`;
+                  csv += `'${r.no_rekening}\t${r.nama_nasabah}\t${r.kode_produk||''}\t${r.alamat||''}\t'${r.no_hp||''}\t${r.kankas||''}\t${r.nama_ao}\t${r.tgl_jatuh_tempo}\t${Math.round(r.jml_pinjaman)}\t${Math.round(r.os_m1)}\t${Math.round(r.os_curr)}\t${Math.round(r.totung)}\t${r.dpd_curr}\t${Math.round(r.tabungan)}\t${r.status_tabungan}\t${Math.round(r.trx_bulan_lalu||0)}\t${Math.round(r.trx_bulan_ini||0)}\t${r.status_ket}\n`;
               });
           } else {
               csv = `Nama Nasabah\tID Nasabah\tAlamat\tNama AO\tRek Lama\tPlafond Lama\tOS Lunas (M-1)\tStatus\tRek Baru\tPlafond Baru\tTgl Realisasi Baru\n`;
