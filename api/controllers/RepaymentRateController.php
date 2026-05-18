@@ -585,8 +585,8 @@ class RepaymentRateController {
         $harian  = $b['harian_date'] ?? null;
         $kc      = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
         $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
-        $kankas  = !empty($b['kode_kankas']) ? $b['kode_kankas'] : null; // 🔥 FIX: Tangkap filter kankas
-        $typeB   = $b['type_bucket'] ?? 'fe_all'; // fe_all, 31-60, 61-90
+        $kankas  = !empty($b['kode_kankas']) ? $b['kode_kankas'] : null;
+        $typeB   = $b['type_bucket'] ?? 'dpd_0'; // dpd_0 (default), dpd_1_30, fe_all, 31-60, 61-90
 
         if (!$closing || !$harian) return $this->send(400, "Tanggal wajib diisi.");
 
@@ -608,8 +608,10 @@ class RepaymentRateController {
         }
 
         // Tentukan Filter Bucket di M-1
-        $whereBucket = "AND hari_menunggak BETWEEN 31 AND 90"; 
-        if ($typeB === '31-60') $whereBucket = "AND hari_menunggak BETWEEN 31 AND 60";
+        $whereBucket = "AND hari_menunggak = 0 AND kolektibilitas = 'L'"; // default: DPD 0
+        if ($typeB === 'dpd_1_30') $whereBucket = "AND hari_menunggak BETWEEN 1 AND 30";
+        elseif ($typeB === 'fe_all') $whereBucket = "AND hari_menunggak BETWEEN 31 AND 90";
+        elseif ($typeB === '31-60') $whereBucket = "AND hari_menunggak BETWEEN 31 AND 60";
         elseif ($typeB === '61-90') $whereBucket = "AND hari_menunggak BETWEEN 61 AND 90";
 
         // AMBIL DATA CLOSING (M1)
@@ -679,8 +681,10 @@ class RepaymentRateController {
             $dpdOri = (int)$row['dpd_ori']; 
             $osM1   = (float)$row['baki_debet'];
 
-            // Tentukan dynamic limit per nasabah
-            if ($dpdOri >= 31 && $dpdOri <= 60) { $minB = 31; $maxB = 60; }
+            // Tentukan dynamic limit per nasabah berdasarkan type bucket
+            if ($typeB === 'dpd_0') { $minB = 0; $maxB = 0; }
+            elseif ($typeB === 'dpd_1_30') { $minB = 1; $maxB = 30; }
+            elseif ($dpdOri >= 31 && $dpdOri <= 60) { $minB = 31; $maxB = 60; }
             else { $minB = 61; $maxB = 90; }
 
             $report[$tglMap]['m1_noa']++; $report[$tglMap]['m1_os'] += $osM1;
@@ -699,22 +703,46 @@ class RepaymentRateController {
                     $report[$tglMap]['runoff_noa']++; $report[$tglMap]['runoff_os'] += $osM1;
                     $grandTotal['runoff_noa']++; $grandTotal['runoff_os'] += $osM1;
                 } else {
-                    // 🔥 FIX: Pakai osCur (actual) bukan osM1 untuk OS kolom migrasi
-                    if ($dpdCur == 0) {
-                        $report[$tglMap]['btc_noa']++; $report[$tglMap]['btc_os'] += $osCur;
-                        $grandTotal['btc_noa']++; $grandTotal['btc_os'] += $osCur;
-                    } elseif ($dpdCur > 0 && $dpdCur < $minB) {
-                        $report[$tglMap]['backflow_noa']++; $report[$tglMap]['backflow_os'] += $osCur;
-                        $grandTotal['backflow_noa']++; $grandTotal['backflow_os'] += $osCur;
-                    } elseif ($dpdCur >= $minB && $dpdCur <= $maxB) {
-                        $report[$tglMap]['stay_noa']++; $report[$tglMap]['stay_os'] += $osCur;
-                        $grandTotal['stay_noa']++; $grandTotal['stay_os'] += $osCur;
-                    } elseif ($dpdCur > $maxB) {
-                        $report[$tglMap]['migrasi_noa']++; $report[$tglMap]['migrasi_os'] += $osCur;
-                        $grandTotal['migrasi_noa']++; $grandTotal['migrasi_os'] += $osCur;
+                    // Logika migrasi berdasarkan type bucket
+                    if ($typeB === 'dpd_0') {
+                        // DPD 0: BTC=tetap 0, MIGRASI=dpd > 0
+                        if ($dpdCur == 0) {
+                            $report[$tglMap]['btc_noa']++; $report[$tglMap]['btc_os'] += $osCur;
+                            $grandTotal['btc_noa']++; $grandTotal['btc_os'] += $osCur;
+                        } else {
+                            $report[$tglMap]['migrasi_noa']++; $report[$tglMap]['migrasi_os'] += $osCur;
+                            $grandTotal['migrasi_noa']++; $grandTotal['migrasi_os'] += $osCur;
+                        }
+                    } elseif ($typeB === 'dpd_1_30') {
+                        // DPD 1-30: BTC=dpd 0, BACKFLOW=dpd turun tapi masih 1-30, STAY=tetap 1-30, MIGRASI=dpd > 30
+                        if ($dpdCur == 0) {
+                            $report[$tglMap]['btc_noa']++; $report[$tglMap]['btc_os'] += $osCur;
+                            $grandTotal['btc_noa']++; $grandTotal['btc_os'] += $osCur;
+                        } elseif ($dpdCur >= 1 && $dpdCur <= 30) {
+                            $report[$tglMap]['stay_noa']++; $report[$tglMap]['stay_os'] += $osCur;
+                            $grandTotal['stay_noa']++; $grandTotal['stay_os'] += $osCur;
+                        } else {
+                            $report[$tglMap]['migrasi_noa']++; $report[$tglMap]['migrasi_os'] += $osCur;
+                            $grandTotal['migrasi_noa']++; $grandTotal['migrasi_os'] += $osCur;
+                        }
+                    } else {
+                        // FE bucket (31-90): logika asli
+                        if ($dpdCur == 0) {
+                            $report[$tglMap]['btc_noa']++; $report[$tglMap]['btc_os'] += $osCur;
+                            $grandTotal['btc_noa']++; $grandTotal['btc_os'] += $osCur;
+                        } elseif ($dpdCur > 0 && $dpdCur < $minB) {
+                            $report[$tglMap]['backflow_noa']++; $report[$tglMap]['backflow_os'] += $osCur;
+                            $grandTotal['backflow_noa']++; $grandTotal['backflow_os'] += $osCur;
+                        } elseif ($dpdCur >= $minB && $dpdCur <= $maxB) {
+                            $report[$tglMap]['stay_noa']++; $report[$tglMap]['stay_os'] += $osCur;
+                            $grandTotal['stay_noa']++; $grandTotal['stay_os'] += $osCur;
+                        } elseif ($dpdCur > $maxB) {
+                            $report[$tglMap]['migrasi_noa']++; $report[$tglMap]['migrasi_os'] += $osCur;
+                            $grandTotal['migrasi_noa']++; $grandTotal['migrasi_os'] += $osCur;
+                        }
                     }
 
-                    // 🔥 Kolom ANGSURAN = selisih (osM1 - osCur) jika ada pengurangan
+                    // Kolom ANGSURAN = selisih (osM1 - osCur) jika ada pengurangan
                     if ($osCur < $osM1) {
                         $selisih = $osM1 - $osCur;
                         $report[$tglMap]['angsuran_os'] += $selisih;
@@ -762,7 +790,7 @@ class RepaymentRateController {
         $search  = trim($b['search'] ?? '');
         
         $tglMap  = isset($b['tgl_tagih']) ? (int)$b['tgl_tagih'] : null;
-        $typeB   = $b['type_bucket'] ?? 'fe_all'; 
+        $typeB   = $b['type_bucket'] ?? 'dpd_0'; 
         $status  = strtoupper($b['status'] ?? 'ALL'); 
         $page    = $b['page'] ?? 1;
         $limit   = $b['limit'] ?? 10;
@@ -799,8 +827,10 @@ class RepaymentRateController {
         }
 
         // Tentukan Filter Type Bucket Asal (M-1)
-        $whereBucket = "AND t1.hari_menunggak BETWEEN 31 AND 90"; 
-        if ($typeB === '31-60') $whereBucket = "AND t1.hari_menunggak BETWEEN 31 AND 60";
+        $whereBucket = "AND t1.hari_menunggak = 0 AND t1.kolektibilitas = 'L'"; // default: DPD 0
+        if ($typeB === 'dpd_1_30') $whereBucket = "AND t1.hari_menunggak BETWEEN 1 AND 30";
+        elseif ($typeB === 'fe_all') $whereBucket = "AND t1.hari_menunggak BETWEEN 31 AND 90";
+        elseif ($typeB === '31-60') $whereBucket = "AND t1.hari_menunggak BETWEEN 31 AND 60";
         elseif ($typeB === '61-90') $whereBucket = "AND t1.hari_menunggak BETWEEN 61 AND 90";
 
         // Filter Logic Roll Rate / Migration Status pakai SQL Logic Aman
@@ -814,25 +844,46 @@ class RepaymentRateController {
             $whereStatus = "AND t2.baki_debet > 0 AND t2.hari_menunggak = 0";
         } elseif ($status === 'BACKFLOW') {
             $joinType = "JOIN";
-            $whereStatus = "AND t2.baki_debet > 0 AND (
-                (t1.hari_menunggak BETWEEN 31 AND 60 AND t2.hari_menunggak > 0 AND t2.hari_menunggak < 31) 
-                OR 
-                (t1.hari_menunggak BETWEEN 61 AND 90 AND t2.hari_menunggak > 0 AND t2.hari_menunggak < 61)
-            )";
+            if ($typeB === 'dpd_0') {
+                // DPD 0 tidak punya backflow
+                $whereStatus = "AND 1=0";
+            } elseif ($typeB === 'dpd_1_30') {
+                // DPD 1-30 tidak punya backflow (BTC sudah cover dpd=0)
+                $whereStatus = "AND 1=0";
+            } else {
+                $whereStatus = "AND t2.baki_debet > 0 AND (
+                    (t1.hari_menunggak BETWEEN 31 AND 60 AND t2.hari_menunggak > 0 AND t2.hari_menunggak < 31) 
+                    OR 
+                    (t1.hari_menunggak BETWEEN 61 AND 90 AND t2.hari_menunggak > 0 AND t2.hari_menunggak < 61)
+                )";
+            }
         } elseif ($status === 'STAY') {
             $joinType = "JOIN";
-            $whereStatus = "AND t2.baki_debet > 0 AND (
-                (t1.hari_menunggak BETWEEN 31 AND 60 AND t2.hari_menunggak BETWEEN 31 AND 60) 
-                OR 
-                (t1.hari_menunggak BETWEEN 61 AND 90 AND t2.hari_menunggak BETWEEN 61 AND 90)
-            )";
+            if ($typeB === 'dpd_0') {
+                // DPD 0: STAY = tetap dpd 0 (sama dengan BTC)
+                $whereStatus = "AND t2.baki_debet > 0 AND t2.hari_menunggak = 0";
+            } elseif ($typeB === 'dpd_1_30') {
+                $whereStatus = "AND t2.baki_debet > 0 AND t2.hari_menunggak BETWEEN 1 AND 30";
+            } else {
+                $whereStatus = "AND t2.baki_debet > 0 AND (
+                    (t1.hari_menunggak BETWEEN 31 AND 60 AND t2.hari_menunggak BETWEEN 31 AND 60) 
+                    OR 
+                    (t1.hari_menunggak BETWEEN 61 AND 90 AND t2.hari_menunggak BETWEEN 61 AND 90)
+                )";
+            }
         } elseif ($status === 'MIGRASI') {
             $joinType = "JOIN";
-            $whereStatus = "AND t2.baki_debet > 0 AND (
-                (t1.hari_menunggak BETWEEN 31 AND 60 AND t2.hari_menunggak > 60) 
-                OR 
-                (t1.hari_menunggak BETWEEN 61 AND 90 AND t2.hari_menunggak > 90)
-            )";
+            if ($typeB === 'dpd_0') {
+                $whereStatus = "AND t2.baki_debet > 0 AND t2.hari_menunggak > 0";
+            } elseif ($typeB === 'dpd_1_30') {
+                $whereStatus = "AND t2.baki_debet > 0 AND t2.hari_menunggak > 30";
+            } else {
+                $whereStatus = "AND t2.baki_debet > 0 AND (
+                    (t1.hari_menunggak BETWEEN 31 AND 60 AND t2.hari_menunggak > 60) 
+                    OR 
+                    (t1.hari_menunggak BETWEEN 61 AND 90 AND t2.hari_menunggak > 90)
+                )";
+            }
         }
 
         // Base Query 
@@ -890,6 +941,7 @@ class RepaymentRateController {
                  COALESCE(ao.nama_ao, t1.kode_group2) as nama_ao,
                  t1.kode_group2,
                  t1.tgl_jatuh_tempo, t1.jml_pinjaman, t1.tgl_realisasi,
+                 t1.kode_produk,
                  t1.baki_debet as os_m1, 
                  COALESCE(t2.baki_debet, 0) as os_curr, 
                  COALESCE(t2.hari_menunggak, 0) as dpd_curr,
@@ -917,20 +969,32 @@ class RepaymentRateController {
             $dpdCur = (int)$r['dpd_curr']; $dpdM1 = (int)$r['dpd_m1'];
             $totung = (float)$r['totung']; $tabungan = (float)$r['tabungan'];
             
-            if ($dpdM1 >= 31 && $dpdM1 <= 60) { $cMin = 31; $cMax = 60; }
-            else { $cMin = 61; $cMax = 90; }
+            // Logika status migrasi berdasarkan type bucket
+            if ($typeB === 'dpd_0') {
+                if ($osCur <= 0) { $r['status_ket'] = 'RUNOFF (LUNAS)'; }
+                elseif ($dpdCur == 0) { $r['status_ket'] = 'BTC (LANCAR)'; }
+                else { $r['status_ket'] = 'MIGRASI (MEMBURUK)'; }
+            } elseif ($typeB === 'dpd_1_30') {
+                if ($osCur <= 0) { $r['status_ket'] = 'RUNOFF (LUNAS)'; }
+                elseif ($dpdCur == 0) { $r['status_ket'] = 'BTC (LANCAR)'; }
+                elseif ($dpdCur >= 1 && $dpdCur <= 30) { $r['status_ket'] = 'STAY'; }
+                else { $r['status_ket'] = 'MIGRASI (MEMBURUK)'; }
+            } else {
+                if ($dpdM1 >= 31 && $dpdM1 <= 60) { $cMin = 31; $cMax = 60; }
+                else { $cMin = 61; $cMax = 90; }
 
-            if ($osCur <= 0) { $r['status_ket'] = 'RUNOFF (LUNAS)'; }
-            elseif ($dpdCur == 0) { $r['status_ket'] = 'BTC (LANCAR)'; }
-            elseif ($dpdCur > 0 && $dpdCur < $cMin) { $r['status_ket'] = 'BACKFLOW'; }
-            elseif ($dpdCur >= $cMin && $dpdCur <= $cMax) { $r['status_ket'] = 'STAY'; }
-            elseif ($dpdCur > $cMax) { $r['status_ket'] = 'MIGRASI (MEMBURUK)'; }
+                if ($osCur <= 0) { $r['status_ket'] = 'RUNOFF (LUNAS)'; }
+                elseif ($dpdCur == 0) { $r['status_ket'] = 'BTC (LANCAR)'; }
+                elseif ($dpdCur > 0 && $dpdCur < $cMin) { $r['status_ket'] = 'BACKFLOW'; }
+                elseif ($dpdCur >= $cMin && $dpdCur <= $cMax) { $r['status_ket'] = 'STAY'; }
+                elseif ($dpdCur > $cMax) { $r['status_ket'] = 'MIGRASI (MEMBURUK)'; }
+            }
 
             $r['os_m1']=$osM1; $r['os_curr']=$osCur; 
             $r['bayar_pokok'] = ($osM1 > $osCur) ? ($osM1 - $osCur) : 0;
             $r['status_tabungan'] = (($tabungan * 0.015) > $totung) ? 'Aman' : 'Belum Aman';
 
-            // 🔥 Format transaksi data
+            // Format transaksi data
             $r['tgl_trans_sekarang'] = $r['tgl_trans_sekarang'] ?? null;
             $r['total_bayar_sekarang'] = (float)($r['total_bayar_sekarang'] ?? 0);
             $r['tgl_trans_lalu'] = $r['tgl_trans_lalu'] ?? null;

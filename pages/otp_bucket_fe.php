@@ -99,7 +99,7 @@
                 <span class="bg-emerald-600 text-white p-1.5 rounded-lg text-sm shadow-sm">
                     <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
                 </span> 
-                <span>Rekap OTP Migration</span>
+                <span id="titleProgPage">Rekap OTP DPD 0</span>
             </h1>
              <p class="text-[8px] md:text-xs text-rose-600 font-bold italic ml-8 md:ml-[42px] leading-tight">
                  *Berdasarkan Tanggal Jatuh Tempo
@@ -126,9 +126,11 @@
             <div class="flex flex-col w-full md:w-[100px]">
                 <label class="text-[8px] md:text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">BUCKET</label>
                 <select id="type_bucket_otp" class="inp text-slate-700 shadow-sm" onchange="triggerAutoRefresh()">
-                    <option value="fe_all">ALL</option>
-                    <option value="31-60">31 - 60</option>
-                    <option value="61-90">61 - 90</option>
+                    <option value="dpd_0">DPD 0</option>
+                    <option value="dpd_1_30">DPD 1 - 30</option>
+                    <option value="fe_all">DPD 31 - 90</option>
+                    <option value="31-60">DPD 31 - 60</option>
+                    <option value="61-90">DPD 61 - 90</option>
                 </select>
             </div>
 
@@ -246,6 +248,7 @@
                 <th class="px-1 md:px-2 text-center w-[90px]">AO</th>
                 <th class="px-1 md:px-2 text-center w-[70px]">TGL JT</th>
                 <th class="px-2 md:px-3 text-right w-[110px]">PLAFON</th>
+                <th class="px-1 md:px-2 text-center w-[60px]">PRODUK</th>
                 <th class="px-2 md:px-3 text-right w-[110px]">OS (CURR)</th>
                 <th class="px-2 md:px-3 text-right w-[90px]">TABUNGAN</th>
                 <th class="px-2 md:px-3 text-right w-[90px]">TGK POKOK</th>
@@ -345,6 +348,10 @@
 
   function triggerAutoRefresh() {
       if(window.innerWidth < 1280) document.getElementById('panelFilterProg').classList.add('hidden');
+      // Update judul sesuai bucket
+      const bucketVal = document.getElementById('type_bucket_otp').value;
+      const titleMap = { 'dpd_0': 'Rekap OTP DPD 0', 'dpd_1_30': 'Rekap OTP DPD 1-30', 'fe_all': 'Rekap OTP DPD 31-90', '31-60': 'Rekap OTP DPD 31-60', '61-90': 'Rekap OTP DPD 61-90' };
+      document.getElementById('titleProgPage').textContent = titleMap[bucketVal] || 'Rekap OTP Migration';
       fetchProgKredit();
   }
 
@@ -621,7 +628,7 @@
           currentProgTotalPages = meta.total_pages;
 
           if(rows.length === 0) {
-              tbody.innerHTML = `<tr><td colspan="21" class="py-20 text-center text-slate-500 italic">Tidak ada data debitur.</td></tr>`;
+              tbody.innerHTML = `<tr><td colspan="22" class="py-20 text-center text-slate-500 italic">Tidak ada data debitur.</td></tr>`;
               info.innerText = `0 Data`;
           } else {
               let html = '';
@@ -656,6 +663,7 @@
                         <td class="px-1 md:px-2 text-center text-slate-600 border-r border-slate-100">${r.nama_ao || '-'}</td>
                         <td class="px-1 md:px-2 text-center font-medium border-r border-slate-100">${r.tgl_jatuh_tempo}</td>
                         <td class="px-2 md:px-3 text-right font-bold text-indigo-700 border-r border-slate-100">${fmt(r.jml_pinjaman)}</td>
+                        <td class="px-1 md:px-2 text-center text-slate-500 border-r border-slate-100">${r.kode_produk || '-'}</td>
                         <td class="px-2 md:px-3 text-right font-bold text-slate-800 border-r border-slate-100">${fmt(r.os_curr)}</td>
                         <td class="px-2 md:px-3 text-right text-slate-600 border-r border-slate-100">${txtTabungan}</td>
                         <td class="px-2 md:px-3 text-right text-slate-600 border-r border-slate-100">${fmt(r.tunggakan_pokok)}</td>
@@ -679,7 +687,7 @@
           document.getElementById('btnPrevProg').disabled = page <= 1;
           document.getElementById('btnNextProg').disabled = page >= meta.total_pages;
       } catch(err){ 
-          tbody.innerHTML = `<tr><td colspan="21" class="py-16 text-center text-red-500 font-bold">${err.message}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="22" class="py-16 text-center text-red-500 font-bold">${err.message}</td></tr>`;
       } finally { loading.classList.add('hidden'); }
   }
 
@@ -707,7 +715,7 @@
             <tr>
               <th>No Rekening</th><th>Nama Nasabah</th><th>Kolektibilitas</th><th>Alamat</th><th>No HP</th>
               <th>Kankas</th><th>Nama AO</th><th>Tgl Realisasi</th><th>Tgl Jatuh Tempo</th>
-              <th>Plafon</th><th>OS (Baki Debet Curr)</th><th>Tabungan</th>
+              <th>Plafon</th><th>Kode Produk</th><th>OS (Baki Debet Curr)</th><th>Tabungan</th>
               <th>Tgl Byr Lalu</th><th>Total Byr Lalu</th>
               <th>Tgl Byr Sekarang</th><th>Total Byr Sekarang</th>
               <th>Tunggakan Pokok</th><th>Tunggakan Bunga</th>
@@ -726,6 +734,7 @@
                 <td>${r.tgl_realisasi || ''}</td>
                 <td>${r.tgl_jatuh_tempo || ''}</td>
                 <td>${r.jml_pinjaman || 0}</td>
+                <td>${r.kode_produk || ''}</td>
                 <td>${r.os_curr}</td>
                 <td>${r.tabungan}</td>
                 <td>${r.tgl_trans_lalu || ''}</td>
