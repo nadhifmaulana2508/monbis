@@ -88,4 +88,66 @@ class KodeController {
         }
     }
 
+    public function getListWilayahDropdown($input) {
+        $type = $input['type'] ?? '';
+        $kode_kantor = $input['kode_kantor'] ?? '';
+        
+        // Tangkap parameter kecamatan dari FE
+        $kecamatan = $input['kecamatan'] ?? ''; 
+
+        // Pakai data H-1
+        $tanggal_hari_ini = date('Y-m-d', strtotime('-1 day'));
+
+        $where = " WHERE created = :tanggal ";
+        $params = [':tanggal' => $tanggal_hari_ini];
+
+        if ($kode_kantor !== '' && $kode_kantor !== '000') {
+            $where .= " AND kode_cabang = :kode_kantor ";
+            $params[':kode_kantor'] = $kode_kantor;
+        }
+
+        try {
+            $sql = "";
+            if ($type === 'kecamatan') {
+                $sql = "SELECT DISTINCT deskripsi_kode_kecamatan 
+                        FROM nominatif 
+                        $where 
+                          AND deskripsi_kode_kecamatan IS NOT NULL 
+                          AND deskripsi_kode_kecamatan != ''
+                        ORDER BY deskripsi_kode_kecamatan ASC";
+                        
+            } else if ($type === 'kelurahan') {
+                
+                // 🔥 FILTER KELURAHAN BERDASARKAN KECAMATAN 🔥
+                // Jika dari FE mengirimkan kecamatan, tambahkan ke WHERE
+                if ($kecamatan !== '') {
+                    $where .= " AND deskripsi_kode_kecamatan = :kecamatan ";
+                    $params[':kecamatan'] = $kecamatan;
+                }
+
+                $sql = "SELECT DISTINCT deskripsi_kode_kelurahan 
+                        FROM nominatif 
+                        $where 
+                          AND deskripsi_kode_kelurahan IS NOT NULL 
+                          AND deskripsi_kode_kelurahan != ''
+                        ORDER BY deskripsi_kode_kelurahan ASC";
+            } else {
+                sendResponse(400, "Type tidak dikenali");
+                return;
+            }
+
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => $val) { 
+                $stmt->bindValue($key, $val); 
+            }
+            $stmt->execute();
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            sendResponse(200, "Sukses", $data);
+
+        } catch (Exception $e) {
+            sendResponse(500, "Error BE: " . $e->getMessage());
+        }
+    }
+
 }

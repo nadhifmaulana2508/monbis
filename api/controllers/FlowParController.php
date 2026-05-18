@@ -227,7 +227,7 @@ class FlowParController {
     }
 
     public function searchDebiturKredit($input) {
-    // --- 1. AMBIL PARAMETER ---
+        // --- 1. AMBIL PARAMETER ---
         $user_login_kode = $input['user_kode'] ?? '000'; 
         $kc_input = $input['kode_kantor'] ?? '';
 
@@ -237,51 +237,132 @@ class FlowParController {
             $kode_kantor = ($kc_input !== '') ? str_pad($kc_input, 3, '0', STR_PAD_LEFT) : '';
         }
 
-        $kolek  = $input['kolek'] ?? 'Semua';
-        $search = trim($input['search'] ?? '');
+        $kolek       = $input['kolek'] ?? 'Semua';
+        $search      = trim($input['search'] ?? '');
+        $kode_group1 = $input['kode_group1'] ?? $input['kode_kankas'] ?? '';
+        $kode_group2 = $input['kode_group2'] ?? '';
+        $kelurahan   = $input['kelurahan'] ?? '';
+        $kecamatan   = $input['kecamatan'] ?? '';
+        $status_jt   = $input['status_jt'] ?? ''; 
+        $totung      = (isset($input['totung']) && $input['totung'] !== '') ? (float)$input['totung'] : null;
         
-        // Ambil totung dan pastikan tipenya float/angka
-        $totung = (isset($input['totung']) && $input['totung'] !== '') ? (float)$input['totung'] : null;
-        
-        // 🔥 FIX: Default pakai data HARI INI (karena DB update tiap 30 menit)
-        $tanggal_hari_ini = $input['tanggal'] ?? date('Y-m-d');
+        $h_input = $input['harian_date'] ?? '';
+        $c_input = $input['closing_date'] ?? '';
+
+        $harian_date  = ($h_input !== '') ? date('Y-m-d', strtotime($h_input)) : date('Y-m-d', strtotime('-1 day'));
+        $closing_date = ($c_input !== '') ? date('Y-m-d', strtotime($c_input)) : date('Y-m-d', strtotime('last day of previous month', strtotime($harian_date)));
 
         $page   = isset($input['page']) ? (int)$input['page'] : 1;
         $limit  = isset($input['limit']) ? (int)$input['limit'] : 50;
         $offset = ($page - 1) * $limit;
 
-        // WHERE AWAL: Batasi berdasarkan tanggal created hari ini
-        $where = " WHERE n.created = :tanggal_hari_ini ";
-        $params = [':tanggal_hari_ini' => $tanggal_hari_ini];
-
-        // --- 2. LOGIC FILTERING ---
+        $subWhere = "";
         if ($kode_kantor !== '' && $kode_kantor !== '000') {
-            $where .= " AND n.kode_cabang = :kode_kantor ";
-            $params[':kode_kantor'] = $kode_kantor;
+            $subWhere .= " AND kode_cabang = '$kode_kantor' ";
         }
 
+        $where  = " WHERE 1=1 ";
+        $params = []; 
+
+        // --- 2. LOGIC FILTERING ---
+        // 🔥 UBAHAN BARU: FILTER KOLEK BERDASARKAN KOLEK LALU (Tabel c)
         if ($kolek !== 'Semua' && $kolek !== '') {
-            $where .= " AND n.kolektibilitas = :kolek ";
-            $params[':kolek'] = $kolek;
+            $kolekArray = array_map('trim', explode(',', $kolek));
+            $kolekPlaceholders = [];
+            foreach ($kolekArray as $index => $val) {
+                $key = ":kolek_$index";
+                $kolekPlaceholders[] = $key;
+                $params[$key] = $val;
+            }
+            // Pakai c.kolektibilitas (Data Closing/Bulan Lalu)
+            $where .= " AND COALESCE(c.kolektibilitas, 'Lunas') IN (" . implode(',', $kolekPlaceholders) . ") ";
         }
 
         if ($search !== '') {
-            $where .= " AND (n.no_rekening LIKE :search OR n.nama_nasabah LIKE :search_nama OR n.alamat LIKE :search_alamat) ";
+            $where .= " AND (act.no_rekening LIKE :search OR COALESCE(n.nama_nasabah, c.nama_nasabah) LIKE :search_nama OR COALESCE(n.alamat, c.alamat) LIKE :search_alamat) ";
             $params[':search'] = "%$search%";
             $params[':search_nama'] = "%$search%";
             $params[':search_alamat'] = "%$search%";
         }
 
-        // totung > 0 DAN totung <= nilai_input
         if ($totung !== null) {
             $where .= " AND (COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)) > 0 ";
             $where .= " AND (COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)) <= :totung ";
             $params[':totung'] = $totung;
         }
 
+        if ($kode_group1 !== '') {
+            $where .= " AND COALESCE(n.kode_group1, c.kode_group1) = :kode_group1 ";
+            $params[':kode_group1'] = $kode_group1;
+        }
+        if ($kode_group2 !== '') {
+            $where .= " AND COALESCE(n.kode_group2, c.kode_group2) = :kode_group2 ";
+            $params[':kode_group2'] = $kode_group2;
+        }
+        if ($kelurahan !== '') {
+            $where .= " AND COALESCE(n.deskripsi_kode_kelurahan, c.deskripsi_kode_kelurahan) = :kelurahan ";
+            $params[':kelurahan'] = $kelurahan;
+        }
+        if ($kecamatan !== '') {
+            $where .= " AND COALESCE(n.deskripsi_kode_kecamatan, c.deskripsi_kode_kecamatan) = :kecamatan ";
+            $params[':kecamatan'] = $kecamatan;
+        }
+
+        // --- 3. FROM & JOIN STATEMENT ---
+        $from_join = "
+            FROM (
+                SELECT no_rekening FROM nominatif WHERE created = '$harian_date' $subWhere
+                UNION
+                SELECT no_rekening FROM nominatif WHERE created = '$closing_date' $subWhere
+            ) act
+            LEFT JOIN nominatif n ON act.no_rekening = n.no_rekening AND n.created = '$harian_date'
+            LEFT JOIN nominatif c ON act.no_rekening = c.no_rekening AND c.created = '$closing_date'
+            LEFT JOIN tabungan tb ON COALESCE(n.norek_tabungan, c.norek_tabungan) = tb.no_rekening
+            LEFT JOIN kankas kas ON COALESCE(n.kode_group1, c.kode_group1) = kas.kode_group1
+            LEFT JOIN ao_kredit ao ON COALESCE(n.kode_group2, c.kode_group2) = ao.kode_group2
+            LEFT JOIN (
+                SELECT 
+                    no_rekening,
+                    MAX(CASE WHEN DATE_FORMAT(tgl_trans, '%Y-%m') = DATE_FORMAT('$harian_date', '%Y-%m') THEN tgl_trans END) as tgl_trans_sekarang,
+                    SUM(CASE WHEN DATE_FORMAT(tgl_trans, '%Y-%m') = DATE_FORMAT('$harian_date', '%Y-%m') THEN (COALESCE(angsuran_pokok, 0) + COALESCE(angsuran_bunga, 0) - COALESCE(diskon_bunga, 0)) ELSE 0 END) as total_bayar_sekarang,
+                    
+                    MAX(CASE WHEN DATE_FORMAT(tgl_trans, '%Y-%m') = DATE_FORMAT(DATE_SUB('$harian_date', INTERVAL 1 MONTH), '%Y-%m') THEN tgl_trans END) as tgl_trans_lalu,
+                    SUM(CASE WHEN DATE_FORMAT(tgl_trans, '%Y-%m') = DATE_FORMAT(DATE_SUB('$harian_date', INTERVAL 1 MONTH), '%Y-%m') THEN COALESCE(angsuran_pokok, 0) ELSE 0 END) as pokok_lalu,
+                    SUM(CASE WHEN DATE_FORMAT(tgl_trans, '%Y-%m') = DATE_FORMAT(DATE_SUB('$harian_date', INTERVAL 1 MONTH), '%Y-%m') THEN (COALESCE(angsuran_bunga, 0) - COALESCE(diskon_bunga, 0)) ELSE 0 END) as bunga_lalu
+                FROM transaksi_kredit
+                WHERE tgl_trans >= DATE_FORMAT(DATE_SUB('$harian_date', INTERVAL 1 MONTH), '%Y-%m-01')
+                GROUP BY no_rekening
+            ) trx ON act.no_rekening = trx.no_rekening
+        ";
+
+        // --- FILTER STATUS ---
+        if ($status_jt === 'otp_sesuai') {
+            $where .= " AND n.no_rekening IS NOT NULL AND n.hari_menunggak = 0 AND n.kolektibilitas = 'L' AND trx.total_bayar_sekarang > 0 AND DAY(trx.tgl_trans_sekarang) <= DAY(n.tgl_jatuh_tempo) ";
+        } else if ($status_jt === 'otp_tidak_sesuai') {
+            $where .= " AND n.no_rekening IS NOT NULL AND n.hari_menunggak = 0 AND n.kolektibilitas = 'L' AND trx.total_bayar_sekarang > 0 AND DAY(trx.tgl_trans_sekarang) > DAY(n.tgl_jatuh_tempo) ";
+        } else if ($status_jt === 'lunas') {
+            $where .= " AND n.no_rekening IS NULL AND c.no_rekening IS NOT NULL ";
+        } else if ($status_jt === 'jt_potensi_npl') {
+            $where .= " AND COALESCE(n.tgl_jatuh_tempo, c.tgl_jatuh_tempo) >= DATE_ADD(LAST_DAY(DATE_SUB('$harian_date', INTERVAL 1 MONTH)), INTERVAL -15 DAY) AND COALESCE(n.tgl_jatuh_tempo, c.tgl_jatuh_tempo) <= LAST_DAY('$harian_date') AND c.kolektibilitas IN ('L', 'DP') AND n.baki_debet > 0 ";
+        } else if ($status_jt === 'recovery_npl') {
+            $where .= " AND c.kolektibilitas IN ('KL', 'D', 'M') AND (n.no_rekening IS NULL OR n.kolektibilitas IN ('L', 'DP') OR n.baki_debet < c.baki_debet) ";
+        } else if ($status_jt === 'flow_par') {
+            $where .= " AND c.kolektibilitas IN ('L', 'DP') AND n.kolektibilitas IN ('KL', 'D', 'M') ";
+        } else if ($status_jt === 'realisasi_baru') {
+            $where .= " AND c.no_rekening IS NULL AND n.no_rekening IS NOT NULL ";
+        } else if ($status_jt === 'restruktur') {
+            $where .= " AND n.baki_debet > c.baki_debet AND c.no_rekening IS NOT NULL ";
+        } else if ($status_jt === 'byr_tunggakan') {
+            $where .= " AND n.no_rekening IS NOT NULL AND trx.total_bayar_sekarang > 0 AND (COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)) > 0 ";
+        } else if ($status_jt === 'belum_bayar_belum_jt') {
+            $where .= " AND n.no_rekening IS NOT NULL AND n.hari_menunggak = 0 AND n.kolektibilitas = 'L' AND (trx.total_bayar_sekarang IS NULL OR trx.total_bayar_sekarang <= 0) AND DAY('$harian_date') <= DAY(n.tgl_jatuh_tempo) ";
+        } else if ($status_jt === 'belum_bayar_lewat_jt') {
+            $where .= " AND n.no_rekening IS NOT NULL AND (trx.total_bayar_sekarang IS NULL OR trx.total_bayar_sekarang <= 0) AND DAY('$harian_date') > DAY(n.tgl_jatuh_tempo) ";
+        }
+
         try {
-            // --- 3. COUNT & SUMMARY ---
-            $sqlSum = "SELECT COUNT(n.no_rekening) as total_data, SUM(n.baki_debet) AS sum_bd FROM nominatif n $where";
+            // --- 4. COUNT & SUMMARY ---
+            $sqlSum = "SELECT COUNT(act.no_rekening) as total_data, SUM(COALESCE(n.baki_debet, 0)) AS sum_bd $from_join $where";
             $stmtSum = $this->pdo->prepare($sqlSum);
             foreach ($params as $key => $val) { $stmtSum->bindValue($key, $val); }
             $stmtSum->execute();
@@ -290,18 +371,59 @@ class FlowParController {
             $totalData  = (int)($summary['total_data'] ?? 0);
             $totalPages = ceil($totalData / $limit);
 
-            // --- 4. QUERY DATA UTAMA ---
+            // --- 5. QUERY DATA UTAMA ---
             $sqlData = "
                 SELECT 
-                    n.kode_cabang, n.nama_nasabah, n.no_rekening, n.norek_tabungan, n.kode_produk, n.alamat,
-                    n.kolektibilitas AS kolek, n.hari_menunggak AS dpd,
-                    n.hari_menunggak_pokok AS hmp, n.hari_menunggak_bunga AS hmb,
-                    n.tgl_jatuh_tempo, n.baki_debet,
-                    n.tunggakan_pokok, n.tunggakan_bunga,
+                    COALESCE(n.kode_cabang, c.kode_cabang) AS kode_cabang,
+                    COALESCE(n.nama_nasabah, c.nama_nasabah) AS nama_nasabah,
+                    act.no_rekening,
+                    COALESCE(n.norek_tabungan, c.norek_tabungan) AS norek_tabungan,
+                    COALESCE(n.kode_produk, c.kode_produk) AS kode_produk,
+                    COALESCE(n.alamat, c.alamat) AS alamat,
+                    COALESCE(n.kolektibilitas, 'Lunas') AS kolek, 
+                    COALESCE(n.hari_menunggak, 0) AS dpd,
+                    COALESCE(n.hari_menunggak_pokok, 0) AS hmp, 
+                    COALESCE(n.hari_menunggak_bunga, 0) AS hmb,
+                    COALESCE(n.tgl_jatuh_tempo, c.tgl_jatuh_tempo) AS tgl_jatuh_tempo, 
+                    COALESCE(n.baki_debet, 0) AS baki_debet,
+                    COALESCE(n.tunggakan_pokok, 0) AS tunggakan_pokok, 
+                    COALESCE(n.tunggakan_bunga, 0) AS tunggakan_bunga,
                     (COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)) AS totung,
-                    COALESCE(tb.saldo_akhir, 0) AS saldo_tabungan
-                FROM nominatif n
-                LEFT JOIN tabungan tb ON n.norek_tabungan = tb.no_rekening
+                    COALESCE(tb.saldo_akhir, 0) AS saldo_tabungan,
+                    COALESCE(n.kode_group1, c.kode_group1) AS kode_group1, 
+                    kas.deskripsi_group1 AS nama_kankas,
+                    COALESCE(n.kode_group2, c.kode_group2) AS kode_group2, 
+                    ao.nama_ao,
+                    COALESCE(n.deskripsi_kode_kelurahan, c.deskripsi_kode_kelurahan) AS deskripsi_kode_kelurahan, 
+                    COALESCE(n.deskripsi_kode_kecamatan, c.deskripsi_kode_kecamatan) AS deskripsi_kode_kecamatan,
+                    
+                    COALESCE(n.jml_pinjaman, c.jml_pinjaman) AS plafon,
+                    COALESCE(n.tgl_realisasi, c.tgl_realisasi) AS tgl_realisasi,
+                    COALESCE(n.nilai_ckpn, c.nilai_ckpn) AS nilai_ckpn,
+                    
+                    trx.tgl_trans_sekarang, 
+                    trx.total_bayar_sekarang,
+                    trx.tgl_trans_lalu, 
+                    trx.pokok_lalu, 
+                    trx.bunga_lalu,
+                    c.kolektibilitas AS kolek_lalu,
+                    
+                    CASE
+                        WHEN n.no_rekening IS NULL AND c.no_rekening IS NOT NULL THEN 'Lunas'
+                        WHEN c.no_rekening IS NULL THEN 'Realisasi Baru'
+                        WHEN n.baki_debet > c.baki_debet AND c.no_rekening IS NOT NULL THEN 'Restruktur'
+                        WHEN c.kolektibilitas IN ('L', 'DP') AND n.kolektibilitas IN ('KL', 'D', 'M') THEN 'Flow Par'
+                        WHEN c.kolektibilitas IN ('KL', 'D', 'M') AND (n.no_rekening IS NULL OR n.kolektibilitas IN ('L', 'DP') OR n.baki_debet < c.baki_debet) THEN 'Recovery NPL'
+                        WHEN COALESCE(n.tgl_jatuh_tempo, c.tgl_jatuh_tempo) >= DATE_ADD(LAST_DAY(DATE_SUB('$harian_date', INTERVAL 1 MONTH)), INTERVAL -15 DAY) AND COALESCE(n.tgl_jatuh_tempo, c.tgl_jatuh_tempo) <= LAST_DAY('$harian_date') AND c.kolektibilitas IN ('L', 'DP') AND n.baki_debet > 0 THEN 'JT Potensi NPL'
+                        WHEN n.hari_menunggak = 0 AND n.kolektibilitas = 'L' AND trx.total_bayar_sekarang > 0 AND DAY(trx.tgl_trans_sekarang) <= DAY(n.tgl_jatuh_tempo) THEN 'OTP (Sesuai JT)'
+                        WHEN n.hari_menunggak = 0 AND n.kolektibilitas = 'L' AND trx.total_bayar_sekarang > 0 AND DAY(trx.tgl_trans_sekarang) > DAY(n.tgl_jatuh_tempo) THEN 'OTP (Tidak Sesuai JT)'
+                        WHEN trx.total_bayar_sekarang > 0 AND (COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)) > 0 THEN 'Byr, Ada Tunggakan'
+                        WHEN n.hari_menunggak = 0 AND n.kolektibilitas = 'L' AND (trx.total_bayar_sekarang IS NULL OR trx.total_bayar_sekarang <= 0) AND DAY('$harian_date') <= DAY(n.tgl_jatuh_tempo) THEN 'Blm Byr, Belum JT'
+                        WHEN (trx.total_bayar_sekarang IS NULL OR trx.total_bayar_sekarang <= 0) AND DAY('$harian_date') > DAY(n.tgl_jatuh_tempo) THEN 'Blm Byr, Lewat JT'
+                        ELSE '-'
+                    END AS status_bayar_berjalan
+                    
+                $from_join
                 $where
                 ORDER BY n.baki_debet DESC
                 LIMIT $limit OFFSET $offset
@@ -326,317 +448,6 @@ class FlowParController {
             sendResponse(500, "Error BE: " . $e->getMessage());
         }
     }
-
-    public function getPotensiNplRekap($input = [])
-    {
-        $harian_date = $input['harian_date'] ?? date('Y-m-d');
-        // Gunakan closing_date dari frontend jika ada, jika tidak otomatis hitung
-        if (!empty($input['closing_date'])) {
-            $closing = date('Y-m-d', strtotime($input['closing_date']));
-        } else {
-            $base = new DateTime($harian_date);
-            $closing = (clone $base)->modify('first day of this month')->modify('-1 day')->format('Y-m-d');
-        }
-        
-        $awalBulan  = date('Y-m-01', strtotime($harian_date));
-        $akhirBulan = date('Y-m-t', strtotime($harian_date));
-        
-        // LOGIC KALKULASI SISA HARI BULAN BERJALAN
-        $jml_hari_bulan = (int) date('t', strtotime($harian_date));
-        $tgl_harian     = (int) date('d', strtotime($harian_date));
-        $sisa_hari      = $jml_hari_bulan - $tgl_harian;
-        if ($sisa_hari < 0) $sisa_hari = 0;
-
-        $kc = $input['kode_kantor'] ?? null;
-        if ($kc === '000' || $kc === '') $kc = null;
-
-        // LOGIC MASTER TABLE (Agar Kantor / Kankas dengan nilai 0 tetap tampil)
-        if ($kc) {
-            $masterTable  = "kankas k";
-            $colKey       = "kode_group1"; 
-            $selectName   = "k.deskripsi_group1 AS nama_cabang";
-            $filterMaster = "WHERE k.kode_kantor = :kc_master";
-            $joinKey      = "k.kode_group1";
-            $filterHarian = "AND kode_cabang = :kc1";
-            $filterClosing= "AND kode_cabang = :kc2";
-            $kc_val       = str_pad((string)$kc, 3, '0', STR_PAD_LEFT);
-        } else {
-            $masterTable  = "kode_kantor k";
-            $colKey       = "kode_cabang";
-            $selectName   = "k.nama_kantor AS nama_cabang";
-            $filterMaster = "WHERE k.kode_kantor <> '000'";
-            $joinKey      = "k.kode_kantor";
-            $filterHarian = "";
-            $filterClosing= "";
-            $kc_val       = null;
-        }
-
-        $sql = "
-            WITH master_data AS (
-                SELECT $joinKey AS kode_unit, $selectName 
-                FROM $masterTable 
-                $filterMaster
-            ),
-            kandidat AS (
-                SELECT no_rekening
-                FROM nominatif
-                WHERE created = :closing
-                AND kolektibilitas IN ('L','DP')
-                $filterClosing
-                AND (
-                        (COALESCE(hari_menunggak,0) + :jml_hari) >= 90
-                     OR (COALESCE(hari_menunggak_pokok,0) + :jml_hari) >= 90
-                     OR (COALESCE(hari_menunggak_bunga,0) + :jml_hari) >= 90
-                     OR (tgl_jatuh_tempo BETWEEN :awal_bulan AND :akhir_bulan)
-                )
-            ),
-            harian AS (
-                SELECT 
-                    no_rekening, 
-                    $colKey AS kode_join, 
-                    baki_debet, 
-                    kolektibilitas, 
-                    COALESCE(hari_menunggak,0) AS hari_menunggak, 
-                    COALESCE(hari_menunggak_pokok,0) AS hari_menunggak_pokok, 
-                    COALESCE(hari_menunggak_bunga,0) AS hari_menunggak_bunga, 
-                    tgl_jatuh_tempo
-                FROM nominatif
-                WHERE created = :harian_date
-                $filterHarian
-            ),
-            flow_par AS (
-                SELECT h.* FROM harian h
-                JOIN kandidat c ON h.no_rekening = c.no_rekening
-            ),
-            rekap AS (
-                SELECT 
-                    m.kode_unit AS kode_cabang,
-                    m.nama_cabang,
-                    
-                    -- TOTAL POTENSI
-                    COUNT(f.no_rekening) AS total_noa,
-                    COALESCE(SUM(f.baki_debet),0) AS total_baki,
-                    
-                    -- AMAN (Sisa hari tidak tembus 90 & bukan JT)
-                    SUM(CASE WHEN f.kolektibilitas NOT IN ('KL','D','M') AND (f.tgl_jatuh_tempo < :awal_bulan OR f.tgl_jatuh_tempo > :akhir_bulan OR f.tgl_jatuh_tempo IS NULL) AND (f.hari_menunggak + :sisa_hari) < 90 AND (f.hari_menunggak_pokok + :sisa_hari) < 90 AND (f.hari_menunggak_bunga + :sisa_hari) < 90 THEN 1 ELSE 0 END) AS noa_aman,
-                    SUM(CASE WHEN f.kolektibilitas NOT IN ('KL','D','M') AND (f.tgl_jatuh_tempo < :awal_bulan OR f.tgl_jatuh_tempo > :akhir_bulan OR f.tgl_jatuh_tempo IS NULL) AND (f.hari_menunggak + :sisa_hari) < 90 AND (f.hari_menunggak_pokok + :sisa_hari) < 90 AND (f.hari_menunggak_bunga + :sisa_hari) < 90 THEN f.baki_debet ELSE 0 END) AS baki_aman,
-
-                    -- JATUH TEMPO
-                    SUM(CASE WHEN f.kolektibilitas NOT IN ('KL','D','M') AND f.tgl_jatuh_tempo BETWEEN :awal_bulan AND :akhir_bulan THEN 1 ELSE 0 END) AS noa_jt,
-                    SUM(CASE WHEN f.kolektibilitas NOT IN ('KL','D','M') AND f.tgl_jatuh_tempo BETWEEN :awal_bulan AND :akhir_bulan THEN f.baki_debet ELSE 0 END) AS baki_jt,
-                    
-                    -- FLOW KOLEK (KL/D/M)
-                    SUM(CASE WHEN f.kolektibilitas IN ('KL','D','M') THEN 1 ELSE 0 END) AS noa_flow,
-                    SUM(CASE WHEN f.kolektibilitas IN ('KL','D','M') THEN f.baki_debet ELSE 0 END) AS baki_flow,
-
-                    -- MASIH POTENSI
-                    SUM(CASE WHEN f.kolektibilitas NOT IN ('KL','D','M') AND (f.tgl_jatuh_tempo < :awal_bulan OR f.tgl_jatuh_tempo > :akhir_bulan OR f.tgl_jatuh_tempo IS NULL) AND ((f.hari_menunggak + :sisa_hari) >= 90 OR (f.hari_menunggak_pokok + :sisa_hari) >= 90 OR (f.hari_menunggak_bunga + :sisa_hari) >= 90) THEN 1 ELSE 0 END) AS noa_potensi,
-                    SUM(CASE WHEN f.kolektibilitas NOT IN ('KL','D','M') AND (f.tgl_jatuh_tempo < :awal_bulan OR f.tgl_jatuh_tempo > :akhir_bulan OR f.tgl_jatuh_tempo IS NULL) AND ((f.hari_menunggak + :sisa_hari) >= 90 OR (f.hari_menunggak_pokok + :sisa_hari) >= 90 OR (f.hari_menunggak_bunga + :sisa_hari) >= 90) THEN f.baki_debet ELSE 0 END) AS baki_potensi
-
-                FROM master_data m
-                LEFT JOIN flow_par f ON f.kode_join = m.kode_unit
-                GROUP BY m.kode_unit, m.nama_cabang
-            )
-            SELECT * FROM rekap
-            UNION ALL
-            SELECT NULL, 'TOTAL KONSOLIDASI', SUM(total_noa), SUM(total_baki), SUM(noa_aman), SUM(baki_aman), SUM(noa_jt), SUM(baki_jt), SUM(noa_flow), SUM(baki_flow), SUM(noa_potensi), SUM(baki_potensi)
-            FROM rekap
-            ORDER BY CASE WHEN nama_cabang = 'TOTAL KONSOLIDASI' THEN 1 ELSE 0 END, kode_cabang ASC
-        ";
-
-        try {
-            $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':closing',     $closing);
-            $stmt->bindValue(':harian_date', $harian_date);
-            $stmt->bindValue(':awal_bulan',  $awalBulan);
-            $stmt->bindValue(':akhir_bulan', $akhirBulan);
-            $stmt->bindValue(':jml_hari',    $jml_hari_bulan);
-            $stmt->bindValue(':sisa_hari',   $sisa_hari);
-            
-            if ($kc_val) {
-                $stmt->bindValue(':kc_master', $kc_val);
-                $stmt->bindValue(':kc1', $kc_val);
-                $stmt->bindValue(':kc2', $kc_val);
-            }
-            
-            $stmt->execute();
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $grandTotal = array_pop($rows);
-            if (!$grandTotal) {
-                $grandTotal = ['kode_cabang'=>'','nama_cabang'=>'TOTAL KONSOLIDASI','total_noa'=>0,'total_baki'=>0];
-            }
-
-            sendResponse(200, "Berhasil ambil Rekap Potensi NPL", [
-                'data' => $rows, 
-                'grand_total' => $grandTotal
-            ]);
-        } catch (Exception $e) {
-            sendResponse(500, "Error: " . $e->getMessage());
-        }
-    }
-
-    public function getDetailPotensiNpl($input = [])
-    {
-        $kode_kantor = isset($input['kode_kantor']) && $input['kode_kantor'] !== ''
-            ? str_pad($input['kode_kantor'], 3, '0', STR_PAD_LEFT)
-            : null;
-            
-        $kode_kankas = $input['kode_kankas'] ?? '';
-
-        $harian_date = !empty($input['harian_date'])
-            ? date('Y-m-d', strtotime($input['harian_date']))
-            : date('Y-m-d');
-            
-        $closing_date = !empty($input['closing_date'])
-            ? date('Y-m-d', strtotime($input['closing_date']))
-            : (new DateTime($harian_date))->modify('first day of this month')->modify('-1 day')->format('Y-m-d');
-
-        $awal_date = !empty($input['awal_date'])
-            ? date('Y-m-d', strtotime($input['awal_date']))
-            : date('Y-m-01', strtotime($harian_date));
-
-        $bulan_awal      = date('Y-m-01', strtotime($harian_date));
-        $bulan_akhir     = date('Y-m-t',  strtotime($harian_date));
-        
-        $jml_hari_bulan = (int) date('t', strtotime($harian_date));
-        $tgl_harian     = (int) date('d', strtotime($harian_date));
-        $sisa_hari      = $jml_hari_bulan - $tgl_harian;
-        if ($sisa_hari < 0) $sisa_hari = 0;
-
-        $filterKantorClosing = $kode_kantor && $kode_kantor !== '000' ? " AND n.kode_cabang = :kode_kantor " : "";
-        $filterKankasClosing = $kode_kankas !== '' ? " AND n.kode_group1 = :kode_kankas " : "";
-        $filterKantorTrx     = $kode_kantor && $kode_kantor !== '000' ? " AND t.kode_kantor = :kode_kantor_trx " : "";
-
-        $sql = "
-            WITH kandidat AS (
-                SELECT
-                    n.no_rekening,
-                    n.kode_cabang,
-                    n.kode_group1,
-                    n.nama_nasabah,
-                    n.kolektibilitas AS kolek_closing,
-                    n.baki_debet     AS baki_debet_closing,
-                    COALESCE(n.hari_menunggak,0)        AS hm_closing,
-                    COALESCE(n.hari_menunggak_pokok,0)  AS hmp_closing,
-                    COALESCE(n.hari_menunggak_bunga,0)  AS hmb_closing,
-                    n.tgl_jatuh_tempo AS jt_closing,
-                    n.tgl_realisasi
-                FROM nominatif n
-                WHERE n.created = :closing_date
-                AND n.kolektibilitas IN ('L','DP')
-                {$filterKantorClosing}
-                {$filterKankasClosing}
-                AND (
-                        (COALESCE(n.hari_menunggak,0)       + :jml_hari) >= 90
-                    OR (COALESCE(n.hari_menunggak_pokok,0) + :jml_hari) >= 90
-                    OR (COALESCE(n.hari_menunggak_bunga,0) + :jml_hari) >= 90
-                    OR (n.tgl_jatuh_tempo BETWEEN :bulan_awal AND :bulan_akhir)
-                )
-            ),
-            harian AS (
-                SELECT
-                    h.no_rekening,
-                    h.kolektibilitas AS kolek_harian,
-                    h.baki_debet     AS baki_debet_harian,
-                    COALESCE(h.tunggakan_pokok,0)       AS tunggakan_pokok,
-                    COALESCE(h.tunggakan_bunga,0)       AS tunggakan_bunga,
-                    COALESCE(h.hari_menunggak,0)        AS hm_harian,
-                    COALESCE(h.hari_menunggak_pokok,0)  AS hmp_harian,
-                    COALESCE(h.hari_menunggak_bunga,0)  AS hmb_harian,
-                    h.tgl_jatuh_tempo AS jt_harian
-                FROM nominatif h
-                WHERE h.created = :harian_date
-            ),
-            trx AS (
-                SELECT
-                    t.no_rekening,
-                    MAX(t.tgl_trans)        AS tgl_trans_terakhir,
-                    SUM(t.angsuran_pokok)   AS angsuran_pokok,
-                    SUM(t.angsuran_bunga)   AS angsuran_bunga,
-                    SUM(t.angsuran_denda)   AS angsuran_denda
-                FROM transaksi_kredit t
-                WHERE t.tgl_trans BETWEEN :awal_date AND :harian_date_trx
-                {$filterKantorTrx}
-                GROUP BY t.no_rekening
-            )
-            SELECT
-                kd.kode_cabang,
-                kk.nama_kantor,
-                kas.deskripsi_group1 AS nama_kankas,
-                kd.no_rekening,
-                kd.nama_nasabah,
-                kd.kolek_closing,
-                kd.baki_debet_closing,
-                h.kolek_harian,
-                h.baki_debet_harian,
-                h.tunggakan_pokok,
-                h.tunggakan_bunga,
-                (COALESCE(h.tunggakan_pokok, 0) + COALESCE(h.tunggakan_bunga, 0)) AS total_tunggakan,
-                h.hm_harian,
-                h.hmp_harian,
-                h.hmb_harian,
-                h.jt_harian,
-                CASE 
-                    WHEN h.no_rekening IS NULL OR h.baki_debet_harian = 0 THEN 'LUNAS / AMAN'
-                    WHEN h.kolek_harian IN ('KL','D','M') THEN 'FLOW KOLEK'
-                    WHEN h.jt_harian BETWEEN :bulan_awal AND :bulan_akhir THEN 'JATUH TEMPO'
-                    WHEN (h.hm_harian + :sisa_hari) < 90 AND (h.hmp_harian + :sisa_hari) < 90 AND (h.hmb_harian + :sisa_hari) < 90 THEN 'AMAN'
-                    ELSE 'MASIH POTENSI'
-                END AS status_potensi,
-                tr.tgl_trans_terakhir,
-                tr.angsuran_pokok,
-                tr.angsuran_bunga
-            FROM kandidat kd
-            LEFT JOIN harian h ON kd.no_rekening = h.no_rekening
-            LEFT JOIN trx    tr ON kd.no_rekening = tr.no_rekening
-            LEFT JOIN kode_kantor kk ON kd.kode_cabang = kk.kode_kantor
-            LEFT JOIN kankas kas ON kd.kode_group1 = kas.kode_group1
-            WHERE kk.kode_kantor <> '000'
-            ORDER BY kd.baki_debet_closing DESC, kd.no_rekening
-        ";
-
-        try {
-            $st = $this->pdo->prepare($sql);
-            $st->bindValue(':closing_date',    $closing_date);
-            $st->bindValue(':harian_date',     $harian_date);
-            $st->bindValue(':awal_date',       $awal_date);
-            $st->bindValue(':harian_date_trx', $harian_date);
-            
-            $st->bindValue(':jml_hari',        $jml_hari_bulan);
-            $st->bindValue(':sisa_hari',       $sisa_hari);
-            $st->bindValue(':bulan_awal',      $bulan_awal);
-            $st->bindValue(':bulan_akhir',     $bulan_akhir);
-
-            if ($kode_kantor && $kode_kantor !== '000') {
-                $st->bindValue(':kode_kantor',     $kode_kantor);
-                $st->bindValue(':kode_kantor_trx', $kode_kantor);
-            }
-            if ($kode_kankas !== '') {
-                $st->bindValue(':kode_kankas', $kode_kankas);
-            }
-
-            $st->execute();
-            $rows = $st->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Format Output numeric
-            $numericFields = [
-                'baki_debet_closing', 'baki_debet_harian', 'tunggakan_pokok', 'tunggakan_bunga', 
-                'total_tunggakan', 'hm_harian', 'hmp_harian', 'hmb_harian', 'angsuran_pokok', 'angsuran_bunga'
-            ];
-            foreach ($rows as &$r) {
-                foreach ($numericFields as $f) {
-                    if (isset($r[$f])) $r[$f] = 0 + $r[$f];
-                }
-            }
-            unset($r);
-
-            sendResponse(200, 'Detail potensi NPL', $rows);
-        } catch (Throwable $e) {
-            sendResponse(500, 'Gagal ambil detail potensi NPL: '.$e->getMessage());
-        }
-    }
-
 
 
 

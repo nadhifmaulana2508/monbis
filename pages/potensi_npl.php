@@ -205,6 +205,12 @@
               <option value="">Semua AO</option>
           </select>
 
+          <!-- Tombol Update Tambahan -->
+          <button onclick="gotoUpdatePotensiNPL()" class="flex items-center justify-center h-9 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition shrink-0 gap-1.5 font-bold text-xs" title="Update Potensi NPL">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+              <span>Update</span>
+          </button>
+
           <button onclick="exportDetailPotensiExcel()" class="flex items-center justify-center w-9 h-9 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm transition shrink-0" title="Export Excel Detail">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
           </button>
@@ -906,6 +912,25 @@
       a.download = `Detail_Potensi_NPL_${downloadName}_${statusFilter}.xls`;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
   }
+
+  // --- TRIGGER UPDATE BULK (TOMBOL UPDATE DI MODAL POTENSI NPL) ---
+  window.gotoUpdatePotensiNPL = function() {
+      const selectedKankas = document.getElementById('modalFilterKankas')?.value || '';
+      const selectedAo = document.getElementById('modalFilterAo')?.value || '';
+      const selectedStatus = document.getElementById('modalFilterStatus')?.value || 'ALL';
+      
+      const payload = {
+          kode_kantor: currentDetailKode === '000' ? '' : currentDetailKode,
+          kode_kankas: selectedKankas,
+          kode_ao: selectedAo,
+          status_filter: selectedStatus,
+          closing_date: currentFilter.closing,
+          harian_date: currentFilter.harian
+      };
+      
+      sessionStorage.setItem("potensinpl_update", JSON.stringify(payload));
+      window.location.href = './update_potensi'; 
+  };
 
   const closePoModal = () => { document.getElementById('modalDebiturPotensi').classList.add('hidden'); document.getElementById('modalDebiturPotensi').classList.remove('flex'); };
   document.getElementById('btnClosePO').onclick = closePoModal;

@@ -24,6 +24,8 @@ switch ($method) {
             $controller->getKodeAOKredit($input);
         }elseif ($input['type'] == 'kode_kankas') { // Tambahkan kondisi ini
             $controller->getKodeKankas($input);
+        }elseif ($input['type'] == "kecamatan" or "kelurahan") { // Tambahkan kondisi ini
+            $controller->getListWilayahDropdown($input);
 
         } else {
             sendResponse(400, "Type tidak dikenali");
