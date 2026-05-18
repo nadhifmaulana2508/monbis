@@ -73,15 +73,24 @@
   tbody.mod-body tr:hover td.mod-td-rek, tbody.mod-body tr:hover td.mod-td-nas { filter: brightness(0.97); }
 
   @media (max-width: 767px) {
-      .col-kategori { left: 0 !important; z-index: 45 !important; min-width: 50px; font-size: 10px;}
+      .col-kategori { left: 0 !important; z-index: 45 !important; min-width: 40px; font-size: 10px; padding: 4px 4px;}
       thead th.col-kategori { z-index: 70 !important; }
       .sticky-total td.col-kategori { z-index: 65 !important; }
-      .mod-freeze-nas, .mod-td-nas { left: 0 !important; box-shadow: inset -1px 0 0 #f1f5f9; min-width: 120px;}
+      .mod-freeze-nas, .mod-td-nas { left: 0 !important; box-shadow: inset -1px 0 0 #f1f5f9; min-width: 100px; max-width: 120px; font-size: 10px;}
       .mod-freeze-rek, .mod-td-rek { display: none !important; }
+      table { font-size: 10px; }
+      th, td { padding: 4px 5px; }
+      #progScroller { -webkit-overflow-scrolling: touch; }
+
+      /* Modal detail mobile fixes */
+      #modalDetailProg > div:last-child { border-radius: 0.75rem 0.75rem 0 0; height: 100vh; max-height: 100vh; }
+      #tableDetailProg { font-size: 9px; }
+      #tableDetailProg th, #tableDetailProg td { padding: 3px 4px; white-space: nowrap; }
+      #tableDetailProg thead th { height: 30px; font-size: 8px; }
   }
 </style>
 
-<div class="max-w-[1600px] mx-auto px-3 md:px-4 py-4 h-[calc(100vh-80px)] md:h-[calc(100vh-120px)] flex flex-col relative z-10">
+<div class="max-w-[1600px] mx-auto px-2 sm:px-3 md:px-4 py-3 md:py-4 h-[calc(100vh-64px)] sm:h-[calc(100vh-80px)] md:h-[calc(100vh-120px)] flex flex-col relative z-10">
   
   <div class="flex flex-col xl:flex-row xl:items-end justify-between gap-3 mb-4 shrink-0">
     <div class="flex items-start justify-between w-full xl:w-auto">
@@ -165,14 +174,15 @@
           <tr>
             <th class="col-kategori" rowspan="2">TGL</th>
             <th rowspan="2" class="text-blue-800">TARGET (M-1)</th>
-            <th colspan="5">STATUS MIGRASI (M)</th>
+            <th colspan="6">STATUS MIGRASI (M)</th>
           </tr>
           <tr>
             <th class="text-emerald-600 leading-tight">BTC<br><span class="text-[8px] md:text-[9px] font-medium">(LANCAR)</span></th>
             <th class="text-teal-600 leading-tight">BACKFLOW<br><span class="text-[8px] md:text-[9px] font-medium">(MEMBAIK)</span></th>
             <th class="text-orange-500 leading-tight">STAY<br><span class="text-[8px] md:text-[9px] font-medium">(TETAP)</span></th>
             <th class="text-red-600 leading-tight">MIGRASI<br><span class="text-[8px] md:text-[9px] font-medium">(MEMBURUK)</span></th>
-            <th class="text-slate-500 leading-tight">RUN OFF<br><span class="text-[8px] md:text-[9px] font-medium">(LUNAS)</span></th>
+            <th class="text-indigo-600 leading-tight">ANGSURAN<br><span class="text-[8px] md:text-[9px] font-medium">(SELISIH)</span></th>
+            <th class="text-slate-500 leading-tight">LUNAS<br><span class="text-[8px] md:text-[9px] font-medium">(RUN OFF)</span></th>
           </tr>
         </thead>
         <tbody id="totalProg"></tbody>
@@ -182,34 +192,43 @@
   </div>
 </div>
 
-<div id="modalDetailProg" class="fixed inset-0 hidden z-[9999] flex items-end md:items-center justify-center p-0 sm:p-4">
+<div id="modalDetailProg" class="fixed inset-0 hidden z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-2 md:p-4">
   <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModalProg()"></div>
-  <div class="relative bg-white w-full h-[95vh] md:h-[92vh] max-w-[1600px] rounded-t-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
+  <div class="relative bg-white w-full h-[100dvh] sm:h-[95vh] md:h-[92vh] max-w-[1600px] rounded-t-xl sm:rounded-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
     
     <div class="flex flex-col bg-white border-b shrink-0 w-full z-50">
-        <div class="flex flex-row items-center justify-between px-3 py-2.5 md:px-4 md:py-3 gap-2 w-full">
-            <div class="flex-1 min-w-0">
-              <h3 class="font-bold text-slate-800 flex items-center gap-1.5 text-[11px] md:text-lg leading-none truncate">
-                  <span class="w-1.5 md:w-2 h-3 md:h-5 bg-emerald-600 rounded-full hidden md:block shrink-0"></span> 
-                  <span id="mdlTitleProg" class="truncate">Detail Debitur</span>
-              </h3>
-              <p class="text-[8px] md:text-xs text-slate-500 mt-1 md:ml-3 font-mono font-medium leading-none truncate" id="mdlSubTitleProg">...</p>
+        <div class="flex flex-col md:flex-row md:items-center justify-between px-3 py-2.5 md:px-4 md:py-3 gap-2 w-full">
+            <div class="flex items-center justify-between w-full md:w-auto md:flex-1 min-w-0">
+              <div class="flex-1 min-w-0">
+                <h3 class="font-bold text-slate-800 flex items-center gap-1.5 text-[11px] md:text-lg leading-none truncate">
+                    <span class="w-1.5 md:w-2 h-3 md:h-5 bg-emerald-600 rounded-full hidden md:block shrink-0"></span> 
+                    <span id="mdlTitleProg" class="truncate">Detail Debitur</span>
+                </h3>
+                <p class="text-[8px] md:text-xs text-slate-500 mt-1 md:ml-3 font-mono font-medium leading-none truncate" id="mdlSubTitleProg">...</p>
+              </div>
+              <button onclick="closeModalProg()" class="md:hidden w-[28px] h-[28px] flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-lg leading-none shrink-0">&times;</button>
             </div>
             
-            <div class="flex flex-row items-center gap-1 md:gap-2 shrink-0">
-                <select id="opt_kankas_prog_modal" class="inp px-1 md:px-2 h-[28px] md:h-[36px] w-[90px] md:w-[150px] text-[9px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 cursor-pointer" onchange="loadDetailProgPage(1)">
+            <div class="flex flex-row items-center gap-1 md:gap-2 shrink-0 w-full md:w-auto overflow-x-auto">
+                <input type="text" id="opt_search_prog_modal" class="inp px-2 h-[28px] md:h-[36px] w-[90px] md:w-[160px] text-[9px] md:text-xs text-slate-700 bg-slate-50 border-slate-200 shrink-0" placeholder="Cari nama/rek..." onkeydown="if(event.key==='Enter'){event.preventDefault();loadDetailProgPage(1);}">
+
+                <select id="opt_ao_prog_modal" class="inp px-1 md:px-2 h-[28px] md:h-[36px] w-[70px] md:w-[130px] text-[9px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 cursor-pointer shrink-0" onchange="loadDetailProgPage(1)">
+                    <option value="">ALL AO</option>
+                </select>
+
+                <select id="opt_kankas_prog_modal" class="inp px-1 md:px-2 h-[28px] md:h-[36px] w-[80px] md:w-[130px] text-[9px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 cursor-pointer shrink-0" onchange="loadDetailProgPage(1)">
                     <option value="">ALL KANKAS</option>
                 </select>
 
                 <button onclick="exportDetailProgExcel()" class="btn-icon bg-indigo-600 hover:bg-indigo-700 text-white h-[28px] w-[28px] md:h-[36px] md:w-[36px] rounded-lg shadow-sm shrink-0 transition flex items-center justify-center" title="Export Excel Detail">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                 </button>
-                <button onclick="closeModalProg()" class="w-[28px] h-[28px] md:w-[36px] md:h-[36px] flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-lg leading-none shrink-0">&times;</button>
+                <button onclick="closeModalProg()" class="hidden md:flex w-[28px] h-[28px] md:w-[36px] md:h-[36px] items-center justify-center rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-lg leading-none shrink-0">&times;</button>
             </div>
         </div>
     </div>
 
-    <div class="flex-1 overflow-auto bg-slate-50 relative custom-scrollbar">
+    <div class="flex-1 overflow-auto bg-slate-50 relative custom-scrollbar" style="-webkit-overflow-scrolling: touch;">
       <div id="loadingModalProg" class="hidden absolute inset-0 bg-white/90 z-40 flex flex-col items-center justify-center text-emerald-600 backdrop-blur-sm">
          <div class="animate-spin h-6 w-6 md:h-10 md:w-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full mb-2"></div>
          <span class="text-[9px] md:text-xs font-bold uppercase tracking-widest">Loading...</span>
@@ -224,15 +243,21 @@
                 <th class="px-2 md:px-3 text-left w-[150px]">ALAMAT</th>
                 <th class="px-1 md:px-2 text-center w-[80px]">NO HP</th>
                 <th class="px-1 md:px-2 text-center w-[90px]">KANKAS</th>
-                <th class="px-1 md:px-2 text-center w-[70px] text-orange-600">TGL JT</th>
-                <th class="px-2 md:px-3 text-right w-[110px] text-blue-800">OS (CURR)</th>
-                <th class="px-2 md:px-3 text-right w-[90px] text-emerald-600">TABUNGAN</th>
-                <th class="px-2 md:px-3 text-right w-[90px] text-red-600">TGK POKOK</th>
-                <th class="px-2 md:px-3 text-right w-[90px] text-red-600">TGK BUNGA</th>
-                <th class="px-1 md:px-2 text-center w-[50px] text-red-600">DPD PK</th>
-                <th class="px-1 md:px-2 text-center w-[50px] text-red-600">DPD BG</th>
-                <th class="px-2 md:px-3 text-center w-[60px]">DPD M</th>
-                <th class="px-2 md:px-3 text-center w-[110px] text-emerald-700">MIGRASI</th>
+                <th class="px-1 md:px-2 text-center w-[90px]">AO</th>
+                <th class="px-1 md:px-2 text-center w-[70px]">TGL JT</th>
+                <th class="px-2 md:px-3 text-right w-[110px]">PLAFON</th>
+                <th class="px-2 md:px-3 text-right w-[110px]">OS (CURR)</th>
+                <th class="px-2 md:px-3 text-right w-[90px]">TABUNGAN</th>
+                <th class="px-2 md:px-3 text-right w-[90px]">TGK POKOK</th>
+                <th class="px-2 md:px-3 text-right w-[90px]">TGK BUNGA</th>
+                <th class="px-1 md:px-2 text-center w-[50px]">DPD PK</th>
+                <th class="px-1 md:px-2 text-center w-[50px]">DPD BG</th>
+                <th class="px-2 md:px-3 text-center w-[60px]">DPD</th>
+                <th class="px-2 md:px-3 text-center w-[100px]">MIGRASI</th>
+                <th class="px-1 md:px-2 text-center w-[75px]">TGL BYR LALU</th>
+                <th class="px-2 md:px-3 text-right w-[95px]">BYR LALU</th>
+                <th class="px-1 md:px-2 text-center w-[75px]">TGL BYR SKR</th>
+                <th class="px-2 md:px-3 text-right w-[95px]">BYR SKR</th>
             </tr>
         </thead>
         <tbody id="bodyModalProg" class="mod-body text-[8.5px] md:text-xs"></tbody>
@@ -395,7 +420,6 @@
       tbodyTotal.innerHTML = '';
       if (!gt) return;
       
-      // URUTAN BARU: BTC, BACKFLOW, STAY, MIGRASI, RUNOFF
       tbodyTotal.innerHTML = `
         <tr class="sticky-total">
             <td class="col-kategori text-center text-slate-800 uppercase tracking-widest text-[11px] leading-tight pt-3">TOTAL</td>
@@ -424,6 +448,10 @@
                 <div class="text-[9px] text-red-600/70 font-semibold">${fmt(gt.migrasi_noa)} NOA | ${fmt2(gt.migrasi_pct)}%</div>
             </td>
 
+            <td class="border-r border-slate-300 border-b-2 border-b-indigo-400">
+                <span class="text-indigo-600 font-black">${fmt(gt.angsuran_os)}</span>
+            </td>
+
             <td class="border-b-2 border-b-slate-400">
                 <a href="#" onclick="openModalProg('ALL', 'RUNOFF'); return false;" class="text-slate-600 hover:underline hover:text-slate-800">${fmt(gt.runoff_os)}</a>
                 <div class="text-[9px] text-slate-400 font-semibold">${fmt(gt.runoff_noa)} NOA | ${fmt2(gt.runoff_pct)}%</div>
@@ -434,13 +462,12 @@
   function renderProgTable(rows) {
       const tbody = document.getElementById('bodyProg');
       tbody.innerHTML = '';
-      if (rows.length === 0) return tbody.innerHTML = `<tr><td colspan="7" class="text-center py-12 text-slate-400 font-medium">Data tidak ditemukan.</td></tr>`;
+      if (rows.length === 0) return tbody.innerHTML = `<tr><td colspan="8" class="text-center py-12 text-slate-400 font-medium">Data tidak ditemukan.</td></tr>`;
       
       let html = '';
       rows.forEach(r => {
           if(r.m1_os <= 0) return; 
           
-          // URUTAN BARU: BTC, BACKFLOW, STAY, MIGRASI, RUNOFF
           html += `
             <tr class="transition border-b border-slate-200 h-[50px]">
                 <td class="col-kategori font-bold text-slate-700 text-xs">${r.tgl}</td>
@@ -450,27 +477,31 @@
                     <div class="text-[9px] text-slate-400 font-medium">${fmt(r.m1_noa)} NOA</div>
                 </td>
 
-                <td class="text-right font-semibold text-emerald-600 border-r border-slate-200 bg-emerald-50/20">
+                <td class="text-right font-semibold text-emerald-600 border-r border-slate-200">
                     <a href="#" onclick="openModalProg(${r.tgl}, 'BTC'); return false;" class="hover:underline">${fmt(r.btc_os)}</a>
-                    <div class="text-[8.5px] text-emerald-600/60 font-medium">${fmt(r.btc_noa)} NOA | ${fmt2(r.btc_pct)}%</div>
+                    <div class="text-[8.5px] text-slate-400 font-medium">${fmt(r.btc_noa)} NOA | ${fmt2(r.btc_pct)}%</div>
                 </td>
 
-                <td class="text-right font-semibold text-teal-600 border-r border-slate-200 bg-teal-50/20">
+                <td class="text-right font-semibold text-teal-600 border-r border-slate-200">
                     <a href="#" onclick="openModalProg(${r.tgl}, 'BACKFLOW'); return false;" class="hover:underline">${fmt(r.backflow_os)}</a>
-                    <div class="text-[8.5px] text-teal-600/60 font-medium">${fmt(r.backflow_noa)} NOA | ${fmt2(r.backflow_pct)}%</div>
+                    <div class="text-[8.5px] text-slate-400 font-medium">${fmt(r.backflow_noa)} NOA | ${fmt2(r.backflow_pct)}%</div>
                 </td>
 
-                <td class="text-right font-semibold text-orange-500 border-r border-slate-200 bg-orange-50/20">
+                <td class="text-right font-semibold text-orange-500 border-r border-slate-200">
                     <a href="#" onclick="openModalProg(${r.tgl}, 'STAY'); return false;" class="hover:underline">${fmt(r.stay_os)}</a>
-                    <div class="text-[8.5px] text-orange-500/60 font-medium">${fmt(r.stay_noa)} NOA | ${fmt2(r.stay_pct)}%</div>
+                    <div class="text-[8.5px] text-slate-400 font-medium">${fmt(r.stay_noa)} NOA | ${fmt2(r.stay_pct)}%</div>
                 </td>
 
-                <td class="text-right font-semibold text-red-500 border-r border-slate-200 bg-red-50/20">
+                <td class="text-right font-semibold text-red-500 border-r border-slate-200">
                     <a href="#" onclick="openModalProg(${r.tgl}, 'MIGRASI'); return false;" class="hover:underline">${fmt(r.migrasi_os)}</a>
-                    <div class="text-[8.5px] text-red-500/60 font-medium">${fmt(r.migrasi_noa)} NOA | ${fmt2(r.migrasi_pct)}%</div>
+                    <div class="text-[8.5px] text-slate-400 font-medium">${fmt(r.migrasi_noa)} NOA | ${fmt2(r.migrasi_pct)}%</div>
                 </td>
 
-                <td class="text-right font-semibold text-slate-600 bg-slate-50/50">
+                <td class="text-right font-semibold text-indigo-600 border-r border-slate-200">
+                    ${fmt(r.angsuran_os)}
+                </td>
+
+                <td class="text-right font-semibold text-slate-600">
                     <a href="#" onclick="openModalProg(${r.tgl}, 'RUNOFF'); return false;" class="hover:underline">${fmt(r.runoff_os)}</a>
                     <div class="text-[8.5px] text-slate-400 font-medium">${fmt(r.runoff_noa)} NOA | ${fmt2(r.runoff_pct)}%</div>
                 </td>
@@ -481,7 +512,9 @@
 
   async function loadKankasDetailProg(kodeCabang) {
       const optKankas = document.getElementById('opt_kankas_prog_modal');
+      const optAo = document.getElementById('opt_ao_prog_modal');
       optKankas.innerHTML = '<option value="">SEMUA KANKAS</option>';
+      optAo.innerHTML = '<option value="">ALL AO</option>';
       if (!kodeCabang || kodeCabang === '000') return; 
 
       try {
@@ -496,6 +529,35 @@
           if(mainKankas && document.getElementById('lbl_sub_otp').innerText === "KANKAS") {
               optKankas.value = mainKankas;
           }
+      } catch(err) {}
+
+      // Load AO list from actual detail data (fetch all without AO filter to get unique AOs)
+      try {
+          const payloadAo = { 
+              ...currentProgDetailParams, 
+              kode_ao: '', 
+              search: '', 
+              page: 1, 
+              limit: 5000 
+          };
+          const rAo = await fetch(API_RR, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payloadAo) });
+          const jAo = await rAo.json();
+          let h2 = '<option value="">ALL AO</option>';
+          if(jAo.status === 200 && jAo.data?.data) {
+              const aoMap = {};
+              jAo.data.data.forEach(row => {
+                  const kodeAo = row.kode_group2 || '';
+                  const namaAo = row.nama_ao || kodeAo;
+                  if(kodeAo && kodeAo !== '-' && !aoMap[kodeAo]) {
+                      aoMap[kodeAo] = namaAo;
+                  }
+              });
+              // Sort AO names alphabetically
+              Object.entries(aoMap).sort((a, b) => a[1].localeCompare(b[1])).forEach(([kode, nama]) => {
+                  h2 += `<option value="${kode}">${nama}</option>`;
+              });
+          }
+          optAo.innerHTML = h2;
       } catch(err) {}
   }
 
@@ -543,7 +605,9 @@
 
       try {
           const kankasVal = document.getElementById('opt_kankas_prog_modal').value;
-          const payload = { ...currentProgDetailParams, kode_kankas: kankasVal || currentProgDetailParams.kode_kankas, page: page };
+          const aoVal = document.getElementById('opt_ao_prog_modal').value;
+          const searchVal = document.getElementById('opt_search_prog_modal').value.trim();
+          const payload = { ...currentProgDetailParams, kode_kankas: kankasVal || currentProgDetailParams.kode_kankas, kode_ao: aoVal, search: searchVal, page: page };
           
           const res = await fetch(API_RR, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
           const json = await res.json();
@@ -557,41 +621,53 @@
           currentProgTotalPages = meta.total_pages;
 
           if(rows.length === 0) {
-              tbody.innerHTML = `<tr><td colspan="15" class="py-20 text-center text-slate-500 italic">Tidak ada data debitur.</td></tr>`;
+              tbody.innerHTML = `<tr><td colspan="21" class="py-20 text-center text-slate-500 italic">Tidak ada data debitur.</td></tr>`;
               info.innerText = `0 Data`;
           } else {
               let html = '';
               rows.forEach(r => {
-                  let badge = 'bg-slate-100 text-slate-600';
+                  let badge = 'bg-slate-100 text-slate-700';
                   if(r.status_ket.includes('RUNOFF')) badge = 'bg-slate-200 text-slate-700';
-                  else if(r.status_ket.includes('BTC')) badge = 'bg-emerald-100 text-emerald-700';
-                  else if(r.status_ket.includes('BACKFLOW')) badge = 'bg-teal-100 text-teal-700';
-                  else if(r.status_ket.includes('STAY')) badge = 'bg-orange-100 text-orange-600';
-                  else if(r.status_ket.includes('MIGRASI')) badge = 'bg-red-100 text-red-600';
+                  else if(r.status_ket.includes('BTC')) badge = 'bg-emerald-50 text-emerald-700';
+                  else if(r.status_ket.includes('BACKFLOW')) badge = 'bg-teal-50 text-teal-700';
+                  else if(r.status_ket.includes('STAY')) badge = 'bg-amber-50 text-amber-700';
+                  else if(r.status_ket.includes('MIGRASI')) badge = 'bg-red-50 text-red-700';
 
                   let txtTabungan = fmt(r.tabungan);
-                  if (r.status_tabungan === 'Aman') txtTabungan = `<span class="text-emerald-600 font-bold">${txtTabungan}</span>`;
-                  else if (r.tabungan > 0) txtTabungan = `<span class="text-orange-500 font-medium">${txtTabungan}</span>`;
+                  if (r.status_tabungan === 'Aman') txtTabungan = `<span class="font-bold">${txtTabungan}</span>`;
 
                   const textAlamat = r.alamat ? (r.alamat.length > 25 ? r.alamat.substring(0, 25) + '...' : r.alamat) : '-';
 
+                  // Format tanggal transaksi
+                  const fmtTgl = (d) => { if(!d) return '-'; const dt = new Date(d); return dt.toLocaleDateString('id-ID', {day:'2-digit', month:'short'}); };
+                  const tglByrLalu = fmtTgl(r.tgl_trans_lalu);
+                  const tglByrSkr = fmtTgl(r.tgl_trans_sekarang);
+                  const byrLalu = r.total_bayar_lalu > 0 ? fmt(r.total_bayar_lalu) : '-';
+                  const byrSkr = r.total_bayar_sekarang > 0 ? fmt(r.total_bayar_sekarang) : '-';
+
                   html += `
-                    <tr class="border-b border-slate-200">
-                        <td class="mod-td-rek hidden md:table-cell px-1 md:px-2 font-mono text-slate-500 border-r border-slate-200">${r.no_rekening}</td>
-                        <td class="mod-td-nas px-1 md:px-3 font-bold text-slate-700 truncate border-r border-slate-200" title="${r.nama_nasabah}">${r.nama_nasabah}</td>
-                        <td class="px-1 md:px-2 text-center font-bold text-slate-600 border-r border-slate-200">${r.kolektibilitas || '-'}</td>
-                        <td class="px-2 md:px-3 truncate border-r border-slate-200" title="${r.alamat || ''}">${textAlamat}</td>
-                        <td class="px-1 md:px-2 text-center font-mono text-slate-600 border-r border-slate-200">${r.no_hp || '-'}</td>
-                        <td class="px-1 md:px-2 text-center font-mono text-slate-600 border-r border-slate-200">${r.kankas || '-'}</td>
-                        <td class="px-1 md:px-2 text-center font-bold text-orange-600 border-r border-slate-200">${r.tgl_jatuh_tempo}</td>
-                        <td class="px-2 md:px-3 text-right font-bold text-blue-800 border-r border-slate-200">${fmt(r.os_curr)}</td>
-                        <td class="px-2 md:px-3 text-right font-medium border-r border-slate-200">${txtTabungan}</td>
-                        <td class="px-2 md:px-3 text-right font-medium text-red-500 border-r border-slate-200">${fmt(r.tunggakan_pokok)}</td>
-                        <td class="px-2 md:px-3 text-right font-medium text-red-500 border-r border-slate-200">${fmt(r.tunggakan_bunga)}</td>
-                        <td class="px-1 md:px-2 text-center font-bold border-r border-slate-200">${r.dpd_pokok || 0}</td>
-                        <td class="px-1 md:px-2 text-center font-bold border-r border-slate-200">${r.dpd_bunga || 0}</td>
-                        <td class="px-2 md:px-3 text-center font-bold border-r border-slate-200">${r.dpd_curr} Hr</td>
-                        <td class="px-2 md:px-3 text-center font-extrabold"><span class="px-1.5 md:px-2 py-0.5 rounded-md ${badge}">${r.status_ket}</span></td>
+                    <tr class="border-b border-slate-100 hover:bg-slate-50/50">
+                        <td class="mod-td-rek hidden md:table-cell px-1 md:px-2 font-mono text-slate-500 border-r border-slate-100">${r.no_rekening}</td>
+                        <td class="mod-td-nas px-1 md:px-3 font-semibold text-slate-800 truncate border-r border-slate-100" title="${r.nama_nasabah}">${r.nama_nasabah}</td>
+                        <td class="px-1 md:px-2 text-center font-bold text-slate-600 border-r border-slate-100">${r.kolektibilitas || '-'}</td>
+                        <td class="px-2 md:px-3 truncate text-slate-600 border-r border-slate-100" title="${r.alamat || ''}">${textAlamat}</td>
+                        <td class="px-1 md:px-2 text-center font-mono text-slate-500 border-r border-slate-100">${r.no_hp || '-'}</td>
+                        <td class="px-1 md:px-2 text-center text-slate-600 border-r border-slate-100">${r.kankas || '-'}</td>
+                        <td class="px-1 md:px-2 text-center text-slate-600 border-r border-slate-100">${r.nama_ao || '-'}</td>
+                        <td class="px-1 md:px-2 text-center font-medium border-r border-slate-100">${r.tgl_jatuh_tempo}</td>
+                        <td class="px-2 md:px-3 text-right font-bold text-indigo-700 border-r border-slate-100">${fmt(r.jml_pinjaman)}</td>
+                        <td class="px-2 md:px-3 text-right font-bold text-slate-800 border-r border-slate-100">${fmt(r.os_curr)}</td>
+                        <td class="px-2 md:px-3 text-right text-slate-600 border-r border-slate-100">${txtTabungan}</td>
+                        <td class="px-2 md:px-3 text-right text-slate-600 border-r border-slate-100">${fmt(r.tunggakan_pokok)}</td>
+                        <td class="px-2 md:px-3 text-right text-slate-600 border-r border-slate-100">${fmt(r.tunggakan_bunga)}</td>
+                        <td class="px-1 md:px-2 text-center text-slate-600 border-r border-slate-100">${r.dpd_pokok || 0}</td>
+                        <td class="px-1 md:px-2 text-center text-slate-600 border-r border-slate-100">${r.dpd_bunga || 0}</td>
+                        <td class="px-2 md:px-3 text-center font-bold text-slate-700 border-r border-slate-100">${r.dpd_curr}</td>
+                        <td class="px-2 md:px-3 text-center"><span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${badge}">${r.status_ket}</span></td>
+                        <td class="px-1 md:px-2 text-center text-slate-500 border-r border-slate-100">${tglByrLalu}</td>
+                        <td class="px-2 md:px-3 text-right text-slate-600 border-r border-slate-100">${byrLalu}</td>
+                        <td class="px-1 md:px-2 text-center text-slate-500 border-r border-slate-100">${tglByrSkr}</td>
+                        <td class="px-2 md:px-3 text-right text-slate-600">${byrSkr}</td>
                     </tr>`;
               });
               tbody.innerHTML = html;
@@ -603,7 +679,7 @@
           document.getElementById('btnPrevProg').disabled = page <= 1;
           document.getElementById('btnNextProg').disabled = page >= meta.total_pages;
       } catch(err){ 
-          tbody.innerHTML = `<tr><td colspan="15" class="py-16 text-center text-red-500 font-bold">${err.message}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="21" class="py-16 text-center text-red-500 font-bold">${err.message}</td></tr>`;
       } finally { loading.classList.add('hidden'); }
   }
 
@@ -631,7 +707,10 @@
             <tr>
               <th>No Rekening</th><th>Nama Nasabah</th><th>Kolektibilitas</th><th>Alamat</th><th>No HP</th>
               <th>Kankas</th><th>Nama AO</th><th>Tgl Realisasi</th><th>Tgl Jatuh Tempo</th>
-              <th>OS (Baki Debet Curr)</th><th>Tabungan</th><th>Tunggakan Pokok</th><th>Tunggakan Bunga</th>
+              <th>Plafon</th><th>OS (Baki Debet Curr)</th><th>Tabungan</th>
+              <th>Tgl Byr Lalu</th><th>Total Byr Lalu</th>
+              <th>Tgl Byr Sekarang</th><th>Total Byr Sekarang</th>
+              <th>Tunggakan Pokok</th><th>Tunggakan Bunga</th>
               <th>DPD Pokok</th><th>DPD Bunga</th><th>DPD (Curr)</th><th>Status Migrasi</th>
             </tr>`;
           
@@ -646,8 +725,13 @@
                 <td>${r.nama_ao || ''}</td>
                 <td>${r.tgl_realisasi || ''}</td>
                 <td>${r.tgl_jatuh_tempo || ''}</td>
+                <td>${r.jml_pinjaman || 0}</td>
                 <td>${r.os_curr}</td>
                 <td>${r.tabungan}</td>
+                <td>${r.tgl_trans_lalu || ''}</td>
+                <td>${r.total_bayar_lalu || 0}</td>
+                <td>${r.tgl_trans_sekarang || ''}</td>
+                <td>${r.total_bayar_sekarang || 0}</td>
                 <td>${r.tunggakan_pokok || 0}</td>
                 <td>${r.tunggakan_bunga || 0}</td>
                 <td>${r.dpd_pokok || 0}</td>
