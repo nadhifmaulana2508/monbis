@@ -1,516 +1,625 @@
-<?php
-// ==========================================
-// BAGIAN API PHP 
-// ==========================================
-$dataFile = 'tracker_data.json';
-
-if (isset($_GET['api']) && $_GET['api'] == 'true') {
-    header('Content-Type: application/json');
-    header('Access-Control-Allow-Origin: *');
-
-    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
-        if (file_exists($dataFile)) {
-            echo file_get_contents($dataFile);
-        } else {
-            echo json_encode([]);
-        }
-    } 
-    elseif ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $input = file_get_contents('php://input');
-        if (json_decode($input) !== null) {
-            // CEK APAKAH BERHASIL DITULIS KE SERVER
-            $result = file_put_contents($dataFile, $input);
-            if ($result !== false) {
-                echo json_encode(['status' => 'success']);
-            } else {
-                http_response_code(500); // Server error
-                echo json_encode(['status' => 'error', 'message' => 'Permission Denied! File tidak bisa ditulis.']);
-            }
-        } else {
-            http_response_code(400);
-            echo json_encode(['status' => 'error', 'message' => 'Format JSON tidak valid']);
-        }
-    }
-    exit; 
-}
-?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monbis Dev Tracker - BKK Jateng</title>
+    <title>Monbis - Dev Tracking</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        details > summary { list-style: none; }
-        details > summary::-webkit-details-marker { display: none; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f8fafc; }
+        .progress-bar { transition: width 0.5s ease; }
+        .modal-backdrop { background: rgba(15,23,42,0.6); backdrop-filter: blur(2px); }
+        .tab-active { border-color: #3b82f6; color: #1e40af; background: #eff6ff; }
+        .status-done { background: #dcfce7; color: #166534; }
+        .status-in_progress { background: #fef9c3; color: #854d0e; }
+        .status-backlog { background: #f1f5f9; color: #475569; }
+        .status-blocked { background: #fee2e2; color: #991b1b; }
+        .status-deprecated { background: #f3e8ff; color: #6b21a8; }
+        .pri-critical { background: #fef2f2; border-left: 3px solid #dc2626; }
+        .pri-high { background: #fffbeb; border-left: 3px solid #f59e0b; }
+        .pri-medium { background: #f0fdf4; border-left: 3px solid #22c55e; }
+        .pri-low { background: #f8fafc; border-left: 3px solid #94a3b8; }
+        .toast { animation: slideIn 0.3s ease; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     </style>
 </head>
-<body class="bg-[#f8fafc] text-slate-900 min-h-screen">
+<body class="min-h-screen">
 
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-30 py-3 px-4 md:py-4 md:px-6 mb-4 md:mb-6 shadow-sm">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+<!-- TOAST NOTIFICATION -->
+<div id="toastContainer" class="fixed top-4 right-4 z-[9999] space-y-2"></div>
+
+<!-- HEADER -->
+<header class="bg-white border-b border-slate-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            </div>
             <div>
-                <h1 class="text-lg md:text-xl font-bold text-blue-700 flex items-center gap-2">
-                    <span class="bg-blue-600 text-white p-1 rounded text-sm md:text-base">MB</span> 
-                    <span>Monbis Dev Tracker</span>
-                </h1>
-                <p class="text-[10px] md:text-xs text-slate-500 hidden sm:block mt-1">Live Server Sync 🟢</p>
-            </div>
-            
-            <div class="flex flex-wrap items-center gap-2 md:gap-3">
-                <button onclick="openLegendModal()" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-bold transition-all border border-indigo-200 flex items-center gap-1">
-                    ℹ️ <span class="hidden sm:inline">Panduan</span>
-                </button>
-                <button onclick="openModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium transition-all shadow-md shadow-blue-200 ml-2">
-                    + <span class="hidden sm:inline">Tambah Menu</span>
-                </button>
+                <h1 class="text-lg font-bold text-slate-800">Monbis Dev Tracker</h1>
+                <p class="text-xs text-slate-500">Tracking progress pengerjaan fitur</p>
             </div>
         </div>
-    </nav>
-
-    <main class="max-w-7xl mx-auto px-3 md:px-4 pb-20">
-        <div class="mb-6 md:mb-8">
-            <h2 class="text-base md:text-lg font-bold text-slate-800 mb-3 md:mb-4 flex items-center justify-between gap-2">
-                <span>📊 Dashboard Rekapitulasi</span>
-                <span id="sync-status" class="text-xs text-slate-400 font-normal">Sinkronisasi...</span>
-            </h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4" id="rekap-area">
-                <!-- Di-render oleh JS -->
-            </div>
-        </div>
-
-        <div id="content-area" class="space-y-6 md:space-y-8">
-            <!-- Data rendered here -->
-        </div>
-    </main>
-
-    <!-- MODAL PANDUAN PENILAIAN -->
-    <div id="legend-modal" class="fixed inset-0 bg-slate-900/60 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
-            <div class="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center shrink-0 bg-indigo-50">
-                <h2 class="text-base md:text-lg font-bold text-indigo-800 flex items-center gap-2">ℹ️ Panduan Penilaian Indikator</h2>
-                <button onclick="closeLegendModal()" class="text-indigo-400 hover:text-indigo-600 p-1 font-bold text-xl">✕</button>
-            </div>
-            <div class="overflow-y-auto p-4 md:p-6 space-y-4 text-sm text-slate-700">
-                <p class="font-medium mb-2">Setiap indikator memiliki bobot 25%. Total 100% jika semua siap.</p>
-                <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg"><strong class="bg-green-100 text-green-700 border border-green-200 px-2 py-0.5 rounded mr-2 text-xs">BE READY</strong> Query Database (SQL) & API Endpoint di Backend sudah selesai dan siap dikonsumsi.</div>
-                <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg"><strong class="bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded mr-2 text-xs">FE READY</strong> Slicing UI Frontend dan proses integrasi tarik data dari Backend sudah berjalan lancar.</div>
-                <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg"><strong class="bg-purple-100 text-purple-700 border border-purple-200 px-2 py-0.5 rounded mr-2 text-xs">FILTER</strong> Sistem filter data (Kode Kantor, Hierarki AO, Tanggal, dll) sudah berfungsi dengan valid.</div>
-                <div class="bg-slate-50 border border-slate-100 p-3 rounded-lg"><strong class="bg-orange-100 text-orange-700 border border-orange-200 px-2 py-0.5 rounded mr-2 text-xs">RESPONSIVE</strong> Tampilan UI aman, rapi, dan tabel tidak menumpuk saat dibuka di perangkat Mobile/HP.</div>
-            </div>
-            <div class="p-4 border-t border-slate-100 flex justify-end">
-                <button onclick="closeLegendModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors">Tutup Panduan</button>
-            </div>
+        <div class="flex items-center gap-2">
+            <button onclick="openModal('idea')" class="px-3 py-2 text-sm bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 font-medium">+ Ide Baru</button>
+            <button onclick="openModal('feature')" class="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">+ Fitur Baru</button>
         </div>
     </div>
+</header>
 
-    <!-- Modal Tambah Sub-Menu -->
-    <div id="modal" class="fixed inset-0 bg-slate-900/60 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
-            <div class="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
-                <h2 class="text-base md:text-lg font-bold">Input Sub-Menu Baru</h2>
-                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1">✕</button>
-            </div>
-            <div class="overflow-y-auto p-4 md:p-6">
-                <form id="menu-form" class="space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Menu Utama</label>
-                        <input type="text" id="m_parent" placeholder="ex: Pemasaran, NPL, Laporan..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm" required>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Nama Sub-Menu</label>
-                        <input type="text" id="m_name" placeholder="ex: Realisasi Kredit AO" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm" required>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Dikerjakan Oleh</label>
-                        <input type="text" id="m_user" value="Tim IT" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm" required>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-1">Catatan Kekurangan</label>
-                        <textarea id="m_notes" rows="3" placeholder="Catatan bug atau fitur yang kurang..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm"></textarea>
-                    </div>
-                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-medium text-sm transition-colors">Batal</button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors">Simpan Data</button>
-                    </div>
-                </form>
-            </div>
+<!-- SUMMARY CARDS -->
+<section id="summarySection" class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="summaryCards">
+        <div class="bg-white rounded-xl border p-4 text-center"><div class="text-2xl font-bold text-slate-800" id="cardTotal">-</div><div class="text-xs text-slate-500 mt-1">Total Fitur</div></div>
+        <div class="bg-white rounded-xl border p-4 text-center"><div class="text-2xl font-bold text-green-600" id="cardDone">-</div><div class="text-xs text-slate-500 mt-1">Selesai</div></div>
+        <div class="bg-white rounded-xl border p-4 text-center"><div class="text-2xl font-bold text-yellow-600" id="cardProgress">-</div><div class="text-xs text-slate-500 mt-1">In Progress</div></div>
+        <div class="bg-white rounded-xl border p-4 text-center"><div class="text-2xl font-bold text-slate-500" id="cardBacklog">-</div><div class="text-xs text-slate-500 mt-1">Backlog</div></div>
+        <div class="bg-white rounded-xl border p-4 text-center"><div class="text-2xl font-bold text-blue-600" id="cardAvg">-</div><div class="text-xs text-slate-500 mt-1">Avg Progress</div></div>
+    </div>
+</section>
+
+<!-- TABS -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6">
+    <div class="flex gap-1 border-b border-slate-200">
+        <button onclick="switchTab('overview')" id="tabOverview" class="px-4 py-2.5 text-sm font-medium border-b-2 tab-active rounded-t-lg">Overview</button>
+        <button onclick="switchTab('features')" id="tabFeatures" class="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 rounded-t-lg">Semua Fitur</button>
+        <button onclick="switchTab('logs')" id="tabLogs" class="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 rounded-t-lg">Activity Log</button>
+        <button onclick="switchTab('ideas')" id="tabIdeas" class="px-4 py-2.5 text-sm font-medium border-b-2 border-transparent text-slate-500 hover:text-slate-700 rounded-t-lg">Backlog Ide</button>
+    </div>
+</section>
+
+<!-- TAB CONTENT -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+    <!-- OVERVIEW TAB -->
+    <div id="contentOverview" class="space-y-4"></div>
+    <!-- FEATURES TAB -->
+    <div id="contentFeatures" class="hidden space-y-3"></div>
+    <!-- LOGS TAB -->
+    <div id="contentLogs" class="hidden"></div>
+    <!-- IDEAS TAB -->
+    <div id="contentIdeas" class="hidden space-y-3"></div>
+</section>
+
+<!-- MODAL FEATURE -->
+<div id="modalFeature" class="fixed inset-0 z-[9000] hidden">
+    <div class="modal-backdrop absolute inset-0" onclick="closeModal('feature')"></div>
+    <div class="absolute inset-4 md:inset-auto md:top-[5%] md:left-1/2 md:-translate-x-1/2 md:w-[600px] bg-white rounded-2xl shadow-2xl overflow-y-auto max-h-[90vh] z-10">
+        <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+            <h2 id="modalFeatureTitle" class="text-lg font-bold text-slate-800">Tambah Fitur Baru</h2>
+            <button onclick="closeModal('feature')" class="text-slate-400 hover:text-slate-600">&times;</button>
         </div>
+        <form id="formFeature" onsubmit="submitFeature(event)" class="p-6 space-y-4">
+            <input type="hidden" id="featureId" value="">
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="text-xs font-medium text-slate-600">Module *</label><select id="fModule" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" required></select></div>
+                <div><label class="text-xs font-medium text-slate-600">Kode Fitur *</label><input id="fKode" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="REALISASI_KREDIT" required></div>
+            </div>
+            <div><label class="text-xs font-medium text-slate-600">Nama Fitur *</label><input id="fNama" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="Realisasi Kredit" required></div>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="text-xs font-medium text-slate-600">Slug (URL)</label><input id="fSlug" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="realisasi_kredit"></div>
+                <div><label class="text-xs font-medium text-slate-600">Prioritas</label><select id="fPrioritas" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"><option value="critical">Critical</option><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+            </div>
+            <div><label class="text-xs font-medium text-slate-600">Deskripsi</label><textarea id="fDeskripsi" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" rows="2" placeholder="Penjelasan singkat fitur..."></textarea></div>
+            <div class="grid grid-cols-3 gap-4">
+                <div><label class="text-xs font-medium text-slate-600">Status</label><select id="fStatus" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"><option value="backlog">Backlog</option><option value="in_progress">In Progress</option><option value="done">Done</option><option value="blocked">Blocked</option></select></div>
+                <div><label class="text-xs font-medium text-slate-600">Progress %</label><input id="fProgress" type="number" min="0" max="100" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" value="0"></div>
+                <div><label class="text-xs font-medium text-slate-600">Assignee</label><input id="fAssignee" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="Nadhif"></div>
+            </div>
+            <div class="grid grid-cols-3 gap-4">
+                <div><label class="text-xs font-medium text-slate-600">File Page</label><input id="fFilePage" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="pages/xxx.php"></div>
+                <div><label class="text-xs font-medium text-slate-600">File Controller</label><input id="fFileCtrl" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="api/controllers/Xxx.php"></div>
+                <div><label class="text-xs font-medium text-slate-600">File Route</label><input id="fFileRoute" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="api/routes/xxx.php"></div>
+            </div>
+            <div><label class="text-xs font-medium text-slate-600">Catatan (untuk log)</label><input id="fCatatan" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="Apa yang dikerjakan..."></div>
+            <div class="flex gap-3 pt-2">
+                <button type="submit" class="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700">Simpan</button>
+                <button type="button" onclick="closeModal('feature')" class="px-6 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50">Batal</button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <!-- MODAL EDIT CATATAN -->
-    <div id="edit-modal" class="fixed inset-0 bg-slate-900/60 hidden backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden max-h-[95vh] flex flex-col">
-            <div class="p-4 md:p-6 border-b border-slate-100 flex justify-between items-center shrink-0">
-                <h2 class="text-base md:text-lg font-bold text-blue-700">Update Catatan</h2>
-                <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 p-1">✕</button>
-            </div>
-            <div class="overflow-y-auto p-4 md:p-6">
-                <form id="edit-form" class="space-y-4">
-                    <input type="hidden" id="edit_id"> 
-                    <div>
-                        <label class="block text-xs font-bold uppercase text-slate-500 mb-2">Detail Kekurangan / Bug</label>
-                        <textarea id="edit_notes" rows="6" placeholder="Ketik catatan di sini..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 outline-none focus:border-blue-500 text-sm"></textarea>
-                    </div>
-                    <div class="flex justify-end gap-3 pt-4 border-t border-slate-100 mt-4">
-                        <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-slate-500 hover:bg-slate-100 rounded-lg font-medium text-sm transition-colors">Batal</button>
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold text-sm transition-colors">Update Server</button>
-                    </div>
-                </form>
-            </div>
+<!-- MODAL IDEA -->
+<div id="modalIdea" class="fixed inset-0 z-[9000] hidden">
+    <div class="modal-backdrop absolute inset-0" onclick="closeModal('idea')"></div>
+    <div class="absolute inset-4 md:inset-auto md:top-[10%] md:left-1/2 md:-translate-x-1/2 md:w-[500px] bg-white rounded-2xl shadow-2xl overflow-y-auto max-h-[80vh] z-10">
+        <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+            <h2 id="modalIdeaTitle" class="text-lg font-bold text-slate-800">Tambah Ide Fitur</h2>
+            <button onclick="closeModal('idea')" class="text-slate-400 hover:text-slate-600">&times;</button>
         </div>
+        <form id="formIdea" onsubmit="submitIdea(event)" class="p-6 space-y-4">
+            <input type="hidden" id="ideaId" value="">
+            <div><label class="text-xs font-medium text-slate-600">Judul *</label><input id="iJudul" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" required placeholder="Export PDF Laporan NPL"></div>
+            <div><label class="text-xs font-medium text-slate-600">Deskripsi</label><textarea id="iDeskripsi" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" rows="3" placeholder="Detail ide fitur..."></textarea></div>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="text-xs font-medium text-slate-600">Module</label><select id="iModule" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"><option value="">-- Belum ditentukan --</option></select></div>
+                <div><label class="text-xs font-medium text-slate-600">Prioritas</label><select id="iPrioritas" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"><option value="critical">Critical</option><option value="high">High</option><option value="medium" selected>Medium</option><option value="low">Low</option></select></div>
+            </div>
+            <div><label class="text-xs font-medium text-slate-600">Diusulkan Oleh</label><input id="iOleh" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" placeholder="Nadhif"></div>
+            <div class="flex gap-3 pt-2">
+                <button type="submit" class="flex-1 py-2.5 bg-amber-500 text-white rounded-lg text-sm font-medium hover:bg-amber-600">Simpan Ide</button>
+                <button type="button" onclick="closeModal('idea')" class="px-6 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50">Batal</button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <!-- TOAST NOTIFICATION REALTIME -->
-    <div id="toast" class="fixed bottom-4 right-4 bg-slate-800 text-white px-4 py-3 rounded-lg shadow-2xl transform translate-y-24 opacity-0 transition-all duration-300 z-50 text-xs md:text-sm flex items-center gap-3 border border-slate-700">
-        <span class="relative flex h-2.5 w-2.5">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-        </span>
-        <span id="toast-msg" class="font-medium">Tersimpan ke Server Database!</span>
+<!-- MODAL LOG (Quick Update Progress) -->
+<div id="modalLog" class="fixed inset-0 z-[9000] hidden">
+    <div class="modal-backdrop absolute inset-0" onclick="closeModal('log')"></div>
+    <div class="absolute inset-4 md:inset-auto md:top-[15%] md:left-1/2 md:-translate-x-1/2 md:w-[450px] bg-white rounded-2xl shadow-2xl z-10">
+        <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+            <h2 class="text-lg font-bold text-slate-800">Update Progress</h2>
+            <button onclick="closeModal('log')" class="text-slate-400 hover:text-slate-600">&times;</button>
+        </div>
+        <form id="formLog" onsubmit="submitLog(event)" class="p-6 space-y-4">
+            <input type="hidden" id="logFeatureId" value="">
+            <div class="p-3 bg-slate-50 rounded-lg"><span class="text-xs text-slate-500">Fitur:</span><div id="logFeatureName" class="font-medium text-slate-800 text-sm"></div></div>
+            <div class="grid grid-cols-2 gap-4">
+                <div><label class="text-xs font-medium text-slate-600">Status Baru</label><select id="logStatus" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"><option value="backlog">Backlog</option><option value="in_progress">In Progress</option><option value="done">Done</option><option value="blocked">Blocked</option></select></div>
+                <div><label class="text-xs font-medium text-slate-600">Progress %</label><input id="logProgress" type="number" min="0" max="100" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm"></div>
+            </div>
+            <div><label class="text-xs font-medium text-slate-600">Catatan *</label><textarea id="logCatatan" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" rows="3" placeholder="Apa yang dikerjakan session ini..." required></textarea></div>
+            <div><label class="text-xs font-medium text-slate-600">Dikerjakan Oleh</label><input id="logOleh" class="w-full mt-1 px-3 py-2 border rounded-lg text-sm" value="Nadhif"></div>
+            <div class="flex gap-3 pt-2">
+                <button type="submit" class="flex-1 py-2.5 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700">Simpan Log</button>
+                <button type="button" onclick="closeModal('log')" class="px-6 py-2.5 border border-slate-300 rounded-lg text-sm text-slate-600 hover:bg-slate-50">Batal</button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <!-- TOAST ERROR (BARU) -->
-    <div id="toast-error" class="fixed bottom-4 right-4 bg-red-600 text-white px-4 py-3 rounded-lg shadow-2xl transform translate-y-24 opacity-0 transition-all duration-300 z-50 text-xs md:text-sm flex items-center gap-3 border border-red-700">
-        <span class="font-bold text-lg">⚠️</span>
-        <span id="toast-error-msg" class="font-medium">Gagal menyimpan ke Server! Cek File Permission.</span>
-    </div>
+<script>
+// ============================================================
+// CONFIG & STATE
+// ============================================================
+const API = '../api/?request=dev_tracking';
+let STATE = { modules: [], features: [], summary: null, currentTab: 'overview' };
 
-    <script>
-        let menuData = [];
-        const API_URL = 'index.php?api=true'; 
-        
-        const defaultData = [
-            {
-                id: 1, parent: "Pemasaran", name: "Realisasi Kredit (Sample)", 
-                user: "Syaifun Nadhif", notes: "Data contoh awal, testing di server dev aman.",
-                be: true, fe: true, filter: true, responsif: true, progress: 100,
-                created_at: new Date().toLocaleString('id-ID'), updated_at: new Date().toLocaleString('id-ID')
-            }
-        ];
+async function api(type, data = {}) {
+    const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, ...data })
+    });
+    return await res.json();
+}
 
-        // --- FUNGSI AMBIL DATA DARI SERVER (GET) ---
-        async function fetchFromServer() {
-            try {
-                const response = await fetch(API_URL);
-                const data = await response.json();
-                
-                if (data.length === 0) {
-                    menuData = defaultData;
-                    saveToServer(true); 
-                } else {
-                    if(JSON.stringify(menuData) !== JSON.stringify(data)){
-                        menuData = data;
-                        renderApp();
-                    }
-                }
-                document.getElementById('sync-status').innerHTML = '🟢 Terhubung Server';
-            } catch (error) {
-                console.error("Gagal konek ke server API:", error);
-                document.getElementById('sync-status').innerHTML = '🔴 Server Offline';
-            }
-        }
+function toast(msg, type = 'success') {
+    const c = document.getElementById('toastContainer');
+    const colors = { success: 'bg-green-500', error: 'bg-red-500', info: 'bg-blue-500' };
+    const el = document.createElement('div');
+    el.className = `toast px-4 py-3 rounded-lg text-white text-sm shadow-lg ${colors[type] || colors.info}`;
+    el.textContent = msg;
+    c.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+}
 
-        // --- FUNGSI SIMPAN DATA KE SERVER DENGAN ERROR DETECTION (POST) ---
-        async function saveToServer(isSilently = false) {
-            try {
-                renderApp(); 
-                
-                const response = await fetch(API_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(menuData)
-                });
+// ============================================================
+// INIT
+// ============================================================
+document.addEventListener('DOMContentLoaded', () => { loadAll(); });
 
-                // Cek kalau server nolak (misal permission gagal)
-                if (!response.ok) {
-                    throw new Error("Permission Denied Server");
-                }
+async function loadAll() {
+    const [sumRes, featRes] = await Promise.all([
+        api('summary'),
+        api('get_features')
+    ]);
 
-                if(!isSilently) showToast("Tersimpan ke Server Database!");
-            } catch (error) {
-                console.error("Gagal simpan ke server:", error);
-                showErrorToast("Gagal simpan! Cek Permission folder/file (chmod 777)");
-            }
-        }
+    if (sumRes.status === 200) {
+        STATE.summary = sumRes.data;
+        STATE.modules = sumRes.data.modules;
+        renderSummary();
+        renderOverview();
+        populateModuleDropdowns();
+    }
+    if (featRes.status === 200) {
+        STATE.features = featRes.data;
+        renderFeatures();
+    }
+}
 
-        fetchFromServer();
-        setInterval(fetchFromServer, 3000); 
+// ============================================================
+// RENDER SUMMARY
+// ============================================================
+function renderSummary() {
+    const g = STATE.summary.grand_total;
+    document.getElementById('cardTotal').textContent = g.total || 0;
+    document.getElementById('cardDone').textContent = g.done || 0;
+    document.getElementById('cardProgress').textContent = g.in_progress || 0;
+    document.getElementById('cardBacklog').textContent = g.backlog || 0;
+    document.getElementById('cardAvg').textContent = (g.avg_progress || 0) + '%';
+}
 
-        // --- FUNGSI TOAST NOTIFIKASI ---
-        let toastTimeout;
-        function showToast(message) {
-            const toast = document.getElementById('toast');
-            document.getElementById('toast-msg').innerText = message;
-            toast.classList.remove('translate-y-24', 'opacity-0');
-            clearTimeout(toastTimeout);
-            toastTimeout = setTimeout(() => { toast.classList.add('translate-y-24', 'opacity-0'); }, 3000);
-        }
+// ============================================================
+// RENDER OVERVIEW (Per Module Cards)
+// ============================================================
+function renderOverview() {
+    const container = document.getElementById('contentOverview');
+    const modules = STATE.summary.modules;
+    const logs = STATE.summary.recent_logs;
 
-        let errorToastTimeout;
-        function showErrorToast(message) {
-            const toastError = document.getElementById('toast-error');
-            document.getElementById('toast-error-msg').innerText = message;
-            toastError.classList.remove('translate-y-24', 'opacity-0');
-            clearTimeout(errorToastTimeout);
-            errorToastTimeout = setTimeout(() => { toastError.classList.add('translate-y-24', 'opacity-0'); }, 5000);
-        }
+    let html = '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+    modules.forEach(m => {
+        const pct = m.avg_progress || 0;
+        const barColor = pct >= 90 ? 'bg-green-500' : pct >= 60 ? 'bg-blue-500' : pct >= 30 ? 'bg-yellow-500' : 'bg-slate-400';
+        html += `
+        <div class="bg-white rounded-xl border p-5 hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-bold text-slate-800">${m.nama_module}</h3>
+                <span class="text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded-full">${m.kode_module}</span>
+            </div>
+            <div class="flex gap-4 text-xs mb-3">
+                <span class="text-green-600 font-medium">${m.done || 0} done</span>
+                <span class="text-yellow-600 font-medium">${m.in_progress || 0} progress</span>
+                <span class="text-slate-400">${m.backlog || 0} backlog</span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full ${barColor} progress-bar rounded-full" style="width: ${pct}%"></div>
+            </div>
+            <div class="text-right text-xs text-slate-500 mt-1">${pct}% avg</div>
+        </div>`;
+    });
+    html += '</div>';
 
-        function openLegendModal() { document.getElementById('legend-modal').classList.remove('hidden'); }
-        function closeLegendModal() { document.getElementById('legend-modal').classList.add('hidden'); }
-        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
-        function closeModal() { document.getElementById('modal').classList.add('hidden'); document.getElementById('menu-form').reset(); }
+    // Recent Activity
+    if (logs && logs.length > 0) {
+        html += '<div class="mt-6"><h3 class="text-sm font-bold text-slate-700 mb-3">Activity Terakhir</h3><div class="bg-white rounded-xl border divide-y">';
+        logs.forEach(l => {
+            const badge = l.status_sesudah ? `<span class="text-[10px] px-1.5 py-0.5 rounded status-${l.status_sesudah}">${l.status_sesudah}</span>` : '';
+            html += `<div class="px-4 py-3 flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-blue-400 shrink-0"></div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm text-slate-800 truncate"><span class="font-medium">${l.nama_fitur}</span> — ${l.catatan || '-'}</div>
+                    <div class="text-[10px] text-slate-400 mt-0.5">${l.dikerjakan_oleh || '-'} · ${formatDate(l.created_at)}</div>
+                </div>
+                ${badge}
+            </div>`;
+        });
+        html += '</div></div>';
+    }
 
-        document.getElementById('menu-form').onsubmit = (e) => {
-            e.preventDefault();
-            const now = new Date().toLocaleString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'});
-            const newItem = {
-                id: Date.now(),
-                parent: document.getElementById('m_parent').value,
-                name: document.getElementById('m_name').value,
-                user: document.getElementById('m_user').value,
-                notes: document.getElementById('m_notes').value,
-                be: false, fe: false, filter: false, responsif: false,
-                progress: 0, created_at: now, updated_at: now
-            };
-            menuData.push(newItem);
-            saveToServer();
-            closeModal();
-        };
+    container.innerHTML = html;
+}
 
-        function openEditModal(id) {
-            const idx = menuData.findIndex(i => i.id === id);
-            if(idx !== -1) {
-                document.getElementById('edit_id').value = id;
-                document.getElementById('edit_notes').value = menuData[idx].notes;
-                document.getElementById('edit-modal').classList.remove('hidden');
-            }
-        }
+// ============================================================
+// RENDER FEATURES TABLE
+// ============================================================
+function renderFeatures() {
+    const container = document.getElementById('contentFeatures');
+    const features = STATE.features;
 
-        function closeEditModal() { 
-            document.getElementById('edit-modal').classList.add('hidden'); 
-            document.getElementById('edit-form').reset(); 
-        }
+    if (!features || features.length === 0) {
+        container.innerHTML = '<div class="text-center py-12 text-slate-400">Belum ada fitur. Klik "+ Fitur Baru" untuk menambahkan.</div>';
+        return;
+    }
 
-        document.getElementById('edit-form').onsubmit = (e) => {
-            e.preventDefault();
-            const id = parseInt(document.getElementById('edit_id').value);
-            const newNote = document.getElementById('edit_notes').value;
-            
-            const idx = menuData.findIndex(i => i.id === id);
-            if(idx !== -1) {
-                menuData[idx].notes = newNote;
-                menuData[idx].updated_at = new Date().toLocaleString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'});
-                saveToServer();
-                closeEditModal();
-            }
-        };
+    // Group by module
+    const grouped = {};
+    features.forEach(f => {
+        const key = f.nama_module || 'Uncategorized';
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(f);
+    });
 
-        function toggleIndicator(id, type) {
-            const idx = menuData.findIndex(i => i.id === id);
-            menuData[idx][type] = !menuData[idx][type];
-            
-            let prog = 0;
-            if(menuData[idx].be) prog += 25;
-            if(menuData[idx].fe) prog += 25;
-            if(menuData[idx].filter) prog += 25;
-            if(menuData[idx].responsif) prog += 25;
-            menuData[idx].progress = prog;
-            
-            menuData[idx].updated_at = new Date().toLocaleString('id-ID', {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'});
-            saveToServer();
-        }
+    let html = '';
+    // Filter toolbar
+    html += `<div class="flex flex-wrap gap-2 mb-4">
+        <button onclick="filterFeatures('')" class="px-3 py-1.5 text-xs rounded-lg border bg-white hover:bg-slate-50 font-medium">Semua</button>
+        <button onclick="filterFeatures('done')" class="px-3 py-1.5 text-xs rounded-lg border bg-green-50 text-green-700 hover:bg-green-100 font-medium">Done</button>
+        <button onclick="filterFeatures('in_progress')" class="px-3 py-1.5 text-xs rounded-lg border bg-yellow-50 text-yellow-700 hover:bg-yellow-100 font-medium">In Progress</button>
+        <button onclick="filterFeatures('backlog')" class="px-3 py-1.5 text-xs rounded-lg border bg-slate-50 text-slate-600 hover:bg-slate-100 font-medium">Backlog</button>
+        <button onclick="filterFeatures('blocked')" class="px-3 py-1.5 text-xs rounded-lg border bg-red-50 text-red-700 hover:bg-red-100 font-medium">Blocked</button>
+    </div>`;
 
-        function deleteItem(id) {
-            const password = prompt('Masukkan password administrator untuk menghapus sub-menu ini:');
-            if (password === 'oke123') {
-                menuData = menuData.filter(i => i.id !== id);
-                saveToServer();
-            } else if (password !== null) {
-                alert('Password salah! Data tidak dihapus.');
-            }
-        }
-
-        function renderRekap() {
-            const total = menuData.length;
-            if (total === 0) {
-                document.getElementById('rekap-area').innerHTML = '<p class="text-slate-500 text-sm">Belum ada data untuk direkap.</p>';
-                return;
-            }
-
-            const totalProgress = menuData.reduce((sum, item) => sum + item.progress, 0);
-            const avgProgress = Math.round(totalProgress / total);
-            const doneCount = menuData.filter(item => item.progress === 100).length;
-            const progressCount = total - doneCount;
-
-            const beCount = menuData.filter(item => item.be).length;
-            const feCount = menuData.filter(item => item.fe).length;
-            const filterCount = menuData.filter(item => item.filter).length;
-            const responsifCount = menuData.filter(item => item.responsif).length;
-
-            const rekapHtml = `
-                <div class="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
-                    <div>
-                        <p class="text-xs md:text-sm text-slate-500 font-medium mb-1">Rata-rata Progres</p>
-                        <h3 class="text-2xl md:text-3xl font-black text-blue-600">${avgProgress}%</h3>
-                        <p class="text-[10px] md:text-xs text-slate-400 mt-1">Dari total ${total} Sub-Menu</p>
+    Object.keys(grouped).forEach(moduleName => {
+        html += `<div class="mb-4"><h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-1">${moduleName}</h3><div class="space-y-2">`;
+        grouped[moduleName].forEach(f => {
+            const pct = f.progress_persen || 0;
+            const barColor = pct >= 90 ? 'bg-green-500' : pct >= 60 ? 'bg-blue-500' : pct >= 30 ? 'bg-yellow-500' : 'bg-slate-300';
+            html += `
+            <div class="bg-white rounded-lg border p-4 pri-${f.prioritas} hover:shadow-sm transition-shadow feature-card" data-status="${f.status}">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="font-medium text-sm text-slate-800">${f.nama_fitur}</span>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded-full status-${f.status}">${f.status.replace('_',' ')}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 truncate">${f.deskripsi || '-'}</p>
+                        <div class="flex items-center gap-3 mt-2">
+                            <div class="flex-1 max-w-[200px] h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full ${barColor} progress-bar rounded-full" style="width:${pct}%"></div>
+                            </div>
+                            <span class="text-[10px] text-slate-500 font-medium">${pct}%</span>
+                            <span class="text-[10px] text-slate-400">${f.slug || ''}</span>
+                        </div>
                     </div>
-                    <div class="w-12 h-12 md:w-16 md:h-16 rounded-full border-[3px] md:border-4 ${avgProgress === 100 ? 'border-green-500' : 'border-blue-500'} flex items-center justify-center shrink-0">
-                        <span class="text-lg md:text-xl font-bold ${avgProgress === 100 ? 'text-green-500' : 'text-blue-500'}">📊</span>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="openLogModal(${f.id}, '${escape(f.nama_fitur)}', '${f.status}', ${pct})" class="p-1.5 rounded-md hover:bg-green-50 text-green-600" title="Update Progress">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        </button>
+                        <button onclick="editFeature(${f.id})" class="p-1.5 rounded-md hover:bg-blue-50 text-blue-600" title="Edit">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                        </button>
+                        <button onclick="deleteFeature(${f.id}, '${escape(f.nama_fitur)}')" class="p-1.5 rounded-md hover:bg-red-50 text-red-500" title="Hapus">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
                     </div>
                 </div>
+            </div>`;
+        });
+        html += '</div></div>';
+    });
 
-                <div class="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <p class="text-xs md:text-sm text-slate-500 font-medium mb-2 md:mb-3">Status Penyelesaian</p>
-                    <div class="flex gap-3 md:gap-4">
-                        <div class="flex-1 bg-green-50 rounded-lg p-2 md:p-3 border border-green-100 flex flex-col justify-center">
-                            <p class="text-[10px] md:text-xs text-green-600 font-bold mb-0.5">SELESAI</p>
-                            <h4 class="text-xl md:text-2xl font-black text-green-700">${doneCount}</h4>
-                        </div>
-                        <div class="flex-1 bg-yellow-50 rounded-lg p-2 md:p-3 border border-yellow-100 flex flex-col justify-center">
-                            <p class="text-[10px] md:text-xs text-yellow-600 font-bold mb-0.5">PROGRES</p>
-                            <h4 class="text-xl md:text-2xl font-black text-yellow-700">${progressCount}</h4>
-                        </div>
-                    </div>
-                </div>
+    container.innerHTML = html;
+}
 
-                <div class="bg-white p-4 md:p-5 rounded-xl border border-slate-200 shadow-sm">
-                    <p class="text-xs md:text-sm text-slate-500 font-medium mb-2">Kesiapan Indikator</p>
-                    <div class="space-y-2">
-                        <div>
-                            <div class="flex justify-between items-center text-[11px] md:text-sm mb-1">
-                                <span class="text-slate-600">Backend (BE)</span>
-                                <span class="font-bold text-slate-800">${beCount}/${total}</span>
-                            </div>
-                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                <div class="bg-green-500 h-full" style="width: ${(beCount/total)*100}%"></div>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <div class="flex justify-between items-center text-[11px] md:text-sm mb-1">
-                                <span class="text-slate-600">Frontend (FE)</span>
-                                <span class="font-bold text-slate-800">${feCount}/${total}</span>
-                            </div>
-                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                                <div class="bg-blue-500 h-full" style="width: ${(feCount/total)*100}%"></div>
-                            </div>
-                        </div>
-                        
-                        <div class="flex justify-between items-center text-[11px] md:text-sm pt-1">
-                            <span class="text-slate-600">Filter & Responsif</span>
-                            <span class="font-bold text-slate-800">${filterCount}/${total} & ${responsifCount}/${total}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.getElementById('rekap-area').innerHTML = rekapHtml;
+function filterFeatures(status) {
+    document.querySelectorAll('.feature-card').forEach(card => {
+        if (!status || card.dataset.status === status) {
+            card.style.display = '';
+        } else {
+            card.style.display = 'none';
         }
+    });
+}
 
-        function renderApp() {
-            renderRekap(); 
+// ============================================================
+// RENDER LOGS
+// ============================================================
+async function renderLogs() {
+    const container = document.getElementById('contentLogs');
+    container.innerHTML = '<div class="text-center py-8 text-slate-400">Loading...</div>';
 
-            const container = document.getElementById('content-area');
-            container.innerHTML = '';
+    const res = await api('get_logs', { limit: 50 });
+    if (res.status !== 200) { container.innerHTML = '<div class="text-red-500">Error loading logs</div>'; return; }
 
-            const grouped = menuData.reduce((acc, item) => {
-                if (!acc[item.parent]) acc[item.parent] = [];
-                acc[item.parent].push(item);
-                return acc;
-            }, {});
+    const logs = res.data;
+    if (!logs || logs.length === 0) { container.innerHTML = '<div class="text-center py-12 text-slate-400">Belum ada activity log.</div>'; return; }
 
-            for (const parent in grouped) {
-                const section = document.createElement('div');
-                section.className = "bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden";
-                
-                let html = `
-                    <div class="bg-slate-50 border-b border-slate-200 p-3 md:p-4 flex items-center justify-between">
-                        <div class="flex items-center gap-2 md:gap-3">
-                            <div class="w-1.5 h-5 md:w-2 md:h-6 bg-blue-600 rounded-full"></div>
-                            <h2 class="text-base md:text-lg font-bold text-slate-800">${parent}</h2>
-                        </div>
-                        <span class="bg-blue-100 text-blue-700 text-[10px] md:text-xs px-2 py-1 md:px-3 rounded-full font-bold">${grouped[parent].length} Item</span>
+    let html = '<div class="bg-white rounded-xl border divide-y">';
+    logs.forEach(l => {
+        const badge = l.status_sesudah ? `<span class="text-[10px] px-1.5 py-0.5 rounded status-${l.status_sesudah}">${l.status_sesudah}</span>` : '';
+        const progressInfo = (l.progress_sebelum !== null && l.progress_sesudah !== null) ? `<span class="text-[10px] text-slate-400 ml-2">${l.progress_sebelum}% → ${l.progress_sesudah}%</span>` : '';
+        html += `<div class="px-5 py-4">
+            <div class="flex items-center gap-2 mb-1">
+                <span class="text-sm font-medium text-slate-800">${l.nama_fitur}</span>
+                ${badge}${progressInfo}
+            </div>
+            <p class="text-sm text-slate-600">${l.catatan || '-'}</p>
+            <div class="text-[10px] text-slate-400 mt-1">${l.dikerjakan_oleh || '-'} · ${formatDate(l.created_at)}${l.session_id ? ' · Session: ' + l.session_id.substring(0,8) : ''}</div>
+        </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ============================================================
+// RENDER IDEAS
+// ============================================================
+async function renderIdeas() {
+    const container = document.getElementById('contentIdeas');
+    container.innerHTML = '<div class="text-center py-8 text-slate-400">Loading...</div>';
+
+    const res = await api('get_ideas');
+    if (res.status !== 200) { container.innerHTML = '<div class="text-red-500">Error</div>'; return; }
+
+    const ideas = res.data;
+    if (!ideas || ideas.length === 0) { container.innerHTML = '<div class="text-center py-12 text-slate-400">Belum ada ide. Klik "+ Ide Baru" untuk menambahkan.</div>'; return; }
+
+    let html = '';
+    ideas.forEach(i => {
+        const statusColors = { idea: 'bg-purple-100 text-purple-700', approved: 'bg-green-100 text-green-700', rejected: 'bg-red-100 text-red-700', merged: 'bg-blue-100 text-blue-700' };
+        const sc = statusColors[i.status] || statusColors.idea;
+        html += `
+        <div class="bg-white rounded-lg border p-4 pri-${i.prioritas}">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex-1">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="font-medium text-sm text-slate-800">${i.judul}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded-full ${sc}">${i.status}</span>
                     </div>
-                    <div class="divide-y divide-slate-100">
-                `;
+                    <p class="text-xs text-slate-500">${i.deskripsi || '-'}</p>
+                    <div class="text-[10px] text-slate-400 mt-1">${i.nama_module || 'Belum ditentukan'} · ${i.diusulkan_oleh || '-'} · ${formatDate(i.created_at)}</div>
+                </div>
+                <div class="flex gap-1 shrink-0">
+                    <button onclick="approveIdea(${i.id})" class="p-1.5 rounded-md hover:bg-green-50 text-green-600" title="Approve"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg></button>
+                    <button onclick="deleteIdea(${i.id})" class="p-1.5 rounded-md hover:bg-red-50 text-red-500" title="Hapus"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+                </div>
+            </div>
+        </div>`;
+    });
+    container.innerHTML = html;
+}
 
-                grouped[parent].forEach(item => {
-                    html += `
-                        <div class="p-4 md:p-5 flex flex-col lg:flex-row gap-4 md:gap-6 items-start lg:items-center hover:bg-slate-50/50 transition-colors">
-                            
-                            <div class="flex-1 w-full">
-                                <div class="flex items-center gap-2 mb-1 md:mb-2">
-                                    <h4 class="text-base md:text-lg font-bold text-slate-800 leading-tight">${item.name}</h4>
-                                </div>
-                                
-                                <details class="mb-2 md:mb-3 cursor-pointer group">
-                                    <summary class="text-[11px] md:text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 focus:outline-none w-fit">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 md:h-4 md:w-4 group-open:rotate-90 transition-transform" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                        </svg>
-                                        Lihat Catatan
-                                    </summary>
-                                    
-                                    <div class="mt-2 text-xs md:text-sm text-slate-700 bg-yellow-50 p-2 md:p-3 rounded-lg border border-yellow-100 shadow-inner relative group/note">
-                                        <div class="pr-8 whitespace-pre-line">${item.notes || 'Tidak ada catatan.'}</div>
-                                        <button onclick="openEditModal(${item.id})" class="absolute top-2 right-2 p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-all opacity-70 hover:opacity-100" title="Edit Catatan">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                </details>
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab) {
+    STATE.currentTab = tab;
+    ['Overview','Features','Logs','Ideas'].forEach(t => {
+        document.getElementById('tab' + t).classList.remove('tab-active');
+        document.getElementById('tab' + t).classList.add('border-transparent', 'text-slate-500');
+        document.getElementById('content' + t).classList.add('hidden');
+    });
+    const tabEl = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+    tabEl.classList.add('tab-active');
+    tabEl.classList.remove('border-transparent', 'text-slate-500');
+    document.getElementById('content' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hidden');
 
-                                <div class="flex flex-wrap gap-x-3 gap-y-1 text-[10px] md:text-[11px] text-slate-500 font-medium">
-                                    <span>🕒 ${item.created_at}</span>
-                                    <span class="text-blue-600">🔄 ${item.updated_at}</span>
-                                    <span class="bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">👤 ${item.user}</span>
-                                </div>
-                            </div>
-                            
-                            <div class="w-full lg:w-auto flex flex-col sm:flex-row lg:flex-row gap-4 lg:gap-6 items-start sm:items-center">
-                                <div class="grid grid-cols-2 md:flex md:flex-wrap gap-2 w-full sm:w-auto shrink-0">
-                                    <button onclick="toggleIndicator(${item.id}, 'be')" class="w-full md:w-auto px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold border md:border-2 transition-all ${item.be ? 'bg-green-100 border-green-500 text-green-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}">
-                                        ${item.be ? '✓ BE READY' : 'BE WAIT'}
-                                    </button>
-                                    <button onclick="toggleIndicator(${item.id}, 'fe')" class="w-full md:w-auto px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold border md:border-2 transition-all ${item.fe ? 'bg-blue-100 border-blue-500 text-blue-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}">
-                                        ${item.fe ? '✓ FE READY' : 'FE WAIT'}
-                                    </button>
-                                    <button onclick="toggleIndicator(${item.id}, 'filter')" class="w-full md:w-auto px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold border md:border-2 transition-all ${item.filter ? 'bg-purple-100 border-purple-500 text-purple-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}">
-                                        ${item.filter ? '✓ FILTER' : 'NO FILTER'}
-                                    </button>
-                                    <button onclick="toggleIndicator(${item.id}, 'responsif')" class="w-full md:w-auto px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-[10px] md:text-xs font-bold border md:border-2 transition-all ${item.responsif ? 'bg-orange-100 border-orange-500 text-orange-700' : 'border-slate-200 text-slate-400 hover:border-slate-300'}">
-                                        ${item.responsif ? '✓ RESPONSIVE' : 'NO RESPONSIVE'}
-                                    </button>
-                                </div>
-                                
-                                <div class="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pt-3 sm:pt-0 border-t border-slate-100 sm:border-none shrink-0">
-                                    <div class="flex flex-row sm:flex-col items-center sm:justify-center gap-3 sm:gap-0 w-full sm:w-[80px]">
-                                        <span class="text-xl md:text-2xl font-black ${item.progress === 100 ? 'text-green-500' : 'text-slate-700'}">${item.progress}%</span>
-                                        <div class="flex-1 sm:w-full h-1.5 bg-slate-200 rounded-full sm:mt-1 overflow-hidden">
-                                            <div class="h-full ${item.progress === 100 ? 'bg-green-500' : 'bg-blue-500'} transition-all duration-300" style="width: ${item.progress}%"></div>
-                                        </div>
-                                    </div>
+    if (tab === 'logs') renderLogs();
+    if (tab === 'ideas') renderIdeas();
+}
 
-                                    <button onclick="deleteItem(${item.id})" class="p-1.5 md:p-2 text-slate-400 hover:text-white hover:bg-red-500 rounded-lg transition-colors border border-slate-200 hover:border-red-500 shrink-0" title="Hapus">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 md:h-5 md:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                });
+// ============================================================
+// MODALS
+// ============================================================
+function openModal(type) {
+    document.getElementById('modal' + capitalize(type)).classList.remove('hidden');
+}
+function closeModal(type) {
+    document.getElementById('modal' + capitalize(type)).classList.add('hidden');
+}
 
-                html += `</div>`;
-                section.innerHTML = html;
-                container.appendChild(section);
-            }
-        }
-    </script>
+function openLogModal(featureId, featureName, currentStatus, currentProgress) {
+    document.getElementById('logFeatureId').value = featureId;
+    document.getElementById('logFeatureName').textContent = featureName;
+    document.getElementById('logStatus').value = currentStatus;
+    document.getElementById('logProgress').value = currentProgress;
+    document.getElementById('logCatatan').value = '';
+    openModal('log');
+}
+
+function populateModuleDropdowns() {
+    const modules = STATE.modules;
+    ['fModule', 'iModule'].forEach(id => {
+        const sel = document.getElementById(id);
+        const existing = sel.value;
+        sel.innerHTML = id === 'iModule' ? '<option value="">-- Belum ditentukan --</option>' : '';
+        modules.forEach(m => {
+            sel.innerHTML += `<option value="${m.module_id || m.id}">${m.nama_module}</option>`;
+        });
+        if (existing) sel.value = existing;
+    });
+}
+
+// ============================================================
+// CRUD ACTIONS
+// ============================================================
+async function submitFeature(e) {
+    e.preventDefault();
+    const id = document.getElementById('featureId').value;
+    const payload = {
+        module_id: document.getElementById('fModule').value,
+        kode_fitur: document.getElementById('fKode').value,
+        nama_fitur: document.getElementById('fNama').value,
+        slug: document.getElementById('fSlug').value,
+        deskripsi: document.getElementById('fDeskripsi').value,
+        status: document.getElementById('fStatus').value,
+        progress_persen: parseInt(document.getElementById('fProgress').value) || 0,
+        prioritas: document.getElementById('fPrioritas').value,
+        assignee: document.getElementById('fAssignee').value,
+        file_page: document.getElementById('fFilePage').value,
+        file_controller: document.getElementById('fFileCtrl').value,
+        file_route: document.getElementById('fFileRoute').value,
+        catatan: document.getElementById('fCatatan').value,
+        dikerjakan_oleh: document.getElementById('fAssignee').value || 'Nadhif'
+    };
+
+    let res;
+    if (id) {
+        payload.id = id;
+        res = await api('update_feature', payload);
+    } else {
+        res = await api('create_feature', payload);
+    }
+
+    if (res.status === 200 || res.status === 201) {
+        toast(id ? 'Fitur berhasil diupdate!' : 'Fitur berhasil ditambahkan!');
+        closeModal('feature');
+        document.getElementById('formFeature').reset();
+        document.getElementById('featureId').value = '';
+        loadAll();
+    } else {
+        toast(res.message || 'Gagal menyimpan', 'error');
+    }
+}
+
+async function editFeature(id) {
+    const res = await api('get_feature_detail', { id });
+    if (res.status !== 200) return toast('Gagal load detail', 'error');
+
+    const f = res.data.feature;
+    document.getElementById('featureId').value = f.id;
+    document.getElementById('fModule').value = f.module_id;
+    document.getElementById('fKode').value = f.kode_fitur;
+    document.getElementById('fNama').value = f.nama_fitur;
+    document.getElementById('fSlug').value = f.slug || '';
+    document.getElementById('fDeskripsi').value = f.deskripsi || '';
+    document.getElementById('fStatus').value = f.status;
+    document.getElementById('fProgress').value = f.progress_persen;
+    document.getElementById('fPrioritas').value = f.prioritas;
+    document.getElementById('fAssignee').value = f.assignee || '';
+    document.getElementById('fFilePage').value = f.file_page || '';
+    document.getElementById('fFileCtrl').value = f.file_controller || '';
+    document.getElementById('fFileRoute').value = f.file_route || '';
+    document.getElementById('fCatatan').value = '';
+    document.getElementById('modalFeatureTitle').textContent = 'Edit Fitur: ' + f.nama_fitur;
+    openModal('feature');
+}
+
+async function deleteFeature(id, nama) {
+    if (!confirm(`Hapus fitur "${nama}"?`)) return;
+    const res = await api('delete_feature', { id });
+    if (res.status === 200) { toast('Fitur dihapus'); loadAll(); }
+    else toast(res.message || 'Gagal', 'error');
+}
+
+async function submitLog(e) {
+    e.preventDefault();
+    const payload = {
+        feature_id: document.getElementById('logFeatureId').value,
+        status_sesudah: document.getElementById('logStatus').value,
+        progress_sesudah: parseInt(document.getElementById('logProgress').value) || 0,
+        catatan: document.getElementById('logCatatan').value,
+        dikerjakan_oleh: document.getElementById('logOleh').value
+    };
+
+    const res = await api('create_log', payload);
+    if (res.status === 201) {
+        toast('Progress berhasil di-update!');
+        closeModal('log');
+        loadAll();
+    } else {
+        toast(res.message || 'Gagal', 'error');
+    }
+}
+
+async function submitIdea(e) {
+    e.preventDefault();
+    const id = document.getElementById('ideaId').value;
+    const payload = {
+        judul: document.getElementById('iJudul').value,
+        deskripsi: document.getElementById('iDeskripsi').value,
+        module_id: document.getElementById('iModule').value || null,
+        prioritas: document.getElementById('iPrioritas').value,
+        diusulkan_oleh: document.getElementById('iOleh').value
+    };
+
+    let res;
+    if (id) { payload.id = id; res = await api('update_idea', payload); }
+    else { res = await api('create_idea', payload); }
+
+    if (res.status === 200 || res.status === 201) {
+        toast(id ? 'Ide diupdate!' : 'Ide berhasil ditambahkan!');
+        closeModal('idea');
+        document.getElementById('formIdea').reset();
+        document.getElementById('ideaId').value = '';
+        renderIdeas();
+    } else {
+        toast(res.message || 'Gagal', 'error');
+    }
+}
+
+async function approveIdea(id) {
+    const res = await api('update_idea', { id, status: 'approved' });
+    if (res.status === 200) { toast('Ide di-approve!'); renderIdeas(); }
+    else toast('Gagal', 'error');
+}
+
+async function deleteIdea(id) {
+    if (!confirm('Hapus ide ini?')) return;
+    const res = await api('delete_idea', { id });
+    if (res.status === 200) { toast('Ide dihapus'); renderIdeas(); }
+    else toast('Gagal', 'error');
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function capitalize(str) { return str.charAt(0).toUpperCase() + str.slice(1); }
+function escape(str) { return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
+function formatDate(d) { if (!d) return '-'; const dt = new Date(d); return dt.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+</script>
 </body>
 </html>
