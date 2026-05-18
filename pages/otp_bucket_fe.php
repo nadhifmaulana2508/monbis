@@ -73,15 +73,18 @@
   tbody.mod-body tr:hover td.mod-td-rek, tbody.mod-body tr:hover td.mod-td-nas { filter: brightness(0.97); }
 
   @media (max-width: 767px) {
-      .col-kategori { left: 0 !important; z-index: 45 !important; min-width: 50px; font-size: 10px;}
+      .col-kategori { left: 0 !important; z-index: 45 !important; min-width: 40px; font-size: 10px; padding: 4px 4px;}
       thead th.col-kategori { z-index: 70 !important; }
       .sticky-total td.col-kategori { z-index: 65 !important; }
-      .mod-freeze-nas, .mod-td-nas { left: 0 !important; box-shadow: inset -1px 0 0 #f1f5f9; min-width: 120px;}
+      .mod-freeze-nas, .mod-td-nas { left: 0 !important; box-shadow: inset -1px 0 0 #f1f5f9; min-width: 110px; max-width: 130px; font-size: 10px;}
       .mod-freeze-rek, .mod-td-rek { display: none !important; }
+      table { font-size: 10px; }
+      th, td { padding: 4px 5px; }
+      #progScroller { -webkit-overflow-scrolling: touch; }
   }
 </style>
 
-<div class="max-w-[1600px] mx-auto px-3 md:px-4 py-4 h-[calc(100vh-80px)] md:h-[calc(100vh-120px)] flex flex-col relative z-10">
+<div class="max-w-[1600px] mx-auto px-2 sm:px-3 md:px-4 py-3 md:py-4 h-[calc(100vh-64px)] sm:h-[calc(100vh-80px)] md:h-[calc(100vh-120px)] flex flex-col relative z-10">
   
   <div class="flex flex-col xl:flex-row xl:items-end justify-between gap-3 mb-4 shrink-0">
     <div class="flex items-start justify-between w-full xl:w-auto">
@@ -182,9 +185,9 @@
   </div>
 </div>
 
-<div id="modalDetailProg" class="fixed inset-0 hidden z-[9999] flex items-end md:items-center justify-center p-0 sm:p-4">
+<div id="modalDetailProg" class="fixed inset-0 hidden z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-2 md:p-4">
   <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModalProg()"></div>
-  <div class="relative bg-white w-full h-[95vh] md:h-[92vh] max-w-[1600px] rounded-t-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
+  <div class="relative bg-white w-full h-full sm:h-[95vh] md:h-[92vh] max-w-[1600px] sm:rounded-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
     
     <div class="flex flex-col bg-white border-b shrink-0 w-full z-50">
         <div class="flex flex-row items-center justify-between px-3 py-2.5 md:px-4 md:py-3 gap-2 w-full">
@@ -209,7 +212,7 @@
         </div>
     </div>
 
-    <div class="flex-1 overflow-auto bg-slate-50 relative custom-scrollbar">
+    <div class="flex-1 overflow-auto bg-slate-50 relative custom-scrollbar" style="-webkit-overflow-scrolling: touch;">
       <div id="loadingModalProg" class="hidden absolute inset-0 bg-white/90 z-40 flex flex-col items-center justify-center text-emerald-600 backdrop-blur-sm">
          <div class="animate-spin h-6 w-6 md:h-10 md:w-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full mb-2"></div>
          <span class="text-[9px] md:text-xs font-bold uppercase tracking-widest">Loading...</span>
@@ -227,6 +230,10 @@
                 <th class="px-1 md:px-2 text-center w-[70px] text-orange-600">TGL JT</th>
                 <th class="px-2 md:px-3 text-right w-[110px] text-blue-800">OS (CURR)</th>
                 <th class="px-2 md:px-3 text-right w-[90px] text-emerald-600">TABUNGAN</th>
+                <th class="px-1 md:px-2 text-center w-[80px] text-violet-600">TGL BYR LALU</th>
+                <th class="px-2 md:px-3 text-right w-[100px] text-violet-600">BYR LALU</th>
+                <th class="px-1 md:px-2 text-center w-[80px] text-sky-600">TGL BYR SKR</th>
+                <th class="px-2 md:px-3 text-right w-[100px] text-sky-600">BYR SKR</th>
                 <th class="px-2 md:px-3 text-right w-[90px] text-red-600">TGK POKOK</th>
                 <th class="px-2 md:px-3 text-right w-[90px] text-red-600">TGK BUNGA</th>
                 <th class="px-1 md:px-2 text-center w-[50px] text-red-600">DPD PK</th>
@@ -557,7 +564,7 @@
           currentProgTotalPages = meta.total_pages;
 
           if(rows.length === 0) {
-              tbody.innerHTML = `<tr><td colspan="15" class="py-20 text-center text-slate-500 italic">Tidak ada data debitur.</td></tr>`;
+              tbody.innerHTML = `<tr><td colspan="19" class="py-20 text-center text-slate-500 italic">Tidak ada data debitur.</td></tr>`;
               info.innerText = `0 Data`;
           } else {
               let html = '';
@@ -575,6 +582,13 @@
 
                   const textAlamat = r.alamat ? (r.alamat.length > 25 ? r.alamat.substring(0, 25) + '...' : r.alamat) : '-';
 
+                  // Format tanggal transaksi
+                  const fmtTgl = (d) => { if(!d) return '-'; const dt = new Date(d); return dt.toLocaleDateString('id-ID', {day:'2-digit', month:'short'}); };
+                  const tglByrLalu = fmtTgl(r.tgl_trans_lalu);
+                  const tglByrSkr = fmtTgl(r.tgl_trans_sekarang);
+                  const byrLalu = r.total_bayar_lalu > 0 ? `<span class="text-violet-600 font-bold">${fmt(r.total_bayar_lalu)}</span>` : '<span class="text-slate-300">0</span>';
+                  const byrSkr = r.total_bayar_sekarang > 0 ? `<span class="text-sky-600 font-bold">${fmt(r.total_bayar_sekarang)}</span>` : '<span class="text-slate-300">0</span>';
+
                   html += `
                     <tr class="border-b border-slate-200">
                         <td class="mod-td-rek hidden md:table-cell px-1 md:px-2 font-mono text-slate-500 border-r border-slate-200">${r.no_rekening}</td>
@@ -586,6 +600,10 @@
                         <td class="px-1 md:px-2 text-center font-bold text-orange-600 border-r border-slate-200">${r.tgl_jatuh_tempo}</td>
                         <td class="px-2 md:px-3 text-right font-bold text-blue-800 border-r border-slate-200">${fmt(r.os_curr)}</td>
                         <td class="px-2 md:px-3 text-right font-medium border-r border-slate-200">${txtTabungan}</td>
+                        <td class="px-1 md:px-2 text-center text-violet-600 border-r border-slate-200">${tglByrLalu}</td>
+                        <td class="px-2 md:px-3 text-right border-r border-slate-200">${byrLalu}</td>
+                        <td class="px-1 md:px-2 text-center text-sky-600 border-r border-slate-200">${tglByrSkr}</td>
+                        <td class="px-2 md:px-3 text-right border-r border-slate-200">${byrSkr}</td>
                         <td class="px-2 md:px-3 text-right font-medium text-red-500 border-r border-slate-200">${fmt(r.tunggakan_pokok)}</td>
                         <td class="px-2 md:px-3 text-right font-medium text-red-500 border-r border-slate-200">${fmt(r.tunggakan_bunga)}</td>
                         <td class="px-1 md:px-2 text-center font-bold border-r border-slate-200">${r.dpd_pokok || 0}</td>
@@ -603,7 +621,7 @@
           document.getElementById('btnPrevProg').disabled = page <= 1;
           document.getElementById('btnNextProg').disabled = page >= meta.total_pages;
       } catch(err){ 
-          tbody.innerHTML = `<tr><td colspan="15" class="py-16 text-center text-red-500 font-bold">${err.message}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="19" class="py-16 text-center text-red-500 font-bold">${err.message}</td></tr>`;
       } finally { loading.classList.add('hidden'); }
   }
 
@@ -631,7 +649,10 @@
             <tr>
               <th>No Rekening</th><th>Nama Nasabah</th><th>Kolektibilitas</th><th>Alamat</th><th>No HP</th>
               <th>Kankas</th><th>Nama AO</th><th>Tgl Realisasi</th><th>Tgl Jatuh Tempo</th>
-              <th>OS (Baki Debet Curr)</th><th>Tabungan</th><th>Tunggakan Pokok</th><th>Tunggakan Bunga</th>
+              <th>OS (Baki Debet Curr)</th><th>Tabungan</th>
+              <th>Tgl Byr Lalu</th><th>Total Byr Lalu</th>
+              <th>Tgl Byr Sekarang</th><th>Total Byr Sekarang</th>
+              <th>Tunggakan Pokok</th><th>Tunggakan Bunga</th>
               <th>DPD Pokok</th><th>DPD Bunga</th><th>DPD (Curr)</th><th>Status Migrasi</th>
             </tr>`;
           
@@ -648,6 +669,10 @@
                 <td>${r.tgl_jatuh_tempo || ''}</td>
                 <td>${r.os_curr}</td>
                 <td>${r.tabungan}</td>
+                <td>${r.tgl_trans_lalu || ''}</td>
+                <td>${r.total_bayar_lalu || 0}</td>
+                <td>${r.tgl_trans_sekarang || ''}</td>
+                <td>${r.total_bayar_sekarang || 0}</td>
                 <td>${r.tunggakan_pokok || 0}</td>
                 <td>${r.tunggakan_bunga || 0}</td>
                 <td>${r.dpd_pokok || 0}</td>

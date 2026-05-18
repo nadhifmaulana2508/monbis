@@ -585,6 +585,7 @@ class RepaymentRateController {
         $harian  = $b['harian_date'] ?? null;
         $kc      = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
         $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
+        $kankas  = !empty($b['kode_kankas']) ? $b['kode_kankas'] : null; // 🔥 FIX: Tangkap filter kankas
         $typeB   = $b['type_bucket'] ?? 'fe_all'; // fe_all, 31-60, 61-90
 
         if (!$closing || !$harian) return $this->send(400, "Tanggal wajib diisi.");
@@ -620,11 +621,13 @@ class RepaymentRateController {
         
         if ($kc && $kc !== '000') $sqlM1 .= " AND kode_cabang = :kc";
         elseif ($korwil && $kw_start && $kw_end) $sqlM1 .= " AND kode_cabang BETWEEN :kw_start AND :kw_end";
+        if ($kankas) $sqlM1 .= " AND kode_group1 = :kankas"; // 🔥 FIX: Filter kankas di rekap
 
         $stmt1 = $this->pdo->prepare($sqlM1);
         $stmt1->bindValue(':s1', $s1); $stmt1->bindValue(':e1', $e1);
         if ($kc && $kc !== '000') $stmt1->bindValue(':kc', $kc);
         elseif ($korwil && $kw_start && $kw_end) { $stmt1->bindValue(':kw_start', $kw_start); $stmt1->bindValue(':kw_end', $kw_end); }
+        if ($kankas) $stmt1->bindValue(':kankas', $kankas); // 🔥 FIX: Bind kankas
         $stmt1->execute();
         $dataM1 = $stmt1->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
 
@@ -634,11 +637,13 @@ class RepaymentRateController {
                    WHERE created BETWEEN :s2 AND :e2";
         if ($kc && $kc !== '000') $sqlCur .= " AND kode_cabang = :kc";
         elseif ($korwil && $kw_start && $kw_end) $sqlCur .= " AND kode_cabang BETWEEN :kw_start AND :kw_end";
+        if ($kankas) $sqlCur .= " AND kode_group1 = :kankas"; // 🔥 FIX: Filter kankas di current
 
         $stmt2 = $this->pdo->prepare($sqlCur);
         $stmt2->bindValue(':s2', $s2); $stmt2->bindValue(':e2', $e2);
         if ($kc && $kc !== '000') $stmt2->bindValue(':kc', $kc);
         elseif ($korwil && $kw_start && $kw_end) { $stmt2->bindValue(':kw_start', $kw_start); $stmt2->bindValue(':kw_end', $kw_end); }
+        if ($kankas) $stmt2->bindValue(':kankas', $kankas); // 🔥 FIX: Bind kankas
         $stmt2->execute();
         $dataCur = $stmt2->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
 
@@ -824,6 +829,17 @@ class RepaymentRateController {
                       LEFT JOIN ao_kredit ao ON t1.kode_group2 = ao.kode_group2
                       LEFT JOIN tabungan tb ON t1.norek_tabungan = tb.no_rekening
                       LEFT JOIN kankas kn ON t1.kode_group1 = kn.kode_group1
+                      LEFT JOIN (
+                          SELECT 
+                              no_rekening,
+                              MAX(CASE WHEN DATE_FORMAT(tgl_trans, '%Y-%m') = DATE_FORMAT('$harian', '%Y-%m') THEN tgl_trans END) as tgl_trans_sekarang,
+                              SUM(CASE WHEN DATE_FORMAT(tgl_trans, '%Y-%m') = DATE_FORMAT('$harian', '%Y-%m') THEN (COALESCE(angsuran_pokok, 0) + COALESCE(angsuran_bunga, 0) - COALESCE(diskon_bunga, 0)) ELSE 0 END) as total_bayar_sekarang,
+                              MAX(CASE WHEN DATE_FORMAT(tgl_trans, '%Y-%m') = DATE_FORMAT(DATE_SUB('$harian', INTERVAL 1 MONTH), '%Y-%m') THEN tgl_trans END) as tgl_trans_lalu,
+                              SUM(CASE WHEN DATE_FORMAT(tgl_trans, '%Y-%m') = DATE_FORMAT(DATE_SUB('$harian', INTERVAL 1 MONTH), '%Y-%m') THEN (COALESCE(angsuran_pokok, 0) + COALESCE(angsuran_bunga, 0) - COALESCE(diskon_bunga, 0)) ELSE 0 END) as total_bayar_lalu
+                          FROM transaksi_kredit
+                          WHERE tgl_trans >= DATE_FORMAT(DATE_SUB('$harian', INTERVAL 1 MONTH), '%Y-%m-01')
+                          GROUP BY no_rekening
+                      ) trx ON t1.no_rekening = trx.no_rekening
                       WHERE (t1.created BETWEEN :s1 AND :e1)
                       AND t1.baki_debet > 0
                       AND DAY(t1.tgl_jatuh_tempo) IN ($daysStr)
@@ -856,7 +872,7 @@ class RepaymentRateController {
                  COALESCE(kn.deskripsi_group1, t1.kode_group1) as kankas,
                  COALESCE(tb.saldo_akhir, 0) as tabungan,
                  COALESCE(ao.nama_ao, t1.kode_group2) as nama_ao,
-                 t1.tgl_jatuh_tempo, t1.jml_pinjaman,
+                 t1.tgl_jatuh_tempo, t1.jml_pinjaman, t1.tgl_realisasi,
                  t1.baki_debet as os_m1, 
                  COALESCE(t2.baki_debet, 0) as os_curr, 
                  COALESCE(t2.hari_menunggak, 0) as dpd_curr,
@@ -865,7 +881,11 @@ class RepaymentRateController {
                  t2.tunggakan_bunga,
                  t2.hari_menunggak_pokok as dpd_pokok,
                  t2.hari_menunggak_bunga as dpd_bunga,
-                 (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) as totung";
+                 (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) as totung,
+                 trx.tgl_trans_sekarang,
+                 COALESCE(trx.total_bayar_sekarang, 0) as total_bayar_sekarang,
+                 trx.tgl_trans_lalu,
+                 COALESCE(trx.total_bayar_lalu, 0) as total_bayar_lalu";
         
         $sqlData = "SELECT $cols $baseQuery ORDER BY t1.baki_debet DESC LIMIT :lim OFFSET :off";
         $stmt = $this->pdo->prepare($sqlData);
@@ -892,6 +912,12 @@ class RepaymentRateController {
             $r['os_m1']=$osM1; $r['os_curr']=$osCur; 
             $r['bayar_pokok'] = ($osM1 > $osCur) ? ($osM1 - $osCur) : 0;
             $r['status_tabungan'] = (($tabungan * 0.015) > $totung) ? 'Aman' : 'Belum Aman';
+
+            // 🔥 Format transaksi data
+            $r['tgl_trans_sekarang'] = $r['tgl_trans_sekarang'] ?? null;
+            $r['total_bayar_sekarang'] = (float)($r['total_bayar_sekarang'] ?? 0);
+            $r['tgl_trans_lalu'] = $r['tgl_trans_lalu'] ?? null;
+            $r['total_bayar_lalu'] = (float)($r['total_bayar_lalu'] ?? 0);
         }
 
         return $this->send(200, "Detail Data OTP By Tgl & Migration", [
