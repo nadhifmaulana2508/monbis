@@ -249,10 +249,13 @@ class RepaymentRateController {
                  COALESCE(kn.deskripsi_group1, t1.kode_group1) as kankas,
                  COALESCE(tb.saldo_akhir, 0) as tabungan,
                  COALESCE(ao.nama_ao, t1.kode_group2) as nama_ao,
+                 t1.kode_group2 as kode_ao,
                  t1.tgl_jatuh_tempo, t1.jml_pinjaman,
                  t1.baki_debet as os_m1, 
                  COALESCE(t2.baki_debet, 0) as os_curr, 
                  COALESCE(t2.hari_menunggak, 0) as dpd_curr,
+                 COALESCE(t2.tunggakan_pokok, 0) as tunggakan_pokok,
+                 COALESCE(t2.tunggakan_bunga, 0) as tunggakan_bunga,
                  (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) as totung";
         
         $sqlData = "SELECT $cols $baseQuery ORDER BY t1.baki_debet DESC LIMIT :lim OFFSET :off";
@@ -285,9 +288,33 @@ class RepaymentRateController {
             }
         }
 
+        // 🔥 Query distinct AO dari data yang sama (tanpa filter ao)
+        $baseQueryNoAo = "FROM nominatif t1 
+                      $joinType nominatif t2 ON t1.no_rekening = t2.no_rekening 
+                          AND (t2.created BETWEEN :s2 AND :e2)
+                      LEFT JOIN ao_kredit ao ON t1.kode_group2 = ao.kode_group2
+                      WHERE (t1.created BETWEEN :s1 AND :e1)
+                      AND t1.kolektibilitas = 'L' 
+                      AND t1.baki_debet > 0
+                      AND t1.hari_menunggak = 0 
+                      AND DAY(t1.tgl_jatuh_tempo) IN ($daysStr)
+                      $whereStatus
+                      $whereProduk";
+        if ($kc) $baseQueryNoAo .= " AND t1.kode_cabang = :kc";
+        if ($kankas) $baseQueryNoAo .= " AND t1.kode_group1 = :kankas";
+
+        $stmtAo = $this->pdo->prepare("SELECT DISTINCT t1.kode_group2 as kode_ao, COALESCE(ao.nama_ao, t1.kode_group2) as nama_ao $baseQueryNoAo ORDER BY nama_ao");
+        $stmtAo->bindValue(':s1', $s1); $stmtAo->bindValue(':e1', $e1);
+        $stmtAo->bindValue(':s2', $s2); $stmtAo->bindValue(':e2', $e2);
+        if ($kc) $stmtAo->bindValue(':kc', $kc);
+        if ($kankas) $stmtAo->bindValue(':kankas', $kankas);
+        $stmtAo->execute();
+        $aoList = $stmtAo->fetchAll(PDO::FETCH_ASSOC);
+
         $this->send(200, "Detail Data RR", [
             'pagination' => ['current_page' => $page, 'total_records' => (int)$total, 'total_pages' => ceil($total / $limit)],
-            'data' => $rows
+            'data' => $rows,
+            'ao_list' => $aoList
         ]);
     }
 
@@ -408,9 +435,32 @@ class RepaymentRateController {
             }
         }
 
+        // 🔥 Query distinct AO dari data lunas (tanpa filter ao)
+        $baseQueryNoAoLunas = "FROM nominatif t1 
+                      LEFT JOIN nominatif t2 ON t1.no_rekening = t2.no_rekening 
+                          AND (t2.created BETWEEN :s2 AND :e2)
+                      LEFT JOIN ao_kredit ao ON t1.kode_group2 = ao.kode_group2
+                      WHERE (t1.created BETWEEN :s1 AND :e1)
+                      AND t1.kolektibilitas = 'L' 
+                      AND t1.baki_debet > 0
+                      AND t1.hari_menunggak = 0 
+                      AND (t2.no_rekening IS NULL OR t2.baki_debet <= 0)
+                      AND DAY(t1.tgl_jatuh_tempo) IN ($daysStr)";
+        if ($kc) $baseQueryNoAoLunas .= " AND t1.kode_cabang = :kc";
+        if ($kankas) $baseQueryNoAoLunas .= " AND t1.kode_group1 = :kankas";
+
+        $stmtAoLunas = $this->pdo->prepare("SELECT DISTINCT t1.kode_group2 as kode_ao, COALESCE(ao.nama_ao, t1.kode_group2) as nama_ao $baseQueryNoAoLunas ORDER BY nama_ao");
+        $stmtAoLunas->bindValue(':s1', $s1); $stmtAoLunas->bindValue(':e1', $e1);
+        $stmtAoLunas->bindValue(':s2', $s2); $stmtAoLunas->bindValue(':e2', $e2);
+        if ($kc) $stmtAoLunas->bindValue(':kc', $kc);
+        if ($kankas) $stmtAoLunas->bindValue(':kankas', $kankas);
+        $stmtAoLunas->execute();
+        $aoList = $stmtAoLunas->fetchAll(PDO::FETCH_ASSOC);
+
         $this->send(200, "Detail Lunas RR", [
             'pagination' => ['current_page' => $page, 'total_records' => (int)$total, 'total_pages' => ceil($total / $limit)],
-            'data' => $rows
+            'data' => $rows,
+            'ao_list' => $aoList
         ]);
     }
 

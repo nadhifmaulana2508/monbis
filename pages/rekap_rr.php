@@ -244,6 +244,7 @@
 
 <script>
   const API_URL  = './api/rr/'; 
+  const API_RR_URL = './api/rr/';
   const API_DATE = './api/date/';
   const API_KODE_URL = './api/kode/'; 
   const nf = new Intl.NumberFormat('id-ID');
@@ -662,8 +663,11 @@
                   <th class="px-2 md:px-4 bg-green-50 text-green-700 border-b border-r border-green-200 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-green-100 transition select-none" onclick="sortDetailRR('os_curr', 'number')">
                       <div class="flex items-center justify-end">ACTUAL (CURR) ${getSortIcon('os_curr', sortDetailCol, sortDetailAsc)}</div>
                   </th>
-                  <th class="px-2 md:px-4 bg-red-50 text-red-700 border-b border-r border-red-200 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-red-100 transition select-none" onclick="sortDetailRR('totung', 'number')">
-                      <div class="flex items-center justify-end">TUNGGAKAN ${getSortIcon('totung', sortDetailCol, sortDetailAsc)}</div>
+                  <th class="px-2 md:px-4 bg-red-50 text-red-700 border-b border-r border-red-200 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-red-100 transition select-none" onclick="sortDetailRR('tunggakan_pokok', 'number')">
+                      <div class="flex items-center justify-end">TGK POKOK ${getSortIcon('tunggakan_pokok', sortDetailCol, sortDetailAsc)}</div>
+                  </th>
+                  <th class="px-2 md:px-4 bg-red-50 text-red-700 border-b border-r border-red-200 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-red-100 transition select-none" onclick="sortDetailRR('tunggakan_bunga', 'number')">
+                      <div class="flex items-center justify-end">TGK BUNGA ${getSortIcon('tunggakan_bunga', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[50px] md:w-[70px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('dpd_curr', 'number')">
                       <div class="flex items-center justify-center">DPD ${getSortIcon('dpd_curr', sortDetailCol, sortDetailAsc)}</div>
@@ -748,6 +752,52 @@
 
       renderModalHeaderRR();
       renderTableDetailBodyRR(detailDataCache);
+  }
+
+  // 🔥 FIX: Populate AO dropdown dari data response
+  function populateAOFromResponse(aoList) {
+      const elAO = document.getElementById('opt_ao_modal');
+      if(!elAO) return;
+      const currentVal = elAO.value;
+      let h = '<option value="">Semua AO</option>';
+      if(aoList && Array.isArray(aoList)) {
+          aoList.forEach(x => { 
+              const rawName = x.nama_ao || x.kode_ao;
+              h += `<option value="${x.kode_ao}">${rawName}</option>`; 
+          });
+      }
+      elAO.innerHTML = h;
+      if(currentVal) {
+          const opt = elAO.querySelector(`option[value="${currentVal}"]`);
+          if(opt) elAO.value = currentVal;
+      }
+  }
+
+  async function loadKankasModalDropdown() {
+      const elKankas = document.getElementById('opt_kankas_modal');
+      if(!elKankas) return;
+      const branch = document.getElementById('opt_kantor').value;
+      
+      elKankas.innerHTML = '<option value="">Semua Kankas</option>';
+      if(!branch || branch === '') return;
+
+      try {
+          const payload = { type: 'kode_kankas', kode_kantor: branch };
+          const r = await fetch(API_KODE_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+          const j = await r.json();
+          let h = '<option value="">Semua Kankas</option>';
+          if(j.data && Array.isArray(j.data)) {
+              j.data.forEach(x => { h += `<option value="${x.kode_group1}">${x.deskripsi_group1 || x.kode_group1}</option>`; });
+          }
+          elKankas.innerHTML = h;
+      } catch(err) { }
+  }
+
+  async function loadAOModalDropdown(kode_cabang) {
+      const elAO = document.getElementById('opt_ao_modal');
+      if(!elAO) return;
+      elAO.innerHTML = '<option value="">Semua AO</option>';
+      // AO dropdown akan di-populate dari response detail data (ao_list)
   }
 
   async function initModalDetail(tgl, status) {
@@ -856,6 +906,10 @@
           
           detailDataCache = res.json.data?.data || [];
           const meta = res.json.data?.pagination || { total_records:0, total_pages:1 };
+          const aoList = res.json.data?.ao_list || [];
+
+          // 🔥 Populate AO dropdown dari response data
+          populateAOFromResponse(aoList);
 
           currentDetailPage = page; currentDetailTotalPages = meta.total_pages;
 
@@ -910,7 +964,8 @@
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-right font-medium text-slate-600 text-[9.5px] md:text-sm">${fmt(r.jml_pinjaman)}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-blue-100 text-right font-bold text-blue-700 bg-blue-50/30 text-[9.5px] md:text-sm">${fmt(r.os_m1)}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-green-100 text-right font-bold text-green-700 bg-green-50/30 text-[9.5px] md:text-sm">${fmt(r.os_curr)}</td>
-                    <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-red-100 text-right font-bold text-red-600 bg-red-50/30 text-[9.5px] md:text-sm">${fmt(r.totung)}</td>
+                    <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-red-100 text-right font-bold text-red-600 bg-red-50/30 text-[9.5px] md:text-sm">${fmt(r.tunggakan_pokok)}</td>
+                    <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-red-100 text-right font-bold text-red-600 bg-red-50/30 text-[9.5px] md:text-sm">${fmt(r.tunggakan_bunga)}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-bold text-slate-700 text-[9.5px] md:text-sm">${r.dpd_curr}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-right font-bold text-emerald-600 bg-emerald-50/10 text-[9.5px] md:text-sm">${fmt(r.tabungan)}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center">${statTabungan}</td>

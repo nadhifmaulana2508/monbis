@@ -93,6 +93,16 @@
   /* HIDE DATEPICKER ICON */
   input[type="date"]::-webkit-inner-spin-button, input[type="date"]::-webkit-calendar-picker-indicator { display: none; -webkit-appearance: none; }
   input[type="date"] { -moz-appearance: textfield; }
+
+  /* 🔥 FIX MOBILE RESPONSIVE MODAL DETAIL 🔥 */
+  @media (max-width: 767px) {
+    #modalDetailRR > div:nth-child(2) { border-radius: 0 !important; height: 100vh !important; }
+    #tableExportRR { font-size: 9px; }
+    #tableExportRR th { padding: 4px 6px; height: 32px; font-size: 8px; }
+    #tableExportRR td { padding: 4px 6px; }
+    .mod-col-rek { display: none !important; }
+    .mod-col-nas { left: 0 !important; min-width: 100px !important; max-width: 120px !important; }
+  }
 </style>
 
 <div class="max-w-[1920px] mx-auto px-2 md:px-4 py-4 md:py-6 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
@@ -182,46 +192,46 @@
 
 <div id="modalDetailRR" class="fixed inset-0 hidden z-[9999] flex items-end md:items-center justify-center p-0 sm:p-4">
   <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModalRR()"></div>
-  <div class="relative bg-white w-full h-[95vh] md:h-[92vh] max-w-[1600px] rounded-t-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
+  <div class="relative bg-white w-full h-[100vh] md:h-[92vh] max-w-[1600px] rounded-t-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
     
     <div class="flex flex-col bg-white border-b shrink-0 w-full z-50">
-        <div class="flex flex-row items-center justify-between px-3 py-2.5 md:px-4 md:py-3 gap-2 w-full">
+        <div class="flex flex-row items-center justify-between px-2 py-2 md:px-4 md:py-3 gap-1.5 md:gap-2 w-full">
             
             <div class="flex-1 min-w-0" id="modal-title-container">
-              <h3 class="font-bold text-slate-800 flex items-center gap-1.5 text-[12px] md:text-xl leading-none truncate">
+              <h3 class="font-bold text-slate-800 flex items-center gap-1.5 text-[11px] md:text-xl leading-none truncate">
                   <span class="w-1.5 md:w-2 h-4 md:h-6 bg-blue-600 rounded-full hidden md:block shrink-0"></span> 
                   <span id="modalTitleRR" class="truncate">Detail Penagihan</span>
               </h3>
-              <p class="text-[9px] md:text-sm text-slate-500 mt-1 md:ml-4 font-mono font-medium leading-none truncate" id="modalSubTitleRR">...</p>
+              <p class="text-[8px] md:text-sm text-slate-500 mt-0.5 md:mt-1 md:ml-4 font-mono font-medium leading-none truncate" id="modalSubTitleRR">...</p>
             </div>
             
-            <div class="flex flex-row items-center gap-1.5 md:gap-2 shrink-0">
-                <div class="relative w-[120px] md:w-[200px] shrink-0">
-                    <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                        <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            <div class="flex flex-row items-center gap-1 md:gap-2 shrink-0">
+                <div class="relative w-[100px] md:w-[200px] shrink-0">
+                    <div class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
+                        <svg class="w-3 h-3 md:w-3.5 md:h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
-                    <input type="text" id="search_nasabah" onkeyup="filterTableDetail()" class="w-full pl-8 pr-3 py-1.5 h-[32px] bg-slate-50 border border-slate-200 rounded-lg text-[10px] md:text-xs outline-none focus:border-blue-500 focus:bg-white transition-all placeholder-slate-400 font-medium" placeholder="Cari nama...">
+                    <input type="text" id="search_nasabah" onkeyup="filterTableDetail()" class="w-full pl-7 md:pl-8 pr-2 md:pr-3 py-1.5 h-[28px] md:h-[32px] bg-slate-50 border border-slate-200 rounded-lg text-[9px] md:text-xs outline-none focus:border-blue-500 focus:bg-white transition-all placeholder-slate-400 font-medium" placeholder="Cari nama...">
                 </div>
                 
-                <button type="button" onclick="toggleModalFilter()" class="md:hidden h-[32px] w-[32px] bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg flex items-center justify-center transition shrink-0">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                <button type="button" onclick="toggleModalFilter()" class="md:hidden h-[28px] w-[28px] bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg flex items-center justify-center transition shrink-0">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
                 </button>
                 
-                <button onclick="closeModalRR()" class="w-[32px] h-[32px] flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-xl leading-none shrink-0">&times;</button>
+                <button onclick="closeModalRR()" class="w-[28px] h-[28px] md:w-[32px] md:h-[32px] flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-lg md:text-xl leading-none shrink-0">&times;</button>
             </div>
         </div>
 
         <div id="modalFilterWrapper" class="hidden md:block w-full border-t border-slate-100 md:border-none transition-all">
-            <div class="flex flex-row items-center justify-end gap-1.5 md:gap-2 px-3 pb-2.5 md:px-4 md:pb-3 overflow-x-auto no-scrollbar">
-                <select id="opt_kankas_modal" class="inp px-1 md:px-2 h-[32px] w-[100px] md:w-[130px] text-[10px] md:text-xs font-bold text-blue-800 bg-blue-50/50 border-blue-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)">
+            <div class="flex flex-row items-center justify-end gap-1.5 md:gap-2 px-2 pb-2 md:px-4 md:pb-3 overflow-x-auto no-scrollbar">
+                <select id="opt_kankas_modal" class="inp px-1 md:px-2 h-[28px] md:h-[32px] w-[90px] md:w-[130px] text-[9px] md:text-xs font-bold text-blue-800 bg-blue-50/50 border-blue-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)">
                     <option value="">Semua Kankas</option>
                 </select>
 
-                <select id="opt_ao_modal" class="inp px-1 md:px-2 h-[32px] w-[100px] md:w-[130px] text-[10px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)">
+                <select id="opt_ao_modal" class="inp px-1 md:px-2 h-[28px] md:h-[32px] w-[90px] md:w-[130px] text-[9px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)">
                     <option value="">Semua AO</option>
                 </select>
                 
-                <button onclick="downloadExcelFull()" class="btn-icon bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 md:px-3 h-[32px] rounded-lg shadow-sm shrink-0" title="Export Excel">
+                <button onclick="downloadExcelFull()" class="btn-icon bg-emerald-600 hover:bg-emerald-700 text-white px-2 md:px-3 h-[28px] md:h-[32px] rounded-lg shadow-sm shrink-0" title="Export Excel">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                     <span class="ml-1.5 text-[10px] md:text-xs font-bold uppercase tracking-wider">Export</span>
                 </button>
@@ -242,8 +252,8 @@
       </table>
     </div>
 
-    <div class="px-3 py-2.5 md:px-5 md:py-4 border-t bg-white flex justify-between items-center shrink-0">
-      <span class="text-[9px] md:text-sm font-bold text-slate-600 bg-slate-100 px-2 md:px-3 py-1 rounded-md md:rounded-lg" id="pageInfoRR">0 Data</span>
+    <div class="px-2 py-2 md:px-5 md:py-4 border-t bg-white flex justify-between items-center shrink-0">
+      <span class="text-[8px] md:text-sm font-bold text-slate-600 bg-slate-100 px-1.5 md:px-3 py-0.5 md:py-1 rounded-md md:rounded-lg" id="pageInfoRR">0 Data</span>
       <div class="flex gap-1 md:gap-2">
           <button id="btnPrevRR" onclick="changePageDetail(-1)" class="px-2.5 md:px-4 py-1.5 md:py-2 bg-white border border-slate-300 rounded-md md:rounded-lg text-[9px] md:text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 transition shadow-sm">« Prev</button>
           <button id="btnNextRR" onclick="changePageDetail(1)" class="px-2.5 md:px-4 py-1.5 md:py-2 bg-white border border-slate-300 rounded-md md:rounded-lg text-[9px] md:text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 transition shadow-sm">Next »</button>
@@ -381,21 +391,26 @@
   async function loadAOModalDropdown(kode_cabang) {
       const elAO = document.getElementById('opt_ao_modal');
       elAO.innerHTML = '<option value="">Semua AO</option>';
-      if(!kode_cabang) return;
+      // AO dropdown akan di-populate dari response detail data (ao_list)
+  }
 
-      try {
-          const payload = { type: 'kode_ao_kredit', kode_kantor: kode_cabang };
-          const r = await fetch(API_KODE_URL, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-          const j = await r.json();
-          let h = '<option value="">Semua AO</option>';
-          if(j.data && Array.isArray(j.data)) {
-              j.data.forEach(x => { 
-                  const rawName = x.nama_ao || x.kode_group2;
-                  h += `<option value="${x.kode_group2}">${rawName}</option>`; 
-              });
-          }
-          elAO.innerHTML = h;
-      } catch(err) { }
+  // 🔥 FIX: Populate AO dropdown dari data response
+  function populateAOFromResponse(aoList) {
+      const elAO = document.getElementById('opt_ao_modal');
+      const currentVal = elAO.value;
+      let h = '<option value="">Semua AO</option>';
+      if(aoList && Array.isArray(aoList)) {
+          aoList.forEach(x => { 
+              const rawName = x.nama_ao || x.kode_ao;
+              h += `<option value="${x.kode_ao}">${rawName}</option>`; 
+          });
+      }
+      elAO.innerHTML = h;
+      // Restore previous selection if still exists
+      if(currentVal) {
+          const opt = elAO.querySelector(`option[value="${currentVal}"]`);
+          if(opt) elAO.value = currentVal;
+      }
   }
 
   function renderMainHeaderRR() {
@@ -629,8 +644,11 @@
                   <th class="px-2 md:px-4 bg-green-50 text-green-700 border-b border-r border-green-200 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-green-100 transition select-none" onclick="sortDetailRR('os_curr', 'number')">
                       <div class="flex items-center justify-end">ACTUAL (CURR) ${getSortIcon('os_curr', sortDetailCol, sortDetailAsc)}</div>
                   </th>
-                  <th class="px-2 md:px-4 bg-red-50 text-red-700 border-b border-r border-red-200 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-red-100 transition select-none" onclick="sortDetailRR('totung', 'number')">
-                      <div class="flex items-center justify-end">TUNGGAKAN ${getSortIcon('totung', sortDetailCol, sortDetailAsc)}</div>
+                  <th class="px-2 md:px-4 bg-red-50 text-red-700 border-b border-r border-red-200 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-red-100 transition select-none" onclick="sortDetailRR('tunggakan_pokok', 'number')">
+                      <div class="flex items-center justify-end">TGK POKOK ${getSortIcon('tunggakan_pokok', sortDetailCol, sortDetailAsc)}</div>
+                  </th>
+                  <th class="px-2 md:px-4 bg-red-50 text-red-700 border-b border-r border-red-200 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-red-100 transition select-none" onclick="sortDetailRR('tunggakan_bunga', 'number')">
+                      <div class="flex items-center justify-end">TGK BUNGA ${getSortIcon('tunggakan_bunga', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[50px] md:w-[70px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('dpd_curr', 'number')">
                       <div class="flex items-center justify-center">DPD ${getSortIcon('dpd_curr', sortDetailCol, sortDetailAsc)}</div>
@@ -806,11 +824,15 @@
           
           detailDataCache = res.json.data?.data || [];
           const meta = res.json.data?.pagination || { total_records:0, total_pages:1 };
+          const aoList = res.json.data?.ao_list || [];
+
+          // 🔥 Populate AO dropdown dari response data
+          populateAOFromResponse(aoList);
 
           currentDetailPage = page; currentDetailTotalPages = meta.total_pages;
 
           if(detailDataCache.length === 0) {
-              tb.innerHTML = `<tr><td colspan="15" class="py-20 text-center text-slate-500 italic text-xs md:text-base">Tidak ada data detail.</td></tr>`;
+              tb.innerHTML = `<tr><td colspan="16" class="py-20 text-center text-slate-500 italic text-xs md:text-base">Tidak ada data detail.</td></tr>`;
               info.innerText = `0 Data`;
           } else {
               sortDetailCol = ''; sortDetailAsc = true;
@@ -821,7 +843,7 @@
           document.getElementById('btnNextRR').disabled = page >= meta.total_pages;
       } catch(err){ 
           console.error(err); 
-          tb.innerHTML = `<tr><td colspan="15" class="py-16 text-center text-red-500 font-bold tracking-widest uppercase text-[10px] md:text-sm">Gagal memuat detail</td></tr>`;
+          tb.innerHTML = `<tr><td colspan="16" class="py-16 text-center text-red-500 font-bold tracking-widest uppercase text-[10px] md:text-sm">Gagal memuat detail</td></tr>`;
       } finally { l.classList.add('hidden'); }
   }
 
@@ -847,7 +869,8 @@
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-right font-medium text-slate-600 text-[9.5px] md:text-sm">${fmt(r.jml_pinjaman)}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-blue-100 text-right font-bold text-blue-700 bg-blue-50/30 text-[9.5px] md:text-sm">${fmt(r.os_m1)}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-green-100 text-right font-bold text-green-700 bg-green-50/30 text-[9.5px] md:text-sm">${fmt(r.os_curr)}</td>
-                    <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-red-100 text-right font-bold text-red-600 bg-red-50/30 text-[9.5px] md:text-sm">${fmt(r.totung)}</td>
+                    <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-red-100 text-right font-bold text-red-600 bg-red-50/30 text-[9.5px] md:text-sm">${fmt(r.tunggakan_pokok)}</td>
+                    <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-red-100 text-right font-bold text-red-600 bg-red-50/30 text-[9.5px] md:text-sm">${fmt(r.tunggakan_bunga)}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-bold text-slate-700 text-[9.5px] md:text-sm">${r.dpd_curr}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-right font-bold text-emerald-600 bg-emerald-50/10 text-[9.5px] md:text-sm">${fmt(r.tabungan)}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center text-[9px] md:text-xs">${r.status_tabungan === 'Aman' ? '<span class="text-green-600 font-bold">Aman</span>' : '<span class="text-red-500 font-bold">Belum Aman</span>'}</td>
@@ -899,9 +922,9 @@
 
           let csv = "";
           if(currentMode === 'NORMAL') {
-              csv = `No Rekening\tNama Nasabah\tAlamat\tNo HP\tKankas\tNama AO\tTgl JT\tPlafond\tTarget (M-1)\tActual (Curr)\tTot Tunggakan\tDPD\tSaldo Tabungan\tStatus Tabungan\tStatus Tagih\n`;
+              csv = `No Rekening\tNama Nasabah\tAlamat\tNo HP\tKankas\tNama AO\tTgl JT\tPlafond\tTarget (M-1)\tActual (Curr)\tTgk Pokok\tTgk Bunga\tDPD\tSaldo Tabungan\tStatus Tabungan\tStatus Tagih\n`;
               rows.forEach(r => {
-                  csv += `'${r.no_rekening}\t${r.nama_nasabah}\t${r.alamat||''}\t'${r.no_hp||''}\t${r.kankas||''}\t${r.nama_ao}\t${r.tgl_jatuh_tempo}\t${Math.round(r.jml_pinjaman)}\t${Math.round(r.os_m1)}\t${Math.round(r.os_curr)}\t${Math.round(r.totung)}\t${r.dpd_curr}\t${Math.round(r.tabungan)}\t${r.status_tabungan}\t${r.status_ket}\n`;
+                  csv += `'${r.no_rekening}\t${r.nama_nasabah}\t${r.alamat||''}\t'${r.no_hp||''}\t${r.kankas||''}\t${r.nama_ao}\t${r.tgl_jatuh_tempo}\t${Math.round(r.jml_pinjaman)}\t${Math.round(r.os_m1)}\t${Math.round(r.os_curr)}\t${Math.round(r.tunggakan_pokok||0)}\t${Math.round(r.tunggakan_bunga||0)}\t${r.dpd_curr}\t${Math.round(r.tabungan)}\t${r.status_tabungan}\t${r.status_ket}\n`;
               });
           } else {
               csv = `Nama Nasabah\tID Nasabah\tAlamat\tNama AO\tRek Lama\tPlafond Lama\tOS Lunas (M-1)\tStatus\tRek Baru\tPlafond Baru\tTgl Realisasi Baru\n`;
