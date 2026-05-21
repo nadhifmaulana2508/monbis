@@ -260,7 +260,7 @@ document.body.addEventListener("click", (e) => {
 
   let opts = '<option value="">-- Pilih Komitmen --</option>';
   if(isJTThisMonth){
-      opts += `<option value="A_DPD 0">Flow (A_DPD 0)</option><option value="O_Lunas">O_Lunas</option>`;
+      opts += `<option value="E_DPD 91-120">Flow (E_DPD 91-120)</option><option value="O_Lunas">O_Lunas</option>`;
   } else {
       opts += `<option value="A_DPD 0">A_DPD 0</option><option value="B_DPD 1-30">B_DPD 1-30</option>
                <option value="C_DPD 31-60">C_DPD 31-60</option><option value="D_DPD 61-90">D_DPD 61-90</option>

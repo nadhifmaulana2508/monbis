@@ -751,13 +751,6 @@
 
         </tr>`;
       }).join('');
-
-          //       <td class="px-3 py-2 text-center bg-slate-50/50">
-          //     <button type="button" onclick="SD_openModal('${d.no_rekening}', '${String(d.nama_nasabah).replace(/'/g, "\\'")}', '${d.kolek}', ${d.dpd||0}, ${d.dpd_lalu !== undefined && d.dpd_lalu !== null ? d.dpd_lalu : 'null'}, ${d.tunggakan_pokok||0}, ${d.hmp||0}, ${d.tunggakan_bunga||0}, ${d.hmb||0}, '${d.pipeline||''}', '${d.kode_cabang||''}', '${d.nama_ao||''}', '${d.tgl_jatuh_tempo||''}', ${d.plafon||0})" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded shadow-sm text-[10px] font-bold transition flex items-center gap-1 mx-auto">
-          //         <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-          //         Tindakan
-          //     </button>
-          // </td>
   }
 
   function updateSummarySD(s) { document.getElementById('SD_sumNoa').innerText = nf.format(s.noa || 0); document.getElementById('SD_sumBd').innerText = nf.format(s.bd_act || 0); }

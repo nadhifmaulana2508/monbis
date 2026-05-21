@@ -116,7 +116,7 @@
                   <span class="p-1 md:p-2.5 bg-blue-600 rounded-lg text-white shadow-sm">
                       <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
                   </span>
-                  Analisa MOB Vintage
+                  MOB (Month Of Booking)
               </h1>
               <p class="text-[9px] md:text-xs text-rose-600 font-bold italic ml-8 md:ml-[42px] leading-tight">
                   *Geser tabel ke kanan untuk data lengkap. Klik nominal untuk detail.
