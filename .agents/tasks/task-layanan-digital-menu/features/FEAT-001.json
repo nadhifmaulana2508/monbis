@@ -1,0 +1,29 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Restructure sidebar navigation to add 'Layanan Digital' as a parent accordion menu below 'Laporan', with sub-items: Dashboard Layanan Digital, VA, Branchless, QRIS Merchant. Remove the old single 'Layanan Digital' link from inside the Laporan menu. The new parent menu should also be inside the menuMonevDev div (dev-only access).",
+  "status": "in_progress",
+  "steps": [
+    "Open views/navbar.php and locate the 'menuMonevDev' accordion-group div (around line 83-97).",
+    "Inside the accordion-content of 'Laporan', REMOVE the line: <a href=\"layanan_digital\" ...>Layanan Digital</a>",
+    "After the closing </div> of the menuMonevDev accordion-group, add a NEW accordion-group div (also wrapped in a div with style='display:none' and a unique id like 'menuLayananDigital') following the same pattern as other accordion groups.",
+    "The new 'Layanan Digital' parent accordion should use a relevant SVG icon (e.g., a wifi/signal or mobile device icon) and contain 4 sub-items: (1) <a href=\"dashboard_layanan_digital\">Dashboard Layanan Digital</a>, (2) <a href=\"va\">Virtual Account (VA)</a>, (3) <a href=\"branchless\">Branchless</a>, (4) <a href=\"qris_merchant\">QRIS Merchant</a>.",
+    "The new menu div should have the same display:none logic as menuMonevDev for dev-only access. Use the same id pattern or share the same JS toggle that shows menuMonevDev.",
+    "Verify the accordion HTML structure matches exactly the pattern used by Pemasaran, NPL, PH, Collection, and Laporan accordion groups."
+  ],
+  "acceptance_criteria": [
+    "views/navbar.php passes PHP syntax check (php -l)",
+    "The 'Layanan Digital' accordion parent appears below the 'Laporan' accordion in the sidebar HTML",
+    "The accordion contains exactly 4 sub-links: dashboard_layanan_digital, va, branchless, qris_merchant",
+    "The old single 'Layanan Digital' link is removed from the 'Laporan' accordion-content",
+    "The new menu is wrapped with display:none for dev-only access"
+  ],
+  "verification": [
+    "php -l /projects/sandbox/monbis/views/navbar.php",
+    "grep -c 'dashboard_layanan_digital' /projects/sandbox/monbis/views/navbar.php should return 1",
+    "grep -c 'branchless' /projects/sandbox/monbis/views/navbar.php should return 1",
+    "grep -c 'qris_merchant' /projects/sandbox/monbis/views/navbar.php should return 1"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
