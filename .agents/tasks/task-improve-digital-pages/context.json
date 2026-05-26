@@ -1,0 +1,22 @@
+{
+  "project_type": "PHP monolith web app (no framework) with Tailwind CSS + Vanilla JS frontend",
+  "language": "PHP (backend), JavaScript/HTML/CSS (frontend)",
+  "build_system": "None - PHP served directly by Apache. No build step required.",
+  "test_framework": "None - no automated tests. Validation is visual/manual.",
+  "build_command": "N/A - no build step",
+  "test_command": "N/A - no automated tests. Verify by checking PHP syntax: php -l pages/branchless.php && php -l pages/va.php && php -l pages/qris_merchant.php",
+  "verification_instructions": "1. Run php -l on each modified file to ensure no syntax errors. 2. Verify HTML structure is well-formed. 3. Check that JavaScript functions are complete and no unclosed brackets.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "No setup needed. Files are plain PHP/HTML/JS.",
+  "environment_constraints": "INTEGRATIONS_ONLY network - no external package installs, no Docker. Use only AST/syntax validation. Tailwind is loaded via CDN in the layout (already available). ApexCharts loaded via CDN in each page.",
+  "contribution_requirements": "Self-contained PHP pages with inline JS/CSS. Each page fetches data from API endpoints via fetch(). Follow existing patterns in branchless.php as reference.",
+  "key_patterns": "1. API calls use POST to './api/transaksi/' with JSON body containing 'type' field. 2. Filter hierarchy: KONSOLIDASI (all 28 cabang) / KORWIL (subset) / specific cabang. 3. Korwil mapping: Semarang=001-007, Solo=008-014, Banyumas=015-021, Pekalongan=022-028. 4. Existing endpoints: detail_breakdown_transaksi returns MoM data with korwil>cabang hierarchy, yoy_transaksi returns YOY data with same hierarchy. 5. Color themes: branchless=emerald-600, va=blue-600, qris=purple-600. 6. Each page is self-contained with inline <style> and <script> blocks.",
+  "relevant_files": [
+    "pages/branchless.php",
+    "pages/va.php",
+    "pages/qris_merchant.php",
+    "pages/layanan_digital.php",
+    "api/controllers/TransaksiController.php"
+  ],
+  "directory_structure": "pages/ - frontend PHP pages (self-contained with inline JS/CSS). api/controllers/ - backend logic. api/routes/ - API routing. views/ - layout partials (navbar, header, footer)."
+}
