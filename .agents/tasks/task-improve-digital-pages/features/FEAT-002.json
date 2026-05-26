@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Redesign qris_merchant.php with the same improvements as branchless.php: (1) Unified breakdown table showing all 28 cabang (or korwil subset) with both MoM and YoY Gap% columns. (2) Better UI/design. (3) Responsive layout with collapsible mobile filters. Use purple-600 as the accent color (existing theme).",
+  "status": "in_progress",
+  "steps": [
+    "Rewrite pages/qris_merchant.php with the same pattern established in FEAT-001 for branchless.php:",
+    "1. FILTER SECTION: Add mobile-only toggle button to collapse/expand the filter form. Same pattern as branchless.php but with purple-600 accent.",
+    "2. SUMMARY CARDS: Improve card design matching branchless.php pattern. Filter cards by QRIS keyword.",
+    "3. TREND CHART + DISTRIBUTION: Keep existing functionality with improved responsive sizing.",
+    "4. UNIFIED BREAKDOWN TABLE: Merge the separate Breakdown (MoM) and YOY tables into one unified table. Fetch both detail_breakdown_transaksi (channel=QRIS) and yoy_transaksi (channel=QRIS) in parallel. Merge by cabang kode. Show columns: No, Nama Cabang, Nom Tahun Lalu, Nom Tahun Ini, Gap% YoY, Nom Bulan Lalu, Nom Bulan Ini, Gap% MoM.",
+    "5. For KONSOLIDASI: extract all cabang from korwil arrays of both API responses, merge by kode, display all 28.",
+    "6. For KORWIL: show only cabang within that korwil.",
+    "7. Remove the separate YOY chart+table section.",
+    "8. Ensure responsive design - overflow-x-auto on table, proper mobile padding, chart responsiveness."
+  ],
+  "acceptance_criteria": [
+    "php -l pages/qris_merchant.php passes with no syntax errors",
+    "The page has a mobile filter toggle matching branchless.php pattern",
+    "Unified breakdown table combines MoM and YoY data with all 28 cabang shown for KONSOLIDASI",
+    "Purple-600 accent color is maintained throughout",
+    "No separate YOY table exists"
+  ],
+  "verification": [
+    "Run: php -l /projects/sandbox/monbis/pages/qris_merchant.php",
+    "Grep for 'fetchUnifiedBreakdown' to confirm unified function exists",
+    "Grep for 'filter-toggle' or similar mobile toggle"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
