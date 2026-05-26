@@ -179,18 +179,17 @@
     }
 
     const dateData = await getLastHarianData();
-    let hDate = new Date();
-    if (dateData && dateData.last_created) {
-        hDate = new Date(dateData.last_created);
-        document.getElementById('harian_date').value = dateData.last_created;
-    } else {
-        document.getElementById('harian_date').value = hDate.toISOString().split('T')[0];
-    }
-    if (dateData && dateData.closing_date) {
-        document.getElementById('closing_date').value = dateData.closing_date;
-    } else {
-        let pDate = new Date(hDate.getFullYear(), hDate.getMonth(), 0);
-        document.getElementById('closing_date').value = pDate.getFullYear() + '-' + String(pDate.getMonth()+1).padStart(2,'0') + '-' + String(pDate.getDate()).padStart(2,'0');
+    const today = new Date();
+    
+    // Default: harian = today, closing = last day of previous month
+    document.getElementById('harian_date').value = today.toISOString().split('T')[0];
+    const prevMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+    document.getElementById('closing_date').value = prevMonthEnd.getFullYear() + '-' + String(prevMonthEnd.getMonth()+1).padStart(2,'0') + '-' + String(prevMonthEnd.getDate()).padStart(2,'0');
+    
+    // Override with API data if available
+    if (dateData) {
+        if (dateData.last_created) document.getElementById('harian_date').value = dateData.last_created;
+        if (dateData.last_closing) document.getElementById('closing_date').value = dateData.last_closing;
     }
 
     initCharts();
