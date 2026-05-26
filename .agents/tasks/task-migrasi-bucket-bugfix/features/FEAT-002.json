@@ -1,0 +1,27 @@
+{
+  "id": "FEAT-002",
+  "type": "fix",
+  "description": "Fix konsolidasi detail: enable detail click in konsolidasi mode (frontend + backend). Currently when kode_kantor is empty (konsolidasi mode), the linkCell function returns plain text instead of a clickable link, and the backend getMigrasiBucketDetailActual and getMigrasiBucketDetailOLunas reject konsolidasi requests. Also add pagination of 20 items per page in the detail modal.",
+  "status": "pending",
+  "steps": [
+    "FRONTEND - pages/migrasi_bucket.php: In the linkCell function (around line 432 in the JS section), remove the condition `gIsKonsol` that prevents rendering links. Currently: `if(to_bucket === 'RUNOFF' || gIsKonsol) return numHTML(n);` - change it to: `if(to_bucket === 'RUNOFF') return numHTML(n);` so konsolidasi mode cells are also clickable.",
+    "BACKEND - api/controllers/KolekController.php: In getMigrasiBucketDetailActual (starts ~line 1380), remove the early return that blocks konsolidasi. Currently: `if ($kc===null || $kc==='000') { return sendResponse(400, ...); }`. Instead, when $kc is null, query ALL branches (exclude kode_cabang 000) - same pattern used in computeOSForDate. Modify the SQL to conditionally filter by kode_kantor or include all non-000 branches.",
+    "BACKEND - api/controllers/KolekController.php: In getMigrasiBucketDetailOLunas (starts ~line 1460), apply the same fix - remove the early return blocking konsolidasi and modify SQL to work without specific kode_kantor, using the same pattern (exclude kode_cabang 000).",
+    "FRONTEND - pages/migrasi_bucket.php: Add client-side pagination of 20 items per page in the renderDetailTable function. Add pagination controls (prev/next/page numbers) below the modal table. Only render 20 rows at a time based on the current page, while keeping the full dataset in memory for filtering/sorting.",
+    "BACKEND - Note: For REALISASI type, the konsolidasi block can remain (it requires specific branch) since the user only mentioned konsolidasi for the ACTUAL/O_LUNAS paths."
+  ],
+  "acceptance_criteria": [
+    "In konsolidasi mode (no kode_kantor selected), clicking a cell value in the matrix opens the detail modal",
+    "The detail modal shows data with pagination of 20 items per page",
+    "Pagination controls appear below the table with prev/next navigation",
+    "Filtering and sorting still work correctly with pagination",
+    "Backend returns data for konsolidasi mode (all branches except 000) for ACTUAL and O_LUNAS detail types",
+    "PHP syntax check passes on both modified files"
+  ],
+  "verification": [
+    "Run: php -l /projects/sandbox/monbis/api/controllers/KolekController.php",
+    "Run: php -l /projects/sandbox/monbis/pages/migrasi_bucket.php"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

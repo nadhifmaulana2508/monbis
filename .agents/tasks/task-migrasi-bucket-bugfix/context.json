@@ -1,0 +1,20 @@
+{
+  "project_type": "PHP native web application (no framework) with inline JavaScript",
+  "language": "PHP 8.x + Vanilla JavaScript",
+  "build_system": "Apache with .htaccess rewrite, no build step required",
+  "test_framework": "No automated tests - manual verification via PHP syntax check",
+  "build_command": "php -l api/controllers/KolekController.php && php -l pages/migrasi_bucket.php",
+  "test_command": "php -l api/controllers/KolekController.php && php -l pages/migrasi_bucket.php",
+  "verification_instructions": "1) Run php -l on modified files to check syntax. 2) Review logic correctness by reading the code.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "1) Create dev branch from main. 2) All changes go to dev branch.",
+  "environment_constraints": "INTEGRATIONS_ONLY network - no external downloads. PHP 8.4 available. No database access for runtime testing. Verification limited to syntax checks and code review.",
+  "contribution_requirements": "Work on dev branch. Do not modify main branch. All API endpoints use POST with type field as dispatcher.",
+  "key_patterns": "API pattern: POST /api/?request=kolek with body {type:'migrasi bucket'} dispatched in routes/kolek.php. Controllers use PDO. Frontend pages are self-contained PHP+JS files. Filter pattern: kode_kantor null means konsolidasi (all branches). Response format: {status, message, data}. DPD buckets: A(0), B(1-30)=SC, C(31-60) through G(151-180)=FE, H(181-210) through N(>360)=BE. status_tag field in ref_dpd_bucket categorizes buckets.",
+  "relevant_files": [
+    "pages/migrasi_bucket.php",
+    "api/controllers/KolekController.php",
+    "api/routes/kolek.php"
+  ],
+  "directory_structure": "monbis/ root with api/ (controllers, routes, helpers, config) and pages/ (self-contained PHP+JS views). Key controller: KolekController.php with migrasiBucketOsc (line ~900) and getMigrasiBucketDetail (line ~1244)."
+}
