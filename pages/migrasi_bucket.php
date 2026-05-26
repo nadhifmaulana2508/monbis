@@ -122,6 +122,7 @@
                   <span class="text-[11px] font-bold text-emerald-800 uppercase">👍 Perbaikan</span>
                   <span id="tot_baik" class="text-[10px] font-bold text-emerald-700 bg-emerald-200/50 px-1.5 rounded">0 Akun</span>
               </div>
+              <div id="cat_breakdown_baik" class="px-2 py-1 border-b border-emerald-100 bg-emerald-50/30 shrink-0"></div>
               <div id="list_perbaikan" class="flex-1 overflow-y-auto p-1.5 space-y-1 custom-scrollbar"></div>
           </div>
 
@@ -130,6 +131,7 @@
                   <span class="text-[11px] font-bold text-slate-700 uppercase">➖ Stay (Tetap)</span>
                   <span id="tot_stay" class="text-[10px] font-bold text-slate-600 bg-slate-200 px-1.5 rounded">0 Akun</span>
               </div>
+              <div id="cat_breakdown_stay" class="px-2 py-1 border-b border-slate-100 bg-slate-50/30 shrink-0"></div>
               <div id="list_stay" class="flex-1 overflow-y-auto p-1.5 space-y-1 custom-scrollbar"></div>
           </div>
 
@@ -138,6 +140,7 @@
                   <span class="text-[11px] font-bold text-red-800 uppercase">👎 Pemburukan</span>
                   <span id="tot_buruk" class="text-[10px] font-bold text-red-700 bg-red-200/50 px-1.5 rounded">0 Akun</span>
               </div>
+              <div id="cat_breakdown_buruk" class="px-2 py-1 border-b border-red-100 bg-red-50/30 shrink-0"></div>
               <div id="list_pemburukan" class="flex-1 overflow-y-auto p-1.5 space-y-1 custom-scrollbar"></div>
           </div>
       </div>
@@ -323,6 +326,9 @@
   let currentDetailData = []; 
   let currentFromRaw = '';
   let currentToRaw = '';
+  let currentDetailPage = 1;
+  let currentDetailTotal = 0;
+  let currentDetailPerPage = 20;
 
   document.getElementById('MB_modalClose').onclick = () => elMod.classList.add('hidden');
   elMod.addEventListener('click', e => { if(!e.target.closest('#MB_modalCard')) elMod.classList.add('hidden'); });
@@ -524,9 +530,25 @@
     document.getElementById('tot_stay').textContent = `${nfID.format(m.stay.noa)} Akun`;
     document.getElementById('tot_buruk').textContent = `${nfID.format(m.pemburukan.noa)} Akun`;
     
-    renderListCol(details.perbaikan_list, 'list_perbaikan', false);
-    renderListCol(details.stay_list, 'list_stay', false);
-    renderListCol(details.pemburukan_list, 'list_pemburukan', true); // Pemburukan bisa diklik
+    renderListCol(details.perbaikan_list, 'list_perbaikan', true);
+    renderListCol(details.stay_list, 'list_stay', true);
+    renderListCol(details.pemburukan_list, 'list_pemburukan', true);
+
+    // SC/FE/BE Category Breakdown
+    const mCat = data.movement_by_category || {sc:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}, fe:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}, be:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}};
+    function catBreakdownHtml(catData) {
+      return `<div class="text-[9px] text-slate-500 mt-1 space-y-0.5">
+        <div><b>SC:</b> ${nfID.format(catData.sc.noa)} akun (Rp ${fmtFull(catData.sc.os)})</div>
+        <div><b>FE:</b> ${nfID.format(catData.fe.noa)} akun (Rp ${fmtFull(catData.fe.os)})</div>
+        <div><b>BE:</b> ${nfID.format(catData.be.noa)} akun (Rp ${fmtFull(catData.be.os)})</div>
+      </div>`;
+    }
+    const elCatBaik = document.getElementById('cat_breakdown_baik');
+    const elCatStay = document.getElementById('cat_breakdown_stay');
+    const elCatBuruk = document.getElementById('cat_breakdown_buruk');
+    if (elCatBaik) elCatBaik.innerHTML = catBreakdownHtml({sc: mCat.sc.perbaikan, fe: mCat.fe.perbaikan, be: mCat.be.perbaikan});
+    if (elCatStay) elCatStay.innerHTML = catBreakdownHtml({sc: mCat.sc.stay, fe: mCat.fe.stay, be: mCat.be.stay});
+    if (elCatBuruk) elCatBuruk.innerHTML = catBreakdownHtml({sc: mCat.sc.pemburukan, fe: mCat.fe.pemburukan, be: mCat.be.pemburukan});
 
     // GENERATE NARRATIVE (Analisis Modal)
     let narGrowth = '';
@@ -635,7 +657,7 @@
   function linkCell(from_bucket, to_bucket, val){
     const n = getNum(val);
     if(n<=0) return '<span class="text-slate-300">–</span>';
-    if(to_bucket === 'RUNOFF' || gIsKonsol || from_bucket === 'REALISASI') return numHTML(n);
+    if(to_bucket === 'RUNOFF') return numHTML(n);
     return `<a href="#" class="cell-link" onclick="return MB_openDetail('${from_bucket}','${to_bucket}')">${numHTML(n)}</a>`;
   }
 
@@ -665,11 +687,13 @@
   };
 
   // ===== MODAL DETAIL MURNI =====
-  window.MB_openDetail = async function(from_raw, to_raw){
+  window.MB_openDetail = async function(from_raw, to_raw, page){
     if(ABORT_DETAIL) ABORT_DETAIL.abort();
     ABORT_DETAIL = new AbortController();
 
+    const pg = page || 1;
     currentFromRaw = from_raw; currentToRaw = to_raw;
+    currentDetailPage = pg;
     const closing = elClosing.value, harian = elHarian.value;
     const kode = elKantor.disabled ? elKantor.value : (elKantor.value || null);
 
@@ -693,17 +717,30 @@
         closing_date: closing, 
         harian_date: harian, 
         from_bucket: from_raw, 
-        to_bucket: to_raw
+        to_bucket: to_raw,
+        page: pg,
+        per_page: currentDetailPerPage
       };
       if(kode) payload.kode_kantor = kode;
       
       const f = (window.apiFetch || fetch);
       const r = await f('./api/kolek/', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal:ABORT_DETAIL.signal });
       const j = await r.json();
-      currentDetailData = Array.isArray(j?.data) ? j.data : [];
+
+      // Handle paginated response (data.rows) or legacy array response
+      if (j?.data && typeof j.data === 'object' && !Array.isArray(j.data) && Array.isArray(j.data.rows)) {
+        currentDetailData = j.data.rows;
+        currentDetailTotal = j.data.total_count || 0;
+        currentDetailPage = j.data.page || 1;
+        currentDetailPerPage = j.data.per_page || 20;
+      } else {
+        currentDetailData = Array.isArray(j?.data) ? j.data : [];
+        currentDetailTotal = currentDetailData.length;
+      }
       
       if(!currentDetailData.length) {
         elModTbody.innerHTML = `<tr><td class="px-4 py-8 text-center text-slate-400">Tidak ada debitur pada kriteria ini.</td></tr>`;
+        MB_renderPagination();
         return false;
       }
 
@@ -730,10 +767,39 @@
       }
 
       renderDetailTable(currentDetailData);
+      MB_renderPagination();
     }catch(e){
       if(e.name!=='AbortError') elModTbody.innerHTML = `<tr><td class="px-4 py-8 text-center text-red-500 font-bold">Gagal menarik data.</td></tr>`;
     }
     return false;
+  };
+
+  function MB_renderPagination() {
+    let container = document.getElementById('MB_paginationBar');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'MB_paginationBar';
+      container.className = 'flex items-center justify-center gap-2 py-2 text-xs';
+      const tblWrap = document.getElementById('MB_modalTbody')?.closest('table')?.parentElement;
+      if (tblWrap) tblWrap.after(container);
+      else return;
+    }
+    if (currentDetailTotal <= currentDetailPerPage) {
+      container.innerHTML = '';
+      return;
+    }
+    const totalPages = Math.ceil(currentDetailTotal / currentDetailPerPage);
+    let html = '';
+    html += `<button onclick="MB_goDetailPage(${currentDetailPage - 1})" ${currentDetailPage <= 1 ? 'disabled' : ''} class="px-2 py-1 rounded border ${currentDetailPage <= 1 ? 'text-slate-300 border-slate-200 cursor-not-allowed' : 'text-blue-600 border-blue-300 hover:bg-blue-50'}">&laquo; Prev</button>`;
+    html += `<span class="text-slate-600">Hal ${currentDetailPage} / ${totalPages} (${currentDetailTotal} data)</span>`;
+    html += `<button onclick="MB_goDetailPage(${currentDetailPage + 1})" ${currentDetailPage >= totalPages ? 'disabled' : ''} class="px-2 py-1 rounded border ${currentDetailPage >= totalPages ? 'text-slate-300 border-slate-200 cursor-not-allowed' : 'text-blue-600 border-blue-300 hover:bg-blue-50'}">Next &raquo;</button>`;
+    container.innerHTML = html;
+  }
+
+  window.MB_goDetailPage = function(p) {
+    const totalPages = Math.ceil(currentDetailTotal / currentDetailPerPage);
+    if (p < 1 || p > totalPages) return;
+    MB_openDetail(currentFromRaw, currentToRaw, p);
   };
 
   function renderDetailTable(list) {

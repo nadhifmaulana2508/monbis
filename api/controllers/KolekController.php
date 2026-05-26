@@ -959,10 +959,21 @@ class KolekController {
         }
 
         $sum_os_stay_in_system = 0; // OS M-1 yang tetap bertahan (tidak lunas)
+        $angsuran_total = 0; // Sum of max(0, os_m1 - os_curr) for accounts staying in system
+        $lunas_total = 0;    // Sum of os_m1 for accounts going to 'O'
         $movement_summary = [
             'perbaikan'  => ['noa' => 0, 'os' => 0],
             'stay'       => ['noa' => 0, 'os' => 0],
             'pemburukan' => ['noa' => 0, 'os' => 0]
+        ];
+
+        $SC_BUCKETS = ['A','B'];
+        $FE_BUCKETS = ['C','D','E','F','G'];
+        $BE_BUCKETS = ['H','I','J','K','L','M','N'];
+        $movement_by_category = [
+            'sc' => ['perbaikan'=>['noa'=>0,'os'=>0], 'stay'=>['noa'=>0,'os'=>0], 'pemburukan'=>['noa'=>0,'os'=>0]],
+            'fe' => ['perbaikan'=>['noa'=>0,'os'=>0], 'stay'=>['noa'=>0,'os'=>0], 'pemburukan'=>['noa'=>0,'os'=>0]],
+            'be' => ['perbaikan'=>['noa'=>0,'os'=>0], 'stay'=>['noa'=>0,'os'=>0], 'pemburukan'=>['noa'=>0,'os'=>0]]
         ];
 
         foreach ($M1['accSet'] as $acc => $_) {
@@ -972,7 +983,12 @@ class KolekController {
             $os_cur = (int)round($CUR['osByAcc'][$acc] ?? 0);
             
             $os_used = ($to === 'O') ? $os_m1 : $os_cur;
-            if ($to !== 'O') $sum_os_stay_in_system += $os_m1; 
+            if ($to !== 'O') {
+                $sum_os_stay_in_system += $os_m1;
+                $angsuran_total += max(0, $os_m1 - $os_cur);
+            } else {
+                $lunas_total += $os_m1;
+            }
 
             $fromTotals[$from]['noa_m1']++;
             $fromTotals[$from]['os_m1'] += $os_m1;
@@ -980,26 +996,36 @@ class KolekController {
             $matrix[$from][$to]['noa']++;
             $matrix[$from][$to]['os_used'] += $os_used;
 
+            // Determine category from 'from' bucket
+            $cat = null;
+            if (in_array($from, $SC_BUCKETS, true)) $cat = 'sc';
+            elseif (in_array($from, $FE_BUCKETS, true)) $cat = 'fe';
+            elseif (in_array($from, $BE_BUCKETS, true)) $cat = 'be';
+
             // Agregasi Global Movement
             if ($from === $to) {
                 $movement_summary['stay']['noa']++;
                 $movement_summary['stay']['os'] += $os_used;
+                if ($cat) { $movement_by_category[$cat]['stay']['noa']++; $movement_by_category[$cat]['stay']['os'] += $os_used; }
             } elseif ($to === 'O') {
                 $movement_summary['perbaikan']['noa']++;
                 $movement_summary['perbaikan']['os'] += $os_used;
+                if ($cat) { $movement_by_category[$cat]['perbaikan']['noa']++; $movement_by_category[$cat]['perbaikan']['os'] += $os_used; }
             } else {
                 if (ord($to) < ord($from)) {
                     $movement_summary['perbaikan']['noa']++;
                     $movement_summary['perbaikan']['os'] += $os_used;
+                    if ($cat) { $movement_by_category[$cat]['perbaikan']['noa']++; $movement_by_category[$cat]['perbaikan']['os'] += $os_used; }
                 } else {
                     $movement_summary['pemburukan']['noa']++;
                     $movement_summary['pemburukan']['os'] += $os_used;
+                    if ($cat) { $movement_by_category[$cat]['pemburukan']['noa']++; $movement_by_category[$cat]['pemburukan']['os'] += $os_used; }
                 }
             }
         }
 
         // 6. Hitung Run Off & Net Growth
-        $run_off = max(0, $total_os_m1 - $sum_os_stay_in_system);
+        $run_off = $angsuran_total + $lunas_total;
         $net_growth = $realisasi['os'] - $run_off;
 
         // 7. Flatten Data Matrix & Buat Detailed Breakdown Lists
@@ -1062,6 +1088,8 @@ class KolekController {
             'portfolio_flow'   => [
                 'realisasi'  => $realisasi,
                 'run_off'    => $run_off,
+                'angsuran'   => $angsuran_total,
+                'lunas'      => $lunas_total,
                 'net_growth' => $net_growth // Jika minus = portofolio mengecil
             ],
             'npl_comparison'   => [
@@ -1074,6 +1102,7 @@ class KolekController {
                 ]
             ],
             'movement_summary' => $movement_summary,
+            'movement_by_category' => $movement_by_category,
             'movement_details' => [
                 'pemburukan_list' => $pemburukan_list,
                 'perbaikan_list'  => $perbaikan_list,
@@ -1323,34 +1352,35 @@ class KolekController {
       $kankas = $b['kankas'] ?? null;
       $ao     = $b['ao_kredit'] ?? null;
       $search = $b['search'] ?? null;
+      $page     = max(1, (int)($b['page'] ?? 1));
+      $per_page = max(1, min(100, (int)($b['per_page'] ?? 20)));
 
       if (!$closing || !$harian) return sendResponse(400, "closing_date & harian_date wajib (YYYY-MM-DD)");
 
       $VALID = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N'];
 
-      // REALISASI — wajib cabang spesifik (bukan konsolidasi)
+      // REALISASI
       if ($fb === 'REALISASI') {
-        if ($kc === null || $kc === '000') return sendResponse(400, "Realisasi: kode_kantor wajib (tidak boleh konsolidasi).");
         $tbFilter = ($tb !== '' && in_array($tb, $VALID, true)) ? $tb : null;
-        return $this->getMigrasiBucketDetailRealisasi($closing, $harian, $kc, $tbFilter, $kankas, $ao, $search);
+        return $this->getMigrasiBucketDetailRealisasi($closing, $harian, $kc, $tbFilter, $kankas, $ao, $search, $page, $per_page);
       }
 
       // O_LUNAS — wajib from_bucket (A..N)
       if ($tb === 'O' || $tb === 'O_LUNAS') {
         if (!in_array($fb, $VALID, true)) return sendResponse(400, "O_LUNAS: from_bucket wajib A..N.");
-        return $this->getMigrasiBucketDetailOLunas($closing, $harian, $kc, $fb, $kankas, $ao, $search);
+        return $this->getMigrasiBucketDetailOLunas($closing, $harian, $kc, $fb, $kankas, $ao, $search, $page, $per_page);
       }
 
       // ACTUAL — A..N → A..N
       if (!in_array($fb, $VALID, true) || !in_array($tb, $VALID, true))
         return sendResponse(400, "Actual: from_bucket & to_bucket wajib A..N.");
 
-      return $this->getMigrasiBucketDetailActual($closing, $harian, $kc, $fb, $tb, $kankas, $ao, $search);
+      return $this->getMigrasiBucketDetailActual($closing, $harian, $kc, $fb, $tb, $kankas, $ao, $search, $page, $per_page);
     }
 
 
     /*********************** REALISASI (akun baru) ***********************/
-    public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, string $kc, ?string $tbFilter = null, ?string $kankas = null, ?string $ao = null, ?string $search = null)
+    public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, ?string $kc, ?string $tbFilter = null, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20)
     {
       [$dsH, $deH] = $this->dayRange($harian);
 
@@ -1358,6 +1388,40 @@ class KolekController {
       if ($kankas) $whereFilter .= " AND nh.kode_group1 = :kankas ";
       if ($ao)     $whereFilter .= " AND nh.kode_group2 = :ao ";
       if ($search) $whereFilter .= " AND (nh.nama_nasabah LIKE :search OR nh.no_rekening LIKE :search) ";
+
+      $kcCondition = ($kc !== null)
+        ? "AND LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') = :kcH"
+        : "AND LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') <> '000'";
+
+      // COUNT query for pagination
+      $countSql = "
+        SELECT COUNT(*) AS total
+        FROM nominatif nh
+        JOIN ref_dpd_bucket rb2
+          ON nh.hari_menunggak >= rb2.min_day
+        AND (rb2.max_day IS NULL OR nh.hari_menunggak <= rb2.max_day)
+        WHERE nh.created >= :dsH1 AND nh.created < :deH1
+          $kcCondition
+          AND nh.tgl_realisasi >  :cld
+          AND nh.tgl_realisasi <= :hrd
+          " . ($tbFilter ? " AND rb2.dpd_code = :tb " : "") . "
+          $whereFilter
+      ";
+
+      $stCount = $this->pdo->prepare($countSql);
+      $stCount->bindValue(':dsH1', $dsH);
+      $stCount->bindValue(':deH1', $deH);
+      if ($kc !== null) $stCount->bindValue(':kcH', $kc);
+      $stCount->bindValue(':cld', $closing);
+      $stCount->bindValue(':hrd', $harian);
+      if ($tbFilter) $stCount->bindValue(':tb', $tbFilter);
+      if ($kankas)   $stCount->bindValue(':kankas', $kankas);
+      if ($ao)       $stCount->bindValue(':ao', $ao);
+      if ($search)   $stCount->bindValue(':search', "%$search%");
+      $stCount->execute();
+      $totalCount = (int)$stCount->fetchColumn();
+
+      $offset = ($page - 1) * $per_page;
 
       $sql = "
         SELECT
@@ -1398,39 +1462,39 @@ class KolekController {
         LEFT JOIN kankas kks ON kks.kode_group1 = nh.kode_group1
         LEFT JOIN ao_kredit aok ON aok.kode_group2 = nh.kode_group2
         WHERE nh.created >= :dsH1 AND nh.created < :deH1
-          AND LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') = :kcH
+          $kcCondition
           AND nh.tgl_realisasi >  :cld
           AND nh.tgl_realisasi <= :hrd
           " . ($tbFilter ? " AND rb2.dpd_code = :tb " : "") . "
           $whereFilter
         ORDER BY nh.baki_debet DESC
+        LIMIT :lmt OFFSET :ofs
       ";
 
       $st = $this->pdo->prepare($sql);
       $st->bindValue(':dsH1', $dsH);
       $st->bindValue(':deH1', $deH);
-      $st->bindValue(':kcH',  $kc);
+      if ($kc !== null) $st->bindValue(':kcH', $kc);
       $st->bindValue(':cld',  $closing);
       $st->bindValue(':hrd',  $harian);
       if ($tbFilter) $st->bindValue(':tb', $tbFilter);
       if ($kankas)   $st->bindValue(':kankas', $kankas);
       if ($ao)       $st->bindValue(':ao', $ao);
       if ($search)   $st->bindValue(':search', "%$search%");
+      $st->bindValue(':lmt', $per_page, PDO::PARAM_INT);
+      $st->bindValue(':ofs', $offset, PDO::PARAM_INT);
 
       $st->execute();
       $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
-      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'realisasi');
+      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'realisasi', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $per_page]);
     }
 
 
     /*********************** ACTUAL A..N → A..N (FAST + BUCKET INFO) ***********************/
-    public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null)
+    public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20)
     {
-      if ($kc===null || $kc==='000') {
-        return sendResponse(400, "Pilih kode_kantor spesifik (CHAR(3), mis. '004') untuk detail ACTUAL.");
-      }
-      $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
+      if ($kc !== null) $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
 
       [$dsC,$deC] = $this->dayRange($closing);
       [$dsH,$deH] = $this->dayRange($harian);
@@ -1439,6 +1503,48 @@ class KolekController {
       if ($kankas) $whereFilter .= " AND h.kode_group1 = :kankas ";
       if ($ao)     $whereFilter .= " AND h.kode_group2 = :ao ";
       if ($search) $whereFilter .= " AND (h.nama_nasabah LIKE :search OR h.no_rekening LIKE :search) ";
+
+      $kcCondH = ($kc !== null)
+        ? "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') = :kcH"
+        : "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') <> '000'";
+      $kcCondC = ($kc !== null)
+        ? "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') = :kcC"
+        : "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') <> '000'";
+
+      // COUNT query for pagination
+      $countSql = "
+        SELECT COUNT(*) AS total
+        FROM nominatif c
+        JOIN nominatif h
+          ON h.no_rekening = c.no_rekening
+        AND h.created >= :dsH AND h.created < :deH
+        $kcCondH
+        JOIN ref_dpd_bucket rbf
+          ON c.hari_menunggak >= rbf.min_day
+        AND (rbf.max_day IS NULL OR c.hari_menunggak <= rbf.max_day)
+        AND rbf.dpd_code = :fb
+        JOIN ref_dpd_bucket rbt
+          ON h.hari_menunggak >= rbt.min_day
+        AND (rbt.max_day IS NULL OR h.hari_menunggak <= rbt.max_day)
+        AND rbt.dpd_code = :tb
+        WHERE c.created >= :dsC AND c.created < :deC
+          $kcCondC
+          $whereFilter
+      ";
+
+      $stCount = $this->pdo->prepare($countSql);
+      if ($kc !== null) { $stCount->bindValue(':kcH', $kc); $stCount->bindValue(':kcC', $kc); }
+      $stCount->bindValue(':dsH', $dsH); $stCount->bindValue(':deH', $deH);
+      $stCount->bindValue(':dsC', $dsC); $stCount->bindValue(':deC', $deC);
+      $stCount->bindValue(':fb', $fb);
+      $stCount->bindValue(':tb', $tb);
+      if ($kankas) $stCount->bindValue(':kankas', $kankas);
+      if ($ao)     $stCount->bindValue(':ao', $ao);
+      if ($search) $stCount->bindValue(':search', "%$search%");
+      $stCount->execute();
+      $totalCount = (int)$stCount->fetchColumn();
+
+      $offset = ($page - 1) * $per_page;
 
       $sql = "
         SELECT
@@ -1485,7 +1591,7 @@ class KolekController {
         JOIN nominatif h
           ON h.no_rekening = c.no_rekening
         AND h.created >= :dsH AND h.created < :deH
-        AND h.kode_cabang = :kcH
+        $kcCondH
         JOIN ref_dpd_bucket rbf
           ON c.hari_menunggak >= rbf.min_day
         AND (rbf.max_day IS NULL OR c.hari_menunggak <= rbf.max_day)
@@ -1497,14 +1603,14 @@ class KolekController {
         LEFT JOIN kankas kks ON kks.kode_group1 = h.kode_group1
         LEFT JOIN ao_kredit aok ON aok.kode_group2 = h.kode_group2
         WHERE c.created >= :dsC AND c.created < :deC
-          AND c.kode_cabang = :kcC
+          $kcCondC
           $whereFilter
         ORDER BY h.baki_debet DESC
+        LIMIT :lmt OFFSET :ofs
       ";
 
       $st = $this->pdo->prepare($sql);
-      $st->bindValue(':kcH', $kc);
-      $st->bindValue(':kcC', $kc);
+      if ($kc !== null) { $st->bindValue(':kcH', $kc); $st->bindValue(':kcC', $kc); }
       $st->bindValue(':dsH', $dsH); $st->bindValue(':deH', $deH);
       $st->bindValue(':dsC', $dsC); $st->bindValue(':deC', $deC);
       $st->bindValue(':fb',  $fb);
@@ -1513,21 +1619,20 @@ class KolekController {
       if ($kankas) $st->bindValue(':kankas', $kankas);
       if ($ao)     $st->bindValue(':ao', $ao);
       if ($search) $st->bindValue(':search', "%$search%");
+      $st->bindValue(':lmt', $per_page, PDO::PARAM_INT);
+      $st->bindValue(':ofs', $offset, PDO::PARAM_INT);
 
       $st->execute();
       $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
-      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'actual');
+      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'actual', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $per_page]);
     }
 
 
     /*********************** O_LUNAS (M-1 → O) — FAST + BUCKET INFO ***********************/
-    public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null)
+    public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20)
     {
-      if ($kc===null || $kc==='000') {
-        return sendResponse(400, "Pilih kode_kantor spesifik (CHAR(3), mis. '004') untuk detail O_LUNAS.");
-      }
-      $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
+      if ($kc !== null) $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
 
       [$dsC,$deC] = $this->dayRange($closing);
       [$dsH,$deH] = $this->dayRange($harian);
@@ -1537,6 +1642,44 @@ class KolekController {
       if ($kankas) $whereFilter .= " AND c.kode_group1 = :kankas ";
       if ($ao)     $whereFilter .= " AND c.kode_group2 = :ao ";
       if ($search) $whereFilter .= " AND (c.nama_nasabah LIKE :search OR c.no_rekening LIKE :search) ";
+
+      $kcCondH = ($kc !== null)
+        ? "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') = :kcH"
+        : "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') <> '000'";
+      $kcCondC = ($kc !== null)
+        ? "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') = :kcC"
+        : "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') <> '000'";
+
+      // COUNT query for pagination
+      $countSql = "
+        SELECT COUNT(*) AS total
+        FROM nominatif c
+        LEFT JOIN nominatif h
+          ON h.no_rekening = c.no_rekening
+        AND h.created >= :dsH AND h.created < :deH
+        $kcCondH
+        JOIN ref_dpd_bucket rbf
+          ON c.hari_menunggak >= rbf.min_day
+        AND (rbf.max_day IS NULL OR c.hari_menunggak <= rbf.max_day)
+        AND rbf.dpd_code = :fb
+        WHERE c.created >= :dsC AND c.created < :deC
+          $kcCondC
+          AND h.no_rekening IS NULL
+          $whereFilter
+      ";
+
+      $stCount = $this->pdo->prepare($countSql);
+      if ($kc !== null) { $stCount->bindValue(':kcH', $kc); $stCount->bindValue(':kcC', $kc); }
+      $stCount->bindValue(':dsH', $dsH); $stCount->bindValue(':deH', $deH);
+      $stCount->bindValue(':dsC', $dsC); $stCount->bindValue(':deC', $deC);
+      $stCount->bindValue(':fb', $fromBucket);
+      if ($kankas) $stCount->bindValue(':kankas', $kankas);
+      if ($ao)     $stCount->bindValue(':ao', $ao);
+      if ($search) $stCount->bindValue(':search', "%$search%");
+      $stCount->execute();
+      $totalCount = (int)$stCount->fetchColumn();
+
+      $offset = ($page - 1) * $per_page;
 
       $sql = "
         SELECT
@@ -1583,7 +1726,7 @@ class KolekController {
         LEFT JOIN nominatif h
           ON h.no_rekening = c.no_rekening
         AND h.created >= :dsH AND h.created < :deH
-        AND h.kode_cabang = :kcH
+        $kcCondH
         JOIN ref_dpd_bucket rbf
           ON c.hari_menunggak >= rbf.min_day
         AND (rbf.max_day IS NULL OR c.hari_menunggak <= rbf.max_day)
@@ -1591,15 +1734,15 @@ class KolekController {
         LEFT JOIN kankas kks ON kks.kode_group1 = c.kode_group1
         LEFT JOIN ao_kredit aok ON aok.kode_group2 = c.kode_group2
         WHERE c.created >= :dsC AND c.created < :deC
-          AND c.kode_cabang = :kcC
+          $kcCondC
           AND h.no_rekening IS NULL
           $whereFilter
         ORDER BY c.baki_debet DESC
+        LIMIT :lmt OFFSET :ofs
       ";
 
       $st = $this->pdo->prepare($sql);
-      $st->bindValue(':kcH', $kc);
-      $st->bindValue(':kcC', $kc);
+      if ($kc !== null) { $st->bindValue(':kcH', $kc); $st->bindValue(':kcC', $kc); }
       $st->bindValue(':dsH', $dsH); $st->bindValue(':deH', $deH);
       $st->bindValue(':dsC', $dsC); $st->bindValue(':deC', $deC);
       $st->bindValue(':fb',  $fromBucket);
@@ -1607,15 +1750,17 @@ class KolekController {
       if ($kankas) $st->bindValue(':kankas', $kankas);
       if ($ao)     $st->bindValue(':ao', $ao);
       if ($search) $st->bindValue(':search', "%$search%");
+      $st->bindValue(':lmt', $per_page, PDO::PARAM_INT);
+      $st->bindValue(':ofs', $offset, PDO::PARAM_INT);
 
       $st->execute();
       $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
-      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'o_lunas');
+      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'o_lunas', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $per_page]);
     }
 
     /*********************** ATTACH CKPN & CAST ***********************/
-    private function attachCkpnAndCast(array $rows, string $harian, string $closing, ?string $kc, string $mode){
+    private function attachCkpnAndCast(array $rows, string $harian, string $closing, ?string $kc, string $mode, array $meta = []){
       $accs = array_values(array_unique(array_filter(array_map(fn($r)=>$r['no_rekening'] ?? null, $rows))));
 
       // Helper CKPN Class
@@ -1676,6 +1821,9 @@ class KolekController {
       foreach ($rows as &$r){ foreach ($num as $f){ if (array_key_exists($f,$r) && $r[$f]!==null && $r[$f]!=='') $r[$f]=0+$r[$f]; } }
       unset($r);
 
+      if (!empty($meta)) {
+        return sendResponse(200,"OK ($mode detail)", ['rows' => $rows, 'total_count' => $meta['total_count'] ?? 0, 'page' => $meta['page'] ?? 1, 'per_page' => $meta['per_page'] ?? 20]);
+      }
       return sendResponse(200,"OK ($mode detail)", $rows);
     }
 

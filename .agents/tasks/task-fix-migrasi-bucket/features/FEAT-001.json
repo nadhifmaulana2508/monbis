@@ -1,0 +1,36 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix getMigrasiBucketDetail to support konsolidasi mode (kode_kantor is null/empty/000) and enable the frontend detail links for konsolidasi with pagination of 20 items. Also add SC/FE/BE breakdown to movement_summary, and fix the run_off calculation in migrasiBucketOsc.",
+  "status": "in_progress",
+  "steps": [
+    "BACKEND - Fix getMigrasiBucketDetailActual in api/controllers/KolekController.php: Remove the check that returns 400 when kc is null. When kc is null, remove the kode_cabang filter from the SQL queries (both for closing 'c' and harian 'h' tables), keeping only the existing pattern 'kode_cabang <> 000'. Add pagination support: accept 'page' and 'per_page' (default 20) from input, add LIMIT/OFFSET to the query, and return total_count in the response alongside the data array.",
+    "BACKEND - Fix getMigrasiBucketDetailOLunas in api/controllers/KolekController.php: Same pattern - remove the 400 error when kc is null, adjust SQL to not filter by kode_cabang when null (but exclude '000'), add pagination (page/per_page with default 20).",
+    "BACKEND - Fix getMigrasiBucketDetailRealisasi in api/controllers/KolekController.php: Remove the check that returns 400 for konsolidasi. When kc is null, remove the kode_cabang filter (but exclude '000'). Add pagination support.",
+    "BACKEND - Fix run_off calculation in migrasiBucketOsc: Currently run_off = max(0, $total_os_m1 - $sum_os_stay_in_system). The correct formula per user is: Run Off = Angsuran + Lunas. Angsuran = sum of (os_m1 - os_curr) for all accounts that remain in the system (to != 'O'). Lunas = sum of os_m1 for accounts that went to 'O'. So run_off = angsuran_total + lunas_total. Then net_growth (which user calls 'growth') = total_os_curr - total_os_m1, OR equivalently = realisasi - run_off. Update the calculation accordingly.",
+    "BACKEND - Add SC/FE/BE breakdown to movement_summary in migrasiBucketOsc: After the existing movement_summary aggregation loop, add sub-categorization by the 'from_bucket' category. Define SC_BUCKETS=['A','B'], FE_BUCKETS=['C','D','E','F','G'], BE_BUCKETS=['H','I','J','K','L','M','N']. For each movement (perbaikan/stay/pemburukan), also track noa/os per category (sc/fe/be). Add this as 'movement_by_category' in the response with structure: {sc: {perbaikan:{noa,os}, stay:{noa,os}, pemburukan:{noa,os}}, fe: {...}, be: {...}}.",
+    "FRONTEND - In pages/migrasi_bucket.php, modify the linkCell function: Remove the condition 'gIsKonsol' that prevents links in konsolidasi mode. The line 'if(to_bucket === 'RUNOFF' || gIsKonsol || from_bucket === 'REALISASI') return numHTML(n);' should become 'if(to_bucket === 'RUNOFF') return numHTML(n);' - allowing clicking in both konsolidasi and specific branch modes, including REALISASI rows.",
+    "FRONTEND - In pages/migrasi_bucket.php, modify MB_openDetail function to support pagination: Add a 'page' parameter (default 1). Send page and per_page:20 in the API payload. After receiving data, if j.total_count exists, render pagination controls below the table. Store total_count and current page. Add a MB_goDetailPage(page) function that re-calls MB_openDetail with the new page number.",
+    "FRONTEND - In pages/migrasi_bucket.php, modify the renderListCol function: Make ALL list items clickable (not just pemburukan). Change the three renderListCol calls to all pass isClickable=true. This enables clicking detail from perbaikan and stay lists too.",
+    "FRONTEND - In pages/migrasi_bucket.php, add SC/FE/BE breakdown display: After the existing movement_summary cards (tot_baik, tot_stay, tot_buruk), add a new section that shows the breakdown by category. Read data.movement_by_category from the API response and render three sub-rows under each main category card showing SC/FE/BE counts and OS values."
+  ],
+  "acceptance_criteria": [
+    "php -l api/controllers/KolekController.php passes with no syntax errors",
+    "php -l pages/migrasi_bucket.php passes with no syntax errors",
+    "getMigrasiBucketDetailActual no longer returns 400 when kode_kantor is null - it queries all branches excluding 000",
+    "getMigrasiBucketDetailOLunas no longer returns 400 when kode_kantor is null",
+    "getMigrasiBucketDetailRealisasi no longer returns 400 when kode_kantor is null",
+    "All three detail methods accept page and per_page parameters and return paginated results with total_count",
+    "migrasiBucketOsc calculates run_off as angsuran_total + lunas_total (not the old formula)",
+    "migrasiBucketOsc returns movement_by_category with sc/fe/be breakdown",
+    "Frontend linkCell function allows clicking detail even in konsolidasi mode",
+    "Frontend MB_openDetail sends page/per_page and renders pagination when total_count > per_page",
+    "Frontend renders SC/FE/BE breakdown in the summary section"
+  ],
+  "verification": [
+    "php -l /projects/sandbox/monbis/api/controllers/KolekController.php",
+    "php -l /projects/sandbox/monbis/pages/migrasi_bucket.php"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
