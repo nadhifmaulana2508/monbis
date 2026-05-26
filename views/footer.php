@@ -139,7 +139,8 @@
             const name = document.getElementById('navUserName'),
                   br = document.getElementById('navBranch'),
                   acc = document.getElementById('accHandle'),
-                  menuMonevDev = document.getElementById('menuMonevDev');
+                  menuMonevDev = document.getElementById('menuMonevDev'),
+                  menuLayananDigital = document.getElementById('menuLayananDigital');
 
             if (name) name.textContent = u.full_name || u.nama || '-';
             if (br) br.textContent = u.branch_name || u.unit_kerja || '-';
@@ -148,6 +149,9 @@
             const isDev = (u.role === 'dev' || u.unit_kerja === 'Divisi Operasional' || u.unit_kerja === 'Dewan Komisaris dan Direksi');
             if (menuMonevDev) {
                 menuMonevDev.style.setProperty('display', isDev ? 'block' : 'none', 'important');
+            }
+            if (menuLayananDigital) {
+                menuLayananDigital.style.setProperty('display', isDev ? 'block' : 'none', 'important');
             }
             return true;
         }

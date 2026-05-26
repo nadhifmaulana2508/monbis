@@ -1658,7 +1658,8 @@ class TransaksiController {
             ]);
 
         } catch (PDOException $e) {
-            return sendResponse(500, "PDO Error: " . $e->getMessage(), null);
+            error_log("Error: " . $e->getMessage());
+            return sendResponse(500, "Terjadi kesalahan server.", null);
         }
     }
 
@@ -1781,7 +1782,8 @@ class TransaksiController {
             ]);
 
         } catch (PDOException $e) {
-            return sendResponse(500, "PDO Error: " . $e->getMessage(), null);
+            error_log("Error: " . $e->getMessage());
+            return sendResponse(500, "Terjadi kesalahan server.", null);
         }
     }
 
