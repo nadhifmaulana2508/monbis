@@ -45,6 +45,9 @@ switch ($method) {
         } elseif ($input['type'] === 'dashboard_layanan_digital') {
             $controller->getDashboardLayananDigital($input);
 
+        } elseif ($input['type'] === 'va_detail_mandiri_permata') {
+            $controller->getVaDetailMandiriPermata($input);
+
         } else {
             sendResponse(400, "Type tidak dikenali. Gunakan 'Flow Par', 'KL Baru', atau 'Last Created Nominatif'");
         }

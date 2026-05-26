@@ -1,290 +1,416 @@
-<div class="max-w-7xl mx-auto px-4 py-4 h-screen flex flex-col">
+<!-- Load Library ApexCharts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<style>
+  :root { --primary: #0284c7; --bg: #f8fafc; --text: #334155; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
   
-  <div class="hdr flex flex-wrap items-start gap-2 mb-2">
-    <h1 class="title text-2xl font-bold flex items-center gap-2">
-      <span>📈</span> <span>Analisa Transaksi VA</span>
-    </h1>
+  .inp { 
+      box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0 0.5rem; 
+      font-size: 13px; background: #fff; height: 42px; cursor: pointer; outline: none; transition: border 0.2s; font-weight: 600;
+  }
+  .inp:focus { border-color: var(--primary); box-shadow: 0 0 0 2px #bae6fd; }
+  
+  .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
-    <form id="formFilterVa" class="ml-auto" aria-label="Filter VA">
-      <div id="filterVa" class="flex items-center gap-2 flex-wrap justify-end">
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background-color: #f8fafc; color: #1e293b; font-weight: 800; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 11px; }
+  td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-weight: 700; color: #334155; }
+  tr:hover td { background-color: #f0f9ff; }
+  
+  .card-shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
+
+  .local-loader { position: absolute; inset: 0; background: rgba(255,255,255,0.7); z-index: 50; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); border-radius: inherit; }
+  .local-loader.hidden { display: none; }
+
+  .apexcharts-tooltip { z-index: 99999 !important; background: transparent !important; border: none !important; box-shadow: none !important; }
+</style>
+
+<div class="max-w-[1600px] mx-auto px-3 md:px-4 py-4 flex flex-col gap-5">
+  
+  <!-- ================= HEADER & GLOBAL FILTER ================= -->
+  <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-4 rounded-xl card-shadow border border-slate-100">
+    <div>
+        <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
+            <span class="bg-blue-600 text-white p-1.5 rounded-lg text-sm shadow-sm">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+            </span> 
+            <span>Virtual Account (VA)</span>
+        </h1>
+        <p class="text-xs text-slate-500 mt-1 ml-1 font-medium" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
+    </div>
+
+    <form id="formFilterGlobal" class="flex flex-col md:flex-row items-end gap-3 w-full xl:w-auto">
+        <div class="flex flex-col flex-1 md:w-[140px]">
+            <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">CLOSING M-1</label>
+            <input type="date" id="closing_date" class="inp text-slate-700 shadow-sm" required>
+        </div>
+        <div class="flex flex-col flex-1 md:w-[140px]">
+            <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">HARIAN / ACTUAL</label>
+            <input type="date" id="harian_date" class="inp text-slate-700 shadow-sm" required>
+        </div>
+
+        <div class="flex flex-col w-full md:w-[220px]">
+            <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">AREA / CABANG</label>
+            <select id="opt_area" class="inp text-blue-700 shadow-sm">
+                <option value="KONSOLIDASI" class="font-bold">Konsolidasi</option>
+                <optgroup label="Berdasarkan Korwil" class="text-slate-400">
+                    <option value="KORWIL_SEMARANG" class="text-slate-700">Korwil Semarang</option>
+                    <option value="KORWIL_SOLO" class="text-slate-700">Korwil Solo</option>
+                    <option value="KORWIL_BANYUMAS" class="text-slate-700">Korwil Banyumas</option>
+                    <option value="KORWIL_PEKALONGAN" class="text-slate-700">Korwil Pekalongan</option>
+                </optgroup>
+                <optgroup label="Berdasarkan Cabang" id="opt_cabang_list" class="text-slate-400"></optgroup>
+            </select>
+        </div>
         
-        <div class="flex flex-col">
-            <label for="kode_kantor_va" class="lbl">Kode Kantor:</label>
-            <input type="text" id="kode_kantor_va" class="inp w-24" placeholder="Semua">
-        </div>
-
-        <div class="flex flex-col">
-            <label for="awal_date_va" class="lbl">Tgl Awal:</label>
-            <input type="date" id="awal_date_va" class="inp" required>
-        </div>
-
-        <div class="flex flex-col">
-            <label for="akhir_date_va" class="lbl">Tgl Akhir:</label>
-            <input type="date" id="akhir_date_va" class="inp" required>
-        </div>
-
-        <button type="submit" class="btn-icon mt-auto" aria-label="Filter" style="margin-bottom: 2px;">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="7"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white h-[42px] px-6 rounded-lg font-bold text-sm shadow-md flex items-center justify-center transition w-full md:w-auto">
+            Tampilkan
         </button>
-      </div>
     </form>
   </div>
 
-  <div id="loadingVa" class="hidden flex items-center gap-2 text-sm text-gray-600 mb-2">
-    <svg class="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24">
-      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-    </svg>
-    <span>Memuat data transaksi VA...</span>
-  </div>
-
-  <div id="vaScroller" class="flex-1 min-h-0 overflow-hidden rounded border border-gray-200 bg-white flex flex-col">
-    <div id="vaScrollerInner" class="h-full overflow-auto scroll-smooth">
-      
-      <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 bg-gray-50 border-b border-gray-200 sticky-chart">
-         <div class="bg-white p-3 rounded shadow-sm border h-60">
-             <canvas id="chartAmount"></canvas>
-         </div>
-         <div class="bg-white p-3 rounded shadow-sm border h-60">
-             <canvas id="chartTrx"></canvas>
-         </div>
+  <!-- ================= CHART SECTION ================= -->
+  <div class="grid grid-cols-1 xl:grid-cols-2 gap-5">
+      <div class="bg-white rounded-xl border border-slate-200 p-5 card-shadow relative" style="min-height: 350px;">
+          <div id="loadChartNom" class="local-loader hidden rounded-xl"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
+          <h2 class="font-bold text-slate-800 text-sm mb-2">Tren Nominal VA (Mandiri vs Permata)</h2>
+          <div id="chartNominal" class="w-full"></div>
       </div>
-
-      <table id="tabelVa" class="min-w-full text-sm text-left text-gray-700 border-collapse">
-        <thead class="uppercase text-xs font-semibold text-gray-600">
-          
-          <tr id="vaHead1">
-            <th class="px-4 py-2 sticky-rlz freeze-1 col1 bg-gray-100 border-r z-[51]" rowspan="2">NO</th>
-            <th class="px-4 py-2 sticky-rlz freeze-2 col2 bg-gray-100 border-r z-[50]" rowspan="2">BULAN</th>
-            
-            <th class="px-4 py-2 sticky-rlz text-center bg-blue-50 text-blue-800 border-b border-r" colspan="2">BANK MANDIRI</th>
-            <th class="px-4 py-2 sticky-rlz text-center bg-orange-50 text-orange-800 border-b border-r" colspan="2">BANK PERMATA</th>
-            <th class="px-4 py-2 sticky-rlz text-center bg-gray-200 text-gray-800 border-b" colspan="2">TOTAL</th>
-          </tr>
-
-          <tr id="vaHead2">
-             <th class="px-4 py-2 sticky-rlz top-2 bg-blue-50 text-right border-r text-blue-800">AMOUNT</th>
-             <th class="px-4 py-2 sticky-rlz top-2 bg-blue-50 text-right border-r text-blue-800">TRX</th>
-             
-             <th class="px-4 py-2 sticky-rlz top-2 bg-orange-50 text-right border-r text-orange-800">AMOUNT</th>
-             <th class="px-4 py-2 sticky-rlz top-2 bg-orange-50 text-right border-r text-orange-800">TRX</th>
-             
-             <th class="px-4 py-2 sticky-rlz top-2 bg-gray-200 text-right border-r text-gray-800">AMOUNT</th>
-             <th class="px-4 py-2 sticky-rlz top-2 bg-gray-200 text-right text-gray-800">TRX</th>
-          </tr>
-
-        </thead>
-        <tbody class="divide-y divide-gray-100 bg-white">
-            </tbody>
-        
-        <tfoot class="sticky-footer bg-gray-100 font-bold text-gray-800 shadow-inner">
-             </tfoot>
-      </table>
-
-    </div>
+      <div class="bg-white rounded-xl border border-slate-200 p-5 card-shadow relative" style="min-height: 350px;">
+          <div id="loadChartTrx" class="local-loader hidden rounded-xl"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
+          <h2 class="font-bold text-slate-800 text-sm mb-2">Tren Transaksi VA (Mandiri vs Permata)</h2>
+          <div id="chartTrx" class="w-full"></div>
+      </div>
   </div>
+
+  <!-- ================= MONTHLY TABLE ================= -->
+  <div class="bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden card-shadow relative min-h-[200px]">
+      <div id="loadMonthly" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
+      <div class="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+          <h2 class="text-base font-black text-slate-800">Breakdown Bulanan - Mandiri vs Permata</h2>
+          <span class="text-[10px] font-bold text-slate-400" id="lblTahun"></span>
+      </div>
+      <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
+          <table class="w-full text-left">
+              <thead class="sticky top-0 z-10">
+                  <tr>
+                      <th class="w-[40px] text-center pl-2">NO</th>
+                      <th class="w-[120px] pl-4">BULAN</th>
+                      <th class="text-right text-blue-700" style="background:#eff6ff;">MANDIRI (NOM)</th>
+                      <th class="text-right text-blue-700" style="background:#eff6ff;">MANDIRI (TRX)</th>
+                      <th class="text-right text-orange-700" style="background:#fff7ed;">PERMATA (NOM)</th>
+                      <th class="text-right text-orange-700" style="background:#fff7ed;">PERMATA (TRX)</th>
+                      <th class="text-right font-black">TOTAL (NOM)</th>
+                      <th class="text-right font-black pr-4">TOTAL (TRX)</th>
+                  </tr>
+              </thead>
+              <tbody id="bodyMonthly" class="divide-y divide-slate-100"></tbody>
+              <tfoot class="bg-slate-50 font-black border-t-2 border-slate-300">
+                  <tr id="footerMonthly"></tr>
+              </tfoot>
+          </table>
+      </div>
+  </div>
+
+  <!-- ================= BREAKDOWN PER CABANG ================= -->
+  <div class="bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden card-shadow relative min-h-[200px]">
+      <div id="loadBreakdown" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
+      <div class="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+          <h2 class="text-base font-black text-slate-800">Breakdown Transaksi VA per Area</h2>
+      </div>
+      <div class="overflow-x-auto custom-scrollbar max-h-[500px]">
+          <table class="w-full text-left">
+              <thead class="sticky top-0 z-10">
+                  <tr>
+                      <th class="w-[250px] pl-4">NAMA AREA</th>
+                      <th class="text-right">NOMINAL BULAN INI</th>
+                      <th class="text-right">NOMINAL LALU</th>
+                      <th class="text-center w-[100px]">GROWTH (RP)</th>
+                      <th class="text-right">TRX BULAN INI</th>
+                      <th class="text-right">TRX LALU</th>
+                      <th class="text-center w-[100px] pr-4">GROWTH (TRX)</th>
+                  </tr>
+              </thead>
+              <tbody id="bodyBreakdown" class="divide-y divide-slate-100"></tbody>
+          </table>
+      </div>
+  </div>
+
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<style>
-  /* ===== CSS COPY DARI REALISASI KREDIT (Modified for VA) ===== */
-  .inp{ border:1px solid #cbd5e1; border-radius:.6rem; padding:.4rem .75rem; font-size:13px; background:#fff; }
-  .lbl{ font-size:11px; color:#64748b; font-weight: 600; margin-bottom: 2px; }
-  .btn-icon{ width:38px; height:38px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; background:#2563eb; color:#fff; cursor:pointer; border:none; transition:0.2s; }
-  .btn-icon:hover{ background:#1e40af; }
-
-  /* Responsive */
-  .hdr{ row-gap:.5rem; align-items: flex-end; }
-  @media (max-width:640px){
-    .hdr{ flex-direction:column; align-items:flex-start; }
-    #filterVa{ width:100%; justify-content: space-between; }
-    .inp{ width: 100%; }
-  }
-
-  /* ===== FREEZE & STICKY LOGIC ===== */
-  #vaScroller{ --va_col1:3.5rem; --va_col2:8rem; } /* Lebar No & Bulan */
-
-  #tabelVa .col1{ width:var(--va_col1); min-width:var(--va_col1); text-align:center; }
-  #tabelVa .col2{ width:var(--va_col2); min-width:var(--va_col2); }
-
-  /* Freeze Columns (Left) */
-  #tabelVa .freeze-1{ position:sticky; left:0; z-index:41; background:inherit; border-right:1px solid #e2e8f0; }
-  #tabelVa .freeze-2{ position:sticky; left:var(--va_col1); z-index:40; background:inherit; border-right:1px solid #e2e8f0; box-shadow:2px 0 5px -2px rgba(0,0,0,0.1); }
-
-  /* Sticky Header (Top) */
-  #tabelVa thead th.sticky-rlz { position:sticky; top:0; z-index:45; }
-  
-  /* Fix Layering Header vs Freeze Column */
-  #tabelVa thead th.freeze-1 { z-index:51 !important; }
-  #tabelVa thead th.freeze-2 { z-index:50 !important; }
-
-  /* Sticky Footer (Bottom) */
-  #tabelVa tfoot td { position:sticky; bottom:0; z-index:45; background:#f1f5f9; padding: 0.75rem 1rem; border-top: 2px solid #e2e8f0; }
-  #tabelVa tfoot td.freeze-1 { z-index:51; left:0; }
-  #tabelVa tfoot td.freeze-2 { z-index:50; left:var(--va_col1); }
-
-  /* Row Styling */
-  #tabelVa tbody tr:nth-child(even) { background-color: #f8fafc; }
-  #tabelVa tbody tr:nth-child(odd) { background-color: #ffffff; }
-  #tabelVa tbody tr:hover td { background-color: #eff6ff !important; }
-
-  /* Chart Container Fix */
-  /* Agar chart tidak ketutup sticky header saat scroll awal, chart ikut scroll normal */
-</style>
-
 <script>
-  /* ===== UTILS ===== */
-  const fmtNum = n => new Intl.NumberFormat("id-ID").format(+n||0);
+  const API_URL = './api/transaksi/';
+  const API_KODE = './api/kode/';
+  const API_DATE = './api/date/';
 
-  /* ===== DUMMY DATA ===== */
-  const dummyVaData = [
-      { no:1, bulan:"Januari",   m_amt:10859, m_trx:3549, p_amt:494, p_trx:201 },
-      { no:2, bulan:"Februari",  m_amt:10946, m_trx:3712, p_amt:397, p_trx:159 },
-      { no:3, bulan:"Maret",     m_amt:12930, m_trx:4061, p_amt:578, p_trx:239 },
-      { no:4, bulan:"April",     m_amt:11408, m_trx:4079, p_amt:606, p_trx:201 },
-      { no:5, bulan:"Mei",       m_amt:12861, m_trx:4556, p_amt:542, p_trx:223 },
-      { no:6, bulan:"Juni",      m_amt:6574,  m_trx:1702, p_amt:411, p_trx:115 },
-      { no:7, bulan:"Juli",      m_amt:16984, m_trx:5327, p_amt:1492, p_trx:278 },
-      { no:8, bulan:"Agustus",   m_amt:14793, m_trx:5320, p_amt:459, p_trx:264 },
-      { no:9, bulan:"September", m_amt:14966, m_trx:5616, p_amt:456, p_trx:257 },
-      { no:10,bulan:"Oktober",   m_amt:19014, m_trx:6009, p_amt:513, p_trx:277 },
-      { no:11,bulan:"November",  m_amt:18417, m_trx:6198, p_amt:951, p_trx:296 },
-      { no:12,bulan:"Desember",  m_amt:21871, m_trx:6729, p_amt:475, p_trx:258 },
-  ];
+  const nf = new Intl.NumberFormat('id-ID');
+  const fmt = n => nf.format(Number(n||0));
 
-  /* ===== INIT ===== */
-  document.addEventListener("DOMContentLoaded", () => {
-    // 1. Set Default Date
-    const today = new Date();
-    const firstDay = new Date(today.getFullYear(), 0, 1); // Jan 1st
-    document.getElementById("akhir_date_va").value = today.toISOString().split('T')[0];
-    document.getElementById("awal_date_va").value = firstDay.toISOString().split('T')[0];
+  let chartNomObj = null;
+  let chartTrxObj = null;
 
-    // 2. Load Data
-    handleFilterVa();
+  const showLoad = (id) => document.getElementById(id)?.classList.remove('hidden');
+  const hideLoad = (id) => document.getElementById(id)?.classList.add('hidden');
+
+  async function getLastHarianData() {
+      try { const r = await fetch(API_DATE); const j = await r.json(); return j.data || null; } 
+      catch { return null; }
+  }
+
+  window.addEventListener('DOMContentLoaded', async () => {
+    const user = (window.getUser && window.getUser()) || null;
+    let uKode = user?.kode ? String(user.kode).padStart(3,'0') : '000';
+    if(uKode === '099') uKode = '000';
+
+    if (uKode === '000') {
+        await loadCabangList();
+        document.getElementById('opt_area').value = "KONSOLIDASI";
+    } else {
+        document.getElementById('opt_area').innerHTML = `<option value="${uKode}">CABANG ${uKode}</option>`;
+        document.getElementById('opt_area').disabled = true;
+    }
+
+    const dateData = await getLastHarianData();
+    let hDate = new Date();
+    
+    if (dateData && dateData.last_created) {
+        hDate = new Date(dateData.last_created);
+        document.getElementById('harian_date').value = dateData.last_created;
+    } else {
+        document.getElementById('harian_date').value = hDate.toISOString().split('T')[0];
+    }
+    
+    if (dateData && dateData.closing_date) {
+        document.getElementById('closing_date').value = dateData.closing_date;
+    } else {
+        let pDate = new Date(hDate.getFullYear(), hDate.getMonth(), 0);
+        let dd = String(pDate.getDate()).padStart(2, '0');
+        let mm = String(pDate.getMonth() + 1).padStart(2, '0');
+        let yyyy = pDate.getFullYear();
+        document.getElementById('closing_date').value = `${yyyy}-${mm}-${dd}`;
+    }
+
+    initCharts();
+    runFullSync();
   });
 
-  document.getElementById("formFilterVa").addEventListener("submit", (e)=>{
+  async function loadCabangList() {
+    try {
+        const res = await fetch(API_KODE, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_kantor'}) });
+        const json = await res.json();
+        let html = '';
+        (json.data || []).filter(x => x.kode_kantor && x.kode_kantor !== '000').sort((a,b) => a.kode_kantor.localeCompare(b.kode_kantor)).forEach(it => {
+            html += `<option value="${String(it.kode_kantor).padStart(3,'0')}" class="text-slate-700">${String(it.kode_kantor).padStart(3,'0')} - ${it.nama_kantor}</option>`;
+        });
+        document.getElementById('opt_cabang_list').innerHTML = html;
+    } catch(e){}
+  }
+
+  function parseAreaValue() {
+      const val = document.getElementById('opt_area').value;
+      let kode_kantor = ""; let korwil = "";
+      if (val.startsWith('KORWIL_')) { korwil = val.replace('KORWIL_', ''); }
+      else if (val !== 'KONSOLIDASI') { kode_kantor = val; }
+      return { kode_kantor, korwil };
+  }
+
+  document.getElementById('formFilterGlobal').addEventListener('submit', e => {
       e.preventDefault();
-      handleFilterVa();
+      runFullSync();
   });
 
-  function handleFilterVa(){
-      const loading = document.getElementById("loadingVa");
-      loading.classList.remove("hidden");
-
-      // Simulasi delay filter
-      setTimeout(()=>{
-          // Di sini nanti logika filter tanggal/cabang asli
-          renderVaTable(dummyVaData);
-          renderVaCharts(dummyVaData);
-          loading.classList.add("hidden");
-      }, 500);
+  async function runFullSync() {
+      fetchMonthlyData();
+      fetchBreakdown();
   }
 
-  /* ===== RENDER TABLE ===== */
-  function renderVaTable(data) {
-      const tbody = document.querySelector("#tabelVa tbody");
-      const tfoot = document.querySelector("#tabelVa tfoot");
-      tbody.innerHTML = ""; tfoot.innerHTML = "";
-
-      let t_m_amt=0, t_m_trx=0, t_p_amt=0, t_p_trx=0, t_g_amt=0, t_g_trx=0;
-
-      data.forEach(row => {
-          const tot_amt = row.m_amt + row.p_amt;
-          const tot_trx = row.m_trx + row.p_trx;
-
-          t_m_amt += row.m_amt; t_m_trx += row.m_trx;
-          t_p_amt += row.p_amt; t_p_trx += row.p_trx;
-          t_g_amt += tot_amt;   t_g_trx += tot_trx;
-
-          const tr = `
-            <tr class="transition">
-                <td class="px-4 py-3 freeze-1 col1 text-gray-500 font-mono border-r">${row.no}</td>
-                <td class="px-4 py-3 freeze-2 col2 font-medium text-gray-800 border-r">${row.bulan}</td>
-                
-                <td class="px-4 py-3 text-right font-mono text-blue-700">${fmtNum(row.m_amt)}</td>
-                <td class="px-4 py-3 text-right font-mono text-blue-600 border-r bg-blue-50/10">${fmtNum(row.m_trx)}</td>
-                
-                <td class="px-4 py-3 text-right font-mono text-orange-700">${fmtNum(row.p_amt)}</td>
-                <td class="px-4 py-3 text-right font-mono text-orange-600 border-r bg-orange-50/10">${fmtNum(row.p_trx)}</td>
-                
-                <td class="px-4 py-3 text-right font-bold text-gray-800 bg-gray-50">${fmtNum(tot_amt)}</td>
-                <td class="px-4 py-3 text-right font-bold text-gray-800 bg-gray-50">${fmtNum(tot_trx)}</td>
-            </tr>
-          `;
-          tbody.insertAdjacentHTML('beforeend', tr);
+  // ==========================================
+  // INIT CHARTS
+  // ==========================================
+  function initCharts() {
+      chartNomObj = new ApexCharts(document.querySelector("#chartNominal"), {
+          series: [],
+          chart: { type: 'area', height: 280, toolbar: { show: false } },
+          colors: ['#2563eb', '#f97316'],
+          dataLabels: { enabled: false },
+          stroke: { curve: 'smooth', width: 3 },
+          fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05, stops: [0, 100] } },
+          xaxis: { categories: [], labels: { style: { fontSize: '10px' } } },
+          yaxis: { labels: { formatter: (val) => val >= 1000000000 ? (val/1000000000).toFixed(1)+' M' : (val >= 1000000 ? (val/1000000).toFixed(0)+' Jt' : nf.format(val)) } },
+          legend: { position: 'top', fontSize: '12px', fontWeight: 700 },
+          tooltip: { y: { formatter: (val) => 'Rp ' + nf.format(val) } }
       });
+      chartNomObj.render();
 
-      // Render Footer (Sticky)
-      tfoot.innerHTML = `
-        <tr>
-            <td class="freeze-1 col1 border-r text-center">ALL</td>
-            <td class="freeze-2 col2 border-r">GRAND TOTAL</td>
-            <td class="text-right text-blue-800">${fmtNum(t_m_amt)}</td>
-            <td class="text-right text-blue-800 border-r">${fmtNum(t_m_trx)}</td>
-            <td class="text-right text-orange-800">${fmtNum(t_p_amt)}</td>
-            <td class="text-right text-orange-800 border-r">${fmtNum(t_p_trx)}</td>
-            <td class="text-right text-gray-900 bg-gray-200">${fmtNum(t_g_amt)}</td>
-            <td class="text-right text-gray-900 bg-gray-200">${fmtNum(t_g_trx)}</td>
-        </tr>
-      `;
-
-      // Kalkulasi tinggi header row 2 agar sticky pas
-      adjustStickyHeaders();
+      chartTrxObj = new ApexCharts(document.querySelector("#chartTrx"), {
+          series: [],
+          chart: { type: 'bar', height: 280, toolbar: { show: false } },
+          colors: ['#2563eb', '#f97316'],
+          plotOptions: { bar: { borderRadius: 4, columnWidth: '55%' } },
+          dataLabels: { enabled: false },
+          stroke: { show: true, width: 2, colors: ['transparent'] },
+          xaxis: { categories: [], labels: { style: { fontSize: '10px' } } },
+          yaxis: { labels: { formatter: (val) => nf.format(val) } },
+          fill: { opacity: 1 },
+          legend: { position: 'top', fontSize: '12px', fontWeight: 700 },
+          tooltip: { y: { formatter: (val) => nf.format(val) + ' Trx' } }
+      });
+      chartTrxObj.render();
   }
 
-  function adjustStickyHeaders(){
-      const row1Height = document.getElementById('vaHead1').offsetHeight;
-      const thsRow2 = document.querySelectorAll('#vaHead2 th');
-      thsRow2.forEach(th => {
-          th.style.top = row1Height + 'px';
-      });
+  // ==========================================
+  // FETCH MONTHLY VA DATA (MANDIRI VS PERMATA)
+  // ==========================================
+  async function fetchMonthlyData() {
+      showLoad('loadMonthly');
+      showLoad('loadChartNom');
+      showLoad('loadChartTrx');
+      const area = parseAreaValue();
+      const payload = {
+          type: 'va_detail_mandiri_permata',
+          harian_date: document.getElementById('harian_date').value,
+          closing_date: document.getElementById('closing_date').value,
+          kode_kantor: area.kode_kantor,
+          korwil: area.korwil
+      };
+
+      try {
+          const res = await fetch(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          const j = await res.json();
+
+          if (j.status === 200 && j.data) {
+              const data = j.data;
+
+              if (data.meta) {
+                  document.getElementById('lbl_periode_aktif').innerHTML = `Tahun: <span class="text-blue-700 font-bold">${data.meta.tahun}</span> | Filter: <span class="text-blue-700 font-bold">${data.meta.filter}</span>`;
+                  document.getElementById('lblTahun').textContent = 'Tahun ' + data.meta.tahun;
+              }
+
+              // Render table
+              const tbody = document.getElementById('bodyMonthly');
+              const tfoot = document.getElementById('footerMonthly');
+              tbody.innerHTML = '';
+
+              data.monthly.forEach((row, idx) => {
+                  const totalNom = row.mandiri_nom + row.permata_nom;
+                  const totalTrx = row.mandiri_trx + row.permata_trx;
+                  tbody.innerHTML += `
+                      <tr>
+                          <td class="text-center text-slate-400 pl-2">${idx + 1}</td>
+                          <td class="pl-4 font-bold text-slate-700">${row.bulan}</td>
+                          <td class="text-right text-blue-700">${fmt(row.mandiri_nom)}</td>
+                          <td class="text-right text-blue-600">${fmt(row.mandiri_trx)}</td>
+                          <td class="text-right text-orange-700">${fmt(row.permata_nom)}</td>
+                          <td class="text-right text-orange-600">${fmt(row.permata_trx)}</td>
+                          <td class="text-right font-black text-slate-800">${fmt(totalNom)}</td>
+                          <td class="text-right font-black text-slate-800 pr-4">${fmt(totalTrx)}</td>
+                      </tr>`;
+              });
+
+              const t = data.total;
+              const grandNom = t.mandiri_nom + t.permata_nom;
+              const grandTrx = t.mandiri_trx + t.permata_trx;
+              tfoot.innerHTML = `
+                  <td class="text-center pl-2">-</td>
+                  <td class="pl-4">TOTAL</td>
+                  <td class="text-right text-blue-800">${fmt(t.mandiri_nom)}</td>
+                  <td class="text-right text-blue-800">${fmt(t.mandiri_trx)}</td>
+                  <td class="text-right text-orange-800">${fmt(t.permata_nom)}</td>
+                  <td class="text-right text-orange-800">${fmt(t.permata_trx)}</td>
+                  <td class="text-right">${fmt(grandNom)}</td>
+                  <td class="text-right pr-4">${fmt(grandTrx)}</td>`;
+
+              // Update Charts
+              const labels = data.monthly.map(r => r.bulan.substring(0, 3));
+              chartNomObj.updateOptions({ xaxis: { categories: labels } });
+              chartNomObj.updateSeries([
+                  { name: 'Mandiri', data: data.monthly.map(r => r.mandiri_nom) },
+                  { name: 'Permata', data: data.monthly.map(r => r.permata_nom) }
+              ]);
+
+              chartTrxObj.updateOptions({ xaxis: { categories: labels } });
+              chartTrxObj.updateSeries([
+                  { name: 'Mandiri', data: data.monthly.map(r => r.mandiri_trx) },
+                  { name: 'Permata', data: data.monthly.map(r => r.permata_trx) }
+              ]);
+          } else {
+              document.getElementById('bodyMonthly').innerHTML = '<tr><td colspan="8" class="text-center py-6 text-slate-400">Data tidak tersedia.</td></tr>';
+              document.getElementById('footerMonthly').innerHTML = '';
+          }
+      } catch(e) {
+          document.getElementById('bodyMonthly').innerHTML = '<tr><td colspan="8" class="text-center py-6 text-red-500">Gagal memuat data.</td></tr>';
+      } finally {
+          hideLoad('loadMonthly');
+          hideLoad('loadChartNom');
+          hideLoad('loadChartTrx');
+      }
   }
-  window.addEventListener('resize', adjustStickyHeaders);
 
-  /* ===== RENDER CHARTS ===== */
-  let chart1 = null, chart2 = null;
-  function renderVaCharts(data){
-      const ctx1 = document.getElementById('chartAmount');
-      const ctx2 = document.getElementById('chartTrx');
-      const labels = data.map(d => d.bulan);
+  // ==========================================
+  // BREAKDOWN PER CABANG
+  // ==========================================
+  async function fetchBreakdown() {
+      showLoad('loadBreakdown');
+      const area = parseAreaValue();
+      const payload = {
+          type: 'detail_breakdown_transaksi',
+          harian_date: document.getElementById('harian_date').value,
+          closing_date: document.getElementById('closing_date').value,
+          kode_kantor: area.kode_kantor,
+          korwil: area.korwil,
+          channel: 'VA'
+      };
 
-      const cfg = (lbl, color) => ({
-        label: lbl, borderColor: color, backgroundColor: color,
-        tension: 0.3, pointRadius: 3, borderWidth: 2
-      });
+      try {
+          const res = await fetch(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          const j = await res.json();
+          const tbody = document.getElementById('bodyBreakdown');
+          tbody.innerHTML = '';
 
-      // Chart Amount
-      if(chart1) chart1.destroy();
-      chart1 = new Chart(ctx1, {
-          type: 'line',
-          data: {
-              labels,
-              datasets: [
-                  { ...cfg('Mandiri', '#2563eb'), data: data.map(d=>d.m_amt) },
-                  { ...cfg('Permata', '#f97316'), data: data.map(d=>d.p_amt) }
-              ]
-          },
-          options: { responsive:true, maintainAspectRatio:false, plugins:{ title:{ display:true, text:'Tren Nominal (Juta)' } } }
-      });
+          if(j.status !== 200 || !j.data || !j.data.data.length) {
+              tbody.innerHTML = '<tr><td colspan="7" class="text-center py-6">Data kosong.</td></tr>';
+              hideLoad('loadBreakdown');
+              return;
+          }
 
-      // Chart Trx
-      if(chart2) chart2.destroy();
-      chart2 = new Chart(ctx2, {
-          type: 'bar',
-          data: {
-              labels,
-              datasets: [
-                  { ...cfg('Mandiri', '#2563eb'), data: data.map(d=>d.m_trx), backgroundColor:'#93c5fd' },
-                  { ...cfg('Permata', '#f97316'), data: data.map(d=>d.p_trx), backgroundColor:'#fdba74' }
-              ]
-          },
-          options: { responsive:true, maintainAspectRatio:false, plugins:{ title:{ display:true, text:'Tren Transaksi (Trx)' } } }
-      });
+          const rHtml = (nama, cN, pN, gN, cT, pT, gT, isBold, isChild) => {
+              const bg = isBold ? 'bg-slate-50 font-bold' : (isChild ? 'text-slate-600 bg-slate-50/20' : 'font-bold text-slate-700');
+              const pad = isChild ? 'pl-10 relative before:absolute before:w-3 before:h-px before:bg-slate-300 before:left-5 before:top-1/2' : 'pl-4';
+              const c_gN = gN > 0 ? `<span class="text-emerald-600">\u25B2 ${gN}%</span>` : (gN < 0 ? `<span class="text-red-600">\u25BC ${Math.abs(gN)}%</span>` : '-');
+              const c_gT = gT > 0 ? `<span class="text-emerald-600">\u25B2 ${gT}%</span>` : (gT < 0 ? `<span class="text-red-600">\u25BC ${Math.abs(gT)}%</span>` : '-');
+              return `<tr class="${bg}"><td class="${pad}">${nama}</td><td class="text-right text-blue-700">${fmt(cN)}</td><td class="text-right text-[10px] text-slate-400">${fmt(pN)}</td><td class="text-center text-[11px] font-bold bg-slate-50/50">${c_gN}</td><td class="text-right text-indigo-700">${fmt(cT)}</td><td class="text-right text-[10px] text-slate-400">${fmt(pT)}</td><td class="text-center text-[11px] font-bold bg-slate-50/50 pr-4">${c_gT}</td></tr>`;
+          };
+
+          const gt = j.data.grand_total;
+          tbody.innerHTML += rHtml('GRAND TOTAL', gt.curr_nom, gt.prev_nom, gt.growth_nom, gt.curr_trx, gt.prev_trx, gt.growth_trx, true, false);
+
+          const dt = j.data.data;
+          const optAreaVal = document.getElementById('opt_area').value;
+          const isKonsolidasi = optAreaVal === 'KONSOLIDASI';
+          const isSpecificKorwil = optAreaVal.startsWith('KORWIL_');
+
+          if (isKonsolidasi) {
+              dt.forEach(kw => {
+                  tbody.innerHTML += rHtml(kw.korwil, kw.curr_nom, kw.prev_nom, kw.growth_nom, kw.curr_trx, kw.prev_trx, kw.growth_trx, false, false);
+              });
+          } else if (isSpecificKorwil) {
+              dt.forEach(kw => {
+                  (kw.cabang || []).forEach(cb => {
+                      tbody.innerHTML += rHtml(cb.nama, cb.curr_nom, cb.prev_nom, cb.growth_nom, cb.curr_trx, cb.prev_trx, cb.growth_trx, false, true);
+                  });
+              });
+          } else {
+              dt.forEach(kk => {
+                  tbody.innerHTML += rHtml(kk.nama, kk.curr_nom, kk.prev_nom, kk.growth_nom, kk.curr_trx, kk.prev_trx, kk.growth_trx, false, false);
+              });
+          }
+      } catch(e) {
+          document.getElementById('bodyBreakdown').innerHTML = '<tr><td colspan="7" class="text-center py-6 text-red-500">Gagal memuat data breakdown.</td></tr>';
+      } finally {
+          hideLoad('loadBreakdown');
+      }
   }
 </script>

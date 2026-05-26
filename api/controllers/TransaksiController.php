@@ -1663,4 +1663,127 @@ class TransaksiController {
     }
 
 
+    /**
+     * VA Detail Mandiri vs Permata - Monthly Breakdown
+     */
+    public function getVaDetailMandiriPermata($input = null) {
+        set_time_limit(300);
+        ini_set('memory_limit', '512M');
+
+        $b = is_array($input) ? $input : [];
+        $harian = $b['harian_date'] ?? date('Y-m-d');
+        $closing_date = !empty($b['closing_date']) ? $b['closing_date'] : null;
+        $kode_kantor = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+        $korwil = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
+
+        // Determine year from harian_date
+        $year = date('Y', strtotime($harian));
+
+        // Build filter
+        $sqlFilter = "";
+        $params = [':year' => $year];
+
+        if ($kode_kantor && $kode_kantor !== '000') {
+            $sqlFilter .= " AND t.kantor = :kode_kantor ";
+            $params[':kode_kantor'] = $kode_kantor;
+        } elseif ($korwil) {
+            $kw_start = null; $kw_end = null;
+            switch ($korwil) {
+                case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
+                case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
+                case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
+                case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
+            }
+            if ($kw_start && $kw_end) {
+                $sqlFilter .= " AND t.kantor BETWEEN :kw_start AND :kw_end ";
+                $params[':kw_start'] = $kw_start;
+                $params[':kw_end'] = $kw_end;
+            }
+        }
+
+        try {
+            $sql = "
+                SELECT 
+                    MONTH(t.tgl_transaksi) as bulan,
+                    SUM(CASE WHEN t.norek_aba LIKE '%0001000001' THEN t.jumlah ELSE 0 END) as mandiri_nom,
+                    SUM(CASE WHEN t.norek_aba LIKE '%0001000001' THEN 1 ELSE 0 END) as mandiri_trx,
+                    SUM(CASE WHEN t.norek_aba LIKE '%0001000004' THEN t.jumlah ELSE 0 END) as permata_nom,
+                    SUM(CASE WHEN t.norek_aba LIKE '%0001000004' THEN 1 ELSE 0 END) as permata_trx
+                FROM va t
+                WHERE TRIM(t.kode_transaksi) = '320'
+                    AND YEAR(t.tgl_transaksi) = :year
+                    $sqlFilter
+                GROUP BY MONTH(t.tgl_transaksi)
+                ORDER BY bulan ASC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => $val) {
+                $stmt->bindValue($key, $val);
+            }
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $bulanNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+            $monthly = [];
+            $totalMandiriNom = 0;
+            $totalMandiriTrx = 0;
+            $totalPermataNom = 0;
+            $totalPermataTrx = 0;
+
+            // Map fetched data by month
+            $dataMap = [];
+            foreach ($rows as $r) {
+                $dataMap[(int)$r['bulan']] = $r;
+            }
+
+            for ($m = 1; $m <= 12; $m++) {
+                $mNom = isset($dataMap[$m]) ? (float)$dataMap[$m]['mandiri_nom'] : 0;
+                $mTrx = isset($dataMap[$m]) ? (int)$dataMap[$m]['mandiri_trx'] : 0;
+                $pNom = isset($dataMap[$m]) ? (float)$dataMap[$m]['permata_nom'] : 0;
+                $pTrx = isset($dataMap[$m]) ? (int)$dataMap[$m]['permata_trx'] : 0;
+
+                $totalMandiriNom += $mNom;
+                $totalMandiriTrx += $mTrx;
+                $totalPermataNom += $pNom;
+                $totalPermataTrx += $pTrx;
+
+                $monthly[] = [
+                    'bulan' => $bulanNames[$m - 1],
+                    'mandiri_nom' => $mNom,
+                    'mandiri_trx' => $mTrx,
+                    'permata_nom' => $pNom,
+                    'permata_trx' => $pTrx
+                ];
+            }
+
+            $filterLabel = 'Konsolidasi';
+            if ($kode_kantor && $kode_kantor !== '000') {
+                $filterLabel = 'Cabang ' . $kode_kantor;
+            } elseif ($korwil) {
+                $filterLabel = 'Korwil ' . ucfirst(strtolower($korwil));
+            }
+
+            return sendResponse(200, "Berhasil", [
+                'meta' => [
+                    'tahun' => $year,
+                    'harian_date' => $harian,
+                    'filter' => $filterLabel
+                ],
+                'monthly' => $monthly,
+                'total' => [
+                    'mandiri_nom' => $totalMandiriNom,
+                    'mandiri_trx' => $totalMandiriTrx,
+                    'permata_nom' => $totalPermataNom,
+                    'permata_trx' => $totalPermataTrx
+                ]
+            ]);
+
+        } catch (PDOException $e) {
+            return sendResponse(500, "PDO Error: " . $e->getMessage(), null);
+        }
+    }
+
+
 }
