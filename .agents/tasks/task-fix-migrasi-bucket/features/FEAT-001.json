@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "fix",
   "description": "Fix getMigrasiBucketDetail to support konsolidasi mode (kode_kantor is null/empty/000) and enable the frontend detail links for konsolidasi with pagination of 20 items. Also add SC/FE/BE breakdown to movement_summary, and fix the run_off calculation in migrasiBucketOsc.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "BACKEND - Fix getMigrasiBucketDetailActual in api/controllers/KolekController.php: Remove the check that returns 400 when kc is null. When kc is null, remove the kode_cabang filter from the SQL queries (both for closing 'c' and harian 'h' tables), keeping only the existing pattern 'kode_cabang <> 000'. Add pagination support: accept 'page' and 'per_page' (default 20) from input, add LIMIT/OFFSET to the query, and return total_count in the response alongside the data array.",
     "BACKEND - Fix getMigrasiBucketDetailOLunas in api/controllers/KolekController.php: Same pattern - remove the 400 error when kc is null, adjust SQL to not filter by kode_cabang when null (but exclude '000'), add pagination (page/per_page with default 20).",
@@ -32,5 +32,5 @@
     "php -l /projects/sandbox/monbis/pages/migrasi_bucket.php"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All changes implemented and validated with php -l. The attachCkpnAndCast method was modified to accept optional $meta array parameter for pagination metadata. When meta is provided, data is returned as {rows: [...], total_count: N, page: N, per_page: N}. Frontend handles both legacy array response and new paginated object response gracefully."
 }
