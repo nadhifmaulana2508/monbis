@@ -979,9 +979,14 @@ class TransaksiController {
             $closing_date = date('Y-m-t', strtotime(date('Y-m-01', $ts_harian) . ' -1 day'));
         }
 
-        // Previous Year: subtract 1 year from both dates
-        $prev_harian  = date('Y-m-d', strtotime('-1 year', strtotime($harian)));
-        $prev_closing = date('Y-m-d', strtotime('-1 year', strtotime($closing_date)));
+        // Previous Year: subtract 1 year from both dates (DateTime handles leap year correctly)
+        $dtPrevHarian = new DateTime($harian);
+        $dtPrevHarian->modify('-1 year');
+        $prev_harian = $dtPrevHarian->format('Y-m-d');
+
+        $dtPrevClosing = new DateTime($closing_date);
+        $dtPrevClosing->modify('-1 year');
+        $prev_closing = $dtPrevClosing->format('Y-m-d');
 
         // --- 2. BUILD FILTER QUERY & AMAN DARI HY093 ---
         $sqlFilter = "";
@@ -1223,7 +1228,7 @@ class TransaksiController {
 
         } catch (PDOException $e) {
             error_log("Error YOY Transaksi: " . $e->getMessage());
-            return sendResponse(500, "PDO Error: " . $e->getMessage(), null);
+            return sendResponse(500, "Terjadi kesalahan server.", null);
         }
     }
 

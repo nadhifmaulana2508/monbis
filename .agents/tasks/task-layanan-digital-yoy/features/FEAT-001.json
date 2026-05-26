@@ -27,5 +27,5 @@
     "grep -n 'fetchYoy' /projects/sandbox/monbis/pages/layanan_digital.php"
   ],
   "blocked_reason": null,
-  "findings": "All PHP syntax checks pass. The YOY method follows the exact same subquery pattern as getDetailBreakdownTransaksi() to avoid PDO HY093 errors. Chart data is structured as grouped bar with 'Tahun Ini' and 'Tahun Lalu' series."
+  "findings": "All PHP syntax checks pass. The YOY method follows the exact same subquery pattern as getDetailBreakdownTransaksi() to avoid PDO HY093 errors. Chart data is structured as grouped bar with 'Tahun Ini' and 'Tahun Lalu' series. Review fixes applied: leap-year date handling via DateTime, PDO error message hidden from client, silent catch block now shows error message, KORWIL view cabang rows now have child indentation."
 }

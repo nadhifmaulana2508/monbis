@@ -581,11 +581,12 @@
           const isKonsolidasi = optAreaVal === 'KONSOLIDASI';
           const isSpecificKorwil = optAreaVal.startsWith('KORWIL_');
 
-          const rYoy = (nama, cN, pN, gN, cT, pT, gT, isBold=false) => {
-              const bg = isBold ? 'bg-slate-50 font-bold' : 'font-bold text-slate-700';
+          const rYoy = (nama, cN, pN, gN, cT, pT, gT, isBold=false, isChild=false) => {
+              const bg = isBold ? 'bg-slate-50 font-bold' : (isChild ? 'text-slate-600 bg-slate-50/20' : 'font-bold text-slate-700');
+              const pad = isChild ? 'pl-10 relative before:absolute before:w-3 before:h-px before:bg-slate-300 before:left-5 before:top-1/2' : 'pl-4';
               const c_gN = gN > 0 ? `<span class="text-emerald-600">&#9650; ${gN}%</span>` : (gN < 0 ? `<span class="text-red-600">&#9660; ${Math.abs(gN)}%</span>` : '-');
               const c_gT = gT > 0 ? `<span class="text-emerald-600">&#9650; ${gT}%</span>` : (gT < 0 ? `<span class="text-red-600">&#9660; ${Math.abs(gT)}%</span>` : '-');
-              return `<tr class="${bg}"><td class="pl-4">${nama}</td><td class="text-right text-blue-700">${fmt(cN)}</td><td class="text-right text-slate-400">${fmt(pN)}</td><td class="text-center text-[11px] font-bold bg-slate-50/50">${c_gN}</td><td class="text-right text-indigo-700">${fmt(cT)}</td><td class="text-right text-slate-400">${fmt(pT)}</td><td class="text-center text-[11px] font-bold bg-slate-50/50 pr-4">${c_gT}</td></tr>`;
+              return `<tr class="${bg}"><td class="${pad}">${nama}</td><td class="text-right text-blue-700">${fmt(cN)}</td><td class="text-right text-slate-400">${fmt(pN)}</td><td class="text-center text-[11px] font-bold bg-slate-50/50">${c_gN}</td><td class="text-right text-indigo-700">${fmt(cT)}</td><td class="text-right text-slate-400">${fmt(pT)}</td><td class="text-center text-[11px] font-bold bg-slate-50/50 pr-4">${c_gT}</td></tr>`;
           };
 
           const gt = j.data.grand_total;
@@ -598,7 +599,7 @@
           } else if (isSpecificKorwil) {
               dt.forEach(kw => {
                   (kw.cabang || []).forEach(cb => {
-                      tbody.innerHTML += rYoy(cb.nama, cb.curr_nom, cb.prev_nom, cb.yoy_growth_nom, cb.curr_trx, cb.prev_trx, cb.yoy_growth_trx);
+                      tbody.innerHTML += rYoy(cb.nama, cb.curr_nom, cb.prev_nom, cb.yoy_growth_nom, cb.curr_trx, cb.prev_trx, cb.yoy_growth_trx, false, true);
                   });
               });
           } else {
@@ -606,6 +607,8 @@
                   tbody.innerHTML += rYoy(kk.nama, kk.curr_nom, kk.prev_nom, kk.yoy_growth_nom, kk.curr_trx, kk.prev_trx, kk.yoy_growth_trx);
               });
           }
-      } catch(e){} finally { hideLoad('loadYoy'); }
+      } catch(e){
+          document.getElementById('bodyYoy').innerHTML = `<tr><td colspan="7" class="text-center py-6 text-red-500">Gagal memuat data YOY.</td></tr>`;
+      } finally { hideLoad('loadYoy'); }
   }
 </script>
