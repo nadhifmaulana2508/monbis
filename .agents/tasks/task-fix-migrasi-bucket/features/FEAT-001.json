@@ -32,5 +32,5 @@
     "php -l /projects/sandbox/monbis/pages/migrasi_bucket.php"
   ],
   "blocked_reason": null,
-  "findings": "All changes implemented and validated with php -l. The attachCkpnAndCast method was modified to accept optional $meta array parameter for pagination metadata. When meta is provided, data is returned as {rows: [...], total_count: N, page: N, per_page: N}. Frontend handles both legacy array response and new paginated object response gracefully."
+  "findings": "All changes implemented and validated with php -l. The attachCkpnAndCast method was modified to accept optional $meta array parameter for pagination metadata. When meta is provided, data is returned as {rows: [...], total_count: N, page: N, per_page: N}. Frontend handles both legacy array response and new paginated object response gracefully. Review fixes applied: MB_filterDetail now uses server-side filtering via backend search/kankas/ao_kredit params with 300ms debounce on search input; stale pagination cleared on fetch failure and at start of each new detail load; backend category totals fallback added for unexpected bucket codes."
 }

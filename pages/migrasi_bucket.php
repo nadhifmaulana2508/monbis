@@ -179,7 +179,7 @@
       <div class="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto no-scrollbar pb-1 md:pb-0">
         <div class="relative flex-1 min-w-[120px] md:w-[150px] shrink-0">
             <div class="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none"><span class="text-xs text-slate-400">🔍</span></div>
-            <input type="text" id="MB_searchDetail" oninput="MB_filterDetail()" class="w-full pl-6 pr-2 py-1 h-7 bg-white border border-slate-200 rounded text-[10px] outline-none focus:border-blue-500" placeholder="Cari Norek/Nama...">
+            <input type="text" id="MB_searchDetail" oninput="MB_filterDetail(true)" class="w-full pl-6 pr-2 py-1 h-7 bg-white border border-slate-200 rounded text-[10px] outline-none focus:border-blue-500" placeholder="Cari Norek/Nama...">
         </div>
         <select id="MB_modKankas" onchange="MB_filterDetail()" class="w-20 md:w-28 px-1 h-7 bg-white border border-slate-200 rounded text-[10px] outline-none focus:border-blue-500 text-slate-600 shrink-0"><option value="">Kankas (All)</option></select>
         <select id="MB_modAo" onchange="MB_filterDetail()" class="w-20 md:w-28 px-1 h-7 bg-white border border-slate-200 rounded text-[10px] outline-none focus:border-blue-500 text-slate-600 shrink-0"><option value="">AO (All)</option></select>
@@ -329,6 +329,8 @@
   let currentDetailPage = 1;
   let currentDetailTotal = 0;
   let currentDetailPerPage = 20;
+  let _filterTimer = null;
+  let _isInitialDetailLoad = false;
 
   document.getElementById('MB_modalClose').onclick = () => elMod.classList.add('hidden');
   elMod.addEventListener('click', e => { if(!e.target.closest('#MB_modalCard')) elMod.classList.add('hidden'); });
@@ -661,29 +663,14 @@
     return `<a href="#" class="cell-link" onclick="return MB_openDetail('${from_bucket}','${to_bucket}')">${numHTML(n)}</a>`;
   }
 
-  // ===== FILTER PENCARIAN & KANKAS/AO CLIENT SIDE =====
-  window.MB_filterDetail = function() {
-      const searchInput = document.getElementById("MB_searchDetail").value.toLowerCase();
-      const kankasInput = document.getElementById("MB_modKankas").value.toLowerCase();
-      const aoInput     = document.getElementById("MB_modAo").value.toLowerCase();
-
-      if (!currentDetailData) return;
-      
-      const filtered = currentDetailData.filter(d => {
-        const rek  = String(d.no_rekening || '').toLowerCase();
-        const nama = String(d.nama_nasabah || '').toLowerCase();
-        const almt = String(d.alamat || '').toLowerCase();
-        const knk  = String(d.kankas || '').toLowerCase();
-        const aok  = String(d.ao_kredit || '').toLowerCase();
-        
-        const matchSearch = searchInput === '' || rek.includes(searchInput) || nama.includes(searchInput) || almt.includes(searchInput);
-        const matchKankas = kankasInput === '' || knk === kankasInput;
-        const matchAo     = aoInput === '' || aok === aoInput;
-
-        return matchSearch && matchKankas && matchAo;
-      });
-      
-      renderDetailTable(filtered);
+  // ===== FILTER PENCARIAN & KANKAS/AO SERVER SIDE =====
+  window.MB_filterDetail = function(useDebounce) {
+      if (_filterTimer) { clearTimeout(_filterTimer); _filterTimer = null; }
+      const delay = useDebounce ? 300 : 0;
+      _filterTimer = setTimeout(function() {
+        _filterTimer = null;
+        MB_openDetail(currentFromRaw, currentToRaw, 1);
+      }, delay);
   };
 
   // ===== MODAL DETAIL MURNI =====
@@ -694,6 +681,8 @@
     const pg = page || 1;
     currentFromRaw = from_raw; currentToRaw = to_raw;
     currentDetailPage = pg;
+    currentDetailTotal = 0;
+    MB_renderPagination();
     const closing = elClosing.value, harian = elHarian.value;
     const kode = elKantor.disabled ? elKantor.value : (elKantor.value || null);
 
@@ -703,8 +692,18 @@
     elModTitle.innerHTML = `Detail Migrasi <span class="bg-blue-100 text-blue-800 text-[10px] lg:text-xs px-2 py-1 rounded-md font-mono border border-blue-200 ml-1.5 lg:ml-2">${fLabel} ➔ ${tLabel}</span>`;
     $('#MB_modalSubtitle').textContent = `Posisi: ${closing} vs ${harian}`;
     
-    const searchInput = document.getElementById('MB_searchDetail');
-    if(searchInput) searchInput.value = '';
+    // Read current filter values from DOM
+    const searchVal = document.getElementById('MB_searchDetail')?.value || '';
+    const kankasVal = document.getElementById('MB_modKankas')?.value || '';
+    const aoVal = document.getElementById('MB_modAo')?.value || '';
+
+    // Determine if this is an initial load (fresh open, not a filter/pagination call)
+    _isInitialDetailLoad = (pg === 1 && !searchVal && !kankasVal && !aoVal);
+
+    if (_isInitialDetailLoad) {
+      const searchInput = document.getElementById('MB_searchDetail');
+      if(searchInput) searchInput.value = '';
+    }
 
     elMod.classList.remove('hidden');
 
@@ -722,6 +721,9 @@
         per_page: currentDetailPerPage
       };
       if(kode) payload.kode_kantor = kode;
+      if(searchVal) payload.search = searchVal;
+      if(kankasVal) payload.kankas = kankasVal;
+      if(aoVal) payload.ao_kredit = aoVal;
       
       const f = (window.apiFetch || fetch);
       const r = await f('./api/kolek/', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal:ABORT_DETAIL.signal });
@@ -749,27 +751,32 @@
         return { ...d, tgl_tagih: t && !isNaN(t) ? t.getDate() : null };
       });
 
-      const uniqueKankas = [...new Set(currentDetailData.map(d => d.kankas).filter(Boolean))].sort();
-      const uniqueAo = [...new Set(currentDetailData.map(d => d.ao_kredit).filter(Boolean))].sort();
+      // Only populate dropdowns on initial load (no filters active, page 1)
+      if (_isInitialDetailLoad) {
+        const uniqueKankas = [...new Set(currentDetailData.map(d => d.kankas).filter(Boolean))].sort();
+        const uniqueAo = [...new Set(currentDetailData.map(d => d.ao_kredit).filter(Boolean))].sort();
 
-      const modKankas = document.getElementById('MB_modKankas');
-      if (modKankas) {
-          modKankas.innerHTML = '<option value="">Kankas (All)</option>' + 
-              uniqueKankas.map(k => `<option value="${k}">${k}</option>`).join('');
-          modKankas.value = '';
-      }
+        const modKankas = document.getElementById('MB_modKankas');
+        if (modKankas) {
+            modKankas.innerHTML = '<option value="">Kankas (All)</option>' + 
+                uniqueKankas.map(k => `<option value="${k}">${k}</option>`).join('');
+            modKankas.value = '';
+        }
 
-      const modAo = document.getElementById('MB_modAo');
-      if (modAo) {
-          modAo.innerHTML = '<option value="">AO (All)</option>' + 
-              uniqueAo.map(a => `<option value="${a}">${a}</option>`).join('');
-          modAo.value = '';
+        const modAo = document.getElementById('MB_modAo');
+        if (modAo) {
+            modAo.innerHTML = '<option value="">AO (All)</option>' + 
+                uniqueAo.map(a => `<option value="${a}">${a}</option>`).join('');
+            modAo.value = '';
+        }
       }
 
       renderDetailTable(currentDetailData);
       MB_renderPagination();
     }catch(e){
       if(e.name!=='AbortError') elModTbody.innerHTML = `<tr><td class="px-4 py-8 text-center text-red-500 font-bold">Gagal menarik data.</td></tr>`;
+      currentDetailTotal = 0;
+      MB_renderPagination();
     }
     return false;
   };

@@ -1001,6 +1001,7 @@ class KolekController {
             if (in_array($from, $SC_BUCKETS, true)) $cat = 'sc';
             elseif (in_array($from, $FE_BUCKETS, true)) $cat = 'fe';
             elseif (in_array($from, $BE_BUCKETS, true)) $cat = 'be';
+            else $cat = 'be'; // defensive fallback for unexpected bucket codes
 
             // Agregasi Global Movement
             if ($from === $to) {
