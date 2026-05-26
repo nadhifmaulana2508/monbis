@@ -558,6 +558,7 @@
 
           if(j.status !== 200 || !j.data || !j.data.data.length) { 
               tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6">Data kosong.</td></tr>`; 
+              chartYoyObj.updateSeries([]);
               hideLoad('loadYoy'); 
               return; 
           }
