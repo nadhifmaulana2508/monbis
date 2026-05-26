@@ -26,5 +26,5 @@
     "php -l /projects/sandbox/monbis/pages/migrasi_bucket.php"
   ],
   "blocked_reason": null,
-  "findings": "All 4 fixes implemented and verified with php -l. No syntax errors. The run_off_per_from and angsuran_by_category are added as top-level response fields alongside matrix/from_totals/column_totals."
+  "findings": "All 4 fixes implemented and verified with php -l. No syntax errors. The run_off_per_from and angsuran_by_category are added as top-level response fields alongside matrix/from_totals/column_totals. Review fix applied: added os_m1_per_category to backend response and updated frontend catBreakdownHtml to use it as the denominator for angsuran percentage instead of the movement card OS, ensuring consistent meaningful percentages across all three cards."
 }
