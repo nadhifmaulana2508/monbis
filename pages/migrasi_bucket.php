@@ -540,24 +540,25 @@
     // SC/FE/BE Category Breakdown
     const mCat = data.movement_by_category || {sc:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}, fe:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}, be:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}};
     const angsCat = data.angsuran_by_category || {sc:{noa:0,os:0}, fe:{noa:0,os:0}, be:{noa:0,os:0}};
-    function catBreakdownHtml(catData, angsuranData) {
-      function catRow(label, cat, angs) {
-        const totalCatOs = cat.os;
-        const angsPct = totalCatOs > 0 ? ((angs.os / totalCatOs) * 100).toFixed(1) : '0.0';
+    const osM1Cat = data.os_m1_per_category || {sc:0, fe:0, be:0};
+    function catBreakdownHtml(catData, angsuranData, osM1PerCat) {
+      function catRow(label, cat, angs, catKey, osM1PerCat) {
+        const denom = osM1PerCat[catKey] || 0;
+        const angsPct = denom > 0 ? ((angs.os / denom) * 100).toFixed(1) : '0.0';
         return `<div><b>${label}:</b> ${nfID.format(cat.noa)} akun (Rp ${fmtFull(cat.os)}) <span class="text-blue-600">| Angs: Rp ${fmtFull(angs.os)} (${angsPct}%)</span></div>`;
       }
       return `<div class="text-[9px] text-slate-500 mt-1 space-y-0.5">
-        ${catRow('SC', catData.sc, angsuranData.sc)}
-        ${catRow('FE', catData.fe, angsuranData.fe)}
-        ${catRow('BE', catData.be, angsuranData.be)}
+        ${catRow('SC', catData.sc, angsuranData.sc, 'sc', osM1PerCat)}
+        ${catRow('FE', catData.fe, angsuranData.fe, 'fe', osM1PerCat)}
+        ${catRow('BE', catData.be, angsuranData.be, 'be', osM1PerCat)}
       </div>`;
     }
     const elCatBaik = document.getElementById('cat_breakdown_baik');
     const elCatStay = document.getElementById('cat_breakdown_stay');
     const elCatBuruk = document.getElementById('cat_breakdown_buruk');
-    if (elCatBaik) elCatBaik.innerHTML = catBreakdownHtml({sc: mCat.sc.perbaikan, fe: mCat.fe.perbaikan, be: mCat.be.perbaikan}, angsCat);
-    if (elCatStay) elCatStay.innerHTML = catBreakdownHtml({sc: mCat.sc.stay, fe: mCat.fe.stay, be: mCat.be.stay}, angsCat);
-    if (elCatBuruk) elCatBuruk.innerHTML = catBreakdownHtml({sc: mCat.sc.pemburukan, fe: mCat.fe.pemburukan, be: mCat.be.pemburukan}, angsCat);
+    if (elCatBaik) elCatBaik.innerHTML = catBreakdownHtml({sc: mCat.sc.perbaikan, fe: mCat.fe.perbaikan, be: mCat.be.perbaikan}, angsCat, osM1Cat);
+    if (elCatStay) elCatStay.innerHTML = catBreakdownHtml({sc: mCat.sc.stay, fe: mCat.fe.stay, be: mCat.be.stay}, angsCat, osM1Cat);
+    if (elCatBuruk) elCatBuruk.innerHTML = catBreakdownHtml({sc: mCat.sc.pemburukan, fe: mCat.fe.pemburukan, be: mCat.be.pemburukan}, angsCat, osM1Cat);
 
     // GENERATE NARRATIVE (Analisis Modal)
     let narGrowth = '';

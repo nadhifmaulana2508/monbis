@@ -983,6 +983,7 @@ class KolekController {
             'fe' => ['noa' => 0, 'os' => 0],
             'be' => ['noa' => 0, 'os' => 0]
         ];
+        $os_m1_per_category = ['sc' => 0, 'fe' => 0, 'be' => 0];
 
         foreach ($M1['accSet'] as $acc => $_) {
             $from = $M1['bucketByAcc'][$acc] ?? 'A';
@@ -1012,6 +1013,9 @@ class KolekController {
             elseif (in_array($from, $FE_BUCKETS, true)) $cat = 'fe';
             elseif (in_array($from, $BE_BUCKETS, true)) $cat = 'be';
             else $cat = 'be'; // defensive fallback for unexpected bucket codes
+
+            // Track total M-1 OS per category
+            if ($cat) $os_m1_per_category[$cat] += $os_m1;
 
             // Agregasi Global Movement
             if ($from === $to) {
@@ -1132,7 +1136,8 @@ class KolekController {
             'from_totals'      => $fromTotals,
             'column_totals'    => $colTotals,
             'run_off_per_from' => $run_off_per_from,
-            'angsuran_by_category' => $angsuran_by_category
+            'angsuran_by_category' => $angsuran_by_category,
+            'os_m1_per_category' => $os_m1_per_category
         ]);
     }
 
