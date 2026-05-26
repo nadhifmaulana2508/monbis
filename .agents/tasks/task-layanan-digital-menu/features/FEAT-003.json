@@ -2,7 +2,7 @@
   "id": "FEAT-003",
   "type": "feat",
   "description": "Update the existing VA page (pages/va.php) to use real API data instead of dummy data, split between Mandiri and Permata banks, and show breakdown by cabang. Also create Branchless page (pages/branchless.php) and QRIS Merchant page (pages/qris_merchant.php) with similar structure - each with trend charts, cabang breakdown table, and MoM/YOY comparison.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Update pages/va.php: (a) Replace the dummy dummyVaData array with a real API call to ./api/transaksi/ with type 'va_detail_mandiri_permata' (new endpoint). (b) Keep the existing table structure showing Mandiri and Permata columns. (c) Add an area/cabang filter dropdown similar to layanan_digital.php pattern. (d) When kode_kantor is set (branch user), lock the filter. (e) Replace Chart.js with ApexCharts for consistency with other pages. (f) Add a breakdown table per cabang below the existing monthly table.",
     "Add a new TransaksiController method getVaDetailMandiriPermata($input) that: (a) accepts harian_date (or date range awal/akhir), kode_kantor, korwil params, (b) queries the va table with kode_transaksi='320', (c) splits by Mandiri (norek_aba LIKE '%0001000001') vs Permata (norek_aba LIKE '%0001000004'), (d) groups by month for the monthly table, (e) also returns per-cabang breakdown with Mandiri/Permata split.",
@@ -33,5 +33,5 @@
     "grep -c 'channel.*QRIS' /projects/sandbox/monbis/pages/qris_merchant.php should return at least 1"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All implementations completed successfully. Created getVaDetailMandiriPermata() in TransaksiController with monthly Mandiri/Permata VA breakdown. Registered va_detail_mandiri_permata route type. Replaced va.php with modern ApexCharts-based page using real API data. Created branchless.php and qris_merchant.php following layanan_digital.php patterns with BRANCHLESS and QRIS channel params respectively. All PHP syntax checks pass."
 }
