@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "feat",
   "description": "Create the Dashboard Layanan Digital page (pages/dashboard_layanan_digital.php) with summary cards for each channel (VA, Branchless, QRIS), Top 5 and Bottom 5 cabang for each channel by nominal, MoM comparison, and ApexCharts visualizations. When konsolidasi: show all cabang breakdown. When user is a specific branch: show only their data. Also add a new API endpoint 'dashboard_layanan_digital' in the TransaksiController that returns Top 5 and Bottom 5 per channel.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Create api/controllers/TransaksiController.php new method getDashboardLayananDigital($input) that: (a) accepts harian_date, closing_date, kode_kantor, korwil params, (b) queries the va table grouped by kantor for each channel (VA kode='320', Branchless kode IN('150','152'), QRIS kode IN('140','16','162')), (c) returns top 5 and bottom 5 cabang by total nominal for each channel, (d) includes MoM comparison (current period vs previous month same period), (e) respects kode_kantor filter - if specific branch, only return that branch data with kankas breakdown.",
     "Register the new type 'dashboard_layanan_digital' in api/routes/transaksi.php to call $controller->getDashboardLayananDigital($input).",
@@ -26,5 +26,5 @@
     "grep -c 'getDashboardLayananDigital' /projects/sandbox/monbis/api/controllers/TransaksiController.php should return at least 1"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "Successfully implemented all 3 parts: getDashboardLayananDigital() method in TransaksiController (using mktime-based date logic, LEFT JOIN to kode_kantor for names, Top/Bottom 5 per channel with MoM growth), registered route type 'dashboard_layanan_digital' in transaksi.php, and created pages/dashboard_layanan_digital.php with ApexCharts horizontal bar charts, summary cards from existing summary_cards_transaksi API, and breakdown tables. All PHP syntax checks pass."
 }
