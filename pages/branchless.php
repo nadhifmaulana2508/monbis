@@ -141,6 +141,7 @@
 
   const nf = new Intl.NumberFormat('id-ID');
   const fmt = n => nf.format(Number(n||0));
+  const esc = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
   let chartTrendObj = null;
   let chartDonutObj = null;
@@ -256,7 +257,7 @@
                   const gv = parseFloat(c.growth||0); const isUp = gv >= 0;
                   const bColor = isUp ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700';
                   const arrow = isUp ? '▲' : '▼';
-                  container.innerHTML += '<div class="bg-white rounded-xl card-shadow p-5 flex flex-col justify-between border-l-4 border-l-emerald-600"><div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">' + c.title + '</p><h3 class="text-xl font-black text-slate-800 leading-tight">' + (c.value||'Rp 0') + '</h3><p class="text-[10px] font-bold text-slate-500 mt-1">' + (c.subtitle||'') + '</p></div><div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-3"><span class="' + bColor + ' px-2 py-0.5 rounded font-bold text-[11px]">' + arrow + ' ' + Math.abs(gv) + '%</span><div class="text-right leading-tight"><span class="text-[9px] text-slate-400">' + (c.prev_label||'Bulan Lalu') + '</span><br><span class="text-[10px] font-bold text-slate-600">' + (c.prev_nominal||'Rp -') + '</span></div></div></div>';
+                  container.innerHTML += '<div class="bg-white rounded-xl card-shadow p-5 flex flex-col justify-between border-l-4 border-l-emerald-600"><div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">' + esc(c.title) + '</p><h3 class="text-xl font-black text-slate-800 leading-tight">' + esc(c.value||'Rp 0') + '</h3><p class="text-[10px] font-bold text-slate-500 mt-1">' + esc(c.subtitle||'') + '</p></div><div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-3"><span class="' + bColor + ' px-2 py-0.5 rounded font-bold text-[11px]">' + arrow + ' ' + Math.abs(gv) + '%</span><div class="text-right leading-tight"><span class="text-[9px] text-slate-400">' + esc(c.prev_label||'Bulan Lalu') + '</span><br><span class="text-[10px] font-bold text-slate-600">' + esc(c.prev_nominal||'Rp -') + '</span></div></div></div>';
               });
           }
       } catch(e){} finally { hideLoad('loadSummary'); }
@@ -294,7 +295,7 @@
               d.top_5.forEach((t,i) => {
                   const wPct = (t.nominal/maxNom)*100;
                   let fNom = t.nominal >= 1000000000 ? (t.nominal/1000000000).toFixed(2)+' M' : (t.nominal >= 1000000 ? (t.nominal/1000000).toFixed(1)+' jt' : nf.format(t.nominal));
-                  listC.innerHTML += '<div class="flex flex-col text-xs"><div class="flex justify-between items-end mb-1"><div class="flex items-center gap-2"><span class="w-4 h-4 rounded-full ' + colors[i%colors.length] + ' text-white flex items-center justify-center text-[9px] font-bold">' + (i+1) + '</span><span class="font-bold text-slate-700">' + t.label + '</span></div><div class="text-right leading-none"><span class="font-black text-slate-800">Rp ' + fNom + '</span><br><span class="text-[9px] text-slate-400">' + nf.format(t.trx) + ' Trx</span></div></div><div class="w-full bg-slate-100 rounded-full h-1.5"><div class="' + colors[i%colors.length] + ' h-1.5 rounded-full" style="width:' + wPct + '%"></div></div></div>';
+                  listC.innerHTML += '<div class="flex flex-col text-xs"><div class="flex justify-between items-end mb-1"><div class="flex items-center gap-2"><span class="w-4 h-4 rounded-full ' + colors[i%colors.length] + ' text-white flex items-center justify-center text-[9px] font-bold">' + (i+1) + '</span><span class="font-bold text-slate-700">' + esc(t.label) + '</span></div><div class="text-right leading-none"><span class="font-black text-slate-800">Rp ' + fNom + '</span><br><span class="text-[9px] text-slate-400">' + nf.format(t.trx) + ' Trx</span></div></div><div class="w-full bg-slate-100 rounded-full h-1.5"><div class="' + colors[i%colors.length] + ' h-1.5 rounded-full" style="width:' + wPct + '%"></div></div></div>';
               });
           }
       } catch(e){} finally { hideLoad('loadDist'); }
@@ -313,6 +314,21 @@
           const jYoy = await resYoy.json();
           const tbody = document.getElementById('bodyUnified');
           tbody.innerHTML = '';
+
+          // Remove any previous warning banner
+          const prevWarning = tbody.closest('.overflow-x-auto').previousElementSibling;
+          if (prevWarning && prevWarning.classList.contains('partial-fetch-warning')) prevWarning.remove();
+
+          // Show warning if either data source failed
+          let warningHtml = '';
+          if (jMom.status !== 200) warningHtml += '<div class="bg-amber-50 border border-amber-200 text-amber-700 px-3 py-2 rounded text-xs font-bold mb-2">Data MoM tidak tersedia</div>';
+          if (jYoy.status !== 200) warningHtml += '<div class="bg-amber-50 border border-amber-200 text-amber-700 px-3 py-2 rounded text-xs font-bold mb-2">Data YoY tidak tersedia</div>';
+          if (warningHtml) {
+              const warningContainer = document.createElement('div');
+              warningContainer.className = 'px-4 pt-3 partial-fetch-warning';
+              warningContainer.innerHTML = warningHtml;
+              tbody.closest('.overflow-x-auto').insertAdjacentElement('beforebegin', warningContainer);
+          }
 
           const optAreaVal = document.getElementById('opt_area').value;
 
@@ -412,7 +428,7 @@
           // Render data rows
           let idx = 1;
           mergedMap.forEach((row) => {
-              tbody.innerHTML += '<tr><td class="text-center pl-4 text-slate-400">' + idx + '</td><td class="font-bold text-slate-700">' + row.nama + '</td><td class="text-right text-slate-500">' + fmt(row.yoy_prev_nom) + '</td><td class="text-right text-blue-700">' + fmt(row.yoy_curr_nom) + '</td><td class="text-center text-[11px]">' + growthBadge(row.yoy_growth) + '</td><td class="text-right text-slate-500">' + fmt(row.mom_prev_nom) + '</td><td class="text-right text-blue-700">' + fmt(row.mom_curr_nom) + '</td><td class="text-center text-[11px] pr-4">' + growthBadge(row.mom_growth) + '</td></tr>';
+              tbody.innerHTML += '<tr><td class="text-center pl-4 text-slate-400">' + idx + '</td><td class="font-bold text-slate-700">' + esc(row.nama) + '</td><td class="text-right text-slate-500">' + fmt(row.yoy_prev_nom) + '</td><td class="text-right text-blue-700">' + fmt(row.yoy_curr_nom) + '</td><td class="text-center text-[11px]">' + growthBadge(row.yoy_growth) + '</td><td class="text-right text-slate-500">' + fmt(row.mom_prev_nom) + '</td><td class="text-right text-blue-700">' + fmt(row.mom_curr_nom) + '</td><td class="text-center text-[11px] pr-4">' + growthBadge(row.mom_growth) + '</td></tr>';
               idx++;
           });
       } catch(e){ console.error(e); document.getElementById('bodyUnified').innerHTML = '<tr><td colspan="8" class="text-center py-6 text-slate-400">Gagal memuat data.</td></tr>'; } finally { hideLoad('loadTable'); }

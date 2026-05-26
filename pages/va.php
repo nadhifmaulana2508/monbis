@@ -148,6 +148,7 @@
 
   const nf = new Intl.NumberFormat('id-ID');
   const fmt = n => nf.format(Number(n||0));
+  const esc = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
   let chartNomObj = null;
   let chartTrxObj = null;
@@ -295,7 +296,7 @@
               data.monthly.forEach((row, idx) => {
                   const totalNom = row.mandiri_nom + row.permata_nom;
                   const totalTrx = row.mandiri_trx + row.permata_trx;
-                  tbody.innerHTML += '<tr><td class="text-center text-slate-400 pl-2">' + (idx + 1) + '</td><td class="pl-4 font-bold text-slate-700">' + row.bulan + '</td><td class="text-right text-blue-700">' + fmt(row.mandiri_nom) + '</td><td class="text-right text-blue-600">' + fmt(row.mandiri_trx) + '</td><td class="text-right text-orange-700">' + fmt(row.permata_nom) + '</td><td class="text-right text-orange-600">' + fmt(row.permata_trx) + '</td><td class="text-right font-black text-slate-800">' + fmt(totalNom) + '</td><td class="text-right font-black text-slate-800 pr-4">' + fmt(totalTrx) + '</td></tr>';
+                  tbody.innerHTML += '<tr><td class="text-center text-slate-400 pl-2">' + (idx + 1) + '</td><td class="pl-4 font-bold text-slate-700">' + esc(row.bulan) + '</td><td class="text-right text-blue-700">' + fmt(row.mandiri_nom) + '</td><td class="text-right text-blue-600">' + fmt(row.mandiri_trx) + '</td><td class="text-right text-orange-700">' + fmt(row.permata_nom) + '</td><td class="text-right text-orange-600">' + fmt(row.permata_trx) + '</td><td class="text-right font-black text-slate-800">' + fmt(totalNom) + '</td><td class="text-right font-black text-slate-800 pr-4">' + fmt(totalTrx) + '</td></tr>';
               });
 
               const t = data.total;
@@ -345,6 +346,21 @@
           const jYoy = await resYoy.json();
           const tbody = document.getElementById('bodyUnified');
           tbody.innerHTML = '';
+
+          // Remove any previous warning banner
+          const prevWarning = tbody.closest('.overflow-x-auto').previousElementSibling;
+          if (prevWarning && prevWarning.classList.contains('partial-fetch-warning')) prevWarning.remove();
+
+          // Show warning if either data source failed
+          let warningHtml = '';
+          if (jMom.status !== 200) warningHtml += '<div class="bg-amber-50 border border-amber-200 text-amber-700 px-3 py-2 rounded text-xs font-bold mb-2">Data MoM tidak tersedia</div>';
+          if (jYoy.status !== 200) warningHtml += '<div class="bg-amber-50 border border-amber-200 text-amber-700 px-3 py-2 rounded text-xs font-bold mb-2">Data YoY tidak tersedia</div>';
+          if (warningHtml) {
+              const warningContainer = document.createElement('div');
+              warningContainer.className = 'px-4 pt-3 partial-fetch-warning';
+              warningContainer.innerHTML = warningHtml;
+              tbody.closest('.overflow-x-auto').insertAdjacentElement('beforebegin', warningContainer);
+          }
 
           const optAreaVal = document.getElementById('opt_area').value;
 
@@ -443,7 +459,7 @@
           // Render data rows
           let idx = 1;
           mergedMap.forEach((row) => {
-              tbody.innerHTML += '<tr><td class="text-center pl-4 text-slate-400">' + idx + '</td><td class="font-bold text-slate-700">' + row.nama + '</td><td class="text-right text-slate-500">' + fmt(row.yoy_prev_nom) + '</td><td class="text-right text-blue-700">' + fmt(row.yoy_curr_nom) + '</td><td class="text-center text-[11px]">' + growthBadge(row.yoy_growth) + '</td><td class="text-right text-slate-500">' + fmt(row.mom_prev_nom) + '</td><td class="text-right text-blue-700">' + fmt(row.mom_curr_nom) + '</td><td class="text-center text-[11px] pr-4">' + growthBadge(row.mom_growth) + '</td></tr>';
+              tbody.innerHTML += '<tr><td class="text-center pl-4 text-slate-400">' + idx + '</td><td class="font-bold text-slate-700">' + esc(row.nama) + '</td><td class="text-right text-slate-500">' + fmt(row.yoy_prev_nom) + '</td><td class="text-right text-blue-700">' + fmt(row.yoy_curr_nom) + '</td><td class="text-center text-[11px]">' + growthBadge(row.yoy_growth) + '</td><td class="text-right text-slate-500">' + fmt(row.mom_prev_nom) + '</td><td class="text-right text-blue-700">' + fmt(row.mom_curr_nom) + '</td><td class="text-center text-[11px] pr-4">' + growthBadge(row.mom_growth) + '</td></tr>';
               idx++;
           });
       } catch(e) { console.error(e); document.getElementById('bodyUnified').innerHTML = '<tr><td colspan="8" class="text-center py-6 text-slate-400">Gagal memuat data.</td></tr>'; } finally { hideLoad('loadTable'); }
