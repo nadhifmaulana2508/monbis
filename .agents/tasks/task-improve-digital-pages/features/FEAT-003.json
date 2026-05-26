@@ -1,0 +1,33 @@
+{
+  "id": "FEAT-003",
+  "type": "feat",
+  "description": "Redesign va.php with the same improvements: (1) Add a YoY comparison to the existing breakdown table (unified table showing both MoM and YoY). (2) Better UI/design. (3) Responsive layout with collapsible mobile filters. VA page has a unique 'Mandiri vs Permata' monthly table that should be kept but improved. The 'Breakdown per Cabang' section needs the unified table treatment. Use blue-600 accent color.",
+  "status": "completed",
+  "steps": [
+    "Rewrite pages/va.php with these changes:",
+    "1. FILTER SECTION: Add mobile-only toggle button (same pattern as branchless/qris). Blue-600 accent.",
+    "2. CHARTS SECTION (Mandiri vs Permata): Keep the existing 2-chart grid (Tren Nominal + Tren Trx). Improve responsive sizing.",
+    "3. MONTHLY TABLE (Mandiri vs Permata): Keep this unique table as-is since it is VA-specific. Improve styling consistency.",
+    "4. UNIFIED BREAKDOWN TABLE: Replace the simple 'Breakdown Transaksi VA per Area' table with a unified table that includes BOTH MoM AND YoY data. Add a new fetchYoy call (type: yoy_transaksi, channel: VA) alongside the existing fetchBreakdown. Merge data by cabang kode. Show columns: No, Nama Cabang, Nom Tahun Lalu, Nom Tahun Ini, Gap% YoY, Nom Bulan Lalu, Nom Bulan Ini, Gap% MoM.",
+    "5. For KONSOLIDASI: show all 28 cabang (extract from korwil cabang arrays).",
+    "6. For KORWIL: show only cabang within that korwil.",
+    "7. Ensure responsive design - overflow-x-auto on tables, proper mobile padding, chart responsiveness.",
+    "8. Add the runFullSync function to call fetchMonthlyData + fetchUnifiedBreakdown (replacing the old fetchBreakdown-only approach)."
+  ],
+  "acceptance_criteria": [
+    "php -l pages/va.php passes with no syntax errors",
+    "The page has a mobile filter toggle",
+    "The Mandiri vs Permata monthly table and charts are preserved",
+    "A unified breakdown table exists with both MoM and YoY columns",
+    "The page calls yoy_transaksi endpoint in addition to detail_breakdown_transaksi",
+    "For KONSOLIDASI, all 28 cabang are shown in the unified table"
+  ],
+  "verification": [
+    "Run: php -l /projects/sandbox/monbis/pages/va.php",
+    "Grep for 'yoy_transaksi' to confirm YoY API call exists",
+    "Grep for 'fetchUnifiedBreakdown' to confirm unified function",
+    "Grep for 'filter-toggle' or similar mobile toggle"
+  ],
+  "blocked_reason": null,
+  "findings": "Implemented successfully. The va.php page now has: (1) collapsible mobile filter with toggleFilter(), (2) preserved Mandiri vs Permata charts and monthly table, (3) new unified breakdown table with both MoM and YoY columns calling detail_breakdown_transaksi + yoy_transaksi endpoints, (4) blue-600 accent color, (5) responsive overflow-x-auto on all tables with min-width constraints. PHP lint passes with no syntax errors."
+}
