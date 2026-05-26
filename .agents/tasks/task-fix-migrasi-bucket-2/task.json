@@ -1,0 +1,7 @@
+{
+  "task_id": "task-fix-migrasi-bucket-2",
+  "task_description": "Fix remaining bugs in migrasi_bucket: (1) run_off per bucket in matrix wrong (only shows lunas, not angsuran+lunas), (2) growth calculation should use direct formula, (3) detail O_LUNAS query fails in konsolidasi, (4) SC/FE/BE breakdown missing angsuran % and nominal",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

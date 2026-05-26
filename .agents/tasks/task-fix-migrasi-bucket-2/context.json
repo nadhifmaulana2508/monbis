@@ -1,0 +1,19 @@
+{
+  "project_type": "PHP web app with vanilla JS frontend (no framework)",
+  "language": "PHP 8.4 + JavaScript (embedded in PHP pages)",
+  "build_system": "None (plain PHP served via Apache/Nginx)",
+  "test_framework": "None (no automated tests)",
+  "build_command": "php -l api/controllers/KolekController.php && php -l pages/migrasi_bucket.php",
+  "test_command": "php -l api/controllers/KolekController.php && php -l pages/migrasi_bucket.php",
+  "verification_instructions": "Run php -l on both modified files to verify no syntax errors",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "No setup needed, PHP 8.4 already available",
+  "environment_constraints": "INTEGRATIONS_ONLY network - no package installs, no Docker. Only AST/syntax validation possible.",
+  "contribution_requirements": "None documented",
+  "key_patterns": "Backend: KolekController.php contains migrasiBucketOsc (main matrix+summary) and getMigrasiBucketDetail* (detail modal). Frontend: pages/migrasi_bucket.php has all JS inline. The catBreakdownHtml function renders SC/FE/BE breakdown. The runoff per row is currently computed in JS as Math.max(0, os_m1 - sumNonO).",
+  "relevant_files": [
+    "api/controllers/KolekController.php",
+    "pages/migrasi_bucket.php"
+  ],
+  "directory_structure": "api/controllers/ - PHP backend controllers; pages/ - PHP frontend pages with inline JS/CSS; api/routes/ - route definitions; api/helpers/ - utility classes"
+}

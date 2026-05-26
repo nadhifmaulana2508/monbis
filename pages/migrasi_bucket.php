@@ -489,6 +489,7 @@
     const matrixArr = Array.isArray(data.matrix) ? data.matrix : [];
     const colTotalsData = data.column_totals || {};
     const fromTotals = data.from_totals || {};
+    const runOffPerFrom = data.run_off_per_from || {};
     const flow = data.portfolio_flow || { realisasi: {noa:0,os:0}, run_off: 0, net_growth: 0 };
     const m = data.movement_summary || { perbaikan:{os:0,noa:0}, pemburukan:{os:0,noa:0}, stay:{os:0,noa:0} };
     const details = data.movement_details || { pemburukan_list:[], perbaikan_list:[], stay_list:[] };
@@ -538,19 +539,25 @@
 
     // SC/FE/BE Category Breakdown
     const mCat = data.movement_by_category || {sc:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}, fe:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}, be:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}};
-    function catBreakdownHtml(catData) {
+    const angsCat = data.angsuran_by_category || {sc:{noa:0,os:0}, fe:{noa:0,os:0}, be:{noa:0,os:0}};
+    function catBreakdownHtml(catData, angsuranData) {
+      function catRow(label, cat, angs) {
+        const totalCatOs = cat.os;
+        const angsPct = totalCatOs > 0 ? ((angs.os / totalCatOs) * 100).toFixed(1) : '0.0';
+        return `<div><b>${label}:</b> ${nfID.format(cat.noa)} akun (Rp ${fmtFull(cat.os)}) <span class="text-blue-600">| Angs: Rp ${fmtFull(angs.os)} (${angsPct}%)</span></div>`;
+      }
       return `<div class="text-[9px] text-slate-500 mt-1 space-y-0.5">
-        <div><b>SC:</b> ${nfID.format(catData.sc.noa)} akun (Rp ${fmtFull(catData.sc.os)})</div>
-        <div><b>FE:</b> ${nfID.format(catData.fe.noa)} akun (Rp ${fmtFull(catData.fe.os)})</div>
-        <div><b>BE:</b> ${nfID.format(catData.be.noa)} akun (Rp ${fmtFull(catData.be.os)})</div>
+        ${catRow('SC', catData.sc, angsuranData.sc)}
+        ${catRow('FE', catData.fe, angsuranData.fe)}
+        ${catRow('BE', catData.be, angsuranData.be)}
       </div>`;
     }
     const elCatBaik = document.getElementById('cat_breakdown_baik');
     const elCatStay = document.getElementById('cat_breakdown_stay');
     const elCatBuruk = document.getElementById('cat_breakdown_buruk');
-    if (elCatBaik) elCatBaik.innerHTML = catBreakdownHtml({sc: mCat.sc.perbaikan, fe: mCat.fe.perbaikan, be: mCat.be.perbaikan});
-    if (elCatStay) elCatStay.innerHTML = catBreakdownHtml({sc: mCat.sc.stay, fe: mCat.fe.stay, be: mCat.be.stay});
-    if (elCatBuruk) elCatBuruk.innerHTML = catBreakdownHtml({sc: mCat.sc.pemburukan, fe: mCat.fe.pemburukan, be: mCat.be.pemburukan});
+    if (elCatBaik) elCatBaik.innerHTML = catBreakdownHtml({sc: mCat.sc.perbaikan, fe: mCat.fe.perbaikan, be: mCat.be.perbaikan}, angsCat);
+    if (elCatStay) elCatStay.innerHTML = catBreakdownHtml({sc: mCat.sc.stay, fe: mCat.fe.stay, be: mCat.be.stay}, angsCat);
+    if (elCatBuruk) elCatBuruk.innerHTML = catBreakdownHtml({sc: mCat.sc.pemburukan, fe: mCat.fe.pemburukan, be: mCat.be.pemburukan}, angsCat);
 
     // GENERATE NARRATIVE (Analisis Modal)
     let narGrowth = '';
@@ -623,7 +630,7 @@
         cellsHtml.push(`<td class="text-right col-N ${flowCls}">${linkCell(f,t,c.os)}<span class="cell-sub">${sub.join(' • ')}</span></td>`);
       }
       
-      const runoff = Math.max(0, os_m1 - sumNonO);
+      const runoff = (runOffPerFrom[f] !== undefined) ? getNum(runOffPerFrom[f]) : Math.max(0, os_m1 - sumNonO);
       rowsHtml.push(`<tr>
           <td class="text-left sticky-col-1 col-from font-bold text-slate-700">${DPD_LABEL[f]||f}</td>
           <td class="text-right sticky-col-2 col-6 text-slate-800">${dashHTML(os_m1)}</td>

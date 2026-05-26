@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-001",
+  "type": "fix",
+  "description": "Fix 4 remaining bugs: (1) Run Off per bucket in matrix uses wrong formula, (2) Growth calculation should use total_os_curr - total_os_m1 directly, (3) O_LUNAS detail query fails in konsolidasi mode due to kcCondH filter on LEFT JOIN, (4) SC/FE/BE category breakdown is missing angsuran percentage and nominal values.",
+  "status": "in_progress",
+  "steps": [
+    "BACKEND (api/controllers/KolekController.php) - Add run_off_per_from computation: Inside the main forEach loop (line ~975-1025), add a $run_off_per_from array initialized before the loop. For each account processed: if to='O', add os_m1 to $run_off_per_from[$from]; if to!='O', add max(0, os_m1 - os_cur) to $run_off_per_from[$from]. After the loop, include 'run_off_per_from' => $run_off_per_from in the response alongside portfolio_flow or as a top-level field.",
+    "BACKEND (api/controllers/KolekController.php) - Fix growth calculation: Change line ~1030 from '$net_growth = $realisasi[\"os\"] - $run_off' to '$net_growth = $total_os_curr - $total_os_m1'. This gives the direct/correct growth = baki_debet_actual - baki_debet_m1.",
+    "BACKEND (api/controllers/KolekController.php) - Fix O_LUNAS detail for konsolidasi: In getMigrasiBucketDetailOLunas (around line ~1636), the $kcCondH when kc is null currently adds 'AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') <> '000'' to the LEFT JOIN. This incorrectly filters the LEFT JOIN causing accounts that exist in harian under branch 000 to appear as NULL (false positive 'lunas'). Fix: When kc is null, set $kcCondH to empty string '' for the LEFT JOIN (we only want to check existence, not filter by branch on h-side). Keep $kcCondC as-is (filtering closing data to exclude branch 000).",
+    "BACKEND (api/controllers/KolekController.php) - Add angsuran tracking per category: In the main loop, also track angsuran_by_category. Define $angsuran_by_category = ['sc'=>['noa'=>0,'os'=>0], 'fe'=>['noa'=>0,'os'=>0], 'be'=>['noa'=>0,'os'=>0]]. For each account where to != 'O' and (os_m1 - os_cur) > 0, increment angsuran_by_category[$cat]['noa']++ and angsuran_by_category[$cat]['os'] += max(0, os_m1 - os_cur). Include angsuran_by_category in the response.",
+    "FRONTEND (pages/migrasi_bucket.php) - Use backend run_off_per_from for matrix: In the renderBucket function, read data.run_off_per_from. In the matrix row loop (around line 604-640), instead of computing 'const runoff = Math.max(0, os_m1 - sumNonO)', use: 'const runoff = (data.run_off_per_from && data.run_off_per_from[f]) ? getNum(data.run_off_per_from[f]) : Math.max(0, os_m1 - sumNonO)'. This uses the backend value (angsuran+lunas per bucket) when available.",
+    "FRONTEND (pages/migrasi_bucket.php) - Update catBreakdownHtml to show angsuran: Read data.angsuran_by_category (or fallback). Update catBreakdownHtml to accept an additional angsuranData parameter with {sc:{noa,os}, fe:{noa,os}, be:{noa,os}}. For each category row (SC/FE/BE), add angsuran info: 'SC: X akun (Rp Y) | Angsuran: Rp Z (P%)' where P% = angsuran_os / total_os_m1_for_that_category * 100. The total_os_m1 per category can be approximated from the movement os total (perbaikan.os + stay.os + pemburukan.os for that category), or passed from backend. Show angsuran % relative to the total os of that category."
+  ],
+  "acceptance_criteria": [
+    "php -l api/controllers/KolekController.php passes with no syntax errors",
+    "php -l pages/migrasi_bucket.php passes with no syntax errors",
+    "Backend response includes run_off_per_from with a mapping of each bucket letter to its run_off value (angsuran + lunas for that bucket)",
+    "Backend net_growth is computed as total_os_curr - total_os_m1 (direct formula)",
+    "Backend getMigrasiBucketDetailOLunas does NOT add kode_cabang filter to the h-side LEFT JOIN when kc is null",
+    "Backend response includes angsuran_by_category with sc/fe/be breakdown of angsuran noa and os",
+    "Frontend matrix uses run_off_per_from from backend instead of computing Math.max(0, os_m1 - sumNonO)",
+    "Frontend catBreakdownHtml shows angsuran percentage and nominal for each SC/FE/BE category"
+  ],
+  "verification": [
+    "php -l /projects/sandbox/monbis/api/controllers/KolekController.php",
+    "php -l /projects/sandbox/monbis/pages/migrasi_bucket.php"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

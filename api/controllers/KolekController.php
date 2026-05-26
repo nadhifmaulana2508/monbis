@@ -976,6 +976,14 @@ class KolekController {
             'be' => ['perbaikan'=>['noa'=>0,'os'=>0], 'stay'=>['noa'=>0,'os'=>0], 'pemburukan'=>['noa'=>0,'os'=>0]]
         ];
 
+        $run_off_per_from = [];
+        foreach ($order as $f) { $run_off_per_from[$f] = 0; }
+        $angsuran_by_category = [
+            'sc' => ['noa' => 0, 'os' => 0],
+            'fe' => ['noa' => 0, 'os' => 0],
+            'be' => ['noa' => 0, 'os' => 0]
+        ];
+
         foreach ($M1['accSet'] as $acc => $_) {
             $from = $M1['bucketByAcc'][$acc] ?? 'A';
             $to   = $CUR['bucketByAcc'][$acc] ?? 'O';
@@ -986,8 +994,10 @@ class KolekController {
             if ($to !== 'O') {
                 $sum_os_stay_in_system += $os_m1;
                 $angsuran_total += max(0, $os_m1 - $os_cur);
+                $run_off_per_from[$from] += max(0, $os_m1 - $os_cur);
             } else {
                 $lunas_total += $os_m1;
+                $run_off_per_from[$from] += $os_m1;
             }
 
             $fromTotals[$from]['noa_m1']++;
@@ -1023,11 +1033,20 @@ class KolekController {
                     if ($cat) { $movement_by_category[$cat]['pemburukan']['noa']++; $movement_by_category[$cat]['pemburukan']['os'] += $os_used; }
                 }
             }
+
+            // Track angsuran per category
+            if ($to !== 'O') {
+                $angsuran_acc = max(0, $os_m1 - $os_cur);
+                if ($angsuran_acc > 0 && $cat) {
+                    $angsuran_by_category[$cat]['noa']++;
+                    $angsuran_by_category[$cat]['os'] += $angsuran_acc;
+                }
+            }
         }
 
         // 6. Hitung Run Off & Net Growth
         $run_off = $angsuran_total + $lunas_total;
-        $net_growth = $realisasi['os'] - $run_off;
+        $net_growth = $total_os_curr - $total_os_m1;
 
         // 7. Flatten Data Matrix & Buat Detailed Breakdown Lists
         $out = [];
@@ -1111,7 +1130,9 @@ class KolekController {
             ],
             'matrix'           => $out,
             'from_totals'      => $fromTotals,
-            'column_totals'    => $colTotals
+            'column_totals'    => $colTotals,
+            'run_off_per_from' => $run_off_per_from,
+            'angsuran_by_category' => $angsuran_by_category
         ]);
     }
 
@@ -1646,7 +1667,7 @@ class KolekController {
 
       $kcCondH = ($kc !== null)
         ? "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') = :kcH"
-        : "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') <> '000'";
+        : "";
       $kcCondC = ($kc !== null)
         ? "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') = :kcC"
         : "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') <> '000'";
