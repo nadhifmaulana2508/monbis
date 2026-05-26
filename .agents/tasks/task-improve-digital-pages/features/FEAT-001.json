@@ -1,0 +1,34 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Redesign branchless.php with: (1) Unified breakdown table showing ALL 28 cabang when Konsolidasi is selected (combining MoM AND YoY data in one table), showing only korwil-specific cabang when a korwil is selected. Table columns: Nama Cabang, Nominal Tahun Lalu, Nominal Tahun Ini, Gap% YoY, Nominal Bulan Lalu, Nominal Bulan Ini, Gap% MoM. (2) Improved UI/design with better spacing, card styling, and professional dashboard look. (3) Fully responsive layout - collapsible filter section on mobile (toggle open/close), horizontally scrollable tables, properly resizing charts. The existing separate 'Breakdown' and 'YOY' tables should be merged into one unified table.",
+  "status": "in_progress",
+  "steps": [
+    "Rewrite pages/branchless.php completely with the following changes:",
+    "1. FILTER SECTION: Wrap the filter form in a collapsible container on mobile. Add a toggle button visible only on mobile (md:hidden) that shows/hides the date pickers and area selector. On desktop (md+), filters remain always visible as current. Use a simple JS toggle with CSS classes.",
+    "2. SUMMARY CARDS: Keep the existing 3-card grid but improve card design - add subtle gradient backgrounds, better padding (p-5), improved typography hierarchy, and hover effects.",
+    "3. TREND CHART: Keep as-is but ensure the chart container is responsive (width:100%, proper min-height on mobile).",
+    "4. DISTRIBUTION SECTION: Keep the Top 5 + Donut chart section but improve spacing.",
+    "5. UNIFIED BREAKDOWN TABLE: Replace the two separate tables (Breakdown MoM + YOY) with ONE unified table. The new table fetches BOTH detail_breakdown_transaksi AND yoy_transaksi simultaneously. When KONSOLIDASI is selected, the table shows ALL 28 cabang (extracted from korwilMap.cabang arrays from both endpoints). When KORWIL is selected, show only cabang in that korwil. Table columns: No, Nama Cabang, Nom Tahun Lalu (from YOY prev_nom), Nom Tahun Ini (from YOY curr_nom), Gap% YoY, Nom Bulan Lalu (from breakdown prev_nom), Nom Bulan Ini (from breakdown curr_nom), Gap% MoM. Add a GRAND TOTAL row at the top. Make the table wrapper horizontally scrollable (overflow-x-auto) on mobile with min-width on the table.",
+    "6. Remove the separate YOY chart+table section since it is now merged into the unified table.",
+    "7. CSS: Add responsive utilities - @media queries or Tailwind responsive classes. Ensure .card-shadow, table th/td padding, font sizes work well on mobile (smaller padding, smaller fonts on xs screens).",
+    "8. Ensure all existing API calls (fetchSummaryCards, fetchTrend, fetchDistribusi) remain functional. Replace fetchBreakdown and fetchYoy with a single fetchUnifiedBreakdown function that calls both endpoints in parallel (Promise.all) and merges the data by cabang kode."
+  ],
+  "acceptance_criteria": [
+    "php -l pages/branchless.php passes with no syntax errors",
+    "The page contains a mobile filter toggle button that is hidden on md+ screens",
+    "The unified breakdown table has columns for both MoM and YoY comparison",
+    "When KONSOLIDASI is selected, the fetchUnifiedBreakdown function iterates through all korwil cabang arrays to show all 28 cabang",
+    "When a KORWIL is selected, only cabang within that korwil range are shown",
+    "The table is wrapped in overflow-x-auto for horizontal scrolling on mobile",
+    "No separate YOY table/chart section exists anymore - it is merged into the unified table"
+  ],
+  "verification": [
+    "Run: php -l /projects/sandbox/monbis/pages/branchless.php",
+    "Grep for 'fetchUnifiedBreakdown' to confirm the new unified function exists",
+    "Grep for 'filter-toggle' or similar to confirm mobile toggle exists",
+    "Verify no JavaScript syntax errors by checking balanced braces and function definitions"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}
