@@ -451,7 +451,9 @@
       }
       grand_lunas += lunas;
       const runOffData = data.run_off_per_from || {};
-      const runoff = getNum(runOffData[f]) || Math.max(0, os_m1 - sumNonO);
+      const runoff = (runOffData[f] !== undefined && runOffData[f] !== null)
+        ? getNum(runOffData[f])
+        : Math.max(0, os_m1 - sumNonO);
       grand_runoff += runoff;
 
       rowsHtml.push(`<tr>
