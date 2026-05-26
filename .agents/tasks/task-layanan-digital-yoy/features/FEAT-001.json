@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Add YOY (Year-over-Year) comparison backend endpoint and enhance the frontend page to show YOY data alongside the existing MoM comparison. Also rename QRIS tab to 'QRIS Merchant'. The YOY endpoint compares the same period this year vs last year for each channel, broken down by cabang/kanwil.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "Step 1 - Add getYoyTransaksi() method to api/controllers/TransaksiController.php. This method should: (a) Accept harian_date, closing_date, kode_kantor, korwil, channel params. (b) Calculate YOY by comparing current period (closing_date to harian_date) with same period last year (closing_date-1year to harian_date-1year). (c) Return per-cabang/kanwil breakdown with curr_nom, curr_trx, prev_year_nom, prev_year_trx, yoy_growth_nom, yoy_growth_trx. (d) Follow the exact same filter pattern as getDetailBreakdownTransaksi() (korwil ranges, channel filter codes). (e) Include grand_total with YOY growth.",
     "Step 2 - Add route entry in api/routes/transaksi.php for type 'yoy_transaksi' dispatching to $controller->getYoyTransaksi($input).",
@@ -27,5 +27,5 @@
     "grep -n 'fetchYoy' /projects/sandbox/monbis/pages/layanan_digital.php"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All PHP syntax checks pass. The YOY method follows the exact same subquery pattern as getDetailBreakdownTransaksi() to avoid PDO HY093 errors. Chart data is structured as grouped bar with 'Tahun Ini' and 'Tahun Lalu' series."
 }
