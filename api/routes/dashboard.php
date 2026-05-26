@@ -42,7 +42,7 @@ switch ($method) {
             sendResponse(200, "Testing Kenaikan & Penurunan NPL", $data);
 
         } elseif ($type === 'test runoff korwil') {
-            $data = $controller->getRunOffVsRealisasiKorwil($input);
+            $data = $controller->getRunOffRealisasi($input);
             sendResponse(200, "Testing Run Off vs Realisasi (Per Korwil)", $data);
 
         } elseif ($type === 'test flow recovery npl') {
@@ -50,7 +50,7 @@ switch ($method) {
             sendResponse(200, "Testing Flow NPL vs Recovery NPL", $data);
 
         } elseif ($type === 'test top realisasi') {
-            $data = $controller->getTopBottomRealisasi($input);
+            $data = $controller->getTopBottomRealisasiNominatif($input);
             sendResponse(200, "Testing Top Bottom Realisasi", $data);
             
         } elseif ($type === 'test flow par') {

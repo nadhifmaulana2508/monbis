@@ -350,8 +350,9 @@ class FlowParController {
             $where .= " AND c.kolektibilitas IN ('L', 'DP') AND n.kolektibilitas IN ('KL', 'D', 'M') ";
         } else if ($status_jt === 'realisasi_baru') {
             $where .= " AND c.no_rekening IS NULL AND n.no_rekening IS NOT NULL ";
-        } else if ($status_jt === 'restruktur') {
-            $where .= " AND n.baki_debet > c.baki_debet AND c.no_rekening IS NOT NULL ";
+} else if ($status_jt === 'restruktur') {
+            // 🔥 UPDATE BARU: Tambah OR n.tgl_jatuh_tempo != c.tgl_jatuh_tempo
+            $where .= " AND (n.baki_debet > c.baki_debet OR n.tgl_jatuh_tempo != c.tgl_jatuh_tempo) AND c.no_rekening IS NOT NULL ";
         } else if ($status_jt === 'byr_tunggakan') {
             $where .= " AND n.no_rekening IS NOT NULL AND trx.total_bayar_sekarang > 0 AND (COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)) > 0 ";
         } else if ($status_jt === 'belum_bayar_belum_jt') {

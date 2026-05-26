@@ -145,7 +145,7 @@
             if (br) br.textContent = u.branch_name || u.unit_kerja || '-';
             if (acc) acc.textContent = (u.account_handle || u.username || u.email || u.employee_id || u.kode || '-');
 
-            const isDev = (u.role === 'dev' || u.job_position === 'Divisi Operasional' || u.unit_kerja === 'Divisi Operasional');
+            const isDev = (u.role === 'dev' || u.unit_kerja === 'Divisi Operasional' || u.unit_kerja === 'Dewan Komisaris dan Direksi');
             if (menuMonevDev) {
                 menuMonevDev.style.setProperty('display', isDev ? 'block' : 'none', 'important');
             }

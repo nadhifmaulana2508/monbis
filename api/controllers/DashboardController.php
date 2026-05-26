@@ -715,7 +715,9 @@ class DashboardController{
         $kode_kantor = $input['kode_kantor'] ?? '000';
         $korwil      = strtoupper($input['korwil'] ?? '');
         
-        // 1. Tentukan batas tanggal awal berdasarkan periode
+        // =========================================================
+        // 1. Tentukan batas tanggal awal dan format grouping
+        // =========================================================
         $start_date = $harian_date;
         $format_group = 'daily'; 
         
@@ -732,8 +734,9 @@ class DashboardController{
             $start_date = date('Y-m-01', strtotime('-5 months', strtotime($harian_date))); 
             $format_group = 'monthly';
         } elseif ($periode === 'tahunan') {
-            $start_date = date('Y-m-01', strtotime('-11 months', strtotime($harian_date))); 
-            $format_group = 'monthly';
+            // FIX: Ambil dari awal tahun 2020
+            $start_date = '2020-01-01'; 
+            $format_group = 'yearly';
         }
 
         // =========================================================
@@ -842,6 +845,21 @@ class DashboardController{
                     ];
                     $curr = strtotime('+1 month', $curr);
                 }
+            } elseif ($format_group === 'yearly') {
+                // FIX: Loop dari 2020 sampai tahun hari ini
+                $startYear = 2020;
+                $currentYear = (int)date('Y', strtotime($harian_date));
+                
+                for ($y = $startYear; $y <= $currentYear; $y++) {
+                    $lbl = (string)$y;
+                    $groupedData[$lbl] = [
+                        'label' => $lbl, // Output misal: "2020", "2021"
+                        'realisasi' => 0, 'noa_realisasi' => 0, 
+                        'lunas' => 0, 'noa_lunas' => 0, 
+                        'angsuran' => 0, 'noa_angsuran' => 0, 
+                        'runoff' => 0
+                    ];
+                }
             }
 
             // =========================================================
@@ -850,8 +868,10 @@ class DashboardController{
             foreach ($rows as $row) {
                 $tgl = $row['tanggal'];
                 $lblKey = $tgl; 
+                
                 if ($format_group === 'weekly') $lblKey = date('o-\WW', strtotime($tgl));
                 elseif ($format_group === 'monthly') $lblKey = date('Y-m', strtotime($tgl));
+                elseif ($format_group === 'yearly') $lblKey = date('Y', strtotime($tgl)); // FIX: Map ke tahun
 
                 if (isset($groupedData[$lblKey])) {
                     $groupedData[$lblKey]['realisasi']     += (float) $row['total_realisasi'];
@@ -885,7 +905,7 @@ class DashboardController{
                 ];
             }
             
-            // Tandai elemen terakhir sebagai "Act"
+            // Tandai elemen terakhir sebagai "Act" (Aktual)
             if (count($formattedData) > 0) {
                 $formattedData[count($formattedData) - 1]['label'] .= ' (Act)';
             }
@@ -1338,6 +1358,212 @@ class DashboardController{
         }
     }
 
+    public function getRunOffRealisasi($input) {
+        $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
+        $harian_date  = $input['harian_date']  ?? date('Y-m-d');
+        
+        // Mulai narik data dari H+1 closing
+        $start_date = date('Y-m-d', strtotime('+1 day', strtotime($closing_date)));
+
+        $kode_kantor = $input['kode_kantor'] ?? '000';
+        $korwil      = strtoupper($input['korwil'] ?? '');
+
+        // =========================================================
+        // 1. TENTUKAN MODE TAMPILAN & FILTER SQL
+        // =========================================================
+        $displayMode = 'KORWIL'; // Default Konsolidasi
+        $filterSql_master = ""; 
+        $filterParams = [];
+
+        if ($kode_kantor !== '000' && empty($korwil)) {
+            // MODE CABANG: Breakdown ke Kas
+            $displayMode = 'CABANG';
+            $filterSql_master .= " AND g.kode_kantor = :kode_kantor_master";
+            $filterParams[':kode_kantor_master'] = $kode_kantor;
+        } elseif (!empty($korwil)) {
+            // MODE KORWIL FILTERED: Tampilkan semua cabang di Korwil tsb
+            $displayMode = 'CABANG_BY_KORWIL';
+            if ($korwil === 'SEMARANG') {
+                $filterSql_master .= " AND k.kode_kantor BETWEEN '001' AND '007'";
+            } elseif ($korwil === 'SOLO') {
+                $filterSql_master .= " AND k.kode_kantor BETWEEN '008' AND '014'";
+            } elseif ($korwil === 'BANYUMAS') {
+                $filterSql_master .= " AND k.kode_kantor BETWEEN '015' AND '021'";
+            } elseif ($korwil === 'PEKALONGAN') {
+                $filterSql_master .= " AND k.kode_kantor BETWEEN '022' AND '028'";
+            }
+        }
+
+        // =========================================================
+        // 2. SUSUN QUERY BERDASARKAN MODE
+        // =========================================================
+        
+        if ($displayMode === 'KORWIL') {
+            // --- MODE KONSOLIDASI: Tampilkan 4 Korwil Utama ---
+            $sql = "
+                WITH 
+                master_korwil AS (
+                    SELECT 'SEMARANG' AS nama_korwil, 1 as sort_order UNION ALL
+                    SELECT 'SOLO', 2 UNION ALL
+                    SELECT 'BANYUMAS', 3 UNION ALL
+                    SELECT 'PEKALONGAN', 4
+                ),
+                summary_data AS (
+                    SELECT 
+                        CASE 
+                            WHEN s.kode_kantor BETWEEN '001' AND '007' THEN 'SEMARANG'
+                            WHEN s.kode_kantor BETWEEN '008' AND '014' THEN 'SOLO'
+                            WHEN s.kode_kantor BETWEEN '015' AND '021' THEN 'BANYUMAS'
+                            WHEN s.kode_kantor BETWEEN '022' AND '028' THEN 'PEKALONGAN'
+                            ELSE 'LAINNYA' 
+                        END AS nama_korwil,
+                        -- 🔥 FIX: realisasi ditambah restrukturisasi
+                        SUM(COALESCE(s.realisasi, 0) + COALESCE(s.restrukturisasi, 0)) AS total_realisasi,
+                        SUM(COALESCE(s.pelunasan, 0)) AS total_lunas,
+                        SUM(COALESCE(s.angsuran, 0) - COALESCE(s.pelunasan, 0)) AS total_angsuran,
+                        SUM(COALESCE(s.angsuran, 0)) AS total_runoff
+                    FROM summary_kredit_harian_update s
+                    WHERE s.created >= :start_date AND s.created <= :end_date
+                    GROUP BY 
+                        CASE 
+                            WHEN s.kode_kantor BETWEEN '001' AND '007' THEN 'SEMARANG'
+                            WHEN s.kode_kantor BETWEEN '008' AND '014' THEN 'SOLO'
+                            WHEN s.kode_kantor BETWEEN '015' AND '021' THEN 'BANYUMAS'
+                            WHEN s.kode_kantor BETWEEN '022' AND '028' THEN 'PEKALONGAN'
+                            ELSE 'LAINNYA' 
+                        END
+                )
+                SELECT 
+                    mk.nama_korwil,
+                    COALESCE(sd.total_realisasi, 0) AS realisasi,
+                    COALESCE(sd.total_lunas, 0) AS lunas,
+                    COALESCE(sd.total_angsuran, 0) AS angsuran,
+                    COALESCE(sd.total_runoff, 0) AS total_runoff,
+                    (COALESCE(sd.total_realisasi, 0) - COALESCE(sd.total_runoff, 0)) AS growth
+                FROM master_korwil mk
+                LEFT JOIN summary_data sd ON mk.nama_korwil = sd.nama_korwil
+                ORDER BY mk.sort_order;
+            ";
+        } elseif ($displayMode === 'CABANG_BY_KORWIL') {
+            // --- MODE KORWIL: Breakdown ke Cabang ---
+            $sql = "
+                WITH summary_data AS (
+                    SELECT 
+                        s.kode_kantor,
+                        -- 🔥 FIX: realisasi ditambah restrukturisasi
+                        SUM(COALESCE(s.realisasi, 0) + COALESCE(s.restrukturisasi, 0)) AS total_realisasi,
+                        SUM(COALESCE(s.pelunasan, 0)) AS total_lunas,
+                        SUM(COALESCE(s.angsuran, 0) - COALESCE(s.pelunasan, 0)) AS total_angsuran,
+                        SUM(COALESCE(s.angsuran, 0)) AS total_runoff
+                    FROM summary_kredit_harian_update s
+                    WHERE s.created >= :start_date AND s.created <= :end_date
+                    GROUP BY s.kode_kantor
+                )
+                SELECT 
+                    k.nama_kantor AS nama_korwil,
+                    COALESCE(sd.total_realisasi, 0) AS realisasi,
+                    COALESCE(sd.total_lunas, 0) AS lunas,
+                    COALESCE(sd.total_angsuran, 0) AS angsuran,
+                    COALESCE(sd.total_runoff, 0) AS total_runoff,
+                    (COALESCE(sd.total_realisasi, 0) - COALESCE(sd.total_runoff, 0)) AS growth
+                FROM kode_kantor k
+                LEFT JOIN summary_data sd ON k.kode_kantor = sd.kode_kantor
+                WHERE 1=1 {$filterSql_master}
+                ORDER BY k.kode_kantor ASC;
+            ";
+        } elseif ($displayMode === 'CABANG') {
+            // --- MODE CABANG SPESIFIK: Breakdown ke Kantor Kas ---
+            $sql = "
+                WITH summary_data AS (
+                    SELECT 
+                        s.kode_group_1,
+                        -- 🔥 FIX: realisasi ditambah restrukturisasi
+                        SUM(COALESCE(s.realisasi, 0) + COALESCE(s.restrukturisasi, 0)) AS total_realisasi,
+                        SUM(COALESCE(s.pelunasan, 0)) AS total_lunas,
+                        SUM(COALESCE(s.angsuran, 0) - COALESCE(s.pelunasan, 0)) AS total_angsuran,
+                        SUM(COALESCE(s.angsuran, 0)) AS total_runoff
+                    FROM summary_kredit_harian_update s
+                    WHERE s.created >= :start_date AND s.created <= :end_date
+                    GROUP BY s.kode_group_1
+                )
+                SELECT 
+                    g.deskripsi_group1 AS nama_korwil,
+                    COALESCE(sd.total_realisasi, 0) AS realisasi,
+                    COALESCE(sd.total_lunas, 0) AS lunas,
+                    COALESCE(sd.total_angsuran, 0) AS angsuran,
+                    COALESCE(sd.total_runoff, 0) AS total_runoff,
+                    (COALESCE(sd.total_realisasi, 0) - COALESCE(sd.total_runoff, 0)) AS growth
+                FROM kankas g
+                LEFT JOIN summary_data sd ON g.kode_group1 = sd.kode_group_1
+                WHERE 1=1 {$filterSql_master}
+                ORDER BY g.kode_group1 ASC;
+            ";
+        }
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            
+            // Bind parameter tanggal
+            $stmt->bindValue(':start_date', $start_date);
+            $stmt->bindValue(':end_date', $harian_date);
+            
+            // Bind parameter filter
+            if (!empty($filterParams)) {
+                foreach ($filterParams as $key => $val) {
+                    $stmt->bindValue($key, $val);
+                }
+            }
+            
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // =========================================================
+            // 3. HITUNG GRAND TOTAL & FORMAT OUTPUT
+            // =========================================================
+            $grand_total = [
+                'nama_korwil'  => 'TOTAL KONSOLIDASI',
+                'realisasi'    => 0,
+                'lunas'        => 0,
+                'angsuran'     => 0,
+                'total_runoff' => 0,
+                'growth'       => 0
+            ];
+
+            $formattedData = [];
+            foreach ($rows as $r) {
+                $realisasi = (float) $r['realisasi'];
+                $lunas     = (float) $r['lunas'];
+                $angsuran  = (float) $r['angsuran'];
+                $runoff    = (float) $r['total_runoff'];
+                $growth    = (float) $r['growth'];
+
+                $formattedData[] = [
+                    'nama_korwil'  => str_replace('Kc. ', '', $r['nama_korwil'] ?? 'KAS TANPA NAMA'), 
+                    'realisasi'    => $realisasi,
+                    'lunas'        => $lunas,
+                    'angsuran'     => $angsuran,
+                    'total_runoff' => $runoff,
+                    'growth'       => $growth
+                ];
+
+                $grand_total['realisasi']    += $realisasi;
+                $grand_total['lunas']        += $lunas;
+                $grand_total['angsuran']     += $angsuran;
+                $grand_total['total_runoff'] += $runoff;
+                $grand_total['growth']       += $growth;
+            }
+
+            return [
+                'detail_korwil' => $formattedData,
+                'grand_total'   => $grand_total
+            ];
+
+        } catch (PDOException $e) {
+            error_log("Error getRunOffVsRealisasi: " . $e->getMessage());
+            return ['detail_korwil' => [], 'grand_total' => []];
+        }
+    }
+
     public function getFlowVsRecoveryNPL($input) {
         $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian_date  = $input['harian_date']  ?? date('Y-m-d');
@@ -1351,49 +1577,56 @@ class DashboardController{
         $displayMode = 'KORWIL'; // Default Konsolidasi
         $filterSql_cls = "";
         $filterSql_hrn = "";
+        $filterSql_master = ""; // Filter khusus untuk tabel master (kantor / kankas)
         $filterParams = [];
 
-        // Jika mode Cabang Spesifik (001, 002, dst)
+        // Jika mode Cabang Spesifik (001, 002, dst) -> BREAKDOWN KE KAS
         if ($kode_kantor !== '000' && empty($korwil)) {
             $displayMode = 'CABANG';
             // Dibedakan nama parameternya agar PDO tidak error (HY093)
             $filterSql_cls .= " AND kode_cabang = :kode_kantor_cls";
             $filterSql_hrn .= " AND kode_cabang = :kode_kantor_hrn";
+            $filterSql_master .= " AND g.kode_kantor = :kode_kantor_master";
             $filterParams[':kode_kantor_cls'] = $kode_kantor;
             $filterParams[':kode_kantor_hrn'] = $kode_kantor;
+            $filterParams[':kode_kantor_master'] = $kode_kantor;
         } 
-        // Jika mode Filter Dropdown Korwil (Nampilin isi cabangnya)
+        // Jika mode Filter Dropdown Korwil -> BREAKDOWN KE CABANG
         elseif (!empty($korwil)) {
             $displayMode = 'CABANG_BY_KORWIL';
             if ($korwil === 'SEMARANG') {
                 $filterSql_cls .= " AND kode_cabang BETWEEN '001' AND '007'";
                 $filterSql_hrn .= " AND kode_cabang BETWEEN '001' AND '007'";
+                $filterSql_master .= " AND kantor.kode_kantor BETWEEN '001' AND '007'";
             } elseif ($korwil === 'SOLO') {
                 $filterSql_cls .= " AND kode_cabang BETWEEN '008' AND '014'";
                 $filterSql_hrn .= " AND kode_cabang BETWEEN '008' AND '014'";
+                $filterSql_master .= " AND kantor.kode_kantor BETWEEN '008' AND '014'";
             } elseif ($korwil === 'BANYUMAS') {
                 $filterSql_cls .= " AND kode_cabang BETWEEN '015' AND '021'";
                 $filterSql_hrn .= " AND kode_cabang BETWEEN '015' AND '021'";
+                $filterSql_master .= " AND kantor.kode_kantor BETWEEN '015' AND '021'";
             } elseif ($korwil === 'PEKALONGAN') {
                 $filterSql_cls .= " AND kode_cabang BETWEEN '022' AND '028'";
                 $filterSql_hrn .= " AND kode_cabang BETWEEN '022' AND '028'";
+                $filterSql_master .= " AND kantor.kode_kantor BETWEEN '022' AND '028'";
             }
         }
 
         // =========================================================
-        // 2. CTE MASTER (Dioptimasi agar super ringan)
+        // 2. CTE MASTER (Menggunakan kolom: kode_cabang & kode_group1)
         // =========================================================
         $cte_base = "
             WITH 
             closing AS (
-                SELECT no_rekening, kode_cabang, kolektibilitas AS kolek_prev, baki_debet AS baki_prev
+                SELECT no_rekening, kode_cabang, kode_group1, kolektibilitas AS kolek_prev, baki_debet AS baki_prev
                 FROM nominatif
                 WHERE created = :closing_date
                 AND kolektibilitas IN ('L','DP','KL','D','M')
                 {$filterSql_cls}
             ),
             harian AS (
-                SELECT no_rekening, kolektibilitas AS kolek_curr, baki_debet AS baki_curr
+                SELECT no_rekening, kode_cabang, kode_group1, kolektibilitas AS kolek_curr, baki_debet AS baki_curr
                 FROM nominatif
                 WHERE created = :harian_date
                 AND kolektibilitas IN ('L','DP','KL','D','M')
@@ -1403,6 +1636,7 @@ class DashboardController{
                 SELECT 
                     c.no_rekening,
                     c.kode_cabang,
+                    c.kode_group1,
                     c.kolek_prev,
                     c.baki_prev,
                     h.kolek_curr,
@@ -1417,7 +1651,7 @@ class DashboardController{
         // 3. SUSUN QUERY BERDASARKAN MODE TAMPILAN
         // =========================================================
         if ($displayMode === 'KORWIL') {
-            // MODE KONSOLIDASI: Tampilkan 4 Korwil Utama
+            // --- MODE KONSOLIDASI: Tampilkan 4 Korwil Utama ---
             $sql = $cte_base . ",
             kalkulasi AS (
                 SELECT 
@@ -1459,8 +1693,8 @@ class DashboardController{
             LEFT JOIN kalkulasi k ON mk.nama_korwil = k.nama_korwil
             ORDER BY mk.sort_order;
             ";
-        } else {
-            // MODE CABANG / FILTER KORWIL: Tampilkan per Cabang (Join ke tabel kode_kantor)
+        } elseif ($displayMode === 'CABANG_BY_KORWIL') {
+            // --- MODE KORWIL: Breakdown ke Cabang ---
             $sql = $cte_base . ",
             kalkulasi AS (
                 SELECT 
@@ -1473,15 +1707,41 @@ class DashboardController{
                 GROUP BY kode_cabang
             )
             SELECT 
-                COALESCE(kantor.nama_kantor, CONCAT('CABANG ', k.kode_cabang)) AS nama_korwil,
+                kantor.nama_kantor AS nama_korwil,
                 COALESCE(k.flow_npl, 0) AS flow_npl,
                 COALESCE(k.backflow, 0) AS backflow,
                 COALESCE(k.lunas_npl, 0) AS lunas_npl,
                 COALESCE(k.angsuran_npl, 0) AS angsuran_npl,
                 (COALESCE(k.backflow, 0) + COALESCE(k.lunas_npl, 0) + COALESCE(k.angsuran_npl, 0)) AS total_recovery
-            FROM kalkulasi k
-            LEFT JOIN kode_kantor kantor ON k.kode_cabang = kantor.kode_kantor
-            ORDER BY k.flow_npl DESC;
+            FROM kode_kantor kantor
+            LEFT JOIN kalkulasi k ON kantor.kode_kantor = k.kode_cabang
+            WHERE 1=1 {$filterSql_master}
+            ORDER BY kantor.kode_kantor ASC;
+            ";
+        } elseif ($displayMode === 'CABANG') {
+            // --- MODE CABANG SPESIFIK: Breakdown ke Kantor Kas (Base kankas agar semua Kas muncul) ---
+            $sql = $cte_base . ",
+            kalkulasi AS (
+                SELECT 
+                    kode_group1,
+                    SUM(CASE WHEN kolek_prev IN ('L','DP') AND kolek_curr IN ('KL','D','M') THEN baki_curr ELSE 0 END) AS flow_npl,
+                    SUM(CASE WHEN kolek_prev IN ('KL','D','M') AND kolek_curr IN ('L','DP') THEN baki_curr ELSE 0 END) AS backflow,
+                    SUM(CASE WHEN kolek_prev IN ('KL','D','M') AND is_lunas = 1 THEN baki_prev ELSE 0 END) AS lunas_npl,
+                    SUM(CASE WHEN kolek_prev IN ('KL','D','M') AND is_lunas = 0 THEN (baki_prev - baki_curr) ELSE 0 END) AS angsuran_npl
+                FROM gabung
+                GROUP BY kode_group1
+            )
+            SELECT 
+                g.deskripsi_group1 AS nama_korwil,
+                COALESCE(k.flow_npl, 0) AS flow_npl,
+                COALESCE(k.backflow, 0) AS backflow,
+                COALESCE(k.lunas_npl, 0) AS lunas_npl,
+                COALESCE(k.angsuran_npl, 0) AS angsuran_npl,
+                (COALESCE(k.backflow, 0) + COALESCE(k.lunas_npl, 0) + COALESCE(k.angsuran_npl, 0)) AS total_recovery
+            FROM kankas g
+            LEFT JOIN kalkulasi k ON g.kode_group1 = k.kode_group1
+            WHERE 1=1 {$filterSql_master}
+            ORDER BY g.kode_group1 ASC;
             ";
         }
 
@@ -1492,8 +1752,8 @@ class DashboardController{
             $stmt->bindValue(':closing_date', $closing_date);
             $stmt->bindValue(':harian_date', $harian_date);
             
-            // Bind parameter filter (Hanya jalan jika mode bukan Konsolidasi)
-            if ($displayMode === 'CABANG') {
+            // Bind parameter filter master & kankas jika ada
+            if (!empty($filterParams)) {
                 foreach ($filterParams as $key => $val) {
                     $stmt->bindValue($key, $val);
                 }
@@ -1523,8 +1783,7 @@ class DashboardController{
                 $recovery     = (float) $r['total_recovery'];
 
                 $formattedData[] = [
-                    // Hapus kata 'Kc. ' biar rapi di Dashboard
-                    'nama_korwil'    => str_replace('Kc. ', '', $r['nama_korwil']), 
+                    'nama_korwil'    => str_replace('Kc. ', '', $r['nama_korwil'] ?? 'KAS TANPA NAMA'), 
                     'flow_npl'       => $flow_npl,
                     'backflow'       => $backflow,
                     'lunas_npl'      => $lunas_npl,
@@ -1703,51 +1962,292 @@ class DashboardController{
         }
     }
 
+    public function getTopBottomRealisasiNominatif($input) {
+        // Tetap pakai Actual (Hari Ini) sesuai request terakhir
+        $harian_date  = $input['harian_date'] ?? date('Y-m-d');
+        $closing_date = $input['closing_date'] ?? date('Y-m-t', strtotime($harian_date . ' -1 month')); 
+        
+        $kode_kantor = $input['kode_kantor'] ?? '000';
+        $korwil      = strtoupper($input['korwil'] ?? '');
+
+        // =========================================================
+        // 1. FILTER KORWIL (Untuk Query Master Cabang & AO)
+        // =========================================================
+        $filterSqlKorwil = "";
+        $filterParams = [
+            ':harian_date'  => $harian_date,
+            ':closing_date' => $closing_date
+        ];
+
+        if (!empty($korwil) && $kode_kantor === '000') {
+            if ($korwil === 'SEMARANG') {
+                $filterSqlKorwil = " AND k.kode_kantor BETWEEN '001' AND '007'";
+            } elseif ($korwil === 'SOLO') {
+                $filterSqlKorwil = " AND k.kode_kantor BETWEEN '008' AND '014'";
+            } elseif ($korwil === 'BANYUMAS') {
+                $filterSqlKorwil = " AND k.kode_kantor BETWEEN '015' AND '021'";
+            } elseif ($korwil === 'PEKALONGAN') {
+                $filterSqlKorwil = " AND k.kode_kantor BETWEEN '022' AND '028'";
+            }
+        }
+
+        // =========================================================
+        // 2. QUERY AREA DENGAN DYNAMIC BREAKDOWN (Cabang vs Kas)
+        // =========================================================
+        if ($kode_kantor === '000') {
+            // View ALL: Breakdown per Cabang
+            $sqlArea = "
+                SELECT 
+                    k.kode_kantor AS kode_area,
+                    k.nama_kantor AS nama_area,
+                    COALESCE(SUM(t.jml_pinjaman), 0) AS total_realisasi,
+                    COUNT(t.no_rekening) AS noa_realisasi
+                FROM kode_kantor k
+                LEFT JOIN nominatif t ON k.kode_kantor = t.kode_cabang
+                    AND t.created = :harian_date
+                    AND t.tgl_realisasi > :closing_date
+                    AND t.tgl_realisasi <= :harian_date
+                WHERE k.kode_kantor <> '000'
+                {$filterSqlKorwil}
+                GROUP BY k.kode_kantor, k.nama_kantor
+            ";
+        } else {
+            // View Cabang: Breakdown per Kantor Kas (kode_group1)
+            // Pastikan 'master_group1' sesuai dengan nama tabel kas di database kamu ya
+            $sqlArea = "
+                SELECT 
+                    g.kode_group1 AS kode_area,
+                    g.deskripsi_group1 AS nama_area,
+                    COALESCE(SUM(t.jml_pinjaman), 0) AS total_realisasi,
+                    COUNT(t.no_rekening) AS noa_realisasi
+                FROM master_group1 g
+                LEFT JOIN nominatif t ON g.kode_group1 = t.kode_group1
+                    AND t.kode_cabang = :kode_kantor_filter
+                    AND t.created = :harian_date
+                    AND t.tgl_realisasi > :closing_date
+                    AND t.tgl_realisasi <= :harian_date
+                WHERE g.kode_kantor = :kode_kantor_filter
+                GROUP BY g.kode_group1, g.deskripsi_group1
+            ";
+            $filterParams[':kode_kantor_filter'] = $kode_kantor;
+        }
+
+        // =========================================================
+        // 3. QUERY AO (Top 5 AO berdasarkan kode_group2)
+        // =========================================================
+        $filterSqlAO = "";
+        if ($kode_kantor !== '000') {
+            // Jika filter cabang aktif
+            $filterSqlAO = " AND t.kode_cabang = :kode_kantor_filter ";
+        } else {
+            // Jika filter korwil aktif, kita replace alias 'k.' menjadi 't.' dan kolomnya pakai kode_cabang
+            $filterSqlAO = str_replace('k.kode_kantor', 't.kode_cabang', $filterSqlKorwil);
+        }
+
+        $sqlAO = "
+            SELECT 
+                t.kode_group2 AS kode_ao,
+                COALESCE(ao.nama_ao, CONCAT('AO ', t.kode_group2)) AS nama_ao,
+                SUM(t.jml_pinjaman) AS total_realisasi,
+                COUNT(t.no_rekening) AS noa_realisasi
+            FROM nominatif t
+            LEFT JOIN ao_kredit ao ON t.kode_group2 = ao.kode_group2
+            WHERE t.created = :harian_date
+              AND t.tgl_realisasi > :closing_date
+              AND t.tgl_realisasi <= :harian_date
+              AND t.kode_cabang <> '000'
+            {$filterSqlAO}
+            GROUP BY t.kode_group2, ao.nama_ao
+            HAVING SUM(t.jml_pinjaman) > 0
+            ORDER BY total_realisasi DESC
+            LIMIT 5
+        ";
+
+        try {
+            // --- Eksekusi Area ---
+            $stmtArea = $this->pdo->prepare($sqlArea);
+            foreach ($filterParams as $key => $val) {
+                $stmtArea->bindValue($key, $val);
+            }
+            $stmtArea->execute();
+            $rowsArea = $stmtArea->fetchAll(PDO::FETCH_ASSOC);
+
+            $areaData = array_map(function($r) {
+                return [
+                    'kode_area'       => $r['kode_area'],
+                    'nama_area'       => $r['nama_area'],
+                    'total_realisasi' => (float) $r['total_realisasi'],
+                    'noa_realisasi'   => (int) $r['noa_realisasi']
+                ];
+            }, $rowsArea);
+
+            // Sort Descending (Top 5 Tertinggi)
+            usort($areaData, function($a, $b) {
+                return $b['total_realisasi'] <=> $a['total_realisasi'];
+            });
+            $topArea = array_slice($areaData, 0, 5);
+
+            // Sort Ascending (Bottom 5 Terendah)
+            usort($areaData, function($a, $b) {
+                // Jika realisasi sama, sort by kode area biar berurutan
+                if ($a['total_realisasi'] == $b['total_realisasi']) {
+                    return $a['kode_area'] <=> $b['kode_area'];
+                }
+                return $a['total_realisasi'] <=> $b['total_realisasi'];
+            });
+            $bottomArea = array_slice($areaData, 0, 5);
+
+            // --- Eksekusi AO ---
+            $stmtAO = $this->pdo->prepare($sqlAO);
+            foreach ($filterParams as $key => $val) {
+                $stmtAO->bindValue($key, $val);
+            }
+            $stmtAO->execute();
+            $rowsAO = $stmtAO->fetchAll(PDO::FETCH_ASSOC);
+
+            $topAO = array_map(function($r) {
+                return [
+                    'kode_ao'         => $r['kode_ao'],
+                    'nama_ao'         => $r['nama_ao'],
+                    'total_realisasi' => (float) $r['total_realisasi'],
+                    'noa_realisasi'   => (int) $r['noa_realisasi']
+                ];
+            }, $rowsAO);
+
+            // --- GRAND TOTAL ---
+            $grand_total_realisasi = 0;
+            $grand_total_noa = 0;
+            foreach($areaData as $cd) {
+                $grand_total_realisasi += $cd['total_realisasi'];
+                $grand_total_noa += $cd['noa_realisasi'];
+            }
+
+            return [
+                'top_area'      => $topArea,
+                'bottom_area'   => $bottomArea,
+                'top_ao'        => $topAO,
+                'grand_total'   => [
+                    'total_realisasi' => $grand_total_realisasi,
+                    'noa_realisasi'   => $grand_total_noa
+                ]
+            ];
+
+        } catch (PDOException $e) {
+            error_log("Error getTopBottomRealisasiNominatif: " . $e->getMessage());
+            return [
+                'top_area'      => [], 
+                'bottom_area'   => [], 
+                'top_ao'        => [],
+                'grand_total'   => ['total_realisasi' => 0, 'noa_realisasi' => 0]
+            ];
+        }
+    }
+
 
     public function getPerkembanganDeposito($input) {
         $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian_date  = $input['harian_date']  ?? date('Y-m-d');
 
-        // 1. Panggil helper filter (beri alias 'nd' untuk nominatif_deposito)
+        $kode_kantor = $input['kode_kantor'] ?? '000';
+        $korwil      = strtoupper($input['korwil'] ?? '');
+
+        // =========================================================
+        // 1. FILTER PINTAR & MODE TAMPILAN
+        // =========================================================
+        $displayMode = 'KORWIL'; 
+        $filterSql_master = ""; 
+        
+        // Panggil helper filter (beri alias 'nd' untuk nominatif_deposito)
         $filter = $this->buildFilterQuery($input, 'nd');
         
-        // 2. Trik sakti: Ganti 'kode_cabang' jadi 'kode_kantor' khusus untuk tabel ini
+        // Trik sakti bawaan: Ganti 'kode_cabang' jadi 'kode_kantor' khusus untuk tabel ini
         $filter['sql'] = str_replace('nd.kode_cabang', 'nd.kode_kantor', $filter['sql']);
 
-        // Query CTE Ultimate: Menghitung mutasi, saldo baru, saldo cair, beserta filter
-        $sql = "
-            WITH rekap_rek AS (
+        // Tentukan Mode Tampilan & Amankan query breakdown-nya
+        if ($kode_kantor !== '000' && empty($korwil)) {
+            $displayMode = 'CABANG';
+            $filterSql_master .= " AND g.kode_kantor = :kode_kantor_master";
+        } elseif (!empty($korwil)) {
+            $displayMode = 'CABANG_BY_KORWIL';
+            if ($korwil === 'SEMARANG') {
+                $filterSql_master .= " AND kantor.kode_kantor BETWEEN '001' AND '007'";
+            } elseif ($korwil === 'SOLO') {
+                $filterSql_master .= " AND kantor.kode_kantor BETWEEN '008' AND '014'";
+            } elseif ($korwil === 'BANYUMAS') {
+                $filterSql_master .= " AND kantor.kode_kantor BETWEEN '015' AND '021'";
+            } elseif ($korwil === 'PEKALONGAN') {
+                $filterSql_master .= " AND kantor.kode_kantor BETWEEN '022' AND '028'";
+            }
+        }
+
+        // =========================================================
+        // 2. KONDISIONAL QUERY BERDASARKAN MODE BREAKDOWN
+        // =========================================================
+        if ($displayMode === 'CABANG') {
+            // MODE CABANG: Breakdown ke Kantor Kas (Gunakan kode_group1 untuk kankas)
+            $sql = "
+                WITH rekap_rek AS (
+                    SELECT 
+                        no_rekening,
+                        MAX(kode_group1) AS kode_target, 
+                        SUM(CASE WHEN created = :closing_date_1 THEN 1 ELSE 0 END) AS is_prev,
+                        SUM(CASE WHEN created = :harian_date_1 THEN 1 ELSE 0 END) AS is_curr,
+                        SUM(CASE WHEN created = :closing_date_2 THEN saldo_akhir ELSE 0 END) AS saldo_prev,
+                        SUM(CASE WHEN created = :harian_date_2 THEN saldo_akhir ELSE 0 END) AS saldo_curr
+                    FROM nominatif_deposito nd
+                    WHERE created IN (:closing_date_3, :harian_date_3)
+                    {$filter['sql']}
+                    GROUP BY no_rekening
+                )
                 SELECT 
-                    no_rekening,
-                    MAX(kode_kantor) AS kode_kantor, 
-                    SUM(CASE WHEN created = :closing_date_1 THEN 1 ELSE 0 END) AS is_prev,
-                    SUM(CASE WHEN created = :harian_date_1 THEN 1 ELSE 0 END) AS is_curr,
-                    SUM(CASE WHEN created = :closing_date_2 THEN saldo_akhir ELSE 0 END) AS saldo_prev,
-                    SUM(CASE WHEN created = :harian_date_2 THEN saldo_akhir ELSE 0 END) AS saldo_curr
-                FROM nominatif_deposito nd
-                WHERE created IN (:closing_date_3, :harian_date_3)
-                {$filter['sql']}
-                GROUP BY no_rekening
-            )
-            SELECT 
-                r.kode_kantor,
-                COALESCE(k.nama_kantor, CONCAT('CABANG ', r.kode_kantor)) AS nama_cabang,
-                
-                SUM(CASE WHEN r.is_curr > 0 THEN 1 ELSE 0 END) AS noa_curr, 
-                SUM(CASE WHEN r.is_prev = 0 AND r.is_curr > 0 THEN 1 ELSE 0 END) AS noa_tambah,
-                SUM(CASE WHEN r.is_prev > 0 AND r.is_curr = 0 THEN 1 ELSE 0 END) AS noa_kurang,
-                
-                SUM(r.saldo_prev) AS saldo_prev,
-                SUM(r.saldo_curr) AS saldo_curr,
-                
-                -- LOGIKA BARU: Hitung Saldo Uang Segar dan Saldo Kabur
-                SUM(CASE WHEN r.is_prev = 0 AND r.is_curr > 0 THEN r.saldo_curr ELSE 0 END) AS saldo_baru,
-                SUM(CASE WHEN r.is_prev > 0 AND r.is_curr = 0 THEN r.saldo_prev ELSE 0 END) AS saldo_cair
-                
-            FROM rekap_rek r
-            LEFT JOIN kode_kantor k ON r.kode_kantor = k.kode_kantor
-            GROUP BY r.kode_kantor, k.nama_kantor
-        ";
+                    r.kode_target AS kode_kantor,
+                    COALESCE(g.deskripsi_group1, CONCAT('KAS ', r.kode_target)) AS nama_cabang,
+                    SUM(CASE WHEN r.is_curr > 0 THEN 1 ELSE 0 END) AS noa_curr, 
+                    SUM(CASE WHEN r.is_prev = 0 AND r.is_curr > 0 THEN 1 ELSE 0 END) AS noa_tambah,
+                    SUM(CASE WHEN r.is_prev > 0 AND r.is_curr = 0 THEN 1 ELSE 0 END) AS noa_kurang,
+                    SUM(r.saldo_prev) AS saldo_prev,
+                    SUM(r.saldo_curr) AS saldo_curr,
+                    SUM(CASE WHEN r.is_prev = 0 AND r.is_curr > 0 THEN r.saldo_curr ELSE 0 END) AS saldo_baru,
+                    SUM(CASE WHEN r.is_prev > 0 AND r.is_curr = 0 THEN r.saldo_prev ELSE 0 END) AS saldo_cair
+                FROM kankas g
+                LEFT JOIN rekap_rek r ON TRIM(g.kode_group1) = TRIM(r.kode_target)
+                WHERE 1=1 {$filterSql_master}
+                GROUP BY r.kode_target, g.deskripsi_group1, g.kode_group1
+                ORDER BY g.kode_group1 ASC;
+            ";
+        } else {
+            // MODE KONSOLIDASI & KORWIL: Breakdown ke Cabang Utama (Sama seperti code lama)
+            $sql = "
+                WITH rekap_rek AS (
+                    SELECT 
+                        no_rekening,
+                        MAX(kode_kantor) AS kode_target, 
+                        SUM(CASE WHEN created = :closing_date_1 THEN 1 ELSE 0 END) AS is_prev,
+                        SUM(CASE WHEN created = :harian_date_1 THEN 1 ELSE 0 END) AS is_curr,
+                        SUM(CASE WHEN created = :closing_date_2 THEN saldo_akhir ELSE 0 END) AS saldo_prev,
+                        SUM(CASE WHEN created = :harian_date_2 THEN saldo_akhir ELSE 0 END) AS saldo_curr
+                    FROM nominatif_deposito nd
+                    WHERE created IN (:closing_date_3, :harian_date_3)
+                    {$filter['sql']}
+                    GROUP BY no_rekening
+                )
+                SELECT 
+                    kantor.kode_kantor,
+                    kantor.nama_kantor AS nama_cabang,
+                    SUM(CASE WHEN r.is_curr > 0 THEN 1 ELSE 0 END) AS noa_curr, 
+                    SUM(CASE WHEN r.is_prev = 0 AND r.is_curr > 0 THEN 1 ELSE 0 END) AS noa_tambah,
+                    SUM(CASE WHEN r.is_prev > 0 AND r.is_curr = 0 THEN 1 ELSE 0 END) AS noa_kurang,
+                    SUM(COALESCE(r.saldo_prev, 0)) AS saldo_prev,
+                    SUM(COALESCE(r.saldo_curr, 0)) AS saldo_curr,
+                    SUM(CASE WHEN r.is_prev = 0 AND r.is_curr > 0 THEN r.saldo_curr ELSE 0 END) AS saldo_baru,
+                    SUM(CASE WHEN r.is_prev > 0 AND r.is_curr = 0 THEN r.saldo_prev ELSE 0 END) AS saldo_cair
+                FROM kode_kantor kantor
+                LEFT JOIN rekap_rek r ON kantor.kode_kantor = r.kode_target
+                WHERE 1=1 {$filterSql_master}
+                GROUP BY kantor.kode_kantor, kantor.nama_kantor
+                ORDER BY kantor.kode_kantor ASC;
+            ";
+        }
 
         try {
             $stmt = $this->pdo->prepare($sql);
@@ -1760,7 +2260,12 @@ class DashboardController{
             $stmt->bindValue(':harian_date_2', $harian_date);
             $stmt->bindValue(':harian_date_3', $harian_date);
             
-            // 3. Bind parameter filternya (jika ada)
+            // Bind parameter master kankas jika mode Cabang Spesifik
+            if ($displayMode === 'CABANG') {
+                $stmt->bindValue(':kode_kantor_master', $kode_kantor);
+            }
+
+            // Bind parameter bawaan dari buildFilterQuery
             foreach ($filter['params'] as $key => $val) {
                 $stmt->bindValue($key, $val);
             }
@@ -1768,7 +2273,9 @@ class DashboardController{
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // 4. Siapkan Wadah untuk 4 Korwil Saja
+            // =========================================================
+            // 3. WADAH UNTUK GENERATE KORWIL & GRAND TOTAL
+            // =========================================================
             $korwil_data = [];
             $korwil_list = ['SEMARANG', 'SOLO', 'BANYUMAS', 'PEKALONGAN'];
             foreach ($korwil_list as $kw) {
@@ -1784,9 +2291,13 @@ class DashboardController{
             ];
             $cabang_array = [];
 
-            // 5. Olah Data dari Database
+            // =========================================================
+            // 4. OLAH DATA DARI DATABASE (DYNAMIC MAPPING)
+            // =========================================================
             foreach ($rows as $r) {
-                $kd = str_pad($r['kode_kantor'], 3, '0', STR_PAD_LEFT);
+                // Bersihkan kode kantor/kas untuk mapping
+                $kd = str_pad($r['kode_kantor'] ?? '', 3, '0', STR_PAD_LEFT);
+                
                 $saldo_prev = (float) $r['saldo_prev'];
                 $saldo_curr = (float) $r['saldo_curr'];
                 $delta      = $saldo_curr - $saldo_prev;
@@ -1798,14 +2309,21 @@ class DashboardController{
                 $noa_tambah = (int) $r['noa_tambah'];
                 $noa_kurang = (int) $r['noa_kurang'];
 
-                // Mapping Korwil
+                // Atur Korwil berdasarkan kode cabang asalnya jika tidak kosong
                 $korwil = '';
-                if ($kd >= '001' && $kd <= '007') $korwil = 'SEMARANG';
-                elseif ($kd >= '008' && $kd <= '014') $korwil = 'SOLO';
-                elseif ($kd >= '015' && $kd <= '021') $korwil = 'BANYUMAS';
-                elseif ($kd >= '022' && $kd <= '028') $korwil = 'PEKALONGAN';
+                if ($displayMode === 'CABANG') {
+                    // Kalau mode Cabang, variabel $kode_kantor di input adalah cabang asalnya
+                    $kd_cab = str_pad($kode_kantor, 3, '0', STR_PAD_LEFT);
+                } else {
+                    $kd_cab = $kd;
+                }
 
-                // Tambah ke Korwil (Hanya kalau masuk 4 korwil utama)
+                if ($kd_cab >= '001' && $kd_cab <= '007') $korwil = 'SEMARANG';
+                elseif ($kd_cab >= '008' && $kd_cab <= '014') $korwil = 'SOLO';
+                elseif ($kd_cab >= '015' && $kd_cab <= '021') $korwil = 'BANYUMAS';
+                elseif ($kd_cab >= '022' && $kd_cab <= '028') $korwil = 'PEKALONGAN';
+
+                // Akumulasikan ke Korwil
                 if ($korwil !== '') {
                     $korwil_data[$korwil]['noa_curr']    += $noa_curr;
                     $korwil_data[$korwil]['noa_tambah']  += $noa_tambah;
@@ -1817,7 +2335,7 @@ class DashboardController{
                     $korwil_data[$korwil]['saldo_cair']  += $saldo_cair;
                 }
 
-                // Tambah ke Grand Total
+                // Akumulasikan ke Grand Total
                 $grand_total['noa_curr']    += $noa_curr;
                 $grand_total['noa_tambah']  += $noa_tambah;
                 $grand_total['noa_kurang']  += $noa_kurang;
@@ -1825,13 +2343,14 @@ class DashboardController{
                 $grand_total['saldo_curr']  += $saldo_curr;
                 $grand_total['delta_saldo'] += $delta;
                 $grand_total['saldo_baru']  += $saldo_baru;
+                $grand_total['delta_saldo'] += $delta;
                 $grand_total['saldo_cair']  += $saldo_cair;
 
-                // 🔥 FIX: Tambahkan 'noa_curr' ke array Cabang biar muncul di Front-End
+                // Output detail cabang / kankas
                 $cabang_array[] = [
                     'kode_cabang' => $kd,
-                    'nama_cabang' => $r['nama_cabang'],
-                    'noa_curr'    => $noa_curr,      // <--- INI BIANG KEROKNYA
+                    'nama_cabang' => str_replace('Kc. ', '', $r['nama_cabang'] ?? 'KAS TANPA NAMA'),
+                    'noa_curr'    => $noa_curr,
                     'noa_tambah'  => $noa_tambah,
                     'noa_kurang'  => $noa_kurang,
                     'saldo_prev'  => $saldo_prev,
@@ -1842,8 +2361,9 @@ class DashboardController{
                 ];
             }
 
-            // 6. Eksekusi Kategori Sortir
-
+            // =========================================================
+            // 5. EKSEKUSI KATEGORI SORTIR TOP 5 & BOTTOM 5
+            // =========================================================
             $kenaikan = array_filter($cabang_array, function($c) { return $c['delta_saldo'] > 0; });
             usort($kenaikan, function($a, $b) { return $b['delta_saldo'] <=> $a['delta_saldo']; });
             $top_kenaikan = array_slice($kenaikan, 0, 5);
@@ -1876,7 +2396,8 @@ class DashboardController{
                 'top_kenaikan'  => $top_kenaikan,
                 'top_penurunan' => $top_penurunan,
                 'top_baru'      => $top_baru,
-                'top_pencairan' => $top_cair
+                'top_pencairan' => $top_cair,
+                'detail_cabang' => $cabang_array // Pastikan di FE mengambil ini saat breakdown kankas
             ];
 
         } catch (PDOException $e) {
@@ -1889,131 +2410,166 @@ class DashboardController{
         $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian_date  = $input['harian_date']  ?? date('Y-m-d');
 
-        // 1. Panggil helper filter (beri alias 'nt' untuk nominatif_tabungan)
+        $kode_kantor = $input['kode_kantor'] ?? '000';
+        $korwil      = strtoupper($input['korwil'] ?? '');
+
+        // =========================================================
+        // 1. PANGGIL HELPER FILTER (nt = nominatif_tabungan)
+        // =========================================================
         $filter = $this->buildFilterQuery($input, 'nt');
-        
-        // 2. Trik sakti: Ganti 'kode_cabang' jadi 'kode_kantor' khusus untuk tabel ini
         $filter['sql'] = str_replace('nt.kode_cabang', 'nt.kode_kantor', $filter['sql']);
 
-        // Query CTE Ultimate: Menghitung mutasi, saldo baru, saldo cair untuk TABUNGAN
+        // =========================================================
+        // 2. PENENTUAN MODE DISPLAY & FILTER BASELINE
+        // =========================================================
+        $displayMode = 'KONSOLIDASI'; 
+        $filterSql = "";
+        $filterParams = [];
+
+        if ($kode_kantor !== '000' && empty($korwil)) {
+            $displayMode = 'CABANG'; // Fokus internal cabang -> breakdown kankas
+            $filterSql .= " AND nt.kode_kantor = :kode_kantor_filter";
+            $filterParams[':kode_kantor_filter'] = $kode_kantor;
+        } elseif (!empty($korwil)) {
+            $displayMode = 'KORWIL'; // Breakdown per Cabang di Korwil
+            if ($korwil === 'SEMARANG') {
+                $filterSql .= " AND nt.kode_kantor BETWEEN '001' AND '007'";
+            } elseif ($korwil === 'SOLO') {
+                $filterSql .= " AND nt.kode_kantor BETWEEN '008' AND '014'";
+            } elseif ($korwil === 'BANYUMAS') {
+                $filterSql .= " AND nt.kode_kantor BETWEEN '015' AND '021'";
+            } elseif ($korwil === 'PEKALONGAN') {
+                $filterSql .= " AND nt.kode_kantor BETWEEN '022' AND '028'";
+            }
+        }
+
+        // =========================================================
+        // 3. QUERY UTAMA DENGAN CTE (MURNI NOMINATIF_TABUNGAN)
+        // =========================================================
+        // FIX: Hilangkan prefix "nt." karena kita query dari "rekap_rek"
+        $groupByField = ($displayMode === 'CABANG') ? "COALESCE(NULLIF(TRIM(nama_kankas), ''), 'Belum Cleansing')" : "kode_kantor";
+        $targetNamaField = ($displayMode === 'CABANG') ? "COALESCE(NULLIF(TRIM(nama_kankas), ''), 'Belum Cleansing')" : "CONCAT('Kc. ', kode_kantor)";
+
         $sql = "
             WITH rekap_rek AS (
                 SELECT 
                     no_rekening,
                     MAX(kode_kantor) AS kode_kantor, 
+                    MAX(nama_kankas) AS nama_kankas,
                     SUM(CASE WHEN created = :closing_date_1 THEN 1 ELSE 0 END) AS is_prev,
                     SUM(CASE WHEN created = :harian_date_1 THEN 1 ELSE 0 END) AS is_curr,
-                    -- Perhatikan: Pakai kolom 'saldo' sesuai screenshot, bukan 'saldo_akhir'
                     SUM(CASE WHEN created = :closing_date_2 THEN saldo ELSE 0 END) AS saldo_prev,
                     SUM(CASE WHEN created = :harian_date_2 THEN saldo ELSE 0 END) AS saldo_curr
                 FROM nominatif_tabungan nt
                 WHERE created IN (:closing_date_3, :harian_date_3)
-                {$filter['sql']}
+                {$filter['sql']} {$filterSql}
                 GROUP BY no_rekening
             )
             SELECT 
-                r.kode_kantor,
-                COALESCE(k.nama_kantor, CONCAT('CABANG ', r.kode_kantor)) AS nama_cabang,
+                {$groupByField} AS target_kode,
+                {$targetNamaField} AS target_nama,
+                MAX(kode_kantor) AS kode_kantor_asli,
                 
-                SUM(CASE WHEN r.is_curr > 0 THEN 1 ELSE 0 END) AS noa_curr, 
-                SUM(CASE WHEN r.is_prev = 0 AND r.is_curr > 0 THEN 1 ELSE 0 END) AS noa_tambah,
-                SUM(CASE WHEN r.is_prev > 0 AND r.is_curr = 0 THEN 1 ELSE 0 END) AS noa_kurang,
+                SUM(CASE WHEN is_curr > 0 THEN 1 ELSE 0 END) AS noa_curr, 
+                SUM(CASE WHEN is_prev = 0 AND is_curr > 0 THEN 1 ELSE 0 END) AS noa_tambah,
+                SUM(CASE WHEN is_prev > 0 AND is_curr = 0 THEN 1 ELSE 0 END) AS noa_kurang,
                 
-                SUM(r.saldo_prev) AS saldo_prev,
-                SUM(r.saldo_curr) AS saldo_curr,
+                SUM(saldo_prev) AS saldo_prev,
+                SUM(saldo_curr) AS saldo_curr,
                 
-                -- Hitung Saldo Uang Segar (Rekening Baru) dan Saldo Kabur (Tutup Rekening)
-                SUM(CASE WHEN r.is_prev = 0 AND r.is_curr > 0 THEN r.saldo_curr ELSE 0 END) AS saldo_baru,
-                SUM(CASE WHEN r.is_prev > 0 AND r.is_curr = 0 THEN r.saldo_prev ELSE 0 END) AS saldo_cair
-                
-            FROM rekap_rek r
-            LEFT JOIN kode_kantor k ON r.kode_kantor = k.kode_kantor
-            GROUP BY r.kode_kantor, k.nama_kantor
+                SUM(CASE WHEN is_prev = 0 AND is_curr > 0 THEN saldo_curr ELSE 0 END) AS saldo_baru,
+                SUM(CASE WHEN is_prev > 0 AND is_curr = 0 THEN saldo_prev ELSE 0 END) AS saldo_cair
+            FROM rekap_rek
+            GROUP BY {$groupByField}
+            ORDER BY target_kode ASC;
+        ";
+
+        // =========================================================
+        // 4. QUERY EXTRA: DATA AO (MURNI NAMA_AO DARI NOMINATIF)
+        // =========================================================
+        $sqlAO = "
+            SELECT 
+                COALESCE(NULLIF(TRIM(nt.nama_ao), ''), 'Belum Cleansing') AS kode_ao,
+                SUM(CASE WHEN nt.created = :closing_date_ao THEN nt.saldo ELSE 0 END) AS saldo_prev,
+                SUM(CASE WHEN nt.created = :harian_date_ao THEN nt.saldo ELSE 0 END) AS saldo_curr
+            FROM nominatif_tabungan nt
+            WHERE nt.created IN (:closing_date_ao_in, :harian_date_ao_in)
+            {$filter['sql']} {$filterSql}
+            GROUP BY COALESCE(NULLIF(TRIM(nt.nama_ao), ''), 'Belum Cleansing')
         ";
 
         try {
+            // -- Eksekusi Query Utama --
             $stmt = $this->pdo->prepare($sql);
-            
             $stmt->bindValue(':closing_date_1', $closing_date);
             $stmt->bindValue(':closing_date_2', $closing_date);
             $stmt->bindValue(':closing_date_3', $closing_date);
-            
             $stmt->bindValue(':harian_date_1', $harian_date);
             $stmt->bindValue(':harian_date_2', $harian_date);
             $stmt->bindValue(':harian_date_3', $harian_date);
             
-            // 3. Bind parameter filternya (jika ada)
-            foreach ($filter['params'] as $key => $val) {
-                $stmt->bindValue($key, $val);
-            }
+            // Binding filter kondisional cabang & master filter helper
+            foreach ($filterParams as $key => $val) { $stmt->bindValue($key, $val); }
+            foreach ($filter['params'] as $key => $val) { $stmt->bindValue($key, $val); }
             
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // 4. Siapkan Wadah untuk 4 Korwil Saja
-            $korwil_data = [];
-            $korwil_list = ['SEMARANG', 'SOLO', 'BANYUMAS', 'PEKALONGAN'];
-            foreach ($korwil_list as $kw) {
-                $korwil_data[$kw] = [
-                    'nama_korwil' => $kw, 'noa_curr' => 0, 'noa_tambah' => 0, 'noa_kurang' => 0, 
-                    'saldo_prev' => 0, 'saldo_curr' => 0, 'delta_saldo' => 0, 'saldo_baru' => 0, 'saldo_cair' => 0
-                ];
-            }
+            // -- Eksekusi Query AO --
+            $stmtAO = $this->pdo->prepare($sqlAO);
+            $stmtAO->bindValue(':closing_date_ao', $closing_date);
+            $stmtAO->bindValue(':closing_date_ao_in', $closing_date);
+            $stmtAO->bindValue(':harian_date_ao', $harian_date);
+            $stmtAO->bindValue(':harian_date_ao_in', $harian_date);
+            
+            foreach ($filterParams as $key => $val) { $stmtAO->bindValue($key, $val); }
+            foreach ($filter['params'] as $key => $val) { $stmtAO->bindValue($key, $val); }
+            
+            $stmtAO->execute();
+            $aoRows = $stmtAO->fetchAll(PDO::FETCH_ASSOC);
 
+            // =========================================================
+            // 5. MANAGEMENT DATA OUTPUT & INITIALIZATION
+            // =========================================================
+            $korwil_data = [];
             $grand_total = [
                 'nama_korwil' => 'TOTAL KONSOLIDASI', 'noa_curr' => 0, 'noa_tambah' => 0, 'noa_kurang' => 0, 
                 'saldo_prev' => 0, 'saldo_curr' => 0, 'delta_saldo' => 0, 'saldo_baru' => 0, 'saldo_cair' => 0
             ];
-            $cabang_array = [];
 
-            // 5. Olah Data dari Database
+            // Wadah khusus total internal cabang untuk konsumsi card dashboard
+            $total_cabang = [
+                'kode_cabang' => $kode_kantor, 'noa_curr' => 0, 'noa_tambah' => 0, 'noa_kurang' => 0, 
+                'saldo_prev' => 0, 'saldo_curr' => 0, 'delta_saldo' => 0, 'saldo_baru' => 0, 'saldo_cair' => 0
+            ];
+
+            if ($displayMode !== 'CABANG') {
+                $korwil_list = ['SEMARANG', 'SOLO', 'BANYUMAS', 'PEKALONGAN'];
+                foreach ($korwil_list as $kw) {
+                    $korwil_data[$kw] = [
+                        'nama_korwil' => $kw, 'noa_curr' => 0, 'noa_tambah' => 0, 'noa_kurang' => 0, 
+                        'saldo_prev' => 0, 'saldo_curr' => 0, 'delta_saldo' => 0, 'saldo_baru' => 0, 'saldo_cair' => 0
+                    ];
+                }
+            }
+
+            $detail_data = [];
+
             foreach ($rows as $r) {
-                $kd = str_pad($r['kode_kantor'], 3, '0', STR_PAD_LEFT);
                 $saldo_prev = (float) $r['saldo_prev'];
                 $saldo_curr = (float) $r['saldo_curr'];
                 $delta      = $saldo_curr - $saldo_prev;
-                
-                $saldo_baru = (float) $r['saldo_baru'];
-                $saldo_cair = (float) $r['saldo_cair'];
 
                 $noa_curr   = (int) $r['noa_curr'];
                 $noa_tambah = (int) $r['noa_tambah'];
                 $noa_kurang = (int) $r['noa_kurang'];
+                $saldo_baru = (float) $r['saldo_baru'];
+                $saldo_cair = (float) $r['saldo_cair'];
 
-                // Mapping Korwil
-                $korwil = '';
-                if ($kd >= '001' && $kd <= '007') $korwil = 'SEMARANG';
-                elseif ($kd >= '008' && $kd <= '014') $korwil = 'SOLO';
-                elseif ($kd >= '015' && $kd <= '021') $korwil = 'BANYUMAS';
-                elseif ($kd >= '022' && $kd <= '028') $korwil = 'PEKALONGAN';
-
-                // Tambah ke Korwil (Hanya kalau masuk 4 korwil utama)
-                if ($korwil !== '') {
-                    $korwil_data[$korwil]['noa_curr']    += $noa_curr;
-                    $korwil_data[$korwil]['noa_tambah']  += $noa_tambah;
-                    $korwil_data[$korwil]['noa_kurang']  += $noa_kurang;
-                    $korwil_data[$korwil]['saldo_prev']  += $saldo_prev;
-                    $korwil_data[$korwil]['saldo_curr']  += $saldo_curr;
-                    $korwil_data[$korwil]['delta_saldo'] += $delta;
-                    $korwil_data[$korwil]['saldo_baru']  += $saldo_baru;
-                    $korwil_data[$korwil]['saldo_cair']  += $saldo_cair;
-                }
-
-                // Tambah ke Grand Total
-                $grand_total['noa_curr']    += $noa_curr;
-                $grand_total['noa_tambah']  += $noa_tambah;
-                $grand_total['noa_kurang']  += $noa_kurang;
-                $grand_total['saldo_prev']  += $saldo_prev;
-                $grand_total['saldo_curr']  += $saldo_curr;
-                $grand_total['delta_saldo'] += $delta;
-                $grand_total['saldo_baru']  += $saldo_baru;
-                $grand_total['saldo_cair']  += $saldo_cair;
-
-                // 🔥 FIX: Tambahkan 'noa_curr' ke array Cabang biar muncul di Front-End
-                $cabang_array[] = [
-                    'kode_cabang' => $kd,
-                    'nama_cabang' => $r['nama_cabang'],
-                    'noa_curr'    => $noa_curr,      // <--- INI BIANG KEROKNYA
+                $detail_data[] = [
+                    'kode'        => $r['target_kode'],
+                    'nama'        => $r['target_nama'],
+                    'noa_curr'    => $noa_curr,
                     'noa_tambah'  => $noa_tambah,
                     'noa_kurang'  => $noa_kurang,
                     'saldo_prev'  => $saldo_prev,
@@ -2022,50 +2578,102 @@ class DashboardController{
                     'saldo_baru'  => $saldo_baru,
                     'saldo_cair'  => $saldo_cair
                 ];
+
+                // Jika mode CABANG, akumulasikan datanya ke wadah card total_cabang
+                if ($displayMode === 'CABANG') {
+                    $total_cabang['noa_curr']    += $noa_curr;
+                    $total_cabang['noa_tambah']  += $noa_tambah;
+                    $total_cabang['noa_kurang']  += $noa_kurang;
+                    $total_cabang['saldo_prev']  += $saldo_prev;
+                    $total_cabang['saldo_curr']  += $saldo_curr;
+                    $total_cabang['delta_saldo'] += $delta;
+                    $total_cabang['saldo_baru']  += $saldo_baru;
+                    $total_cabang['saldo_cair']  += $saldo_cair;
+                } else {
+                    // Mode Korwil & Konsolidasi masuk ke mapper korwil seperti biasa
+                    $kd_cab = str_pad($r['kode_kantor_asli'] ?? '', 3, '0', STR_PAD_LEFT);
+                    $korwil_name = '';
+                    if ($kd_cab >= '001' && $kd_cab <= '007') $korwil_name = 'SEMARANG';
+                    elseif ($kd_cab >= '008' && $kd_cab <= '014') $korwil_name = 'SOLO';
+                    elseif ($kd_cab >= '015' && $kd_cab <= '021') $korwil_name = 'BANYUMAS';
+                    elseif ($kd_cab >= '022' && $kd_cab <= '028') $korwil_name = 'PEKALONGAN';
+
+                    if ($korwil_name !== '') {
+                        $korwil_data[$korwil_name]['noa_curr']    += $noa_curr;
+                        $korwil_data[$korwil_name]['noa_tambah']  += $noa_tambah;
+                        $korwil_data[$korwil_name]['noa_kurang']  += $noa_kurang;
+                        $korwil_data[$korwil_name]['saldo_prev']  += $saldo_prev;
+                        $korwil_data[$korwil_name]['saldo_curr']  += $saldo_curr;
+                        $korwil_data[$korwil_name]['delta_saldo'] += $delta;
+                        $korwil_data[$korwil_name]['saldo_baru']  += $saldo_baru;
+                        $korwil_data[$korwil_name]['saldo_cair']  += $saldo_cair;
+                    }
+
+                    $grand_total['noa_curr']    += $noa_curr;
+                    $grand_total['noa_tambah']  += $noa_tambah;
+                    $grand_total['noa_kurang']  += $noa_kurang;
+                    $grand_total['saldo_prev']  += $saldo_prev;
+                    $grand_total['saldo_curr']  += $saldo_curr;
+                    $grand_total['delta_saldo'] += $delta;
+                    $grand_total['saldo_baru']  += $saldo_baru;
+                    $grand_total['saldo_cair']  += $saldo_cair;
+                }
             }
 
-            // 6. Eksekusi Kategori Sortir
+            // =========================================================
+            // 6. SORTING TOP 5 AO (SALDO & GROWTH)
+            // =========================================================
+            $ao_processed = [];
+            foreach ($aoRows as $ao) {
+                $s_prev = (float) $ao['saldo_prev'];
+                $s_curr = (float) $ao['saldo_curr'];
+                $growth = $s_curr - $s_prev;
 
-            $kenaikan = array_filter($cabang_array, function($c) { return $c['delta_saldo'] > 0; });
-            usort($kenaikan, function($a, $b) { return $b['delta_saldo'] <=> $a['delta_saldo']; });
-            $top_kenaikan = array_slice($kenaikan, 0, 5);
+                $ao_processed[] = [
+                    'nama_ao'    => $ao['kode_ao'], 
+                    'saldo_prev' => $s_prev,
+                    'saldo_curr' => $s_curr,
+                    'growth'     => $growth
+                ];
+            }
 
-            $penurunan = array_filter($cabang_array, function($c) { return $c['delta_saldo'] < 0; });
-            usort($penurunan, function($a, $b) { return $a['delta_saldo'] <=> $b['delta_saldo']; }); 
-            $top_penurunan = array_slice($penurunan, 0, 5);
+            $top_saldo_ao = $ao_processed;
+            usort($top_saldo_ao, function($a, $b) { return $b['saldo_curr'] <=> $a['saldo_curr']; });
+            $top_saldo_ao = array_slice($top_saldo_ao, 0, 5);
 
-            $baru = array_filter($cabang_array, function($c) { return $c['saldo_baru'] > 0; });
-            usort($baru, function($a, $b) { return $b['saldo_baru'] <=> $a['saldo_baru']; });
-            $top_baru = array_slice($baru, 0, 5);
+            $top_growth_ao = $ao_processed;
+            usort($top_growth_ao, function($a, $b) { return $b['growth'] <=> $a['growth']; });
+            $top_growth_ao = array_slice($top_growth_ao, 0, 5);
 
-            $cair = array_filter($cabang_array, function($c) { return $c['saldo_cair'] > 0; });
-            usort($cair, function($a, $b) { return $b['saldo_cair'] <=> $a['saldo_cair']; });
-            $top_cair = array_slice($cair, 0, 5);
-
-            $saldo_aktif = array_filter($cabang_array, function($c) { return $c['saldo_curr'] > 0; });
-            
-            usort($saldo_aktif, function($a, $b) { return $b['saldo_curr'] <=> $a['saldo_curr']; });
-            $top_saldo = array_slice($saldo_aktif, 0, 5);
-
-            usort($saldo_aktif, function($a, $b) { return $a['saldo_curr'] <=> $b['saldo_curr']; });
-            $bottom_saldo = array_slice($saldo_aktif, 0, 5);
-
-            return [
-                'per_korwil'    => array_values($korwil_data),
-                'grand_total'   => $grand_total,
-                'top_saldo'     => $top_saldo,
-                'bottom_saldo'  => $bottom_saldo,
-                'top_kenaikan'  => $top_kenaikan,
-                'top_penurunan' => $top_penurunan,
-                'top_baru'      => $top_baru,
-                'top_pencairan' => $top_cair
-            ];
+            // =========================================================
+            // 7. RETURN JSON DATA RESPONSE
+            // =========================================================
+            if ($displayMode === 'CABANG') {
+                return [
+                    'mode'          => $displayMode,
+                    'total_cabang'  => $total_cabang, // <-- Hadir untuk card front-end
+                    'detail_kankas' => $detail_data, 
+                    'top_saldo_ao'  => $top_saldo_ao,
+                    'top_growth_ao' => $top_growth_ao
+                ];
+            } else {
+                return [
+                    'mode'          => $displayMode,
+                    'per_korwil'    => array_values($korwil_data),
+                    'grand_total'   => $grand_total,
+                    'detail_cabang' => $detail_data,
+                    'top_saldo_ao'  => $top_saldo_ao,
+                    'top_growth_ao' => $top_growth_ao
+                ];
+            }
 
         } catch (PDOException $e) {
-            error_log("Error getPerkembanganTabungan: " . $e->getMessage());
+            error_log("Error getPerkembanganTabungan Nominatif: " . $e->getMessage());
             return [];
         }
     }
+
+
 
 
 
