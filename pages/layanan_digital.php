@@ -93,7 +93,7 @@
           <div class="flex gap-2 bg-slate-100 border border-slate-200 p-1.5 rounded-xl overflow-x-auto custom-scrollbar">
               <button onclick="changeChannel('VA')" id="tab_VA" class="tab-btn active">Virtual Account (VA)</button>
               <button onclick="changeChannel('BRANCHLESS')" id="tab_BRANCHLESS" class="tab-btn">Branchless</button>
-              <button onclick="changeChannel('QRIS')" id="tab_QRIS" class="tab-btn">QRIS</button>
+              <button onclick="changeChannel('QRIS')" id="tab_QRIS" class="tab-btn">QRIS Merchant</button>
           </div>
       </div>
 
@@ -151,6 +151,34 @@
           </div>
       </div>
 
+      <!-- TABEL & CHART YOY (YEAR-OVER-YEAR) -->
+      <div class="bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden relative min-h-[200px]">
+          <div id="loadYoy" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
+          <div class="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+              <h2 class="text-base font-black text-slate-800">Perbandingan Year-over-Year (YOY)</h2>
+              <span class="text-[10px] font-bold text-slate-400" id="lblYoyPeriode"></span>
+          </div>
+          <div class="p-4">
+              <div id="chartYoy" class="w-full mb-4" style="min-height: 300px;"></div>
+          </div>
+          <div class="overflow-x-auto custom-scrollbar max-h-[500px]">
+              <table class="w-full text-left">
+                  <thead class="sticky top-0 z-10">
+                      <tr>
+                          <th class="w-[250px] pl-4">NAMA AREA</th>
+                          <th class="text-right">NOMINAL TAHUN INI</th>
+                          <th class="text-right">NOMINAL TAHUN LALU</th>
+                          <th class="text-center w-[100px]">YOY (%)</th>
+                          <th class="text-right">TRX TAHUN INI</th>
+                          <th class="text-right">TRX TAHUN LALU</th>
+                          <th class="text-center w-[100px] pr-4">YOY TRX (%)</th>
+                      </tr>
+                  </thead>
+                  <tbody id="bodyYoy" class="divide-y divide-slate-100"></tbody>
+              </table>
+          </div>
+      </div>
+
   </div> <!-- End Wrapper -->
 </div>
 
@@ -164,6 +192,7 @@
   
   let chartTrendObj = null;
   let chartDonutObj = null;
+  let chartYoyObj = null;
   let currentActiveChannel = 'VA'; 
 
   const showLoad = (id) => document.getElementById(id)?.classList.remove('hidden');
@@ -248,6 +277,7 @@
       fetchTrend();
       fetchDistribusi();
       fetchBreakdown();
+      fetchYoy();
   }
 
   async function runFullSync() {
@@ -255,6 +285,7 @@
       fetchTrend();
       fetchDistribusi();
       fetchBreakdown();
+      fetchYoy();
   }
 
   // ==========================================
@@ -386,6 +417,21 @@
           }
       });
       chartDonutObj.render();
+
+      chartYoyObj = new ApexCharts(document.querySelector("#chartYoy"), {
+          series: [],
+          chart: { type: 'bar', height: 300, toolbar: { show: false } },
+          colors: ['#0284c7', '#94a3b8'],
+          plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 4, dataLabels: { position: 'top' } } },
+          dataLabels: { enabled: false },
+          stroke: { show: true, width: 2, colors: ['transparent'] },
+          xaxis: { categories: [], labels: { style: { fontSize: '10px', fontWeight: 700 } } },
+          yaxis: { labels: { formatter: (val) => val >= 1000000000 ? (val/1000000000).toFixed(1)+' M' : (val >= 1000000 ? (val/1000000).toFixed(0)+' Jt' : nf.format(val)), style: { fontSize: '10px' } } },
+          fill: { opacity: 1 },
+          legend: { position: 'top', fontSize: '12px', fontWeight: 700 },
+          tooltip: { y: { formatter: (val) => 'Rp ' + nf.format(val) } }
+      });
+      chartYoyObj.render();
   }
 
   async function fetchTrend() {
@@ -487,5 +533,79 @@
               });
           }
       } catch(e){} finally { hideLoad('loadTable'); }
+  }
+
+  // ==========================================
+  // 4. YOY (YEAR-OVER-YEAR) COMPARISON
+  // ==========================================
+  async function fetchYoy() {
+      showLoad('loadYoy');
+      const area = parseAreaValue();
+      const payload = { 
+          type: "yoy_transaksi", 
+          harian_date: document.getElementById('harian_date').value, 
+          closing_date: document.getElementById('closing_date').value, 
+          kode_kantor: area.kode_kantor, 
+          korwil: area.korwil, 
+          channel: currentActiveChannel 
+      };
+
+      try {
+          const res = await fetch(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          const j = await res.json();
+          const tbody = document.getElementById('bodyYoy');
+          tbody.innerHTML = '';
+
+          if(j.status !== 200 || !j.data || !j.data.data.length) { 
+              tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6">Data kosong.</td></tr>`; 
+              hideLoad('loadYoy'); 
+              return; 
+          }
+
+          // Update period label
+          if(j.data.meta) {
+              const pc = j.data.meta.periode_curr;
+              const pp = j.data.meta.periode_prev;
+              document.getElementById('lblYoyPeriode').innerHTML = `Periode: ${pc.start} s/d ${pc.end} vs ${pp.start} s/d ${pp.end}`;
+          }
+
+          // Update Chart
+          if(j.data.chart) {
+              chartYoyObj.updateOptions({ xaxis: { categories: j.data.chart.labels } });
+              chartYoyObj.updateSeries(j.data.chart.series);
+          }
+
+          // Render Table
+          const dt = j.data.data;
+          const optAreaVal = document.getElementById('opt_area').value;
+          const isKonsolidasi = optAreaVal === 'KONSOLIDASI';
+          const isSpecificKorwil = optAreaVal.startsWith('KORWIL_');
+
+          const rYoy = (nama, cN, pN, gN, cT, pT, gT, isBold=false) => {
+              const bg = isBold ? 'bg-slate-50 font-bold' : 'font-bold text-slate-700';
+              const c_gN = gN > 0 ? `<span class="text-emerald-600">&#9650; ${gN}%</span>` : (gN < 0 ? `<span class="text-red-600">&#9660; ${Math.abs(gN)}%</span>` : '-');
+              const c_gT = gT > 0 ? `<span class="text-emerald-600">&#9650; ${gT}%</span>` : (gT < 0 ? `<span class="text-red-600">&#9660; ${Math.abs(gT)}%</span>` : '-');
+              return `<tr class="${bg}"><td class="pl-4">${nama}</td><td class="text-right text-blue-700">${fmt(cN)}</td><td class="text-right text-slate-400">${fmt(pN)}</td><td class="text-center text-[11px] font-bold bg-slate-50/50">${c_gN}</td><td class="text-right text-indigo-700">${fmt(cT)}</td><td class="text-right text-slate-400">${fmt(pT)}</td><td class="text-center text-[11px] font-bold bg-slate-50/50 pr-4">${c_gT}</td></tr>`;
+          };
+
+          const gt = j.data.grand_total;
+          tbody.innerHTML += rYoy('GRAND TOTAL', gt.curr_nom, gt.prev_nom, gt.yoy_growth_nom, gt.curr_trx, gt.prev_trx, gt.yoy_growth_trx, true);
+
+          if (isKonsolidasi) {
+              dt.forEach(kw => {
+                  tbody.innerHTML += rYoy(kw.korwil, kw.curr_nom, kw.prev_nom, kw.yoy_growth_nom, kw.curr_trx, kw.prev_trx, kw.yoy_growth_trx);
+              });
+          } else if (isSpecificKorwil) {
+              dt.forEach(kw => {
+                  (kw.cabang || []).forEach(cb => {
+                      tbody.innerHTML += rYoy(cb.nama, cb.curr_nom, cb.prev_nom, cb.yoy_growth_nom, cb.curr_trx, cb.prev_trx, cb.yoy_growth_trx);
+                  });
+              });
+          } else {
+              dt.forEach(kk => {
+                  tbody.innerHTML += rYoy(kk.nama, kk.curr_nom, kk.prev_nom, kk.yoy_growth_nom, kk.curr_trx, kk.prev_trx, kk.yoy_growth_trx);
+              });
+          }
+      } catch(e){} finally { hideLoad('loadYoy'); }
   }
 </script>

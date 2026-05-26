@@ -33,6 +33,9 @@ switch ($method) {
         } elseif ($input['type'] === 'detail_breakdown_transaksi') {
             $controller->getDetailBreakdownTransaksi($input);
 
+        } elseif ($input['type'] === 'yoy_transaksi') {
+            $controller->getYoyTransaksi($input);
+
         } elseif ($input['type'] === 'rekap_device_branchless') {
             $controller->getRekapDeviceBranchless($input);
         

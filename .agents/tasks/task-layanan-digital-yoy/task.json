@@ -1,0 +1,7 @@
+{
+  "task_id": "task-layanan-digital-yoy",
+  "task_description": "Enhance the Layanan Digital page with YOY (Year-over-Year) comparison for digital transaction channels (QRIS Merchant, VA, Branchless). Add backend endpoint for YOY data, frontend YOY table and grouped bar chart, and rename QRIS tab to QRIS Merchant. Keep restricted access via the existing menuMonevDev div.",
+  "status": "in_progress",
+  "feature_order": ["FEAT-001"],
+  "blocked_reason": null
+}

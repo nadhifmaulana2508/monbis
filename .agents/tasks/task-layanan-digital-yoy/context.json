@@ -1,0 +1,22 @@
+{
+  "project_type": "PHP native web app with inline JS frontend (Monbis - Monitoring Bisnis BKK Jateng)",
+  "language": "PHP 8.x + Vanilla JavaScript",
+  "build_system": "Apache with .htaccess rewrite, no build step needed",
+  "test_framework": "None (no automated tests)",
+  "build_command": "php -l (syntax check on modified files)",
+  "test_command": "php -l api/controllers/TransaksiController.php && php -l pages/layanan_digital.php",
+  "verification_instructions": "1. Run php -l on all modified PHP files to verify no syntax errors. 2. Verify JSON response structure matches frontend expectations by tracing API calls.",
+  "snapshot_or_generated_files": null,
+  "setup_instructions": "No setup needed - PHP files are served directly by Apache",
+  "environment_constraints": "INTEGRATIONS_ONLY network mode - no external package installation, no Docker. PHP 8.4 available on host. Only AST/syntax validation possible.",
+  "contribution_requirements": "Follow existing patterns: POST API with type dispatcher, sendResponse() helper, Korwil/Cabang filter pattern, ApexCharts for charts, Tailwind CSS for styling",
+  "key_patterns": "1. API routing: POST /api/?request=transaksi with body {type: 'action_name'} dispatches to controller methods. 2. Filter pattern: kode_kantor/korwil/kankas params with Korwil ranges (Semarang 001-007, Solo 008-014, Banyumas 015-021, Pekalongan 022-028). 3. Date pattern: closing_date (M-1 end) + harian_date (actual). 4. Response: {status, message, data}. 5. Frontend: inline <script> in PHP page, fetch to API_URL, ApexCharts for charts. 6. Table: va (transaction table with tgl_transaksi, kode_transaksi, jumlah, kantor, kankas, device, no_rekening, adm, norek_aba). 7. Channel codes: VA='320', Branchless='150','152', QRIS='140','16','162'.",
+  "relevant_files": [
+    "api/controllers/TransaksiController.php",
+    "pages/layanan_digital.php",
+    "api/routes/transaksi.php",
+    "views/navbar.php",
+    "api/helpers/response.php"
+  ],
+  "directory_structure": "monbis/ root: api/ (backend with controllers/, routes/, helpers/, config/), pages/ (frontend PHP pages), views/ (navbar, header, footer), img/ (assets)"
+}

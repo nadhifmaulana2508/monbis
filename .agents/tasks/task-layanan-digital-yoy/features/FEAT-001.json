@@ -1,0 +1,31 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Add YOY (Year-over-Year) comparison backend endpoint and enhance the frontend page to show YOY data alongside the existing MoM comparison. Also rename QRIS tab to 'QRIS Merchant'. The YOY endpoint compares the same period this year vs last year for each channel, broken down by cabang/kanwil.",
+  "status": "in_progress",
+  "steps": [
+    "Step 1 - Add getYoyTransaksi() method to api/controllers/TransaksiController.php. This method should: (a) Accept harian_date, closing_date, kode_kantor, korwil, channel params. (b) Calculate YOY by comparing current period (closing_date to harian_date) with same period last year (closing_date-1year to harian_date-1year). (c) Return per-cabang/kanwil breakdown with curr_nom, curr_trx, prev_year_nom, prev_year_trx, yoy_growth_nom, yoy_growth_trx. (d) Follow the exact same filter pattern as getDetailBreakdownTransaksi() (korwil ranges, channel filter codes). (e) Include grand_total with YOY growth.",
+    "Step 2 - Add route entry in api/routes/transaksi.php for type 'yoy_transaksi' dispatching to $controller->getYoyTransaksi($input).",
+    "Step 3 - Enhance pages/layanan_digital.php frontend: (a) Rename the QRIS tab button text from 'QRIS' to 'QRIS Merchant'. (b) Add a new section below the existing breakdown table for YOY comparison. This section should have: a title 'Perbandingan Year-over-Year (YOY)', a table showing NAMA AREA | NOMINAL TAHUN INI | NOMINAL TAHUN LALU | YOY GROWTH (%) | TRX TAHUN INI | TRX TAHUN LALU | YOY GROWTH TRX (%). (c) Add a bar chart using ApexCharts comparing this year vs last year nominal per korwil/cabang (grouped bar chart). (d) Add fetchYoy() JS function that calls type:'yoy_transaksi' with current filters and channel, renders the table and chart. (e) Call fetchYoy() inside runFullSync() and changeChannel().",
+    "Step 4 - Run php -l on both modified PHP files to verify no syntax errors."
+  ],
+  "acceptance_criteria": [
+    "php -l api/controllers/TransaksiController.php passes with no syntax errors",
+    "php -l pages/layanan_digital.php passes with no syntax errors",
+    "The getYoyTransaksi() method exists and returns a response with structure {status, message, data: {meta, grand_total, data, chart}}",
+    "The YOY chart section and table render in the frontend when fetchYoy() is called",
+    "The QRIS tab now reads 'QRIS Merchant'",
+    "routes/transaksi.php has the 'yoy_transaksi' type entry"
+  ],
+  "verification": [
+    "php -l /projects/sandbox/monbis/api/controllers/TransaksiController.php",
+    "php -l /projects/sandbox/monbis/pages/layanan_digital.php",
+    "php -l /projects/sandbox/monbis/api/routes/transaksi.php",
+    "grep -n 'getYoyTransaksi' /projects/sandbox/monbis/api/controllers/TransaksiController.php",
+    "grep -n 'yoy_transaksi' /projects/sandbox/monbis/api/routes/transaksi.php",
+    "grep -n 'QRIS Merchant' /projects/sandbox/monbis/pages/layanan_digital.php",
+    "grep -n 'fetchYoy' /projects/sandbox/monbis/pages/layanan_digital.php"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

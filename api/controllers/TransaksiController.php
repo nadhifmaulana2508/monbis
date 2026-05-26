@@ -954,6 +954,280 @@ class TransaksiController {
         }
 
     /**
+     * 12B. YEAR-OVER-YEAR (YOY) COMPARISON
+     * Membandingkan Current Period vs Same Period Last Year.
+     * Bebas Bug HY093 (Duplicate Named Parameters).
+     */
+    public function getYoyTransaksi($input = null) {
+        set_time_limit(300); ini_set('memory_limit', '1024M');
+
+        $b = is_array($input) ? $input : [];
+        $harian  = $b['harian_date'] ?? date('Y-m-d');
+        $kode_kantor = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+        $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
+        $kankas  = !empty($b['kode_kankas']) ? $b['kode_kankas'] : null;
+        $channel = !empty($b['channel']) ? strtoupper($b['channel']) : 'ALL';
+
+        if (!$harian) return sendResponse(400, "Tanggal Actual (Harian) wajib diisi.", null);
+
+        // --- 1. LOGIC PERIODE (Tahun Ini vs Tahun Lalu - Same Period) ---
+        $ts_harian = strtotime($harian);
+
+        if (!empty($b['closing_date'])) {
+            $closing_date = $b['closing_date'];
+        } else {
+            $closing_date = date('Y-m-t', strtotime(date('Y-m-01', $ts_harian) . ' -1 day'));
+        }
+
+        // Previous Year: subtract 1 year from both dates
+        $prev_harian  = date('Y-m-d', strtotime('-1 year', strtotime($harian)));
+        $prev_closing = date('Y-m-d', strtotime('-1 year', strtotime($closing_date)));
+
+        // --- 2. BUILD FILTER QUERY & AMAN DARI HY093 ---
+        $sqlFilter = "";
+        $params = [
+            ':s_closing'  => $closing_date, ':s_harian'   => $harian,
+            ':s_pclosing' => $prev_closing, ':s_pharian'  => $prev_harian,
+            ':w_closing'  => $closing_date, ':w_harian'   => $harian,
+            ':w_pclosing' => $prev_closing, ':w_pharian'  => $prev_harian
+        ];
+
+        $mode_hirarki = 'KONSOLIDASI';
+
+        if ($kode_kantor && $kode_kantor !== '000') {
+            $sqlFilter .= " AND t.kantor = :kode_kantor ";
+            $params[':kode_kantor'] = $kode_kantor;
+            $mode_hirarki = 'CABANG';
+        } elseif ($korwil) {
+            $kw_start = null; $kw_end = null;
+            switch ($korwil) {
+                case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
+                case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
+                case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
+                case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
+            }
+            if ($kw_start && $kw_end) {
+                $sqlFilter .= " AND t.kantor BETWEEN :kw_start AND :kw_end ";
+                $params[':kw_start'] = $kw_start;
+                $params[':kw_end'] = $kw_end;
+            }
+            $mode_hirarki = 'KORWIL';
+        }
+
+        if ($kankas) {
+            $sqlFilter .= " AND TRIM(t.kankas) = :kode_kankas ";
+            $params[':kode_kankas'] = $kankas;
+            $mode_hirarki = 'KANKAS';
+        }
+
+        // Filter Channel
+        $chanFilter = "";
+        if ($channel === 'VA') {
+            $chanFilter = " AND TRIM(t.kode_transaksi) = '320' ";
+        } elseif ($channel === 'BRANCHLESS') {
+            $chanFilter = " AND TRIM(t.kode_transaksi) IN ('150', '152') ";
+        } elseif ($channel === 'QRIS') {
+            $chanFilter = " AND TRIM(t.kode_transaksi) IN ('140', '16', '162') ";
+        } else {
+            $chanFilter = " AND TRIM(t.kode_transaksi) IN ('320', '150', '152', '140', '16', '162') ";
+        }
+
+        // --- 3. MAIN QUERY (SUBQUERY MAPPING ANTI HY093) ---
+        $sql = "
+            SELECT 
+                kantor,
+                nama_kantor,
+                kankas,
+                nama_kankas,
+                SUM(CASE WHEN is_curr = 1 THEN jumlah ELSE 0 END) as curr_nom,
+                SUM(CASE WHEN is_curr = 1 THEN 1 ELSE 0 END) as curr_trx,
+                SUM(CASE WHEN is_prev = 1 THEN jumlah ELSE 0 END) as prev_nom,
+                SUM(CASE WHEN is_prev = 1 THEN 1 ELSE 0 END) as prev_trx
+            FROM (
+                SELECT 
+                    t.kantor,
+                    kk.nama_kantor,
+                    TRIM(t.kankas) as kankas,
+                    kn.deskripsi_group1 as nama_kankas,
+                    t.jumlah,
+                    CASE WHEN t.tgl_transaksi > :s_closing AND t.tgl_transaksi <= :s_harian THEN 1 ELSE 0 END as is_curr,
+                    CASE WHEN t.tgl_transaksi > :s_pclosing AND t.tgl_transaksi <= :s_pharian THEN 1 ELSE 0 END as is_prev
+                FROM va t
+                LEFT JOIN kode_kantor kk ON t.kantor = kk.kode_kantor
+                LEFT JOIN kankas kn ON TRIM(t.kankas) = TRIM(kn.kode_group1)
+                WHERE ((t.tgl_transaksi > :w_closing AND t.tgl_transaksi <= :w_harian) 
+                OR (t.tgl_transaksi > :w_pclosing AND t.tgl_transaksi <= :w_pharian))
+                $chanFilter
+                $sqlFilter
+            ) as mapped_data
+            GROUP BY kantor, nama_kantor, kankas, nama_kankas
+        ";
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // --- 4. PROCESSING & HIERARCHY MAPPING ---
+            $getKorwil = function($cabang) {
+                $c = (int)$cabang;
+                if ($c >= 1 && $c <= 7) return 'KORWIL SEMARANG';
+                if ($c >= 8 && $c <= 14) return 'KORWIL SOLO';
+                if ($c >= 15 && $c <= 21) return 'KORWIL BANYUMAS';
+                if ($c >= 22 && $c <= 28) return 'KORWIL PEKALONGAN';
+                return 'PUSAT / LAINNYA';
+            };
+
+            $calcGrowth = function($curr, $prev) {
+                if ($prev > 0) return round((($curr - $prev) / $prev) * 100, 2);
+                return $curr > 0 ? 100 : 0;
+            };
+
+            $grandTotal = ['curr_nom' => 0, 'curr_trx' => 0, 'prev_nom' => 0, 'prev_trx' => 0];
+            $resultData = [];
+            $chartLabels = [];
+            $chartCurrData = [];
+            $chartPrevData = [];
+
+            // JIKA LOGIN / FILTER CABANG -> Tampilkan Breakdown Kankas
+            if ($mode_hirarki === 'CABANG' || $mode_hirarki === 'KANKAS') {
+                $kankasMap = [];
+                foreach ($rows as $r) {
+                    $kKey = $r['kankas'] ?: '000000';
+                    if (!isset($kankasMap[$kKey])) {
+                        $kankasMap[$kKey] = [
+                            'kode' => $kKey,
+                            'nama' => $r['nama_kankas'] ?: 'Pusat / Operasional',
+                            'curr_nom' => 0, 'curr_trx' => 0, 'prev_nom' => 0, 'prev_trx' => 0
+                        ];
+                    }
+                    $kankasMap[$kKey]['curr_nom'] += (float)$r['curr_nom'];
+                    $kankasMap[$kKey]['curr_trx'] += (int)$r['curr_trx'];
+                    $kankasMap[$kKey]['prev_nom'] += (float)$r['prev_nom'];
+                    $kankasMap[$kKey]['prev_trx'] += (int)$r['prev_trx'];
+
+                    $grandTotal['curr_nom'] += (float)$r['curr_nom'];
+                    $grandTotal['curr_trx'] += (int)$r['curr_trx'];
+                    $grandTotal['prev_nom'] += (float)$r['prev_nom'];
+                    $grandTotal['prev_trx'] += (int)$r['prev_trx'];
+                }
+
+                foreach ($kankasMap as &$k) {
+                    $k['yoy_growth_nom'] = $calcGrowth($k['curr_nom'], $k['prev_nom']);
+                    $k['yoy_growth_trx'] = $calcGrowth($k['curr_trx'], $k['prev_trx']);
+                }
+
+                $resultData = array_values($kankasMap);
+                usort($resultData, function($a, $b) { return $b['curr_nom'] <=> $a['curr_nom']; });
+
+                foreach ($resultData as $item) {
+                    $chartLabels[] = $item['nama'];
+                    $chartCurrData[] = $item['curr_nom'];
+                    $chartPrevData[] = $item['prev_nom'];
+                }
+
+            } else {
+                // KONSOLIDASI / KORWIL -> Tampilkan Breakdown Korwil > Cabang
+                $korwilMap = [];
+                foreach ($rows as $r) {
+                    $cab = $r['kantor'] ?: '000';
+                    $kw = $getKorwil($cab);
+
+                    if (!isset($korwilMap[$kw])) {
+                        $korwilMap[$kw] = [
+                            'korwil' => $kw,
+                            'curr_nom' => 0, 'curr_trx' => 0, 'prev_nom' => 0, 'prev_trx' => 0,
+                            'cabang' => []
+                        ];
+                    }
+
+                    if (!isset($korwilMap[$kw]['cabang'][$cab])) {
+                        $korwilMap[$kw]['cabang'][$cab] = [
+                            'kode' => $cab,
+                            'nama' => $r['nama_kantor'] ?: "Cabang $cab",
+                            'curr_nom' => 0, 'curr_trx' => 0, 'prev_nom' => 0, 'prev_trx' => 0
+                        ];
+                    }
+
+                    $korwilMap[$kw]['cabang'][$cab]['curr_nom'] += (float)$r['curr_nom'];
+                    $korwilMap[$kw]['cabang'][$cab]['curr_trx'] += (int)$r['curr_trx'];
+                    $korwilMap[$kw]['cabang'][$cab]['prev_nom'] += (float)$r['prev_nom'];
+                    $korwilMap[$kw]['cabang'][$cab]['prev_trx'] += (int)$r['prev_trx'];
+
+                    $korwilMap[$kw]['curr_nom'] += (float)$r['curr_nom'];
+                    $korwilMap[$kw]['curr_trx'] += (int)$r['curr_trx'];
+                    $korwilMap[$kw]['prev_nom'] += (float)$r['prev_nom'];
+                    $korwilMap[$kw]['prev_trx'] += (int)$r['prev_trx'];
+
+                    $grandTotal['curr_nom'] += (float)$r['curr_nom'];
+                    $grandTotal['curr_trx'] += (int)$r['curr_trx'];
+                    $grandTotal['prev_nom'] += (float)$r['prev_nom'];
+                    $grandTotal['prev_trx'] += (int)$r['prev_trx'];
+                }
+
+                foreach ($korwilMap as &$kwData) {
+                    $kwData['yoy_growth_nom'] = $calcGrowth($kwData['curr_nom'], $kwData['prev_nom']);
+                    $kwData['yoy_growth_trx'] = $calcGrowth($kwData['curr_trx'], $kwData['prev_trx']);
+
+                    $kwData['cabang'] = array_values($kwData['cabang']);
+                    foreach ($kwData['cabang'] as &$cb) {
+                        $cb['yoy_growth_nom'] = $calcGrowth($cb['curr_nom'], $cb['prev_nom']);
+                        $cb['yoy_growth_trx'] = $calcGrowth($cb['curr_trx'], $cb['prev_trx']);
+                    }
+                    usort($kwData['cabang'], function($a, $b) { return $b['curr_nom'] <=> $a['curr_nom']; });
+                }
+
+                $resultData = array_values($korwilMap);
+                usort($resultData, function($a, $b) { return $b['curr_nom'] <=> $a['curr_nom']; });
+
+                // Chart data: at korwil level for KONSOLIDASI, at cabang level for KORWIL
+                if ($mode_hirarki === 'KONSOLIDASI') {
+                    foreach ($resultData as $kw) {
+                        $chartLabels[] = $kw['korwil'];
+                        $chartCurrData[] = $kw['curr_nom'];
+                        $chartPrevData[] = $kw['prev_nom'];
+                    }
+                } else {
+                    foreach ($resultData as $kw) {
+                        foreach ($kw['cabang'] as $cb) {
+                            $chartLabels[] = $cb['nama'];
+                            $chartCurrData[] = $cb['curr_nom'];
+                            $chartPrevData[] = $cb['prev_nom'];
+                        }
+                    }
+                }
+            }
+
+            // Hitung Growth Grand Total
+            $grandTotal['yoy_growth_nom'] = $calcGrowth($grandTotal['curr_nom'], $grandTotal['prev_nom']);
+            $grandTotal['yoy_growth_trx'] = $calcGrowth($grandTotal['curr_trx'], $grandTotal['prev_trx']);
+
+            return sendResponse(200, "Berhasil ambil YOY Transaksi", [
+                'meta' => [
+                    'hierarki_aktif' => $mode_hirarki,
+                    'channel_aktif'  => $channel,
+                    'periode_curr'   => ['start' => $closing_date, 'end' => $harian],
+                    'periode_prev'   => ['start' => $prev_closing, 'end' => $prev_harian]
+                ],
+                'grand_total' => $grandTotal,
+                'data' => $resultData,
+                'chart' => [
+                    'labels' => $chartLabels,
+                    'series' => [
+                        ['name' => 'Tahun Ini', 'data' => $chartCurrData],
+                        ['name' => 'Tahun Lalu', 'data' => $chartPrevData]
+                    ]
+                ]
+            ]);
+
+        } catch (PDOException $e) {
+            error_log("Error YOY Transaksi: " . $e->getMessage());
+            return sendResponse(500, "PDO Error: " . $e->getMessage(), null);
+        }
+    }
+
+    /**
      * 13. REKAP TRANSAKSI BRANCHLESS BERDASARKAN DEVICE
      * Syarat: kode_transaksi IN ('150', '152')
      */
