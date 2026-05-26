@@ -1382,6 +1382,10 @@ class KolekController {
       $page     = max(1, (int)($b['page'] ?? 1));
       $per_page = max(1, min(100, (int)($b['per_page'] ?? 20)));
 
+      // Proyeksi mode
+      $is_proj = (bool)($b['is_proyeksi'] ?? false);
+      $targetTable = $is_proj ? 'nominatif_proyeksi_va' : 'nominatif';
+
       if (!$closing || !$harian) return sendResponse(400, "closing_date & harian_date wajib (YYYY-MM-DD)");
 
       $VALID = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N'];
@@ -1389,25 +1393,25 @@ class KolekController {
       // REALISASI
       if ($fb === 'REALISASI') {
         $tbFilter = ($tb !== '' && in_array($tb, $VALID, true)) ? $tb : null;
-        return $this->getMigrasiBucketDetailRealisasi($closing, $harian, $kc, $tbFilter, $kankas, $ao, $search, $page, $per_page);
+        return $this->getMigrasiBucketDetailRealisasi($closing, $harian, $kc, $tbFilter, $kankas, $ao, $search, $page, $per_page, $targetTable);
       }
 
       // O_LUNAS — wajib from_bucket (A..N)
       if ($tb === 'O' || $tb === 'O_LUNAS') {
         if (!in_array($fb, $VALID, true)) return sendResponse(400, "O_LUNAS: from_bucket wajib A..N.");
-        return $this->getMigrasiBucketDetailOLunas($closing, $harian, $kc, $fb, $kankas, $ao, $search, $page, $per_page);
+        return $this->getMigrasiBucketDetailOLunas($closing, $harian, $kc, $fb, $kankas, $ao, $search, $page, $per_page, $targetTable);
       }
 
       // ACTUAL — A..N → A..N
       if (!in_array($fb, $VALID, true) || !in_array($tb, $VALID, true))
         return sendResponse(400, "Actual: from_bucket & to_bucket wajib A..N.");
 
-      return $this->getMigrasiBucketDetailActual($closing, $harian, $kc, $fb, $tb, $kankas, $ao, $search, $page, $per_page);
+      return $this->getMigrasiBucketDetailActual($closing, $harian, $kc, $fb, $tb, $kankas, $ao, $search, $page, $per_page, $targetTable);
     }
 
 
     /*********************** REALISASI (akun baru) ***********************/
-    public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, ?string $kc, ?string $tbFilter = null, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20)
+    public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, ?string $kc, ?string $tbFilter = null, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif')
     {
       [$dsH, $deH] = $this->dayRange($harian);
 
@@ -1423,7 +1427,7 @@ class KolekController {
       // COUNT query for pagination
       $countSql = "
         SELECT COUNT(*) AS total
-        FROM nominatif nh
+        FROM $targetTable nh
         JOIN ref_dpd_bucket rb2
           ON nh.hari_menunggak >= rb2.min_day
         AND (rb2.max_day IS NULL OR nh.hari_menunggak <= rb2.max_day)
@@ -1482,7 +1486,7 @@ class KolekController {
           NULL AS ckpn_actual,
           NULL AS ckpn_m1,
           NULL AS tgl_trans_terakhir
-        FROM nominatif nh
+        FROM $targetTable nh
         JOIN ref_dpd_bucket rb2
           ON nh.hari_menunggak >= rb2.min_day
         AND (rb2.max_day IS NULL OR nh.hari_menunggak <= rb2.max_day)
@@ -1519,7 +1523,7 @@ class KolekController {
 
 
     /*********************** ACTUAL A..N → A..N (FAST + BUCKET INFO) ***********************/
-    public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20)
+    public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif')
     {
       if ($kc !== null) $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
 
@@ -1542,7 +1546,7 @@ class KolekController {
       $countSql = "
         SELECT COUNT(*) AS total
         FROM nominatif c
-        JOIN nominatif h
+        JOIN $targetTable h
           ON h.no_rekening = c.no_rekening
         AND h.created >= :dsH AND h.created < :deH
         $kcCondH
@@ -1615,7 +1619,7 @@ class KolekController {
           NULL AS angsuran_bunga,
           NULL AS tgl_trans_terakhir
         FROM nominatif c
-        JOIN nominatif h
+        JOIN $targetTable h
           ON h.no_rekening = c.no_rekening
         AND h.created >= :dsH AND h.created < :deH
         $kcCondH
@@ -1657,7 +1661,7 @@ class KolekController {
 
 
     /*********************** O_LUNAS (M-1 → O) — FAST + BUCKET INFO ***********************/
-    public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20)
+    public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif')
     {
       if ($kc !== null) $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
 
@@ -1681,7 +1685,7 @@ class KolekController {
       $countSql = "
         SELECT COUNT(*) AS total
         FROM nominatif c
-        LEFT JOIN nominatif h
+        LEFT JOIN $targetTable h
           ON h.no_rekening = c.no_rekening
         AND h.created >= :dsH AND h.created < :deH
         $kcCondH
@@ -1750,7 +1754,7 @@ class KolekController {
           NULL AS angsuran_bunga,
           NULL AS tgl_trans_terakhir
         FROM nominatif c
-        LEFT JOIN nominatif h
+        LEFT JOIN $targetTable h
           ON h.no_rekening = c.no_rekening
         AND h.created >= :dsH AND h.created < :deH
         $kcCondH

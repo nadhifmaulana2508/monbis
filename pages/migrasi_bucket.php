@@ -194,6 +194,7 @@
         <tbody id="MB_modalTbody" class="text-slate-700"></tbody>
       </table>
     </div>
+    <div id="MB_paginationBar" class="flex items-center justify-center gap-2 py-2 text-xs shrink-0 border-t border-slate-100"></div>
   </div>
 </div>
 
@@ -726,7 +727,8 @@
         from_bucket: from_raw, 
         to_bucket: to_raw,
         page: pg,
-        per_page: currentDetailPerPage
+        per_page: currentDetailPerPage,
+        is_proyeksi: document.getElementById('MB_isProyeksi').checked
       };
       if(kode) payload.kode_kantor = kode;
       if(searchVal) payload.search = searchVal;
@@ -790,15 +792,8 @@
   };
 
   function MB_renderPagination() {
-    let container = document.getElementById('MB_paginationBar');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'MB_paginationBar';
-      container.className = 'flex items-center justify-center gap-2 py-2 text-xs';
-      const tblWrap = document.getElementById('MB_modalTbody')?.closest('table')?.parentElement;
-      if (tblWrap) tblWrap.after(container);
-      else return;
-    }
+    const container = document.getElementById('MB_paginationBar');
+    if (!container) return;
     if (currentDetailTotal <= currentDetailPerPage) {
       container.innerHTML = '';
       return;
