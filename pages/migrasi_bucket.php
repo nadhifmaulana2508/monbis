@@ -688,10 +688,13 @@
     ABORT_DETAIL = new AbortController();
 
     const pg = page || 1;
+    const isPaginating = (from_raw === currentFromRaw && to_raw === currentToRaw && pg > 1);
     currentFromRaw = from_raw; currentToRaw = to_raw;
     currentDetailPage = pg;
-    currentDetailTotal = 0;
-    MB_renderPagination();
+    if (!isPaginating) {
+      currentDetailTotal = 0;
+      MB_renderPagination();
+    }
     const closing = elClosing.value, harian = elHarian.value;
     const kode = elKantor.disabled ? elKantor.value : (elKantor.value || null);
 
@@ -800,13 +803,14 @@
     }
     const totalPages = Math.ceil(currentDetailTotal / currentDetailPerPage);
     let html = '';
-    html += `<button onclick="MB_goDetailPage(${currentDetailPage - 1})" ${currentDetailPage <= 1 ? 'disabled' : ''} class="px-2 py-1 rounded border ${currentDetailPage <= 1 ? 'text-slate-300 border-slate-200 cursor-not-allowed' : 'text-blue-600 border-blue-300 hover:bg-blue-50'}">&laquo; Prev</button>`;
+    html += `<button onclick="MB_goDetailPage(${currentDetailPage - 1}, event)" ${currentDetailPage <= 1 ? 'disabled' : ''} class="px-2 py-1 rounded border ${currentDetailPage <= 1 ? 'text-slate-300 border-slate-200 cursor-not-allowed' : 'text-blue-600 border-blue-300 hover:bg-blue-50'}">&laquo; Prev</button>`;
     html += `<span class="text-slate-600">Hal ${currentDetailPage} / ${totalPages} (${currentDetailTotal} data)</span>`;
-    html += `<button onclick="MB_goDetailPage(${currentDetailPage + 1})" ${currentDetailPage >= totalPages ? 'disabled' : ''} class="px-2 py-1 rounded border ${currentDetailPage >= totalPages ? 'text-slate-300 border-slate-200 cursor-not-allowed' : 'text-blue-600 border-blue-300 hover:bg-blue-50'}">Next &raquo;</button>`;
+    html += `<button onclick="MB_goDetailPage(${currentDetailPage + 1}, event)" ${currentDetailPage >= totalPages ? 'disabled' : ''} class="px-2 py-1 rounded border ${currentDetailPage >= totalPages ? 'text-slate-300 border-slate-200 cursor-not-allowed' : 'text-blue-600 border-blue-300 hover:bg-blue-50'}">Next &raquo;</button>`;
     container.innerHTML = html;
   }
 
-  window.MB_goDetailPage = function(p) {
+  window.MB_goDetailPage = function(p, evt) {
+    if (evt) { evt.stopPropagation(); evt.preventDefault(); }
     const totalPages = Math.ceil(currentDetailTotal / currentDetailPerPage);
     if (p < 1 || p > totalPages) return;
     MB_openDetail(currentFromRaw, currentToRaw, p);
