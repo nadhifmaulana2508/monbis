@@ -113,6 +113,7 @@
         <tbody id="MB_modalTbody" class="text-slate-700"></tbody>
       </table>
     </div>
+    <div id="MB_pagination" class="px-4 lg:px-5 py-2 border-t border-slate-100 bg-white flex items-center justify-between gap-2 shrink-0 text-xs"></div>
   </div>
 </div>
 
@@ -299,6 +300,9 @@
   let currentDetailData = []; 
   let currentFromRaw = '';
   let currentToRaw = '';
+  let currentFilteredList = [];
+  let currentPage = 1;
+  const PAGE_SIZE = 20;
 
   document.getElementById('MB_modalClose').onclick = () => elMod.classList.add('hidden');
   elMod.addEventListener('click', e => { if(!e.target.closest('#MB_modalCard')) elMod.classList.add('hidden'); });
@@ -470,7 +474,7 @@
   function linkCell(from_bucket, to_bucket, val){
     const n = getNum(val);
     if(n<=0) return '<span class="text-slate-300">–</span>';
-    if(to_bucket === 'RUNOFF' || gIsKonsol) return numHTML(n);
+    if(to_bucket === 'RUNOFF') return numHTML(n);
     return `<a href="#" class="cell-link" onclick="return MB_openDetail('${from_bucket}','${to_bucket}')">${numHTML(n)}</a>`;
   }
 
@@ -497,6 +501,8 @@
         return matchSearch && matchKankas && matchAo;
       });
       
+      currentFilteredList = filtered;
+      currentPage = 1;
       renderDetailTable(filtered);
   };
 
@@ -568,6 +574,8 @@
           modAo.value = ''; // reset value
       }
 
+      currentFilteredList = currentDetailData;
+      currentPage = 1;
       renderDetailTable(currentDetailData);
     }catch(e){
       if(e.name!=='AbortError') elModTbody.innerHTML = `<tr><td class="px-4 py-8 text-center text-red-500 font-bold">Gagal menarik data.</td></tr>`;
@@ -659,40 +667,20 @@
         <tr class="sticky-total">${totalCells}</tr>
       `;
 
+      // Pagination: slice data for current page
+      const totalPages = Math.ceil(list.length / PAGE_SIZE);
+      const startIdx = (currentPage - 1) * PAGE_SIZE;
+      const endIdx = currentPage * PAGE_SIZE;
+      const pageData = list.slice(startIdx, endIdx);
+
       if(list.length === 0) {
         elModTbody.innerHTML = `<tr><td colspan="${cols.length}" class="py-10 text-center text-slate-400 font-medium">Data tidak ditemukan.</td></tr>`;
       } else {
-        const rowHtml = d=>{
-          let h = '<tr class="border-b border-slate-100 hover:bg-blue-50/40 transition">';
-          for (const [key,label,sz,type,xtraClass] of cols){
-            let v = d[key]; if (v==null) v='';
-            if (key==='nama_nasabah') v = cut(v,20);
-            if (key==='alamat')       v = cut(v,30);
-            
-            const raw = (type==='num') ? getNum(d[key]) : String(d[key]||'');
-            let shown = (type==='num') ? nf.format(raw) : String(v);
-            
-            // Tambahin tanda persen buat PD dan LGD biar enak dibaca
-            if (key === 'pd_actual' || key === 'lgd_actual') {
-                shown = d[key] != null ? d[key] + '%' : '';
-            }
-
-            let alignClass = type === 'num' ? 'text-right' : 'text-left';
-            if(key === 'kolektibilitas') alignClass = 'text-center font-bold text-slate-600';
-            if(key === 'pemulihan_pembentukan') {
-                alignClass += raw > 0 ? ' text-red-600 font-bold' : (raw < 0 ? ' text-emerald-600 font-bold' : ''); 
-            }
-
-            let customClass = xtraClass ? xtraClass : `col-${sz}`;
-
-            h += `<td class="px-2 py-1.5 border-r border-slate-100 ${customClass} ${alignClass} nowrap" data-key="${key}" data-raw="${raw}" title="${String(d[key]??'')}">${String(shown)}</td>`;
-          }
-          h += '</tr>';
-          return h;
-        };
-
-        elModTbody.innerHTML = list.map(rowHtml).join('');
+        elModTbody.innerHTML = pageData.map(d => MB_rowHtml(d, cols, nf)).join('');
       }
+
+      // Render pagination controls
+      MB_renderPagination(list.length, totalPages);
 
       // INIT SORTING
       const thEls = elModThead.querySelectorAll('th.th-sort');
@@ -706,20 +694,120 @@
           sortState.key = key;
           th.classList.add(sortState.dir===1 ? 'asc' : 'desc');
 
-          const rows = Array.from(elModTbody.querySelectorAll('tr'));
-          rows.sort((ra, rb)=>{
-            const a = ra.querySelector(`td[data-key="${key}"]`)?.getAttribute('data-raw');
-            const b = rb.querySelector(`td[data-key="${key}"]`)?.getAttribute('data-raw');
+          currentFilteredList.sort((a, b)=>{
+            const av = (type==='num') ? getNum(a[key]) : String(a[key]||'');
+            const bv = (type==='num') ? getNum(b[key]) : String(b[key]||'');
             if (type==='num'){
-              return sortState.dir * (Number(a||0) - Number(b||0));
+              return sortState.dir * (Number(av) - Number(bv));
             } else {
-              return sortState.dir * String(a||'').localeCompare(String(b||''), 'id', {numeric:true});
+              return sortState.dir * String(av).localeCompare(String(bv), 'id', {numeric:true});
             }
           });
-          rows.forEach(r=>elModTbody.appendChild(r));
+          currentPage = 1;
+          const nf2 = new Intl.NumberFormat('id-ID');
+          const pgData = currentFilteredList.slice(0, PAGE_SIZE);
+          elModTbody.innerHTML = pgData.map(d => MB_rowHtml(d, cols, nf2)).join('');
+          MB_renderPagination(currentFilteredList.length, Math.ceil(currentFilteredList.length / PAGE_SIZE));
         });
       });
   }
+
+  function MB_rowHtml(d, cols, nf) {
+    let h = '<tr class="border-b border-slate-100 hover:bg-blue-50/40 transition">';
+    for (const [key,label,sz,type,xtraClass] of cols){
+      let v = d[key]; if (v==null) v='';
+      if (key==='nama_nasabah') v = cut(v,20);
+      if (key==='alamat')       v = cut(v,30);
+      const raw = (type==='num') ? getNum(d[key]) : String(d[key]||'');
+      let shown = (type==='num') ? nf.format(raw) : String(v);
+      if (key === 'pd_actual' || key === 'lgd_actual') {
+          shown = d[key] != null ? d[key] + '%' : '';
+      }
+      let alignClass = type === 'num' ? 'text-right' : 'text-left';
+      if(key === 'kolektibilitas') alignClass = 'text-center font-bold text-slate-600';
+      if(key === 'pemulihan_pembentukan') {
+          alignClass += raw > 0 ? ' text-red-600 font-bold' : (raw < 0 ? ' text-emerald-600 font-bold' : '');
+      }
+      let customClass = xtraClass ? xtraClass : `col-${sz}`;
+      h += `<td class="px-2 py-1.5 border-r border-slate-100 ${customClass} ${alignClass} nowrap" data-key="${key}" data-raw="${raw}" title="${String(d[key]??'')}">${String(shown)}</td>`;
+    }
+    h += '</tr>';
+    return h;
+  }
+
+  function MB_renderPagination(totalItems, totalPages) {
+    const elPag = document.getElementById('MB_pagination');
+    if (!elPag) return;
+    if (totalItems === 0 || totalPages <= 1) {
+      elPag.innerHTML = totalItems > 0
+        ? `<span class="text-slate-500">Menampilkan 1-${totalItems} dari ${totalItems}</span><span></span>`
+        : '';
+      return;
+    }
+    const startItem = (currentPage - 1) * PAGE_SIZE + 1;
+    const endItem = Math.min(currentPage * PAGE_SIZE, totalItems);
+    let btns = '';
+    btns += `<button onclick="MB_goPage(${currentPage - 1})" class="px-2 py-1 rounded border ${currentPage === 1 ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-slate-300 text-slate-600 hover:bg-slate-100'}" ${currentPage === 1 ? 'disabled' : ''}>&laquo;</button>`;
+    const maxVisible = 7;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+    if (endPage - startPage < maxVisible - 1) startPage = Math.max(1, endPage - maxVisible + 1);
+    if (startPage > 1) {
+      btns += `<button onclick="MB_goPage(1)" class="px-2 py-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-100">1</button>`;
+      if (startPage > 2) btns += `<span class="px-1 text-slate-400">...</span>`;
+    }
+    for (let i = startPage; i <= endPage; i++) {
+      if (i === currentPage) {
+        btns += `<button class="px-2 py-1 rounded border border-blue-500 bg-blue-500 text-white font-bold">${i}</button>`;
+      } else {
+        btns += `<button onclick="MB_goPage(${i})" class="px-2 py-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-100">${i}</button>`;
+      }
+    }
+    if (endPage < totalPages) {
+      if (endPage < totalPages - 1) btns += `<span class="px-1 text-slate-400">...</span>`;
+      btns += `<button onclick="MB_goPage(${totalPages})" class="px-2 py-1 rounded border border-slate-300 text-slate-600 hover:bg-slate-100">${totalPages}</button>`;
+    }
+    btns += `<button onclick="MB_goPage(${currentPage + 1})" class="px-2 py-1 rounded border ${currentPage === totalPages ? 'border-slate-200 text-slate-300 cursor-not-allowed' : 'border-slate-300 text-slate-600 hover:bg-slate-100'}" ${currentPage === totalPages ? 'disabled' : ''}>&raquo;</button>`;
+    elPag.innerHTML = `<span class="text-slate-500">Menampilkan ${startItem}-${endItem} dari ${nfID.format(totalItems)}</span><div class="flex items-center gap-1">${btns}</div>`;
+  }
+
+  window.MB_goPage = function(page) {
+    const totalPages = Math.ceil(currentFilteredList.length / PAGE_SIZE);
+    if (page < 1 || page > totalPages) return;
+    currentPage = page;
+    const nf = new Intl.NumberFormat('id-ID');
+    const cols = [
+      ['no_rekening','Norek','md','text', 'mod-col-rek hidden md:table-cell'],
+      ['nama_nasabah','Nama Nasabah','lg','text', 'mod-col-nas'],
+      ['kankas','Kankas','md','text'],
+      ['ao_kredit','AO Kredit','md','text'],
+      ['alamat','Alamat','lgA','text'],
+      ['kolektibilitas','KOL','sm','text'],
+      ['os_m1','OS M-1','md','num'],
+      ['ckpn_m1','CKPN M-1','md','num'],
+      ['os_curr','OS Act','md','num'],
+      ['ckpn_actual','CKPN Act','md','num'],
+      ['pemulihan_pembentukan','+/- CKPN','md','num'],
+      ['pd_actual','PD (%)','sm','num'],
+      ['lgd_actual','LGD (%)','sm','num'],
+      ['tunggakan_pokok','T.Pokok','md','num'],
+      ['tunggakan_bunga','T.Bunga','md','num'],
+      ['hari_menunggak','HM','sm','num'],
+      ['hari_menunggak_pokok','HMP','sm','num'],
+      ['hari_menunggak_bunga','HMB','sm','num'],
+      ['tgl_jatuh_tempo','JtTmp','md','text'],
+      ['tgl_tagih','TglTg','sm','num'],
+      ['tgl_trans_terakhir','Tgl Trans','md','text'],
+      ['angsuran_pokok','AngsP','md','num'],
+      ['angsuran_bunga','AngsB','md','num']
+    ];
+    const startIdx = (currentPage - 1) * PAGE_SIZE;
+    const pageData = currentFilteredList.slice(startIdx, startIdx + PAGE_SIZE);
+    elModTbody.innerHTML = pageData.map(d => MB_rowHtml(d, cols, nf)).join('');
+    MB_renderPagination(currentFilteredList.length, totalPages);
+    const wrap = document.getElementById('MB_modalTableWrap');
+    if (wrap) wrap.scrollTop = 0;
+  };
 
   // --- EXPORT REKAP UTAMA MATRIX ---
   window.MB_exportRekap = function() {

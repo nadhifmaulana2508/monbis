@@ -2,7 +2,7 @@
   "id": "FEAT-002",
   "type": "fix",
   "description": "Fix konsolidasi detail: enable detail click in konsolidasi mode (frontend + backend). Currently when kode_kantor is empty (konsolidasi mode), the linkCell function returns plain text instead of a clickable link, and the backend getMigrasiBucketDetailActual and getMigrasiBucketDetailOLunas reject konsolidasi requests. Also add pagination of 20 items per page in the detail modal.",
-  "status": "pending",
+  "status": "in_progress",
   "steps": [
     "FRONTEND - pages/migrasi_bucket.php: In the linkCell function (around line 432 in the JS section), remove the condition `gIsKonsol` that prevents rendering links. Currently: `if(to_bucket === 'RUNOFF' || gIsKonsol) return numHTML(n);` - change it to: `if(to_bucket === 'RUNOFF') return numHTML(n);` so konsolidasi mode cells are also clickable.",
     "BACKEND - api/controllers/KolekController.php: In getMigrasiBucketDetailActual (starts ~line 1380), remove the early return that blocks konsolidasi. Currently: `if ($kc===null || $kc==='000') { return sendResponse(400, ...); }`. Instead, when $kc is null, query ALL branches (exclude kode_cabang 000) - same pattern used in computeOSForDate. Modify the SQL to conditionally filter by kode_kantor or include all non-000 branches.",

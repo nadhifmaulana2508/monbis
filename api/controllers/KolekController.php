@@ -1360,10 +1360,10 @@ class KolekController {
   /*********************** ACTUAL A..N → A..N (FAST + BUCKET INFO) ***********************/
   public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null)
   {
-    if ($kc===null || $kc==='000') {
-      return sendResponse(400, "Pilih kode_kantor spesifik (CHAR(3), mis. '004') untuk detail ACTUAL.");
+    if ($kc !== null) {
+      $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
+      if ($kc === '000') $kc = null;
     }
-    $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
 
     [$dsC,$deC] = $this->dayRange($closing);
     [$dsH,$deH] = $this->dayRange($harian);
@@ -1373,9 +1373,21 @@ class KolekController {
     if ($ao)     $whereFilter .= " AND h.kode_group2 = :ao ";
     if ($search) $whereFilter .= " AND (h.nama_nasabah LIKE :search OR h.no_rekening LIKE :search) ";
 
+    // Conditional kode_kantor filter
+    $kcFilter_h = "";
+    $kcFilter_c = "";
+    if ($kc !== null) {
+      $kcFilter_h = " AND h.kode_cabang = :kcH ";
+      $kcFilter_c = " AND c.kode_cabang = :kcC ";
+    } else {
+      $kcFilter_h = " AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') <> '000' ";
+      $kcFilter_c = " AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') <> '000' ";
+    }
+
     $sql = "
       SELECT
         h.kode_cabang,
+        LPAD(CAST(h.kode_cabang AS CHAR),3,'0') AS kode_cabang_display,
         h.kode_group1 AS kankas_kode,
         kks.deskripsi_group1 AS kankas,   -- NAMA KANKAS
         h.kode_group2 AS ao_kredit_kode,
@@ -1418,7 +1430,7 @@ class KolekController {
       JOIN nominatif h
         ON h.no_rekening = c.no_rekening
        AND h.created >= :dsH AND h.created < :deH
-       AND h.kode_cabang = :kcH
+       $kcFilter_h
       JOIN ref_dpd_bucket rbf
         ON c.hari_menunggak >= rbf.min_day
        AND (rbf.max_day IS NULL OR c.hari_menunggak <= rbf.max_day)
@@ -1430,14 +1442,16 @@ class KolekController {
       LEFT JOIN kankas kks ON kks.kode_group1 = h.kode_group1
       LEFT JOIN ao_kredit aok ON aok.kode_group2 = h.kode_group2
       WHERE c.created >= :dsC AND c.created < :deC
-        AND c.kode_cabang = :kcC
+        $kcFilter_c
         $whereFilter
       ORDER BY h.baki_debet DESC
     ";
 
     $st = $this->pdo->prepare($sql);
-    $st->bindValue(':kcH', $kc);
-    $st->bindValue(':kcC', $kc);
+    if ($kc !== null) {
+      $st->bindValue(':kcH', $kc);
+      $st->bindValue(':kcC', $kc);
+    }
     $st->bindValue(':dsH', $dsH); $st->bindValue(':deH', $deH);
     $st->bindValue(':dsC', $dsC); $st->bindValue(':deC', $deC);
     $st->bindValue(':fb',  $fb);
@@ -1457,10 +1471,10 @@ class KolekController {
   /*********************** O_LUNAS (M-1 → O) — FAST + BUCKET INFO ***********************/
   public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null)
   {
-    if ($kc===null || $kc==='000') {
-      return sendResponse(400, "Pilih kode_kantor spesifik (CHAR(3), mis. '004') untuk detail O_LUNAS.");
+    if ($kc !== null) {
+      $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
+      if ($kc === '000') $kc = null;
     }
-    $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
 
     [$dsC,$deC] = $this->dayRange($closing);
     [$dsH,$deH] = $this->dayRange($harian);
@@ -1471,9 +1485,21 @@ class KolekController {
     if ($ao)     $whereFilter .= " AND c.kode_group2 = :ao ";
     if ($search) $whereFilter .= " AND (c.nama_nasabah LIKE :search OR c.no_rekening LIKE :search) ";
 
+    // Conditional kode_kantor filter
+    $kcFilter_h = "";
+    $kcFilter_c = "";
+    if ($kc !== null) {
+      $kcFilter_h = " AND h.kode_cabang = :kcH ";
+      $kcFilter_c = " AND c.kode_cabang = :kcC ";
+    } else {
+      $kcFilter_h = " AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') <> '000' ";
+      $kcFilter_c = " AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') <> '000' ";
+    }
+
     $sql = "
       SELECT
         c.kode_cabang,
+        LPAD(CAST(c.kode_cabang AS CHAR),3,'0') AS kode_cabang_display,
         c.kode_group1 AS kankas_kode,
         kks.deskripsi_group1 AS kankas,   -- NAMA KANKAS
         c.kode_group2 AS ao_kredit_kode,
@@ -1516,7 +1542,7 @@ class KolekController {
       LEFT JOIN nominatif h
         ON h.no_rekening = c.no_rekening
        AND h.created >= :dsH AND h.created < :deH
-       AND h.kode_cabang = :kcH
+       $kcFilter_h
       JOIN ref_dpd_bucket rbf
         ON c.hari_menunggak >= rbf.min_day
        AND (rbf.max_day IS NULL OR c.hari_menunggak <= rbf.max_day)
@@ -1524,15 +1550,17 @@ class KolekController {
       LEFT JOIN kankas kks ON kks.kode_group1 = c.kode_group1
       LEFT JOIN ao_kredit aok ON aok.kode_group2 = c.kode_group2
       WHERE c.created >= :dsC AND c.created < :deC
-        AND c.kode_cabang = :kcC
+        $kcFilter_c
         AND h.no_rekening IS NULL
         $whereFilter
       ORDER BY c.baki_debet DESC
     ";
 
     $st = $this->pdo->prepare($sql);
-    $st->bindValue(':kcH', $kc);
-    $st->bindValue(':kcC', $kc);
+    if ($kc !== null) {
+      $st->bindValue(':kcH', $kc);
+      $st->bindValue(':kcC', $kc);
+    }
     $st->bindValue(':dsH', $dsH); $st->bindValue(':deH', $deH);
     $st->bindValue(':dsC', $dsC); $st->bindValue(':deC', $deC);
     $st->bindValue(':fb',  $fromBucket);
