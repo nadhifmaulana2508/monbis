@@ -1,0 +1,30 @@
+{
+  "id": "FEAT-002",
+  "type": "feat",
+  "description": "Create the Dashboard Layanan Digital page (pages/dashboard_layanan_digital.php) with summary cards for each channel (VA, Branchless, QRIS), Top 5 and Bottom 5 cabang for each channel by nominal, MoM comparison, and ApexCharts visualizations. When konsolidasi: show all cabang breakdown. When user is a specific branch: show only their data. Also add a new API endpoint 'dashboard_layanan_digital' in the TransaksiController that returns Top 5 and Bottom 5 per channel.",
+  "status": "in_progress",
+  "steps": [
+    "Create api/controllers/TransaksiController.php new method getDashboardLayananDigital($input) that: (a) accepts harian_date, closing_date, kode_kantor, korwil params, (b) queries the va table grouped by kantor for each channel (VA kode='320', Branchless kode IN('150','152'), QRIS kode IN('140','16','162')), (c) returns top 5 and bottom 5 cabang by total nominal for each channel, (d) includes MoM comparison (current period vs previous month same period), (e) respects kode_kantor filter - if specific branch, only return that branch data with kankas breakdown.",
+    "Register the new type 'dashboard_layanan_digital' in api/routes/transaksi.php to call $controller->getDashboardLayananDigital($input).",
+    "Create pages/dashboard_layanan_digital.php following the pattern of pages/layanan_digital.php: (a) Include ApexCharts CDN script tag, (b) Add inline CSS styles matching the layanan_digital.php style block, (c) Add header section with title 'Dashboard Layanan Digital' and filter form (closing_date, harian_date, area/cabang selector), (d) Add summary cards section showing total VA, Branchless, QRIS with MoM growth, (e) Add 3 sections - one per channel - each with a bar chart showing Top 5 (green) and Bottom 5 (red) cabang, (f) Add the same DOMContentLoaded initialization pattern: check user kode, load cabang list if konsolidasi, set default dates from API_DATE, then fetch data.",
+    "The page should use window.getUser() to detect if user is branch-specific (kode != '000') and lock the area filter accordingly, same pattern as layanan_digital.php.",
+    "Charts should use ApexCharts horizontal bar charts for Top 5/Bottom 5 visualization per channel."
+  ],
+  "acceptance_criteria": [
+    "php -l pages/dashboard_layanan_digital.php passes without errors",
+    "php -l api/controllers/TransaksiController.php passes without errors",
+    "php -l api/routes/transaksi.php passes without errors",
+    "The page includes ApexCharts CDN and renders 3 channel sections with Top 5/Bottom 5 charts",
+    "API route 'dashboard_layanan_digital' type is registered in transaksi.php",
+    "The getDashboardLayananDigital method exists in TransaksiController.php"
+  ],
+  "verification": [
+    "php -l /projects/sandbox/monbis/pages/dashboard_layanan_digital.php",
+    "php -l /projects/sandbox/monbis/api/controllers/TransaksiController.php",
+    "php -l /projects/sandbox/monbis/api/routes/transaksi.php",
+    "grep -c 'dashboard_layanan_digital' /projects/sandbox/monbis/api/routes/transaksi.php should return at least 1",
+    "grep -c 'getDashboardLayananDigital' /projects/sandbox/monbis/api/controllers/TransaksiController.php should return at least 1"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

@@ -42,8 +42,8 @@ switch ($method) {
         } elseif ($input['type'] === 'detail_device_branchless') {
             $controller->getDetailDeviceBranchless($input);
 
-        
-
+        } elseif ($input['type'] === 'dashboard_layanan_digital') {
+            $controller->getDashboardLayananDigital($input);
 
         } else {
             sendResponse(400, "Type tidak dikenali. Gunakan 'Flow Par', 'KL Baru', atau 'Last Created Nominatif'");

@@ -1452,7 +1452,215 @@ class TransaksiController {
     }
 
 
+    /**
+     * Dashboard Layanan Digital - Top 5 & Bottom 5 cabang per channel
+     */
+    public function getDashboardLayananDigital($input = null) {
+        error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
+        set_time_limit(300); ini_set('memory_limit', '1024M');
 
+        $b = is_array($input) ? $input : [];
+        $harian  = $b['harian_date'] ?? date('Y-m-d');
+        $kode_kantor = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+        $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
+
+        if (!$harian) return sendResponse(400, "Tanggal Actual (Harian) wajib diisi.", null);
+
+        $ts_harian = strtotime($harian);
+        $y = (int)date('Y', $ts_harian);
+        $m = (int)date('m', $ts_harian);
+        $d = (int)date('d', $ts_harian);
+
+        // Logika tanggal bulletproof menggunakan mktime()
+        $prev_month_ts = mktime(0, 0, 0, $m - 1, 1, $y);
+        $prev_y = date('Y', $prev_month_ts);
+        $prev_m = date('m', $prev_month_ts);
+        $max_days = date('t', $prev_month_ts);
+
+        $prev_d = min($d, $max_days);
+        $prev_harian = sprintf("%04d-%02d-%02d", $prev_y, $prev_m, $prev_d);
+
+        if (!empty($b['closing_date'])) {
+            $closing_date = $b['closing_date'];
+        } else {
+            $closing_date = date('Y-m-t', strtotime(sprintf("%04d-%02d-01", $y, $m) . ' -1 day'));
+        }
+
+        $prev_closing = date('Y-m-t', strtotime(date('Y-m-01', strtotime($closing_date)) . ' -1 month'));
+
+        // Channel definitions
+        $channels = [
+            'VA' => "TRIM(t.kode_transaksi) = '320'",
+            'BRANCHLESS' => "TRIM(t.kode_transaksi) IN ('150', '152')",
+            'QRIS' => "TRIM(t.kode_transaksi) IN ('140', '16', '162')"
+        ];
+
+        // Area filter
+        $sqlFilter = "";
+        $filterParams = [];
+        $filterLabel = "KONSOLIDASI";
+
+        if ($kode_kantor && $kode_kantor !== '000') {
+            $filterLabel = "CABANG_" . $kode_kantor;
+        } elseif ($korwil) {
+            $kw_start = null; $kw_end = null;
+            switch ($korwil) {
+                case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
+                case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
+                case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
+                case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
+            }
+            if ($kw_start && $kw_end) {
+                $sqlFilter = " AND t.kantor BETWEEN :kw_start AND :kw_end ";
+                $filterParams[':kw_start'] = $kw_start;
+                $filterParams[':kw_end'] = $kw_end;
+            }
+            $filterLabel = "KORWIL_" . $korwil;
+        }
+
+        $result = [];
+
+        try {
+            foreach ($channels as $chName => $chCondition) {
+
+                if ($kode_kantor && $kode_kantor !== '000') {
+                    // Specific branch: show kankas breakdown
+                    $sql = "
+                        SELECT 
+                            TRIM(t.kankas) as kode,
+                            TRIM(t.kankas) as nama,
+                            SUM(CASE WHEN t.tgl_transaksi > :c_closing AND t.tgl_transaksi <= :c_harian THEN t.jumlah ELSE 0 END) as curr_nom,
+                            SUM(CASE WHEN t.tgl_transaksi > :p_closing AND t.tgl_transaksi <= :p_harian THEN t.jumlah ELSE 0 END) as prev_nom
+                        FROM va t
+                        WHERE ((t.tgl_transaksi > :w_closing AND t.tgl_transaksi <= :w_harian)
+                            OR (t.tgl_transaksi > :wp_closing AND t.tgl_transaksi <= :wp_harian))
+                            AND $chCondition
+                            AND t.kantor = :kode_kantor
+                        GROUP BY TRIM(t.kankas)
+                        ORDER BY curr_nom DESC
+                    ";
+
+                    $params = [
+                        ':c_closing' => $closing_date, ':c_harian' => $harian,
+                        ':p_closing' => $prev_closing, ':p_harian' => $prev_harian,
+                        ':w_closing' => $closing_date, ':w_harian' => $harian,
+                        ':wp_closing' => $prev_closing, ':wp_harian' => $prev_harian,
+                        ':kode_kantor' => $kode_kantor
+                    ];
+
+                    $stmt = $this->pdo->prepare($sql);
+                    foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
+                    $stmt->execute();
+                    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    $totalCurr = 0; $totalPrev = 0;
+                    $items = [];
+                    foreach ($rows as $r) {
+                        $cNom = (float)($r['curr_nom'] ?? 0);
+                        $pNom = (float)($r['prev_nom'] ?? 0);
+                        $growth = $pNom > 0 ? round(($cNom - $pNom) / $pNom * 100, 1) : ($cNom > 0 ? 100 : 0);
+                        $totalCurr += $cNom;
+                        $totalPrev += $pNom;
+                        $items[] = [
+                            'nama' => $r['nama'] ?: ('Kankas ' . $r['kode']),
+                            'kode' => $r['kode'],
+                            'curr_nom' => $cNom,
+                            'prev_nom' => $pNom,
+                            'growth' => $growth
+                        ];
+                    }
+
+                    $top5 = array_slice($items, 0, 5);
+                    $bottom5 = count($items) > 5 ? array_slice($items, -5) : [];
+                    $totalGrowth = $totalPrev > 0 ? round(($totalCurr - $totalPrev) / $totalPrev * 100, 1) : ($totalCurr > 0 ? 100 : 0);
+
+                    $result[$chName] = [
+                        'top5' => $top5,
+                        'bottom5' => $bottom5,
+                        'total_curr' => $totalCurr,
+                        'total_prev' => $totalPrev,
+                        'growth' => $totalGrowth
+                    ];
+
+                } else {
+                    // Konsolidasi or Korwil: show cabang breakdown
+                    $sql = "
+                        SELECT 
+                            t.kantor as kode,
+                            COALESCE(k.nama_kantor, CONCAT('Cabang ', t.kantor)) as nama,
+                            SUM(CASE WHEN t.tgl_transaksi > :c_closing AND t.tgl_transaksi <= :c_harian THEN t.jumlah ELSE 0 END) as curr_nom,
+                            SUM(CASE WHEN t.tgl_transaksi > :p_closing AND t.tgl_transaksi <= :p_harian THEN t.jumlah ELSE 0 END) as prev_nom
+                        FROM va t
+                        LEFT JOIN kode_kantor k ON t.kantor = k.kode_kantor
+                        WHERE ((t.tgl_transaksi > :w_closing AND t.tgl_transaksi <= :w_harian)
+                            OR (t.tgl_transaksi > :wp_closing AND t.tgl_transaksi <= :wp_harian))
+                            AND $chCondition
+                            $sqlFilter
+                        GROUP BY t.kantor, k.nama_kantor
+                        ORDER BY curr_nom DESC
+                    ";
+
+                    $params = [
+                        ':c_closing' => $closing_date, ':c_harian' => $harian,
+                        ':p_closing' => $prev_closing, ':p_harian' => $prev_harian,
+                        ':w_closing' => $closing_date, ':w_harian' => $harian,
+                        ':wp_closing' => $prev_closing, ':wp_harian' => $prev_harian
+                    ];
+                    foreach ($filterParams as $fk => $fv) { $params[$fk] = $fv; }
+
+                    $stmt = $this->pdo->prepare($sql);
+                    foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
+                    $stmt->execute();
+                    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                    $totalCurr = 0; $totalPrev = 0;
+                    $items = [];
+                    foreach ($rows as $r) {
+                        $cNom = (float)($r['curr_nom'] ?? 0);
+                        $pNom = (float)($r['prev_nom'] ?? 0);
+                        $growth = $pNom > 0 ? round(($cNom - $pNom) / $pNom * 100, 1) : ($cNom > 0 ? 100 : 0);
+                        $totalCurr += $cNom;
+                        $totalPrev += $pNom;
+                        $items[] = [
+                            'nama' => $r['nama'],
+                            'kode' => $r['kode'],
+                            'curr_nom' => $cNom,
+                            'prev_nom' => $pNom,
+                            'growth' => $growth
+                        ];
+                    }
+
+                    $top5 = array_slice($items, 0, 5);
+                    // Bottom 5: take from bottom, but only items with curr_nom > 0
+                    $nonZero = array_filter($items, fn($it) => $it['curr_nom'] > 0);
+                    $nonZero = array_values($nonZero);
+                    $bottom5 = count($nonZero) > 5 ? array_slice($nonZero, -5) : [];
+
+                    $totalGrowth = $totalPrev > 0 ? round(($totalCurr - $totalPrev) / $totalPrev * 100, 1) : ($totalCurr > 0 ? 100 : 0);
+
+                    $result[$chName] = [
+                        'top5' => $top5,
+                        'bottom5' => $bottom5,
+                        'total_curr' => $totalCurr,
+                        'total_prev' => $totalPrev,
+                        'growth' => $totalGrowth
+                    ];
+                }
+            }
+
+            return sendResponse(200, "Berhasil", [
+                'meta' => [
+                    'harian_date' => $harian,
+                    'closing_date' => $closing_date,
+                    'filter' => $filterLabel
+                ],
+                'channels' => $result
+            ]);
+
+        } catch (PDOException $e) {
+            return sendResponse(500, "PDO Error: " . $e->getMessage(), null);
+        }
+    }
 
 
 }
