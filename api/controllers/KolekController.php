@@ -992,6 +992,63 @@ class KolekController {
       $t['inc_os']  = (int)($t['os_curr_from']  - $t['os_m1']);
     } unset($t);
 
+    // ===== Run Off per FROM = Angsuran + Lunas (OS M-1 akun yg jadi O)
+    $allAccs = array_keys($M1['accSet']);
+    $angsuranMap = $this->fetchAngsuranMap($closing, $harian, $kc, $allAccs);
+
+    $runOffPerFrom = [];
+    $angsuranPerFrom = [];
+    foreach ($order as $f) {
+      $angsuranPerFrom[$f] = 0;
+    }
+
+    // Aggregate angsuran per from_bucket
+    foreach ($M1['accSet'] as $acc => $_) {
+      $from = $M1['bucketByAcc'][$acc] ?? 'A';
+      if (!in_array($from, $order, true)) $from = 'A';
+      $angsuranPerFrom[$from] += (int)($angsuranMap[$acc]['pokok'] ?? 0);
+    }
+
+    foreach ($order as $f) {
+      $lunas_os = (int)($matrix[$f]['O']['os_m1'] ?? 0);
+      $angsuran_total = (int)$angsuranPerFrom[$f];
+      $runOffPerFrom[$f] = $angsuran_total + $lunas_os;
+    }
+
+    // ===== Summary breakdown: Pemburukan / Stay / Perbaikan by SC/FE/BE
+    $summary = [
+      'SC' => ['pemburukan'=>['noa'=>0,'os'=>0], 'stay'=>['noa'=>0,'os'=>0], 'perbaikan'=>['noa'=>0,'os'=>0]],
+      'FE' => ['pemburukan'=>['noa'=>0,'os'=>0], 'stay'=>['noa'=>0,'os'=>0], 'perbaikan'=>['noa'=>0,'os'=>0]],
+      'BE' => ['pemburukan'=>['noa'=>0,'os'=>0], 'stay'=>['noa'=>0,'os'=>0], 'perbaikan'=>['noa'=>0,'os'=>0]],
+    ];
+
+    foreach ($M1['accSet'] as $acc => $_) {
+      $from = $M1['bucketByAcc'][$acc] ?? 'A';
+      if (!in_array($from, $order, true)) $from = 'A';
+
+      $to = $CUR['bucketByAcc'][$acc] ?? 'O';
+      if (!in_array($to, $orderTo, true)) $to = 'O';
+
+      $os_m1_acc = (int)round($M1['osByAcc'][$acc] ?? 0);
+
+      $tag = $tagMap[$from] ?? 'SC';
+      if (!isset($summary[$tag])) continue;
+
+      $fromIdx = array_search($from, $order);
+      $toIdx = ($to === 'O') ? -1 : array_search($to, $order);
+
+      if ($to === 'O' || $toIdx < $fromIdx) {
+        $summary[$tag]['perbaikan']['noa']++;
+        $summary[$tag]['perbaikan']['os'] += $os_m1_acc;
+      } elseif ($toIdx === $fromIdx) {
+        $summary[$tag]['stay']['noa']++;
+        $summary[$tag]['stay']['os'] += $os_m1_acc;
+      } else {
+        $summary[$tag]['pemburukan']['noa']++;
+        $summary[$tag]['pemburukan']['os'] += $os_m1_acc;
+      }
+    }
+
     // ===== Flatten matriks (lengkap + % per FROM dengan os_used)
     $out = [];
     foreach ($order as $from){
@@ -1022,6 +1079,8 @@ class KolekController {
       'order_to'     => $orderTo,             // urutan kolom TO (A..N,O)
       'from_totals'  => $fromTotals,          // ringkasan per FROM (INC pakai OS CURRENT asli)
       'matrix'       => $out,                 // matriks FROM→TO (TO=O: os = OS M-1)
+      'run_off_per_from' => $runOffPerFrom,   // run off = angsuran + lunas per FROM
+      'summary'      => $summary,             // pemburukan/stay/perbaikan by SC/FE/BE
       'realisasi'    => [
         'total'     => ['noa'=>(int)$realisasi_total['noa'], 'os'=>(int)$realisasi_total['os']],
         'by_bucket' => $realisasi_by_bucket

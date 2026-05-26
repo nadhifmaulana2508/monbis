@@ -55,6 +55,22 @@
       <span id="MB_chip_runoff"    class="pill pill-emerald shadow-sm">Run Off: <b id="MB_total_runoff">0</b></span>
       <span class="text-[11px] text-slate-400 ml-1 italic">* OS tampil dalam <b>ribuan</b></span>
     </div>
+    <div id="MB_summaryBreakdown" class="hidden mt-3">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+          <div class="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">SC <span class="text-slate-400 font-normal">(DPD 0-30)</span></div>
+          <div id="MB_sum_sc" class="space-y-1 text-xs"></div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+          <div class="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">FE <span class="text-slate-400 font-normal">(DPD 31-180)</span></div>
+          <div id="MB_sum_fe" class="space-y-1 text-xs"></div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+          <div class="text-xs font-bold text-slate-600 mb-2 uppercase tracking-wide">BE <span class="text-slate-400 font-normal">(DPD 181++)</span></div>
+          <div id="MB_sum_be" class="space-y-1 text-xs"></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div id="MB_loading" class="hidden flex items-center gap-2 text-sm text-blue-600 font-bold mb-3 tracking-wider">
@@ -434,7 +450,8 @@
         cellsHtml.push(`<td class="text-right col-N ${flowCls}">${linkCell(f,t,c.os)}<span class="cell-sub">${sub.join(' • ')}</span></td>`);
       }
       grand_lunas += lunas;
-      const runoff = Math.max(0, os_m1 - sumNonO);
+      const runOffData = data.run_off_per_from || {};
+      const runoff = getNum(runOffData[f]) || Math.max(0, os_m1 - sumNonO);
       grand_runoff += runoff;
 
       rowsHtml.push(`<tr>
@@ -468,6 +485,36 @@
     $('#MB_realisasi_os').textContent = fmtK(getNum(rTot.os));
     $('#MB_total_lunas').textContent = fmtK(grand_lunas);
     $('#MB_total_runoff').textContent = fmtK(grand_runoff);
+
+    // Render summary breakdown (Pemburukan/Stay/Perbaikan by SC/FE/BE)
+    const summary = data.summary || {};
+    const sumEl = document.getElementById('MB_summaryBreakdown');
+    if (summary && Object.keys(summary).length > 0) {
+      sumEl.classList.remove('hidden');
+      ['SC','FE','BE'].forEach(tag => {
+        const s = summary[tag] || {};
+        const el = document.getElementById('MB_sum_' + tag.toLowerCase());
+        if (el) {
+          el.innerHTML = `
+            <div class="flex justify-between items-center py-1 border-b border-slate-100">
+              <span class="text-red-600 font-semibold">Pemburukan</span>
+              <span><b>${nfID.format(s.pemburukan?.noa||0)}</b> NOA | <b>${fmtK(s.pemburukan?.os||0)}</b></span>
+            </div>
+            <div class="flex justify-between items-center py-1 border-b border-slate-100">
+              <span class="text-slate-600 font-semibold">Stay</span>
+              <span><b>${nfID.format(s.stay?.noa||0)}</b> NOA | <b>${fmtK(s.stay?.os||0)}</b></span>
+            </div>
+            <div class="flex justify-between items-center py-1">
+              <span class="text-emerald-600 font-semibold">Perbaikan</span>
+              <span><b>${nfID.format(s.perbaikan?.noa||0)}</b> NOA | <b>${fmtK(s.perbaikan?.os||0)}</b></span>
+            </div>
+          `;
+        }
+      });
+    } else {
+      sumEl.classList.add('hidden');
+    }
+
     elSummary.classList.remove('hidden');
   }
 
