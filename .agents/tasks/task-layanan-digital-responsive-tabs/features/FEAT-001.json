@@ -2,7 +2,7 @@
   "id": "FEAT-001",
   "type": "feat",
   "description": "Fix responsive filter on dashboard_layanan_digital.php and va.php, then add tab/section navigation (icon pill buttons) and auto-narrative info modal to ALL 4 layanan digital pages.",
-  "status": "in_progress",
+  "status": "completed",
   "steps": [
     "STEP 1 - Fix dashboard_layanan_digital.php responsive filter: Refactor the header/filter section to match the branchless.php/qris_merchant.php pattern. The filter form should be `hidden md:flex` on mobile with a toggle button that shows/hides it. Currently the filter is always visible inside a flex-col xl:flex-row container - change to the compact responsive pattern with a Filter toggle button visible only on mobile (md:hidden).",
 
@@ -36,5 +36,5 @@
     "php -l pages/qris_merchant.php"
   ],
   "blocked_reason": null,
-  "findings": ""
+  "findings": "All 8 steps implemented in a single pass. Restructured pages to place the breakdown table in the Rekap tab (default visible) and charts in the Chart tab. Narrative modal reads data from the DOM (bodyUnified table rows) to generate summary text. No duplicate IDs introduced."
 }
