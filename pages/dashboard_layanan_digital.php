@@ -241,6 +241,11 @@
   function closeNarrative() {
       document.getElementById('modalNarrative').classList.add('hidden');
   }
+  function escNarrative(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+  }
   function generateNarrative() {
       let html = '';
       const cards = document.getElementById('summaryCardsContainer');
@@ -250,8 +255,8 @@
               const card = cards.children[i];
               const title = card.querySelector('.uppercase')?.textContent || '';
               const value = card.querySelector('.text-xl')?.textContent || '';
-              const growth = card.querySelector('[class*="rounded"]')?.textContent || '';
-              html += '<li><strong>' + title.trim() + '</strong>: ' + value.trim() + ' (Growth: ' + growth.trim() + ')</li>';
+              const growth = card.querySelector('[data-narrative="growth"]')?.textContent || '';
+              html += '<li><strong>' + escNarrative(title.trim()) + '</strong>: ' + escNarrative(value.trim()) + ' (Growth: ' + escNarrative(growth.trim()) + ')</li>';
           }
           html += '</ul>';
       } else {
@@ -382,7 +387,7 @@
                               <p class="text-[10px] font-bold text-slate-500 mt-0.5">${c.subtitle || ''}</p>
                           </div>
                           <div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-2">
-                              <span class="${bColor} px-2 py-0.5 rounded font-bold text-[11px]">${arrow} ${Math.abs(growthVal)}%</span>
+                              <span class="${bColor} px-2 py-0.5 rounded font-bold text-[11px]" data-narrative="growth">${arrow} ${Math.abs(growthVal)}%</span>
                               <div class="text-right leading-tight">
                                   <span class="text-[9px] text-slate-400">${pLabel}</span><br>
                                   <span class="text-[10px] font-bold text-slate-600">${pNominal}</span>

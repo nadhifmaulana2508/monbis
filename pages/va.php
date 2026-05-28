@@ -227,6 +227,9 @@
               btn.className = 'flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold transition-all text-gray-500 hover:text-gray-700';
           }
       });
+      if (view === 'chart') {
+          setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 100);
+      }
   }
 
   function openNarrative() {
@@ -235,6 +238,11 @@
   }
   function closeNarrative() {
       document.getElementById('modalNarrative').classList.add('hidden');
+  }
+  function escNarrative(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
   }
   function generateNarrative() {
       let html = '';
@@ -249,13 +257,13 @@
           const totalGrowthYoy = gtCells[4] ? gtCells[4].textContent.trim() : '-';
           html += '<p class="font-bold text-gray-800">Ringkasan Virtual Account:</p>';
           html += '<ul class="list-disc list-inside space-y-1">';
-          html += '<li>Total nominal bulan ini: <strong>' + totalNomBlnIni + '</strong> (Growth MoM: ' + totalGrowthMom + ')</li>';
-          html += '<li>Total nominal tahun ini: <strong>' + totalNomThnIni + '</strong> (Growth YoY: ' + totalGrowthYoy + ')</li>';
+          html += '<li>Total nominal bulan ini: <strong>' + escNarrative(totalNomBlnIni) + '</strong> (Growth MoM: ' + escNarrative(totalGrowthMom) + ')</li>';
+          html += '<li>Total nominal tahun ini: <strong>' + escNarrative(totalNomThnIni) + '</strong> (Growth YoY: ' + escNarrative(totalGrowthYoy) + ')</li>';
           if (rows.length > 2) {
               const topRow = rows[1].querySelectorAll('td');
               const topNama = topRow[1] ? topRow[1].textContent.trim() : '-';
               const topNom = topRow[6] ? topRow[6].textContent.trim() : '-';
-              html += '<li>Top performer: <strong>' + topNama + '</strong> dengan nominal ' + topNom + '</li>';
+              html += '<li>Top performer: <strong>' + escNarrative(topNama) + '</strong> dengan nominal ' + escNarrative(topNom) + '</li>';
           }
           html += '</ul>';
       } else {
