@@ -2,16 +2,14 @@
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <style>
-  :root { --primary: #7c3aed; --bg: #f8fafc; --text: #334155; }
+  :root { --primary: #7c3aed; --bg: #f9fafb; --text: #334155; }
   body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
-  .inp { box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0 0.5rem; font-size: 13px; background: #fff; height: 42px; cursor: pointer; outline: none; transition: border 0.2s; font-weight: 600; }
-  .inp:focus { border-color: var(--primary); box-shadow: 0 0 0 2px #e9d5ff; }
   .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  th { background-color: #f8fafc; color: #1e293b; font-weight: 800; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 11px; }
-  td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-weight: 700; color: #334155; }
+  th { background-color: #f8fafc; color: #1e293b; font-weight: 800; padding: 10px 8px; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 11px; }
+  td { padding: 10px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-weight: 700; color: #334155; }
   tr:hover td { background-color: #faf5ff; }
   .card-shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
   .local-loader { position: absolute; inset: 0; background: rgba(255,255,255,0.7); z-index: 50; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); border-radius: inherit; }
@@ -23,95 +21,91 @@
   }
 </style>
 
-<div class="max-w-[1600px] mx-auto px-3 md:px-6 py-4 flex flex-col gap-5">
-  <!-- HEADER & GLOBAL FILTER -->
-  <div class="flex flex-col gap-4 bg-white p-4 md:p-5 rounded-xl card-shadow border border-slate-100">
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div>
-            <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
-                <span class="bg-purple-600 text-white p-1.5 rounded-lg text-sm shadow-sm">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-                </span>
-                <span>QRIS Merchant</span>
-            </h1>
-            <p class="text-xs text-slate-500 mt-1 ml-1 font-medium" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
+<div class="max-w-[1600px] mx-auto px-2 md:px-4 py-4 md:py-6 min-h-screen font-sans space-y-3 md:space-y-4">
+  <!-- HEADER & FILTER -->
+  <div class="flex flex-col md:flex-row justify-between md:items-end gap-3">
+    <div class="flex justify-between items-center w-full md:w-auto">
+      <div>
+        <h1 class="text-xl md:text-2xl font-extrabold text-gray-800 tracking-tight flex items-center gap-2">
+            <span class="bg-purple-600 text-white p-1.5 rounded-lg text-sm shadow-sm">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+            </span>
+            QRIS Merchant
+        </h1>
+        <p class="text-[10px] md:text-xs text-gray-500 mt-0.5 font-medium" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
+      </div>
+      <button type="button" id="btnFilterToggle" onclick="toggleFilter()" class="md:hidden flex items-center gap-1.5 bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-transform">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+        <span id="filterToggleLabel">Filter</span>
+      </button>
+    </div>
+    <form id="formFilterGlobal" class="hidden md:flex flex-col md:flex-row items-end gap-2.5 md:gap-3 bg-white p-2.5 md:p-3 rounded-xl shadow-sm border border-gray-200 w-full md:w-auto">
+      <div class="flex w-full md:w-auto gap-2 shrink-0">
+        <div class="flex flex-col flex-1 min-w-0 md:w-[130px]">
+          <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Closing M-1</label>
+          <input type="date" id="closing_date" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-purple-500 transition-colors font-semibold cursor-pointer w-full bg-transparent" required>
         </div>
-        <!-- Mobile Filter Toggle Button -->
-        <button type="button" id="btnFilterToggle" onclick="toggleFilter()" class="md:hidden flex items-center gap-2 bg-purple-50 text-purple-700 border border-purple-200 px-4 py-2 rounded-lg font-bold text-sm">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-            <span id="filterToggleLabel">Tampilkan Filter</span>
+        <div class="flex flex-col flex-1 min-w-0 md:w-[130px]">
+          <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Harian/Actual</label>
+          <input type="date" id="harian_date" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-purple-500 transition-colors font-semibold cursor-pointer w-full bg-transparent" required>
+        </div>
+      </div>
+      <div class="flex w-full md:w-auto items-end gap-2 shrink-0 mt-0.5 md:mt-0">
+        <div class="flex flex-col flex-1 min-w-0 md:w-[180px]">
+          <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Area/Cabang</label>
+          <select id="opt_area" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-purple-500 bg-transparent transition-colors font-bold text-purple-700 cursor-pointer w-full truncate">
+              <option value="KONSOLIDASI" class="font-bold">Konsolidasi</option>
+              <optgroup label="Berdasarkan Korwil" class="text-gray-400">
+                  <option value="KORWIL_SEMARANG" class="text-gray-700">Korwil Semarang</option>
+                  <option value="KORWIL_SOLO" class="text-gray-700">Korwil Solo</option>
+                  <option value="KORWIL_BANYUMAS" class="text-gray-700">Korwil Banyumas</option>
+                  <option value="KORWIL_PEKALONGAN" class="text-gray-700">Korwil Pekalongan</option>
+              </optgroup>
+              <optgroup label="Berdasarkan Cabang" id="opt_cabang_list" class="text-gray-400"></optgroup>
+          </select>
+        </div>
+        <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white w-[34px] md:w-auto h-[32px] md:h-[36px] md:px-5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md active:scale-95 shrink-0 mb-[1px]">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="md:hidden"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <span class="hidden md:inline">Tampilkan</span>
         </button>
-    </div>
-    <!-- Filter Form - hidden on mobile by default, always visible on md+ -->
-    <div id="filterContainer" class="hidden md:block">
-        <form id="formFilterGlobal" class="flex flex-col md:flex-row items-end gap-3 w-full">
-            <div class="flex flex-col flex-1 md:w-[140px]">
-                <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">CLOSING M-1</label>
-                <input type="date" id="closing_date" class="inp text-slate-700 shadow-sm" required>
-            </div>
-            <div class="flex flex-col flex-1 md:w-[140px]">
-                <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">HARIAN / ACTUAL</label>
-                <input type="date" id="harian_date" class="inp text-slate-700 shadow-sm" required>
-            </div>
-            <div class="flex flex-col w-full md:w-[220px]">
-                <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">AREA / CABANG</label>
-                <select id="opt_area" class="inp text-purple-700 shadow-sm">
-                    <option value="KONSOLIDASI" class="font-bold">Konsolidasi</option>
-                    <optgroup label="Berdasarkan Korwil" class="text-slate-400">
-                        <option value="KORWIL_SEMARANG" class="text-slate-700">Korwil Semarang</option>
-                        <option value="KORWIL_SOLO" class="text-slate-700">Korwil Solo</option>
-                        <option value="KORWIL_BANYUMAS" class="text-slate-700">Korwil Banyumas</option>
-                        <option value="KORWIL_PEKALONGAN" class="text-slate-700">Korwil Pekalongan</option>
-                    </optgroup>
-                    <optgroup label="Berdasarkan Cabang" id="opt_cabang_list" class="text-slate-400"></optgroup>
-                </select>
-            </div>
-            <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white h-[42px] px-6 rounded-lg font-bold text-sm shadow-md flex items-center justify-center transition w-full md:w-auto">Tampilkan</button>
-        </form>
-    </div>
+      </div>
+    </form>
   </div>
 
-  <!-- SUMMARY CARDS -->
-  <div class="relative rounded-xl min-h-[100px]">
-      <div id="loadSummary" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-purple-200 border-t-purple-600 rounded-full"></div></div>
-      <div id="summaryCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
-  </div>
-
-  <!-- TREND CHART -->
-  <div class="bg-white rounded-xl border border-slate-200 p-4 md:p-5 card-shadow flex flex-col relative" style="min-height:430px;">
+  <!-- TREND CHART + DISTRIBUTION (side by side) -->
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 md:gap-4">
+    <!-- Trend Chart (7 cols) -->
+    <div class="xl:col-span-7 bg-white rounded-xl md:rounded-2xl border border-gray-100 p-3 md:p-4 card-shadow flex flex-col relative" style="min-height:380px;">
       <div id="loadTrend" class="local-loader hidden rounded-xl"><div class="animate-spin h-8 w-8 border-4 border-purple-200 border-t-purple-600 rounded-full"></div></div>
-      <div class="flex justify-between items-center mb-2 border-b border-slate-100 pb-2">
-          <h2 class="font-bold text-slate-800">Tren Transaksi QRIS</h2>
-          <select id="trendPeriode" class="inp h-8 text-[11px] w-[140px]" onchange="fetchTrend()">
+      <div class="flex justify-between items-center mb-2 border-b border-gray-100 pb-2">
+          <h2 class="font-bold text-gray-800 text-[13px] md:text-base">Tren Transaksi QRIS</h2>
+          <select id="trendPeriode" class="border border-gray-200 rounded-md px-2 py-1 text-[10px] md:text-xs font-semibold text-gray-600 outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer bg-white shadow-sm" onchange="fetchTrend()">
               <option value="bulanan">6 Bulan Terakhir</option>
               <option value="7_hari">7 Hari Terakhir</option>
               <option value="30_hari">30 Hari Terakhir</option>
               <option value="tahunan">Tahunan</option>
           </select>
       </div>
-      <div id="chartTrend" class="w-full mt-2"></div>
-  </div>
-
-  <!-- DISTRIBUTION -->
-  <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
-      <div class="xl:col-span-7 bg-white rounded-xl border border-slate-200 p-4 md:p-5 card-shadow flex flex-col relative" style="min-height:380px;">
-          <div id="loadDist" class="local-loader hidden rounded-xl"><div class="animate-spin h-8 w-8 border-4 border-purple-200 border-t-purple-600 rounded-full"></div></div>
-          <h2 class="font-bold text-slate-800 mb-4 border-b border-slate-100 pb-2">Top 5 Distribusi QRIS</h2>
-          <div class="flex-1 flex flex-col md:flex-row gap-4">
-              <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-4" id="listTop5"></div>
-              <div class="w-full md:w-[220px] flex items-center justify-center shrink-0">
-                  <div id="chartDonut" class="w-full"></div>
-              </div>
+      <div id="chartTrend" class="w-full flex-1 mt-1"></div>
+    </div>
+    <!-- Distribution (5 cols) -->
+    <div class="xl:col-span-5 bg-white rounded-xl md:rounded-2xl border border-gray-100 p-3 md:p-4 card-shadow flex flex-col relative" style="min-height:380px;">
+      <div id="loadDist" class="local-loader hidden rounded-xl"><div class="animate-spin h-8 w-8 border-4 border-purple-200 border-t-purple-600 rounded-full"></div></div>
+      <h2 class="font-bold text-gray-800 mb-3 border-b border-gray-100 pb-2 text-[13px] md:text-base">Top 5 Distribusi</h2>
+      <div class="flex-1 flex flex-col gap-3">
+          <div class="flex-1 overflow-y-auto custom-scrollbar pr-1 flex flex-col gap-3" id="listTop5"></div>
+          <div class="w-full flex items-center justify-center shrink-0">
+              <div id="chartDonut" class="w-full max-w-[220px]"></div>
           </div>
       </div>
-      <div class="xl:col-span-5"></div>
+    </div>
   </div>
 
   <!-- UNIFIED BREAKDOWN TABLE -->
-  <div class="bg-white rounded-xl border border-slate-200 flex flex-col overflow-hidden card-shadow relative min-h-[200px]">
+  <div class="bg-white rounded-xl md:rounded-2xl border border-gray-100 flex flex-col overflow-hidden card-shadow relative min-h-[200px]">
       <div id="loadTable" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-purple-200 border-t-purple-600 rounded-full"></div></div>
-      <div class="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-          <h2 class="text-base font-black text-slate-800">Breakdown Transaksi QRIS - MoM & YoY</h2>
+      <div class="px-3 md:px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+          <h2 class="text-[13px] md:text-base font-black text-gray-800">Breakdown Transaksi QRIS - MoM & YoY</h2>
       </div>
       <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
           <table class="w-full text-left" style="min-width: 800px;">
@@ -127,7 +121,7 @@
                       <th class="text-center w-[80px] pr-4">GAP% MOM</th>
                   </tr>
               </thead>
-              <tbody id="bodyUnified" class="divide-y divide-slate-100"></tbody>
+              <tbody id="bodyUnified" class="divide-y divide-gray-50"></tbody>
           </table>
       </div>
   </div>
@@ -150,14 +144,16 @@
   const hideLoad = (id) => document.getElementById(id)?.classList.add('hidden');
 
   function toggleFilter() {
-      const container = document.getElementById('filterContainer');
+      const form = document.getElementById('formFilterGlobal');
       const label = document.getElementById('filterToggleLabel');
-      if (container.classList.contains('hidden')) {
-          container.classList.remove('hidden');
-          label.textContent = 'Sembunyikan Filter';
+      if (form.classList.contains('hidden')) {
+          form.classList.remove('hidden');
+          form.classList.add('flex');
+          label.textContent = 'Tutup';
       } else {
-          container.classList.add('hidden');
-          label.textContent = 'Tampilkan Filter';
+          form.classList.add('hidden');
+          form.classList.remove('flex');
+          label.textContent = 'Filter';
       }
   }
 
@@ -217,7 +213,7 @@
 
   document.getElementById('formFilterGlobal').addEventListener('submit', e => { e.preventDefault(); runFullSync(); });
 
-  async function runFullSync() { fetchSummaryCards(); fetchTrend(); fetchDistribusi(); fetchUnifiedBreakdown(); }
+  async function runFullSync() { fetchTrend(); fetchDistribusi(); fetchUnifiedBreakdown(); }
 
   function initCharts() {
       chartTrendObj = new ApexCharts(document.querySelector('#chartTrend'), {
@@ -239,28 +235,6 @@
           legend: { show: true, position: 'bottom', fontSize: '9.5px' }
       });
       chartDonutObj.render();
-  }
-
-  async function fetchSummaryCards() {
-      showLoad('loadSummary');
-      const area = parseAreaValue();
-      const payload = { type: 'summary_cards_transaksi', harian_date: document.getElementById('harian_date').value, closing_date: document.getElementById('closing_date').value, kode_kantor: area.kode_kantor, korwil: area.korwil };
-      try {
-          const res = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
-          const j = await res.json();
-          if(j.status===200 && j.data && j.data.cards) {
-              if(j.data.meta) { document.getElementById('lbl_periode_aktif').innerHTML = 'Periode: <span class="text-purple-700 font-bold">' + j.data.meta.closing_date + ' s/d ' + j.data.meta.harian_date + '</span>'; }
-              const container = document.getElementById('summaryCardsContainer');
-              container.innerHTML = '';
-              const cards = j.data.cards.filter(c => c && c.title && String(c.title).toUpperCase().includes('QRIS'));
-              cards.forEach(c => {
-                  const gv = parseFloat(c.growth||0); const isUp = gv >= 0;
-                  const bColor = isUp ? 'bg-purple-100 text-purple-700' : 'bg-red-100 text-red-700';
-                  const arrow = isUp ? '▲' : '▼';
-                  container.innerHTML += '<div class="bg-white rounded-xl card-shadow p-5 flex flex-col justify-between border-l-4 border-l-purple-600"><div><p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">' + esc(c.title) + '</p><h3 class="text-xl font-black text-slate-800 leading-tight">' + esc(c.value||'Rp 0') + '</h3><p class="text-[10px] font-bold text-slate-500 mt-1">' + esc(c.subtitle||'') + '</p></div><div class="mt-3 flex items-center justify-between border-t border-slate-100 pt-3"><span class="' + bColor + ' px-2 py-0.5 rounded font-bold text-[11px]">' + arrow + ' ' + Math.abs(gv) + '%</span><div class="text-right leading-tight"><span class="text-[9px] text-slate-400">' + esc(c.prev_label||'Bulan Lalu') + '</span><br><span class="text-[10px] font-bold text-slate-600">' + esc(c.prev_nominal||'Rp -') + '</span></div></div></div>';
-              });
-          }
-      } catch(e){} finally { hideLoad('loadSummary'); }
   }
 
   async function fetchTrend() {
