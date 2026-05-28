@@ -1,0 +1,40 @@
+{
+  "id": "FEAT-001",
+  "type": "feat",
+  "description": "Fix responsive filter on dashboard_layanan_digital.php and va.php, then add tab/section navigation (icon pill buttons) and auto-narrative info modal to ALL 4 layanan digital pages.",
+  "status": "in_progress",
+  "steps": [
+    "STEP 1 - Fix dashboard_layanan_digital.php responsive filter: Refactor the header/filter section to match the branchless.php/qris_merchant.php pattern. The filter form should be `hidden md:flex` on mobile with a toggle button that shows/hides it. Currently the filter is always visible inside a flex-col xl:flex-row container - change to the compact responsive pattern with a Filter toggle button visible only on mobile (md:hidden).",
+
+    "STEP 2 - Fix va.php responsive filter: The current VA page has a toggle button but uses a different pattern (div#filterContainer with hidden md:block). Refactor to match branchless.php exactly: the form itself should have `hidden md:flex` and the toggle button should use the same compact style (bg-white border border-gray-200 px-3 py-1.5 rounded-lg). Also update the filter inputs from the old `.inp` class to the compact `border-b-2 border-transparent` underline style used in branchless.php and qris_merchant.php.",
+
+    "STEP 3 - Add tab/section navigation to va.php: Add icon pill buttons above the content sections. Three tabs: (1) Rekap - shows the unified MoM+YoY breakdown table, (2) Chart - shows the Mandiri vs Permata charts, (3) Detail - shows the monthly breakdown table. Use this HTML pattern for the tab bar: a flex container with gap-1, bg-gray-100 p-1 rounded-lg. Each button has p-2 rounded-md with SVG icon. Active tab gets bg-white shadow-sm. On desktop, show icon + short label. On mobile, icon only. Add a JS function switchView(view) that shows/hides sections by toggling 'hidden' class on wrapper divs around each section group.",
+
+    "STEP 4 - Add tab/section navigation to branchless.php: Two tabs: (1) Rekap - shows the unified breakdown table, (2) Chart - shows the trend chart + distribution side-by-side grid. Same tab bar pattern as VA.",
+
+    "STEP 5 - Add tab/section navigation to qris_merchant.php: Two tabs: (1) Rekap - shows the unified breakdown table, (2) Chart - shows the trend chart + distribution side-by-side grid. Same tab bar pattern as VA, using purple-600 accent.",
+
+    "STEP 6 - Add tab/section navigation to dashboard_layanan_digital.php: Two tabs: (1) Summary - shows the summary cards, (2) Ranking - shows the top/bottom 5 charts and tables for all 3 channels. Same tab bar pattern.",
+
+    "STEP 7 - Add auto-narrative info modal to ALL 4 pages: Add an 'i' (info circle) icon button in the header area next to the page title. When clicked, shows a modal overlay with auto-generated narrative. The narrative is generated client-side from the fetched data. The modal has: semi-transparent dark overlay, white card centered, close X button, title 'Narasi Otomatis', and bullet-point narrative text. The narrative function should analyze the data already available in JS variables (from the latest fetch) and generate insights like: which cabang is top performer, MoM growth percentage, YoY growth, total transaksi summary. Each page generates narrative relevant to its data. For dashboard: summarize across all 3 channels. For VA/branchless/QRIS: summarize the specific channel.",
+
+    "STEP 8 - Ensure consistent styling: All 4 pages should have the same tab bar position (between filter and content), same modal design, same responsive filter pattern. The tab bar should use page-specific accent colors (blue for dashboard/VA, emerald for branchless, purple for QRIS)."
+  ],
+  "acceptance_criteria": [
+    "dashboard_layanan_digital.php has a responsive filter that is hidden on mobile with a toggle button to show/hide",
+    "va.php has a responsive filter matching the branchless/qris compact border-b-2 underline pattern",
+    "All 4 pages have icon pill tab buttons that switch between views without page reload",
+    "Clicking a tab shows only that section and hides others - no excessive scrolling needed",
+    "All 4 pages have an info (i) icon button that opens a narrative modal",
+    "The narrative modal displays auto-generated text summarizing key data insights from the current view",
+    "All files pass php -l syntax validation"
+  ],
+  "verification": [
+    "php -l pages/dashboard_layanan_digital.php",
+    "php -l pages/va.php",
+    "php -l pages/branchless.php",
+    "php -l pages/qris_merchant.php"
+  ],
+  "blocked_reason": null,
+  "findings": ""
+}

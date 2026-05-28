@@ -4,83 +4,104 @@
 <style>
   :root { --primary: #0284c7; --bg: #f8fafc; --text: #334155; }
   body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
-  
-  .inp { 
-      box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0 0.5rem; 
-      font-size: 13px; background: #fff; height: 42px; cursor: pointer; outline: none; transition: border 0.2s; font-weight: 600;
-  }
-  .inp:focus { border-color: var(--primary); box-shadow: 0 0 0 2px #bae6fd; }
-  
   .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-
   table { width: 100%; border-collapse: collapse; font-size: 12px; }
   th { background-color: #f8fafc; color: #1e293b; font-weight: 800; padding: 12px 10px; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 11px; }
   td { padding: 12px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-weight: 700; color: #334155; }
   tr:hover td { background-color: #f0f9ff; }
-  
   .card-shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
-
   .local-loader { position: absolute; inset: 0; background: rgba(255,255,255,0.7); z-index: 50; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); border-radius: inherit; }
   .local-loader.hidden { display: none; }
-
   .apexcharts-tooltip { z-index: 99999 !important; background: transparent !important; border: none !important; box-shadow: none !important; }
+  @media (max-width: 767px) {
+    th { padding: 8px 6px; font-size: 10px; }
+    td { padding: 8px 6px; font-size: 11px; }
+  }
 </style>
 
-<div class="max-w-[1600px] mx-auto px-3 md:px-4 py-4 flex flex-col gap-5">
-  
-  <!-- ================= HEADER & GLOBAL FILTER ================= -->
-  <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-4 rounded-xl card-shadow border border-slate-100">
-    <div>
-        <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
-            <span class="bg-blue-600 text-white p-1.5 rounded-lg text-sm shadow-sm">
-                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13h2v8H3zM9 9h2v12H9zM15 5h2v16h-2zM21 1h2v20h-2z"></path></svg>
-            </span> 
-            <span>Dashboard Layanan Digital</span>
-        </h1>
-        <p class="text-xs text-slate-500 mt-1 ml-1 font-medium" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
-    </div>
+<div class="max-w-[1600px] mx-auto px-2 md:px-4 py-4 md:py-6 min-h-screen font-sans space-y-3 md:space-y-4">
 
-    <form id="formFilterGlobal" class="flex flex-col md:flex-row items-end gap-3 w-full xl:w-auto">
-        <div class="flex flex-col flex-1 md:w-[140px]">
-            <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">CLOSING M-1</label>
-            <input type="date" id="closing_date" class="inp text-slate-700 shadow-sm" required>
+  <!-- HEADER & FILTER -->
+  <div class="flex flex-col md:flex-row justify-between md:items-end gap-3">
+    <div class="flex justify-between items-center w-full md:w-auto">
+      <div class="flex items-center gap-2">
+        <div>
+          <h1 class="text-xl md:text-2xl font-extrabold text-gray-800 tracking-tight flex items-center gap-2">
+              <span class="bg-blue-600 text-white p-1.5 rounded-lg text-sm shadow-sm">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13h2v8H3zM9 9h2v12H9zM15 5h2v16h-2zM21 1h2v20h-2z"></path></svg>
+              </span>
+              Dashboard Layanan Digital
+          </h1>
+          <p class="text-[10px] md:text-xs text-gray-500 mt-0.5 font-medium" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
         </div>
-        <div class="flex flex-col flex-1 md:w-[140px]">
-            <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">HARIAN / ACTUAL</label>
-            <input type="date" id="harian_date" class="inp text-slate-700 shadow-sm" required>
-        </div>
-
-        <div class="flex flex-col w-full md:w-[220px]">
-            <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">AREA / CABANG</label>
-            <select id="opt_area" class="inp text-blue-700 shadow-sm">
-                <option value="KONSOLIDASI" class="font-bold">Konsolidasi</option>
-                <optgroup label="Berdasarkan Korwil" class="text-slate-400">
-                    <option value="KORWIL_SEMARANG" class="text-slate-700">Korwil Semarang</option>
-                    <option value="KORWIL_SOLO" class="text-slate-700">Korwil Solo</option>
-                    <option value="KORWIL_BANYUMAS" class="text-slate-700">Korwil Banyumas</option>
-                    <option value="KORWIL_PEKALONGAN" class="text-slate-700">Korwil Pekalongan</option>
-                </optgroup>
-                <optgroup label="Berdasarkan Cabang" id="opt_cabang_list" class="text-slate-400"></optgroup>
-            </select>
-        </div>
-        
-        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white h-[42px] px-6 rounded-lg font-bold text-sm shadow-md flex items-center justify-center transition w-full md:w-auto">
-            Tampilkan
+        <button type="button" onclick="openNarrative()" class="w-7 h-7 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm" title="Narasi Otomatis">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
         </button>
+      </div>
+      <button type="button" id="btnFilterToggle" onclick="toggleFilter()" class="md:hidden flex items-center gap-1.5 bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-transform">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+        <span id="filterToggleLabel">Filter</span>
+      </button>
+    </div>
+    <form id="formFilterGlobal" class="hidden md:flex flex-col md:flex-row items-end gap-2.5 md:gap-3 bg-white p-2.5 md:p-3 rounded-xl shadow-sm border border-gray-200 w-full md:w-auto">
+      <div class="flex w-full md:w-auto gap-2 shrink-0">
+        <div class="flex flex-col flex-1 min-w-0 md:w-[130px]">
+          <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Closing M-1</label>
+          <input type="date" id="closing_date" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-blue-500 transition-colors font-semibold cursor-pointer w-full bg-transparent" required>
+        </div>
+        <div class="flex flex-col flex-1 min-w-0 md:w-[130px]">
+          <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Harian/Actual</label>
+          <input type="date" id="harian_date" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-blue-500 transition-colors font-semibold cursor-pointer w-full bg-transparent" required>
+        </div>
+      </div>
+      <div class="flex w-full md:w-auto items-end gap-2 shrink-0 mt-0.5 md:mt-0">
+        <div class="flex flex-col flex-1 min-w-0 md:w-[180px]">
+          <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Area/Cabang</label>
+          <select id="opt_area" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-blue-500 bg-transparent transition-colors font-bold text-blue-700 cursor-pointer w-full truncate">
+              <option value="KONSOLIDASI" class="font-bold">Konsolidasi</option>
+              <optgroup label="Berdasarkan Korwil" class="text-gray-400">
+                  <option value="KORWIL_SEMARANG" class="text-gray-700">Korwil Semarang</option>
+                  <option value="KORWIL_SOLO" class="text-gray-700">Korwil Solo</option>
+                  <option value="KORWIL_BANYUMAS" class="text-gray-700">Korwil Banyumas</option>
+                  <option value="KORWIL_PEKALONGAN" class="text-gray-700">Korwil Pekalongan</option>
+              </optgroup>
+              <optgroup label="Berdasarkan Cabang" id="opt_cabang_list" class="text-gray-400"></optgroup>
+          </select>
+        </div>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white w-[34px] md:w-auto h-[32px] md:h-[36px] md:px-5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md active:scale-95 shrink-0 mb-[1px]">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="md:hidden"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          <span class="hidden md:inline">Tampilkan</span>
+        </button>
+      </div>
     </form>
   </div>
 
+  <!-- TAB NAVIGATION -->
+  <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+    <button onclick="switchView('summary')" id="tab-summary" class="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold transition-all bg-white shadow-sm text-blue-700" title="Summary">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="hidden md:inline">Summary</span>
+    </button>
+    <button onclick="switchView('ranking')" id="tab-ranking" class="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold transition-all text-gray-500 hover:text-gray-700" title="Ranking">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9H4.5a2.5 2.5 0 010-5H6M18 9h1.5a2.5 2.5 0 000-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 1012 0V2z"/></svg>
+      <span class="hidden md:inline">Ranking</span>
+    </button>
+  </div>
+
   <!-- ================= SUMMARY CARDS ================= -->
+  <div id="section-summary">
   <div class="relative rounded-xl min-h-[100px]">
       <div id="loadSummary" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
       <div id="summaryCardsContainer" class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <!-- JS Inject -->
       </div>
   </div>
+  </div><!-- end section-summary -->
 
   <!-- ================= CHANNEL SECTIONS ================= -->
+  <div id="section-ranking" class="hidden space-y-3 md:space-y-4">
 
   <!-- VA Section -->
   <div class="bg-white rounded-2xl card-shadow border border-slate-100 p-4 md:p-6 flex flex-col gap-5">
@@ -151,6 +172,23 @@
       </div>
   </div>
 
+  </div><!-- end section-ranking -->
+
+  <!-- Narrative Modal -->
+  <div id="modalNarrative" class="fixed inset-0 z-[9999] hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeNarrative()"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
+      <button onclick="closeNarrative()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        Narasi Otomatis
+      </h3>
+      <div id="narrativeContent" class="text-sm text-gray-700 space-y-2"></div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -167,6 +205,60 @@
 
   const showLoad = (id) => document.getElementById(id)?.classList.remove('hidden');
   const hideLoad = (id) => document.getElementById(id)?.classList.add('hidden');
+
+  function toggleFilter() {
+      const form = document.getElementById('formFilterGlobal');
+      const label = document.getElementById('filterToggleLabel');
+      if (form.classList.contains('hidden')) {
+          form.classList.remove('hidden');
+          form.classList.add('flex');
+          label.textContent = 'Tutup';
+      } else {
+          form.classList.add('hidden');
+          form.classList.remove('flex');
+          label.textContent = 'Filter';
+      }
+  }
+
+  function switchView(view) {
+      document.getElementById('section-summary').classList.add('hidden');
+      document.getElementById('section-ranking').classList.add('hidden');
+      document.getElementById('section-' + view).classList.remove('hidden');
+      ['summary','ranking'].forEach(t => {
+          const btn = document.getElementById('tab-' + t);
+          if (t === view) {
+              btn.className = 'flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold transition-all bg-white shadow-sm text-blue-700';
+          } else {
+              btn.className = 'flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold transition-all text-gray-500 hover:text-gray-700';
+          }
+      });
+  }
+
+  function openNarrative() {
+      document.getElementById('narrativeContent').innerHTML = generateNarrative();
+      document.getElementById('modalNarrative').classList.remove('hidden');
+  }
+  function closeNarrative() {
+      document.getElementById('modalNarrative').classList.add('hidden');
+  }
+  function generateNarrative() {
+      let html = '';
+      const cards = document.getElementById('summaryCardsContainer');
+      if (cards && cards.children.length > 0) {
+          html += '<p class="font-bold text-gray-800">Ringkasan Layanan Digital:</p><ul class="list-disc list-inside space-y-1">';
+          for (let i = 0; i < cards.children.length; i++) {
+              const card = cards.children[i];
+              const title = card.querySelector('.uppercase')?.textContent || '';
+              const value = card.querySelector('.text-xl')?.textContent || '';
+              const growth = card.querySelector('[class*="rounded"]')?.textContent || '';
+              html += '<li><strong>' + title.trim() + '</strong>: ' + value.trim() + ' (Growth: ' + growth.trim() + ')</li>';
+          }
+          html += '</ul>';
+      } else {
+          html += '<p class="text-gray-400">Data belum tersedia. Silakan muat data terlebih dahulu.</p>';
+      }
+      return html;
+  }
 
   async function getLastHarianData() {
       try { const r = await fetch(API_DATE); const j = await r.json(); return j.data || null; } 

@@ -25,14 +25,19 @@
   <!-- HEADER & FILTER -->
   <div class="flex flex-col md:flex-row justify-between md:items-end gap-3">
     <div class="flex justify-between items-center w-full md:w-auto">
-      <div>
-        <h1 class="text-xl md:text-2xl font-extrabold text-gray-800 tracking-tight flex items-center gap-2">
-            <span class="bg-purple-600 text-white p-1.5 rounded-lg text-sm shadow-sm">
-                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
-            </span>
-            QRIS Merchant
-        </h1>
-        <p class="text-[10px] md:text-xs text-gray-500 mt-0.5 font-medium" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
+    <div class="flex items-center gap-2">
+        <div>
+          <h1 class="text-xl md:text-2xl font-extrabold text-gray-800 tracking-tight flex items-center gap-2">
+              <span class="bg-purple-600 text-white p-1.5 rounded-lg text-sm shadow-sm">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
+              </span>
+              QRIS Merchant
+          </h1>
+          <p class="text-[10px] md:text-xs text-gray-500 mt-0.5 font-medium" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
+        </div>
+        <button type="button" onclick="openNarrative()" class="w-7 h-7 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:text-purple-600 hover:border-purple-300 transition-colors shadow-sm" title="Narasi Otomatis">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        </button>
       </div>
       <button type="button" id="btnFilterToggle" onclick="toggleFilter()" class="md:hidden flex items-center gap-1.5 bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-transform">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
@@ -72,6 +77,51 @@
     </form>
   </div>
 
+  <!-- TAB NAVIGATION -->
+  <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+    <button onclick="switchView('rekap')" id="tab-rekap" class="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold transition-all bg-white shadow-sm text-purple-700" title="Rekap Cabang">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      <span class="hidden md:inline">Rekap</span>
+    </button>
+    <button onclick="switchView('chart')" id="tab-chart" class="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold transition-all text-gray-500 hover:text-gray-700" title="Chart">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      <span class="hidden md:inline">Chart</span>
+    </button>
+  </div>
+
+  <!-- SECTION: REKAP (Breakdown Table) -->
+  <div id="section-rekap">
+
+  <!-- UNIFIED BREAKDOWN TABLE -->
+  <div class="bg-white rounded-xl md:rounded-2xl border border-gray-100 flex flex-col overflow-hidden card-shadow relative min-h-[200px]">
+      <div id="loadTable" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-purple-200 border-t-purple-600 rounded-full"></div></div>
+      <div class="px-3 md:px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+          <h2 class="text-[13px] md:text-base font-black text-gray-800">Breakdown Transaksi QRIS - MoM & YoY</h2>
+      </div>
+      <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
+          <table class="w-full text-left" style="min-width: 800px;">
+              <thead class="sticky top-0 z-10">
+                  <tr>
+                      <th class="w-[40px] pl-4 text-center">NO</th>
+                      <th class="w-[200px]">NAMA CABANG</th>
+                      <th class="text-right">NOM THN LALU</th>
+                      <th class="text-right">NOM THN INI</th>
+                      <th class="text-center w-[80px]">GAP% YOY</th>
+                      <th class="text-right">NOM BLN LALU</th>
+                      <th class="text-right">NOM BLN INI</th>
+                      <th class="text-center w-[80px] pr-4">GAP% MOM</th>
+                  </tr>
+              </thead>
+              <tbody id="bodyUnified" class="divide-y divide-gray-50"></tbody>
+          </table>
+      </div>
+  </div>
+
+  </div><!-- end section-rekap -->
+
+  <!-- SECTION: CHART (Trend + Distribution) -->
+  <div id="section-chart" class="hidden space-y-3 md:space-y-4">
+
   <!-- TREND CHART + DISTRIBUTION (side by side) -->
   <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 md:gap-4">
     <!-- Trend Chart (7 cols) -->
@@ -101,29 +151,21 @@
     </div>
   </div>
 
-  <!-- UNIFIED BREAKDOWN TABLE -->
-  <div class="bg-white rounded-xl md:rounded-2xl border border-gray-100 flex flex-col overflow-hidden card-shadow relative min-h-[200px]">
-      <div id="loadTable" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-purple-200 border-t-purple-600 rounded-full"></div></div>
-      <div class="px-3 md:px-4 py-3 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-          <h2 class="text-[13px] md:text-base font-black text-gray-800">Breakdown Transaksi QRIS - MoM & YoY</h2>
-      </div>
-      <div class="overflow-x-auto custom-scrollbar max-h-[600px]">
-          <table class="w-full text-left" style="min-width: 800px;">
-              <thead class="sticky top-0 z-10">
-                  <tr>
-                      <th class="w-[40px] pl-4 text-center">NO</th>
-                      <th class="w-[200px]">NAMA CABANG</th>
-                      <th class="text-right">NOM THN LALU</th>
-                      <th class="text-right">NOM THN INI</th>
-                      <th class="text-center w-[80px]">GAP% YOY</th>
-                      <th class="text-right">NOM BLN LALU</th>
-                      <th class="text-right">NOM BLN INI</th>
-                      <th class="text-center w-[80px] pr-4">GAP% MOM</th>
-                  </tr>
-              </thead>
-              <tbody id="bodyUnified" class="divide-y divide-gray-50"></tbody>
-          </table>
-      </div>
+  </div><!-- end section-chart -->
+
+  <!-- Narrative Modal -->
+  <div id="modalNarrative" class="fixed inset-0 z-[9999] hidden flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeNarrative()"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
+      <button onclick="closeNarrative()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+      <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        Narasi Otomatis
+      </h3>
+      <div id="narrativeContent" class="text-sm text-gray-700 space-y-2"></div>
+    </div>
   </div>
 </div>
 
@@ -155,6 +197,55 @@
           form.classList.remove('flex');
           label.textContent = 'Filter';
       }
+  }
+
+  function switchView(view) {
+      document.getElementById('section-rekap').classList.add('hidden');
+      document.getElementById('section-chart').classList.add('hidden');
+      document.getElementById('section-' + view).classList.remove('hidden');
+      ['rekap','chart'].forEach(t => {
+          const btn = document.getElementById('tab-' + t);
+          if (t === view) {
+              btn.className = 'flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold transition-all bg-white shadow-sm text-purple-700';
+          } else {
+              btn.className = 'flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold transition-all text-gray-500 hover:text-gray-700';
+          }
+      });
+  }
+
+  function openNarrative() {
+      document.getElementById('narrativeContent').innerHTML = generateNarrative();
+      document.getElementById('modalNarrative').classList.remove('hidden');
+  }
+  function closeNarrative() {
+      document.getElementById('modalNarrative').classList.add('hidden');
+  }
+  function generateNarrative() {
+      let html = '';
+      const tbody = document.getElementById('bodyUnified');
+      const rows = tbody ? tbody.querySelectorAll('tr') : [];
+      if (rows.length > 1) {
+          const gtRow = rows[0];
+          const gtCells = gtRow.querySelectorAll('td');
+          const totalNomBlnIni = gtCells[6] ? gtCells[6].textContent.trim() : '-';
+          const totalGrowthMom = gtCells[7] ? gtCells[7].textContent.trim() : '-';
+          const totalNomThnIni = gtCells[3] ? gtCells[3].textContent.trim() : '-';
+          const totalGrowthYoy = gtCells[4] ? gtCells[4].textContent.trim() : '-';
+          html += '<p class="font-bold text-gray-800">Ringkasan QRIS Merchant:</p>';
+          html += '<ul class="list-disc list-inside space-y-1">';
+          html += '<li>Total nominal bulan ini: <strong>' + totalNomBlnIni + '</strong> (Growth MoM: ' + totalGrowthMom + ')</li>';
+          html += '<li>Total nominal tahun ini: <strong>' + totalNomThnIni + '</strong> (Growth YoY: ' + totalGrowthYoy + ')</li>';
+          if (rows.length > 2) {
+              const topRow = rows[1].querySelectorAll('td');
+              const topNama = topRow[1] ? topRow[1].textContent.trim() : '-';
+              const topNom = topRow[6] ? topRow[6].textContent.trim() : '-';
+              html += '<li>Top performer: <strong>' + topNama + '</strong> dengan nominal ' + topNom + '</li>';
+          }
+          html += '</ul>';
+      } else {
+          html += '<p class="text-gray-400">Data belum tersedia. Silakan muat data terlebih dahulu.</p>';
+      }
+      return html;
   }
 
   async function getLastHarianData() {
