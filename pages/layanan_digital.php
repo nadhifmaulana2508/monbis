@@ -54,6 +54,12 @@
 
   .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; color: #64748b; background: #f1f5f9; transition: all .15s; border: 1px solid transparent; }
   .info-btn:hover { color: #0284c7; background: #e0f2fe; border-color: #bae6fd; }
+
+  /* ====== Slider Navigation ====== */
+  .slider-nav-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; color: #64748b; background: #f1f5f9; border: 1px solid #e2e8f0; transition: all .15s; cursor: pointer; }
+  .slider-nav-btn:hover { color: #0284c7; background: #e0f2fe; border-color: #bae6fd; }
+  .slider-dot { width: 8px; height: 8px; border-radius: 9999px; background: #cbd5e1; transition: all .2s; cursor: pointer; }
+  .slider-dot.active { background: #0284c7; width: 20px; border-radius: 4px; }
 </style>
 
 <div class="max-w-[1600px] mx-auto px-3 md:px-4 py-4 flex flex-col gap-5">
@@ -111,8 +117,8 @@
       </div>
   </div>
 
-  <!-- ================= RINGKASAN KORWIL (LEADERBOARD) ================= -->
-  <div class="bg-white rounded-2xl card-shadow border border-slate-100 p-4 md:p-5 relative">
+  <!-- ================= RINGKASAN KORWIL (LEADERBOARD) - AUTO SLIDER ================= -->
+  <div class="bg-white rounded-2xl card-shadow border border-slate-100 p-4 md:p-5 relative overflow-hidden">
       <div id="loadKorwil" class="local-loader hidden rounded-2xl"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3 border-b border-slate-100 pb-2.5">
           <div class="flex items-center gap-2">
@@ -122,15 +128,26 @@
               <h2 class="text-base font-black text-slate-800">Ringkasan Korwil</h2>
               <span class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Channel: <span id="lblKorwilChannel" class="text-blue-700">VA</span></span>
           </div>
-          <p class="text-[11px] text-slate-500">Peringkat 4 Korwil berdasarkan total nominal transaksi bulan ini.</p>
+          <div class="flex items-center gap-2">
+              <p class="text-[11px] text-slate-500 hidden md:block">Peringkat 4 Korwil berdasarkan total nominal transaksi bulan ini.</p>
+              <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="slideKorwilPrev()" class="slider-nav-btn" aria-label="Sebelumnya">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+                  </button>
+                  <div id="korwilDots" class="flex items-center gap-1"></div>
+                  <button type="button" onclick="slideKorwilNext()" class="slider-nav-btn" aria-label="Berikutnya">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+                  </button>
+              </div>
+          </div>
       </div>
-      <div id="korwilLeaderboard" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+      <div id="korwilLeaderboard" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 transition-opacity duration-300">
           <!-- JS Inject -->
       </div>
   </div>
 
-  <!-- ================= TOP 5 & BOTTOM 5 PER CABANG ================= -->
-  <div class="bg-white rounded-2xl card-shadow border border-slate-100 p-4 md:p-5 relative">
+  <!-- ================= TOP 5 & BOTTOM 5 PER CABANG - AUTO SLIDER ================= -->
+  <div class="bg-white rounded-2xl card-shadow border border-slate-100 p-4 md:p-5 relative overflow-hidden">
       <div id="loadTopBottom" class="local-loader hidden rounded-2xl"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4 border-b border-slate-100 pb-2.5">
           <div class="flex items-center gap-2">
@@ -140,9 +157,20 @@
               <h2 class="text-base font-black text-slate-800">Top & Bottom 5 Cabang</h2>
               <span class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Channel: <span id="lblTopBotChannel" class="text-blue-700">VA</span></span>
           </div>
-          <p class="text-[11px] text-slate-500">Peringkat cabang berdasarkan nominal transaksi bulan berjalan.</p>
+          <div class="flex items-center gap-2">
+              <p class="text-[11px] text-slate-500 hidden md:block">Peringkat cabang berdasarkan nominal transaksi bulan berjalan.</p>
+              <div class="flex items-center gap-1.5">
+                  <button type="button" onclick="slideTopBotPrev()" class="slider-nav-btn" aria-label="Sebelumnya">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"></path></svg>
+                  </button>
+                  <div id="topBotDots" class="flex items-center gap-1"></div>
+                  <button type="button" onclick="slideTopBotNext()" class="slider-nav-btn" aria-label="Berikutnya">
+                      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+                  </button>
+              </div>
+          </div>
       </div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 transition-opacity duration-300" id="topBotContent">
           <!-- TOP 5 -->
           <div>
               <div class="flex items-center gap-2 mb-3">
@@ -387,21 +415,21 @@
       const namaCh = ch === 'VA' ? 'VA' : (ch === 'BRANCHLESS' ? 'Branchless' : 'QRIS');
       document.getElementById('titleTrend').innerText = `Tren Transaksi ${namaCh}`;
       document.getElementById('titleDistribusi').innerText = `Distribusi per Wilayah (${namaCh})`;
-      const lblKw = document.getElementById('lblKorwilChannel'); if (lblKw) lblKw.innerText = namaCh;
-      const lblTB = document.getElementById('lblTopBotChannel'); if (lblTB) lblTB.innerText = namaCh;
 
       fetchTrend();
       fetchDistribusi();
       fetchBreakdown();
       fetchYoy();
-      fetchRingkasanKorwil();
-      fetchTopBottomCabang();
   }
 
   async function runFullSync() {
       fetchSummaryCards();
-      fetchRingkasanKorwil();
-      fetchTopBottomCabang();
+      // Init sliders with dots and start auto-slide
+      korwilSliderIdx = 0; topBotSliderIdx = 0;
+      renderKorwilDots(); renderTopBotDots();
+      fetchRingkasanKorwil(SLIDER_CHANNELS[0]);
+      fetchTopBottomCabang(SLIDER_CHANNELS[0]);
+      resetKorwilTimer(); resetTopBotTimer();
       fetchTrend();
       fetchDistribusi();
       fetchBreakdown();
@@ -734,19 +762,50 @@
   }
 
   // ==========================================
-  // 5. RINGKASAN KORWIL (LEADERBOARD)
+  // 5. RINGKASAN KORWIL (LEADERBOARD) + AUTO SLIDER
   // ==========================================
-  async function fetchRingkasanKorwil() {
+  const SLIDER_CHANNELS = ['VA', 'BRANCHLESS', 'QRIS'];
+  const SLIDER_LABELS = ['VA', 'Branchless', 'QRIS'];
+  let korwilSliderIdx = 0;
+  let korwilSliderTimer = null;
+
+  function renderKorwilDots() {
+      const dots = document.getElementById('korwilDots');
+      if (!dots) return;
+      dots.innerHTML = SLIDER_CHANNELS.map((ch, i) => 
+          `<span class="slider-dot ${i === korwilSliderIdx ? 'active' : ''}" onclick="goKorwilSlide(${i})" title="${SLIDER_LABELS[i]}"></span>`
+      ).join('');
+  }
+
+  function goKorwilSlide(idx) {
+      korwilSliderIdx = idx;
+      renderKorwilDots();
+      const lbl = document.getElementById('lblKorwilChannel');
+      if (lbl) lbl.innerText = SLIDER_LABELS[korwilSliderIdx];
+      fetchRingkasanKorwil(SLIDER_CHANNELS[korwilSliderIdx]);
+      resetKorwilTimer();
+  }
+  function slideKorwilNext() { goKorwilSlide((korwilSliderIdx + 1) % SLIDER_CHANNELS.length); }
+  function slideKorwilPrev() { goKorwilSlide((korwilSliderIdx - 1 + SLIDER_CHANNELS.length) % SLIDER_CHANNELS.length); }
+
+  function resetKorwilTimer() {
+      if (korwilSliderTimer) clearInterval(korwilSliderTimer);
+      korwilSliderTimer = setInterval(() => slideKorwilNext(), 5000);
+  }
+
+  async function fetchRingkasanKorwil(channel) {
       const container = document.getElementById('korwilLeaderboard');
       if (!container) return;
+      const ch = channel || SLIDER_CHANNELS[korwilSliderIdx];
       showLoad('loadKorwil');
+      container.style.opacity = '0.4';
       const payload = {
           type: "detail_breakdown_transaksi",
           harian_date: document.getElementById('harian_date').value,
           closing_date: document.getElementById('closing_date').value,
           kode_kantor: "",
           korwil: "",
-          channel: currentActiveChannel
+          channel: ch
       };
       try {
           const res = await fetch(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
@@ -791,22 +850,53 @@
           container.innerHTML = `<div class="col-span-full text-center text-xs text-red-500 py-4">Gagal memuat ringkasan korwil.</div>`;
       } finally {
           hideLoad('loadKorwil');
+          container.style.opacity = '1';
       }
   }
 
   // ==========================================
-  // 6. TOP & BOTTOM 5 CABANG
+  // 6. TOP & BOTTOM 5 CABANG + AUTO SLIDER
   // ==========================================
-  async function fetchTopBottomCabang() {
+  let topBotSliderIdx = 0;
+  let topBotSliderTimer = null;
+
+  function renderTopBotDots() {
+      const dots = document.getElementById('topBotDots');
+      if (!dots) return;
+      dots.innerHTML = SLIDER_CHANNELS.map((ch, i) => 
+          `<span class="slider-dot ${i === topBotSliderIdx ? 'active' : ''}" onclick="goTopBotSlide(${i})" title="${SLIDER_LABELS[i]}"></span>`
+      ).join('');
+  }
+
+  function goTopBotSlide(idx) {
+      topBotSliderIdx = idx;
+      renderTopBotDots();
+      const lbl = document.getElementById('lblTopBotChannel');
+      if (lbl) lbl.innerText = SLIDER_LABELS[topBotSliderIdx];
+      fetchTopBottomCabang(SLIDER_CHANNELS[topBotSliderIdx]);
+      resetTopBotTimer();
+  }
+  function slideTopBotNext() { goTopBotSlide((topBotSliderIdx + 1) % SLIDER_CHANNELS.length); }
+  function slideTopBotPrev() { goTopBotSlide((topBotSliderIdx - 1 + SLIDER_CHANNELS.length) % SLIDER_CHANNELS.length); }
+
+  function resetTopBotTimer() {
+      if (topBotSliderTimer) clearInterval(topBotSliderTimer);
+      topBotSliderTimer = setInterval(() => slideTopBotNext(), 5000);
+  }
+
+  async function fetchTopBottomCabang(channel) {
       const topEl = document.getElementById('listTop5Cabang');
       const botEl = document.getElementById('listBottom5Cabang');
+      const contentEl = document.getElementById('topBotContent');
       if (!topEl || !botEl) return;
+      const ch = channel || SLIDER_CHANNELS[topBotSliderIdx];
       showLoad('loadTopBottom');
+      if (contentEl) contentEl.style.opacity = '0.4';
       const payload = {
           type: "top_bottom_cabang",
           harian_date: document.getElementById('harian_date').value,
           closing_date: document.getElementById('closing_date').value,
-          channel: currentActiveChannel
+          channel: ch
       };
       try {
           const res = await fetch(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
@@ -846,6 +936,7 @@
           botEl.innerHTML = `<p class="text-xs text-red-500">Gagal memuat data.</p>`;
       } finally {
           hideLoad('loadTopBottom');
+          if (contentEl) contentEl.style.opacity = '1';
       }
   }
 
