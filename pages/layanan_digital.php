@@ -7,8 +7,9 @@
   
   .inp { 
       box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0 0.5rem; 
-      font-size: 13px; background: #fff; height: 42px; cursor: pointer; outline: none; transition: border 0.2s; font-weight: 600;
+      font-size: 13px; background: #fff; height: 38px; cursor: pointer; outline: none; transition: border 0.2s; font-weight: 600;
   }
+  @media(min-width: 640px) { .inp { height: 42px; } }
   .inp:focus { border-color: var(--primary); box-shadow: 0 0 0 2px #bae6fd; }
   
   .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -22,7 +23,8 @@
   
   .card-shadow { box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); }
   
-  .tab-btn { padding: 8px 24px; border-radius: 8px; font-size: 13px; font-weight: 800; color: #64748b; transition: all 0.2s; border: 1px solid transparent; cursor: pointer; }
+  .tab-btn { padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: 800; color: #64748b; transition: all 0.2s; border: 1px solid transparent; cursor: pointer; white-space: nowrap; }
+  @media(min-width: 640px) { .tab-btn { padding: 8px 24px; font-size: 13px; } }
   .tab-btn.active { background-color: #0284c7; color: #fff; box-shadow: 0 4px 6px -1px rgba(2, 132, 199, 0.4); border-color: #0284c7; }
   .tab-btn:hover:not(.active) { color: #0f172a; background-color: #e2e8f0; }
 
@@ -65,48 +67,52 @@
 <div class="max-w-[1600px] mx-auto px-3 md:px-4 py-4 flex flex-col gap-5">
   
   <!-- ================= HEADER & GLOBAL FILTER ================= -->
-  <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-4 bg-white p-4 rounded-xl card-shadow border border-slate-100">
-    <div>
-        <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
-            <span class="bg-blue-600 text-white p-1.5 rounded-lg text-sm shadow-sm">
-                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </span> 
-            <span>Layanan Digital</span>
-            <button type="button" onclick="openLdInfoModal()" class="info-btn" title="Informasi Dashboard" aria-label="Informasi Dashboard">
-                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            </button>
-        </h1>
-        <p class="text-xs text-slate-500 mt-1 ml-1 font-medium" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
+  <div class="bg-white p-4 rounded-xl card-shadow border border-slate-100">
+    <div class="flex items-center justify-between gap-3">
+        <div class="min-w-0">
+            <h1 class="text-lg sm:text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
+                <span class="bg-blue-600 text-white p-1 sm:p-1.5 rounded-lg text-sm shadow-sm shrink-0">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </span> 
+                <span class="truncate">Layanan Digital</span>
+                <button type="button" onclick="openLdInfoModal()" class="info-btn shrink-0" title="Informasi Dashboard" aria-label="Informasi Dashboard">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </button>
+            </h1>
+            <p class="text-[11px] text-slate-500 mt-0.5 ml-1 font-medium truncate" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
+        </div>
+        <!-- Mobile: toggle filter -->
+        <button type="button" id="btnToggleFilter" class="xl:hidden shrink-0 w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100" aria-label="Toggle Filter">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+        </button>
     </div>
 
-    <form id="formFilterGlobal" class="flex flex-col md:flex-row items-end gap-3 w-full xl:w-auto">
-        <div class="flex flex-col flex-1 md:w-[140px]">
-            <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">CLOSING M-1</label>
-            <input type="date" id="closing_date" class="inp text-slate-700 shadow-sm" required>
+    <!-- Filter area: hidden on mobile by default, always visible on xl -->
+    <div id="filterPanel" class="hidden xl:flex flex-col xl:flex-row items-end gap-3 w-full mt-3 pt-3 border-t border-slate-100 xl:border-0 xl:mt-0 xl:pt-0">
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full xl:flex xl:w-auto">
+            <div class="flex flex-col">
+                <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">CLOSING M-1</label>
+                <input type="date" id="closing_date" class="inp text-slate-700 shadow-sm w-full xl:w-[140px]">
+            </div>
+            <div class="flex flex-col">
+                <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">HARIAN / ACTUAL</label>
+                <input type="date" id="harian_date" class="inp text-slate-700 shadow-sm w-full xl:w-[140px]">
+            </div>
+            <div class="flex flex-col col-span-2 sm:col-span-1">
+                <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">AREA / CABANG</label>
+                <select id="opt_area" class="inp text-blue-700 shadow-sm w-full xl:w-[220px]">
+                    <option value="KONSOLIDASI" class="font-bold">Konsolidasi</option>
+                    <optgroup label="Berdasarkan Korwil" class="text-slate-400">
+                        <option value="KORWIL_SEMARANG" class="text-slate-700">Korwil Semarang</option>
+                        <option value="KORWIL_SOLO" class="text-slate-700">Korwil Solo</option>
+                        <option value="KORWIL_BANYUMAS" class="text-slate-700">Korwil Banyumas</option>
+                        <option value="KORWIL_PEKALONGAN" class="text-slate-700">Korwil Pekalongan</option>
+                    </optgroup>
+                    <optgroup label="Berdasarkan Cabang" id="opt_cabang_list" class="text-slate-400"></optgroup>
+                </select>
+            </div>
         </div>
-        <div class="flex flex-col flex-1 md:w-[140px]">
-            <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">HARIAN / ACTUAL</label>
-            <input type="date" id="harian_date" class="inp text-slate-700 shadow-sm" required>
-        </div>
-
-        <div class="flex flex-col w-full md:w-[220px]">
-            <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">AREA / CABANG</label>
-            <select id="opt_area" class="inp text-blue-700 shadow-sm">
-                <option value="KONSOLIDASI" class="font-bold">Konsolidasi</option>
-                <optgroup label="Berdasarkan Korwil" class="text-slate-400">
-                    <option value="KORWIL_SEMARANG" class="text-slate-700">Korwil Semarang</option>
-                    <option value="KORWIL_SOLO" class="text-slate-700">Korwil Solo</option>
-                    <option value="KORWIL_BANYUMAS" class="text-slate-700">Korwil Banyumas</option>
-                    <option value="KORWIL_PEKALONGAN" class="text-slate-700">Korwil Pekalongan</option>
-                </optgroup>
-                <optgroup label="Berdasarkan Cabang" id="opt_cabang_list" class="text-slate-400"></optgroup>
-            </select>
-        </div>
-        
-        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white h-[42px] px-6 rounded-lg font-bold text-sm shadow-md flex items-center justify-center transition w-full md:w-auto">
-            Tampilkan
-        </button>
-    </form>
+    </div>
   </div>
 
   <!-- ================= SUMMARY CARDS ================= -->
@@ -207,29 +213,29 @@
       </div>
 
       <!-- GRAFIK AREA -->
-      <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
-          <div class="xl:col-span-7 bg-white rounded-xl border border-slate-200 p-5 flex flex-col relative h-[430px]">
+      <div class="grid grid-cols-1 xl:grid-cols-12 gap-4 md:gap-5">
+          <div class="xl:col-span-7 bg-white rounded-xl border border-slate-200 p-3 sm:p-5 flex flex-col relative h-[320px] sm:h-[430px]">
               <div id="loadTrend" class="local-loader hidden rounded-xl"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
               <div class="flex justify-between items-center mb-2 border-b border-slate-100 pb-2">
-                  <h2 class="font-bold text-slate-800" id="titleTrend">Tren Transaksi VA</h2>
-                  <select id="trendPeriode" class="inp h-8 text-[11px] w-[140px]" onchange="fetchTrend()">
+                  <h2 class="font-bold text-slate-800 text-sm sm:text-base" id="titleTrend">Tren Transaksi VA</h2>
+                  <select id="trendPeriode" class="inp h-7 sm:h-8 text-[10px] sm:text-[11px] w-[120px] sm:w-[140px]" onchange="fetchTrend()">
                       <option value="bulanan">6 Bulan Terakhir</option>
                       <option value="7_hari">7 Hari Terakhir</option>
                       <option value="30_hari">30 Hari Terakhir</option>
                       <option value="tahunan">Tahunan</option>
                   </select>
               </div>
-              <div id="chartTrend" class="w-full mt-2"></div>
+              <div id="chartTrend" class="w-full mt-2 flex-1"></div>
           </div>
 
-          <div class="xl:col-span-5 bg-white rounded-xl border border-slate-200 p-5 flex flex-col relative h-[430px]">
+          <div class="xl:col-span-5 bg-white rounded-xl border border-slate-200 p-3 sm:p-5 flex flex-col relative h-[350px] sm:h-[430px]">
               <div id="loadDist" class="local-loader hidden rounded-xl"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
-              <div class="flex justify-between items-center mb-4 border-b border-slate-100 pb-2">
-                  <h2 class="font-bold text-slate-800" id="titleDistribusi">Distribusi per Wilayah (VA)</h2>
+              <div class="flex justify-between items-center mb-3 sm:mb-4 border-b border-slate-100 pb-2">
+                  <h2 class="font-bold text-slate-800 text-sm sm:text-base" id="titleDistribusi">Distribusi per Wilayah (VA)</h2>
               </div>
-              <div class="flex-1 flex flex-col md:flex-row gap-4">
-                  <div class="flex-1 overflow-y-auto custom-scrollbar pr-2 flex flex-col gap-4 h-full" id="listTop5"></div>
-                  <div class="w-full md:w-[220px] flex items-center justify-center shrink-0 h-full pb-2">
+              <div class="flex-1 flex flex-col md:flex-row gap-3 sm:gap-4 overflow-hidden">
+                  <div class="flex-1 overflow-y-auto custom-scrollbar pr-1 sm:pr-2 flex flex-col gap-3 sm:gap-4" id="listTop5"></div>
+                  <div class="w-full md:w-[200px] xl:w-[220px] flex items-center justify-center shrink-0 pb-2">
                       <div id="chartDonut" class="w-full"></div>
                   </div>
               </div>
@@ -402,9 +408,14 @@
       return { kode_kantor, korwil };
   }
 
-  document.getElementById('formFilterGlobal').addEventListener('submit', e => { 
-      e.preventDefault(); 
-      runFullSync(); 
+  document.getElementById('closing_date').addEventListener('change', () => runFullSync());
+  document.getElementById('harian_date').addEventListener('change', () => runFullSync());
+  document.getElementById('opt_area').addEventListener('change', () => runFullSync());
+
+  // Mobile filter toggle
+  document.getElementById('btnToggleFilter').addEventListener('click', () => {
+      const panel = document.getElementById('filterPanel');
+      panel.classList.toggle('hidden');
   });
 
   function changeChannel(ch) {
@@ -907,30 +918,30 @@
               botEl.innerHTML = `<p class="text-xs text-slate-400">Data belum tersedia.</p>`;
               return;
           }
-          const renderList = (container, items, colorClass, bgClass) => {
-              if (!items || !items.length) { container.innerHTML = `<p class="text-xs text-slate-400">Data kosong.</p>`; return; }
+          const renderList = (container, items, barColor, badgeBg) => {
+              if (!items || !items.length) { container.innerHTML = `<p class="text-xs text-slate-400 text-center py-3">Data kosong.</p>`; return; }
               const maxNom = items[0].nominal || 1;
               items.forEach((it, i) => {
                   const pct = Math.max((it.nominal / maxNom) * 100, 3);
                   const fNom = it.nominal >= 1000000000 ? (it.nominal/1000000000).toFixed(2)+' M' : (it.nominal >= 1000000 ? (it.nominal/1000000).toFixed(1)+' Jt' : fmt(it.nominal));
                   container.innerHTML += `
-                    <div class="flex items-center gap-3 p-2.5 rounded-lg border border-slate-100 hover:border-slate-200 transition">
-                        <span class="w-7 h-7 rounded-full ${bgClass} ${colorClass} flex items-center justify-center text-xs font-black shrink-0">${i+1}</span>
+                    <div class="flex items-center gap-2.5 p-2 sm:p-2.5 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-slate-50/50 transition">
+                        <span class="w-6 h-6 sm:w-7 sm:h-7 rounded-full ${badgeBg} flex items-center justify-center text-[10px] sm:text-xs font-black shrink-0">${i+1}</span>
                         <div class="flex-1 min-w-0">
-                            <div class="flex justify-between items-center mb-1">
-                                <span class="text-xs font-bold text-slate-700 truncate">${it.kode} - ${it.nama}</span>
-                                <span class="text-xs font-black text-slate-800 shrink-0 ml-2">Rp ${fNom}</span>
+                            <div class="flex justify-between items-center gap-1 mb-1">
+                                <span class="text-[11px] sm:text-xs font-bold text-slate-700 truncate">${it.kode} - Kc. ${it.nama}</span>
+                                <span class="text-[11px] sm:text-xs font-black text-slate-800 shrink-0 whitespace-nowrap">Rp ${fNom}</span>
                             </div>
                             <div class="w-full bg-slate-100 rounded-full h-1.5">
-                                <div class="${colorClass.replace('text-','bg-')} h-1.5 rounded-full transition-all" style="width:${pct}%"></div>
+                                <div class="${barColor} h-1.5 rounded-full transition-all" style="width:${pct}%"></div>
                             </div>
-                            <span class="text-[9px] text-slate-400 font-bold mt-0.5">${fmt(it.trx)} Transaksi</span>
+                            <span class="text-[9px] text-slate-400 font-bold block mt-0.5">${fmt(it.trx)} Transaksi</span>
                         </div>
                     </div>`;
               });
           };
-          renderList(topEl, j.data.top_5, 'text-emerald-600', 'bg-emerald-100');
-          renderList(botEl, j.data.bottom_5, 'text-red-600', 'bg-red-100');
+          renderList(topEl, j.data.top_5, 'bg-emerald-500', 'bg-emerald-100 text-emerald-700');
+          renderList(botEl, j.data.bottom_5, 'bg-red-500', 'bg-red-100 text-red-700');
       } catch(e) {
           topEl.innerHTML = `<p class="text-xs text-red-500">Gagal memuat data.</p>`;
           botEl.innerHTML = `<p class="text-xs text-red-500">Gagal memuat data.</p>`;
