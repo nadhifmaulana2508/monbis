@@ -31,6 +31,29 @@
 
   /* CSS ApexCharts */
   .apexcharts-tooltip { z-index: 99999 !important; background: transparent !important; border: none !important; box-shadow: none !important; }
+
+  /* ====== Ringkasan Korwil (Leaderboard) ====== */
+  .korwil-card { position: relative; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px 16px; transition: transform .2s, box-shadow .2s; overflow: hidden; }
+  .korwil-card:hover { transform: translateY(-2px); box-shadow: 0 6px 14px -4px rgba(2,132,199,.18); }
+  .korwil-card .rank-badge { position: absolute; top: -2px; right: 10px; padding: 4px 10px 6px; border-radius: 0 0 8px 8px; font-size: 10px; font-weight: 900; color: #fff; letter-spacing: .5px; }
+  .rank-1 { background: linear-gradient(135deg,#f59e0b,#d97706); }
+  .rank-2 { background: linear-gradient(135deg,#94a3b8,#64748b); }
+  .rank-3 { background: linear-gradient(135deg,#b45309,#92400e); }
+  .rank-x { background: linear-gradient(135deg,#0ea5e9,#0284c7); }
+  .korwil-card.is-top { border-color: #fbbf24; box-shadow: 0 0 0 2px #fef3c7 inset; }
+
+  /* ====== Info Modal ====== */
+  #ldInfoModal { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; padding: 1rem; }
+  #ldInfoModal.is-open { display: flex; }
+  #ldInfoModal .ld-backdrop { position: absolute; inset: 0; background: rgba(15,23,42,.55); backdrop-filter: blur(2px); }
+  #ldInfoModal .ld-dialog { position: relative; background: #fff; width: 100%; max-width: 480px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,.35); border: 1px solid #e2e8f0; overflow: hidden; transform: scale(.96); opacity: 0; transition: transform .22s ease, opacity .22s ease; }
+  #ldInfoModal.is-open .ld-dialog { transform: scale(1); opacity: 1; }
+  #ldInfoModal .ld-progress { position: absolute; left: 0; bottom: 0; height: 3px; background: linear-gradient(90deg,#0ea5e9,#0284c7); width: 100%; transform-origin: left; }
+  #ldInfoModal.is-open .ld-progress { animation: ldShrink 6s linear forwards; }
+  @keyframes ldShrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; color: #64748b; background: #f1f5f9; transition: all .15s; border: 1px solid transparent; }
+  .info-btn:hover { color: #0284c7; background: #e0f2fe; border-color: #bae6fd; }
 </style>
 
 <div class="max-w-[1600px] mx-auto px-3 md:px-4 py-4 flex flex-col gap-5">
@@ -43,6 +66,9 @@
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             </span> 
             <span>Layanan Digital</span>
+            <button type="button" onclick="openLdInfoModal()" class="info-btn" title="Informasi Dashboard" aria-label="Informasi Dashboard">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </button>
         </h1>
         <p class="text-xs text-slate-500 mt-1 ml-1 font-medium" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
     </div>
@@ -81,6 +107,24 @@
   <div class="relative rounded-xl min-h-[100px]">
       <div id="loadSummary" class="local-loader hidden"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
       <div id="summaryCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+          <!-- JS Inject -->
+      </div>
+  </div>
+
+  <!-- ================= RINGKASAN KORWIL (LEADERBOARD) ================= -->
+  <div class="bg-white rounded-2xl card-shadow border border-slate-100 p-4 md:p-5 relative">
+      <div id="loadKorwil" class="local-loader hidden rounded-2xl"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-3 border-b border-slate-100 pb-2.5">
+          <div class="flex items-center gap-2">
+              <span class="bg-amber-100 text-amber-600 p-1.5 rounded-md">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 4h14v3a5 5 0 01-5 5H10a5 5 0 01-5-5V4zm-1 0h1m14 0h1M9 17h6M12 12v5M9 21h6"></path></svg>
+              </span>
+              <h2 class="text-base font-black text-slate-800">Ringkasan Korwil</h2>
+              <span class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Channel: <span id="lblKorwilChannel" class="text-blue-700">VA</span></span>
+          </div>
+          <p class="text-[11px] text-slate-500">Peringkat 4 Korwil berdasarkan total nominal transaksi bulan ini.</p>
+      </div>
+      <div id="korwilLeaderboard" class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
           <!-- JS Inject -->
       </div>
   </div>
@@ -182,6 +226,39 @@
   </div> <!-- End Wrapper -->
 </div>
 
+<!-- ================= INFO MODAL ================= -->
+<div id="ldInfoModal" role="dialog" aria-modal="true" aria-labelledby="ldInfoTitle">
+    <div class="ld-backdrop" onclick="closeLdInfoModal()"></div>
+    <div class="ld-dialog">
+        <div class="flex justify-between items-start px-5 py-4 border-b bg-slate-50">
+            <div class="flex items-start gap-3">
+                <span class="bg-blue-100 text-blue-600 p-2 rounded-lg shrink-0">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </span>
+                <div>
+                    <h3 id="ldInfoTitle" class="text-base font-extrabold text-slate-800 leading-tight">Tentang Dashboard Layanan Digital</h3>
+                    <p class="text-[11px] text-slate-500 font-medium">Pesan ini akan tertutup otomatis dalam 6 detik.</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeLdInfoModal()" class="text-slate-400 hover:text-red-500 transition text-2xl leading-none -mt-1" aria-label="Tutup">&times;</button>
+        </div>
+        <div class="p-5 space-y-3 text-sm text-slate-600">
+            <p>Dashboard ini menampilkan ringkasan transaksi <b>Layanan Digital</b> (VA, Branchless, QRIS) secara langsung tanpa perlu berpindah menu.</p>
+            <ul class="list-disc pl-5 space-y-1.5 text-[13px]">
+                <li><b>Summary Cards</b>: nominal &amp; growth per channel.</li>
+                <li><b>Ringkasan Korwil</b>: peringkat 4 korwil berdasarkan total nominal.</li>
+                <li><b>Tren &amp; Distribusi</b>: grafik transaksi sesuai channel terpilih.</li>
+                <li><b>Breakdown</b>: rincian per area/cabang sesuai filter.</li>
+                <li><b>YOY</b>: perbandingan tahun ke tahun.</li>
+            </ul>
+        </div>
+        <div class="px-5 py-3 border-t bg-slate-50 flex justify-end">
+            <button type="button" onclick="closeLdInfoModal()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-bold shadow-sm transition">Mengerti</button>
+        </div>
+        <div class="ld-progress" aria-hidden="true"></div>
+    </div>
+</div>
+
 <script>
   const API_URL = './api/transaksi/'; 
   const API_KODE = './api/kode/';
@@ -273,15 +350,18 @@
       const namaCh = ch === 'VA' ? 'VA' : (ch === 'BRANCHLESS' ? 'Branchless' : 'QRIS');
       document.getElementById('titleTrend').innerText = `Tren Transaksi ${namaCh}`;
       document.getElementById('titleDistribusi').innerText = `Distribusi per Wilayah (${namaCh})`;
+      const lblKw = document.getElementById('lblKorwilChannel'); if (lblKw) lblKw.innerText = namaCh;
 
       fetchTrend();
       fetchDistribusi();
       fetchBreakdown();
       fetchYoy();
+      fetchRingkasanKorwil();
   }
 
   async function runFullSync() {
       fetchSummaryCards();
+      fetchRingkasanKorwil();
       fetchTrend();
       fetchDistribusi();
       fetchBreakdown();
@@ -612,4 +692,86 @@
           document.getElementById('bodyYoy').innerHTML = `<tr><td colspan="7" class="text-center py-6 text-red-500">Gagal memuat data YOY.</td></tr>`;
       } finally { hideLoad('loadYoy'); }
   }
+
+  // ==========================================
+  // 5. RINGKASAN KORWIL (LEADERBOARD)
+  // ==========================================
+  async function fetchRingkasanKorwil() {
+      const container = document.getElementById('korwilLeaderboard');
+      if (!container) return;
+      showLoad('loadKorwil');
+      const payload = {
+          type: "detail_breakdown_transaksi",
+          harian_date: document.getElementById('harian_date').value,
+          closing_date: document.getElementById('closing_date').value,
+          kode_kantor: "",
+          korwil: "",
+          channel: currentActiveChannel
+      };
+      try {
+          const res = await fetch(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          const j = await res.json();
+          container.innerHTML = '';
+          if (j.status !== 200 || !j.data || !Array.isArray(j.data.data) || !j.data.data.length) {
+              container.innerHTML = `<div class="col-span-full text-center text-xs text-slate-400 py-4">Data ringkasan korwil belum tersedia.</div>`;
+              return;
+          }
+          const sorted = [...j.data.data].sort((a,b) => (Number(b.curr_nom)||0) - (Number(a.curr_nom)||0));
+          const rankClass = ['rank-1','rank-2','rank-3','rank-x'];
+          const rankLabel = ['#1','#2','#3','#4'];
+
+          sorted.forEach((kw, i) => {
+              const gN = Number(kw.growth_nom || 0);
+              const isUp = gN >= 0;
+              const arrow = isUp ? '&#9650;' : '&#9660;';
+              const gColor = isUp ? 'text-emerald-600 bg-emerald-50' : 'text-red-600 bg-red-50';
+              const nom = Number(kw.curr_nom||0);
+              const fNom = nom >= 1000000000 ? (nom/1000000000).toFixed(2)+' M' : (nom >= 1000000 ? (nom/1000000).toFixed(1)+' Jt' : fmt(nom));
+              const isTop = i === 0 ? 'is-top' : '';
+              const rcls = rankClass[i] || 'rank-x';
+              const rlbl = rankLabel[i] || `#${i+1}`;
+              const namaKw = kw.korwil || kw.nama || `Korwil ${i+1}`;
+
+              container.innerHTML += `
+                <div class="korwil-card ${isTop}">
+                    <span class="rank-badge ${rcls}">${rlbl}</span>
+                    <p class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Korwil</p>
+                    <h3 class="text-sm font-black text-slate-800 leading-tight mb-2 truncate">${namaKw}</h3>
+                    <div class="flex items-end justify-between gap-2">
+                        <div>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase">Nominal</p>
+                            <p class="text-base font-black text-blue-700 leading-tight">Rp ${fNom}</p>
+                            <p class="text-[10px] text-slate-500 font-bold mt-0.5">${fmt(kw.curr_trx||0)} Trx</p>
+                        </div>
+                        <span class="${gColor} px-2 py-0.5 rounded font-bold text-[11px] shrink-0">${arrow} ${Math.abs(gN)}%</span>
+                    </div>
+                </div>`;
+          });
+      } catch(e) {
+          container.innerHTML = `<div class="col-span-full text-center text-xs text-red-500 py-4">Gagal memuat ringkasan korwil.</div>`;
+      } finally {
+          hideLoad('loadKorwil');
+      }
+  }
+
+  // ==========================================
+  // 6. INFO MODAL (Auto-close 6 detik)
+  // ==========================================
+  let _ldInfoTimer = null;
+  function openLdInfoModal() {
+      const m = document.getElementById('ldInfoModal');
+      if (!m) return;
+      m.classList.add('is-open');
+      const bar = m.querySelector('.ld-progress');
+      if (bar) { bar.style.animation = 'none'; void bar.offsetWidth; bar.style.animation = ''; }
+      if (_ldInfoTimer) clearTimeout(_ldInfoTimer);
+      _ldInfoTimer = setTimeout(closeLdInfoModal, 6000);
+  }
+  function closeLdInfoModal() {
+      const m = document.getElementById('ldInfoModal');
+      if (!m) return;
+      m.classList.remove('is-open');
+      if (_ldInfoTimer) { clearTimeout(_ldInfoTimer); _ldInfoTimer = null; }
+  }
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLdInfoModal(); });
 </script>
