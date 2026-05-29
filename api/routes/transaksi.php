@@ -45,6 +45,9 @@ switch ($method) {
         } elseif ($input['type'] === 'dashboard_layanan_digital') {
             $controller->getDashboardLayananDigital($input);
 
+        } elseif ($input['type'] === 'top_bottom_cabang') {
+            $controller->getTopBottomCabang($input);
+
         } elseif ($input['type'] === 'va_detail_mandiri_permata') {
             $controller->getVaDetailMandiriPermata($input);
 

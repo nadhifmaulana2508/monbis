@@ -129,6 +129,43 @@
       </div>
   </div>
 
+  <!-- ================= TOP 5 & BOTTOM 5 PER CABANG ================= -->
+  <div class="bg-white rounded-2xl card-shadow border border-slate-100 p-4 md:p-5 relative">
+      <div id="loadTopBottom" class="local-loader hidden rounded-2xl"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4 border-b border-slate-100 pb-2.5">
+          <div class="flex items-center gap-2">
+              <span class="bg-indigo-100 text-indigo-600 p-1.5 rounded-md">
+                  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg>
+              </span>
+              <h2 class="text-base font-black text-slate-800">Top & Bottom 5 Cabang</h2>
+              <span class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-500 px-2 py-0.5 rounded">Channel: <span id="lblTopBotChannel" class="text-blue-700">VA</span></span>
+          </div>
+          <p class="text-[11px] text-slate-500">Peringkat cabang berdasarkan nominal transaksi bulan berjalan.</p>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <!-- TOP 5 -->
+          <div>
+              <div class="flex items-center gap-2 mb-3">
+                  <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-black">&#9650;</span>
+                  <h3 class="text-sm font-extrabold text-emerald-700">Top 5 Tertinggi</h3>
+              </div>
+              <div id="listTop5Cabang" class="space-y-2">
+                  <!-- JS Inject -->
+              </div>
+          </div>
+          <!-- BOTTOM 5 -->
+          <div>
+              <div class="flex items-center gap-2 mb-3">
+                  <span class="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-[10px] font-black">&#9660;</span>
+                  <h3 class="text-sm font-extrabold text-red-700">Bottom 5 Terendah</h3>
+              </div>
+              <div id="listBottom5Cabang" class="space-y-2">
+                  <!-- JS Inject -->
+              </div>
+          </div>
+      </div>
+  </div>
+
   <!-- ================= WRAPPER DETAIL TRANSAKSI ================= -->
   <div class="bg-white rounded-2xl card-shadow border border-slate-100 p-4 md:p-6 flex flex-col gap-5 mt-2">
       
@@ -351,17 +388,20 @@
       document.getElementById('titleTrend').innerText = `Tren Transaksi ${namaCh}`;
       document.getElementById('titleDistribusi').innerText = `Distribusi per Wilayah (${namaCh})`;
       const lblKw = document.getElementById('lblKorwilChannel'); if (lblKw) lblKw.innerText = namaCh;
+      const lblTB = document.getElementById('lblTopBotChannel'); if (lblTB) lblTB.innerText = namaCh;
 
       fetchTrend();
       fetchDistribusi();
       fetchBreakdown();
       fetchYoy();
       fetchRingkasanKorwil();
+      fetchTopBottomCabang();
   }
 
   async function runFullSync() {
       fetchSummaryCards();
       fetchRingkasanKorwil();
+      fetchTopBottomCabang();
       fetchTrend();
       fetchDistribusi();
       fetchBreakdown();
@@ -755,7 +795,62 @@
   }
 
   // ==========================================
-  // 6. INFO MODAL (Auto-close 6 detik)
+  // 6. TOP & BOTTOM 5 CABANG
+  // ==========================================
+  async function fetchTopBottomCabang() {
+      const topEl = document.getElementById('listTop5Cabang');
+      const botEl = document.getElementById('listBottom5Cabang');
+      if (!topEl || !botEl) return;
+      showLoad('loadTopBottom');
+      const payload = {
+          type: "top_bottom_cabang",
+          harian_date: document.getElementById('harian_date').value,
+          closing_date: document.getElementById('closing_date').value,
+          channel: currentActiveChannel
+      };
+      try {
+          const res = await fetch(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+          const j = await res.json();
+          topEl.innerHTML = ''; botEl.innerHTML = '';
+          if (j.status !== 200 || !j.data) {
+              topEl.innerHTML = `<p class="text-xs text-slate-400">Data belum tersedia.</p>`;
+              botEl.innerHTML = `<p class="text-xs text-slate-400">Data belum tersedia.</p>`;
+              return;
+          }
+          const renderList = (container, items, colorClass, bgClass) => {
+              if (!items || !items.length) { container.innerHTML = `<p class="text-xs text-slate-400">Data kosong.</p>`; return; }
+              const maxNom = items[0].nominal || 1;
+              items.forEach((it, i) => {
+                  const pct = Math.max((it.nominal / maxNom) * 100, 3);
+                  const fNom = it.nominal >= 1000000000 ? (it.nominal/1000000000).toFixed(2)+' M' : (it.nominal >= 1000000 ? (it.nominal/1000000).toFixed(1)+' Jt' : fmt(it.nominal));
+                  container.innerHTML += `
+                    <div class="flex items-center gap-3 p-2.5 rounded-lg border border-slate-100 hover:border-slate-200 transition">
+                        <span class="w-7 h-7 rounded-full ${bgClass} ${colorClass} flex items-center justify-center text-xs font-black shrink-0">${i+1}</span>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-xs font-bold text-slate-700 truncate">${it.kode} - ${it.nama}</span>
+                                <span class="text-xs font-black text-slate-800 shrink-0 ml-2">Rp ${fNom}</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-1.5">
+                                <div class="${colorClass.replace('text-','bg-')} h-1.5 rounded-full transition-all" style="width:${pct}%"></div>
+                            </div>
+                            <span class="text-[9px] text-slate-400 font-bold mt-0.5">${fmt(it.trx)} Transaksi</span>
+                        </div>
+                    </div>`;
+              });
+          };
+          renderList(topEl, j.data.top_5, 'text-emerald-600', 'bg-emerald-100');
+          renderList(botEl, j.data.bottom_5, 'text-red-600', 'bg-red-100');
+      } catch(e) {
+          topEl.innerHTML = `<p class="text-xs text-red-500">Gagal memuat data.</p>`;
+          botEl.innerHTML = `<p class="text-xs text-red-500">Gagal memuat data.</p>`;
+      } finally {
+          hideLoad('loadTopBottom');
+      }
+  }
+
+  // ==========================================
+  // 7. INFO MODAL (Auto-close 6 detik)
   // ==========================================
   let _ldInfoTimer = null;
   function openLdInfoModal() {

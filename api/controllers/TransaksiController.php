@@ -1787,5 +1787,99 @@ class TransaksiController {
         }
     }
 
+    /**
+     * TOP 5 & BOTTOM 5 CABANG PER CHANNEL
+     * Menampilkan peringkat cabang berdasarkan nominal transaksi.
+     * Support filter: VA, BRANCHLESS, QRIS
+     */
+    public function getTopBottomCabang($input = null) {
+        set_time_limit(300); ini_set('memory_limit', '1024M');
+
+        $b = is_array($input) ? $input : [];
+        $harian  = $b['harian_date'] ?? date('Y-m-d');
+        $channel = !empty($b['channel']) ? strtoupper($b['channel']) : 'VA';
+
+        if (!$harian) return sendResponse(400, "Tanggal Actual (Harian) wajib diisi.", null);
+
+        // Periode: closing s/d harian (bulan ini)
+        if (!empty($b['closing_date'])) {
+            $closing_date = $b['closing_date'];
+        } else {
+            $ts_harian = strtotime($harian);
+            $closing_date = date('Y-m-t', strtotime(date('Y-m-01', $ts_harian) . ' -1 day'));
+        }
+
+        // Channel filter
+        $chanFilter = "";
+        if ($channel === 'VA') {
+            $chanFilter = " AND TRIM(t.kode_transaksi) = '320' ";
+        } elseif ($channel === 'BRANCHLESS') {
+            $chanFilter = " AND TRIM(t.kode_transaksi) IN ('150', '152') ";
+        } elseif ($channel === 'QRIS') {
+            $chanFilter = " AND TRIM(t.kode_transaksi) IN ('140', '16', '162') ";
+        } else {
+            $chanFilter = " AND TRIM(t.kode_transaksi) IN ('320', '150', '152', '140', '16', '162') ";
+        }
+
+        // Query: aggregate per cabang (seluruh cabang, tanpa filter area)
+        $sql = "
+            SELECT 
+                kantor,
+                nama_kantor,
+                SUM(jumlah) as total_nom,
+                COUNT(1) as total_trx
+            FROM (
+                SELECT 
+                    t.kantor,
+                    kk.nama_kantor,
+                    t.jumlah
+                FROM va t
+                LEFT JOIN kode_kantor kk ON t.kantor = kk.kode_kantor
+                WHERE t.tgl_transaksi > :closing AND t.tgl_transaksi <= :harian
+                $chanFilter
+                AND t.kantor != '000'
+            ) as mapped_data
+            GROUP BY kantor, nama_kantor
+            ORDER BY total_nom DESC
+        ";
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':closing', $closing_date);
+            $stmt->bindValue(':harian', $harian);
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Format data
+            $allCabang = [];
+            foreach ($rows as $r) {
+                $allCabang[] = [
+                    'kode'  => $r['kantor'],
+                    'nama'  => $r['nama_kantor'] ?: ('Cabang ' . $r['kantor']),
+                    'nominal' => (float)$r['total_nom'],
+                    'trx'   => (int)$r['total_trx']
+                ];
+            }
+
+            $top5 = array_slice($allCabang, 0, 5);
+            $bottom5 = array_slice(array_reverse($allCabang), 0, 5);
+
+            return sendResponse(200, "Berhasil ambil Top & Bottom 5 Cabang", [
+                'meta' => [
+                    'channel' => $channel,
+                    'closing_date' => $closing_date,
+                    'harian_date' => $harian,
+                    'total_cabang' => count($allCabang)
+                ],
+                'top_5' => $top5,
+                'bottom_5' => $bottom5
+            ]);
+
+        } catch (PDOException $e) {
+            error_log("Error Top Bottom Cabang: " . $e->getMessage());
+            return sendResponse(500, "PDO Error: " . $e->getMessage(), null);
+        }
+    }
+
 
 }
