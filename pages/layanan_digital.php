@@ -67,40 +67,41 @@
 <div class="max-w-[1600px] mx-auto px-3 md:px-4 py-4 flex flex-col gap-5">
   
   <!-- ================= HEADER & GLOBAL FILTER ================= -->
-  <div class="bg-white p-4 rounded-xl card-shadow border border-slate-100">
-    <div class="flex items-center justify-between gap-3">
-        <div class="min-w-0">
-            <h1 class="text-lg sm:text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
-                <span class="bg-blue-600 text-white p-1 sm:p-1.5 rounded-lg text-sm shadow-sm shrink-0">
-                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </span> 
-                <span class="truncate">Layanan Digital</span>
-                <button type="button" onclick="openLdInfoModal()" class="info-btn shrink-0" title="Informasi Dashboard" aria-label="Informasi Dashboard">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                </button>
-            </h1>
-            <p class="text-[11px] text-slate-500 mt-0.5 ml-1 font-medium truncate" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
+  <div class="bg-white p-3 sm:p-4 rounded-xl card-shadow border border-slate-100">
+    <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+        <!-- Left: Title & Periode -->
+        <div class="flex items-center gap-2 min-w-0 shrink-0">
+            <span class="bg-blue-600 text-white p-1 sm:p-1.5 rounded-lg text-sm shadow-sm shrink-0">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </span>
+            <div class="min-w-0">
+                <div class="flex items-center gap-1.5">
+                    <h1 class="text-lg sm:text-xl font-bold text-slate-800 truncate">Layanan Digital</h1>
+                    <button type="button" onclick="openLdInfoModal()" class="info-btn shrink-0" title="Informasi Dashboard" aria-label="Informasi Dashboard">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </button>
+                </div>
+                <p class="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
+            </div>
+            <!-- Mobile: toggle filter -->
+            <button type="button" id="btnToggleFilter" class="xl:hidden shrink-0 w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 ml-auto" aria-label="Toggle Filter">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+            </button>
         </div>
-        <!-- Mobile: toggle filter -->
-        <button type="button" id="btnToggleFilter" class="xl:hidden shrink-0 w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100" aria-label="Toggle Filter">
-            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
-        </button>
-    </div>
 
-    <!-- Filter area: hidden on mobile by default, always visible on xl, aligned right -->
-    <div id="filterPanel" class="hidden xl:flex flex-col xl:flex-row xl:justify-end items-end gap-3 w-full mt-3 pt-3 border-t border-slate-100 xl:border-0 xl:mt-0 xl:pt-0">
-        <div class="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-3 w-full xl:w-auto justify-end">
+        <!-- Right: Filters (1 baris di desktop) -->
+        <div id="filterPanel" class="hidden xl:flex flex-wrap sm:flex-nowrap items-end gap-2 sm:gap-3">
             <div class="flex flex-col w-[calc(50%-4px)] sm:w-auto">
-                <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">CLOSING M-1</label>
-                <input type="date" id="closing_date" class="inp text-slate-700 shadow-sm w-full sm:w-[140px]">
+                <label class="text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-0.5 tracking-wider">CLOSING M-1</label>
+                <input type="date" id="closing_date" class="inp text-slate-700 shadow-sm w-full sm:w-[130px]">
             </div>
             <div class="flex flex-col w-[calc(50%-4px)] sm:w-auto">
-                <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">HARIAN / ACTUAL</label>
-                <input type="date" id="harian_date" class="inp text-slate-700 shadow-sm w-full sm:w-[140px]">
+                <label class="text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-0.5 tracking-wider">HARIAN / ACTUAL</label>
+                <input type="date" id="harian_date" class="inp text-slate-700 shadow-sm w-full sm:w-[130px]">
             </div>
             <div class="flex flex-col w-full sm:w-auto">
-                <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">AREA / CABANG</label>
-                <select id="opt_area" class="inp text-blue-700 shadow-sm w-full sm:w-[200px]">
+                <label class="text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-0.5 tracking-wider">AREA / CABANG</label>
+                <select id="opt_area" class="inp text-blue-700 shadow-sm w-full sm:w-[180px]">
                     <option value="KONSOLIDASI" class="font-bold">Konsolidasi</option>
                     <optgroup label="Berdasarkan Korwil" class="text-slate-400">
                         <option value="KORWIL_SEMARANG" class="text-slate-700">Korwil Semarang</option>

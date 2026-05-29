@@ -1862,7 +1862,9 @@ class TransaksiController {
             }
 
             $top5 = array_slice($allCabang, 0, 5);
-            $bottom5 = array_slice(array_reverse($allCabang), 0, 5);
+            // Bottom 5: ambil 5 terkecil, lalu urutkan descending (terbesar di #1, terkecil di #5)
+            $bottom5Raw = array_slice(array_reverse($allCabang), 0, 5);
+            $bottom5 = array_reverse($bottom5Raw);
 
             return sendResponse(200, "Berhasil ambil Top & Bottom 5 Cabang", [
                 'meta' => [
