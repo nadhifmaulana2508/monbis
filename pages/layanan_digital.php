@@ -87,20 +87,20 @@
         </button>
     </div>
 
-    <!-- Filter area: hidden on mobile by default, always visible on xl -->
-    <div id="filterPanel" class="hidden xl:flex flex-col xl:flex-row items-end gap-3 w-full mt-3 pt-3 border-t border-slate-100 xl:border-0 xl:mt-0 xl:pt-0">
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full xl:flex xl:w-auto">
-            <div class="flex flex-col">
+    <!-- Filter area: hidden on mobile by default, always visible on xl, aligned right -->
+    <div id="filterPanel" class="hidden xl:flex flex-col xl:flex-row xl:justify-end items-end gap-3 w-full mt-3 pt-3 border-t border-slate-100 xl:border-0 xl:mt-0 xl:pt-0">
+        <div class="flex flex-wrap sm:flex-nowrap gap-2 sm:gap-3 w-full xl:w-auto justify-end">
+            <div class="flex flex-col w-[calc(50%-4px)] sm:w-auto">
                 <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">CLOSING M-1</label>
-                <input type="date" id="closing_date" class="inp text-slate-700 shadow-sm w-full xl:w-[140px]">
+                <input type="date" id="closing_date" class="inp text-slate-700 shadow-sm w-full sm:w-[140px]">
             </div>
-            <div class="flex flex-col">
+            <div class="flex flex-col w-[calc(50%-4px)] sm:w-auto">
                 <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">HARIAN / ACTUAL</label>
-                <input type="date" id="harian_date" class="inp text-slate-700 shadow-sm w-full xl:w-[140px]">
+                <input type="date" id="harian_date" class="inp text-slate-700 shadow-sm w-full sm:w-[140px]">
             </div>
-            <div class="flex flex-col col-span-2 sm:col-span-1">
+            <div class="flex flex-col w-full sm:w-auto">
                 <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">AREA / CABANG</label>
-                <select id="opt_area" class="inp text-blue-700 shadow-sm w-full xl:w-[220px]">
+                <select id="opt_area" class="inp text-blue-700 shadow-sm w-full sm:w-[200px]">
                     <option value="KONSOLIDASI" class="font-bold">Konsolidasi</option>
                     <optgroup label="Berdasarkan Korwil" class="text-slate-400">
                         <option value="KORWIL_SEMARANG" class="text-slate-700">Korwil Semarang</option>
@@ -178,22 +178,22 @@
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 transition-opacity duration-300" id="topBotContent">
           <!-- TOP 5 -->
-          <div>
-              <div class="flex items-center gap-2 mb-3">
+          <div class="flex flex-col min-h-0">
+              <div class="flex items-center gap-2 mb-3 shrink-0">
                   <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] font-black">&#9650;</span>
                   <h3 class="text-sm font-extrabold text-emerald-700">Top 5 Tertinggi</h3>
               </div>
-              <div id="listTop5Cabang" class="space-y-2">
+              <div id="listTop5Cabang" class="space-y-2 overflow-y-auto max-h-[420px] custom-scrollbar pr-1">
                   <!-- JS Inject -->
               </div>
           </div>
           <!-- BOTTOM 5 -->
-          <div>
-              <div class="flex items-center gap-2 mb-3">
+          <div class="flex flex-col min-h-0">
+              <div class="flex items-center gap-2 mb-3 shrink-0">
                   <span class="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-[10px] font-black">&#9660;</span>
                   <h3 class="text-sm font-extrabold text-red-700">Bottom 5 Terendah</h3>
               </div>
-              <div id="listBottom5Cabang" class="space-y-2">
+              <div id="listBottom5Cabang" class="space-y-2 overflow-y-auto max-h-[420px] custom-scrollbar pr-1">
                   <!-- JS Inject -->
               </div>
           </div>
