@@ -802,7 +802,7 @@
 
   function resetKorwilTimer() {
       if (korwilSliderTimer) clearInterval(korwilSliderTimer);
-      korwilSliderTimer = setInterval(() => slideKorwilNext(), 5000);
+      korwilSliderTimer = setInterval(() => slideKorwilNext(), 8000);
   }
 
   async function fetchRingkasanKorwil(channel) {
@@ -893,7 +893,7 @@
 
   function resetTopBotTimer() {
       if (topBotSliderTimer) clearInterval(topBotSliderTimer);
-      topBotSliderTimer = setInterval(() => slideTopBotNext(), 5000);
+      topBotSliderTimer = setInterval(() => slideTopBotNext(), 8000);
   }
 
   async function fetchTopBottomCabang(channel) {

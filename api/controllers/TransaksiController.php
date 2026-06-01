@@ -726,11 +726,20 @@ class TransaksiController {
 
             // --- 1. LOGIC PERIODE (Bulan Ini vs Bulan Lalu) ---
             $ts_harian = strtotime($harian);
-            $prev_harian = date('Y-m-d', strtotime('-1 month', $ts_harian));
+            
+            // Hitung prev_harian secara bulletproof (sama seperti Summary Cards)
+            $y_h = (int)date('Y', $ts_harian);
+            $m_h = (int)date('m', $ts_harian);
+            $d_h = (int)date('d', $ts_harian);
+            $prev_month_ts = mktime(0, 0, 0, $m_h - 1, 1, $y_h);
+            $prev_max_days = (int)date('t', $prev_month_ts);
+            $prev_d_safe = min($d_h, $prev_max_days);
+            $prev_harian = sprintf("%04d-%02d-%02d", date('Y', $prev_month_ts), date('m', $prev_month_ts), $prev_d_safe);
 
             if (!empty($b['closing_date'])) {
                 $closing_date = $b['closing_date'];
-                $prev_closing = date('Y-m-d', strtotime('-1 month', strtotime($closing_date)));
+                // prev_closing = akhir bulan sebelum closing_date (bulletproof, sinkron dengan Summary Cards)
+                $prev_closing = date('Y-m-t', strtotime(date('Y-m-01', strtotime($closing_date)) . ' -1 month'));
             } else {
                 $closing_date = date('Y-m-t', strtotime(date('Y-m-01', $ts_harian) . ' -1 day'));
                 $prev_closing = date('Y-m-t', strtotime(date('Y-m-01', strtotime($prev_harian)) . ' -1 day'));
