@@ -1,75 +1,82 @@
-<div class="flex-none mb-3 md:mb-4 flex flex-col justify-between items-start gap-3 w-full shrink-0">
-    <div class="flex items-center justify-between w-full shrink-0">
-        <div class="flex flex-col gap-1.5 w-full">
-            <h1 class="text-lg md:text-2xl font-bold text-slate-800 flex items-center gap-1.5 md:gap-2 mb-0.5">
-                <span class="p-1 md:p-2.5 bg-blue-600 rounded-lg text-white shadow-sm">
-                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-                </span>
-                MOB (Month Of Booking)
-            </h1>
-            <p class="text-[9px] md:text-xs text-rose-600 font-bold italic ml-8 md:ml-[42px] leading-tight">
-                *Geser tabel ke kanan untuk data lengkap. Klik nominal untuk detail.
-            </p>
-        </div>
+<div class="relative z-20 flex-none mb-3 md:mb-4 w-full bg-white p-2.5 md:p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 shrink-0">
+    
+    <div class="flex items-center justify-between w-full xl:w-auto shrink-0 px-1">
+        <h1 class="text-base md:text-xl font-extrabold text-slate-800 flex items-center gap-2 whitespace-nowrap">
+            <span class="p-1.5 md:p-2 bg-blue-600 rounded-lg text-white shadow-sm shrink-0">
+                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+            </span>
+            MOB <span class="hidden md:inline">(Month Of Booking)</span>
+            
+            <div class="relative group cursor-help ml-1">
+                <svg class="w-4 h-4 md:w-5 md:h-5 text-blue-500 hover:text-blue-700 transition" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path></svg>
+                
+                <div class="absolute left-0 top-full mt-2 w-[260px] md:w-[320px] bg-white border border-slate-200 shadow-2xl rounded-xl p-3 md:p-4 hidden group-hover:flex flex-col gap-2 z-50 text-xs font-normal text-slate-600 whitespace-normal">
+                    <div class="font-bold text-slate-800 mb-1 border-b pb-1 text-sm">💡 Informasi MOB</div>
+                    <p class="mb-1.5"><b>Month Of Booking (MOB):</b> Memantau pergerakan <i>Days Past Due</i> (DPD) atau hari menunggak nasabah berdasarkan bulan pencairan kredit.</p>
+                    <div class="flex flex-col gap-1.5 mb-2">
+                        <div class="flex items-start gap-2">
+                            <span class="w-3 h-3 rounded bg-emerald-100 border border-emerald-300 shrink-0 mt-0.5"></span>
+                            <p><b class="text-emerald-700">DPD 0 (Lancar):</b> Angsuran bulan ini sudah dibayar atau belum masuk tanggal jatuh tempo.</p>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="w-3 h-3 rounded bg-yellow-100 border border-yellow-400 shrink-0 mt-0.5"></span>
+                            <p><b class="text-yellow-700">DPD 1 - 14:</b> Menunggak awal. Lakukan <i>reminder</i> atau penagihan ringan.</p>
+                        </div>
+                        <div class="flex items-start gap-2">
+                            <span class="w-3 h-3 rounded bg-red-100 border border-red-400 shrink-0 mt-0.5"></span>
+                            <p><b class="text-red-700">DPD > 14 (Migrasi):</b> Menunggak lanjut kualitas memburuk. <b class="uppercase">Segera lakukan penagihan intensif!</b></p>
+                        </div>
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 p-2 rounded-lg text-[10.5px] leading-relaxed">
+                        <b class="text-amber-800">⚠️ Catatan Status Aman:</b><br>
+                        Nasabah bersaldo <b>DPD 0 (Lancar)</b> belum tentu sepenuhnya "Aman" jika <b>tanggal jatuh tempo angsurannya di bulan berjalan belum terlewati</b>. Masih ada potensi migrasi menunggak. Pastikan memantau hingga tanggal jatuh tempo terlewati.
+                    </div>
+                </div>
+            </div>
+        </h1>
         
         <button type="button" onclick="toggleFilter('filterWrapperMob')" class="xl:hidden h-[30px] px-3 bg-white border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm transition font-bold text-[10px] md:text-xs whitespace-nowrap ml-2 shrink-0">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
             Filter
         </button>
     </div>
 
-    <div id="filterWrapperMob" class="hidden xl:flex w-full mt-2 xl:mt-0 transition-all duration-300 shrink-0">
-        <!-- Flex wrap ditambahkan agar kolom yang banyak bisa turun ke baris bawah saat layar kecil -->
-        <form id="formFilterMob" class="flex flex-row flex-wrap xl:flex-nowrap items-end gap-2 md:gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-sm w-full" onsubmit="event.preventDefault(); fetchRekapMob();">
+    <div id="filterWrapperMob" class="hidden xl:flex w-full xl:w-auto flex-1 min-w-0 justify-end transition-all duration-300 shrink-0 border-t xl:border-none pt-3 xl:pt-0 mt-2 xl:mt-0">
+        <form id="formFilterMob" class="flex flex-row flex-wrap xl:flex-nowrap items-end gap-2 md:gap-2.5 w-full xl:w-auto" onsubmit="event.preventDefault();">
             
-            <div class="field shrink-0 w-[130px] md:w-[150px]">
-                <label class="lbl text-blue-700">POSISI DATA</label>
-                <input type="date" id="harian_date_mob" class="inp w-full text-[10px] md:text-xs font-semibold h-[34px] md:h-[38px] cursor-pointer" required onclick="try{this.showPicker()}catch(e){}">
+            <div class="field shrink-0 w-[calc(50%-4px)] xl:w-[110px]">
+                <label class="lbl">POSISI DATA</label>
+                <input type="date" id="harian_date_mob" class="inp text-[10px] md:text-xs font-bold h-[34px] md:h-[36px] cursor-pointer text-slate-700" title="Posisi Data" required onclick="try{this.showPicker()}catch(e){}" onchange="fetchRekapMob()">
             </div>
 
-            <div class="field shrink-0 w-[130px] md:w-[150px]">
-                <label class="lbl text-slate-600">REKAP BY</label>
-                <select id="opt_rekap_by" class="inp text-[10px] md:text-xs font-semibold h-[34px] md:h-[38px] cursor-pointer w-full">
-                    <option value="bulan">Bulan Realisasi</option>
-                    <option value="ao">AO Kredit</option>
-                    <option value="kankas">Kantor Kas</option>
+            <div class="field shrink-0 w-[calc(50%-4px)] xl:w-[150px]">
+                <label class="lbl">AREA / CABANG</label>
+                <select id="opt_area" class="inp text-[10px] md:text-xs font-bold text-slate-700 h-[34px] md:h-[36px] cursor-pointer truncate" onchange="updateFilterUI()" title="Pilih Area (Korwil / Cabang)">
+                    <option value="ALL">ALL KONSOLIDASI</option>
                 </select>
             </div>
 
-            <div class="w-full md:w-px h-px md:h-8 bg-slate-200 shrink-0 mx-0 xl:mx-1 mb-2 md:mb-1 xl:block"></div>
-
-            <div class="field shrink-0 w-[130px] md:w-[180px]">
-                <label class="lbl text-slate-600">CABANG / KORWIL</label>
-                <select id="opt_kantor_mob" class="inp text-[10px] md:text-xs font-semibold h-[34px] md:h-[38px] cursor-pointer w-full" onchange="fetchRekapMob()">
-                    <option value="">KONSOLIDASI (SEMUA)</option>
+            <div class="field flex-1 min-w-[100px] xl:w-[130px] xl:max-w-[160px]">
+                <label id="lbl_sub" class="lbl text-slate-600">KORWIL</label>
+                <select id="opt_sub_main" class="inp text-[10px] md:text-xs font-bold text-slate-700 h-[34px] md:h-[36px] cursor-pointer truncate" onchange="fetchRekapMob()">
+                    <option value="ALL">ALL KORWIL</option>
+                    <option value="SEMARANG">SEMARANG</option>
+                    <option value="SOLO">SOLO</option>
+                    <option value="BANYUMAS">BANYUMAS</option>
+                    <option value="PEKALONGAN">PEKALONGAN</option>
                 </select>
             </div>
 
-            <!-- Custom Searchable Dropdown KANKAS -->
-            <div class="field relative flex-1 min-w-[150px]">
-                <label class="lbl text-slate-600">KANKAS</label>
-                <input type="hidden" id="val_kankas_main" value="">
-                <input type="text" id="search_kankas_main" class="inp w-full text-[10px] md:text-xs font-semibold h-[34px] md:h-[38px] cursor-text placeholder-slate-400" placeholder="Semua Kankas..." autocomplete="off">
-                <div id="list_kankas_main" class="search-dropdown-list custom-scrollbar"></div>
-            </div>
-
-            <!-- Custom Searchable Dropdown AO -->
-            <div class="field relative flex-1 min-w-[150px]">
-                <label class="lbl text-slate-600">AO KREDIT</label>
-                <input type="hidden" id="val_ao_main" value="">
-                <input type="text" id="search_ao_main" class="inp w-full text-[10px] md:text-xs font-semibold h-[34px] md:h-[38px] cursor-text placeholder-slate-400" placeholder="Semua AO..." autocomplete="off">
-                <div id="list_ao_main" class="search-dropdown-list custom-scrollbar"></div>
+            <div class="field flex-1 min-w-[100px] xl:w-[150px] xl:max-w-[200px]">
+                <label class="lbl text-blue-700">AO KREDIT</label>
+                <select id="opt_ao_main" class="inp text-[10px] md:text-xs font-bold text-blue-800 bg-blue-50/50 border-blue-200 h-[34px] md:h-[36px] cursor-pointer truncate disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200" onchange="fetchRekapMob()" disabled>
+                    <option value="ALL">PILIH CABANG DULU</option>
+                </select>
             </div>
             
-            <div class="flex items-center gap-1.5 w-full md:w-auto shrink-0 h-[34px] md:h-[38px] mt-2 md:mt-0">
-                <button type="submit" class="btn-icon flex-1 md:flex-none px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm text-[10px] md:text-xs font-bold uppercase tracking-wider h-full" title="Cari Data">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" class="mr-1.5"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    CARI
-                </button>
-                <button type="button" onclick="exportExcelRekapMob()" class="btn-icon h-full w-[42px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm" title="Download Excel">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></line></svg>
-                </button>
-            </div>
+            <button type="button" onclick="exportExcelRekapMob()" class="btn-icon h-[34px] md:h-[36px] w-[38px] md:w-[42px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm shrink-0 ml-auto xl:ml-0 mt-2 xl:mt-0" title="Download Excel">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></line></svg>
+            </button>
         </form>
     </div>
 </div>

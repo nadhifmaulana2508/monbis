@@ -1,4 +1,5 @@
 <script>
+// --- CONFIG ---
 const API_URL = './api/kredit/'; 
 const API_KODE = './api/kode/';
 const API_DATE = './api/date/'; 
@@ -10,51 +11,6 @@ let abortMainMob;
 let detailParamsMob = {}; 
 let detailPageMob = 1;
 let rekapDataCacheMob = null; 
-
-// 🔥 INIT SEARCHABLE DROPDOWN VANILLA JS 🔥
-function setupSearchableDropdown(inputId, hiddenId, listId, dataArray, placeholderText) {
-    const input = document.getElementById(inputId);
-    const hidden = document.getElementById(hiddenId);
-    const list = document.getElementById(listId);
-    
-    input.value = ''; hidden.value = '';
-    
-    function renderList(filterTxt = '') {
-        list.innerHTML = `<div class="dropdown-item text-slate-400 italic" data-val="">-- Semua / Kosongkan --</div>`;
-        let count = 0;
-        dataArray.forEach(item => {
-            const txt = `${item.kode} - ${item.nama}`;
-            if (txt.toLowerCase().includes(filterTxt.toLowerCase())) {
-                list.innerHTML += `<div class="dropdown-item" data-val="${item.kode}">${txt}</div>`;
-                count++;
-            }
-        });
-        if(count === 0) list.innerHTML += `<div class="p-2 text-xs text-slate-400 text-center">Tidak ditemukan</div>`;
-    }
-
-    input.addEventListener('focus', () => { renderList(input.value); list.classList.add('show'); });
-    input.addEventListener('input', (e) => { renderList(e.target.value); list.classList.add('show'); });
-    
-    // Sembunyikan list jika klik di luar
-    document.addEventListener('click', (e) => {
-        if (!input.contains(e.target) && !list.contains(e.target)) {
-            list.classList.remove('show');
-            // Reset text jika value kosong
-            if(!hidden.value) input.value = '';
-        }
-    });
-
-    // Pilihan diklik
-    list.addEventListener('click', (e) => {
-        if(e.target.classList.contains('dropdown-item')) {
-            const val = e.target.getAttribute('data-val');
-            hidden.value = val;
-            input.value = val === "" ? "" : e.target.innerText;
-            list.classList.remove('show');
-            fetchRekapMob(); // Otomatis refresh data
-        }
-    });
-}
 
 function toggleFilter(id) {
     const el = document.getElementById(id);
@@ -69,37 +25,95 @@ function toggleFilter(id) {
 window.addEventListener('DOMContentLoaded', async () => {
     const d = await getLastHarianData(); 
     document.getElementById('harian_date_mob').value = d ? d.last_created : new Date().toISOString().split('T')[0];
-    await populateKantorOptionsMob();
-    fetchRekapMob();
+    await populateAreaDropdown();
+    updateFilterUI(); 
 });
 
 async function getLastHarianData(){
     try{ const r=await apiCall(API_DATE); return (await r.json()).data; } catch{ return null; }
 }
 
-async function populateKantorOptionsMob(){
-    const optKantor = document.getElementById('opt_kantor_mob');
+// DROPDOWN 1: Populate Area (Gabungan)
+async function populateAreaDropdown(){
+    const optArea = document.getElementById('opt_area');
+    const user = (window.getUser && window.getUser()) || null;
+    const userKode = (user?.kode ? String(user.kode).padStart(3,'0') : '000');
+
+    if(userKode !== '000'){
+        optArea.innerHTML = `<option value="CAB-${userKode}">CABANG ${userKode}</option>`;
+        optArea.value = `CAB-${userKode}`;
+        optArea.disabled = true;
+        return;
+    }
+
     try {
         const res = await apiCall(API_KODE, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_kantor'}) });
         const json = await res.json();
         const list = Array.isArray(json.data) ? json.data : [];
-        let html = `<option value="">KONSOLIDASI (SEMUA)</option>`;
+        
+        let html = `<option value="ALL">ALL KONSOLIDASI</option>`;
         list.filter(x => x.kode_kantor && x.kode_kantor !== '000')
             .sort((a,b) => String(a.kode_kantor).localeCompare(b.kode_kantor))
-            .forEach(it => { html += `<option value="${String(it.kode_kantor).padStart(3,'0')}">${String(it.kode_kantor).padStart(3,'0')} - ${it.nama_kantor}</option>`; });
-        optKantor.innerHTML = html;
-    } catch(e){ optKantor.innerHTML = `<option value="">Error Load</option>`; }
+            .forEach(it => { 
+                html += `<option value="CAB-${String(it.kode_kantor).padStart(3,'0')}">${String(it.kode_kantor).padStart(3,'0')} - ${it.nama_kantor}</option>`; 
+            });
+        
+        optArea.innerHTML = html;
+        optArea.disabled = false;
+    } catch(e){ optArea.innerHTML = `<option value="ALL">Error Load Area</option>`; }
+}
+
+// UPDATE UI LOGIC (Ganti Judul Kankas/Korwil)
+function updateFilterUI() {
+    const areaVal = document.getElementById('opt_area').value;
+    const lblSub = document.getElementById('lbl_sub');
+    const optSub = document.getElementById('opt_sub_main');
+    const optAo = document.getElementById('opt_ao_main');
+
+    if(areaVal === 'ALL') {
+        lblSub.innerText = "KORWIL";
+        optSub.innerHTML = `
+            <option value="ALL">ALL KORWIL</option>
+            <option value="SEMARANG">SEMARANG</option>
+            <option value="SOLO">SOLO</option>
+            <option value="BANYUMAS">BANYUMAS</option>
+            <option value="PEKALONGAN">PEKALONGAN</option>
+        `;
+        optAo.innerHTML = `<option value="ALL">PILIH CABANG DULU</option>`;
+        optAo.disabled = true;
+    } else {
+        lblSub.innerText = "KANKAS";
+        optSub.innerHTML = `<option value="ALL">ALL KANKAS</option>`;
+        optAo.innerHTML = `<option value="ALL">ALL AO</option>`;
+        optAo.disabled = false;
+    }
+    
+    fetchRekapMob();
+}
+
+// Render Dropdown List Kankas & AO terpisah dari Backend
+function renderSubDropdown(selectId, dataArray, defaultLabel) {
+    const el = document.getElementById(selectId);
+    const currentVal = el.value; 
+    
+    let html = `<option value="ALL">${defaultLabel}</option>`;
+    if(dataArray && dataArray.length > 0) {
+        dataArray.forEach(x => { html += `<option value="${x.kode}">${x.kode} - ${x.nama}</option>`; });
+    }
+    
+    el.innerHTML = html;
+    if (currentVal && html.includes(`value="${currentVal}"`)) el.value = currentVal;
 }
 
 // --- 1. FETCH REKAP MOB ---
 async function fetchRekapMob(){
     const loading = document.getElementById('loadingMob');
     const tbody  = document.getElementById('bodyMatrix');
-    const harian  = document.getElementById('harian_date_mob').value;
-    const kode    = document.getElementById('opt_kantor_mob').value || null; 
-    const rekapBy = document.getElementById('opt_rekap_by').value;
-    const kankas  = document.getElementById('val_kankas_main').value || null;
-    const ao      = document.getElementById('val_ao_main').value || null;
+    
+    const harian = document.getElementById('harian_date_mob').value;
+    const areaVal = document.getElementById('opt_area').value;
+    const subVal = document.getElementById('opt_sub_main').value;
+    const aoVal  = document.getElementById('opt_ao_main').value;
 
     if(abortMainMob) abortMainMob.abort();
     abortMainMob = new AbortController();
@@ -108,17 +122,16 @@ async function fetchRekapMob(){
     tbody.innerHTML = `<tr><td colspan="11" class="py-20 text-center text-slate-400 italic text-[10px] md:text-sm">Sedang mengambil data...</td></tr>`;
     rekapDataCacheMob = null;
 
-    // Ganti Label Kiri Sesuai Filter
-    let labelTh = "Bulan Real";
-    if(rekapBy === 'ao') labelTh = "Nama AO Kredit";
-    if(rekapBy === 'kankas') labelTh = "Kantor Kas";
-    document.getElementById('th_grouping_label').innerText = labelTh;
-
     try {
-        const payload = { 
-            type: "mob_vintage", harian_date: harian, rekap_by: rekapBy,
-            kode_kantor: kode, kode_kankas: kankas, kode_ao: ao
-        };
+        let payload = { type: "mob_vintage", harian_date: harian, rekap_by: "bulan" };
+        
+        if(areaVal === 'ALL') {
+            if(subVal !== 'ALL') payload.korwil = subVal;
+        } else {
+            payload.kode_kantor = areaVal.replace('CAB-', '');
+            if(subVal !== 'ALL') payload.kode_kankas = subVal;
+            if(aoVal !== 'ALL') payload.kode_ao = aoVal;
+        }
         
         const res = await apiCall(API_URL, {
             method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload), signal: abortMainMob.signal
@@ -127,10 +140,9 @@ async function fetchRekapMob(){
         
         if(json.status !== 200) throw new Error(json.message);
 
-        // Populate Searchable Dropdowns Kankas & AO dari respon Backend
-        if(json.data.dropdown_lists) {
-            setupSearchableDropdown('search_kankas_main', 'val_kankas_main', 'list_kankas_main', json.data.dropdown_lists.list_kankas || []);
-            setupSearchableDropdown('search_ao_main', 'val_ao_main', 'list_ao_main', json.data.dropdown_lists.list_ao || []);
+        if(areaVal !== 'ALL' && json.data.dropdown_lists) {
+            renderSubDropdown('opt_sub_main', json.data.dropdown_lists.list_kankas, 'ALL KANKAS');
+            renderSubDropdown('opt_ao_main', json.data.dropdown_lists.list_ao, 'ALL AO');
         }
 
         const displayData = json.data.data || [];
@@ -149,27 +161,40 @@ async function fetchRekapMob(){
         bucketsKey.forEach(b => grandTotal.buckets[b] = { os:0, noa:0 });
 
         displayData.forEach(r => {
-            grandTotal.plafond += parseFloat(r.total_plafond || 0);
+            let totalPlafondRow = parseFloat(r.total_plafond || 0);
+            grandTotal.plafond += totalPlafondRow;
             let cells = '';
             
             bucketsKey.forEach(key => {
                 const bData = r.buckets[key] || { pct:0, noa:0, os:0 };
-                grandTotal.buckets[key].os  += parseFloat(bData.os || 0);
+                let bucketOs = parseFloat(bData.os || 0);
+
+                grandTotal.buckets[key].os  += bucketOs;
                 grandTotal.buckets[key].noa += parseInt(bData.noa || 0);
 
-                let bgClass = 'bg-transparent'; let textClass = 'text-slate-800';
-                if(key !== '0' && parseFloat(bData.pct) > 0) { bgClass = 'bg-red-50/70 border-red-100'; textClass = 'text-red-700'; }
-                if(key === '0' && parseFloat(bData.pct) > 90) { bgClass = 'bg-emerald-50/70 border-emerald-100'; textClass = 'text-emerald-700'; }
+                let rawPct = totalPlafondRow > 0 ? (bucketOs / totalPlafondRow) * 100 : 0;
+                let textPct = rawPct.toFixed(2);
 
-                const cabangParam = (!kode) ? '' : kode; // Kirim filter cabang ke detail
-                const clickEv = (parseFloat(bData.os) > 0) ? `onclick="openModalMob('${cabangParam}', '${r.group_id}', '${key}', '${rekapBy}')"` : '';
-                const cursor = (parseFloat(bData.os) > 0) ? 'cell-hover' : '';
+                let bgClass = 'bg-transparent'; let textClass = 'text-slate-800';
+
+                if(key === '0') {
+                    if(rawPct > 0) { bgClass = 'bg-emerald-50/50 border-emerald-100'; textClass = 'text-emerald-700'; }
+                } else if (key === '1 - 7' || key === '8 - 14') {
+                    if(rawPct > 0) { bgClass = 'bg-yellow-50/50 border-yellow-100'; textClass = 'text-yellow-700'; }
+                } else if (key === '15 - 21' || key === '22 - 30') {
+                    if(rawPct > 0) { bgClass = 'bg-orange-50/50 border-orange-100'; textClass = 'text-orange-700'; }
+                } else {
+                    if(rawPct > 0) { bgClass = 'bg-red-50/50 border-red-100'; textClass = 'text-red-700'; }
+                }
+
+                const clickEv = (bucketOs > 0) ? `onclick="openModalMob('${r.group_id}', '${key}')"` : '';
+                const cursor = (bucketOs > 0) ? 'cell-hover' : '';
 
                 cells += `
-                    <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-200 align-middle ${bgClass}">
-                        <div class="flex flex-col justify-center h-full ${cursor} transition px-1 rounded" ${clickEv}>
-                            <div class="font-bold text-[10px] md:text-xs ${textClass} leading-tight mb-0.5">${parseFloat(bData.os)>0 ? fmt(bData.os) : '-'}</div>
-                            <div class="text-[8px] md:text-[9.5px] text-slate-500 font-medium leading-tight">NOA: <span class="font-bold text-slate-700">${bData.noa}</span> <span class="mx-0.5 opacity-50">|</span> <span class="font-bold ${textClass}">${bData.pct}%</span></div>
+                    <td class="px-1 md:px-2 py-1.5 border-r border-slate-200 align-middle ${bgClass}">
+                        <div class="flex flex-col justify-center h-full ${cursor} transition px-0.5 rounded" ${clickEv}>
+                            <div class="font-bold text-[9.5px] md:text-[11px] ${textClass} leading-tight mb-1">${bucketOs > 0 ? fmt(bucketOs) : '-'}</div>
+                            <div class="text-[7.5px] md:text-[8.5px] text-slate-500 font-medium leading-tight">NOA: <span class="font-bold text-slate-700">${bData.noa}</span> <span class="mx-0.5 opacity-50">|</span> <span class="font-bold ${textClass}">${textPct}%</span></div>
                         </div>
                     </td>`;
             });
@@ -177,28 +202,31 @@ async function fetchRekapMob(){
             const txtMob = r.mob ? r.mob : '-';
 
             html += `
-                <tr class="hover:bg-slate-50 border-b border-slate-200 group h-[52px] md:h-[60px]">
-                    <td class="sticky-left px-3 md:px-4 py-2 text-left font-bold text-[10.5px] md:text-sm text-slate-700 bg-white border-r border-slate-200 align-middle shadow-[inset_-1px_0_0_#e2e8f0] z-10 min-w-[120px] md:min-w-[180px] truncate" title="${r.group_name}">${r.group_name}</td>
-                    <td class="px-2 md:px-3 py-2 border-r border-slate-200 text-center font-bold text-[10.5px] md:text-sm text-slate-500 bg-slate-50 align-middle">${txtMob}</td>
-                    <td class="px-3 md:px-4 py-2 border-r border-slate-200 text-right font-mono font-bold text-[11px] md:text-sm text-slate-700 bg-slate-50 align-middle leading-tight">${fmt(r.total_plafond)}</td>
+                <tr class="hover:bg-slate-50 border-b border-slate-200 group h-[48px] md:h-[54px]">
+                    <td class="sticky-left px-2 md:px-3 py-1.5 text-left font-bold text-[10px] md:text-xs text-slate-700 bg-white border-r border-slate-200 align-middle shadow-[inset_-1px_0_0_#e2e8f0] z-10 min-w-[80px] md:min-w-[100px] truncate" title="${r.group_name}">${r.group_name}</td>
+                    <td class="px-1 md:px-2 py-1.5 border-r border-slate-200 text-center font-bold text-[10px] md:text-xs text-blue-700 bg-blue-50/30 align-middle">${txtMob}</td>
+                    <td class="px-2 md:px-3 py-1.5 border-r border-slate-200 text-right font-mono font-bold text-[10px] md:text-xs text-blue-800 bg-blue-50/10 align-middle leading-tight">${fmt(r.total_plafond)}</td>
                     ${cells}
                 </tr>`;
         });
         tbody.innerHTML = html;
 
         // --- RENDER TOTAL STICKY ---
-        let tf = `<th class="sticky-left px-3 md:px-4 text-left uppercase tracking-widest align-middle text-blue-900 z-50 bg-[#eff6ff] text-[10px] md:text-xs shadow-[inset_-1px_0_0_#93c5fd]">TOTAL</th>
-                  <th class="border-r border-blue-300 px-2 md:px-3 text-center align-middle text-blue-900 bg-[#eff6ff]">-</th>
-                  <th class="border-r border-blue-300 px-3 md:px-4 text-right font-mono font-bold text-[11px] md:text-[14px] text-blue-900 align-middle bg-[#eff6ff] leading-tight">${fmt(grandTotal.plafond)}</th>`;
+        let tf = `<th class="sticky-left px-2 md:px-3 text-left uppercase tracking-widest align-middle text-blue-900 z-50 bg-[#eff6ff] text-[9px] md:text-[11px] shadow-[inset_-1px_0_0_#93c5fd]">TOTAL</th>
+                  <th class="border-r border-blue-300 px-1 md:px-2 text-center align-middle text-blue-900 bg-[#eff6ff]">-</th>
+                  <th class="border-r border-blue-300 px-2 md:px-3 text-right font-mono font-bold text-[10px] md:text-[12px] text-blue-900 align-middle bg-[#eff6ff] leading-tight">${fmt(grandTotal.plafond)}</th>`;
+        
+        let pembagiTotal = grandTotal.plafond > 0 ? grandTotal.plafond : 1;
         
         bucketsKey.forEach(b => { 
             const bTot = grandTotal.buckets[b];
-            const pembagiTotal = grandTotal.plafond > 0 ? grandTotal.plafond : 1;
-            const pctTotal = ((bTot.os / pembagiTotal) * 100).toFixed(2);
-            tf += `<th class="border-r border-blue-300 align-middle bg-[#eff6ff] px-2 md:px-3">
-                      <div class="flex flex-col justify-center h-full py-1.5 md:py-2">
-                          <div class="text-[10px] md:text-xs text-blue-900 font-bold leading-tight mb-0.5">${fmt(bTot.os)}</div>
-                          <div class="text-[8px] md:text-[9.5px] text-blue-600 font-medium leading-tight">NOA: <span class="font-bold text-blue-800">${bTot.noa}</span> <span class="mx-0.5 opacity-50">|</span> <span class="font-bold">${pctTotal}%</span></div>
+            let rawPctTotal = (bTot.os / pembagiTotal) * 100;
+            const pctTotal = rawPctTotal.toFixed(2);
+            
+            tf += `<th class="border-r border-blue-300 align-middle bg-[#eff6ff] px-1 md:px-2">
+                      <div class="flex flex-col justify-center h-full py-1">
+                          <div class="text-[9.5px] md:text-[11px] text-blue-900 font-bold leading-tight mb-0.5">${fmt(bTot.os)}</div>
+                          <div class="text-[7.5px] md:text-[8.5px] text-blue-600 font-medium leading-tight">NOA: <span class="font-bold text-blue-800">${bTot.noa}</span> <span class="mx-0.5 opacity-50">|</span> <span class="font-bold">${pctTotal}%</span></div>
                       </div>
                    </th>` 
         });
@@ -213,15 +241,18 @@ window.exportExcelRekapMob = function() {
     if(!rekapDataCacheMob || !rekapDataCacheMob.data) return alert("Tidak ada data rekap untuk didownload.");
     const rows = rekapDataCacheMob.data;
     const bk = rekapDataCacheMob.buckets;
-    let csv = "Group Name\tMOB\tTotal Plafond\t";
+    let csv = "Bulan Realisasi\tMOB\tTotal Plafond\t";
     bk.forEach(b => csv += `% ${b}\tOS ${b}\tNOA ${b}\t`);
     csv += "\n";
 
     rows.forEach(r => {
+        let pembagi = parseFloat(r.total_plafond || 0);
         csv += `'${r.group_name}\t${r.mob||'-'}\t${Math.round(r.total_plafond)}\t`;
         bk.forEach(b => {
             const d = r.buckets[b];
-            csv += `${d.pct}%\t${Math.round(d.os)}\t${d.noa}\t`;
+            let rowOS = parseFloat(d.os || 0);
+            let rowPct = pembagi > 0 ? ((rowOS / pembagi) * 100).toFixed(2) : 0;
+            csv += `${rowPct}%\t${Math.round(rowOS)}\t${d.noa}\t`;
         });
         csv += "\n";
     });
@@ -234,25 +265,31 @@ window.exportExcelRekapMob = function() {
 }
 
 // --- 2. MODAL DETAIL LOGIC ---
-async function openModalMob(cabang, groupId, bucket, rekapBy){
-    // Sesuaikan parameter berdasarkan filter grup
+async function openModalMob(bulanReal, bucket){
+    const areaVal = document.getElementById('opt_area').value;
+    const subVal = document.getElementById('opt_sub_main').value;
+    const aoVal  = document.getElementById('opt_ao_main').value;
+
     detailParamsMob = {
         type: "detail_mob_debitur",
         harian_date: document.getElementById('harian_date_mob').value,
-        kode_kantor: cabang, 
+        bulan_realisasi: bulanReal,
         bucket_label: bucket
     };
 
-    // Mapping ulang value yang diklik
-    if(rekapBy === 'bulan') detailParamsMob.bulan_realisasi = groupId;
-    if(rekapBy === 'ao') detailParamsMob.kode_ao = groupId;
-    if(rekapBy === 'kankas') detailParamsMob.kode_kankas = groupId;
+    if(areaVal === 'ALL') {
+        if(subVal !== 'ALL') detailParamsMob.korwil = subVal;
+    } else {
+        detailParamsMob.kode_kantor = areaVal.replace('CAB-','');
+        if(subVal !== 'ALL') detailParamsMob.kode_kankas = subVal;
+        if(aoVal !== 'ALL') detailParamsMob.kode_ao = aoVal;
+    }
 
     detailPageMob = 1;
 
     document.getElementById('modalDetailMob').classList.remove('hidden');
     document.getElementById('badgeBucketDetail').innerText = `Bucket ${bucket}`;
-    document.getElementById('subTitleDetail').innerText = `Grup: ${groupId} • Cabang: ${cabang || 'SEMUA'}`;
+    document.getElementById('subTitleDetail').innerText = `Bulan Realisasi: ${bulanReal}`;
     document.getElementById('search_nasabah').value = '';
     
     renderModalHeaderMigrasi();
@@ -374,7 +411,7 @@ window.exportExcelDetailMob = async function() {
 
         const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
         const a = document.createElement('a'); a.href = window.URL.createObjectURL(blob);
-        a.download = `Detail_MOB.xls`; a.click();
+        a.download = `Detail_MOB_${detailParamsMob.bulan_realisasi}_Bucket_${detailParamsMob.bucket_label}.xls`; a.click();
     } catch(e) { alert("Gagal export data."); } finally { btn.innerHTML = txt; btn.disabled = false; }
 }
 
