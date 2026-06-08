@@ -156,64 +156,106 @@ class KreditController {
     }
 
     public function getRealisasiSum($input = []) {
-        // Tangkap parameter dari FE
-        $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
-        $harian_date  = $input['harian_date']  ?? date('Y-m-d');
-        $kc           = $input['kode_kantor']  ?? null;
+        // 1. Setup Input & Parsing Parameter
+        $b = is_array($input) ? $input : (json_decode(file_get_contents('php://input'), true) ?: []);
         
-        if ($kc === '000' || $kc === '') $kc = null;
+        $closing_date = $b['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
+        $harian_date  = $b['harian_date']  ?? date('Y-m-d');
+        $kode_kantor  = $b['kode_kantor']  ?? null;
 
-        $filterClause = "";
-        $params = [
-            ':closing_date' => $closing_date,
-            ':harian_date'  => $harian_date
-        ];
+        // 2. Panggil Helper Filter (Gunakan prefix 't')
+        $filterData = buildBankFilters($b, 't');
+        $filterSql  = $filterData['sql'];
+        
+        // Penyesuaian nama kolom khusus tabel summary_kredit_harian_update
+        $filterSql = str_replace('t.kode_cabang', 't.kode_kantor', $filterSql);
+        $filterSql = str_replace('t.kode_group1', 't.kode_group_1', $filterSql);
+        
+        $paramsBind = $filterData['params'];
 
-        // Jika filter cabang dikirim
-        if ($kc) {
-            $filterClause = "AND t.kode_kantor = :kc";
-            $params[':kc'] = str_pad((string)$kc, 3, '0', STR_PAD_LEFT);
+        // Masukkan tanggal ke binding parameter
+        $paramsBind[':closing_date'] = $closing_date;
+        $paramsBind[':harian_date']  = $harian_date;
+
+        // 3. Tentukan Mode Tampilan (Konsolidasi vs Breakdown Kankas)
+        $displayMode = 'KONSOLIDASI';
+        if (!empty($kode_kantor) && $kode_kantor !== '000' && $kode_kantor !== 'ALL') {
+            $displayMode = 'BREAKDOWN_KANKAS';
         }
 
-        // =========================================================================
-        // QUERY CUSTOM DARI BROTHERKU
-        // (Parameter tanggal sudah dijadikan dinamis menggunakan prepared statement)
-        // =========================================================================
-        $sql = "
-            SELECT 
-                t.kode_kantor,
-                COALESCE(k.nama_kantor, CONCAT('CABANG ', t.kode_kantor)) AS nama_kantor,
-                SUM(COALESCE(t.noa_realisasi, 0)) AS noa_realisasi,
-                SUM(COALESCE(t.realisasi, 0)) AS total_realisasi,
-                SUM(COALESCE(t.angsuran, 0)) AS total_run_off,
-                SUM(COALESCE(t.pelunasan, 0)) AS total_pelunasan,
-                SUM(COALESCE(t.angsuran, 0) - COALESCE(t.pelunasan, 0)) AS angsuran,
-                (SUM(COALESCE(t.realisasi, 0)) - SUM(COALESCE(t.angsuran, 0))) AS growth
-            FROM summary_kredit_harian t
-            LEFT JOIN kode_kantor k ON t.kode_kantor = k.kode_kantor
-            WHERE t.created > :closing_date 
-              AND t.created <= :harian_date
-              $filterClause
-            GROUP BY t.kode_kantor, k.nama_kantor
-            ORDER BY t.kode_kantor ASC
-        ";
+        // 4. Bangun Query Utama Secara Dinamis
+        if ($displayMode === 'BREAKDOWN_KANKAS') {
+            // --- MODE CABANG: Breakdown Data per Kankas ---
+            $sql = "
+                SELECT 
+                    COALESCE(NULLIF(t.kode_group_1, ''), CONCAT(t.kode_kantor, '000')) AS kode_kantor,
+                    COALESCE(k.deskripsi_group1, CONCAT('KAS ', COALESCE(NULLIF(t.kode_group_1, ''), CONCAT(t.kode_kantor, '000')))) AS nama_kantor,
+                    
+                    SUM(COALESCE(t.noa_realisasi, 0)) AS noa_realisasi,
+                    SUM(COALESCE(t.realisasi, 0)) AS total_realisasi,
+                    
+                    SUM(COALESCE(t.noa_restrukturisasi, 0)) AS noa_restruck,
+                    SUM(COALESCE(t.restrukturisasi, 0)) AS total_restruck,
+                    
+                    SUM(COALESCE(t.pelunasan, 0)) AS total_pelunasan,
+                    SUM(COALESCE(t.angsuran, 0) - COALESCE(t.pelunasan, 0)) AS angsuran_murni,
+                    SUM(COALESCE(t.angsuran, 0)) AS total_run_off,
+                    
+                    (SUM(COALESCE(t.realisasi, 0)) + SUM(COALESCE(t.restrukturisasi, 0)) - SUM(COALESCE(t.angsuran, 0))) AS growth
+                FROM summary_kredit_harian_update t
+                LEFT JOIN kankas k ON k.kode_group1 = COALESCE(NULLIF(t.kode_group_1, ''), CONCAT(t.kode_kantor, '000'))
+                WHERE t.created > :closing_date 
+                  AND t.created <= :harian_date
+                  {$filterSql}
+                GROUP BY 1, 2
+                ORDER BY 1 ASC
+            ";
+        } else {
+            // --- MODE KONSOLIDASI: Breakdown Data per Cabang ---
+            $sql = "
+                SELECT 
+                    t.kode_kantor,
+                    COALESCE(k.nama_kantor, CONCAT('CABANG ', t.kode_kantor)) AS nama_kantor,
+                    
+                    SUM(COALESCE(t.noa_realisasi, 0)) AS noa_realisasi,
+                    SUM(COALESCE(t.realisasi, 0)) AS total_realisasi,
+                    
+                    SUM(COALESCE(t.noa_restrukturisasi, 0)) AS noa_restruck,
+                    SUM(COALESCE(t.restrukturisasi, 0)) AS total_restruck,
+                    
+                    SUM(COALESCE(t.pelunasan, 0)) AS total_pelunasan,
+                    SUM(COALESCE(t.angsuran, 0) - COALESCE(t.pelunasan, 0)) AS angsuran_murni,
+                    SUM(COALESCE(t.angsuran, 0)) AS total_run_off,
+                    
+                    (SUM(COALESCE(t.realisasi, 0)) + SUM(COALESCE(t.restrukturisasi, 0)) - SUM(COALESCE(t.angsuran, 0))) AS growth
+                FROM summary_kredit_harian_update t
+                LEFT JOIN kode_kantor k ON t.kode_kantor = k.kode_kantor
+                WHERE t.created > :closing_date 
+                  AND t.created <= :harian_date
+                  {$filterSql}
+                GROUP BY t.kode_kantor, k.nama_kantor
+                ORDER BY t.kode_kantor ASC
+            ";
+        }
 
         try {
             $stmt = $this->pdo->prepare($sql);
             
-            // Eksekusi dengan parameter aman
-            foreach ($params as $key => $val) {
+            // Eksekusi Bind Parameter Dinamis
+            foreach ($paramsBind as $key => $val) {
                 $stmt->bindValue($key, $val);
             }
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Setup Grand Total (Keys disesuaikan dengan Front-End)
+            // 5. Setup & Kalkulasi Grand Total
             $grandTotal = [
                 'kode_kantor'     => '', 
                 'nama_kantor'     => 'TOTAL KONSOLIDASI',
                 'noa_realisasi'   => 0, 
                 'total_realisasi' => 0,
+                'noa_restruck'    => 0,
+                'total_restruck'  => 0,
                 'pelunasan'       => 0,
                 'angsuran_murni'  => 0,
                 'total_run_off'   => 0, 
@@ -222,42 +264,42 @@ class KreditController {
 
             $cleanedRows = [];
 
-            // Looping untuk memastikan tipe data angka dan menghitung Grand Total
             foreach ($rows as $row) {
                 $noa_real       = (int) $row['noa_realisasi'];
                 $tot_real       = (float) $row['total_realisasi'];
-                $tot_run        = (float) $row['total_run_off'];
-                
-                // Mapping penamaan alias query ke penamaan yang diharapkan Front-End
+                $noa_res        = (int) $row['noa_restruck'];
+                $tot_res        = (float) $row['total_restruck'];
                 $pelunasan      = (float) $row['total_pelunasan']; 
-                $angsuran_murni = (float) $row['angsuran']; 
-                
+                $angsuran_murni = (float) $row['angsuran_murni']; 
+                $tot_run        = (float) $row['total_run_off'];
                 $growth         = (float) $row['growth'];
 
                 $cleanedRows[] = [
                     'kode_kantor'     => $row['kode_kantor'],
-                    'nama_kantor'     => $row['nama_kantor'],
+                    'nama_kantor'     => str_replace('Kc. ', '', $row['nama_kantor']),
                     'noa_realisasi'   => $noa_real,
                     'total_realisasi' => $tot_real,
+                    'noa_restruck'    => $noa_res,
+                    'total_restruck'  => $tot_res,
                     'pelunasan'       => $pelunasan,
                     'angsuran_murni'  => $angsuran_murni,
                     'total_run_off'   => $tot_run,
                     'growth'          => $growth
                 ];
 
-                // Tambahkan ke Grand Total
                 $grandTotal['noa_realisasi']   += $noa_real;
                 $grandTotal['total_realisasi'] += $tot_real;
+                $grandTotal['noa_restruck']    += $noa_res;
+                $grandTotal['total_restruck']  += $tot_res;
                 $grandTotal['pelunasan']       += $pelunasan;
                 $grandTotal['angsuran_murni']  += $angsuran_murni;
                 $grandTotal['total_run_off']   += $tot_run;
                 $grandTotal['growth']          += $growth;
             }
 
-            // Kembalikan Response JSON Format Standar
-            sendResponse(200, "Sukses Realisasi & Growth", [
+            sendResponse(200, "Sukses Realisasi & Growth ($displayMode)", [
                 'meta' => [
-                    'mode'    => $kc ? "FILTER CABANG ($kc)" : "KONSOLIDASI CABANG",
+                    'mode'    => $displayMode,
                     'closing' => $closing_date,
                     'harian'  => $harian_date
                 ],
@@ -267,83 +309,103 @@ class KreditController {
 
         } catch (Exception $e) {
             error_log("Error getRealisasiSum: " . $e->getMessage());
-            sendResponse(500, "Error: " . $e->getMessage());
+            sendResponse(500, "Error DB: " . $e->getMessage());
         }
     }
 
+
     public function getDetailRealisasiUpdate($input = []) {
-        // 1. Ambil Parameter Tanggal
-        $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
-        $harian_date  = $input['harian_date']  ?? date('Y-m-d');
+        $b = is_array($input) ? $input : (json_decode(file_get_contents('php://input'), true) ?: []);
+
+        // 1. Ambil Parameter Dasar
+        $closing_date = $b['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
+        $harian_date  = $b['harian_date']  ?? date('Y-m-d');
+        $kode_trans   = $b['kode_trans']   ?? null; // 110 = Baru, 109 = Restruck
+
+        $page   = isset($b['page']) ? (int)$b['page'] : 1;
+        $limit  = isset($b['limit']) ? (int)$b['limit'] : 20; 
+        $offset = ($page - 1) * $limit;
+
+        // 2. Panggil Helper Filter (Prefix 't1')
+        $filterData = buildBankFilters($b, 't1');
+        $filterSql  = $filterData['sql'];
         
-        $kc           = $input['kode_kantor'] ?? null;
-        $kankas       = $input['kode_kankas'] ?? null; 
-        // 🔥 FIX: Tangkap parameter kode_ao dari Frontend 🔥
-        $kode_ao      = $input['kode_ao'] ?? null; 
+        // Penyesuaian nama kolom khusus tabel update_realisasi_kredit
+        $filterSql  = str_replace('t1.kode_cabang', 't1.kode_kantor', $filterSql);
+        $paramsBind = $filterData['params'];
 
-        if ($kc === '000' || $kc === '') $kc = null;
-
-        // =======================================================
-        // 🔥 FIX: Ganti t1.created menjadi t1.tanggal_realisasi
-        // =======================================================
+        // 3. Base Where Clause untuk range tanggal
         $where = "WHERE t1.tanggal_realisasi > :closing AND t1.tanggal_realisasi <= :harian";
-        
-        $params = [
-            ':closing' => $closing_date,
-            ':harian'  => $harian_date
-        ];
+        $paramsBind[':closing'] = $closing_date;
+        $paramsBind[':harian']  = $harian_date;
 
-        // 3. Filter Cabang 
-        if ($kc) {
-            $where .= " AND t1.kode_kantor = :kc";
-            $params[':kc'] = str_pad((string)$kc, 3, '0', STR_PAD_LEFT);
+        // Filter Transaksi (Baru / Restruck)
+        if ($kode_trans) {
+            $where .= " AND t1.kode_trans = :kode_trans";
+            $paramsBind[':kode_trans'] = $kode_trans;
         }
 
-        // 4. Filter Kankas
-        if ($kankas) {
-            $where .= " AND t1.kode_group1 = :kankas";
-            $params[':kankas'] = $kankas;
-        }
+        try {
+            // 4. Hitung Total Records untuk Pagination
+            $sqlCount = "SELECT COUNT(*) FROM update_realisasi_kredit t1 $where {$filterSql}";
+            $stmtCount = $this->pdo->prepare($sqlCount);
+            foreach ($paramsBind as $k => $v) { $stmtCount->bindValue($k, $v); }
+            $stmtCount->execute();
+            $total_records = $stmtCount->fetchColumn();
 
-        // 🔥 4.5. Filter AO (Biar dropdown AO di modal fungsi) 🔥
-        if ($kode_ao) {
-            $where .= " AND t1.kode_group2 = :kode_ao";
-            $params[':kode_ao'] = $kode_ao;
-        }
-
-        // 5. Query Builder (Alias Kolom agar FE tidak Error)
-        $sql = "SELECT 
+            // 5. Query Utama Detail (Dengan handling Kankas Kosong)
+            $sql = "
+                SELECT 
                     t1.no_rekening,
                     t1.nama_nasabah,
                     t1.realisasi_pokok AS plafond,
                     t1.realisasi_pokok AS baki_debet,
                     t1.tanggal_realisasi AS tgl_realisasi,
-                    NULL AS tgl_jatuh_tempo, -- Dikosongkan karena tidak ada di tabel ini
+                    NULL AS tgl_jatuh_tempo, 
                     t1.kode_kantor AS kode_cabang,
-                    COALESCE(k.deskripsi_group1, t1.kode_group1) AS nama_kankas,
+                    t1.kode_trans,
+                    
+                    COALESCE(k.deskripsi_group1, COALESCE(NULLIF(t1.kode_group1, ''), CONCAT(t1.kode_kantor, '000'))) AS nama_kankas,
                     COALESCE(ao.nama_ao, t1.kode_group2) AS nama_ao,
                     t1.alamat
                 FROM update_realisasi_kredit t1
-                LEFT JOIN kankas k ON t1.kode_group1 = k.kode_group1
-                LEFT JOIN ao_kredit ao ON t1.kode_group2 = ao.kode_group2
+                LEFT JOIN kankas k ON k.kode_group1 = COALESCE(NULLIF(t1.kode_group1, ''), CONCAT(t1.kode_kantor, '000'))
+                LEFT JOIN ao_kredit ao ON t1.kode_group2 = ao.kode_group2 AND t1.kode_kantor = ao.kode_kantor
                 $where
-                ORDER BY t1.tanggal_realisasi DESC, t1.no_rekening ASC";
+                {$filterSql}
+                ORDER BY t1.tanggal_realisasi DESC, t1.no_rekening ASC
+                LIMIT :limit OFFSET :offset
+            ";
 
-        try {
             $stmt = $this->pdo->prepare($sql);
             
-            // Eksekusi Parameter
-            foreach ($params as $k => $v) {
+            // Bind Semua Parameter
+            foreach ($paramsBind as $k => $v) {
                 $stmt->bindValue($k, $v);
             }
+            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
             
             $stmt->execute();
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            sendResponse(200, "Detail Realisasi Update Sukses", $data);
+            // Tipe data casting nominal
+            foreach ($data as &$row) {
+                $row['plafond']    = (float) $row['plafond'];
+                $row['baki_debet'] = (float) $row['baki_debet'];
+            }
+            unset($row);
+
+            sendResponse(200, "Detail Realisasi Update Sukses", [
+                'total_records' => $total_records,
+                'total_pages'   => ceil($total_records / $limit),
+                'current_page'  => $page,
+                'data'          => $data
+            ]);
+
         } catch (Exception $e) {
             error_log("Error getDetailRealisasiUpdate: " . $e->getMessage());
-            sendResponse(500, "Error: " . $e->getMessage());
+            sendResponse(500, "Error DB: " . $e->getMessage());
         }
     }
 
@@ -533,46 +595,6 @@ class KreditController {
         }
     }
 
-    // /**
-    //  * =================================================================
-    //  * HELPER FILTER KORWIL & CABANG
-    //  * =================================================================
-    //  * Biar tidak perlu nulis if-else korwil & cabang berulang-ulang
-    //  */
-    // private function buildFilterQuery($input, $alias = 't', $kolom = 'kode_kantor') {
-    //     $kode_kantor  = !empty($input['kode_kantor']) ? str_pad($input['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
-    //     $korwil_input = !empty($input['korwil']) ? strtoupper($input['korwil']) : null;
-        
-    //     $sqlFilter = "";
-    //     $params = [];
-    //     $prefix = $alias ? "{$alias}." : "";
-
-    //     if ($kode_kantor && $kode_kantor !== '000') {
-    //         // 🔥 FIX: Menggunakan variabel $kolom dinamis (default: kode_kantor)
-    //         $sqlFilter = " AND {$prefix}{$kolom} = :kode_kantor ";
-    //         $params[':kode_kantor'] = $kode_kantor;
-    //     } elseif ($korwil_input) {
-    //         $kw_start = null; $kw_end = null;
-    //         switch ($korwil_input) {
-    //             case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
-    //             case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
-    //             case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
-    //             case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
-    //         }
-    //         if ($kw_start && $kw_end) {
-    //             // 🔥 FIX: Menggunakan variabel $kolom dinamis
-    //             $sqlFilter = " AND {$prefix}{$kolom} BETWEEN :kw_start AND :kw_end ";
-    //             $params[':kw_start'] = $kw_start;
-    //             $params[':kw_end'] = $kw_end;
-    //         }
-    //     }
-
-    //     return ['sql' => $sqlFilter, 'params' => $params];
-    // }
-
-    // ===================================================================
-    // FUNGSI CHART PROMO VS NON-PROMO (Dikelompokkan per Hari)
-    // ===================================================================
 
     public function getChartPromo($input = []) {
         // 🔥 FIX 1: Closing Date BEBAS diubah, tapi default-nya 2026-02-23
