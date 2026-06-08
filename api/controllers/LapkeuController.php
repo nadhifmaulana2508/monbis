@@ -717,11 +717,11 @@ class LaporanKeuanganController
         }
     }
 
-            /**
+    /**
      * =================================================================
      * 1. KAMUS COA (Breakdown Nama Perkiraan)
      * =================================================================
-     */
+    */
     private function getCoaDictionary(): array 
     {
         return [

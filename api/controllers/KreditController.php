@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../helpers/MobHelper.php';
+require_once __DIR__ . '/../helpers/filterHelpers.php';
 
 class KreditController {
     private $pdo;
@@ -10,92 +11,92 @@ class KreditController {
         $this->pdo = $pdo;
     }
 
-public function getRealisasiKredit($input = []) {
-    $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
-    $harian_date  = $input['harian_date']  ?? date('Y-m-d');
-    $kc           = $input['kode_kantor']  ?? null;
-    
-    if ($kc === '000' || empty($kc)) $kc = null;
+    public function getRealisasiKredit($input = []) {
+        $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
+        $harian_date  = $input['harian_date']  ?? date('Y-m-d');
+        $kc           = $input['kode_kantor']  ?? null;
+        
+        if ($kc === '000' || empty($kc)) $kc = null;
 
-    // 1. Setup Grouping & Join Table
-    if ($kc) {
-        $colKey     = "kode_group1"; 
-        $selectName = "COALESCE(k.deskripsi_group1, CONCAT('KAS ', base.unit_key)) as nama_unit";
-        $joinTable  = "LEFT JOIN kankas k ON base.unit_key = k.kode_group1";
-        $filter     = "AND t.kode_cabang = '" . str_pad((string)$kc, 3, '0', STR_PAD_LEFT) . "'";
-    } else {
-        $colKey     = "kode_cabang";
-        $selectName = "COALESCE(k.nama_kantor, CONCAT('CABANG ', base.unit_key)) as nama_unit";
-        $joinTable  = "LEFT JOIN kode_kantor k ON base.unit_key = k.kode_kantor";
-        $filter     = "";
-    }
-
-    // 2. Query Utama dengan Logic Simpel
-    $sql = "
-        SELECT 
-            base.unit_key as kode_unit,
-            $selectName,
-            COALESCE(realiz.noa, 0) as noa_realisasi,
-            COALESCE(realiz.total_plafond, 0) as total_realisasi,
-            -- Formula: Run Off = Realisasi - (Saldo Akhir - Saldo Awal)
-            (COALESCE(realiz.total_plafond, 0) - (COALESCE(base.akhir, 0) - COALESCE(base.awal, 0))) as total_run_off,
-            (COALESCE(base.akhir, 0) - COALESCE(base.awal, 0)) as growth
-        FROM (
-            SELECT 
-                unit_key,
-                SUM(awal) as awal,
-                SUM(akhir) as akhir
-            FROM (
-                -- Ambil Saldo Awal (Closing)
-                SELECT $colKey as unit_key, SUM(baki_debet) as awal, 0 as akhir 
-                FROM nominatif t WHERE created = :closing $filter GROUP BY 1
-                UNION ALL
-                -- Ambil Saldo Akhir (Harian)
-                SELECT $colKey as unit_key, 0 as awal, SUM(baki_debet) as akhir 
-                FROM nominatif t WHERE created = :harian $filter GROUP BY 1
-            ) as tmp
-            GROUP BY unit_key
-        ) as base
-        -- Join Data Realisasi Baru
-        LEFT JOIN (
-            SELECT $colKey as unit_key, COUNT(no_rekening) as noa, SUM(plafond) as total_plafond
-            FROM nominatif t
-            WHERE created = :harian_ref 
-              AND tgl_realisasi > :closing_ref 
-              AND tgl_realisasi <= :harian_ref2
-              $filter
-            GROUP BY 1
-        ) as realiz ON base.unit_key = realiz.unit_key
-        $joinTable
-        ORDER BY base.unit_key ASC
-    ";
-
-    try {
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':closing', $closing_date);
-        $stmt->bindValue(':harian', $harian_date);
-        $stmt->bindValue(':harian_ref', $harian_date);
-        $stmt->bindValue(':closing_ref', $closing_date);
-        $stmt->bindValue(':harian_ref2', $harian_date);
-
-        $stmt->execute();
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        // 3. Hitung Grand Total
-        $gt = ['noa_realisasi' => 0, 'total_realisasi' => 0, 'total_run_off' => 0, 'growth' => 0];
-        foreach ($rows as $row) {
-            $gt['noa_realisasi']   += (int)$row['noa_realisasi'];
-            $gt['total_realisasi'] += (float)$row['total_realisasi'];
-            $gt['total_run_off']   += (float)$row['total_run_off'];
-            $gt['growth']          += (float)$row['growth'];
+        // 1. Setup Grouping & Join Table
+        if ($kc) {
+            $colKey     = "kode_group1"; 
+            $selectName = "COALESCE(k.deskripsi_group1, CONCAT('KAS ', base.unit_key)) as nama_unit";
+            $joinTable  = "LEFT JOIN kankas k ON base.unit_key = k.kode_group1";
+            $filter     = "AND t.kode_cabang = '" . str_pad((string)$kc, 3, '0', STR_PAD_LEFT) . "'";
+        } else {
+            $colKey     = "kode_cabang";
+            $selectName = "COALESCE(k.nama_kantor, CONCAT('CABANG ', base.unit_key)) as nama_unit";
+            $joinTable  = "LEFT JOIN kode_kantor k ON base.unit_key = k.kode_kantor";
+            $filter     = "";
         }
 
-        sendResponse(200, "Sukses", ['data' => $rows, 'grand_total' => $gt]);
+        // 2. Query Utama dengan Logic Simpel
+        $sql = "
+            SELECT 
+                base.unit_key as kode_unit,
+                $selectName,
+                COALESCE(realiz.noa, 0) as noa_realisasi,
+                COALESCE(realiz.total_plafond, 0) as total_realisasi,
+                -- Formula: Run Off = Realisasi - (Saldo Akhir - Saldo Awal)
+                (COALESCE(realiz.total_plafond, 0) - (COALESCE(base.akhir, 0) - COALESCE(base.awal, 0))) as total_run_off,
+                (COALESCE(base.akhir, 0) - COALESCE(base.awal, 0)) as growth
+            FROM (
+                SELECT 
+                    unit_key,
+                    SUM(awal) as awal,
+                    SUM(akhir) as akhir
+                FROM (
+                    -- Ambil Saldo Awal (Closing)
+                    SELECT $colKey as unit_key, SUM(baki_debet) as awal, 0 as akhir 
+                    FROM nominatif t WHERE created = :closing $filter GROUP BY 1
+                    UNION ALL
+                    -- Ambil Saldo Akhir (Harian)
+                    SELECT $colKey as unit_key, 0 as awal, SUM(baki_debet) as akhir 
+                    FROM nominatif t WHERE created = :harian $filter GROUP BY 1
+                ) as tmp
+                GROUP BY unit_key
+            ) as base
+            -- Join Data Realisasi Baru
+            LEFT JOIN (
+                SELECT $colKey as unit_key, COUNT(no_rekening) as noa, SUM(plafond) as total_plafond
+                FROM nominatif t
+                WHERE created = :harian_ref 
+                AND tgl_realisasi > :closing_ref 
+                AND tgl_realisasi <= :harian_ref2
+                $filter
+                GROUP BY 1
+            ) as realiz ON base.unit_key = realiz.unit_key
+            $joinTable
+            ORDER BY base.unit_key ASC
+        ";
 
-    } catch (Exception $e) {
-        sendResponse(500, "Error Database: " . $e->getMessage());
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':closing', $closing_date);
+            $stmt->bindValue(':harian', $harian_date);
+            $stmt->bindValue(':harian_ref', $harian_date);
+            $stmt->bindValue(':closing_ref', $closing_date);
+            $stmt->bindValue(':harian_ref2', $harian_date);
+
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // 3. Hitung Grand Total
+            $gt = ['noa_realisasi' => 0, 'total_realisasi' => 0, 'total_run_off' => 0, 'growth' => 0];
+            foreach ($rows as $row) {
+                $gt['noa_realisasi']   += (int)$row['noa_realisasi'];
+                $gt['total_realisasi'] += (float)$row['total_realisasi'];
+                $gt['total_run_off']   += (float)$row['total_run_off'];
+                $gt['growth']          += (float)$row['growth'];
+            }
+
+            sendResponse(200, "Sukses", ['data' => $rows, 'grand_total' => $gt]);
+
+        } catch (Exception $e) {
+            sendResponse(500, "Error Database: " . $e->getMessage());
+        }
     }
-}
 
     /**
      * DETAIL REALISASI
@@ -531,49 +532,48 @@ public function getRealisasiKredit($input = []) {
             sendResponse(500, "Error: " . $e->getMessage());
         }
     }
-/**
-     * =================================================================
-     * HELPER FILTER KORWIL & CABANG
-     * =================================================================
-     * Biar tidak perlu nulis if-else korwil & cabang berulang-ulang
-     */
-    private function buildFilterQuery($input, $alias = 't', $kolom = 'kode_kantor') {
-        $kode_kantor  = !empty($input['kode_kantor']) ? str_pad($input['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
-        $korwil_input = !empty($input['korwil']) ? strtoupper($input['korwil']) : null;
+
+    // /**
+    //  * =================================================================
+    //  * HELPER FILTER KORWIL & CABANG
+    //  * =================================================================
+    //  * Biar tidak perlu nulis if-else korwil & cabang berulang-ulang
+    //  */
+    // private function buildFilterQuery($input, $alias = 't', $kolom = 'kode_kantor') {
+    //     $kode_kantor  = !empty($input['kode_kantor']) ? str_pad($input['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+    //     $korwil_input = !empty($input['korwil']) ? strtoupper($input['korwil']) : null;
         
-        $sqlFilter = "";
-        $params = [];
-        $prefix = $alias ? "{$alias}." : "";
+    //     $sqlFilter = "";
+    //     $params = [];
+    //     $prefix = $alias ? "{$alias}." : "";
 
-        if ($kode_kantor && $kode_kantor !== '000') {
-            // 🔥 FIX: Menggunakan variabel $kolom dinamis (default: kode_kantor)
-            $sqlFilter = " AND {$prefix}{$kolom} = :kode_kantor ";
-            $params[':kode_kantor'] = $kode_kantor;
-        } elseif ($korwil_input) {
-            $kw_start = null; $kw_end = null;
-            switch ($korwil_input) {
-                case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
-                case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
-                case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
-                case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
-            }
-            if ($kw_start && $kw_end) {
-                // 🔥 FIX: Menggunakan variabel $kolom dinamis
-                $sqlFilter = " AND {$prefix}{$kolom} BETWEEN :kw_start AND :kw_end ";
-                $params[':kw_start'] = $kw_start;
-                $params[':kw_end'] = $kw_end;
-            }
-        }
+    //     if ($kode_kantor && $kode_kantor !== '000') {
+    //         // 🔥 FIX: Menggunakan variabel $kolom dinamis (default: kode_kantor)
+    //         $sqlFilter = " AND {$prefix}{$kolom} = :kode_kantor ";
+    //         $params[':kode_kantor'] = $kode_kantor;
+    //     } elseif ($korwil_input) {
+    //         $kw_start = null; $kw_end = null;
+    //         switch ($korwil_input) {
+    //             case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
+    //             case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
+    //             case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
+    //             case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
+    //         }
+    //         if ($kw_start && $kw_end) {
+    //             // 🔥 FIX: Menggunakan variabel $kolom dinamis
+    //             $sqlFilter = " AND {$prefix}{$kolom} BETWEEN :kw_start AND :kw_end ";
+    //             $params[':kw_start'] = $kw_start;
+    //             $params[':kw_end'] = $kw_end;
+    //         }
+    //     }
 
-        return ['sql' => $sqlFilter, 'params' => $params];
-    }
+    //     return ['sql' => $sqlFilter, 'params' => $params];
+    // }
 
     // ===================================================================
     // FUNGSI CHART PROMO VS NON-PROMO (Dikelompokkan per Hari)
     // ===================================================================
-    // ===================================================================
-    // FUNGSI CHART PROMO VS NON-PROMO (Dikelompokkan PER MINGGU / PERIODE)
-    // ===================================================================
+
     public function getChartPromo($input = []) {
         // 🔥 FIX 1: Closing Date BEBAS diubah, tapi default-nya 2026-02-23
         $closing_date = $input['closing_date'] ?? '2026-02-23'; 
@@ -676,9 +676,6 @@ public function getRealisasiKredit($input = []) {
             sendResponse(500, "Error: " . $e->getMessage());
         }
     }
-
-
-
     
     public function getMigrasiKolek($input) {
         $closing_date = !empty($input['closing_date']) ? $input['closing_date'] : date('Y-m-d', strtotime('last day of previous month'));
@@ -953,9 +950,7 @@ public function getRealisasiKredit($input = []) {
         }
     }
 
-
-
-public function getKolek($input) {
+    public function getKolek($input) {
         // 1. Ambil Parameter
         $harian_date = isset($input['harian_date']) ? $input['harian_date'] : date('Y-m-d');
         $kc          = isset($input['kode_kantor']) ? $input['kode_kantor'] : null;
@@ -1103,226 +1098,242 @@ public function getKolek($input) {
         }
     }
 
-public function getTopRealisasi($input = []) {
-    $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
-    $harian_date  = $input['harian_date']  ?? date('Y-m-d');
-    $kc           = $input['kode_kantor'] ?? null;
-    
-    $page         = isset($input['page']) ? (int)$input['page'] : 1;
-    $limit        = isset($input['limit']) ? (int)$input['limit'] : 10;
-    $offset       = ($page - 1) * $limit;
+    public function getTopRealisasi($input = []) {
+        $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
+        $harian_date  = $input['harian_date']  ?? date('Y-m-d');
+        $kc           = $input['kode_kantor'] ?? null;
+        
+        $page         = isset($input['page']) ? (int)$input['page'] : 1;
+        $limit        = isset($input['limit']) ? (int)$input['limit'] : 10;
+        $offset       = ($page - 1) * $limit;
 
-    $is_konsolidasi = empty($kc) || $kc === '000' || $kc === 'konsolidasi';
+        $is_konsolidasi = empty($kc) || $kc === '000' || $kc === 'konsolidasi';
 
-    try {
-        // --- 1. FILTER CABANG (Gunakan filter pada tabel AO) ---
-        $branchFilter = "";
-        if (!$is_konsolidasi) {
-            // Kita filter berdasarkan kode kantor AO-nya
-            $branchFilter = " WHERE LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = :kc ";
-        }
+        try {
+            // --- 1. FILTER CABANG (Gunakan filter pada tabel AO) ---
+            $branchFilter = "";
+            if (!$is_konsolidasi) {
+                // Kita filter berdasarkan kode kantor AO-nya
+                $branchFilter = " WHERE LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = :kc ";
+            }
 
-        // --- 2. COUNT TOTAL AO ---
-        $sqlCount = "SELECT COUNT(*) as total FROM ao_kredit ao $branchFilter";
-        $stmtCount = $this->pdo->prepare($sqlCount);
-        if (!$is_konsolidasi) $stmtCount->bindValue(':kc', str_pad((string)$kc, 3, '0', STR_PAD_LEFT));
-        $stmtCount->execute();
-        $totalData = $stmtCount->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+            // --- 2. COUNT TOTAL AO ---
+            $sqlCount = "SELECT COUNT(*) as total FROM ao_kredit ao $branchFilter";
+            $stmtCount = $this->pdo->prepare($sqlCount);
+            if (!$is_konsolidasi) $stmtCount->bindValue(':kc', str_pad((string)$kc, 3, '0', STR_PAD_LEFT));
+            $stmtCount->execute();
+            $totalData = $stmtCount->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
 
-        // --- 3. QUERY UTAMA: BASE NYA ADALAH TABEL AO ---
-        $sql = "
-            SELECT 
-                LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') AS kode_cabang,
-                kk.nama_kantor,
-                ao.kode_group2 AS kode_ao,
-                ao.nama_ao,
-                COUNT(t1.no_rekening) AS total_noa,
-                COALESCE(SUM(t1.realisasi_pokok), 0) AS total_realisasi
-            FROM ao_kredit ao
-            -- LEFT JOIN ke transaksi: AO tetap muncul biarpun transaksi NULL
-            LEFT JOIN update_realisasi_kredit t1 ON ao.kode_group2 = t1.kode_group2 
-                AND t1.tanggal_realisasi >= :closing_date 
-                AND t1.tanggal_realisasi <= :harian_date
-            LEFT JOIN kode_kantor kk ON LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = kk.kode_kantor
-            $branchFilter
-            GROUP BY ao.kode_kantor, ao.kode_group2, ao.nama_ao, kk.nama_kantor
-            ORDER BY total_realisasi DESC, ao.nama_ao ASC
-        ";
+            // --- 3. QUERY UTAMA: BASE NYA ADALAH TABEL AO ---
+            $sql = "
+                SELECT 
+                    LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') AS kode_cabang,
+                    kk.nama_kantor,
+                    ao.kode_group2 AS kode_ao,
+                    ao.nama_ao,
+                    COUNT(t1.no_rekening) AS total_noa,
+                    COALESCE(SUM(t1.realisasi_pokok), 0) AS total_realisasi
+                FROM ao_kredit ao
+                -- LEFT JOIN ke transaksi: AO tetap muncul biarpun transaksi NULL
+                LEFT JOIN update_realisasi_kredit t1 ON ao.kode_group2 = t1.kode_group2 
+                    AND t1.tanggal_realisasi >= :closing_date 
+                    AND t1.tanggal_realisasi <= :harian_date
+                LEFT JOIN kode_kantor kk ON LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = kk.kode_kantor
+                $branchFilter
+                GROUP BY ao.kode_kantor, ao.kode_group2, ao.nama_ao, kk.nama_kantor
+                ORDER BY total_realisasi DESC, ao.nama_ao ASC
+            ";
 
-        if ($is_konsolidasi) {
-            $sql .= " LIMIT :limit OFFSET :offset ";
-        }
+            if ($is_konsolidasi) {
+                $sql .= " LIMIT :limit OFFSET :offset ";
+            }
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':closing_date', $closing_date);
-        $stmt->bindValue(':harian_date', $harian_date);
-        if (!$is_konsolidasi) {
-            $stmt->bindValue(':kc', str_pad((string)$kc, 3, '0', STR_PAD_LEFT));
-        } else {
-            $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-            $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
-        }
-        $stmt->execute();
-        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':closing_date', $closing_date);
+            $stmt->bindValue(':harian_date', $harian_date);
+            if (!$is_konsolidasi) {
+                $stmt->bindValue(':kc', str_pad((string)$kc, 3, '0', STR_PAD_LEFT));
+            } else {
+                $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+                $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+            }
+            $stmt->execute();
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        sendResponse(200, "Sukses", [
-            'data' => $data,
-            'pagination' => [
-                'total_data'   => (int)$totalData,
-                'total_page'   => ceil($totalData / $limit),
-                'current_page' => $page,
-                'limit'        => $limit,
-                'is_konsolidasi' => $is_konsolidasi
-            ]
-        ]);
-    } catch (Exception $e) { sendResponse(500, $e->getMessage()); }
-}
+            sendResponse(200, "Sukses", [
+                'data' => $data,
+                'pagination' => [
+                    'total_data'   => (int)$totalData,
+                    'total_page'   => ceil($totalData / $limit),
+                    'current_page' => $page,
+                    'limit'        => $limit,
+                    'is_konsolidasi' => $is_konsolidasi
+                ]
+            ]);
+        } catch (Exception $e) { sendResponse(500, $e->getMessage()); }
+    }
 
     public function getDetailRealisasiAO($input = []) {
-    $tgl_awal  = $input['closing_date'] ?? null;
-    $tgl_akhir = $input['harian_date']  ?? null;
-    $kode_ao   = $input['kode_ao']      ?? null;
-    $kode_kc   = $input['kode_kantor']  ?? null;
+        $tgl_awal  = $input['closing_date'] ?? null;
+        $tgl_akhir = $input['harian_date']  ?? null;
+        $kode_ao   = $input['kode_ao']      ?? null;
+        $kode_kc   = $input['kode_kantor']  ?? null;
 
-    if (!$tgl_awal || !$tgl_akhir || !$kode_ao) {
-        sendResponse(400, "Parameter tidak lengkap");
-        return;
-    }
-
-    try {
-        $sql = "
-            SELECT 
-                t1.no_rekening,
-                t1.nama_nasabah,
-                t1.realisasi_pokok as plafond,
-                t1.tanggal_realisasi,
-                t1.kode_kantor,
-                COALESCE(k.nama_kantor, t1.kode_kantor) as nama_cabang,
-                t1.kode_group2 as kode_ao,
-                COALESCE(ao.nama_ao, t1.kode_group2) as nama_ao
-            FROM update_realisasi_kredit t1
-            LEFT JOIN kode_kantor k ON LPAD(CAST(t1.kode_kantor AS CHAR), 3, '0') = k.kode_kantor
-            LEFT JOIN ao_kredit ao ON t1.kode_group2 = ao.kode_group2
-            WHERE t1.tanggal_realisasi >= :tgl_awal 
-              AND t1.tanggal_realisasi <= :tgl_akhir
-              AND t1.kode_group2 = :kode_ao
-        ";
-
-        // Filter kantor jika user bukan pusat
-        if ($kode_kc && $kode_kc !== '000' && $kode_kc !== 'konsolidasi') {
-            $sql .= " AND LPAD(CAST(t1.kode_kantor AS CHAR), 3, '0') = :kc ";
+        if (!$tgl_awal || !$tgl_akhir || !$kode_ao) {
+            sendResponse(400, "Parameter tidak lengkap");
+            return;
         }
 
-        $sql .= " ORDER BY t1.tanggal_realisasi DESC, t1.realisasi_pokok DESC";
+        try {
+            $sql = "
+                SELECT 
+                    t1.no_rekening,
+                    t1.nama_nasabah,
+                    t1.realisasi_pokok as plafond,
+                    t1.tanggal_realisasi,
+                    t1.kode_kantor,
+                    COALESCE(k.nama_kantor, t1.kode_kantor) as nama_cabang,
+                    t1.kode_group2 as kode_ao,
+                    COALESCE(ao.nama_ao, t1.kode_group2) as nama_ao
+                FROM update_realisasi_kredit t1
+                LEFT JOIN kode_kantor k ON LPAD(CAST(t1.kode_kantor AS CHAR), 3, '0') = k.kode_kantor
+                LEFT JOIN ao_kredit ao ON t1.kode_group2 = ao.kode_group2
+                WHERE t1.tanggal_realisasi >= :tgl_awal 
+                AND t1.tanggal_realisasi <= :tgl_akhir
+                AND t1.kode_group2 = :kode_ao
+            ";
 
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':tgl_awal', $tgl_awal);
-        $stmt->bindValue(':tgl_akhir', $tgl_akhir);
-        $stmt->bindValue(':kode_ao', $kode_ao);
-        
-        if ($kode_kc && $kode_kc !== '000' && $kode_kc !== 'konsolidasi') {
-            $stmt->bindValue(':kc', str_pad($kode_kc, 3, '0', STR_PAD_LEFT));
+            // Filter kantor jika user bukan pusat
+            if ($kode_kc && $kode_kc !== '000' && $kode_kc !== 'konsolidasi') {
+                $sql .= " AND LPAD(CAST(t1.kode_kantor AS CHAR), 3, '0') = :kc ";
+            }
+
+            $sql .= " ORDER BY t1.tanggal_realisasi DESC, t1.realisasi_pokok DESC";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':tgl_awal', $tgl_awal);
+            $stmt->bindValue(':tgl_akhir', $tgl_akhir);
+            $stmt->bindValue(':kode_ao', $kode_ao);
+            
+            if ($kode_kc && $kode_kc !== '000' && $kode_kc !== 'konsolidasi') {
+                $stmt->bindValue(':kc', str_pad($kode_kc, 3, '0', STR_PAD_LEFT));
+            }
+
+            $stmt->execute();
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            sendResponse(200, "Sukses load detail realisasi AO", $data);
+        } catch (Exception $e) {
+            sendResponse(500, "Error: " . $e->getMessage());
         }
-
-        $stmt->execute();
-        $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        sendResponse(200, "Sukses load detail realisasi AO", $data);
-    } catch (Exception $e) {
-        sendResponse(500, "Error: " . $e->getMessage());
     }
-}
-
 
     public function getRekapMob6Bulan($input = null) {
-        // 1. Setup Input & Memory
         set_time_limit(300); 
         ini_set('memory_limit', '512M');
         
+        // --- 1. SETUP & REQUEST BODY ---
         $b = is_array($input) ? $input : (json_decode(file_get_contents('php://input'), true) ?: []);
-        
         $harian_date = $b['harian_date'] ?? date('Y-m-d'); 
         
-        // Input 'kode_kantor' -> Filter 'kode_cabang'
-        $kc_raw = $b['kode_kantor'] ?? null;
-        $kc     = ($kc_raw === null || $kc_raw === '') ? null : str_pad((string)$kc_raw, 3, '0', STR_PAD_LEFT);
+        // Fitur dinamis grouping: 'bulan', 'ao', atau 'kankas'
+        $rekap_by = $b['rekap_by'] ?? 'bulan'; 
+        
+        // Panggil Helper Filter (PENTING: pakai prefix 'n' karena kita mau JOIN)
+        $filterData = buildBankFilters($b, 'n');
+        $filterSql  = $filterData['sql'];
+        $paramsBind = $filterData['params'];
 
-        // 2. Tentukan Range Realisasi (Mundur 6 bulan Full dari bulan data)
-        // Contoh: Data Februari -> Ambil Realisasi Agustus s/d Januari
+        // --- 2. TENTUKAN RANGE REALISASI ---
         $tgl_data_obj = new DateTime($harian_date);
         
-        // End Date = Akhir bulan lalu (M-1)
         $end_obj = clone $tgl_data_obj;
         $end_obj->modify('last day of previous month');
         $end_date_realisasi = $end_obj->format('Y-m-d');
 
-        // Start Date = Awal bulan dari 5 bulan sebelum End Date (Total 6 bulan)
         $start_obj = clone $end_obj;
         $start_obj->modify('-5 months'); 
         $start_obj->modify('first day of this month');
         $start_date_realisasi = $start_obj->format('Y-m-d');
 
-        // 3. Query Utama
+        // --- 3. QUERY UTAMA NOMINATIF (Dengan JOIN) ---
         $sql = "SELECT 
-                    kode_cabang, 
-                    tgl_realisasi,
-                    jml_pinjaman as plafond, 
-                    baki_debet as os,            
-                    hari_menunggak
-                FROM nominatif
-                WHERE created = :harian_date
-                AND tgl_realisasi BETWEEN :start_date AND :end_date";
-
-        if ($kc) {
-            $sql .= " AND kode_cabang = :kc"; 
-        }
+                    n.kode_cabang, 
+                    n.kode_group1,
+                    n.kode_group2,
+                    ak.nama_ao,
+                    kk.deskripsi_group1 as nama_kankas,
+                    n.tgl_realisasi,
+                    n.jml_pinjaman as plafond, 
+                    n.baki_debet as os,            
+                    n.hari_menunggak
+                FROM nominatif n
+                LEFT JOIN ao_kredit ak ON n.kode_group2 = ak.kode_group2 AND n.kode_cabang = ak.kode_kantor
+                LEFT JOIN kankas kk ON n.kode_group1 = kk.kode_group1 AND n.kode_cabang = kk.kode_kantor
+                WHERE DATE(n.created) = :harian_date
+                AND n.tgl_realisasi BETWEEN :start_date AND :end_date
+                {$filterSql}"; 
 
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':harian_date', $harian_date);
             $stmt->bindValue(':start_date', $start_date_realisasi);
             $stmt->bindValue(':end_date', $end_date_realisasi);
-            if ($kc) $stmt->bindValue(':kc', $kc);
+            
+            // Eksekusi Parameter Dinamis
+            foreach ($paramsBind as $key => $val) {
+                $stmt->bindValue($key, $val);
+            }
 
             $stmt->execute();
             
-            // 4. Processing Data (Manual Grouping agar MOB Pasti 1-6)
+            // --- 4. DATA PROCESSING (Grouping Dinamis) ---
             $grouped = [];
             $report_year  = (int)$tgl_data_obj->format('Y');
             $report_month = (int)$tgl_data_obj->format('n');
 
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $real_time  = strtotime($row['tgl_realisasi']);
-                $real_month = (int)date('n', $real_time);
-                $real_year  = (int)date('Y', $real_time);
+                $real_time   = strtotime($row['tgl_realisasi']);
+                $real_month  = (int)date('n', $real_time);
+                $real_year   = (int)date('Y', $real_time);
                 $label_bulan = date('Y-m', $real_time);
 
-                // Hitung MOB (Selisih Bulan)
-                // Rumus: ((TahunData - TahunReal) * 12) + (BulanData - BulanReal)
-                // Contoh: Data Feb (2), Real Jan (1) -> (0*12) + (2-1) = 1 (MOB 1)
+                // Tetap pastikan hanya data MOB 1-6 yang diambil
                 $mob = (($report_year - $real_year) * 12) + ($report_month - $real_month);
-
-                // Pastikan hanya ambil MOB 1 s/d 6 (Safety Filter)
                 if ($mob < 1 || $mob > 6) continue; 
 
-                // Init Array Grouping
-                if (!isset($grouped[$label_bulan])) {
-                    $grouped[$label_bulan] = [
-                        'kode_cabang'     => $kc ?? 'ALL',
-                        'bulan_realisasi' => $label_bulan,
-                        'mob'             => $mob,
+                // --- TENTUKAN KEY GROUPING ---
+                if ($rekap_by === 'ao') {
+                    $group_key  = $row['kode_group2'] ?: 'UNKNOWN_AO';
+                    $group_name = $row['nama_ao'] ? $row['nama_ao'] : ($row['kode_group2'] ?: 'TANPA AO');
+                } elseif ($rekap_by === 'kankas') {
+                    $group_key  = $row['kode_group1'] ?: 'UNKNOWN_KANKAS';
+                    $group_name = $row['nama_kankas'] ? $row['nama_kankas'] : ($row['kode_group1'] ?: 'TANPA KANKAS');
+                } else {
+                    // Default Rekap By Bulan Realisasi
+                    $group_key  = $label_bulan; 
+                    $group_name = $label_bulan;
+                }
+
+                if (!isset($grouped[$group_key])) {
+                    $grouped[$group_key] = [
+                        'group_id'        => $group_key,
+                        'group_name'      => $group_name,
                         'total_plafond'   => 0,
                         'buckets'         => []
                     ];
-                    // Init Buckets
+                    
+                    // Kalau mode bulan, kita selipkan atribut "mob" ke response
+                    if ($rekap_by === 'bulan') {
+                        $grouped[$group_key]['mob'] = $mob;
+                    }
+
                     $bk = ['0', '1 - 7', '8 - 14', '15 - 21', '22 - 30', '31 - 60', '61 - 90', '> 90'];
-                    foreach($bk as $k) $grouped[$label_bulan]['buckets'][$k] = ['os'=>0, 'noa'=>0];
+                    foreach($bk as $k) $grouped[$group_key]['buckets'][$k] = ['os'=>0, 'noa'=>0];
                 }
 
-                // Aggregasi
-                $grouped[$label_bulan]['total_plafond'] += (float)$row['plafond'];
+                $grouped[$group_key]['total_plafond'] += (float)$row['plafond'];
                 
-                // Tentukan Bucket
                 $dpd = (int)$row['hari_menunggak'];
                 $bucketKey = '0';
                 if ($dpd > 0 && $dpd <= 7) $bucketKey = '1 - 7';
@@ -1333,21 +1344,32 @@ public function getTopRealisasi($input = []) {
                 elseif ($dpd > 60 && $dpd <= 90) $bucketKey = '61 - 90';
                 elseif ($dpd > 90) $bucketKey = '> 90';
 
-                $grouped[$label_bulan]['buckets'][$bucketKey]['os'] += (float)$row['os'];
-                $grouped[$label_bulan]['buckets'][$bucketKey]['noa']++;
+                $grouped[$group_key]['buckets'][$bucketKey]['os'] += (float)$row['os'];
+                $grouped[$group_key]['buckets'][$bucketKey]['noa']++;
             }
 
-            // Sort berdasarkan Bulan Realisasi (Ascending)
-            ksort($grouped);
-            
-            // Re-index array supaya jadi list JSON yang rapi
             $final_data = array_values($grouped);
+            
+            // --- 5. SORTING DATA BIAR RAPI ---
+            usort($final_data, function($a, $b) {
+                return $a['group_name'] <=> $b['group_name']; // Sort by nama / bulan (Ascending)
+            });
 
-            return sendResponse(200, "Rekap MOB 6 Bulan", [
-                'posisi_data'   => $harian_date,
-                'filter_cabang' => $kc ?? 'ALL',
-                'buckets_order' => ['0', '1 - 7', '8 - 14', '15 - 21', '22 - 30', '31 - 60', '61 - 90', '> 90'],
-                'data'          => $final_data
+            // Ambil Dropdown Data dari Helper
+            $dropdownData = getDropdownKankasAo($this->pdo, $b);
+
+            return sendResponse(200, "Rekap MOB (Group by: $rekap_by)", [
+                'posisi_data'     => $harian_date,
+                'rekap_by'        => $rekap_by,
+                'filter_aktif'    => [
+                    'korwil'      => $b['korwil'] ?? null,
+                    'kode_kantor' => $b['kode_kantor'] ?? 'ALL',
+                    'kode_kankas' => $b['kode_kankas'] ?? 'ALL',
+                    'kode_ao'     => $b['kode_ao'] ?? 'ALL'
+                ],
+                'dropdown_lists'  => $dropdownData, 
+                'buckets_order'   => ['0', '1 - 7', '8 - 14', '15 - 21', '22 - 30', '31 - 60', '61 - 90', '> 90'],
+                'data'            => $final_data
             ]);
 
         } catch (PDOException $e) {
@@ -1355,43 +1377,32 @@ public function getTopRealisasi($input = []) {
         }
     }
 
-    /**
-     * API 2: DETAIL DEBITUR PER BUCKET (Untuk Modal Klik + Pagination)
-     * Request Body: harian_date, kode_kantor, bulan_realisasi (YYYY-MM), bucket_label (e.g., '1 - 7'), page
-     */
-    
     public function getDetailMobDebitur($input = null) {
-        // 1. Ambil Input
         $b = is_array($input) ? $input : (json_decode(file_get_contents('php://input'), true) ?: []);
 
-        // 2. Filter Wajib
+        // --- REQUEST BODY ---
+        // harian_date, bulan_realisasi, bucket_label, page
+        // korwil, kode_kantor, kode_kankas, kode_ao
+
         $harian_date   = $b['harian_date'] ?? date('Y-m-d');
         $bln_realisasi = $b['bulan_realisasi'] ?? null; 
+        $bucket_label  = isset($b['bucket_label']) ? (string)$b['bucket_label'] : null;
         
-        // [PERBAIKAN] Pastikan bucket_label diambil, meski nilainya "0"
-        $bucket_label = isset($b['bucket_label']) ? (string)$b['bucket_label'] : null;
-        
-        // Filter Cabang (Input 'kode_kantor' -> DB 'kode_cabang')
-        $kc_raw = $b['kode_kantor'] ?? null;
-        $kc     = ($kc_raw === null || $kc_raw === '') ? null : str_pad((string)$kc_raw, 3, '0', STR_PAD_LEFT);
-        
-        // Filter Kankas
-        $kankas = $b['kode_kankas'] ?? null;
-
-        // Pagination
         $page   = isset($b['page']) ? (int)$b['page'] : 1;
         $limit  = 10; 
         $offset = ($page - 1) * $limit;
 
-        // [PERBAIKAN VALIDASI] Gunakan isset() atau strlen() karena "0" dianggap false
         if (!$bln_realisasi || $bucket_label === null || $bucket_label === '') {
             return sendResponse(400, "Parameter 'bulan_realisasi' dan 'bucket_label' wajib diisi.");
         }
 
-        // 3. Mapping Bucket ke Range DPD
+        // 1. Panggil Helper Filter (Gunakan prefix 'n' karena query JOIN)
+        $filterData = buildBankFilters($b, 'n');
+        $filterSql  = $filterData['sql'];
+        $paramsBind = $filterData['params'];
+
+        // 2. Mapping Bucket DPD
         $dpd_min = 0; $dpd_max = 99999;
-        
-        // Gunakan switch atau if dengan loose comparison (==) atau paksa string
         if ($bucket_label === '0')           { $dpd_min = 0;  $dpd_max = 0; }
         elseif ($bucket_label === '1 - 7')   { $dpd_min = 1;  $dpd_max = 7; }
         elseif ($bucket_label === '8 - 14')  { $dpd_min = 8;  $dpd_max = 14; }
@@ -1401,65 +1412,67 @@ public function getTopRealisasi($input = []) {
         elseif ($bucket_label === '61 - 90') { $dpd_min = 61; $dpd_max = 90; }
         elseif ($bucket_label === '> 90')    { $dpd_min = 91; $dpd_max = 99999; }
         else {
-            // Default Fallback jika label tidak dikenali (Opsional, bisa return error)
             return sendResponse(400, "Label Bucket tidak valid: " . $bucket_label);
         }
 
-        // Tentukan Range Tanggal Realisasi (Awal s/d Akhir Bulan)
         $tgl_awal_bulan  = $bln_realisasi . '-01';
         $tgl_akhir_bulan = date('Y-m-t', strtotime($tgl_awal_bulan));
 
         try {
-            // 4. Hitung Total Data (Untuk Pagination)
+            // 3. Hitung Total Data (Untuk Pagination)
             $sqlCount = "
                 SELECT COUNT(*) 
                 FROM nominatif n
                 WHERE DATE(n.created) = :harian_date
                 AND n.tgl_realisasi BETWEEN :start AND :end
                 AND n.hari_menunggak BETWEEN :dpd_min AND :dpd_max
+                {$filterSql}
             ";
-            if ($kc) $sqlCount .= " AND n.kode_cabang = :kc";
-            if ($kankas) $sqlCount .= " AND n.kode_group1 = :kankas";
 
-            $stmt = $this->pdo->prepare($sqlCount);
-            $stmt->bindValue(':harian_date', $harian_date);
-            $stmt->bindValue(':start', $tgl_awal_bulan);
-            $stmt->bindValue(':end', $tgl_akhir_bulan);
-            $stmt->bindValue(':dpd_min', $dpd_min);
-            $stmt->bindValue(':dpd_max', $dpd_max);
-            if ($kc) $stmt->bindValue(':kc', $kc);
-            if ($kankas) $stmt->bindValue(':kankas', $kankas);
+            $stmtCount = $this->pdo->prepare($sqlCount);
+            $stmtCount->bindValue(':harian_date', $harian_date);
+            $stmtCount->bindValue(':start', $tgl_awal_bulan);
+            $stmtCount->bindValue(':end', $tgl_akhir_bulan);
+            $stmtCount->bindValue(':dpd_min', $dpd_min);
+            $stmtCount->bindValue(':dpd_max', $dpd_max);
             
-            $stmt->execute();
-            $total_records = $stmt->fetchColumn();
+            // Bind parameter filter helper
+            foreach ($paramsBind as $key => $val) {
+                $stmtCount->bindValue($key, $val);
+            }
+            
+            $stmtCount->execute();
+            $total_records = $stmtCount->fetchColumn();
 
-            // 5. Query Utama (Ambil Detail + Join Transaksi Kredit + Tabungan)
+            // 4. Query Utama Detail
             $sql = "
                 SELECT 
                     n.no_rekening, 
                     n.nama_nasabah, 
                     n.alamat,
                     n.hp as no_hp,
-                    n.kode_group1 as kankas,
+                    
+                    -- Tampilkan nama master, fallback ke kode jika tidak ditemukan di master
+                    COALESCE(kk.deskripsi_group1, n.kode_group1) as nama_kankas,
+                    COALESCE(ak.nama_ao, n.kode_group2) as nama_ao,
+                    
                     COALESCE(tb.saldo_akhir, 0) as tabungan,
                     n.tgl_realisasi, 
                     n.jml_pinjaman as plafond, 
                     n.baki_debet as os, 
-                    
-                    -- Info Menunggak
                     n.hari_menunggak,
                     COALESCE(n.hari_menunggak_pokok, 0) as hari_menunggak_pokok,
                     COALESCE(n.hari_menunggak_bunga, 0) as hari_menunggak_bunga,
                     GREATEST((COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)), 0) as totung,
-
                     n.kolektibilitas,
                     n.kode_cabang,
-
-                    -- Info Transaksi (Dari Subquery)
                     t.tgl_trans,
                     COALESCE(t.total_bayar, 0) as transaksi
-
                 FROM nominatif n
+                
+                -- JOIN ke tabel master
+                LEFT JOIN kankas kk ON n.kode_group1 = kk.kode_group1 AND n.kode_cabang = kk.kode_kantor
+                LEFT JOIN ao_kredit ak ON n.kode_group2 = ak.kode_group2 AND n.kode_cabang = ak.kode_kantor
                 
                 LEFT JOIN (
                     SELECT 
@@ -1473,20 +1486,16 @@ public function getTopRealisasi($input = []) {
                 ) t ON n.no_rekening = t.no_rekening
                 
                 LEFT JOIN tabungan tb ON n.norek_tabungan = tb.no_rekening
-
+                
                 WHERE DATE(n.created) = :harian_date
                 AND n.tgl_realisasi BETWEEN :start AND :end
                 AND n.hari_menunggak BETWEEN :dpd_min AND :dpd_max
+                {$filterSql}
+                ORDER BY n.baki_debet DESC LIMIT :limit OFFSET :offset
             ";
-
-            if ($kc) $sql .= " AND n.kode_cabang = :kc";
-            if ($kankas) $sql .= " AND n.kode_group1 = :kankas";
-            
-            $sql .= " ORDER BY n.baki_debet DESC LIMIT :limit OFFSET :offset";
 
             $stmt = $this->pdo->prepare($sql);
             
-            // --- Binding Parameters ---
             $stmt->bindValue(':harian_date', $harian_date);
             $stmt->bindValue(':trans_date_1', $harian_date); 
             $stmt->bindValue(':trans_date_2', $harian_date); 
@@ -1495,8 +1504,10 @@ public function getTopRealisasi($input = []) {
             $stmt->bindValue(':dpd_min', $dpd_min);
             $stmt->bindValue(':dpd_max', $dpd_max);
             
-            if ($kc) $stmt->bindValue(':kc', $kc);
-            if ($kankas) $stmt->bindValue(':kankas', $kankas);
+            // Bind parameter filter helper lagi untuk query utama
+            foreach ($paramsBind as $key => $val) {
+                $stmt->bindValue($key, $val);
+            }
             
             $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
@@ -1504,7 +1515,7 @@ public function getTopRealisasi($input = []) {
             $stmt->execute();
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // 6. Data Type Casting
+            // 5. Data Type Casting
             foreach ($data as &$row) {
                 $row['transaksi'] = (float)$row['transaksi']; 
                 $row['plafond']   = (float)$row['plafond'];
@@ -1516,8 +1527,6 @@ public function getTopRealisasi($input = []) {
                 $row['hari_menunggak_pokok'] = (int)$row['hari_menunggak_pokok'];
                 $row['hari_menunggak_bunga'] = (int)$row['hari_menunggak_bunga'];
                 
-                // Status Tabungan (Aman jika 1.5x - 2x dari saldo tabungan lebih besar dari total tunggakan)
-                // Sesuai request: "tabungannya harus hampir 2x yang rang 1.5 - 2 gitu baru aman yaaa" -> artinya Tabungan >= 1.5 * Totung
                 if ($row['tabungan'] >= (1.5 * $row['totung'])) {
                     $row['status_tabungan'] = 'Aman';
                 } else {
@@ -1526,12 +1535,11 @@ public function getTopRealisasi($input = []) {
             }
             unset($row); 
 
-            // 7. Return Response
             return sendResponse(200, "Detail Debitur Sukses (Bucket: $bucket_label)", [
                 'total_records' => $total_records,
-                'total_pages' => ceil($total_records / $limit),
-                'current_page' => $page,
-                'data' => $data
+                'total_pages'   => ceil($total_records / $limit),
+                'current_page'  => $page,
+                'data'          => $data
             ]);
 
         } catch (PDOException $e) {
@@ -1540,7 +1548,7 @@ public function getTopRealisasi($input = []) {
     }
 
 
-        public function getMigrasiKolek1($input) {
+    public function getMigrasiKolek1($input) {
         $closing_date = !empty($input['closing_date']) ? $input['closing_date'] : date('Y-m-d', strtotime('last day of previous month'));
         $harian_date  = !empty($input['harian_date'])  ? $input['harian_date']  : date('Y-m-d');
         $kode_kantor  = !empty($input['kode_kantor'])  ? str_pad($input['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
@@ -1871,7 +1879,6 @@ public function getTopRealisasi($input = []) {
             return sendResponse(500, "PDO Error: " . $e->getMessage(), null);
         }
     }
-
 
 
     /**
