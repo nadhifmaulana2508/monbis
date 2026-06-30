@@ -38,6 +38,9 @@ switch ($method) {
 
         } elseif ($input['type'] === 'rekap_device_branchless') {
             $controller->getRekapDeviceBranchless($input);
+
+        } elseif ($input['type'] === 'rekap_branchless_bulanan') {
+            $controller->getRekapBranchlessBulanan($input);
         
         } elseif ($input['type'] === 'detail_device_branchless') {
             $controller->getDetailDeviceBranchless($input);

@@ -33,156 +33,234 @@ class RepaymentRateController {
         return $effectiveDay;
     }
 
+    private function getDpdWhere(string $column, string $bucket): string {
+        if ($bucket === 'dpd1-30') {
+            return "AND {$column} BETWEEN 1 AND 30";
+        }
+        if ($bucket === 'all' || $bucket === 'dpd0-30') {
+            return "AND {$column} BETWEEN 0 AND 30";
+        }
+        return "AND {$column} = 0";
+    }
+
+    private function getDueDaysForRequest(string $harian, $tglTagih = 'ALL'): array {
+        $curTime = strtotime($harian);
+        $month = (int)date('n', $curTime);
+        $year = (int)date('Y', $curTime);
+        $cutoffDay = min((int)date('j', $curTime), (int)date('t', $curTime));
+
+        $days = [];
+        if ($tglTagih !== 'ALL') {
+            $tglMap = (int)$tglTagih;
+            for ($d = 1; $d <= 31; $d++) {
+                if ($this->getMappedDay($d, $month, $year) === $tglMap) {
+                    $days[] = $d;
+                }
+            }
+            return $days ?: [$tglMap];
+        }
+
+        for ($d = 1; $d <= 31; $d++) {
+            if ($this->getMappedDay($d, $month, $year) <= $cutoffDay) {
+                $days[] = $d;
+            }
+        }
+
+        return $days ?: [1];
+    }
+
 /**
      * 1. REKAP UTAMA (Summary Per Tanggal) (OTP RR)
      */
     public function getRepaymentRate($input = null) {
-        set_time_limit(300); ini_set('memory_limit', '1024M');
+            set_time_limit(300); ini_set('memory_limit', '1024M');
 
-        $b = is_array($input) ? $input : [];
-        $closing = $b['closing_date'] ?? null;
-        $harian  = $b['harian_date'] ?? null;
-        $kc      = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
-        $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
-        $kankas  = !empty($b['kode_kankas']) ? $b['kode_kankas'] : null;
-        $dpdBucket = $b['dpd_bucket'] ?? 'dpd0'; // dpd0 or dpd1-30
-        
-        // 🔥 Tangkap parameter include_127 dari FE
-        $include127 = filter_var($b['include_127'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        $whereProduk = !$include127 ? "AND kode_produk != '127'" : "";
+            $b = is_array($input) ? $input : [];
+            $closing = $b['closing_date'] ?? null;
+            $harian  = $b['harian_date'] ?? null;
+            $kc      = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+            $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
+            $kankas  = !empty($b['kode_kankas']) ? $b['kode_kankas'] : null;
+            $ao      = !empty($b['kode_ao']) ? $b['kode_ao'] : null;
+            $dpdBucket = $b['dpd_bucket'] ?? 'dpd0'; // dpd0, dpd1-30, all
+            
+            // 🔥 Tangkap parameter include_127 dari FE
+            $include127 = filter_var($b['include_127'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $whereProduk = !$include127 ? "AND kode_produk != '127'" : "";
 
-        if (!$closing || !$harian) return $this->send(400, "Tanggal wajib diisi.");
+            if (!$closing || !$harian) return $this->send(400, "Tanggal wajib diisi.");
 
-        [$s1, $e1] = $this->getDayRange($closing);
-        [$s2, $e2] = $this->getDayRange($harian);
+            [$s1, $e1] = $this->getDayRange($closing);
+            [$s2, $e2] = $this->getDayRange($harian);
 
-        $curTime  = strtotime($harian);
-        $curMonth = date('n', $curTime);
-        $curYear  = date('Y', $curTime);
+            $curTime  = strtotime($harian);
+            $curMonth = date('n', $curTime);
+            $curYear  = date('Y', $curTime);
+            
+            // 🔥 Tampilkan full kalender 1 bulan penuh (misal: 30 atau 31 hari)
+            $cutoffDay = (int)date('t', $curTime);
+            // 🔥 Ambil tanggal aktual harian untuk membatasi hitungan akumulasi persentase TOTAL
+            $actualDay = (int)date('j', $curTime); 
 
-        // 🔥 Filter DPD Bucket di M-1
-        $whereDpd = "AND hari_menunggak = 0"; // default DPD 0
-        if ($dpdBucket === 'dpd1-30') $whereDpd = "AND hari_menunggak BETWEEN 1 AND 30";
+            // 🔥 Filter DPD Bucket di M-1
+            $whereDpd = $this->getDpdWhere('hari_menunggak', $dpdBucket);
 
-        // 🔥 Korwil mapping
-        $kw_start = null; $kw_end = null;
-        if ($korwil) {
-            switch ($korwil) {
-                case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
-                case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
-                case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
-                case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
+            // 🔥 Korwil mapping
+            $kw_start = null; $kw_end = null;
+            if ($korwil) {
+                switch ($korwil) {
+                    case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
+                    case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
+                    case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
+                    case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
+                }
             }
-        }
 
-        // 🔥 Terapkan $whereProduk + $whereDpd
-        $sqlM1 = "SELECT no_rekening, baki_debet, DAY(tgl_jatuh_tempo) as tgl_ori 
-                  FROM nominatif 
-                  WHERE created BETWEEN :s1 AND :e1 
-                  AND kolektibilitas = 'L' 
-                  AND baki_debet > 0
-                  $whereDpd
-                  $whereProduk"; 
+            // 🔥 Terapkan $whereProduk + $whereDpd
+            $sqlM1 = "SELECT no_rekening, baki_debet, DAY(tgl_jatuh_tempo) as tgl_ori 
+                    FROM nominatif 
+                    WHERE created BETWEEN :s1 AND :e1 
+                    AND kolektibilitas = 'L' 
+                    AND baki_debet > 0
+                    $whereDpd
+                    $whereProduk"; 
 
-        if ($kc && $kc !== '000') $sqlM1 .= " AND kode_cabang = :kc";
-        elseif ($korwil && $kw_start && $kw_end) $sqlM1 .= " AND kode_cabang BETWEEN :kw_start AND :kw_end";
-        if ($kankas) $sqlM1 .= " AND kode_group1 = :kankas";
+            if ($kc && $kc !== '000') $sqlM1 .= " AND kode_cabang = :kc";
+            elseif ($korwil && $kw_start && $kw_end) $sqlM1 .= " AND kode_cabang BETWEEN :kw_start AND :kw_end";
+            if ($kankas) $sqlM1 .= " AND kode_group1 = :kankas";
+            if ($ao) $sqlM1 .= " AND kode_group2 = :ao";
 
-        $stmt1 = $this->pdo->prepare($sqlM1);
-        $stmt1->bindValue(':s1', $s1); $stmt1->bindValue(':e1', $e1);
-        if ($kc && $kc !== '000') $stmt1->bindValue(':kc', $kc);
-        elseif ($korwil && $kw_start && $kw_end) { $stmt1->bindValue(':kw_start', $kw_start); $stmt1->bindValue(':kw_end', $kw_end); }
-        if ($kankas) $stmt1->bindValue(':kankas', $kankas);
-        $stmt1->execute();
-        $dataM1 = $stmt1->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
+            $stmt1 = $this->pdo->prepare($sqlM1);
+            $stmt1->bindValue(':s1', $s1); $stmt1->bindValue(':e1', $e1);
+            if ($kc && $kc !== '000') $stmt1->bindValue(':kc', $kc);
+            elseif ($korwil && $kw_start && $kw_end) { $stmt1->bindValue(':kw_start', $kw_start); $stmt1->bindValue(':kw_end', $kw_end); }
+            if ($kankas) $stmt1->bindValue(':kankas', $kankas);
+            if ($ao) $stmt1->bindValue(':ao', $ao);
+            $stmt1->execute();
+            $dataM1 = $stmt1->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
 
-        $sqlCur = "SELECT no_rekening, baki_debet, hari_menunggak 
-                   FROM nominatif 
-                   WHERE created BETWEEN :s2 AND :e2";
-        if ($kc && $kc !== '000') $sqlCur .= " AND kode_cabang = :kc";
-        elseif ($korwil && $kw_start && $kw_end) $sqlCur .= " AND kode_cabang BETWEEN :kw_start AND :kw_end";
-        if ($kankas) $sqlCur .= " AND kode_group1 = :kankas";
+            $sqlCur = "SELECT no_rekening, baki_debet, hari_menunggak 
+                    FROM nominatif 
+                    WHERE created BETWEEN :s2 AND :e2";
+            if ($kc && $kc !== '000') $sqlCur .= " AND kode_cabang = :kc";
+            elseif ($korwil && $kw_start && $kw_end) $sqlCur .= " AND kode_cabang BETWEEN :kw_start AND :kw_end";
+            if ($kankas) $sqlCur .= " AND kode_group1 = :kankas";
 
-        $stmt2 = $this->pdo->prepare($sqlCur);
-        $stmt2->bindValue(':s2', $s2); $stmt2->bindValue(':e2', $e2);
-        if ($kc && $kc !== '000') $stmt2->bindValue(':kc', $kc);
-        elseif ($korwil && $kw_start && $kw_end) { $stmt2->bindValue(':kw_start', $kw_start); $stmt2->bindValue(':kw_end', $kw_end); }
-        if ($kankas) $stmt2->bindValue(':kankas', $kankas);
-        $stmt2->execute();
-        $dataCur = $stmt2->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
+            $stmt2 = $this->pdo->prepare($sqlCur);
+            $stmt2->bindValue(':s2', $s2); $stmt2->bindValue(':e2', $e2);
+            if ($kc && $kc !== '000') $stmt2->bindValue(':kc', $kc);
+            elseif ($korwil && $kw_start && $kw_end) { $stmt2->bindValue(':kw_start', $kw_start); $stmt2->bindValue(':kw_end', $kw_end); }
+            if ($kankas) $stmt2->bindValue(':kankas', $kankas);
+            $stmt2->execute();
+            $dataCur = $stmt2->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
 
-        $report = [];
-        for ($i = 1; $i <= 31; $i++) {
-            $report[$i] = [
-                'tgl' => $i,
-                'target_noa' => 0, 'target_os' => 0,
-                'lancar_noa' => 0, 'lancar_os' => 0, 
-                'macet_noa'  => 0, 'macet_os'  => 0,
-                'lunas_noa'  => 0, 'lunas_os'  => 0,
-                'angsuran'   => 0, 'total_bayar'=> 0, 'persen' => 0
+            $report = [];
+            for ($i = 1; $i <= $cutoffDay; $i++) {
+                $report[$i] = [
+                    'tgl' => $i,
+                    'target_noa' => 0, 'target_os' => 0,
+                    'lancar_noa' => 0, 'lancar_os' => 0, 
+                    'macet_noa'  => 0, 'macet_os'  => 0,
+                    'lunas_noa'  => 0, 'lunas_os'  => 0,
+                    'angsuran'   => 0, 'total_bayar'=> 0, 
+                    'persen' => null 
+                ];
+            }
+            $grandTotal = [
+                'target_noa'=>0, 'target_os'=>0, 'lancar_noa'=>0, 'lancar_os'=>0, 
+                'macet_noa'=>0,  'macet_os'=>0,  'lunas_noa'=>0,  'lunas_os'=>0, 
+                'angsuran'=>0,   'total_bayar'=>0, 'persen'=>0
             ];
-        }
-        $grandTotal = [
-            'target_noa'=>0, 'target_os'=>0, 'lancar_noa'=>0, 'lancar_os'=>0, 
-            'macet_noa'=>0,  'macet_os'=>0,  'lunas_noa'=>0,  'lunas_os'=>0, 
-            'angsuran'=>0,   'total_bayar'=>0, 'persen'=>0
-        ];
 
-        foreach ($dataM1 as $norek => $row) {
-            $tglOri = (int)$row['tgl_ori']; 
-            if ($tglOri < 1 || $tglOri > 31) continue;
+            foreach ($dataM1 as $norek => $row) {
+                $tglOri = (int)$row['tgl_ori']; 
+                if ($tglOri < 1 || $tglOri > 31) continue;
 
-            $tglMap = $this->getMappedDay($tglOri, $curMonth, $curYear);
-            $osTarget = (float)$row['baki_debet'];
+                $tglMap = $this->getMappedDay($tglOri, $curMonth, $curYear);
+                if ($tglMap > $cutoffDay || !isset($report[$tglMap])) continue;
+                $osTarget = (float)$row['baki_debet'];
 
-            $report[$tglMap]['target_noa']++; $report[$tglMap]['target_os'] += $osTarget;
-            $grandTotal['target_noa']++; $grandTotal['target_os'] += $osTarget;
+                $report[$tglMap]['target_noa']++; $report[$tglMap]['target_os'] += $osTarget;
+                $grandTotal['target_noa']++; $grandTotal['target_os'] += $osTarget;
 
-            if (isset($dataCur[$norek])) {
-                $osActual  = (float)$dataCur[$norek]['baki_debet'];
-                $dpdActual = (int)$dataCur[$norek]['hari_menunggak'];
+                if (isset($dataCur[$norek])) {
+                    $osActual  = (float)$dataCur[$norek]['baki_debet'];
+                    $dpdActual = (int)$dataCur[$norek]['hari_menunggak'];
 
-                if ($osActual <= 0) {
+                    if ($osActual <= 0) {
+                        $report[$tglMap]['lunas_noa']++; $report[$tglMap]['lunas_os'] += $osTarget;
+                        $grandTotal['lunas_noa']++; $grandTotal['lunas_os'] += $osTarget;
+                    } else {
+                        if ($dpdActual == 0) {
+                            $report[$tglMap]['lancar_noa']++; $report[$tglMap]['lancar_os'] += $osActual;
+                            $grandTotal['lancar_noa']++; $grandTotal['lancar_os'] += $osActual;
+                        } else {
+                            $report[$tglMap]['macet_noa']++; $report[$tglMap]['macet_os'] += $osActual;
+                            $grandTotal['macet_noa']++; $grandTotal['macet_os'] += $osActual;
+                        }
+                        if ($osTarget > $osActual) {
+                            $bayar = $osTarget - $osActual;
+                            $report[$tglMap]['angsuran'] += $bayar;
+                            $grandTotal['angsuran'] += $bayar;
+                        }
+                    }
+                } else {
                     $report[$tglMap]['lunas_noa']++; $report[$tglMap]['lunas_os'] += $osTarget;
                     $grandTotal['lunas_noa']++; $grandTotal['lunas_os'] += $osTarget;
-                } else {
-                    if ($dpdActual == 0) {
-                        $report[$tglMap]['lancar_noa']++; $report[$tglMap]['lancar_os'] += $osActual;
-                        $grandTotal['lancar_noa']++; $grandTotal['lancar_os'] += $osActual;
-                    } else {
-                        $report[$tglMap]['macet_noa']++; $report[$tglMap]['macet_os'] += $osActual;
-                        $grandTotal['macet_noa']++; $grandTotal['macet_os'] += $osActual;
-                    }
-                    if ($osTarget > $osActual) {
-                        $bayar = $osTarget - $osActual;
-                        $report[$tglMap]['angsuran'] += $bayar;
-                        $grandTotal['angsuran'] += $bayar;
-                    }
                 }
-            } else {
-                $report[$tglMap]['lunas_noa']++; $report[$tglMap]['lunas_os'] += $osTarget;
-                $grandTotal['lunas_noa']++; $grandTotal['lunas_os'] += $osTarget;
             }
-        }
 
-        foreach ($report as &$r) {
-            $performance = $r['lancar_os'] + $r['lunas_os'] + $r['angsuran'];
-            $r['total_bayar'] = $r['lunas_os'] + $r['angsuran'];
-            if ($r['target_os'] > 0) $r['persen'] = round(($performance / $r['target_os']) * 100, 2);
-        }
+            // Variabel penampung akumulasi khusus untuk menghitung Grand Total Persen Real
+            $cumTargetOs = 0;
+            $cumLancarOs = 0;
+            $cumLunasOs  = 0;
+            $cumAngsuran = 0;
 
-        $gtPerformance = $grandTotal['lancar_os'] + $grandTotal['lunas_os'] + $grandTotal['angsuran'];
-        $grandTotal['total_bayar'] = $grandTotal['lunas_os'] + $grandTotal['angsuran'];
-        if ($grandTotal['target_os'] > 0) $grandTotal['persen'] = round(($gtPerformance / $grandTotal['target_os']) * 100, 2);
+            foreach ($report as &$r) {
+                $r['total_bayar'] = $r['lunas_os'] + $r['angsuran'];
+                $dailyPerformance = $r['lancar_os'] + $r['lunas_os'] + $r['angsuran'];
+                
+                if ($r['tgl'] <= $actualDay) {
+                    // Masukkan ke perhitungan akumulasi Grand Total Persen Real (Sesuai Rumus Gambar Excel)
+                    $cumTargetOs += $r['target_os'];
+                    $cumLancarOs += $r['lancar_os'];
+                    $cumLunasOs  += $r['lunas_os'];
+                    $cumAngsuran += $r['angsuran'];
 
-        $this->send(200, "Sukses Rekap RR", [
-            'meta' => ['m1' => $closing, 'cur' => $harian, 'include_127' => $include127, 'dpd_bucket' => $dpdBucket],
-            'grand_total' => $grandTotal,
-            'data' => array_values($report)
-        ]);
+                    if ($r['target_os'] > 0) {
+                        $r['persen'] = round(($dailyPerformance / $r['target_os']) * 100, 2);
+                    } else {
+                        $r['persen'] = 0.00;
+                    }
+                } else {
+                    $r['persen'] = null; 
+                }
+            }
+            unset($r);
+
+            // 🔥 PERBAIKAN UTAMA: Rumus Grand Total % Akumulatif s.d Hari Aktual (Bukan Full Sebulan)
+            $grandTotal['total_bayar'] = $grandTotal['lunas_os'] + $grandTotal['angsuran'];
+            
+            $gtPerformanceCum = $cumLancarOs + $cumLunasOs + $cumAngsuran;
+            if ($cumTargetOs > 0) {
+                $grandTotal['persen'] = round(($gtPerformanceCum / $cumTargetOs) * 100, 2);
+            } else {
+                $grandTotal['persen'] = 0.00;
+            }
+
+            // 🔥 Saring data: Buang baris tanggal yang tidak memiliki target jatuh tempo (target_os == 0)
+            $reportRows = array_values(array_filter($report, function($r) {
+                return (float)$r['target_os'] > 0;
+            }));
+
+            $this->send(200, "Sukses Rekap RR", [
+                'meta' => ['m1' => $closing, 'cur' => $harian, 'include_127' => $include127, 'dpd_bucket' => $dpdBucket, 'cutoff_day' => $cutoffDay, 'actual_day' => $actualDay],
+                'grand_total' => $grandTotal,
+                'data' => $reportRows
+            ]);
     }
 
-/**
+    /**
      * 2. DETAIL DATA
      * Menampilkan data Lancar & Menunggak (OTP  RR)
      */
@@ -194,7 +272,7 @@ class RepaymentRateController {
         $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
         $kankas  = $b['kode_kankas'] ?? null; 
         $ao      = $b['kode_ao'] ?? null;     
-        $dpdBucket = $b['dpd_bucket'] ?? 'dpd0'; // dpd0 or dpd1-30
+        $dpdBucket = $b['dpd_bucket'] ?? 'dpd0'; // dpd0, dpd1-30, all
         
         $tglTagih = $b['tgl_tagih'] ?? 'ALL'; 
         $status  = strtoupper($b['status'] ?? 'ALL');
@@ -210,10 +288,25 @@ class RepaymentRateController {
 
         [$s1, $e1] = $this->getDayRange($closing);
         [$s2, $e2] = $this->getDayRange($harian);
+        $txCurStart = date('Y-m-01 00:00:00', strtotime($harian));
+        $txCurEnd = date('Y-m-d 23:59:59', strtotime($harian));
+        $txPrevStart = date('Y-m-01 00:00:00', strtotime($harian . ' -1 month'));
+        $txPrevEnd = date('Y-m-t 23:59:59', strtotime($harian . ' -1 month'));
+        $bindTxParams = function($stmt) use ($txCurStart, $txCurEnd, $txPrevStart, $txPrevEnd) {
+            $stmt->bindValue(':tx_cur_start_sum', $txCurStart);
+            $stmt->bindValue(':tx_cur_end_sum', $txCurEnd);
+            $stmt->bindValue(':tx_cur_start_max', $txCurStart);
+            $stmt->bindValue(':tx_cur_end_max', $txCurEnd);
+            $stmt->bindValue(':tx_prev_start_sum', $txPrevStart);
+            $stmt->bindValue(':tx_prev_end_sum', $txPrevEnd);
+            $stmt->bindValue(':tx_prev_start_max', $txPrevStart);
+            $stmt->bindValue(':tx_prev_end_max', $txPrevEnd);
+            $stmt->bindValue(':tx_range_start', $txPrevStart);
+            $stmt->bindValue(':tx_range_end', $txCurEnd);
+        };
 
         // 🔥 Filter DPD Bucket di M-1
-        $whereDpd = "AND t1.hari_menunggak = 0"; // default DPD 0
-        if ($dpdBucket === 'dpd1-30') $whereDpd = "AND t1.hari_menunggak BETWEEN 1 AND 30";
+        $whereDpd = $this->getDpdWhere('t1.hari_menunggak', $dpdBucket);
 
         // 🔥 Korwil mapping
         $kw_start = null; $kw_end = null;
@@ -226,21 +319,7 @@ class RepaymentRateController {
             }
         }
 
-        $daysStr = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31";
-        if ($tglTagih !== 'ALL') {
-            $tglMap = (int)$tglTagih;
-            $curTime  = strtotime($harian);
-            $month = date('n', $curTime); $year = date('Y', $curTime);
-            
-            $includedDays = [];
-            for ($d = 1; $d <= 31; $d++) {
-                if ($this->getMappedDay($d, $month, $year) == $tglMap) {
-                    $includedDays[] = $d;
-                }
-            }
-            if (empty($includedDays)) $includedDays = [$tglMap];
-            $daysStr = implode(',', $includedDays);
-        }
+        $daysStr = implode(',', $this->getDueDaysForRequest($harian, $tglTagih));
 
         $joinType = "LEFT JOIN";
         $whereStatus = "";
@@ -266,6 +345,17 @@ class RepaymentRateController {
                       LEFT JOIN ao_kredit ao ON t1.kode_group2 = ao.kode_group2
                       LEFT JOIN tabungan tb ON t1.norek_tabungan = tb.no_rekening
                       LEFT JOIN kankas kn ON t1.kode_group1 = kn.kode_group1
+                      LEFT JOIN (
+                          SELECT
+                              no_rekening,
+                              SUM(CASE WHEN tgl_trans BETWEEN :tx_cur_start_sum AND :tx_cur_end_sum THEN (COALESCE(angsuran_pokok, 0) + COALESCE(angsuran_bunga, 0) - COALESCE(diskon_bunga, 0)) ELSE 0 END) AS trx_bulan_ini,
+                              MAX(CASE WHEN tgl_trans BETWEEN :tx_cur_start_max AND :tx_cur_end_max THEN tgl_trans END) AS tgl_bayar_ini,
+                              SUM(CASE WHEN tgl_trans BETWEEN :tx_prev_start_sum AND :tx_prev_end_sum THEN (COALESCE(angsuran_pokok, 0) + COALESCE(angsuran_bunga, 0) - COALESCE(diskon_bunga, 0)) ELSE 0 END) AS trx_bulan_lalu,
+                              MAX(CASE WHEN tgl_trans BETWEEN :tx_prev_start_max AND :tx_prev_end_max THEN tgl_trans END) AS tgl_bayar_lalu
+                          FROM transaksi_kredit
+                          WHERE tgl_trans BETWEEN :tx_range_start AND :tx_range_end
+                          GROUP BY no_rekening
+                      ) trx ON t1.no_rekening = trx.no_rekening
                       WHERE (t1.created BETWEEN :s1 AND :e1)
                       AND t1.kolektibilitas = 'L' 
                       AND t1.baki_debet > 0
@@ -280,6 +370,7 @@ class RepaymentRateController {
         if ($ao) $baseQuery .= " AND t1.kode_group2 = :ao";
 
         $stmtCnt = $this->pdo->prepare("SELECT COUNT(1) $baseQuery");
+        $bindTxParams($stmtCnt);
         $stmtCnt->bindValue(':s1', $s1); $stmtCnt->bindValue(':e1', $e1);
         $stmtCnt->bindValue(':s2', $s2); $stmtCnt->bindValue(':e2', $e2);
         if ($kc && $kc !== '000') $stmtCnt->bindValue(':kc', $kc);
@@ -300,10 +391,15 @@ class RepaymentRateController {
                  t1.baki_debet as os_m1, 
                  COALESCE(t2.baki_debet, 0) as os_curr, 
                  COALESCE(t2.hari_menunggak, 0) as dpd_curr,
-                 (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) as totung";
+                 (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) as totung,
+                 COALESCE(trx.trx_bulan_lalu, 0) as trx_bulan_lalu,
+                 trx.tgl_bayar_lalu,
+                 COALESCE(trx.trx_bulan_ini, 0) as trx_bulan_ini,
+                 trx.tgl_bayar_ini";
         
         $sqlData = "SELECT $cols $baseQuery ORDER BY t1.baki_debet DESC LIMIT :lim OFFSET :off";
         $stmt = $this->pdo->prepare($sqlData);
+        $bindTxParams($stmt);
         $stmt->bindValue(':s1', $s1); $stmt->bindValue(':e1', $e1);
         $stmt->bindValue(':s2', $s2); $stmt->bindValue(':e2', $e2);
         if ($kc && $kc !== '000') $stmt->bindValue(':kc', $kc);
@@ -324,6 +420,10 @@ class RepaymentRateController {
             else { $r['status_ket'] = 'MENUNGGAK'; }
 
             $r['os_m1']=$osM1; $r['os_curr']=$osCur; 
+            $r['trx_bulan_lalu'] = (float)($r['trx_bulan_lalu'] ?? 0);
+            $r['trx_bulan_ini'] = (float)($r['trx_bulan_ini'] ?? 0);
+            $r['tgl_bayar_lalu'] = $r['tgl_bayar_lalu'] ?? null;
+            $r['tgl_bayar_ini'] = $r['tgl_bayar_ini'] ?? null;
             $r['bayar_pokok'] = ($osM1 > $osCur) ? ($osM1 - $osCur) : 0;
 
             if (($tabungan * 0.015) > $totung) {
@@ -368,8 +468,7 @@ class RepaymentRateController {
         [$s2, $e2] = $this->getDayRange($harian);
 
         // 🔥 FIX: Filter DPD Bucket di M-1
-        $whereDpd = "AND t1.hari_menunggak = 0"; 
-        if ($dpdBucket === 'dpd1-30') $whereDpd = "AND t1.hari_menunggak BETWEEN 1 AND 30";
+        $whereDpd = $this->getDpdWhere('t1.hari_menunggak', $dpdBucket);
 
         // 🔥 FIX: Korwil mapping
         $kw_start = null; $kw_end = null;
@@ -383,19 +482,7 @@ class RepaymentRateController {
         }
 
         // 🔥 FIX: Logika Tanggal
-        $daysStr = "1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31";
-        if ($tglTagih !== 'ALL') {
-            $tglMap = (int)$tglTagih;
-            $curTime  = strtotime($harian);
-            $month = date('n', $curTime); $year = date('Y', $curTime);
-            
-            $includedDays = [];
-            for ($d = 1; $d <= 31; $d++) {
-                if ($this->getMappedDay($d, $month, $year) == $tglMap) $includedDays[] = $d;
-            }
-            if (empty($includedDays)) $includedDays = [$tglMap];
-            $daysStr = implode(',', $includedDays);
-        }
+        $daysStr = implode(',', $this->getDueDaysForRequest($harian, $tglTagih));
 
         $baseQuery = "FROM nominatif t1 
                       LEFT JOIN nominatif t2 ON t1.no_rekening = t2.no_rekening 

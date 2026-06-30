@@ -1347,6 +1347,177 @@ class TransaksiController {
      * 14. DETAIL RIWAYAT TRANSAKSI DEVICE (Pagination)
      * Ditampilkan ketika salah satu Device ID di-klik.
      */
+    public function getRekapBranchlessBulanan($input = null) {
+        set_time_limit(300); ini_set('memory_limit', '1024M');
+
+        $b = is_array($input) ? $input : [];
+        $harian  = $b['harian_date'] ?? date('Y-m-d');
+        $kode_kantor = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+        $korwil  = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
+        $kankas  = !empty($b['kode_kankas']) ? $b['kode_kankas'] : null;
+        $page    = max(1, (int)($b['page'] ?? 1));
+        $limit   = max(1, min(100, (int)($b['limit'] ?? 15)));
+        $offset  = ($page - 1) * $limit;
+
+        if (!$harian) return sendResponse(400, "Tanggal Actual (Harian) wajib diisi.", null);
+
+        if (!empty($b['closing_date'])) {
+            $closing_date = $b['closing_date'];
+        } else {
+            $ts_harian = strtotime($harian);
+            $closing_date = date('Y-m-t', strtotime(date('Y-m-01', $ts_harian) . ' -1 day'));
+        }
+
+        $sqlFilter = "";
+        $params = [':closing' => $closing_date, ':harian' => $harian];
+
+        if ($kode_kantor && $kode_kantor !== '000') {
+            $sqlFilter .= " AND t.kantor = :kode_kantor ";
+            $params[':kode_kantor'] = $kode_kantor;
+        } elseif ($korwil) {
+            $kw_start = null; $kw_end = null;
+            switch ($korwil) {
+                case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
+                case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
+                case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
+                case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
+            }
+            if ($kw_start && $kw_end) {
+                $sqlFilter .= " AND t.kantor BETWEEN :kw_start AND :kw_end ";
+                $params[':kw_start'] = $kw_start;
+                $params[':kw_end'] = $kw_end;
+            }
+        }
+
+        if ($kankas) {
+            $sqlFilter .= " AND TRIM(t.kankas) = :kode_kankas ";
+            $params[':kode_kankas'] = $kankas;
+        }
+
+        $baseFrom = "
+            FROM va t
+            LEFT JOIN kode_kantor kk ON t.kantor = kk.kode_kantor
+            LEFT JOIN users u
+              ON REPLACE(TRIM(COALESCE(u.employee_id, '')), '.', '') = REPLACE(TRIM(COALESCE(t.user_id, '')), '.', '')
+            WHERE t.tgl_transaksi > :closing AND t.tgl_transaksi <= :harian
+              AND TRIM(t.kode_transaksi) IN ('150', '152')
+              $sqlFilter
+        ";
+
+        $groupedSelect = "
+            SELECT
+                t.kantor as kode_kantor,
+                COALESCE(NULLIF(TRIM(kk.nama_kantor), ''), CONCAT('Cabang ', t.kantor)) as nama_kantor,
+                COALESCE(NULLIF(TRIM(t.user_id), ''), '-') as user_id,
+                COALESCE(NULLIF(TRIM(u.full_name), ''), CONCAT('User ', COALESCE(NULLIF(TRIM(t.user_id), ''), '-'))) as ao_name,
+                COALESCE(NULLIF(TRIM(t.device), ''), 'TIDAK TERDETEKSI') as device_id,
+                COUNT(1) as total_trx,
+                COUNT(DISTINCT NULLIF(TRIM(t.no_rekening), '')) as total_noa,
+                SUM(COALESCE(t.jumlah, 0)) as total_nominal,
+                SUM(COALESCE(t.adm, 0)) as total_adm,
+                MAX(CONCAT(t.tgl_transaksi, ' ', COALESCE(t.jam_transaksi, '00:00:00'))) as last_transaksi
+            $baseFrom
+            GROUP BY
+                t.kantor,
+                kk.nama_kantor,
+                user_id,
+                ao_name,
+                device_id
+        ";
+
+        try {
+            $stmtCnt = $this->pdo->prepare("SELECT COUNT(1) FROM ($groupedSelect) x");
+            foreach ($params as $key => $val) { $stmtCnt->bindValue($key, $val); }
+            $stmtCnt->execute();
+            $totalRecords = (int)$stmtCnt->fetchColumn();
+
+            $stmt = $this->pdo->prepare("
+                SELECT *
+                FROM ($groupedSelect) d
+                ORDER BY d.total_nominal DESC, d.total_trx DESC, d.kode_kantor ASC
+                LIMIT :lim OFFSET :off
+            ");
+            foreach ($params as $key => $val) { $stmt->bindValue($key, $val); }
+            $stmt->bindValue(':lim', (int)$limit, PDO::PARAM_INT);
+            $stmt->bindValue(':off', (int)$offset, PDO::PARAM_INT);
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $stmtGrand = $this->pdo->prepare("
+                SELECT
+                    COUNT(1) as total_trx,
+                    COUNT(DISTINCT NULLIF(TRIM(t.no_rekening), '')) as total_noa,
+                    SUM(COALESCE(t.jumlah, 0)) as total_nominal,
+                    SUM(COALESCE(t.adm, 0)) as total_adm,
+                    COUNT(DISTINCT COALESCE(NULLIF(TRIM(t.device), ''), 'TIDAK TERDETEKSI')) as total_device,
+                    COUNT(DISTINCT COALESCE(NULLIF(TRIM(t.user_id), ''), '-')) as total_user
+                $baseFrom
+            ");
+            foreach ($params as $key => $val) { $stmtGrand->bindValue($key, $val); }
+            $stmtGrand->execute();
+            $grandTotal = $stmtGrand->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            $stmtTopUsers = $this->pdo->prepare("
+                SELECT
+                    t.kantor as kode_kantor,
+                    COALESCE(NULLIF(TRIM(kk.nama_kantor), ''), CONCAT('Cabang ', t.kantor)) as nama_kantor,
+                    COALESCE(NULLIF(TRIM(t.user_id), ''), '-') as user_id,
+                    COALESCE(NULLIF(TRIM(u.full_name), ''), CONCAT('User ', COALESCE(NULLIF(TRIM(t.user_id), ''), '-'))) as ao_name,
+                    COUNT(DISTINCT COALESCE(NULLIF(TRIM(t.device), ''), 'TIDAK TERDETEKSI')) as total_device,
+                    COUNT(1) as total_trx,
+                    COUNT(DISTINCT NULLIF(TRIM(t.no_rekening), '')) as total_noa,
+                    SUM(COALESCE(t.adm, 0)) as total_adm,
+                    SUM(COALESCE(t.jumlah, 0)) as total_nominal
+                $baseFrom
+                GROUP BY kode_kantor, nama_kantor, user_id, ao_name
+                ORDER BY total_nominal DESC, total_trx DESC
+            ");
+            foreach ($params as $key => $val) { $stmtTopUsers->bindValue($key, $val); }
+            $stmtTopUsers->execute();
+            $topUsers = $stmtTopUsers->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($rows as &$r) {
+                $r['total_trx'] = (int)$r['total_trx'];
+                $r['total_noa'] = (int)$r['total_noa'];
+                $r['total_nominal'] = (float)$r['total_nominal'];
+                $r['total_adm'] = (float)$r['total_adm'];
+                $r['last_transaksi'] = $r['last_transaksi'] ?: null;
+            }
+            unset($r);
+
+            foreach ($topUsers as &$uRow) {
+                $uRow['total_device'] = (int)$uRow['total_device'];
+                $uRow['total_trx'] = (int)$uRow['total_trx'];
+                $uRow['total_noa'] = (int)$uRow['total_noa'];
+                $uRow['total_adm'] = (float)$uRow['total_adm'];
+                $uRow['total_nominal'] = (float)$uRow['total_nominal'];
+            }
+            unset($uRow);
+
+            return sendResponse(200, "Berhasil ambil rekap branchless bulanan", [
+                'meta' => ['harian_date' => $harian, 'closing_date' => $closing_date],
+                'grand_total' => [
+                    'total_trx' => (int)($grandTotal['total_trx'] ?? 0),
+                    'total_noa' => (int)($grandTotal['total_noa'] ?? 0),
+                    'total_nominal' => (float)($grandTotal['total_nominal'] ?? 0),
+                    'total_adm' => (float)($grandTotal['total_adm'] ?? 0),
+                    'total_device' => (int)($grandTotal['total_device'] ?? 0),
+                    'total_user' => (int)($grandTotal['total_user'] ?? 0),
+                ],
+                'top_users' => $topUsers,
+                'pagination' => [
+                    'current_page' => (int)$page,
+                    'per_page' => (int)$limit,
+                    'total_records' => $totalRecords,
+                    'total_pages' => (int)ceil($totalRecords / $limit)
+                ],
+                'data' => $rows
+            ]);
+        } catch (PDOException $e) {
+            return sendResponse(500, "PDO Error: " . $e->getMessage(), null);
+        }
+    }
+
     public function getDetailDeviceBranchless($input = null) {
         set_time_limit(300); ini_set('memory_limit', '1024M');
 

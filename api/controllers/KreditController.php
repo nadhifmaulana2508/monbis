@@ -1120,133 +1120,387 @@ class KreditController {
         }
     }
 
-    public function getTopRealisasi($input = []) {
-        $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
-        $harian_date  = $input['harian_date']  ?? date('Y-m-d');
-        $kc           = $input['kode_kantor'] ?? null;
-        
-        $page         = isset($input['page']) ? (int)$input['page'] : 1;
-        $limit        = isset($input['limit']) ? (int)$input['limit'] : 10;
-        $offset       = ($page - 1) * $limit;
+    public function getTopRealisasi($input = [])
+    {
+        set_time_limit(300);
+        ini_set('memory_limit', '1024M');
 
-        $is_konsolidasi = empty($kc) || $kc === '000' || $kc === 'konsolidasi';
+        $b = is_array($input) ? $input : (json_decode(file_get_contents('php://input'), true) ?: []);
+
+        $harian_date = $b['harian_date'] ?? date('Y-m-d');
+
+        // Default closing_date = last day of previous month dari harian_date
+        $closing_date = $b['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month', strtotime($harian_date)));
+
+        $page  = isset($b['page']) ? max(1, (int)$b['page']) : 1;
+        $limit = isset($b['limit']) ? max(1, (int)$b['limit']) : 10;
+        $offset = ($page - 1) * $limit;
+
+        $kode_kantor = $b['kode_kantor'] ?? null;
+        $kode_ao     = $b['kode_ao'] ?? null;
+
+        $kode_kantor_norm = $kode_kantor ? str_pad((string)$kode_kantor, 3, '0', STR_PAD_LEFT) : null;
+        $is_konsolidasi = empty($kode_kantor) || $kode_kantor === '000' || strtolower((string)$kode_kantor) === 'konsolidasi';
+
+        /*
+        * Bulan berjalan:
+        * - Kalau harian_date masih bulan berjalan, AO yang tampil hanya status = 1.
+        * - Kalau tarik history / bulan lampau, semua AO boleh tampil.
+        */
+        $is_bulan_berjalan = date('Y-m', strtotime($harian_date)) === date('Y-m');
 
         try {
-            // --- 1. FILTER CABANG (Gunakan filter pada tabel AO) ---
-            $branchFilter = "";
+            /*
+            * =========================
+            * FILTER MASTER AO
+            * =========================
+            * Basis query dari ao_kredit supaya AO yang belum realisasi tetap muncul.
+            */
+            $aoWhere = [];
+            $aoParams = [];
+
             if (!$is_konsolidasi) {
-                // Kita filter berdasarkan kode kantor AO-nya
-                $branchFilter = " WHERE LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = :kc ";
+                $aoWhere[] = "LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = :ao_kode_kantor";
+                $aoParams[':ao_kode_kantor'] = $kode_kantor_norm;
             }
 
-            // --- 2. COUNT TOTAL AO ---
-            $sqlCount = "SELECT COUNT(*) as total FROM ao_kredit ao $branchFilter";
-            $stmtCount = $this->pdo->prepare($sqlCount);
-            if (!$is_konsolidasi) $stmtCount->bindValue(':kc', str_pad((string)$kc, 3, '0', STR_PAD_LEFT));
-            $stmtCount->execute();
-            $totalData = $stmtCount->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+            if (!empty($kode_ao) && strtoupper((string)$kode_ao) !== 'ALL') {
+                $aoWhere[] = "ao.kode_group2 = :ao_kode_ao";
+                $aoParams[':ao_kode_ao'] = $kode_ao;
+            }
 
-            // --- 3. QUERY UTAMA: BASE NYA ADALAH TABEL AO ---
-            $sql = "
-                SELECT 
-                    LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') AS kode_cabang,
-                    kk.nama_kantor,
-                    ao.kode_group2 AS kode_ao,
-                    ao.nama_ao,
-                    COUNT(t1.no_rekening) AS total_noa,
-                    COALESCE(SUM(t1.realisasi_pokok), 0) AS total_realisasi
+            if ($is_bulan_berjalan) {
+                $aoWhere[] = "ao.status = 1";
+            }
+
+            $aoWhereSql = '';
+            if (!empty($aoWhere)) {
+                $aoWhereSql = " WHERE " . implode(" AND ", $aoWhere);
+            }
+
+            /*
+            * =========================
+            * FILTER TRANSAKSI REALISASI
+            * =========================
+            * Hanya kode_trans = 110.
+            */
+            $trxWhere = [];
+            $trxParams = [];
+
+            $trxWhere[] = "t1.tanggal_realisasi > :closing_date";
+            $trxWhere[] = "t1.tanggal_realisasi <= :harian_date";
+            $trxWhere[] = "t1.kode_trans = 110";
+
+            if (!$is_konsolidasi) {
+                $trxWhere[] = "LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') = :trx_kode_kantor";
+                $trxParams[':trx_kode_kantor'] = $kode_kantor_norm;
+            }
+
+            if (!empty($kode_ao) && strtoupper((string)$kode_ao) !== 'ALL') {
+                $trxWhere[] = "COALESCE(n.kode_group2, t1.kode_group2) = :trx_kode_ao";
+                $trxParams[':trx_kode_ao'] = $kode_ao;
+            }
+
+            $trxWhereSql = implode(" AND ", $trxWhere);
+
+            /*
+            * =========================
+            * COUNT TOTAL AO
+            * =========================
+            */
+            $sqlCount = "
+                SELECT COUNT(*) AS total
                 FROM ao_kredit ao
-                -- LEFT JOIN ke transaksi: AO tetap muncul biarpun transaksi NULL
-                LEFT JOIN update_realisasi_kredit t1 ON ao.kode_group2 = t1.kode_group2 
-                    AND t1.tanggal_realisasi >= :closing_date 
-                    AND t1.tanggal_realisasi <= :harian_date
-                LEFT JOIN kode_kantor kk ON LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = kk.kode_kantor
-                $branchFilter
-                GROUP BY ao.kode_kantor, ao.kode_group2, ao.nama_ao, kk.nama_kantor
-                ORDER BY total_realisasi DESC, ao.nama_ao ASC
+                LEFT JOIN kode_kantor kk
+                    ON LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = kk.kode_kantor
+                {$aoWhereSql}
+            ";
+
+            $stmtCount = $this->pdo->prepare($sqlCount);
+
+            foreach ($aoParams as $key => $val) {
+                $stmtCount->bindValue($key, $val);
+            }
+
+            $stmtCount->execute();
+            $totalData = (int)($stmtCount->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+            /*
+            * =========================
+            * QUERY UTAMA REKAP AO
+            * =========================
+            * Catatan:
+            * - Alias subquery pakai rls, bukan real, supaya aman di MariaDB.
+            * - AO belum realisasi tetap muncul karena FROM utama dari ao_kredit.
+            */
+            $sql = "
+                SELECT
+                    LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') AS kode_kantor,
+                    COALESCE(kk.nama_kantor, LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0')) AS nama_kantor,
+
+                    ao.kode_group2 AS kode_ao,
+                    COALESCE(ao.nama_ao, ao.kode_group2) AS nama_ao,
+
+                    COALESCE(rls.total_noa, 0) AS total_noa,
+                    COALESCE(rls.total_realisasi, 0) AS total_realisasi
+                FROM ao_kredit ao
+                LEFT JOIN kode_kantor kk
+                    ON LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = kk.kode_kantor
+                LEFT JOIN (
+                    SELECT
+                        LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') AS kode_kantor,
+                        COALESCE(n.kode_group2, t1.kode_group2) AS kode_ao,
+                        COUNT(DISTINCT t1.no_rekening) AS total_noa,
+                        COALESCE(SUM(t1.realisasi_pokok), 0) AS total_realisasi
+                    FROM update_realisasi_kredit t1
+                    LEFT JOIN nominatif n
+                        ON t1.no_rekening = n.no_rekening
+                        AND DATE(n.created) = :posisi_date
+                    WHERE {$trxWhereSql}
+                    GROUP BY
+                        LPAD(CAST(n.kode_cabang AS CHAR), 3, '0'),
+                        COALESCE(n.kode_group2, t1.kode_group2)
+                ) rls
+                    ON rls.kode_ao = ao.kode_group2
+                    AND rls.kode_kantor = LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0')
+                {$aoWhereSql}
+                ORDER BY
+                    COALESCE(rls.total_realisasi, 0) DESC,
+                    ao.nama_ao ASC
             ";
 
             if ($is_konsolidasi) {
-                $sql .= " LIMIT :limit OFFSET :offset ";
+                $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
             }
 
             $stmt = $this->pdo->prepare($sql);
+
+            $stmt->bindValue(':posisi_date', $harian_date);
             $stmt->bindValue(':closing_date', $closing_date);
             $stmt->bindValue(':harian_date', $harian_date);
-            if (!$is_konsolidasi) {
-                $stmt->bindValue(':kc', str_pad((string)$kc, 3, '0', STR_PAD_LEFT));
-            } else {
-                $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
-                $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+
+            foreach ($trxParams as $key => $val) {
+                $stmt->bindValue($key, $val);
             }
+
+            foreach ($aoParams as $key => $val) {
+                $stmt->bindValue($key, $val);
+            }
+
             $stmt->execute();
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            sendResponse(200, "Sukses", [
+            $summary = [
+                'total_ao'        => count($data),
+                'total_noa'       => 0,
+                'total_realisasi' => 0,
+            ];
+
+            foreach ($data as $row) {
+                $summary['total_noa'] += (int)($row['total_noa'] ?? 0);
+                $summary['total_realisasi'] += (float)($row['total_realisasi'] ?? 0);
+            }
+
+            $dropdownData = [];
+            if (function_exists('getDropdownKankasAo')) {
+                $dropdownData = getDropdownKankasAo($this->pdo, $b);
+            }
+
+            return sendResponse(200, "Sukses load top realisasi AO", [
+                'posisi_data' => $harian_date,
+                'periode' => [
+                    'closing_date' => $closing_date,
+                    'harian_date'  => $harian_date,
+                ],
+                'mode' => [
+                    'bulan_berjalan'  => $is_bulan_berjalan,
+                    'filter_status_ao' => $is_bulan_berjalan ? 1 : 'ALL',
+                ],
+                'filter_aktif' => [
+                    'kode_kantor' => $kode_kantor ?? 'ALL',
+                    'kode_ao'     => $kode_ao ?? 'ALL',
+                ],
+                'dropdown_lists' => $dropdownData,
+                'summary' => $summary,
                 'data' => $data,
                 'pagination' => [
-                    'total_data'   => (int)$totalData,
-                    'total_page'   => ceil($totalData / $limit),
-                    'current_page' => $page,
-                    'limit'        => $limit,
-                    'is_konsolidasi' => $is_konsolidasi
-                ]
+                    'total_data'     => $totalData,
+                    'total_page'     => $is_konsolidasi ? (int)ceil($totalData / $limit) : 1,
+                    'current_page'   => $page,
+                    'limit'          => $limit,
+                    'is_konsolidasi' => $is_konsolidasi,
+                ],
             ]);
-        } catch (Exception $e) { sendResponse(500, $e->getMessage()); }
+        } catch (Exception $e) {
+            return sendResponse(500, "Error: " . $e->getMessage());
+        }
     }
 
-    public function getDetailRealisasiAO($input = []) {
-        $tgl_awal  = $input['closing_date'] ?? null;
-        $tgl_akhir = $input['harian_date']  ?? null;
-        $kode_ao   = $input['kode_ao']      ?? null;
-        $kode_kc   = $input['kode_kantor']  ?? null;
 
-        if (!$tgl_awal || !$tgl_akhir || !$kode_ao) {
-            sendResponse(400, "Parameter tidak lengkap");
-            return;
+    public function getDetailRealisasiAO($input = [])
+    {
+        set_time_limit(300);
+        ini_set('memory_limit', '1024M');
+
+        $b = is_array($input) ? $input : (json_decode(file_get_contents('php://input'), true) ?: []);
+
+        $harian_date = $b['harian_date'] ?? date('Y-m-d');
+
+        // Default closing_date = last day of previous month dari harian_date
+        $closing_date = $b['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month', strtotime($harian_date)));
+
+        $kode_ao = $b['kode_ao'] ?? null;
+
+        $kode_kantor = $b['kode_kantor'] ?? null;
+        $kode_kantor_norm = $kode_kantor ? str_pad((string)$kode_kantor, 3, '0', STR_PAD_LEFT) : null;
+        $is_konsolidasi = empty($kode_kantor) || $kode_kantor === '000' || strtolower((string)$kode_kantor) === 'konsolidasi';
+
+        if (!$harian_date || !$closing_date) {
+            return sendResponse(400, "Parameter harian_date / closing_date tidak lengkap");
+        }
+
+        if (!$kode_ao || strtoupper((string)$kode_ao) === 'ALL') {
+            return sendResponse(400, "Parameter kode_ao wajib diisi untuk detail realisasi AO");
         }
 
         try {
-            $sql = "
-                SELECT 
-                    t1.no_rekening,
-                    t1.nama_nasabah,
-                    t1.realisasi_pokok as plafond,
-                    t1.tanggal_realisasi,
-                    t1.kode_kantor,
-                    COALESCE(k.nama_kantor, t1.kode_kantor) as nama_cabang,
-                    t1.kode_group2 as kode_ao,
-                    COALESCE(ao.nama_ao, t1.kode_group2) as nama_ao
-                FROM update_realisasi_kredit t1
-                LEFT JOIN kode_kantor k ON LPAD(CAST(t1.kode_kantor AS CHAR), 3, '0') = k.kode_kantor
-                LEFT JOIN ao_kredit ao ON t1.kode_group2 = ao.kode_group2
-                WHERE t1.tanggal_realisasi >= :tgl_awal 
-                AND t1.tanggal_realisasi <= :tgl_akhir
-                AND t1.kode_group2 = :kode_ao
+            /*
+            * =========================
+            * MASTER AO
+            * =========================
+            * Supaya modal tetap punya data AO walaupun realisasi kosong.
+            */
+            $sqlAo = "
+                SELECT
+                    LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') AS kode_kantor,
+                    COALESCE(kk.nama_kantor, LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0')) AS nama_kantor,
+                    ao.kode_group2 AS kode_ao,
+                    COALESCE(ao.nama_ao, ao.kode_group2) AS nama_ao,
+                    ao.status
+                FROM ao_kredit ao
+                LEFT JOIN kode_kantor kk
+                    ON LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = kk.kode_kantor
+                WHERE ao.kode_group2 = :master_kode_ao
             ";
 
-            // Filter kantor jika user bukan pusat
-            if ($kode_kc && $kode_kc !== '000' && $kode_kc !== 'konsolidasi') {
-                $sql .= " AND LPAD(CAST(t1.kode_kantor AS CHAR), 3, '0') = :kc ";
+            if (!$is_konsolidasi) {
+                $sqlAo .= " AND LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = :master_kode_kantor";
             }
 
-            $sql .= " ORDER BY t1.tanggal_realisasi DESC, t1.realisasi_pokok DESC";
+            $sqlAo .= " LIMIT 1";
+
+            $stmtAo = $this->pdo->prepare($sqlAo);
+            $stmtAo->bindValue(':master_kode_ao', $kode_ao);
+
+            if (!$is_konsolidasi) {
+                $stmtAo->bindValue(':master_kode_kantor', $kode_kantor_norm);
+            }
+
+            $stmtAo->execute();
+            $masterAo = $stmtAo->fetch(PDO::FETCH_ASSOC) ?: null;
+
+            /*
+            * =========================
+            * DETAIL TRANSAKSI REALISASI
+            * =========================
+            * Hanya kode_trans = 110.
+            */
+            $where = [];
+            $params = [];
+
+            $where[] = "t1.tanggal_realisasi > :closing_date";
+            $where[] = "t1.tanggal_realisasi <= :harian_date";
+            $where[] = "t1.kode_trans = 110";
+            $where[] = "COALESCE(n.kode_group2, t1.kode_group2) = :kode_ao";
+
+            $params[':closing_date'] = $closing_date;
+            $params[':harian_date']  = $harian_date;
+            $params[':kode_ao']      = $kode_ao;
+
+            if (!$is_konsolidasi) {
+                $where[] = "LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') = :kode_kantor";
+                $params[':kode_kantor'] = $kode_kantor_norm;
+            }
+
+            $whereSql = implode(" AND ", $where);
+
+            $sql = "
+                SELECT
+                    t1.no_rekening,
+                    COALESCE(t1.nama_nasabah, n.nama_nasabah, '-') AS nama_nasabah,
+                    t1.realisasi_pokok AS plafond,
+                    t1.tanggal_realisasi,
+
+                    LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') AS kode_kantor,
+                    COALESCE(k.nama_kantor, LPAD(CAST(n.kode_cabang AS CHAR), 3, '0')) AS nama_kantor,
+
+                    n.kode_group1 AS kode_kankas,
+                    COALESCE(kks.deskripsi_group1, n.kode_group1) AS nama_kankas,
+
+                    COALESCE(n.kode_group2, t1.kode_group2) AS kode_ao,
+                    COALESCE(ao.nama_ao, :kode_ao_nama_fallback) AS nama_ao,
+
+                    n.kode_produk,
+                 
+                    n.baki_debet,
+                    n.hari_menunggak
+                FROM update_realisasi_kredit t1
+                LEFT JOIN nominatif n
+                    ON t1.no_rekening = n.no_rekening
+                    AND DATE(n.created) = :posisi_date
+                LEFT JOIN kode_kantor k
+                    ON LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') = k.kode_kantor
+                LEFT JOIN ao_kredit ao
+                    ON COALESCE(n.kode_group2, t1.kode_group2) = ao.kode_group2
+                    AND LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') = LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0')
+                LEFT JOIN kankas kks
+                    ON n.kode_group1 = kks.kode_group1
+                    AND LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') = LPAD(CAST(kks.kode_kantor AS CHAR), 3, '0')
+                WHERE {$whereSql}
+                ORDER BY
+                    t1.tanggal_realisasi DESC,
+                    t1.realisasi_pokok DESC,
+                    t1.no_rekening ASC
+            ";
 
             $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':tgl_awal', $tgl_awal);
-            $stmt->bindValue(':tgl_akhir', $tgl_akhir);
-            $stmt->bindValue(':kode_ao', $kode_ao);
-            
-            if ($kode_kc && $kode_kc !== '000' && $kode_kc !== 'konsolidasi') {
-                $stmt->bindValue(':kc', str_pad($kode_kc, 3, '0', STR_PAD_LEFT));
+
+            $stmt->bindValue(':posisi_date', $harian_date);
+            $stmt->bindValue(':kode_ao_nama_fallback', $masterAo['nama_ao'] ?? $kode_ao);
+
+            foreach ($params as $key => $val) {
+                $stmt->bindValue($key, $val);
             }
 
             $stmt->execute();
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            sendResponse(200, "Sukses load detail realisasi AO", $data);
+            $summary = [
+                'total_noa'       => 0,
+                'total_realisasi' => 0,
+            ];
+
+            foreach ($data as $row) {
+                $summary['total_noa']++;
+                $summary['total_realisasi'] += (float)($row['plafond'] ?? 0);
+            }
+
+            return sendResponse(200, "Sukses load detail realisasi AO", [
+                'posisi_data' => $harian_date,
+                'periode' => [
+                    'closing_date' => $closing_date,
+                    'harian_date'  => $harian_date,
+                ],
+                'filter_aktif' => [
+                    'kode_kantor' => $kode_kantor ?? 'ALL',
+                    'kode_ao'     => $kode_ao,
+                ],
+                'ao' => $masterAo,
+                'summary' => $summary,
+                'data' => $data,
+            ]);
         } catch (Exception $e) {
-            sendResponse(500, "Error: " . $e->getMessage());
+            return sendResponse(500, "Error: " . $e->getMessage());
         }
     }
 

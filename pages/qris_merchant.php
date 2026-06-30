@@ -15,6 +15,8 @@
   .local-loader { position: absolute; inset: 0; background: rgba(255,255,255,0.7); z-index: 50; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); border-radius: inherit; }
   .local-loader.hidden { display: none; }
   .apexcharts-tooltip { z-index: 99999 !important; background: transparent !important; border: none !important; box-shadow: none !important; }
+  .trend-note { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; background: #f5f3ff; color: #6d28d9; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+  .trend-note-dot { width: 7px; height: 7px; border-radius: 9999px; background: #8b5cf6; box-shadow: 0 0 0 4px rgba(139,92,246,.14); }
   @media (max-width: 767px) {
     th { padding: 8px 6px; font-size: 10px; }
     td { padding: 8px 6px; font-size: 11px; }
@@ -129,12 +131,18 @@
       <div id="loadTrend" class="local-loader hidden rounded-xl"><div class="animate-spin h-8 w-8 border-4 border-purple-200 border-t-purple-600 rounded-full"></div></div>
       <div class="flex justify-between items-center mb-2 border-b border-gray-100 pb-2">
           <h2 class="font-bold text-gray-800 text-[13px] md:text-base">Tren Transaksi QRIS</h2>
-          <select id="trendPeriode" class="border border-gray-200 rounded-md px-2 py-1 text-[10px] md:text-xs font-semibold text-gray-600 outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer bg-white shadow-sm" onchange="fetchTrend()">
-              <option value="bulanan">6 Bulan Terakhir</option>
-              <option value="7_hari">7 Hari Terakhir</option>
-              <option value="30_hari">30 Hari Terakhir</option>
-              <option value="tahunan">Tahunan</option>
-          </select>
+          <div class="flex items-center gap-2">
+              <div id="trendNote" class="trend-note hidden sm:inline-flex">
+                  <span class="trend-note-dot"></span>
+                  Label 6 Bulan Aktif
+              </div>
+              <select id="trendPeriode" class="border border-gray-200 rounded-md px-2 py-1 text-[10px] md:text-xs font-semibold text-gray-600 outline-none focus:ring-2 focus:ring-purple-500 cursor-pointer bg-white shadow-sm" onchange="fetchTrend()">
+                  <option value="bulanan">6 Bulan Terakhir</option>
+                  <option value="7_hari">7 Hari Terakhir</option>
+                  <option value="30_hari">30 Hari Terakhir</option>
+                  <option value="tahunan">Tahunan</option>
+              </select>
+          </div>
       </div>
       <div id="chartTrend" class="w-full flex-1 mt-1"></div>
     </div>
@@ -177,6 +185,15 @@
 
   const nf = new Intl.NumberFormat('id-ID');
   const fmt = n => nf.format(Number(n||0));
+  const fmtCompact = (value, digits = 1) => {
+      const num = Number(value || 0);
+      const abs = Math.abs(num);
+      if (abs >= 1000000000000) return (num / 1000000000000).toFixed(digits) + ' T';
+      if (abs >= 1000000000) return (num / 1000000000).toFixed(digits) + ' M';
+      if (abs >= 1000000) return (num / 1000000).toFixed(digits) + ' Jt';
+      if (abs >= 1000) return (num / 1000).toFixed(digits) + ' Rb';
+      return nf.format(num);
+  };
   const esc = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
   let chartTrendObj = null;
@@ -316,21 +333,22 @@
 
   function initCharts() {
       chartTrendObj = new ApexCharts(document.querySelector('#chartTrend'), {
-          series: [], chart: { type: 'area', height: 340, toolbar: { show: false } },
+          series: [], chart: { type: 'area', height: 340, toolbar: { show: false }, zoom: { enabled: false } },
           colors: ['#7c3aed'], dataLabels: { enabled: false }, legend: { show: false },
-          stroke: { curve: 'smooth', width: 3 },
+          stroke: { curve: 'smooth', width: 3.5, lineCap: 'round' },
+          markers: { size: 4, strokeWidth: 2, hover: { size: 6 }, colors: ['#ffffff'], strokeColors: ['#7c3aed'] },
           fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05, stops: [0, 100] } },
-          grid: { padding: { bottom: 15, left: 10, right: 10 } },
-          xaxis: { categories: [], labels: { style: { fontSize: '10px' } } },
-          yaxis: { labels: { formatter: (val) => val >= 1000000000 ? (val/1000000000).toFixed(1)+' M' : (val >= 1000000 ? (val/1000000).toFixed(0)+' Jt' : nf.format(val)) } },
+          grid: { borderColor: '#e9d5ff', strokeDashArray: 4, padding: { bottom: 15, left: 10, right: 12, top: 8 } },
+          xaxis: { categories: [], labels: { style: { fontSize: '10px', fontWeight: 700, colors: '#64748b' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+          yaxis: { labels: { formatter: (val) => fmtCompact(val, val >= 1000000000 ? 1 : 0), style: { fontSize: '10px', fontWeight: 700, colors: ['#94a3b8'] } } },
           tooltip: { y: { formatter: (val) => 'Rp ' + nf.format(val) } }
       });
       chartTrendObj.render();
 
       chartDonutObj = new ApexCharts(document.querySelector('#chartDonut'), {
           series: [], chart: { type: 'donut', height: 280 }, labels: [],
-          colors: ['#8b5cf6','#0ea5e9','#10b981','#f59e0b','#f43f5e','#64748b'],
-          plotOptions: { donut: { size: '70%' } }, dataLabels: { enabled: false },
+          colors: ['#8b5cf6','#0ea5e9','#10b981','#f59e0b','#ef4444','#64748b'],
+          plotOptions: { pie: { donut: { size: '70%', labels: { show: true, name: { show: true, fontSize: '12px', fontWeight: 800, color: '#64748b' }, value: { show: true, fontSize: '18px', fontWeight: 900, color: '#0f172a', formatter: (val) => 'Rp ' + fmtCompact(val, 1) }, total: { show: true, label: 'Total', fontSize: '12px', fontWeight: 800, color: '#64748b', formatter: function(w) { const total = w.globals.seriesTotals.reduce((sum, item) => sum + item, 0); return 'Rp ' + fmtCompact(total, 1); } } } } } }, dataLabels: { enabled: false },
           legend: { show: true, position: 'bottom', fontSize: '9.5px' }
       });
       chartDonutObj.render();
@@ -339,12 +357,20 @@
   async function fetchTrend() {
       showLoad('loadTrend');
       const area = parseAreaValue();
-      const payload = { type: 'tren_nominal_va', harian_date: document.getElementById('harian_date').value, kode_kantor: area.kode_kantor, korwil: area.korwil, periode: document.getElementById('trendPeriode').value, channel: CHANNEL };
+      const periode = document.getElementById('trendPeriode').value;
+      const isMonthly = periode === 'bulanan';
+      const payload = { type: 'tren_nominal_va', harian_date: document.getElementById('harian_date').value, kode_kantor: area.kode_kantor, korwil: area.korwil, periode, channel: CHANNEL };
       try {
           const r = await fetch(API_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
           const j = await r.json();
           if(j.status===200 && j.data && j.data.chart_nominal) {
-              chartTrendObj.updateOptions({ xaxis: { categories: j.data.chart_nominal.labels } });
+              chartTrendObj.updateOptions({
+                  xaxis: { categories: j.data.chart_nominal.labels, labels: { rotate: isMonthly ? 0 : -25, hideOverlappingLabels: false, style: { fontSize: isMonthly ? '10px' : '9px', fontWeight: 700, colors: '#64748b' } } },
+                  markers: { size: isMonthly ? 5 : 3, hover: { size: isMonthly ? 7 : 5 } },
+                  dataLabels: { enabled: isMonthly, offsetY: -10, background: { enabled: true, foreColor: '#0f172a', borderRadius: 8, padding: 6, opacity: 0.88, borderWidth: 1, borderColor: '#ddd6fe' }, style: { fontSize: '10px', fontWeight: 900, colors: ['#6d28d9'] }, formatter: (val) => fmtCompact(val, val >= 1000000000 ? 3 : 1) },
+                  fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: isMonthly ? 0.22 : 0.3, opacityTo: 0.04, stops: [0, 100] } }
+              });
+              document.getElementById('trendNote')?.classList.toggle('hidden', !isMonthly);
               chartTrendObj.updateSeries(j.data.chart_nominal.series);
           }
       } catch(e){} finally { hideLoad('loadTrend'); }

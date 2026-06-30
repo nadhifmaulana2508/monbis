@@ -1,288 +1,920 @@
-<style>
-  :root { --primary: #2563eb; --bg: #f8fafc; --text: #334155; }
-  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
-  
-  /* === INPUTS & UI === */
-  .inp { 
-      box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0 0.5rem; 
-      font-size: 13px; background: #fff; width: 100%; height: 38px; outline: none; transition: all 0.2s;
-  }
-  .inp:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(37,99,235,0.1); }
-  .inp:disabled { background-color: #f1f5f9; color: #64748b; font-weight: 700; cursor: not-allowed; }
-  .lbl { font-size: 9px; font-weight: 800; color: #475569; text-transform: uppercase; margin-left: 2px; margin-bottom: 2px; }
+<div class="w-full min-h-screen bg-slate-50 p-3 md:p-5 font-sans text-slate-900">
+  <div class="mx-auto flex h-[calc(100vh-32px)] w-full max-w-7xl flex-col gap-3 md:h-[calc(100vh-40px)] md:gap-4">
 
-  /* === TABLE SCROLLER === */
-  #top50Scroller { position: relative; border: 1px solid #e2e8f0; border-radius: 12px; background: white; height: 100%; overflow: auto; }
-  table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 11px; }
-  th, td { white-space: nowrap; padding: 10px 12px; vertical-align: middle; }
-  thead th { position: sticky; top: 0; z-index: 60; background: #f8fafc; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 10px; border-bottom: 1px solid #e2e8f0; border-right: 1px solid #f1f5f9; }
+    <!-- HEADER -->
+    <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+      <div class="flex items-center justify-between gap-3 px-3 py-3 md:px-4">
 
-  .ao-link { color: #2563eb; font-weight: 700; cursor: pointer; text-decoration: underline decoration-blue-200; }
-  .ao-link:hover { color: #1e40af; background: #eff6ff; border-radius: 4px; }
-
-  /* === WEB STYLE FILTER === */
-  #filterPanelAO { display: flex; align-items: center; gap: 8px; background: white; padding: 6px 12px; border: 1px solid #e2e8f0; border-radius: 12px; }
-  .filter-group { display: flex; flex-direction: column; }
-  .filter-group .inp-mini { height: 34px; width: 130px; font-size: 12px; font-weight: 600; }
-
-  /* MOBILE RESPONSIVE */
-  @media (max-width: 1024px) {
-      #headerRow { flex-direction: column; align-items: flex-start !important; gap: 12px; }
-      #filterPanelAO { display: none; width: 100%; flex-direction: column; align-items: stretch; padding: 15px; }
-      #filterPanelAO.active { display: flex; }
-      .filter-group .inp-mini { width: 100%; }
-      #btnToggleFilter { display: flex !important; }
-  }
-</style>
-
-<div class="w-full h-[calc(100vh-80px)] bg-slate-50 flex justify-center font-sans text-slate-800 px-3 md:px-4 py-4">
-  <div class="w-full max-w-7xl flex flex-col h-full">
-    
-    <div id="headerRow" class="flex flex-row items-center justify-between mb-4 shrink-0">
-      <div class="flex items-center justify-between w-full lg:w-auto">
-          <div class="flex items-center gap-3">
-              <div class="p-2 bg-blue-600 text-white rounded-lg shadow-lg">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
-              </div>
-              <div>
-                  <h1 class="text-xl font-black text-slate-800 leading-tight">Rekap Realisasi Per AO</h1>
-                  <p class="text-[10px] text-slate-500 font-medium">*Monitoring Pencairan Kredit</p>
-              </div>
+        <!-- TITLE -->
+        <div class="flex min-w-0 items-center gap-2 md:gap-3">
+          <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white shadow-md md:h-10 md:w-10">
+            <svg class="h-5 w-5 md:h-6 md:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 13h4v8H3v-8zm7-6h4v14h-4V7zm7-4h4v18h-4V3z"></path>
+            </svg>
           </div>
-          <button id="btnToggleFilter" onclick="toggleFilter()" class="hidden h-9 px-3 bg-white border border-slate-300 rounded-lg text-xs font-bold items-center gap-2">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-              Filter
+
+          <div class="flex min-w-0 items-center gap-2">
+            <h1 class="truncate text-base font-black leading-tight tracking-tight text-slate-900 md:text-xl">
+              Realisasi AO
+            </h1>
+
+            <button
+              type="button"
+              onclick="toggleInfoPanel(event)"
+              onmouseenter="showInfoPanel()"
+              onmouseleave="scheduleCloseInfoPanel()"
+              class="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-500 text-[10px] font-black text-white hover:bg-blue-600"
+              title="Panduan kolom"
+            >
+              i
+            </button>
+          </div>
+        </div>
+
+        <!-- DESKTOP FILTER -->
+        <div class="hidden items-end gap-2 lg:flex">
+          <div class="flex flex-col gap-1">
+            <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Closing (M-1)</label>
+            <input
+              type="date"
+              id="tgl_awal"
+              onchange="fetchTopData(1)"
+              class="h-9 w-32 rounded-lg border border-slate-300 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            >
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Harian (Actual)</label>
+            <input
+              type="date"
+              id="tgl_akhir"
+              onchange="fetchTopData(1)"
+              class="h-9 w-32 rounded-lg border border-slate-300 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            >
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Area / Cabang</label>
+            <select
+              id="filter_kantor"
+              onchange="syncMobileFiltersFromDesktop(); fetchTopData(1)"
+              class="h-9 w-48 rounded-lg border border-slate-300 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            ></select>
+          </div>
+
+          <button
+            onclick="exportFullData()"
+            class="flex h-9 w-10 items-center justify-center rounded-lg bg-emerald-600 text-white transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-70"
+            title="Export Excel"
+          >
+            <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <path d="M14 2v6h6"></path>
+              <path d="M8 13l4 4"></path>
+              <path d="M12 13l-4 4"></path>
+              <path d="M15 13h2"></path>
+              <path d="M15 17h2"></path>
+            </svg>
           </button>
+        </div>
+
+        <!-- MOBILE FILTER BUTTON -->
+        <button
+          type="button"
+          onclick="toggleMobileFilter()"
+          class="flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-[11px] font-black text-slate-700 shadow-sm lg:hidden"
+        >
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+          </svg>
+          Filter
+        </button>
       </div>
 
-      <div id="filterPanelAO">
-          <div class="filter-group">
-              <label class="lbl">Closing</label>
-              <input type="date" id="tgl_awal" class="inp inp-mini">
+      <!-- MOBILE FILTER PANEL -->
+      <div id="mobileFilterPanel" class="hidden border-t border-slate-200 px-3 pb-3 lg:hidden">
+        <div class="grid grid-cols-2 gap-2 pt-3">
+
+          <div class="flex flex-col gap-1">
+            <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Closing</label>
+            <input
+              type="date"
+              id="tgl_awal_mobile"
+              onchange="syncDateFromMobile(); fetchTopData(1)"
+              class="h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-bold text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            >
           </div>
-          <div class="filter-group">
-              <label class="lbl">Harian</label>
-              <input type="date" id="tgl_akhir" class="inp inp-mini">
+
+          <div class="flex flex-col gap-1">
+            <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Harian</label>
+            <input
+              type="date"
+              id="tgl_akhir_mobile"
+              onchange="syncDateFromMobile(); fetchTopData(1)"
+              class="h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-bold text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+            >
           </div>
-          <div class="filter-group">
-              <label class="lbl">Kantor</label>
-              <select id="filter_kantor" class="inp inp-mini !w-[160px]"></select>
-          </div>
-          <div class="flex gap-1.5 mt-auto">
-              <button onclick="fetchTopData(1)" class="h-[34px] px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs flex items-center gap-2 transition">
-                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="3"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                  CARI
+
+          <div class="col-span-2 grid grid-cols-[1fr_44px] gap-2">
+            <div class="flex min-w-0 flex-col gap-1">
+              <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Cabang</label>
+              <select
+                id="filter_kantor_mobile"
+                onchange="syncKantorFromMobile(); fetchTopData(1)"
+                class="h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-bold text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
+              ></select>
+            </div>
+
+            <div class="flex flex-col justify-end">
+              <button
+                onclick="exportFullData()"
+                class="flex h-9 w-11 items-center justify-center rounded-lg bg-emerald-600 text-white transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-70"
+                title="Export Excel"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <path d="M14 2v6h6"></path>
+                  <path d="M8 13l4 4"></path>
+                  <path d="M12 13l-4 4"></path>
+                  <path d="M15 13h2"></path>
+                  <path d="M15 17h2"></path>
+                </svg>
               </button>
-              <button onclick="exportFullData()" class="h-[34px] w-10 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg flex items-center justify-center transition">
-                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              </button>
+            </div>
           </div>
+
+        </div>
       </div>
     </div>
 
-    <div id="top50Scroller" class="shadow-sm flex flex-col relative">
-        <div id="loadingAO" class="hidden absolute inset-0 bg-white/80 z-50 flex flex-col items-center justify-center text-blue-600 font-bold backdrop-blur-sm">
-            <div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full mb-2"></div>
-            <span class="text-[10px] uppercase tracking-widest">Memproses...</span>
+    <!-- INFO PANEL -->
+    <div
+      id="infoPanel"
+      onmouseenter="cancelCloseInfoPanel()"
+      onmouseleave="scheduleCloseInfoPanel()"
+      class="fixed left-3 right-3 top-16 z-[9998] hidden rounded-xl border border-slate-200 bg-white p-4 shadow-2xl md:left-auto md:right-auto md:top-24 md:w-[360px]"
+    >
+      <div class="mb-3 flex items-center justify-between border-b border-slate-200 pb-2">
+        <div class="flex items-center gap-2">
+          <span class="text-base">💡</span>
+          <h3 class="text-sm font-black text-slate-800">Panduan Kamus Kolom</h3>
         </div>
 
-        <div class="flex-1 overflow-auto">
-            <table id="tabelAO">
-                <thead>
-                    <tr>
-                        <th class="text-center w-10">NO</th>
-                        <th class="w-48 text-left">NAMA KANTOR</th>
-                        <th>NAMA AO (MARKETING)</th>
-                        <th class="text-center w-24">NOA</th>
-                        <th class="text-right w-44 bg-emerald-50 text-emerald-800">TOTAL REALISASI</th>
-                    </tr>
-                </thead>
-                <tbody id="tbodyAO" class="divide-y divide-slate-100"></tbody>
-            </table>
-        </div>
+        <button onclick="closeInfoPanel()" class="text-sm font-black text-slate-400 hover:text-red-500">
+          ✕
+        </button>
+      </div>
 
-        <div id="paginationWrap" class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between hidden">
-            <span class="text-[10px] text-slate-500 font-bold uppercase" id="pageInfo">Hal 1 / 1</span>
-            <div class="flex gap-1">
-                <button id="btnPrev" onclick="changePage(-1)" class="h-8 px-3 bg-white border border-slate-300 rounded-lg text-[10px] font-black disabled:opacity-30">PREV</button>
-                <button id="btnNext" onclick="changePage(1)" class="h-8 px-3 bg-white border border-slate-300 rounded-lg text-[10px] font-black disabled:opacity-30">NEXT</button>
-            </div>
+      <div class="space-y-2 text-[11px] leading-relaxed text-slate-600">
+        <p>
+          <b class="text-slate-800">Closing (M-1):</b>
+          tanggal penutupan bulan sebelumnya sebagai batas awal monitoring realisasi.
+        </p>
+
+        <p>
+          <b class="text-slate-800">Harian (Actual):</b>
+          posisi data harian yang digunakan dari tabel nominatif.
+        </p>
+
+        <p>
+          <b class="text-slate-800">Area / Cabang:</b>
+          filter kantor cabang. Pilih <b>ALL Konsolidasi</b> untuk melihat seluruh cabang.
+        </p>
+
+        <p>
+          <b class="text-slate-800">NOA:</b>
+          jumlah rekening / debitur yang melakukan realisasi kredit baru.
+        </p>
+
+        <p>
+          <b class="text-slate-800">Nominal:</b>
+          total nominal pencairan kredit dari transaksi realisasi dengan <b>kode_trans 110</b>.
+        </p>
+
+        <p>
+          <b class="text-slate-800">Nama AO:</b>
+          klik nama AO untuk membuka detail rekening realisasi AO tersebut.
+        </p>
+
+        <div class="rounded-lg border border-blue-200 bg-blue-50 p-3 text-blue-900">
+          <div class="mb-1 text-[11px] font-black">Formula Nominal Realisasi</div>
+          <div class="text-[10px]">
+            SUM(realisasi_pokok) dari update_realisasi_kredit dengan kode_trans = 110
+          </div>
         </div>
+      </div>
+    </div>
+
+    <!-- TABLE CARD -->
+    <div class="relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
+
+      <!-- LOADING -->
+      <div id="loadingAO" class="absolute inset-0 z-50 hidden items-center justify-center bg-white/80 backdrop-blur-sm">
+        <div class="flex flex-col items-center gap-2 text-blue-600">
+          <div class="h-8 w-8 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
+          <span class="text-[10px] font-black uppercase tracking-widest">Memproses...</span>
+        </div>
+      </div>
+
+      <!-- MAIN TABLE -->
+      <div class="min-h-0 flex-1 overflow-auto">
+        <table class="w-full min-w-[430px] border-separate border-spacing-0 text-[11px] md:min-w-[760px]">
+
+          <thead>
+            <tr>
+              <th class="hidden md:table-cell sticky top-0 z-30 border-b border-r border-slate-200 bg-sky-50 px-3 py-3 text-center text-[10px] font-black uppercase tracking-wider text-blue-950">
+                NO
+              </th>
+
+              <th class="hidden md:table-cell sticky top-0 z-30 border-b border-r border-slate-200 bg-sky-50 px-3 py-3 text-left text-[10px] font-black uppercase tracking-wider text-blue-950">
+                KANTOR CABANG
+              </th>
+
+              <th class="sticky left-0 top-0 z-40 w-[190px] max-w-[190px] border-b border-r border-slate-200 bg-sky-50 px-3 py-3 text-left text-[10px] font-black uppercase tracking-wider text-blue-950 md:left-auto md:w-auto md:max-w-none">
+                NAMA AO
+              </th>
+
+              <th class="sticky right-[112px] top-0 z-40 w-[58px] border-b border-r border-slate-200 bg-sky-50 px-2 py-3 text-center text-[10px] font-black uppercase tracking-wider text-blue-950 md:right-auto md:w-auto md:px-3">
+                NOA
+              </th>
+
+              <th class="sticky right-0 top-0 z-40 w-[112px] border-b border-slate-200 bg-sky-50 px-2 py-3 text-right text-[10px] font-black uppercase tracking-wider text-blue-950 md:right-auto md:w-auto md:px-3">
+                NOMINAL
+              </th>
+            </tr>
+
+            <!-- TOTAL ROW -->
+            <tr id="totalRow" class="hidden">
+              <th class="hidden md:table-cell sticky top-[41px] z-20 border-b border-r border-blue-300 bg-blue-100 px-3 py-3 text-center text-[10px] font-black uppercase text-blue-950">
+                ALL
+              </th>
+
+              <th class="hidden md:table-cell sticky top-[41px] z-20 border-b border-r border-blue-300 bg-blue-100 px-3 py-3 text-left text-[11px] font-black uppercase text-blue-950">
+                GRAND TOTAL
+              </th>
+
+              <th class="sticky left-0 top-[41px] z-30 w-[190px] max-w-[190px] border-b border-r border-blue-300 bg-blue-100 px-3 py-3 text-left text-[10px] font-black uppercase text-blue-950 md:left-auto md:w-auto md:max-w-none">
+                <span id="totalAO">0 AO</span>
+              </th>
+
+              <th class="sticky right-[112px] top-[41px] z-30 w-[58px] border-b border-r border-blue-300 bg-blue-100 px-2 py-3 text-center text-[11px] font-black text-blue-700 md:right-auto md:w-auto md:px-3">
+                <span id="totalNOA">0</span>
+              </th>
+
+              <th class="sticky right-0 top-[41px] z-30 w-[112px] border-b border-blue-300 bg-blue-100 px-2 py-3 text-right text-[11px] font-black text-blue-700 md:right-auto md:w-auto md:px-3">
+                <span id="totalRealisasi">0</span>
+              </th>
+            </tr>
+          </thead>
+
+          <tbody id="tbodyAO" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+
+      <!-- PAGINATION -->
+      <div id="paginationWrap" class="hidden items-center justify-between border-t border-slate-200 bg-slate-50 p-3">
+        <span id="pageInfo" class="text-[10px] font-black uppercase text-slate-500">Hal 1 / 1</span>
+        <div class="flex gap-1">
+          <button
+            id="btnPrev"
+            onclick="changePage(-1)"
+            class="h-8 rounded-lg border border-slate-300 bg-white px-3 text-[10px] font-black text-slate-600 disabled:opacity-30"
+          >
+            PREV
+          </button>
+          <button
+            id="btnNext"
+            onclick="changePage(1)"
+            class="h-8 rounded-lg border border-slate-300 bg-white px-3 text-[10px] font-black text-slate-600 disabled:opacity-30"
+          >
+            NEXT
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </div>
 
-<div id="modalDetail" class="fixed inset-0 hidden bg-slate-900/60 backdrop-blur-sm items-center justify-center z-[9999] px-2">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col overflow-hidden">
-        <div class="p-4 border-b flex justify-between items-center bg-slate-50">
-            <h3 class="font-bold text-slate-800" id="modalSub">Detail Realisasi</h3>
-            <button onclick="closeModal()" class="text-slate-400 hover:text-red-500 font-bold text-xl">✕</button>
-        </div>
-        <div class="flex-1 overflow-auto">
-            <table class="w-full text-xs text-left border-separate border-spacing-0">
-                <thead class="sticky top-0 bg-white shadow-sm font-bold uppercase text-slate-500 text-[10px]">
-                    <tr>
-                        <th class="px-4 py-3 border-b text-center">No</th>
-                        <th class="px-4 py-3 border-b">Nama Nasabah</th>
-                        <th class="px-4 py-3 border-b text-center">Rekening</th>
-                        <th class="px-4 py-3 border-b text-center">Tanggal</th>
-                        <th class="px-4 py-3 border-b text-right bg-emerald-50">Plafond</th>
-                    </tr>
-                </thead>
-                <tbody id="modalBody" class="divide-y divide-slate-100"></tbody>
-            </table>
-        </div>
+<!-- MODAL DETAIL -->
+<div id="modalDetail" class="fixed inset-0 z-[9999] hidden items-center justify-center bg-slate-900/60 p-3 backdrop-blur-sm">
+  <div class="flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+
+    <div class="flex items-center justify-between border-b border-slate-200 bg-slate-50 p-4">
+      <div class="min-w-0">
+        <h3 id="modalSub" class="truncate font-black text-slate-900">Detail Realisasi AO</h3>
+        <p id="modalSummary" class="truncate text-[10px] font-bold text-slate-500">-</p>
+      </div>
+
+      <button onclick="closeModal()" class="ml-3 shrink-0 text-xl font-black text-slate-400 hover:text-red-500">
+        ✕
+      </button>
     </div>
+
+    <div class="overflow-auto">
+      <table class="w-full min-w-[390px] border-separate border-spacing-0 text-xs md:min-w-[700px]">
+        <thead>
+          <tr>
+            <th class="hidden md:table-cell sticky top-0 z-20 border-b bg-sky-50 px-4 py-3 text-center text-[10px] font-black uppercase text-blue-950">
+              NO
+            </th>
+
+            <th class="sticky left-0 top-0 z-30 w-[170px] max-w-[170px] border-b border-r border-slate-200 bg-sky-50 px-3 py-3 text-left text-[10px] font-black uppercase text-blue-950 md:left-auto md:w-auto md:max-w-none md:px-4">
+              NAMA
+            </th>
+
+            <th class="hidden md:table-cell sticky top-0 z-20 border-b bg-sky-50 px-4 py-3 text-center text-[10px] font-black uppercase text-blue-950">
+              REKENING
+            </th>
+
+            <th class="sticky right-[105px] top-0 z-30 w-[95px] border-b border-r border-slate-200 bg-sky-50 px-2 py-3 text-center text-[10px] font-black uppercase text-blue-950 md:right-auto md:w-auto md:px-4">
+              TANGGAL
+            </th>
+
+            <th class="sticky right-0 top-0 z-30 w-[105px] border-b bg-sky-50 px-2 py-3 text-right text-[10px] font-black uppercase text-blue-950 md:right-auto md:w-auto md:px-4">
+              PLAFON
+            </th>
+          </tr>
+        </thead>
+
+        <tbody id="modalBody" class="divide-y divide-slate-100"></tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
 <script>
-  let currentPage = 1, totalPage = 1;
+  let currentPage = 1;
+  let totalPage = 1;
+  let lastTopData = [];
+  let infoCloseTimer = null;
+
   const id = (x) => document.getElementById(x);
-  const fmt = (n) => new Intl.NumberFormat("id-ID").format(+n||0);
+  const fmt = (n) => new Intl.NumberFormat("id-ID").format(+n || 0);
 
-  window.addEventListener('DOMContentLoaded', async () => {
-    // 1. Set Tanggal Default
-    const d = new Date();
-    id("tgl_akhir").value = d.toISOString().split('T')[0];
-    d.setDate(1);
-    id("tgl_awal").value = d.toISOString().split('T')[0];
-
-    // 2. Integrasi Login User & Dropdown
+  window.addEventListener("DOMContentLoaded", async () => {
+    setDefaultDates();
     await populateKantor();
-    
-    // 3. Fetch Data Awal
-    fetchTopData(1);
+    syncMobileFiltersFromDesktop();
+    await fetchTopData(1);
   });
 
-  function toggleFilter() { id('filterPanelAO').classList.toggle('active'); }
+  function setDefaultDates() {
+    const now = new Date();
+
+    id("tgl_akhir").value = now.toISOString().split("T")[0];
+
+    const closing = new Date(now.getFullYear(), now.getMonth(), 0);
+    id("tgl_awal").value = closing.toISOString().split("T")[0];
+  }
+
+  function toggleMobileFilter() {
+    id("mobileFilterPanel").classList.toggle("hidden");
+  }
+
+  function showInfoPanel() {
+    cancelCloseInfoPanel();
+    id("infoPanel").classList.remove("hidden");
+  }
+
+  function toggleInfoPanel(event) {
+    if (event) event.stopPropagation();
+
+    const panel = id("infoPanel");
+    if (panel.classList.contains("hidden")) {
+      showInfoPanel();
+    } else {
+      closeInfoPanel();
+    }
+  }
+
+  function scheduleCloseInfoPanel() {
+    cancelCloseInfoPanel();
+    infoCloseTimer = setTimeout(() => {
+      closeInfoPanel();
+    }, 180);
+  }
+
+  function cancelCloseInfoPanel() {
+    if (infoCloseTimer) {
+      clearTimeout(infoCloseTimer);
+      infoCloseTimer = null;
+    }
+  }
+
+  function closeInfoPanel() {
+    id("infoPanel").classList.add("hidden");
+  }
+
+  document.addEventListener("click", function(e) {
+    const panel = id("infoPanel");
+    if (!panel || panel.classList.contains("hidden")) return;
+
+    if (!panel.contains(e.target)) {
+      panel.classList.add("hidden");
+    }
+  });
+
+  function getCurrentKantor() {
+    return String(id("filter_kantor").value || "000").padStart(3, "0");
+  }
 
   async function populateKantor() {
-      const el = id('filter_kantor');
-      
-      // Ambil user login (Sesuaikan dengan cara brother menyimpan data user)
-      const user = (window.getUser && window.getUser()) || JSON.parse(localStorage.getItem('user')) || { kode: '000' };
-      const userKode = String(user.kode || '000').padStart(3, '0');
+    const desktop = id("filter_kantor");
+    const mobile = id("filter_kantor_mobile");
 
-      try {
-          const r = await fetch('./api/kode/', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ type: 'kode_kantor' }) });
-          const j = await r.json();
-          const listKantor = j.data || [];
+    const user =
+      (window.getUser && window.getUser()) ||
+      JSON.parse(localStorage.getItem("user") || "{}") ||
+      { kode: "000" };
 
-          if (userKode === '000') {
-              // PUSAT: Bisa akses semua
-              let h = '<option value="000">KONSOLIDASI (SEMUA)</option>';
-              listKantor.filter(x => x.kode_kantor !== '000').forEach(x => { 
-                  h += `<option value="${x.kode_kantor}">${x.kode_kantor} - ${x.nama_kantor}</option>`; 
-              });
-              el.innerHTML = h;
-              el.disabled = false;
-          } else {
-              // CABANG: Hanya flag cabang dia sendiri
-              const cabangUser = listKantor.find(x => String(x.kode_kantor).padStart(3, '0') === userKode);
-              if (cabangUser) {
-                  el.innerHTML = `<option value="${cabangUser.kode_kantor}">${cabangUser.kode_kantor} - ${cabangUser.nama_kantor}</option>`;
-              } else {
-                  el.innerHTML = `<option value="${userKode}">CABANG ${userKode}</option>`;
-              }
-              el.disabled = true; // Kunci dropdown
-          }
-      } catch (e) { 
-          el.innerHTML = '<option value="000">KONSOLIDASI</option>'; 
+    const userKode = String(user.kode || user.kode_kantor || "000").padStart(3, "0");
+
+    try {
+      const r = await fetch("./api/kode/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: "kode_kantor" })
+      });
+
+      const j = await r.json();
+      const listKantor = j.data || [];
+
+      let html = "";
+
+      if (userKode === "000") {
+        html = `<option value="000">ALL KONSOLIDASI</option>`;
+
+        listKantor
+          .filter(x => String(x.kode_kantor).padStart(3, "0") !== "000")
+          .forEach(x => {
+            const kode = String(x.kode_kantor).padStart(3, "0");
+            html += `<option value="${escapeAttr(kode)}">${kode} - ${x.nama_kantor}</option>`;
+          });
+
+        desktop.innerHTML = html;
+        mobile.innerHTML = html;
+        desktop.disabled = false;
+        mobile.disabled = false;
+      } else {
+        const cabangUser = listKantor.find(x => String(x.kode_kantor).padStart(3, "0") === userKode);
+
+        if (cabangUser) {
+          html = `<option value="${escapeAttr(userKode)}">${userKode} - ${cabangUser.nama_kantor}</option>`;
+        } else {
+          html = `<option value="${escapeAttr(userKode)}">CABANG ${userKode}</option>`;
+        }
+
+        desktop.innerHTML = html;
+        mobile.innerHTML = html;
+        desktop.disabled = true;
+        mobile.disabled = true;
       }
+    } catch (e) {
+      const html = `<option value="000">ALL KONSOLIDASI</option>`;
+      desktop.innerHTML = html;
+      mobile.innerHTML = html;
+    }
   }
 
-  function fetchTopData(page) {
-    currentPage = page;
-    id("loadingAO").classList.remove("hidden");
-    const tbody = id("tbodyAO");
-    
-    if(window.innerWidth < 1024) id('filterPanelAO').classList.remove('active');
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-20 text-slate-400">Loading data...</td></tr>`;
+  function syncMobileFiltersFromDesktop() {
+    id("tgl_awal_mobile").value = id("tgl_awal").value;
+    id("tgl_akhir_mobile").value = id("tgl_akhir").value;
+    id("filter_kantor_mobile").value = id("filter_kantor").value;
+  }
 
-    const payload = { 
-        type: "top realisasi", 
-        closing_date: id("tgl_awal").value, 
-        harian_date: id("tgl_akhir").value,
-        kode_kantor: id("filter_kantor").value,
-        page: page
+  function syncDateFromMobile() {
+    id("tgl_awal").value = id("tgl_awal_mobile").value;
+    id("tgl_akhir").value = id("tgl_akhir_mobile").value;
+  }
+
+  function syncKantorFromMobile() {
+    id("filter_kantor").value = id("filter_kantor_mobile").value;
+  }
+
+  function buildPayload(page = 1, customLimit = null) {
+    return {
+      type: "top realisasi",
+      closing_date: id("tgl_awal").value,
+      harian_date: id("tgl_akhir").value,
+      kode_kantor: getCurrentKantor(),
+      page: page,
+      limit: customLimit || 10
     };
+  }
 
-    fetch('./api/kredit/', { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) })
-    .then(res => res.json())
-    .then(res => {
-      const list = res.data?.data || [];
-      const pag = res.data?.pagination || {};
+  async function fetchTopData(page) {
+    currentPage = page;
+    syncMobileFiltersFromDesktop();
+
+    id("loadingAO").classList.remove("hidden");
+    id("loadingAO").classList.add("flex");
+
+    id("tbodyAO").innerHTML = `
+      <tr>
+        <td colspan="5" class="py-16 text-center text-xs font-bold text-slate-400">
+          Loading data...
+        </td>
+      </tr>
+    `;
+
+    try {
+      const r = await fetch("./api/kredit/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(buildPayload(page))
+      });
+
+      const res = await r.json();
+      const wrapper = res.data || {};
+      const list = wrapper.data || [];
+      const pag = wrapper.pagination || {};
+
+      lastTopData = list;
+
       renderTable(list, (page - 1) * 10);
       updatePaginationUI(pag);
-    })
-    .finally(() => id("loadingAO").classList.add("hidden"));
+    } catch (e) {
+      id("tbodyAO").innerHTML = `
+        <tr>
+          <td colspan="5" class="py-16 text-center text-xs font-black text-red-500">
+            Gagal load data
+          </td>
+        </tr>
+      `;
+      updateTotalRow([]);
+    } finally {
+      id("loadingAO").classList.add("hidden");
+      id("loadingAO").classList.remove("flex");
+    }
   }
 
-  function renderTable(data, startIdx) {
+  function renderTable(rows, startIdx) {
     const tbody = id("tbodyAO");
-    tbody.innerHTML = data.length ? "" : `<tr><td colspan="5" class="text-center py-12 text-slate-500 font-bold">DATA KOSONG</td></tr>`;
-    data.forEach((row, i) => {
-      tbody.insertAdjacentHTML('beforeend', `
-          <tr class="hover:bg-blue-50/40 transition">
-              <td class="text-center font-mono text-slate-400 border-r border-slate-50">${startIdx + i + 1}</td>
-              <td class="font-bold text-slate-500 border-r border-slate-50 uppercase text-[10px]">${row.kode_cabang} - ${row.nama_kantor || 'CABANG'}</td>
-              <td class="border-r border-slate-50 font-bold text-slate-700">
-                  <span class="ao-link" onclick="openDetailAO('${row.kode_ao}', '${row.nama_ao}')">${row.nama_ao}</span>
-              </td>
-              <td class="text-center font-black text-slate-600 border-r border-slate-50">${row.total_noa}</td>
-              <td class="text-right font-black text-emerald-700 bg-emerald-50/30">Rp ${fmt(row.total_realisasi)}</td>
-          </tr>`);
+    rows = rows || [];
+
+    updateTotalRow(rows);
+
+    if (!rows.length) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="py-16 text-center text-xs font-black text-slate-500">
+            DATA KOSONG
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    tbody.innerHTML = "";
+
+    rows.forEach((row, i) => {
+      const kodeKantor = row.kode_kantor || row.kode_cabang || "-";
+      const namaKantor = row.nama_kantor || row.nama_cabang || "CABANG";
+      const kodeAO = row.kode_ao || row.kode_group2 || "";
+      const namaAO = row.nama_ao || kodeAO || "TANPA AO";
+
+      tbody.insertAdjacentHTML("beforeend", `
+        <tr class="transition hover:bg-blue-50/40">
+
+          <td class="hidden md:table-cell border-r border-slate-100 bg-white px-3 py-3 text-center font-mono text-[11px] text-slate-500">
+            ${startIdx + i + 1}
+          </td>
+
+          <td class="hidden md:table-cell border-r border-slate-100 bg-white px-3 py-3 text-[11px] font-black uppercase text-slate-800">
+            <div class="max-w-[220px] truncate" title="${escapeAttr(kodeKantor + ' - ' + namaKantor)}">
+              ${namaKantor}
+            </div>
+            <div class="mt-0.5 font-mono text-[9px] font-bold text-slate-400">
+              ${kodeKantor}
+            </div>
+          </td>
+
+          <td class="sticky left-0 z-10 w-[190px] max-w-[190px] border-r border-slate-100 bg-white px-3 py-3 md:static md:z-auto md:w-auto md:max-w-none">
+            <button
+              type="button"
+              onclick="openDetailAO('${escapeAttr(kodeAO)}', '${escapeAttr(namaAO)}')"
+              class="block max-w-[165px] truncate text-left text-[11px] font-black uppercase text-blue-700 hover:text-blue-900 md:max-w-[360px] lg:max-w-none"
+              title="${escapeAttr(namaAO)}"
+            >
+              ${namaAO}
+            </button>
+
+            <div class="mt-0.5 flex items-center gap-1 font-mono text-[9px] font-bold text-slate-400">
+              <span>${kodeAO}</span>
+              <span class="md:hidden">•</span>
+              <span class="max-w-[80px] truncate md:hidden" title="${escapeAttr(namaKantor)}">${namaKantor}</span>
+            </div>
+          </td>
+
+          <td class="sticky right-[112px] z-10 w-[58px] border-r border-slate-100 bg-white px-2 py-3 text-center font-mono text-[11px] font-black text-blue-700 md:static md:z-auto md:w-auto md:px-3">
+            ${fmt(row.total_noa || 0)}
+          </td>
+
+          <td class="sticky right-0 z-10 w-[112px] bg-white px-2 py-3 text-right font-mono text-[11px] font-black text-blue-700 md:static md:z-auto md:w-auto md:px-3">
+            ${fmt(row.total_realisasi || 0)}
+          </td>
+        </tr>
+      `);
     });
   }
 
-  async function openDetailAO(kodeAO, namaAO) {
-      id('modalDetail').classList.replace('hidden', 'flex');
-      id('modalSub').innerText = `AO: ${namaAO} (${kodeAO})`;
-      const body = id('modalBody');
-      body.innerHTML = `<tr><td colspan="5" class="text-center py-12 italic">Loading...</td></tr>`;
+  function updateTotalRow(rows) {
+    const totalRow = id("totalRow");
 
-      try {
-          const r = await fetch('./api/kredit/', { method: "POST", headers: { "Content-Type": "application/json" }, 
-            body: JSON.stringify({ type: "detail realisasi ao", kode_ao: kodeAO, closing_date: id('tgl_awal').value, harian_date: id('tgl_akhir').value, kode_kantor: id('filter_kantor').value }) 
-          });
-          const j = await r.json();
-          body.innerHTML = (j.data || []).map((d, i) => `
-              <tr class="border-b transition hover:bg-slate-50">
-                  <td class="px-4 py-3 text-center text-slate-400 font-mono">${i+1}</td>
-                  <td class="px-4 py-3 font-bold text-slate-700">${d.nama_nasabah}</td>
-                  <td class="px-4 py-3 text-center font-mono text-slate-500">${d.no_rekening}</td>
-                  <td class="px-4 py-3 text-center">${d.tanggal_realisasi}</td>
-                  <td class="px-4 py-3 text-right font-bold text-emerald-700 bg-emerald-50/20">Rp ${fmt(d.plafond)}</td>
-              </tr>`).join('');
-      } catch { body.innerHTML = `<tr><td colspan="5" class="text-center text-red-500">Error load detail</td></tr>`; }
+    if (!rows || !rows.length) {
+      totalRow.classList.add("hidden");
+      return;
+    }
+
+    totalRow.classList.remove("hidden");
+
+    const totalNOA = rows.reduce((sum, row) => sum + Number(row.total_noa || 0), 0);
+    const totalRealisasi = rows.reduce((sum, row) => sum + Number(row.total_realisasi || 0), 0);
+
+    id("totalAO").innerText = `${fmt(rows.length)} AO`;
+    id("totalNOA").innerText = fmt(totalNOA);
+    id("totalRealisasi").innerText = fmt(totalRealisasi);
+  }
+
+  async function openDetailAO(kodeAO, namaAO) {
+    id("modalDetail").classList.remove("hidden");
+    id("modalDetail").classList.add("flex");
+
+    id("modalSub").innerText = `Detail Realisasi AO - ${namaAO}`;
+    id("modalSummary").innerText = `Kode AO: ${kodeAO}`;
+
+    const body = id("modalBody");
+
+    body.innerHTML = `
+      <tr>
+        <td colspan="5" class="py-12 text-center text-xs font-bold italic text-slate-400">
+          Loading detail...
+        </td>
+      </tr>
+    `;
+
+    try {
+      const payload = {
+        type: "detail realisasi ao",
+        kode_ao: kodeAO,
+        closing_date: id("tgl_awal").value,
+        harian_date: id("tgl_akhir").value,
+        kode_kantor: getCurrentKantor()
+      };
+
+      const r = await fetch("./api/kredit/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const j = await r.json();
+
+      const wrapper = j.data || {};
+      const list = Array.isArray(wrapper) ? wrapper : (wrapper.data || []);
+      const summary = wrapper.summary || null;
+
+      if (summary) {
+        id("modalSummary").innerText =
+          `Kode AO: ${kodeAO} | NOA: ${fmt(summary.total_noa || 0)} | Total: ${fmt(summary.total_realisasi || 0)}`;
+      }
+
+      if (!list.length) {
+        body.innerHTML = `
+          <tr>
+            <td colspan="5" class="py-12 text-center text-xs font-black text-slate-500">
+              DETAIL KOSONG
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      body.innerHTML = list.map((d, i) => `
+        <tr class="transition hover:bg-blue-50/40">
+
+          <td class="hidden md:table-cell px-4 py-3 text-center font-mono text-slate-500">
+            ${i + 1}
+          </td>
+
+          <td class="sticky left-0 z-10 w-[170px] max-w-[170px] border-r border-slate-100 bg-white px-3 py-3 md:static md:z-auto md:w-auto md:max-w-none md:px-4">
+            <div class="max-w-[150px] truncate font-black uppercase text-slate-800 md:max-w-[320px]" title="${escapeAttr(d.nama_nasabah || "-")}">
+              ${d.nama_nasabah || "-"}
+            </div>
+            <div class="mt-0.5 font-mono text-[9px] font-bold text-slate-400 md:hidden">
+              ${d.no_rekening || "-"}
+            </div>
+          </td>
+
+          <td class="hidden md:table-cell px-4 py-3 text-center font-mono text-slate-600">
+            ${d.no_rekening || "-"}
+          </td>
+
+          <td class="sticky right-[105px] z-10 w-[95px] border-r border-slate-100 bg-white px-2 py-3 text-center font-mono text-[11px] text-slate-600 md:static md:z-auto md:w-auto md:px-4">
+            ${formatDateOnly(d.tanggal_realisasi)}
+          </td>
+
+          <td class="sticky right-0 z-10 w-[105px] bg-white px-2 py-3 text-right font-mono text-[11px] font-black text-blue-700 md:static md:z-auto md:w-auto md:px-4">
+            ${fmt(d.plafond || 0)}
+          </td>
+        </tr>
+      `).join("");
+    } catch (e) {
+      body.innerHTML = `
+        <tr>
+          <td colspan="5" class="py-12 text-center text-xs font-black text-red-500">
+            Error load detail
+          </td>
+        </tr>
+      `;
+    }
   }
 
   async function exportFullData() {
-      const btn = document.querySelector('button[onclick="exportFullData()"]');
-      const original = btn.innerHTML; btn.innerHTML = '...'; btn.disabled = true;
-      try {
-          const r = await fetch('./api/kredit/', { method: "POST", headers: { "Content-Type": "application/json" }, 
-            body: JSON.stringify({ type: "top realisasi", closing_date: id('tgl_awal').value, harian_date: id('tgl_akhir').value, kode_kantor: id('filter_kantor').value, limit: 1000 }) 
-          });
-          const res = await r.json();
-          const list = res.data?.data || [];
-          let csv = 'KANTOR,KODE AO,NAMA AO,NOA,REALISASI\n';
-          list.forEach(row => { csv += `${row.kode_cabang},'${row.kode_ao},${row.nama_ao},${row.total_noa},${row.total_realisasi}\n`; });
-          const blob = new Blob([csv], { type: 'text/csv' });
-          const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `REKAP_AO.csv`; a.click();
-      } finally { btn.innerHTML = original; btn.disabled = false; }
+    const btns = document.querySelectorAll('button[onclick="exportFullData()"]');
+
+    btns.forEach(btn => {
+      btn.dataset.original = btn.innerHTML;
+      btn.innerHTML = "...";
+      btn.disabled = true;
+    });
+
+    try {
+      const payload = buildPayload(1, 10000);
+
+      const r = await fetch("./api/kredit/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+
+      const res = await r.json();
+      const list = res.data?.data || [];
+
+      const totalNOA = list.reduce((sum, row) => sum + Number(row.total_noa || 0), 0);
+      const totalRealisasi = list.reduce((sum, row) => sum + Number(row.total_realisasi || 0), 0);
+
+      let rowsHtml = "";
+
+      rowsHtml += `
+        <tr>
+          <td style="font-weight:bold;background:#dbeafe;text-align:center;">ALL</td>
+          <td style="font-weight:bold;background:#dbeafe;">GRAND TOTAL</td>
+          <td style="font-weight:bold;background:#dbeafe;">${list.length} AO</td>
+          <td style="font-weight:bold;background:#dbeafe;text-align:center;">${totalNOA}</td>
+          <td style="font-weight:bold;background:#dbeafe;text-align:right;">${totalRealisasi}</td>
+        </tr>
+      `;
+
+      list.forEach((row, index) => {
+        const kodeKantor = row.kode_kantor || row.kode_cabang || "";
+        const namaKantor = row.nama_kantor || row.nama_cabang || "";
+        const kodeAO = row.kode_ao || row.kode_group2 || "";
+        const namaAO = row.nama_ao || "";
+        const noa = Number(row.total_noa || 0);
+        const realisasi = Number(row.total_realisasi || 0);
+
+        rowsHtml += `
+          <tr>
+            <td style="text-align:center;">${index + 1}</td>
+            <td>${escapeExcel(kodeKantor)} - ${escapeExcel(namaKantor)}</td>
+            <td>${escapeExcel(kodeAO)} - ${escapeExcel(namaAO)}</td>
+            <td style="text-align:center;">${noa}</td>
+            <td style="text-align:right;">${realisasi}</td>
+          </tr>
+        `;
+      });
+
+      const htmlExcel = `
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              table {
+                border-collapse: collapse;
+                font-family: Arial, sans-serif;
+                font-size: 11px;
+              }
+              th {
+                background: #e0f2fe;
+                color: #172554;
+                font-weight: bold;
+                text-align: center;
+                border: 1px solid #94a3b8;
+                padding: 8px;
+              }
+              td {
+                border: 1px solid #cbd5e1;
+                padding: 7px;
+              }
+              .text {
+                mso-number-format: "\\@";
+              }
+              .num {
+                mso-number-format: "#,##0";
+              }
+              .title {
+                font-size: 16px;
+                font-weight: bold;
+                color: #0f172a;
+              }
+              .subtitle {
+                font-size: 11px;
+                color: #475569;
+              }
+            </style>
+          </head>
+          <body>
+            <table>
+              <tr>
+                <td colspan="5" class="title">Rekap Realisasi AO</td>
+              </tr>
+              <tr>
+                <td colspan="5" class="subtitle">
+                  Closing: ${escapeExcel(id("tgl_awal").value)} | Harian: ${escapeExcel(id("tgl_akhir").value)} | Kantor: ${escapeExcel(getCurrentKantor())}
+                </td>
+              </tr>
+              <tr></tr>
+              <tr>
+                <th>NO</th>
+                <th>KANTOR CABANG</th>
+                <th>NAMA AO</th>
+                <th>NOA</th>
+                <th>NOMINAL</th>
+              </tr>
+              ${rowsHtml}
+            </table>
+          </body>
+        </html>
+      `;
+
+      const blob = new Blob(["\ufeff" + htmlExcel], {
+        type: "application/vnd.ms-excel;charset=utf-8;"
+      });
+
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `REKAP_REALISASI_AO_${id("tgl_akhir").value}.xls`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } finally {
+      btns.forEach(btn => {
+        btn.innerHTML = btn.dataset.original || "";
+        btn.disabled = false;
+      });
+    }
   }
 
   function updatePaginationUI(p) {
-      const wrap = id('paginationWrap');
-      if(!p.is_konsolidasi) { wrap.classList.add('hidden'); return; }
-      wrap.classList.remove('hidden');
-      totalPage = p.total_page;
-      id('pageInfo').innerText = `Hal ${p.current_page} / ${p.total_page}`;
-      id('btnPrev').disabled = p.current_page <= 1;
-      id('btnNext').disabled = p.current_page >= p.total_page;
+    const wrap = id("paginationWrap");
+
+    if (!p || !p.is_konsolidasi) {
+      wrap.classList.add("hidden");
+      wrap.classList.remove("flex");
+      return;
+    }
+
+    wrap.classList.remove("hidden");
+    wrap.classList.add("flex");
+
+    totalPage = Number(p.total_page || 1);
+    currentPage = Number(p.current_page || 1);
+
+    id("pageInfo").innerText = `Hal ${currentPage} / ${totalPage}`;
+    id("btnPrev").disabled = currentPage <= 1;
+    id("btnNext").disabled = currentPage >= totalPage;
   }
 
-  function changePage(dir) { let t = currentPage + dir; if(t >= 1 && t <= totalPage) fetchTopData(t); }
-  function closeModal() { id('modalDetail').classList.replace('flex', 'hidden'); }
+  function changePage(dir) {
+    const target = currentPage + dir;
+
+    if (target >= 1 && target <= totalPage) {
+      fetchTopData(target);
+    }
+  }
+
+  function closeModal() {
+    id("modalDetail").classList.add("hidden");
+    id("modalDetail").classList.remove("flex");
+  }
+
+  function formatDateOnly(value) {
+    if (!value) return "-";
+    return String(value).split(" ")[0];
+  }
+
+  function escapeAttr(value) {
+    return String(value || "")
+      .replace(/\\/g, "\\\\")
+      .replace(/'/g, "\\'")
+      .replace(/"/g, "&quot;");
+  }
+
+  function escapeExcel(value) {
+    return String(value ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
 </script>

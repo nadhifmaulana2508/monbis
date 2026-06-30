@@ -15,6 +15,8 @@
   .local-loader { position: absolute; inset: 0; background: rgba(255,255,255,0.7); z-index: 50; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); border-radius: inherit; }
   .local-loader.hidden { display: none; }
   .apexcharts-tooltip { z-index: 99999 !important; background: transparent !important; border: none !important; box-shadow: none !important; }
+  .chart-note { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; background: #eff6ff; color: #1d4ed8; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+  .chart-note-dot { width: 7px; height: 7px; border-radius: 9999px; background: #2563eb; box-shadow: 0 0 0 4px rgba(37,99,235,.14); }
   @media (max-width: 767px) {
     th { padding: 8px 6px; font-size: 10px; }
     td { padding: 8px 6px; font-size: 11px; }
@@ -192,6 +194,27 @@
 
   const nf = new Intl.NumberFormat('id-ID');
   const fmt = n => nf.format(Number(n||0));
+  const fmtCompact = (value, digits = 1) => {
+      const num = Number(value || 0);
+      const abs = Math.abs(num);
+      if (abs >= 1000000000000) return (num / 1000000000000).toFixed(digits) + ' T';
+      if (abs >= 1000000000) return (num / 1000000000).toFixed(digits) + ' M';
+      if (abs >= 1000000) return (num / 1000000).toFixed(digits) + ' Jt';
+      if (abs >= 1000) return (num / 1000).toFixed(digits) + ' Rb';
+      return nf.format(num);
+  };
+  const trimTrailingEmptyMonths = (rows) => {
+      if (!Array.isArray(rows) || rows.length === 0) return [];
+      let lastDataIndex = -1;
+      rows.forEach((row, index) => {
+          const hasValue = Number(row.mandiri_nom || 0) > 0
+              || Number(row.permata_nom || 0) > 0
+              || Number(row.mandiri_trx || 0) > 0
+              || Number(row.permata_trx || 0) > 0;
+          if (hasValue) lastDataIndex = index;
+      });
+      return lastDataIndex >= 0 ? rows.slice(0, lastDataIndex + 1) : rows.slice(0, 1);
+  };
   const esc = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
   let chartNomObj = null;
@@ -336,13 +359,15 @@
   function initCharts() {
       chartNomObj = new ApexCharts(document.querySelector('#chartNominal'), {
           series: [],
-          chart: { type: 'area', height: 280, toolbar: { show: false } },
+          chart: { type: 'area', height: 280, toolbar: { show: false }, zoom: { enabled: false } },
           colors: ['#2563eb', '#f97316'],
           dataLabels: { enabled: false },
-          stroke: { curve: 'smooth', width: 3 },
+          stroke: { curve: 'smooth', width: 3.5, lineCap: 'round' },
+          markers: { size: 4, strokeWidth: 2, hover: { size: 6 }, colors: ['#ffffff', '#ffffff'], strokeColors: ['#2563eb', '#f97316'] },
           fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05, stops: [0, 100] } },
-          xaxis: { categories: [], labels: { style: { fontSize: '10px' } } },
-          yaxis: { labels: { formatter: (val) => val >= 1000000000 ? (val/1000000000).toFixed(1)+' M' : (val >= 1000000 ? (val/1000000).toFixed(0)+' Jt' : nf.format(val)) } },
+          grid: { borderColor: '#dbeafe', strokeDashArray: 4, padding: { bottom: 15, left: 10, right: 12, top: 8 } },
+          xaxis: { categories: [], labels: { style: { fontSize: '10px', fontWeight: 700, colors: '#64748b' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+          yaxis: { labels: { formatter: (val) => fmtCompact(val, val >= 1000000000 ? 1 : 0), style: { fontSize: '10px', fontWeight: 700, colors: ['#94a3b8'] } } },
           legend: { position: 'top', fontSize: '12px', fontWeight: 700 },
           tooltip: { y: { formatter: (val) => 'Rp ' + nf.format(val) } }
       });
@@ -355,8 +380,8 @@
           plotOptions: { bar: { borderRadius: 4, columnWidth: '55%' } },
           dataLabels: { enabled: false },
           stroke: { show: true, width: 2, colors: ['transparent'] },
-          xaxis: { categories: [], labels: { style: { fontSize: '10px' } } },
-          yaxis: { labels: { formatter: (val) => nf.format(val) } },
+          xaxis: { categories: [], labels: { style: { fontSize: '10px', fontWeight: 700, colors: '#64748b' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+          yaxis: { labels: { formatter: (val) => fmtCompact(val, 0), style: { fontSize: '10px', fontWeight: 700, colors: ['#94a3b8'] } } },
           fill: { opacity: 1 },
           legend: { position: 'top', fontSize: '12px', fontWeight: 700 },
           tooltip: { y: { formatter: (val) => nf.format(val) + ' Trx' } }
@@ -397,7 +422,9 @@
               const tfoot = document.getElementById('footerMonthly');
               tbody.innerHTML = '';
 
-              data.monthly.forEach((row, idx) => {
+              const detailRows = trimTrailingEmptyMonths(data.monthly);
+
+              detailRows.forEach((row, idx) => {
                   const totalNom = row.mandiri_nom + row.permata_nom;
                   const totalTrx = row.mandiri_trx + row.permata_trx;
                   tbody.innerHTML += '<tr><td class="text-center text-slate-400 pl-2">' + (idx + 1) + '</td><td class="pl-4 font-bold text-slate-700">' + esc(row.bulan) + '</td><td class="text-right text-blue-700">' + fmt(row.mandiri_nom) + '</td><td class="text-right text-blue-600">' + fmt(row.mandiri_trx) + '</td><td class="text-right text-orange-700">' + fmt(row.permata_nom) + '</td><td class="text-right text-orange-600">' + fmt(row.permata_trx) + '</td><td class="text-right font-black text-slate-800">' + fmt(totalNom) + '</td><td class="text-right font-black text-slate-800 pr-4">' + fmt(totalTrx) + '</td></tr>';
@@ -409,17 +436,18 @@
               tfoot.innerHTML = '<td class="text-center pl-2">-</td><td class="pl-4">TOTAL</td><td class="text-right text-blue-800">' + fmt(t.mandiri_nom) + '</td><td class="text-right text-blue-800">' + fmt(t.mandiri_trx) + '</td><td class="text-right text-orange-800">' + fmt(t.permata_nom) + '</td><td class="text-right text-orange-800">' + fmt(t.permata_trx) + '</td><td class="text-right">' + fmt(grandNom) + '</td><td class="text-right pr-4">' + fmt(grandTrx) + '</td>';
 
               // Update Charts
-              const labels = data.monthly.map(r => r.bulan.substring(0, 3));
-              chartNomObj.updateOptions({ xaxis: { categories: labels } });
+              const chartRows = detailRows;
+              const labels = chartRows.map(r => r.bulan.substring(0, 3));
+              chartNomObj.updateOptions({ xaxis: { categories: labels }, dataLabels: { enabled: labels.length <= 6, offsetY: -10, background: { enabled: true, foreColor: '#0f172a', borderRadius: 8, padding: 6, opacity: 0.88, borderWidth: 1, borderColor: '#dbeafe' }, style: { fontSize: '10px', fontWeight: 900, colors: ['#1d4ed8'] }, formatter: (val) => fmtCompact(val, val >= 1000000000 ? 2 : 1) } });
               chartNomObj.updateSeries([
-                  { name: 'Mandiri', data: data.monthly.map(r => r.mandiri_nom) },
-                  { name: 'Permata', data: data.monthly.map(r => r.permata_nom) }
+                  { name: 'Mandiri', data: chartRows.map(r => r.mandiri_nom) },
+                  { name: 'Permata', data: chartRows.map(r => r.permata_nom) }
               ]);
 
               chartTrxObj.updateOptions({ xaxis: { categories: labels } });
               chartTrxObj.updateSeries([
-                  { name: 'Mandiri', data: data.monthly.map(r => r.mandiri_trx) },
-                  { name: 'Permata', data: data.monthly.map(r => r.permata_trx) }
+                  { name: 'Mandiri', data: chartRows.map(r => r.mandiri_trx) },
+                  { name: 'Permata', data: chartRows.map(r => r.permata_trx) }
               ]);
           } else {
               document.getElementById('bodyMonthly').innerHTML = '<tr><td colspan="8" class="text-center py-6 text-slate-400">Data tidak tersedia.</td></tr>';

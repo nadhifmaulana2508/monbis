@@ -24,9 +24,9 @@
   #tabelRR thead th { position: sticky !important; z-index: 40; cursor: pointer; transition: background 0.2s; }
   #tabelRR thead th:hover { filter: brightness(0.95); }
   
-  .rr-row-1 th { top: 0 !important; height: 36px; box-shadow: inset 0 -1px 0 #cbd5e1; }
-  .rr-row-2 th { top: 36px !important; height: 34px; box-shadow: inset 0 -1px 0 #cbd5e1; }
-  .rr-row-tot th { top: 70px !important; height: 42px; box-shadow: 0 2px 4px -1px rgba(0,0,0,0.05); z-index: 42 !important; cursor: default; }
+  .rr-row-1 th { top: 0 !important; height: 36px; box-shadow: inset 0 -1px 0 #d7dee8; }
+  .rr-row-2 th { top: 36px !important; height: 34px; box-shadow: inset 0 -1px 0 #d7dee8; }
+  .rr-row-tot th { top: 70px !important; height: 42px; box-shadow: inset 0 -1px 0 #d7dee8; z-index: 42 !important; cursor: default; }
   .rr-row-tot th:hover { filter: none; }
   
   @media (min-width: 768px) {
@@ -42,7 +42,7 @@
 
   /* 3. Tumpukan Z-Index Perpotongan Kiri & Atas (Harus Paling Atas) */
   #tabelRR thead th.sticky-left-1, #tabelRR thead th.sticky-left-2 { z-index: 60 !important; background-color: #dcedc8 !important; }
-  #tabelRR thead tr.rr-row-tot th.sticky-left-1, #tabelRR thead tr.rr-row-tot th.sticky-left-2 { z-index: 62 !important; background-color: #eff6ff !important; box-shadow: inset -1px -2px 0 #93c5fd; }
+  #tabelRR thead tr.rr-row-tot th.sticky-left-1, #tabelRR thead tr.rr-row-tot th.sticky-left-2 { z-index: 62 !important; background-color: #eff6ff !important; box-shadow: inset -1px 0 0 #d7dee8, inset 0 -1px 0 #d7dee8; }
 
   /* 4. Tumpukan Z-Index Data Kiri (Harus Di Atas Data Scroll) */
   #tabelRR tbody td.sticky-left-1, #tabelRR tbody td.sticky-left-2 { 
@@ -92,64 +92,93 @@
   /* HIDE DATEPICKER ICON */
   input[type="date"]::-webkit-inner-spin-button, input[type="date"]::-webkit-calendar-picker-indicator { display: none; -webkit-appearance: none; }
   input[type="date"] { -moz-appearance: textfield; }
+
+  .rr-header-card { background:#fff; border:1px solid #cbd5e1; border-radius:14px; box-shadow:0 1px 2px rgba(15,23,42,.05); }
+  .rr-info-popover { position:absolute; left:20px; top:72px; width:360px; max-width:calc(100vw - 32px); background:#fff; border:1px solid #e2e8f0; border-radius:14px; box-shadow:0 20px 40px rgba(15,23,42,.16); z-index:200; overflow:hidden; }
+  .rr-info-box { border:1px solid #cbd5e1; border-radius:10px; background:#f8fafc; padding:10px 12px; }
+  @media (max-width: 767px) {
+    .rr-info-popover { left:12px; top:62px; width:calc(100vw - 24px); }
+  }
+
+
+  /* Header RR: samakan ketebalan garis header */
+  #tabelRR thead th { border-color:#d7dee8 !important; }
+  #tabelRR .rr-row-1 th,
+  #tabelRR .rr-row-2 th,
+  #tabelRR .rr-row-tot th {
+      box-shadow: inset 0 -1px 0 #d7dee8 !important;
+      border-bottom-width: 1px !important;
+  }
+  #tabelRR thead tr.rr-row-tot th.sticky-left-1,
+  #tabelRR thead tr.rr-row-tot th.sticky-left-2 {
+      box-shadow: inset -1px 0 0 #d7dee8, inset 0 -1px 0 #d7dee8 !important;
+  }
+
 </style>
 
 <div class="max-w-[1920px] mx-auto px-2 md:px-4 py-4 md:py-6 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
   
-  <div class="flex-none mb-3 md:mb-4 flex flex-col xl:flex-row justify-between items-start xl:items-end gap-3 md:gap-4 w-full shrink-0">
-    
-    <div class="flex items-center justify-between w-full xl:w-auto shrink-0">
-        <div class="flex flex-col gap-1 md:gap-1.5 shrink-0">
-          <div class="flex items-center gap-1.5 md:gap-3">
-              <span class="p-1 md:p-2.5 bg-blue-600 rounded-lg text-white shadow-sm">
-                  <svg class="w-4 h-4 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-              </span>
-              <h1 class="text-lg md:text-2xl font-bold text-slate-800 tracking-tight leading-none">Rekap Repayment Rate</h1>
-              <span class="hidden md:inline-block bg-blue-100 text-blue-800 text-[9px] md:text-[10px] font-bold px-2 py-0.5 md:px-2.5 md:py-1 rounded border border-blue-200 uppercase tracking-widest mt-0.5">Konsolidasi</span>
+  <div class="flex-none mb-3 md:mb-4 w-full shrink-0">
+    <div class="relative rr-header-card px-3 md:px-5 py-3 md:py-4">
+      <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 md:gap-4 w-full">
+        <div class="flex items-center justify-between w-full xl:w-auto shrink-0">
+          <div class="flex items-center gap-2 md:gap-3 min-w-0">
+            <span class="p-1.5 md:p-2.5 bg-blue-600 rounded-lg text-white shadow-sm shrink-0">
+              <svg class="w-4 h-4 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v12"></path></svg>
+            </span>
+            <div class="min-w-0">
+              <div class="flex items-center gap-2 min-w-0">
+                <h1 class="text-[15px] md:text-2xl font-extrabold text-slate-800 tracking-tight leading-none truncate">Rekap Repayment Rate</h1>
+                <button type="button" onclick="toggleInfoRR()" class="w-4 h-4 md:w-5 md:h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] md:text-xs font-black hover:bg-blue-600 transition shrink-0" title="Informasi RR">i</button>
+              </div>
+              <p class="text-[9px] md:text-sm text-slate-500 italic mt-1">*RR = Total Baki Debet (Lancar) / Seluruh Baki Debet</p>
+            </div>
           </div>
-          <p class="text-[9px] md:text-sm text-slate-500 italic ml-8 md:ml-14 leading-none">*RR = Total Baki Debet (Lancar) / Seluruh Baki Debet</p>
-        </div>
 
-        <button type="button" onclick="toggleMainFilter()" class="xl:hidden h-[30px] px-3 bg-white border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm transition font-bold text-[10px] whitespace-nowrap ml-2 shrink-0">
+          <button type="button" onclick="toggleMainFilter()" class="xl:hidden h-[30px] px-3 bg-white border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm transition font-bold text-[10px] whitespace-nowrap ml-2 shrink-0">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
             Filter
-        </button>
-    </div>
+          </button>
+        </div>
 
-    <div id="filterWrapperMain" class="hidden xl:flex w-full xl:w-auto mt-2 xl:mt-0 transition-all duration-300">
-        <form id="formFilter" class="bg-white p-1.5 md:p-2.5 rounded-lg md:rounded-xl border border-slate-200 shadow-sm flex flex-row items-end gap-1.5 md:gap-3 w-full overflow-x-auto no-scrollbar" onsubmit="event.preventDefault(); fetchRekap();">
-            
-            <div class="flex flex-nowrap items-end gap-1 md:gap-2 w-full md:w-auto">
-                <div class="field flex-1 shrink min-w-[80px] md:min-w-[130px]" id="wrap-closing">
-                    <label class="lbl text-blue-700">CLOSING (M-1)</label>
-                    <input type="date" id="closing_date" class="inp w-full text-[9px] md:text-sm font-semibold h-[30px] md:h-[38px] px-1 md:px-3 text-slate-700 cursor-pointer" required onclick="try{this.showPicker()}catch(e){}">
-                </div>
-                <div class="field flex-1 shrink min-w-[80px] md:min-w-[130px]">
-                    <label class="lbl">ACTUAL (HARIAN)</label>
-                    <input type="date" id="harian_date" class="inp w-full text-[9px] md:text-sm font-semibold h-[30px] md:h-[38px] px-1 md:px-3 text-slate-700 cursor-pointer" required onclick="try{this.showPicker()}catch(e){}">
-                </div>
-                
-                <div class="w-px h-6 bg-slate-200 shrink-0 mx-0.5 hidden md:block mb-1.5"></div>
-
-                <div class="field flex-1 shrink min-w-[90px] md:min-w-[200px] transition-opacity duration-300">
-                    <label class="lbl text-slate-600">CABANG</label>
-                    <select id="opt_kantor" class="inp border-slate-200 focus:border-blue-500 bg-slate-50/50 text-[9px] md:text-sm font-bold h-[30px] md:h-[38px] px-1 md:px-2 text-slate-700 cursor-pointer w-full truncate" onchange="fetchRekap()">
-                        <option value="">Loading...</option>
-                    </select>
-                </div>
-                
-                <div class="flex items-center gap-1 h-[30px] md:h-[38px] shrink-0">
-                    <button type="submit" id="btn-cari" class="btn-icon h-full w-[34px] md:w-[80px] bg-blue-600 hover:bg-blue-700 text-white rounded-md md:rounded-lg shadow-sm" title="Cari Data">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="md:w-[16px] md:h-[16px]"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <span class="hidden md:inline font-bold text-xs uppercase tracking-wider ml-1.5">CARI</span>
-                    </button>
-                    <button type="button" onclick="exportExcelRekap()" class="btn-icon h-full w-[34px] md:w-[40px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-md md:rounded-lg shadow-sm shrink-0" title="Download Excel">
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="md:w-[18px] md:h-[18px]"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></line></svg>
-                    </button>
-                </div>
+        <div id="filterWrapperMain" class="hidden xl:flex w-full xl:w-auto transition-all duration-300">
+          <form id="formFilter" class="w-full xl:w-auto flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3" onsubmit="event.preventDefault(); fetchRekap();">
+            <div class="flex flex-wrap md:flex-nowrap items-end gap-2 w-full xl:w-auto">
+              <div class="field flex-1 min-w-[120px] md:min-w-[130px]">
+                <label class="lbl text-slate-700">CLOSING (M-1)</label>
+                <input type="date" id="closing_date" onchange="fetchRekap()" class="inp w-full text-[10px] md:text-sm font-semibold h-[32px] md:h-[38px] px-2 md:px-3 text-slate-700 cursor-pointer bg-slate-50" required onclick="try{this.showPicker()}catch(e){}">
+              </div>
+              <div class="field flex-1 min-w-[120px] md:min-w-[130px]">
+                <label class="lbl text-slate-700">ACTUAL (HARIAN)</label>
+                <input type="date" id="harian_date" onchange="fetchRekap()" class="inp w-full text-[10px] md:text-sm font-semibold h-[32px] md:h-[38px] px-2 md:px-3 text-slate-700 cursor-pointer bg-slate-50" required onclick="try{this.showPicker()}catch(e){}">
+              </div>
+              <div class="field flex-1 min-w-[180px] md:min-w-[220px]">
+                <label class="lbl text-slate-700">AREA / CABANG</label>
+                <select id="opt_kantor" class="inp bg-slate-50 text-[10px] md:text-sm font-bold h-[32px] md:h-[38px] px-2 md:px-3 text-slate-700 cursor-pointer w-full truncate" onchange="fetchRekap()">
+                  <option value="">Loading...</option>
+                </select>
+              </div>
+              <button type="button" onclick="exportExcelRekap()" class="btn-icon h-[32px] md:h-[38px] w-[36px] md:w-[42px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm shrink-0" title="Download Excel">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="md:w-[18px] md:h-[18px]"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline></svg>
+              </button>
             </div>
-            
-        </form>
+          </form>
+        </div>
+      </div>
+
+      <div id="infoRR" class="rr-info-popover hidden">
+        <div class="px-4 py-3 border-b border-slate-100">
+          <h3 class="text-sm font-black text-slate-900">Informasi RR</h3>
+        </div>
+        <div class="px-4 py-3 text-[11px] md:text-xs text-slate-700 leading-relaxed space-y-2">
+          <p><b>Repayment Rate (RR)</b> adalah rasio kualitas pembayaran yang membandingkan <b>baki debet lancar</b> terhadap <b>seluruh baki debet</b>.</p>
+          <div class="rr-info-box"><b>M-1</b>: posisi data pada closing bulan sebelumnya.</div>
+          <div class="rr-info-box"><b>Actual</b>: posisi data harian / aktual pada tanggal yang dipilih.</div>
+          <div class="rr-info-box"><b>Delta</b>: selisih antara posisi Actual dengan posisi M-1, baik nominal baki debet maupun persentasenya.</div>
+          <div class="rr-info-box"><b>Rumus RR</b>: Total Baki Debet Lancar / Seluruh Baki Debet.</div>
+          <div class="pt-1 border-t border-slate-200 font-bold text-slate-900">Semakin tinggi persentase RR, semakin baik kualitas repayment pada area tersebut.</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -284,6 +313,21 @@
       }
   }
 
+
+  function toggleInfoRR() {
+      const el = document.getElementById('infoRR');
+      if (!el) return;
+      el.classList.toggle('hidden');
+  }
+
+  document.addEventListener('click', function(e) {
+      const info = document.getElementById('infoRR');
+      if (!info) return;
+      const btn = e.target.closest('[onclick="toggleInfoRR()"]');
+      const box = e.target.closest('#infoRR');
+      if (!btn && !box) info.classList.add('hidden');
+  });
+
   window.addEventListener('DOMContentLoaded', async () => {
       const user = (window.getUser && window.getUser()) || null;
       userKodeGlobal = (user?.kode ? String(user.kode).padStart(3,'0') : '000');
@@ -332,20 +376,20 @@
     }
     try {
         const res = await apiCall(API_KODE_URL, { type: 'kode_kantor' });
-        let h = '<option value="">ALL | SEMUA CABANG (KONSOLIDASI)</option>';
+        let h = '<option value="">KONSOLIDASI</option>';
         if(res.data) res.data.filter(x => x.kode_kantor !== '000').forEach(x => { h += `<option value="${x.kode_kantor}">${x.kode_kantor} - ${x.nama_kantor}</option>`; });
         el.innerHTML = h;
-    } catch { el.innerHTML = '<option value="">ALL | SEMUA CABANG (KONSOLIDASI)</option>'; }
+    } catch { el.innerHTML = '<option value="">KONSOLIDASI</option>'; }
   }
 
   // 🔥 SETUP HEADER UTAMA (KUNCI NAMA KANTOR) 🔥
   function setupHeaderRR(userKode) {
       const th = document.getElementById('headRR');
-      let thHtml = `<tr class="rr-row-1">`;
+      let thHtml = `<tr class="rr-row-1 text-[10px] md:text-sm">`;
 
       if (userKode === '000') {
           thHtml += `
-            <th rowspan="2" class="hidden md:table-cell sticky-left-1 w-[60px] md:w-[80px] border-r border-b border-white align-middle bg-[#dcedc8] text-slate-800 text-center" onclick="sortData('kode', 'string')">
+            <th rowspan="2" class="hidden md:table-cell sticky-left-1 w-[60px] md:w-[80px] border-r border-b border-slate-200 align-middle bg-[#dcedc8] text-slate-800 text-center" onclick="sortData('kode', 'string')">
                 <div class="flex items-center justify-center">KODE ${getSortIcon('kode', sortCol, sortAsc)}</div>
             </th>
             <th rowspan="2" class="sticky-left-2 min-w-[120px] max-w-[120px] md:min-w-[200px] md:max-w-[200px] border-r border-b border-white align-middle text-left pl-3 md:pl-5 bg-[#dcedc8] text-slate-800 truncate" onclick="sortData('nama', 'string')">
@@ -361,11 +405,11 @@
       }
 
       thHtml += `
-            <th colspan="2" class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-white align-middle bg-[#dcedc8] text-slate-800 text-[10px] md:text-sm text-center">M-1</th>
-            <th colspan="2" class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-white align-middle bg-[#dcedc8] text-slate-800 text-[10px] md:text-sm text-center">ACTUAL</th>
-            <th colspan="2" class="px-2 md:px-4 py-1.5 md:py-2 border-b border-white align-middle bg-[#dcedc8] text-slate-800 text-[10px] md:text-sm text-center">DELTA</th>
+            <th colspan="2" class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 align-middle bg-[#dcedc8] text-slate-800 text-[10px] md:text-sm text-center">M-1</th>
+            <th colspan="2" class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 align-middle bg-[#dcedc8] text-slate-800 text-[10px] md:text-sm text-center">ACTUAL</th>
+            <th colspan="2" class="px-2 md:px-4 py-1.5 md:py-2 border-b border-slate-200 align-middle bg-[#dcedc8] text-slate-800 text-[10px] md:text-sm text-center">DELTA</th>
           </tr>
-          <tr class="rr-row-2 text-[9px] md:text-xs">
+          <tr class="rr-row-2 text-[8.5px] md:text-[10px] tracking-wider">
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('m1_lancar_os', 'number')">
                 <div class="flex items-center justify-end">BAKI DEBET ${getSortIcon('m1_lancar_os', sortCol, sortAsc)}</div>
             </th>
@@ -387,7 +431,7 @@
                 <div class="flex items-center justify-center">% ${getSortIcon('delta_pct', sortCol, sortAsc)}</div>
             </th>
           </tr>
-          <tr class="rr-row-tot font-bold text-[10px] md:text-sm bg-slate-100 sticky-total shadow-[0_2px_4px_-1px_rgba(0,0,0,0.05)] border-b-2 border-slate-300" id="rowTotalRRAtas"></tr>
+          <tr class="rr-row-tot font-bold text-[10px] md:text-sm bg-slate-100 sticky-total border-b border-slate-200" id="rowTotalRRAtas"></tr>
       `;
       th.innerHTML = thHtml;
   }
@@ -429,7 +473,7 @@
       renderTableBodyRR(rekapDataCache, rekapGtCache);
   }
 
-  document.getElementById('formFilterRR').addEventListener('submit', e => { e.preventDefault(); fetchRekap(); });
+  document.getElementById('formFilter')?.addEventListener('submit', e => { e.preventDefault(); fetchRekap(); });
 
   async function fetchRekap() {
       const l = document.getElementById('loadingRekap');
@@ -497,11 +541,11 @@
               // 🔥 HIDE KODE CABANG DI MOBILE 🔥
               rowHtml += `
                 <td class="hidden md:table-cell sticky-left-1 px-2 md:px-4 py-2 border-r border-slate-100 font-semibold text-blue-700 z-20 shadow-[inset_-1px_0_0_#e2e8f0] text-center text-[10px] md:text-sm">${r.kode}</td>
-                <td class="sticky-left-2 px-3 md:px-5 py-2 border-r border-slate-100 font-semibold text-slate-700 text-left truncate z-20 shadow-[inset_-1px_0_0_#e2e8f0] text-[10px] md:text-sm min-w-[120px] max-w-[120px] md:min-w-[200px] md:max-w-[200px]" title="${r.nama}">${r.nama}</td>
+                <td class="sticky-left-2 px-3 md:px-5 py-2 border-r border-slate-100 font-bold text-slate-700 text-left truncate z-20 shadow-[inset_-1px_0_0_#e2e8f0] text-[10px] md:text-sm min-w-[120px] max-w-[120px] md:min-w-[200px] md:max-w-[200px]" title="${r.nama}">${r.nama}</td>
               `;
           } else {
               rowHtml += `
-                <td class="sticky-left-1 px-3 md:px-5 py-2 border-r border-slate-100 font-semibold text-slate-700 text-left truncate z-20 shadow-[inset_-1px_0_0_#e2e8f0] text-[10px] md:text-sm min-w-[120px] max-w-[120px] md:min-w-[200px] md:max-w-[200px]" title="${r.nama}">${r.nama}</td>
+                <td class="sticky-left-1 px-3 md:px-5 py-2 border-r border-slate-100 font-bold text-slate-700 text-left truncate z-20 shadow-[inset_-1px_0_0_#e2e8f0] text-[10px] md:text-sm min-w-[120px] max-w-[120px] md:min-w-[200px] md:max-w-[200px]" title="${r.nama}">${r.nama}</td>
               `;
           }
 
@@ -850,12 +894,10 @@
           }
 
           const payload = { ...currentDetailParams, page: page };
-          const res = await apiCall(API_RR_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-          
-          if(!res.ok || res.json.status !== 200) throw new Error(res.json.message || "Gagal memuat detail");
-          
-          detailDataCache = res.json.data?.data || [];
-          const meta = res.json.data?.pagination || { total_records:0, total_pages:1 };
+          const res = await apiCall(API_URL, payload);
+          if(res.status !== 200) throw new Error(res.message || 'Gagal memuat detail');
+          detailDataCache = res.data?.data || [];
+          const meta = res.data?.pagination || { total_records:0, total_pages:1 };
 
           currentDetailPage = page; currentDetailTotalPages = meta.total_pages;
 
@@ -954,11 +996,9 @@
           if (aoModal) { kodeAoVal = aoModal.value; }
 
           const payload = { ...currentDetailParams, kode_kankas: kankasModal, kode_ao: kodeAoVal, page: 1, limit: 10000 };
-          const res = await apiCall(API_RR_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-          
-          if(!res.ok || res.json.status !== 200) throw new Error(res.json.message || "Export gagal");
-          
-          const rows = res.json.data?.data || [];
+          const res = await apiCall(API_URL, payload);
+          if(res.status !== 200) throw new Error(res.message || 'Export gagal');
+          const rows = res.data?.data || [];
           if(rows.length === 0) { alert("Tidak ada data untuk diexport"); return; }
 
           let csv = "";
