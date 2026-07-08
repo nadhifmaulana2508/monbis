@@ -59,8 +59,9 @@ if ($url === '') {
 // =========================
 // PROTEKSI HALAMAN (AUTH GUARD)
 // =========================
-// 1. Kalau belum login tapi maksa buka halaman selain login, lempar ke login!
-if (!$isLoggedIn && $page !== 'login') {
+// 1. Kalau belum login tapi maksa buka halaman selain login dan atv_direksi, lempar ke login!
+// (atv_direksi di-whitelist agar bisa diakses langsung lewat URL)
+if (!$isLoggedIn && $page !== 'login' && $page !== 'atv_direksi') {
     header("Location: " . BASE_APP . "/login");
     exit;
 }
@@ -78,8 +79,11 @@ $baseDir = __DIR__;
 // =========================
 include $baseDir . "/views/header.php";
 
-// login tidak pakai navbar
-if ($page !== 'login') {
+// =========================
+// LOAD NAVBAR
+// =========================
+// login dan atv_direksi tidak pakai navbar (tampilan full screen)
+if ($page !== 'login' && $page !== 'atv_direksi') {
     include $baseDir . "/views/navbar.php";
 }
 

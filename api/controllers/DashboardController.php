@@ -72,7 +72,7 @@ class DashboardController{
                 
                 // 3. Metrik DPK (Dana Pihak Ketiga) (🔥 Pakai $inputH1 -> Pasti H-1)
                 'perkembangan_deposito'   => $this->getPerkembanganDeposito($input),
-                'perkembangan_tabungan'   => $this->getPerkembanganTabungan($inputH1),
+                'perkembangan_tabungan'   => $this->getPerkembanganTabungan($input),
                 'tren_portofolio_kredit'  => $this->getTrenPortofolioKredit($input)
             ];
 
