@@ -1,11 +1,25 @@
 <div class="tv-fit grid lg:grid-cols-3 gap-3 md:gap-4">
     <div class="tv-card bg-white p-4 md:p-6 rounded-xl md:rounded-3xl shadow-sm border border-gray-100 lg:col-span-2 flex flex-col">
-        <div class="flex flex-col md:flex-row justify-between md:items-center gap-2 md:gap-0 mb-3 md:mb-4 border-b border-gray-100 pb-3 shrink-0">
+        <div class="flex flex-col xl:flex-row justify-between xl:items-center gap-3 mb-3 md:mb-4 border-b border-gray-100 pb-3 shrink-0">
             <div>
                 <h3 class="font-bold text-gray-800 flex items-center gap-1.5 md:gap-2 text-[13px] md:text-xl">
                     <span class="text-blue-500">NPL</span> Tren Portofolio Kredit
                 </h3>
                 <p class="text-[10px] md:text-sm text-gray-500 font-medium mt-1">Periode bulanan konsolidasi</p>
+            </div>
+            <div class="grid grid-cols-3 gap-2 w-full xl:w-auto">
+                <div class="bg-red-50 border border-red-100 rounded-lg px-3 py-2 min-w-[120px]">
+                    <p class="text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider text-red-700">NPL Aktual</p>
+                    <p id="summary_npl_pct" class="text-base md:text-xl font-black text-red-600">0%</p>
+                </div>
+                <div class="bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 min-w-[120px]">
+                    <p class="text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider text-gray-500">Perubahan</p>
+                    <p id="summary_npl_delta" class="text-base md:text-xl font-black text-gray-900">0.00 Poin</p>
+                </div>
+                <div class="bg-red-50 border border-red-100 rounded-lg px-3 py-2 min-w-[120px]">
+                    <p class="text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider text-red-700">Nominal NPL</p>
+                    <p id="summary_npl_amt" class="text-base md:text-xl font-black text-red-600">Rp 0</p>
+                </div>
             </div>
             <div class="flex gap-2 hidden">
                 <select id="filter_tren_tipe"><option value="npl" selected>NPL</option></select>

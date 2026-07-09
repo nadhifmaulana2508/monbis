@@ -106,6 +106,15 @@
         return 'text-gray-100';
     }
 
+    function tvChartTheme() {
+        const dark = document.body.classList.contains('dark-mode');
+        return {
+            text: dark ? '#e5e7eb' : '#374151',
+            muted: dark ? '#9ca3af' : '#6b7280',
+            grid: dark ? '#374151' : '#e5e7eb'
+        };
+    }
+
     let chartTrenInstance = null;
     let chartRunoffInstance = null; 
     let chartCoaMtMInstance = null;
@@ -116,10 +125,129 @@
     // ==========================================
     const TV_CONFIG = {
         closing_date: '',
-        harian_date: ''
+        harian_date: '',
+        filter_mode: 'konsolidasi',
+        kantor: '000'
     };
+    const TV_KORWIL = ['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'];
+    let tvFilterApplyTimer = null;
+    let tvControlCloseTimer = null;
 
     const apiCall = (url, opt={}) => fetch(url, opt);
+
+    function openTvControls() {
+        if(tvControlCloseTimer) clearTimeout(tvControlCloseTimer);
+        document.getElementById('tvFloatingControls')?.classList.add('is-open');
+    }
+
+    function closeTvControlsSoon() {
+        if(tvControlCloseTimer) clearTimeout(tvControlCloseTimer);
+        tvControlCloseTimer = setTimeout(() => {
+            document.getElementById('tvFloatingControls')?.classList.remove('is-open');
+        }, 700);
+    }
+
+    function toggleTvControls() {
+        const box = document.getElementById('tvFloatingControls');
+        if(!box) return;
+        box.classList.toggle('is-open');
+    }
+
+    function getH1DateTV(dateStr) {
+        let d = new Date(dateStr);
+        d.setDate(d.getDate() - 1);
+        return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function isTvKonsolidasi() {
+        return TV_CONFIG.filter_mode === 'konsolidasi';
+    }
+
+    function updateTvScopeBadge() {
+        const badge = document.getElementById('tv_scope_badge');
+        const select = document.getElementById('tv_filter_kantor');
+        if(!badge) return;
+        if(isTvKonsolidasi()) {
+            badge.textContent = 'KONSOLIDASI';
+            return;
+        }
+        const label = select?.selectedOptions?.[0]?.textContent || TV_CONFIG.kantor || 'KANWIL / CABANG';
+        badge.textContent = label.replace(/^(\d{3}\s-\s)/, '').toUpperCase();
+    }
+
+    async function loadTvKantorOptions() {
+        const optKantor = document.getElementById('tv_filter_kantor');
+        if(!optKantor) return;
+        try {
+            const res = await apiCall('./api/kode/', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({type:'kode_kantor'}) });
+            const j = await res.json();
+            let html = `<option value="000">000 - Kantor Pusat</option><option value="SEMARANG">Korwil Semarang</option><option value="SOLO">Korwil Solo</option><option value="BANYUMAS">Korwil Banyumas</option><option value="PEKALONGAN">Korwil Pekalongan</option>`;
+            if(j.data) j.data.filter(x => x.kode_kantor !== '000').forEach(k => html += `<option value="${k.kode_kantor}">${k.kode_kantor} - ${k.nama_kantor || k.nama_cabang || ''}</option>`);
+            optKantor.innerHTML = html;
+            optKantor.value = TV_CONFIG.kantor;
+        } catch(e) {
+            optKantor.innerHTML = `<option value="000">000 - Kantor Pusat</option>`;
+        }
+    }
+
+    function syncTvFilterControls() {
+        const closing = document.getElementById('tv_filter_closing');
+        const harian = document.getElementById('tv_filter_harian');
+        const mode = document.getElementById('tv_filter_mode');
+        const kantor = document.getElementById('tv_filter_kantor');
+        if(closing) closing.value = TV_CONFIG.closing_date || '';
+        if(harian) harian.value = TV_CONFIG.harian_date || '';
+        if(mode) mode.value = TV_CONFIG.filter_mode;
+        if(kantor) {
+            kantor.value = TV_CONFIG.kantor;
+            kantor.disabled = isTvKonsolidasi();
+        }
+        updateTvScopeBadge();
+    }
+
+    function handleTvFilterModeChange() {
+        const mode = document.getElementById('tv_filter_mode');
+        const kantor = document.getElementById('tv_filter_kantor');
+        TV_CONFIG.filter_mode = mode?.value || 'konsolidasi';
+        if(kantor) kantor.disabled = isTvKonsolidasi();
+        updateTvScopeBadge();
+        scheduleTvFilterApply();
+    }
+
+    function applyTvFilters() {
+        TV_CONFIG.closing_date = document.getElementById('tv_filter_closing')?.value || TV_CONFIG.closing_date;
+        TV_CONFIG.harian_date = document.getElementById('tv_filter_harian')?.value || TV_CONFIG.harian_date;
+        TV_CONFIG.filter_mode = document.getElementById('tv_filter_mode')?.value || 'konsolidasi';
+        TV_CONFIG.kantor = document.getElementById('tv_filter_kantor')?.value || '000';
+        syncTvFilterControls();
+        fetchAllDataSlide();
+    }
+
+    function scheduleTvFilterApply() {
+        if(tvFilterApplyTimer) clearTimeout(tvFilterApplyTimer);
+        tvFilterApplyTimer = setTimeout(applyTvFilters, 900);
+    }
+
+    function bindTvFilterEvents() {
+        ['tv_filter_closing', 'tv_filter_harian', 'tv_filter_kantor'].forEach(id => {
+            const el = document.getElementById(id);
+            if(!el || el.dataset.tvBound === '1') return;
+            el.addEventListener('change', scheduleTvFilterApply);
+            el.dataset.tvBound = '1';
+        });
+    }
+
+    function attachTvOfficeFilter(payload, isLapkeu = false) {
+        if(isLapkeu) {
+            payload.kode_kantor = isTvKonsolidasi() ? 'konsolidasi' : (TV_CONFIG.kantor === '000' ? '000' : TV_CONFIG.kantor);
+            return payload;
+        }
+        if(!isTvKonsolidasi()) {
+            if(TV_KORWIL.includes(TV_CONFIG.kantor)) payload.korwil = TV_CONFIG.kantor;
+            else payload.kode_kantor = TV_CONFIG.kantor;
+        }
+        return payload;
+    }
 
     async function initTvDashboard() {
         try { 
@@ -133,9 +261,9 @@
             console.error("Gagal get date", e);
         }
 
-        if(document.getElementById('tv_date_info')) {
-            document.getElementById('tv_date_info').innerText = `Posisi Harian: ${TV_CONFIG.harian_date} | Closing M-1: ${TV_CONFIG.closing_date}`;
-        }
+        await loadTvKantorOptions();
+        syncTvFilterControls();
+        bindTvFilterEvents();
 
         document.getElementById('loadingDash').classList.add('hidden');
         document.getElementById('contentDash').classList.remove('hidden');
@@ -156,9 +284,7 @@
     async function fetchWidgetDataTV(type, isH1 = false) {
         let currDate = TV_CONFIG.harian_date;
         if (isH1) {
-            let d = new Date(currDate); 
-            d.setDate(d.getDate() - 1);
-            currDate = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            currDate = getH1DateTV(currDate);
         }
 
         // Payload dasar
@@ -174,10 +300,10 @@
         // LOGIKA KANTOR KONSOLIDASI (SAMA PERSIS DENGAN ASLINYA)
         if (type === 'summary_perbandingan' || type === 'financial_kpi') {
             endpointUrl = './api/lapkeu/';
-            payload.kode_kantor = "konsolidasi"; // Lapkeu butuh parameter ini
+            attachTvOfficeFilter(payload, true);
         } else {
             endpointUrl = './api/dashboard/';
-            // Untuk dashboard, JANGAN tambahkan kode_kantor/korwil sama sekali jika Konsolidasi
+            attachTvOfficeFilter(payload, false);
         }
 
         try {
@@ -357,6 +483,7 @@
             harian_date: TV_CONFIG.harian_date,
             periode: 'bulanan'
         };
+        attachTvOfficeFilter(payload, false);
         const res = await apiCall('./api/dashboard/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const json = await res.json();
         
@@ -366,23 +493,86 @@
         const canvas = document.getElementById('canvasTrenPortofolio'); 
         if(!canvas) return; const ctx = canvas.getContext('2d');
         if(chartTrenInstance) chartTrenInstance.destroy();
+        const theme = tvChartTheme();
 
-        const labels = arr.map(d => d.label || d.tanggal); 
-        const dataNPL = arr.map(d => parseFloat(Number(d.npl_persen).toFixed(2))); 
+        const labels = arr.map(d => d.label || d.tanggal);
+        const dataNPL = arr.map(d => parseFloat(Number(d.npl_persen || 0).toFixed(2)));
+        const dataNplAmt = arr.map(d => Number(d.npl_amt || d.osc_npl || 0));
+        const lastNpl = arr[arr.length - 1] || {};
+        const prevNpl = arr.length > 1 ? arr[arr.length - 2] : lastNpl;
+        const deltaNpl = Number(lastNpl.npl_persen || 0) - Number(prevNpl.npl_persen || 0);
+
+        setText('summary_npl_pct', pct(lastNpl.npl_persen));
+        setText('summary_npl_amt', `Rp ${fmtB(lastNpl.npl_amt || lastNpl.osc_npl)}`);
+        const deltaEl = document.getElementById('summary_npl_delta');
+        if(deltaEl) {
+            deltaEl.textContent = `${deltaNpl >= 0 ? '+' : '-'}${Math.abs(deltaNpl).toFixed(2)} Poin`;
+            deltaEl.className = `text-base md:text-xl font-black ${deltaNpl <= 0 ? 'text-green-600' : 'text-red-600'}`;
+        }
+
         let gradNPL = ctx.createLinearGradient(0, 0, 0, 300); 
         gradNPL.addColorStop(0, 'rgba(239, 68, 68, 0.3)'); gradNPL.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+        const minNpl = Math.min(...dataNPL);
+        const maxNpl = Math.max(...dataNPL);
+
+        const nplLabelPlugin = {
+            id: 'tvNplValueLabels',
+            afterDatasetsDraw(chart) {
+                const { ctx } = chart;
+                const meta = chart.getDatasetMeta(0);
+                ctx.save();
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#ef4444';
+                meta.data.forEach((point, index) => {
+                    if(!point) return;
+                    const value = dataNPL[index];
+                    ctx.fillText(`${value.toFixed(2)}%`, point.x, point.y - 14);
+                });
+                ctx.restore();
+            }
+        };
 
         chartTrenInstance = new Chart(ctx, {
             type: 'line',
-            data: { labels: labels, datasets: [{ label: 'NPL (%)', data: dataNPL, borderColor: '#ef4444', backgroundColor: gradNPL, borderWidth: 3, pointBackgroundColor: '#ffffff', pointBorderColor: '#ef4444', pointRadius: 4, fill: true, tension: 0.4 }] },
+            data: { labels: labels, datasets: [{ label: 'NPL (%)', data: dataNPL, borderColor: '#ef4444', backgroundColor: gradNPL, borderWidth: 3, pointBackgroundColor: '#ffffff', pointBorderColor: '#ef4444', pointBorderWidth: 3, pointRadius: 5, pointHoverRadius: 7, fill: true, tension: 0.35 }] },
             options: { 
-                layout: { padding: 20 }, responsive: true, maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: '#374151' } } },
+                layout: { padding: { top: 34, right: 18, bottom: 12, left: 10 } },
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'top', labels: { color: theme.text, usePointStyle: true, boxWidth: 10, font: { family: 'sans-serif', size: 12, weight: 'bold' } } },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                        padding: 12,
+                        titleFont: { size: 13, family: 'sans-serif' },
+                        bodyFont: { size: 12, family: 'sans-serif' },
+                        usePointStyle: true,
+                        callbacks: {
+                            labelColor: context => ({ borderColor: context.dataset.borderColor, backgroundColor: context.dataset.borderColor }),
+                            label: c => `NPL: ${Number(c.raw || 0).toFixed(2)}% (Rp ${fmtB(dataNplAmt[c.dataIndex])})`,
+                            afterBody: c => {
+                                if(!c.length || c[0].dataIndex === 0) return [];
+                                const idx = c[0].dataIndex;
+                                const delta = dataNPL[idx] - dataNPL[idx - 1];
+                                return [`Perubahan: ${delta >= 0 ? '+' : '-'}${Math.abs(delta).toFixed(2)} Poin`];
+                            }
+                        }
+                    }
+                },
                 scales: { 
-                    x: { ticks: { color: '#6b7280' }, grid: { display: false } }, 
-                    y: { ticks: { color: '#6b7280', callback: val => val + '%' }, grid: { color: '#e5e7eb', borderDash: [4,4] } } 
+                    x: { ticks: { color: theme.muted }, grid: { display: false } }, 
+                    y: {
+                        suggestedMin: Math.max(0, minNpl - 0.4),
+                        suggestedMax: maxNpl + 0.4,
+                        ticks: { color: theme.muted, callback: val => `${Number(val).toFixed(2)}%` },
+                        grid: { color: theme.grid, borderDash: [4,4] }
+                    } 
                 }
-            }
+            },
+            plugins: [nplLabelPlugin]
         });
     }
 
@@ -396,6 +586,7 @@
             harian_date: TV_CONFIG.harian_date,
             periode: 'bulanan'
         };
+        attachTvOfficeFilter(payload, false);
         const res = await apiCall('./api/dashboard/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const json = await res.json();
         
@@ -405,6 +596,7 @@
         const canvas = document.getElementById('canvasTrenRunoff'); 
         if(!canvas) return; const ctx = canvas.getContext('2d');
         if(chartRunoffInstance) chartRunoffInstance.destroy();
+        const theme = tvChartTheme();
 
         const labels = arr.map(d => d.label); 
         const dataReal = arr.map(d => Number(d.total_realisasi) || 0); 
@@ -464,7 +656,7 @@
                 maintainAspectRatio: false,
                 interaction: { mode: 'index', intersect: false },
                 plugins: {
-                    legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, color: '#374151', font: { family: 'sans-serif', size: 12, weight: 'bold' } } },
+                    legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, color: theme.text, font: { family: 'sans-serif', size: 12, weight: 'bold' } } },
                     tooltip: {
                         backgroundColor: 'rgba(17, 24, 39, 0.95)',
                         padding: 12,
@@ -491,8 +683,8 @@
                     }
                 },
                 scales: { 
-                    x: { ticks: { color: '#6b7280' }, grid: { display: false } }, 
-                    y: { ticks: { color: '#6b7280', callback: val => fmtB(val) }, grid: { color: '#e5e7eb', borderDash: [4,4] } } 
+                    x: { ticks: { color: theme.muted }, grid: { display: false } }, 
+                    y: { ticks: { color: theme.muted, callback: val => fmtB(val) }, grid: { color: theme.grid, borderDash: [4,4] } } 
                 }
             },
             plugins: [valueLabelPlugin]
@@ -504,15 +696,14 @@
             console.error('Chart.js belum termuat untuk canvas COA');
             return;
         }
-        let d = new Date(TV_CONFIG.harian_date); d.setDate(d.getDate() - 1);
-        let currDateH1 = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        let currDateH1 = getH1DateTV(TV_CONFIG.harian_date);
 
         const payload = {
             type: 'test tren perkiraan',
             kode_perk: 'LABA_RUGI',
-            harian_date: currDateH1,
-            kode_kantor: 'konsolidasi' // LAPKEU WAJIB KONSOLIDASI
+            harian_date: currDateH1
         };
+        attachTvOfficeFilter(payload, true);
 
         const res = await apiCall('./api/lapkeu/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
         const json = await res.json();
@@ -525,13 +716,14 @@
 
         const ctxMtM = document.getElementById('canvasCoaMtM').getContext('2d');
         const ctxYtY = document.getElementById('canvasCoaYtY').getContext('2d');
+        const theme = tvChartTheme();
         if(chartCoaMtMInstance) chartCoaMtMInstance.destroy();
         if(chartCoaYtYInstance) chartCoaYtYInstance.destroy();
 
         const getConf = (lbls, vals) => ({
             type: 'bar',
             data: { labels: lbls, datasets: [{ data: vals, backgroundColor: vals.map(v => v < 0 ? '#ef4444' : '#22c55e'), borderRadius: 4 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: '#6b7280' }, grid: { display: false } }, y: { ticks: { color: '#6b7280', callback: v => fmtB(v) }, grid: { color: '#e5e7eb', borderDash: [4,4] } } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: theme.muted }, grid: { display: false } }, y: { ticks: { color: theme.muted, callback: v => fmtB(v) }, grid: { color: theme.grid, borderDash: [4,4] } } } }
         });
 
         chartCoaMtMInstance = new Chart(ctxMtM, getConf(data.mtm.map(d => d.label), data.mtm.map(d => d.saldo)));
@@ -610,5 +802,26 @@
             const icon = document.getElementById('theme_icon');
             if(icon) icon.innerText = '☀️';
         }
+    });
+    function toggleTvTheme() {
+        document.body.classList.toggle('dark-mode');
+        const isDark = document.body.classList.contains('dark-mode');
+        ['theme_icon', 'theme_icon_panel'].forEach(id => {
+            const icon = document.getElementById(id);
+            if(icon) icon.innerText = isDark ? '☀' : '☾';
+        });
+        localStorage.setItem('tv_theme_preference', isDark ? 'dark' : 'light');
+        fetchTrenPortoTV();
+        fetchTrenRunoffTV();
+        fetchTrenCoaTV();
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+        const isDark = localStorage.getItem('tv_theme_preference') === 'dark';
+        document.body.classList.toggle('dark-mode', isDark);
+        ['theme_icon', 'theme_icon_panel'].forEach(id => {
+            const icon = document.getElementById(id);
+            if(icon) icon.innerText = isDark ? '☀' : '☾';
+        });
     });
 </script>
