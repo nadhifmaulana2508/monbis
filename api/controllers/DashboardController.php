@@ -1011,17 +1011,33 @@ class DashboardController{
         // =========================================================
         // 🔥 FIX: Mengubah t.tgl_realisasi menjadi t.tanggal_realisasi sesuai DB
         $sql = "
-            SELECT 
-                t.kode_produk,
-                COALESCE(p.nama_produk, CONCAT('PRODUK ', t.kode_produk)) AS nama_produk,
-                SUM(COALESCE(t.realisasi_pokok, 0)) AS total_realisasi,
-                COUNT(DISTINCT t.no_rekening) AS noa_realisasi
-            FROM update_realisasi_kredit t
-            LEFT JOIN produk_kredit p ON t.kode_produk = p.kode_produk
-            WHERE t.tanggal_realisasi > :closing_date 
-              AND t.tanggal_realisasi <= :harian_date
-            {$filterSql}
-            GROUP BY t.kode_produk, p.nama_produk
+            SELECT
+                x.kode_produk_group AS kode_produk,
+                COALESCE(p_group.nama_produk, x.nama_produk_group, CONCAT('PRODUK ', x.kode_produk_group)) AS nama_produk,
+                SUM(x.realisasi_pokok) AS total_realisasi,
+                COUNT(DISTINCT x.no_rekening) AS noa_realisasi
+            FROM (
+                SELECT
+                    t.no_rekening,
+                    t.realisasi_pokok,
+                    t.tanggal_realisasi,
+                    CASE
+                        WHEN t.tanggal_realisasi >= '2026-06-01' THEN COALESCE(p_old.kode_baru, t.kode_produk)
+                        ELSE t.kode_produk
+                    END AS kode_produk_group,
+                    CASE
+                        WHEN t.tanggal_realisasi >= '2026-06-01' AND p_new.nama_produk IS NOT NULL THEN p_new.nama_produk
+                        ELSE p_old.nama_produk
+                    END AS nama_produk_group
+                FROM update_realisasi_kredit t
+                LEFT JOIN produk_kredit p_old ON t.kode_produk = p_old.kode_produk
+                LEFT JOIN produk_kredit p_new ON p_old.kode_baru = p_new.kode_produk
+                WHERE t.tanggal_realisasi > :closing_date
+                  AND t.tanggal_realisasi <= :harian_date
+                {$filterSql}
+            ) x
+            LEFT JOIN produk_kredit p_group ON x.kode_produk_group = p_group.kode_produk
+            GROUP BY x.kode_produk_group, COALESCE(p_group.nama_produk, x.nama_produk_group, CONCAT('PRODUK ', x.kode_produk_group))
             ORDER BY total_realisasi DESC
         ";
 

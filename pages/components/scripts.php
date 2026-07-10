@@ -185,7 +185,7 @@
             { label: 'RR (%)', data: dataRRPct, borderColor: '#10b981', backgroundColor: gradRR, borderWidth: 3, pointBackgroundColor: '#ffffff', pointBorderColor: '#10b981', pointRadius: 3, pointHoverRadius: 5, fill: true, tension: 0.4 },
             { label: 'NPL (%)', data: dataNPLPct, borderColor: '#ef4444', backgroundColor: gradNPL, borderWidth: 3, pointBackgroundColor: '#ffffff', pointBorderColor: '#ef4444', pointRadius: 3, pointHoverRadius: 5, fill: true, tension: 0.4 }
         ];
-        yAxisCallback = function(value) { return value + '%'; };
+        yAxisCallback = function(value) { return `${Number(value).toFixed(2)}%`; };
     } else if (tipe === 'npl') {
         const dataNPLPct = trenPortoDataGlobal.map(d => parseFloat(Number(d.npl_persen).toFixed(2))); 
         let gradNPL = ctx.createLinearGradient(0, 0, 0, 300); gradNPL.addColorStop(0, 'rgba(239, 68, 68, 0.2)'); gradNPL.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
@@ -193,7 +193,7 @@
         datasets = [
             { label: 'NPL (%)', data: dataNPLPct, borderColor: '#ef4444', backgroundColor: gradNPL, borderWidth: 3, pointBackgroundColor: '#ffffff', pointBorderColor: '#ef4444', pointRadius: 4, pointHoverRadius: 6, fill: true, tension: 0.4 }
         ];
-        yAxisCallback = function(value) { return value + '%'; };
+        yAxisCallback = function(value) { return `${Number(value).toFixed(2)}%`; };
     }
 
     const labelPlugin = {
@@ -217,7 +217,7 @@
                     const meta = chart.getDatasetMeta(j);
                     if (!meta.hidden && meta.data[i]) {
                         const val = data.datasets[j].data[i];
-                        const text = (tipe === 'nom') ? fmtB(val) : val + '%';
+                        const text = (tipe === 'nom') ? fmtB(val) : `${Number(val).toFixed(2)}%`;
                         const pos = meta.data[i].tooltipPosition();
                         points.push({ index: j, text: text, color: data.datasets[j].borderColor, x: pos.x, y: pos.y });
                     }
@@ -523,7 +523,7 @@
     pRealProduk.then(rpRaw => {
       if(!rpRaw) return;
       let rp = rpRaw?.realisasi_by_produk || rpRaw || {};
-      let prods = rp.detail_produk || [];
+      let prods = (rp.detail_produk || []).slice(0, 5);
       let grandTotal = rp.grand_total?.total_realisasi || 0;
       document.getElementById('label_total_realisasi_produk').textContent = `Rp ${fmtB(grandTotal)}`;
       renderUniversalList('box_realisasi_produk', prods, 'nama_produk', 'total_realisasi', 'noa_realisasi', 'bg-indigo-400', false, 'NOA');

@@ -167,6 +167,7 @@
     let tvFilterApplyTimer = null;
     let tvControlCloseTimer = null;
     let tvActiveSelectModalId = null;
+    let tvInitialHarianDate = null;
 
     const apiCall = (url, opt={}) => fetch(url, opt);
 
@@ -191,6 +192,11 @@
         const box = document.getElementById('tvFloatingControls');
         if(!box) return;
         box.classList.toggle('is-open');
+    }
+
+    function getTodayRealtimeTV() {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     }
 
     function refreshTvTriggerLabel(selectId) {
@@ -449,6 +455,7 @@
             if(j.data) {
                 TV_CONFIG.closing_date = j.data.last_closing;
                 TV_CONFIG.harian_date = j.data.last_created;
+                tvInitialHarianDate = j.data.last_created;
             }
         } catch(e) {
             console.error("Gagal get date", e);
@@ -480,16 +487,15 @@
     // FUNGSI INI SUDAH DISAMAKAN PERSIS DENGAN KODE ASLI BAPAK
     async function fetchWidgetDataTV(type, isH1 = false) {
         let currDate = TV_CONFIG.harian_date;
-        if (isH1) {
-            currDate = getH1DateTV(currDate);
-        }
+        if (isH1 && currDate === tvInitialHarianDate) currDate = getH1DateTV(currDate);
+        let targetRealisasiDate = (currDate === tvInitialHarianDate) ? getTodayRealtimeTV() : currDate;
 
         // Payload dasar
         let payload = { 
             type: type, 
             closing_date: TV_CONFIG.closing_date, 
             harian_date: currDate,
-            harian_date_realisasi: TV_CONFIG.harian_date // Realisasi selalu pakai hari ini
+            harian_date_realisasi: targetRealisasiDate
         };
 
         let endpointUrl = './api/dashboard/';
