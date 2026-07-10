@@ -137,7 +137,7 @@
         harian_date: '',
         filter_mode: 'konsolidasi',
         kantor: 'konsolidasi',
-        screen_profile: 'auto'
+        screen_profile: 'tv_sd'
     };
     const TV_KORWIL = ['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'];
     const TV_SCREEN_PROFILES = {
@@ -152,8 +152,21 @@
         tablet: { layout: 'mobile', width: 1024, height: 768 },
         mobile: { layout: 'mobile', width: 430, height: 932 }
     };
+    const TV_SELECT_TRIGGER_MAP = {
+        tv_screen_profile: 'tv_screen_profile_trigger',
+        tv_filter_closing: 'tv_filter_closing_trigger',
+        tv_filter_harian: 'tv_filter_harian_trigger',
+        tv_filter_kantor: 'tv_filter_kantor_trigger'
+    };
+    const TV_SELECT_TITLE_MAP = {
+        tv_screen_profile: 'Resolusi layar TV',
+        tv_filter_closing: 'Pilih Closing Date',
+        tv_filter_harian: 'Pilih Harian Date',
+        tv_filter_kantor: 'Pilih Filter Kantor'
+    };
     let tvFilterApplyTimer = null;
     let tvControlCloseTimer = null;
+    let tvActiveSelectModalId = null;
 
     const apiCall = (url, opt={}) => fetch(url, opt);
 
@@ -178,6 +191,49 @@
         const box = document.getElementById('tvFloatingControls');
         if(!box) return;
         box.classList.toggle('is-open');
+    }
+
+    function refreshTvTriggerLabel(selectId) {
+        const select = document.getElementById(selectId);
+        const trigger = document.getElementById(TV_SELECT_TRIGGER_MAP[selectId] || '');
+        if(!select || !trigger) return;
+        trigger.textContent = select.selectedOptions?.[0]?.textContent || select.value || '-';
+    }
+
+    function refreshAllTvTriggerLabels() {
+        Object.keys(TV_SELECT_TRIGGER_MAP).forEach(refreshTvTriggerLabel);
+    }
+
+    function closeTvSelectModal() {
+        tvActiveSelectModalId = null;
+        document.getElementById('tvSelectModal')?.classList.add('hidden');
+    }
+
+    function selectTvModalOption(value) {
+        if(!tvActiveSelectModalId) return;
+        const select = document.getElementById(tvActiveSelectModalId);
+        if(!select) return;
+        select.value = value;
+        refreshTvTriggerLabel(tvActiveSelectModalId);
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        closeTvSelectModal();
+    }
+
+    function openTvSelectModal(selectId) {
+        const select = document.getElementById(selectId);
+        const modal = document.getElementById('tvSelectModal');
+        const title = document.getElementById('tvSelectModalTitle');
+        const optionsBox = document.getElementById('tvSelectModalOptions');
+        if(!select || !modal || !title || !optionsBox) return;
+
+        tvActiveSelectModalId = selectId;
+        title.textContent = TV_SELECT_TITLE_MAP[selectId] || 'Pilih Opsi';
+        optionsBox.innerHTML = [...select.options].map(option => `
+            <button type="button" class="tv-select-option ${option.value === select.value ? 'is-active' : ''}" onclick="selectTvModalOption('${String(option.value).replace(/'/g, "\\'")}')">
+                ${option.textContent}
+            </button>
+        `).join('');
+        modal.classList.remove('hidden');
     }
 
     function getH1DateTV(dateStr) {
@@ -225,6 +281,7 @@
             select.prepend(option);
         }
         select.value = value;
+        refreshTvTriggerLabel(selectId);
     }
 
     function isTvKonsolidasi() {
@@ -270,6 +327,7 @@
             kantor.value = TV_CONFIG.kantor;
         }
         updateTvScopeBadge();
+        refreshAllTvTriggerLabels();
     }
 
     function getTvResolvedLayout() {
@@ -357,6 +415,18 @@
             screen.addEventListener('change', handleTvScreenProfileChange);
             screen.dataset.tvBound = '1';
         }
+        Object.entries(TV_SELECT_TRIGGER_MAP).forEach(([selectId, triggerId]) => {
+            const trigger = document.getElementById(triggerId);
+            const select = document.getElementById(selectId);
+            if(trigger && trigger.dataset.tvBound !== '1') {
+                trigger.addEventListener('click', () => openTvSelectModal(selectId));
+                trigger.dataset.tvBound = '1';
+            }
+            if(select && select.dataset.tvLabelBound !== '1') {
+                select.addEventListener('change', () => refreshTvTriggerLabel(selectId));
+                select.dataset.tvLabelBound = '1';
+            }
+        });
     }
 
     function attachTvOfficeFilter(payload, isLapkeu = false) {
@@ -383,7 +453,7 @@
             console.error("Gagal get date", e);
         }
 
-        TV_CONFIG.screen_profile = localStorage.getItem('tv_screen_profile') || 'auto';
+        TV_CONFIG.screen_profile = localStorage.getItem('tv_screen_profile') || 'tv_sd';
         await loadTvKantorOptions();
         buildTvDateOptions('tv_filter_closing', TV_CONFIG.closing_date, 12, true);
         buildTvDateOptions('tv_filter_harian', TV_CONFIG.harian_date, 31, false);

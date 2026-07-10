@@ -12,12 +12,14 @@
             <button onclick="toggleTvTheme()" class="tv-icon-btn" title="Ubah Tema">
                 <span id="theme_icon_panel" class="text-lg leading-none">◐</span>
             </button>
-            <label class="tv-field">
+
+            <div class="tv-field">
                 <span>Layar</span>
-                <select id="tv_screen_profile">
+                <button type="button" id="tv_screen_profile_trigger" class="tv-field-trigger" data-select-target="tv_screen_profile">SD - 854 x 480</button>
+                <select id="tv_screen_profile" class="tv-native-select sr-only">
+                    <option value="tv_sd">SD - 854 x 480</option>
                     <option value="auto">Auto</option>
                     <option value="tv_nhd">nHD - 640 x 360</option>
-                    <option value="tv_sd">SD - 854 x 480</option>
                     <option value="tv_xga">XGA - 1024 x 576</option>
                     <option value="tv_hd">HD - 1366 x 768</option>
                     <option value="tv_fhd">Full HD - 1920 x 1080</option>
@@ -26,21 +28,27 @@
                     <option value="tablet">Tablet</option>
                     <option value="mobile">Mobile</option>
                 </select>
-            </label>
-            <label class="tv-field">
+            </div>
+
+            <div class="tv-field">
                 <span>Closing</span>
-                <select id="tv_filter_closing"></select>
-            </label>
-            <label class="tv-field">
+                <button type="button" id="tv_filter_closing_trigger" class="tv-field-trigger" data-select-target="tv_filter_closing">-</button>
+                <select id="tv_filter_closing" class="tv-native-select sr-only"></select>
+            </div>
+
+            <div class="tv-field">
                 <span>Harian</span>
-                <select id="tv_filter_harian"></select>
-            </label>
-            <label class="tv-field tv-field-wide">
+                <button type="button" id="tv_filter_harian_trigger" class="tv-field-trigger" data-select-target="tv_filter_harian">-</button>
+                <select id="tv_filter_harian" class="tv-native-select sr-only"></select>
+            </div>
+
+            <div class="tv-field tv-field-wide">
                 <span>Filter</span>
-                <select id="tv_filter_kantor">
-                    <option value="000">Memuat kantor...</option>
+                <button type="button" id="tv_filter_kantor_trigger" class="tv-field-trigger" data-select-target="tv_filter_kantor">Konsolidasi</button>
+                <select id="tv_filter_kantor" class="tv-native-select sr-only">
+                    <option value="konsolidasi">Memuat kantor...</option>
                 </select>
-            </label>
+            </div>
         </div>
     </div>
 </div>
@@ -53,4 +61,15 @@
     <button onclick="nextTvSlide()" class="tv-slide-btn" title="Slide Berikutnya">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
     </button>
+</div>
+
+<div id="tvSelectModal" class="tv-select-modal hidden">
+    <button type="button" class="tv-select-modal-backdrop" onclick="closeTvSelectModal()" aria-label="Tutup daftar pilihan"></button>
+    <div class="tv-select-modal-sheet">
+        <div class="tv-select-modal-head">
+            <div id="tvSelectModalTitle" class="tv-select-modal-title">Pilih Opsi</div>
+            <button type="button" class="tv-select-modal-close" onclick="closeTvSelectModal()" aria-label="Tutup">✕</button>
+        </div>
+        <div id="tvSelectModalOptions" class="tv-select-modal-options"></div>
+    </div>
 </div>
