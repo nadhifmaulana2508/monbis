@@ -12,6 +12,19 @@ class LaporanKeuanganController
         $this->pdo = $pdo;
     }
 
+    private function getKorwilRange(?string $korwil): ?array
+    {
+        $korwil = strtoupper(trim((string) $korwil));
+
+        return match ($korwil) {
+            'SEMARANG' => ['001', '007'],
+            'SOLO' => ['008', '014'],
+            'BANYUMAS' => ['015', '021'],
+            'PEKALONGAN' => ['022', '028'],
+            default => null,
+        };
+    }
+
 
 
     /**
@@ -341,6 +354,153 @@ class LaporanKeuanganController
         }
     }
 
+    public function apiGetTrenMakroMingguan(array $input)
+    {
+        try {
+            $baseDate = $input['harian_date'] ?? date('Y-m-d');
+            $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
+            $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
+
+            $baseDateObj = new DateTime($baseDate);
+            $monthStart = $baseDateObj->format('Y-m-01');
+            $monthEnd = $baseDateObj->format('Y-m-t');
+            $effectiveEnd = min($baseDate, $monthEnd);
+
+            $sqlKantor = '';
+            $params = [
+                ':start_date' => $monthStart,
+                ':end_date' => $effectiveEnd,
+            ];
+
+            if ($korwilRange) {
+                $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = $korwilRange[0];
+                $params[':kw_end'] = $korwilRange[1];
+            } elseif (strtolower($kodeKantorReq) === 'konsolidasi') {
+                $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN '000' AND '028'";
+            } else {
+                $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') = :kode_kantor";
+                $params[':kode_kantor'] = str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT);
+            }
+
+            $asetCodes = [
+                '101','102','103','104','105','10601','10602','10604','10605','10606',
+                '107','108','109','110','11102','112','113','116','117','118','119','120','121'
+            ];
+            $asetQuoted = implode(',', array_map('intval', $asetCodes));
+            $trackedCodes = array_merge($asetCodes, ['210', '204', '4', '5']);
+            $trackedQuoted = implode(',', array_map('intval', array_unique($trackedCodes)));
+
+            $sql = "
+                SELECT
+                    tanggal,
+                    SUM(CASE WHEN kode_perk IN ($asetQuoted) THEN saldo_akhir ELSE 0 END)
+                    - SUM(CASE WHEN kode_perk = 210 THEN saldo_akhir ELSE 0 END) AS aset_gabungan,
+                    SUM(CASE WHEN kode_perk = 10601 THEN saldo_akhir ELSE 0 END) AS kredit_baki_debet,
+                    SUM(CASE WHEN kode_perk = 204 THEN saldo_akhir ELSE 0 END) AS dpk,
+                    (
+                        SUM(CASE WHEN kode_perk = 4 THEN saldo_akhir ELSE 0 END) -
+                        SUM(CASE WHEN kode_perk = 5 THEN saldo_akhir ELSE 0 END)
+                    ) AS laba_net
+                FROM acc_history
+                WHERE tanggal BETWEEN :start_date AND :end_date
+                  $sqlKantor
+                  AND kode_perk IN ($trackedQuoted)
+                GROUP BY tanggal
+                ORDER BY tanggal ASC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $rowsByWeek = [];
+            foreach ($rows as $row) {
+                $tglObj = new DateTime($row['tanggal']);
+                $dayNum = (int) $tglObj->format('j');
+                $weekIndex = (int) floor(($dayNum - 1) / 7) + 1;
+                $rowsByWeek[$weekIndex] = [
+                    'tanggal' => $row['tanggal'],
+                    'aset_gabungan' => (float) ($row['aset_gabungan'] ?? 0),
+                    'kredit_baki_debet' => (float) ($row['kredit_baki_debet'] ?? 0),
+                    'dpk' => (float) ($row['dpk'] ?? 0),
+                    'laba_net' => (float) ($row['laba_net'] ?? 0),
+                ];
+            }
+
+            $lastDay = (int) $baseDateObj->format('j');
+            $maxWeek = (int) floor(($lastDay - 1) / 7) + 1;
+            $weeks = [];
+
+            for ($week = 1; $week <= $maxWeek; $week++) {
+                $startDay = (($week - 1) * 7) + 1;
+                $endDay = min($week * 7, (int) $baseDateObj->format('t'), $lastDay);
+                $startWeek = $baseDateObj->format('Y-m-') . str_pad((string) $startDay, 2, '0', STR_PAD_LEFT);
+                $endWeek = $baseDateObj->format('Y-m-') . str_pad((string) $endDay, 2, '0', STR_PAD_LEFT);
+                $weekRow = $rowsByWeek[$week] ?? [
+                    'tanggal' => $endWeek,
+                    'aset_gabungan' => 0,
+                    'kredit_baki_debet' => 0,
+                    'dpk' => 0,
+                    'laba_net' => 0,
+                ];
+
+                $weeks[] = [
+                    'label' => 'Pekan ' . $week,
+                    'tanggal' => $weekRow['tanggal'],
+                    'keterangan' => date('d M', strtotime($startWeek)) . ' - ' . date('d M', strtotime($endWeek)),
+                    'aset_gabungan' => $weekRow['aset_gabungan'],
+                    'kredit_baki_debet' => $weekRow['kredit_baki_debet'],
+                    'dpk' => $weekRow['dpk'],
+                    'laba_net' => $weekRow['laba_net'],
+                ];
+            }
+
+            $latest = end($weeks) ?: null;
+            $previous = count($weeks) > 1 ? $weeks[count($weeks) - 2] : null;
+            $calcGrowth = function ($current, $past) {
+                if ((float) $past == 0.0) {
+                    return (float) $current == 0.0 ? 0.0 : 100.0;
+                }
+                return round(((($current - $past) / abs($past)) * 100), 2);
+            };
+
+            $summary = $latest ? [
+                'label' => $latest['label'],
+                'tanggal' => $latest['tanggal'],
+                'aset_gabungan' => $latest['aset_gabungan'],
+                'kredit_baki_debet' => $latest['kredit_baki_debet'],
+                'dpk' => $latest['dpk'],
+                'laba_net' => $latest['laba_net'],
+                'growth_aset' => $calcGrowth($latest['aset_gabungan'], $previous['aset_gabungan'] ?? 0),
+                'growth_kredit' => $calcGrowth($latest['kredit_baki_debet'], $previous['kredit_baki_debet'] ?? 0),
+                'growth_dpk' => $calcGrowth($latest['dpk'], $previous['dpk'] ?? 0),
+                'growth_laba' => $calcGrowth($latest['laba_net'], $previous['laba_net'] ?? 0),
+            ] : null;
+
+            $scopeLabel = $korwilRange ? ('KORWIL ' . $korwilReq) : strtoupper($kodeKantorReq);
+
+            sendResponse(200, "Berhasil memuat tren makro mingguan (" . $scopeLabel . ")", [
+                'scope' => $scopeLabel,
+                'periode' => [
+                    'start' => $monthStart,
+                    'end' => $effectiveEnd,
+                ],
+                'formula' => [
+                    'aset_gabungan' => "101 + 102 + 103 + 104 + 105 + 10601 + 10602 + 10604 + 10605 + 10606 + 107 + 108 + 109 + 110 + 11102 + 112 + 113 + 116 + 117 + 118 + 119 + 120 + 121 - 210",
+                    'kredit_baki_debet' => "10601",
+                    'dpk' => "204",
+                    'laba_net' => "4 - 5",
+                ],
+                'summary' => $summary,
+                'weeks' => $weeks,
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, "Gagal memuat tren makro mingguan: " . $e->getMessage(), null);
+        }
+    }
+
     /**
      * =================================================================
      * ENDPOINT: API FINANCIAL KPI DASHBOARD
@@ -352,13 +512,20 @@ class LaporanKeuanganController
         try {
             $baseDate = $input['harian_date'] ?? date('Y-m-d');
             $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
+            $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
 
             // 1. 🔥 FILTER KANTOR (Bisa dipakai u/ acc_history & nominatif) 🔥
             $sqlKantorAcc = "";
             $sqlKantorNom = "";
             $params = [':tanggal' => $baseDate];
 
-            if (strtolower($kodeKantorReq) === 'konsolidasi') {
+            if ($korwilRange) {
+                $sqlKantorAcc = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN :kw_start AND :kw_end";
+                $sqlKantorNom = "AND LPAD(CAST(kode_cabang AS CHAR), 3, '0') BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = $korwilRange[0];
+                $params[':kw_end'] = $korwilRange[1];
+            } elseif (strtolower($kodeKantorReq) === 'konsolidasi') {
                 $sqlKantorAcc = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN '000' AND '028'";
                 // Nominatif konsolidasi tidak perlu filter cabang
             } else {
@@ -485,13 +652,18 @@ class LaporanKeuanganController
                 }
             }
 
+            $coaDict = $this->getCoaDictionary();
+            $leafBiaya = array_values(array_filter($leafBiaya, function($row) use ($coaDict) {
+                $nama = strtoupper(trim((string) ($coaDict[$row['kode']] ?? '')));
+                return strpos($nama, 'TAMADES') === false;
+            }));
+
             usort($leafBiaya, function($a, $b) {
                 return $b['total_biaya'] <=> $a['total_biaya']; 
             });
 
             $top5BiayaRaw = array_slice($leafBiaya, 0, 5);
 
-            $coaDict = $this->getCoaDictionary();
             $topBiaya = [];
             foreach($top5BiayaRaw as $row) {
                 $topBiaya[] = [
@@ -504,6 +676,8 @@ class LaporanKeuanganController
             // =========================================================
             // BUNGKUS KE DALAM RESPONSE JSON
             // =========================================================
+            $scopeLabel = $korwilRange ? ('KORWIL ' . $korwilReq) : strtoupper($kodeKantorReq);
+
             $responseData = [
                 'rasio' => [
                     'bopo_persen'           => round($bopo, 2),
@@ -531,7 +705,7 @@ class LaporanKeuanganController
                 'top_5_biaya' => $topBiaya
             ];
 
-            sendResponse(200, "Berhasil memuat KPI Kesehatan Bank (" . strtoupper($kodeKantorReq) . ")", $responseData);
+            sendResponse(200, "Berhasil memuat KPI Kesehatan Bank (" . $scopeLabel . ")", $responseData);
 
         } catch (Exception $e) {
             sendResponse(500, "Gagal memuat KPI: " . $e->getMessage(), null);
@@ -548,6 +722,8 @@ class LaporanKeuanganController
         try {
             $baseDate = $input['harian_date'] ?? date('Y-m-d');
             $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
+            $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
 
             // 1. Tentukan 3 Titik Waktu
             $baseDateObj = new DateTime($baseDate);
@@ -565,7 +741,11 @@ class LaporanKeuanganController
             $sqlKantor = "";
             $params = [$dateCurrent, $dateLastMonth, $dateLastYear];
 
-            if (strtolower($kodeKantorReq) === 'konsolidasi') {
+            if ($korwilRange) {
+                $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN ? AND ?";
+                $params[] = $korwilRange[0];
+                $params[] = $korwilRange[1];
+            } elseif (strtolower($kodeKantorReq) === 'konsolidasi') {
                 $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN '000' AND '028'";
             } else {
                 $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') = ?";
@@ -579,6 +759,9 @@ class LaporanKeuanganController
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '1' THEN saldo_akhir ELSE 0 END) AS aset,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '2' THEN saldo_akhir ELSE 0 END) AS kewajiban,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '3' THEN saldo_akhir ELSE 0 END) AS ekuitas,
+                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '101' THEN saldo_akhir ELSE 0 END) AS kas,
+                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '104' THEN saldo_akhir ELSE 0 END) AS penempatan_bank,
+                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '201' THEN saldo_akhir ELSE 0 END) AS kewajiban_segera,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '4' THEN saldo_akhir ELSE 0 END) AS pendapatan,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '5' THEN saldo_akhir ELSE 0 END) AS biaya,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '106' THEN saldo_akhir ELSE 0 END) AS kredit,
@@ -598,7 +781,8 @@ class LaporanKeuanganController
             // 4. Mapping Data berdasarkan Tanggal (Siapkan default 0)
             $defaultData = [
                 'aset' => 0, 'kewajiban' => 0, 'ekuitas' => 0, 'pendapatan' => 0, 'biaya' => 0,
-                'kredit' => 0, 'tabungan' => 0, 'deposito' => 0, 'pend_ops' => 0, 'biaya_ops' => 0
+                'kredit' => 0, 'tabungan' => 0, 'deposito' => 0, 'pend_ops' => 0, 'biaya_ops' => 0,
+                'kas' => 0, 'penempatan_bank' => 0, 'kewajiban_segera' => 0
             ];
 
             $dataMap = [
@@ -621,12 +805,19 @@ class LaporanKeuanganController
             };
 
             // Fungsi Helper Buat Ngitung Rasio (Persentase Kesehatan)
-            $calculateRasio = function($data) {
+            $calculateRasio = function($data, $date) {
                 $dpk = $data['tabungan'] + $data['deposito'];
+                $labaBerjalan = $data['pendapatan'] - $data['biaya'];
+                $monthNumber = max(1, (int) date('n', strtotime($date)));
+                $labaDisetahunkan = ($labaBerjalan / $monthNumber) * 12;
+                $alatLikuid = $data['kas'] + $data['penempatan_bank'];
                 return [
                     'bopo' => ($data['pend_ops'] > 0) ? ($data['biaya_ops'] / $data['pend_ops']) * 100 : 0,
                     'ldr'  => ($dpk > 0) ? ($data['kredit'] / $dpk) * 100 : 0,
                     'casa' => ($dpk > 0) ? ($data['tabungan'] / $dpk) * 100 : 0,
+                    'roa'  => ($data['aset'] > 0) ? ($labaDisetahunkan / $data['aset']) * 100 : 0,
+                    'roe'  => ($data['ekuitas'] > 0) ? ($labaDisetahunkan / $data['ekuitas']) * 100 : 0,
+                    'cash' => ($data['kewajiban_segera'] > 0) ? ($alatLikuid / $data['kewajiban_segera']) * 100 : 0,
                 ];
             };
 
@@ -662,12 +853,12 @@ class LaporanKeuanganController
             ];
 
             // 7. Format Response Rasio Kesehatan (Khusus Persentase)
-            $rasioCurr  = $calculateRasio($dataMap[$dateCurrent]);
-            $rasioPrevM = $calculateRasio($dataMap[$dateLastMonth]);
-            $rasioPrevY = $calculateRasio($dataMap[$dateLastYear]);
+            $rasioCurr  = $calculateRasio($dataMap[$dateCurrent], $dateCurrent);
+            $rasioPrevM = $calculateRasio($dataMap[$dateLastMonth], $dateLastMonth);
+            $rasioPrevY = $calculateRasio($dataMap[$dateLastYear], $dateLastYear);
 
             $rasioData = [];
-            foreach (['bopo', 'ldr', 'casa'] as $r) {
+            foreach (['bopo', 'ldr', 'casa', 'roa', 'roe', 'cash'] as $r) {
                 $rasioData[$r] = [
                     'persen_aktual'     => round($rasioCurr[$r], 2),
                     'persen_bulan_lalu' => round($rasioPrevM[$r], 2),
@@ -678,8 +869,10 @@ class LaporanKeuanganController
             }
 
             // 8. Rangkum Hasil
+            $scopeLabel = $korwilRange ? ('KORWIL ' . $korwilReq) : strtoupper($kodeKantorReq);
+
             $responseData = [
-                'info_kantor'  => strtoupper($kodeKantorReq),
+                'info_kantor'  => $scopeLabel,
                 'info_tanggal' => [
                     'aktual'     => $dateCurrent,
                     'bulan_lalu' => $dateLastMonth,
@@ -689,7 +882,7 @@ class LaporanKeuanganController
                 'kesehatan_rasio' => $rasioData
             ];
 
-            sendResponse(200, "Berhasil memuat Summary Perbandingan (" . strtoupper($kodeKantorReq) . ")", $responseData);
+            sendResponse(200, "Berhasil memuat Summary Perbandingan (" . $scopeLabel . ")", $responseData);
 
         } catch (Exception $e) {
             sendResponse(500, "Gagal memuat Summary: " . $e->getMessage(), null);

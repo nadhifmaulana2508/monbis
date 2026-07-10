@@ -39,6 +39,10 @@
             <?php include 'components/display_direksi/slide_7_dpk.php'; ?>
         </div>
 
+        <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-8">
+            <?php include 'components/display_direksi/slide_8_tabungan.php'; ?>
+        </div>
+
     </div>
 </div>
 
@@ -178,6 +182,21 @@
         appearance: auto;
         -webkit-appearance: auto;
         pointer-events: auto;
+    }
+    .tv-date-input {
+        min-width: 0;
+        width: 100%;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        color: #0f172a;
+        font-weight: 800;
+        font-size: .82rem;
+        padding: 0;
+    }
+    .tv-date-input::-webkit-calendar-picker-indicator {
+        cursor: pointer;
+        opacity: .9;
     }
     .tv-field-trigger {
         width: 100%;

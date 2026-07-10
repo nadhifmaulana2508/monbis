@@ -1123,11 +1123,11 @@
     const pTopReal      = fetchWidgetData('test top realisasi');
     const pTopNpl       = fetchWidgetData('test top bottom npl');
     const pDeltaNpl     = fetchWidgetData('test delta npl');
-    const pDeposito     = fetchWidgetData('test perkembangan deposito', true);
-    const pTabungan     = fetchWidgetData('test perkembangan tabungan', true);
+    const pDeposito     = fetchWidgetData('test perkembangan deposito');
+    const pTabungan     = fetchWidgetData('test perkembangan tabungan');
     
-    const pSummaryMakro = fetchWidgetData('summary_perbandingan', true);
-    const pHealthKpi    = fetchWidgetData('financial_kpi', true);
+    const pSummaryMakro = fetchWidgetData('summary_perbandingan');
+    const pHealthKpi    = fetchWidgetData('financial_kpi');
 
     pSaldoBank.then(sb => {
       if(!sb) return;

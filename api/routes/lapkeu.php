@@ -39,6 +39,9 @@ switch ($method) {
         
 
         // 🔥 TAMBAHKAN INI BROKU 🔥
+        } elseif ($type === 'tren_makro_mingguan') {
+            $controller->apiGetTrenMakroMingguan($input);
+
         } elseif ($type === 'list_coa') {
             $controller->apiGetCoaList();
 

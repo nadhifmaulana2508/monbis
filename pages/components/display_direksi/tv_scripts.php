@@ -103,6 +103,47 @@
         let displayVal = isPercent ? pct(Math.abs(numVal)) : fmtB(Math.abs(numVal));
         return `<span class="${color} font-black ${sizeClass}">${icon} ${displayVal}</span>`;
     };
+    const getPreviousValueHTML = (val, prefix = 'Rp ') => {
+        const numVal = Number(val || 0);
+        return `<div class="leading-tight"><div class="text-[8px] md:text-[9px] font-bold uppercase tracking-wider text-gray-400">Bulan Lalu</div><div class="text-[10px] md:text-[11px] font-black text-gray-700">${prefix}${fmtB(numVal)}</div></div>`;
+    };
+    const getPercentInfoHTML = (label, val, invertGoodBad = false) => {
+        const numVal = Number(val || 0);
+        const isGood = invertGoodBad ? numVal < 0 : numVal > 0;
+        const color = numVal === 0 ? 'text-gray-500' : (isGood ? 'text-green-600' : 'text-red-600');
+        const sign = numVal > 0 ? '+' : '';
+        return `<div class="leading-tight"><div class="text-[8px] md:text-[9px] font-bold uppercase tracking-wider text-gray-400">${label}</div><div class="text-[10px] md:text-[11px] font-black ${color}">${sign}${pct(numVal)}</div></div>`;
+    };
+    const getNominalAndPercentHTML = (prevNominal, growthPercent, invertGoodBad = false) => {
+        const numVal = Number(growthPercent || 0);
+        const isGood = invertGoodBad ? numVal < 0 : numVal > 0;
+        const color = numVal === 0 ? 'text-gray-500' : (isGood ? 'text-green-600' : 'text-red-600');
+        const sign = numVal > 0 ? '+' : '';
+        return `
+            <div class="leading-tight space-y-1">
+                <div>
+                    <div class="text-[8px] md:text-[9px] font-bold uppercase tracking-wider text-gray-400">Bulan Lalu</div>
+                    <div class="text-[10px] md:text-[11px] font-black text-gray-700">Rp ${fmtB(prevNominal)}</div>
+                </div>
+                <div>
+                    <div class="text-[8px] md:text-[9px] font-bold uppercase tracking-wider text-gray-400">MoM</div>
+                    <div class="text-[10px] md:text-[11px] font-black ${color}">${sign}${pct(numVal)}</div>
+                </div>
+            </div>
+        `;
+    };
+    const getRatioCompareHTML = (prevVal, deltaVal, invertGoodBad = false) => {
+        const prev = Number(prevVal || 0);
+        const delta = Number(deltaVal || 0);
+        const deltaHtml = getDeltaHTML(delta, true, invertGoodBad, true);
+        return `
+            <div class="leading-tight space-y-1">
+                <div class="text-[9px] md:text-[10px] text-gray-500 font-bold">M-1: <span class="text-gray-700">${pct(prev)}</span></div>
+                <div>${deltaHtml}</div>
+            </div>
+        `;
+    };
+    const getPercentCompareHTML = (label, val) => `<div class="text-[9px] md:text-[10px] text-gray-500 font-bold">${label}: <span class="text-gray-700">${pct(val)}</span></div>`;
 
     function getRasioColor(key, val) {
         let num = Number(val);
@@ -126,8 +167,7 @@
 
     let chartTrenInstance = null;
     let chartRunoffInstance = null; 
-    let chartCoaMtMInstance = null;
-    let chartCoaYtYInstance = null;
+    let chartWeeklyMakroInstance = null;
 
     // ==========================================
     // 3. GLOBAL CONFIG & DATA FETCHING (FIXED LOGIC)
@@ -154,14 +194,10 @@
     };
     const TV_SELECT_TRIGGER_MAP = {
         tv_screen_profile: 'tv_screen_profile_trigger',
-        tv_filter_closing: 'tv_filter_closing_trigger',
-        tv_filter_harian: 'tv_filter_harian_trigger',
         tv_filter_kantor: 'tv_filter_kantor_trigger'
     };
     const TV_SELECT_TITLE_MAP = {
         tv_screen_profile: 'Resolusi layar TV',
-        tv_filter_closing: 'Pilih Closing Date',
-        tv_filter_harian: 'Pilih Harian Date',
         tv_filter_kantor: 'Pilih Filter Kantor'
     };
     let tvFilterApplyTimer = null;
@@ -256,6 +292,10 @@
     function buildTvDateOptions(selectId, endDate, totalDays = 31, monthEndOnly = false) {
         const select = document.getElementById(selectId);
         if(!select || !endDate) return;
+        if(select.tagName !== 'SELECT') {
+            select.value = endDate;
+            return;
+        }
         const end = new Date(endDate);
         if(Number.isNaN(end.getTime())) return;
         const options = [];
@@ -280,6 +320,10 @@
     function ensureTvDateOption(selectId, value) {
         const select = document.getElementById(selectId);
         if(!select || !value) return;
+        if(select.tagName !== 'SELECT') {
+            select.value = value;
+            return;
+        }
         if(![...select.options].some(opt => opt.value === value)) {
             const option = document.createElement('option');
             option.value = value;
@@ -328,6 +372,8 @@
         const screen = document.getElementById('tv_screen_profile');
         if(closing) ensureTvDateOption('tv_filter_closing', TV_CONFIG.closing_date || '');
         if(harian) ensureTvDateOption('tv_filter_harian', TV_CONFIG.harian_date || '');
+        if(closing && closing.tagName !== 'SELECT' && TV_CONFIG.closing_date) closing.max = TV_CONFIG.closing_date;
+        if(harian && harian.tagName !== 'SELECT' && TV_CONFIG.harian_date) harian.max = TV_CONFIG.harian_date;
         if(screen) screen.value = TV_CONFIG.screen_profile || 'auto';
         if(kantor) {
             kantor.value = TV_CONFIG.kantor;
@@ -438,7 +484,9 @@
 
     function attachTvOfficeFilter(payload, isLapkeu = false) {
         if(isLapkeu) {
-            payload.kode_kantor = isTvKonsolidasi() ? 'konsolidasi' : (TV_CONFIG.kantor === '000' ? '000' : TV_CONFIG.kantor);
+            if(isTvKonsolidasi()) payload.kode_kantor = 'konsolidasi';
+            else if(TV_KORWIL.includes(TV_CONFIG.kantor)) payload.korwil = TV_CONFIG.kantor;
+            else payload.kode_kantor = (TV_CONFIG.kantor === '000' ? '000' : TV_CONFIG.kantor);
             return payload;
         }
         if(!isTvKonsolidasi()) {
@@ -463,8 +511,6 @@
 
         TV_CONFIG.screen_profile = localStorage.getItem('tv_screen_profile') || 'tv_sd';
         await loadTvKantorOptions();
-        buildTvDateOptions('tv_filter_closing', TV_CONFIG.closing_date, 12, true);
-        buildTvDateOptions('tv_filter_harian', TV_CONFIG.harian_date, 31, false);
         syncTvFilterControls();
         applyTvScreenProfile();
         bindTvFilterEvents();
@@ -529,10 +575,10 @@
         const pTopReal      = fetchWidgetDataTV('test top realisasi');
         const pTopNpl       = fetchWidgetDataTV('test top bottom npl');
         const pDeltaNpl     = fetchWidgetDataTV('test delta npl');
-        const pDeposito     = fetchWidgetDataTV('test perkembangan deposito', true);
+        const pDeposito     = fetchWidgetDataTV('test perkembangan deposito');
         const pTabungan     = fetchWidgetDataTV('test perkembangan tabungan', true);
-        const pSummaryMakro = fetchWidgetDataTV('summary_perbandingan', true);
-        const pHealthKpi    = fetchWidgetDataTV('financial_kpi', true);
+        const pSummaryMakro = fetchWidgetDataTV('summary_perbandingan');
+        const pHealthKpi    = fetchWidgetDataTV('financial_kpi');
         
         fetchTrenPortoTV();
         fetchTrenRunoffTV();
@@ -578,11 +624,15 @@
 
             if(Object.keys(dep).length > 0) {
                 renderUniversalList('list_dep_saldo_top', dep.top_saldo, 'nama_cabang', 'saldo_curr', 'noa_curr', 'bg-yellow-500', false, 'Rek');
+                renderUniversalList('list_dep_saldo_bot', [...(dep.bottom_saldo || [])].reverse(), 'nama_cabang', 'saldo_curr', 'noa_curr', 'bg-yellow-400', false, 'Rek');
                 renderUniversalList('list_dep_baru', dep.top_baru, 'nama_cabang', 'saldo_baru', 'noa_tambah', 'bg-green-500', false, 'Rek Baru');
+                renderUniversalList('list_dep_cair', dep.top_pencairan, 'nama_cabang', 'saldo_cair', 'noa_kurang', 'bg-red-400', false, 'Rek Cair');
             }
             if(Object.keys(tab).length > 0) {
                 renderUniversalList('list_tab_saldo_top', tab.top_saldo, 'nama_cabang', 'saldo_curr', 'noa_curr', 'bg-blue-500', false, 'Rek');
+                renderUniversalList('list_tab_saldo_bot', [...(tab.bottom_saldo || [])].reverse(), 'nama_cabang', 'saldo_curr', 'noa_curr', 'bg-teal-400', false, 'Rek');
                 renderUniversalList('list_tab_baru', tab.top_baru, 'nama_cabang', 'saldo_baru', 'noa_tambah', 'bg-teal-500', false, 'Rek Baru');
+                renderUniversalList('list_tab_cair', tab.top_pencairan, 'nama_cabang', 'saldo_cair', 'noa_kurang', 'bg-red-400', false, 'Rek Cair');
             }
         });
 
@@ -590,22 +640,29 @@
             if(mRaw && mRaw.makro) {
                 let m = mRaw.makro;
                 document.getElementById('txt_makro_aset').textContent = `Rp ${fmtB(m.aset?.nominal_aktual)}`;
-                document.getElementById('delta_makro_aset').innerHTML = getDeltaHTML(m.aset?.growth_mom, true, false, true);
+                document.getElementById('delta_makro_aset').innerHTML = getNominalAndPercentHTML(m.aset?.nominal_bulan_lalu, m.aset?.growth_mom);
                 document.getElementById('txt_makro_laba').textContent = `Rp ${fmtB(m.laba_rugi?.nominal_aktual)}`;
-                document.getElementById('delta_makro_laba').innerHTML = getDeltaHTML(m.laba_rugi?.growth_mom, true, false, true);
+                document.getElementById('delta_makro_laba').innerHTML = getNominalAndPercentHTML(m.laba_rugi?.nominal_bulan_lalu, m.laba_rugi?.growth_mom);
                 document.getElementById('txt_makro_pendapatan').textContent = `Rp ${fmtB(m.pendapatan?.nominal_aktual)}`;
-                document.getElementById('delta_makro_pendapatan').innerHTML = getDeltaHTML(m.pendapatan?.growth_mom, true, false, true);
+                document.getElementById('delta_makro_pendapatan').innerHTML = getNominalAndPercentHTML(m.pendapatan?.nominal_bulan_lalu, m.pendapatan?.growth_mom);
                 document.getElementById('txt_makro_biaya').textContent = `Rp ${fmtB(m.biaya?.nominal_aktual)}`;
-                document.getElementById('delta_makro_biaya').innerHTML = getDeltaHTML(m.biaya?.growth_mom, true, true, true);
+                document.getElementById('delta_makro_biaya').innerHTML = getNominalAndPercentHTML(m.biaya?.nominal_bulan_lalu, m.biaya?.growth_mom, true);
             }
             if(kRaw && kRaw.rasio) {
                 let r = kRaw.rasio;
                 document.getElementById('txt_rasio_bopo').textContent = `${r.bopo_persen}%`; document.getElementById('txt_rasio_bopo').className = `text-lg font-black ${getRasioColor('bopo', r.bopo_persen)}`;
                 document.getElementById('txt_rasio_ldr').textContent = `${r.ldr_persen}%`; document.getElementById('txt_rasio_ldr').className = `text-lg font-black ${getRasioColor('ldr', r.ldr_persen)}`;
                 document.getElementById('txt_rasio_casa').textContent = `${r.casa_persen}%`; document.getElementById('txt_rasio_casa').className = `text-lg font-black ${getRasioColor('casa', r.casa_persen)}`;
-                document.getElementById('txt_rasio_coverage').textContent = `${r.coverage_ratio_persen}%`; document.getElementById('txt_rasio_coverage').className = `text-lg font-black ${getRasioColor('cov', r.coverage_ratio_persen)}`;
                 document.getElementById('txt_rasio_roa').textContent = `${r.roa_persen}%`; document.getElementById('txt_rasio_roa').className = `text-lg font-black ${getRasioColor('roa', r.roa_persen)}`;
+                document.getElementById('txt_rasio_roe').textContent = `${r.roe_persen}%`; document.getElementById('txt_rasio_roe').className = `text-lg font-black ${Number(r.roe_persen || 0) > 0 ? 'text-green-500' : 'text-red-500'}`;
                 document.getElementById('txt_rasio_cash').textContent = `${r.cash_ratio_persen}%`; document.getElementById('txt_rasio_cash').className = `text-lg font-black ${getRasioColor('cash', r.cash_ratio_persen)}`;
+                const rasioSummary = mRaw?.kesehatan_rasio || {};
+                setHtml('delta_rasio_bopo', getRatioCompareHTML(rasioSummary.bopo?.persen_bulan_lalu, rasioSummary.bopo?.delta_mom, true));
+                setHtml('delta_rasio_ldr', getRatioCompareHTML(rasioSummary.ldr?.persen_bulan_lalu, rasioSummary.ldr?.delta_mom));
+                setHtml('delta_rasio_casa', getRatioCompareHTML(rasioSummary.casa?.persen_bulan_lalu, rasioSummary.casa?.delta_mom));
+                setHtml('delta_rasio_roa', getRatioCompareHTML(rasioSummary.roa?.persen_bulan_lalu, rasioSummary.roa?.delta_mom));
+                setHtml('delta_rasio_roe', getRatioCompareHTML(rasioSummary.roe?.persen_bulan_lalu, rasioSummary.roe?.delta_mom));
+                setHtml('delta_rasio_cash', getRatioCompareHTML(rasioSummary.cash?.persen_bulan_lalu, rasioSummary.cash?.delta_mom));
                 
                 if(kRaw.top_5_biaya) renderUniversalList('box_top_biaya', kRaw.top_5_biaya, 'nama', 'nominal', 'kode', 'bg-red-500', false, '');
             }
@@ -911,12 +968,11 @@
             console.error('Chart.js belum termuat untuk canvas COA');
             return;
         }
-        let currDateH1 = getH1DateTV(TV_CONFIG.harian_date);
+        let currDate = TV_CONFIG.harian_date;
 
         const payload = {
-            type: 'test tren perkiraan',
-            kode_perk: 'LABA_RUGI',
-            harian_date: currDateH1
+            type: 'tren_makro_mingguan',
+            harian_date: currDate
         };
         attachTvOfficeFilter(payload, true);
 
@@ -924,25 +980,94 @@
         const json = await res.json();
         const data = json.data;
 
-        if(!data || !data.mtm) return;
-        
-        document.getElementById('txt_coa_saldo').innerText = `Rp ${fmtB(data.summary?.saldo_sekarang)}`;
-        document.getElementById('txt_coa_growth').innerHTML = getDeltaHTML(data.summary?.pertumbuhan_persen, true, false, false);
+        if(!data || !Array.isArray(data.weeks) || !data.weeks.length) return;
 
-        const ctxMtM = document.getElementById('canvasCoaMtM').getContext('2d');
-        const ctxYtY = document.getElementById('canvasCoaYtY').getContext('2d');
+        const latest = data.summary || {};
+        setText('txt_tren_weekly_period', latest.label || '-');
+        setText('txt_tren_weekly_date', `Posisi data: ${latest.tanggal || currDate || '-'}`);
+        setText('summary_tren_aset', `Rp ${fmtB(latest.aset_gabungan)}`);
+        setText('summary_tren_kredit', `Rp ${fmtB(latest.kredit_baki_debet)}`);
+        setText('summary_tren_dpk', `Rp ${fmtB(latest.dpk)}`);
+        setText('summary_tren_laba', `Rp ${fmtB(latest.laba_net)}`);
+        setHtml('delta_tren_aset', getDeltaHTML(latest.growth_aset, true, false, true));
+        setHtml('delta_tren_kredit', getDeltaHTML(latest.growth_kredit, true, false, true));
+        setHtml('delta_tren_dpk', getDeltaHTML(latest.growth_dpk, true, false, true));
+        setHtml('delta_tren_laba', getDeltaHTML(latest.growth_laba, true, false, true));
+
+        const ctx = document.getElementById('canvasWeeklyMakro').getContext('2d');
         const theme = tvChartTheme();
-        if(chartCoaMtMInstance) chartCoaMtMInstance.destroy();
-        if(chartCoaYtYInstance) chartCoaYtYInstance.destroy();
+        if(chartWeeklyMakroInstance) chartWeeklyMakroInstance.destroy();
 
-        const getConf = (lbls, vals) => ({
-            type: 'bar',
-            data: { labels: lbls, datasets: [{ data: vals, backgroundColor: vals.map(v => v < 0 ? '#ef4444' : '#22c55e'), borderRadius: 4 }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: theme.muted }, grid: { display: false } }, y: { ticks: { color: theme.muted, callback: v => fmtB(v) }, grid: { color: theme.grid, borderDash: [4,4] } } } }
+        const labels = data.weeks.map(d => d.label);
+        const dataAset = data.weeks.map(d => Number(d.aset_gabungan) || 0);
+        const dataKredit = data.weeks.map(d => Number(d.kredit_baki_debet) || 0);
+        const dataDpk = data.weeks.map(d => Number(d.dpk) || 0);
+        const dataLaba = data.weeks.map(d => Number(d.laba_net) || 0);
+
+        const valueLabelPlugin = {
+            id: 'tvWeeklyMakroLabels',
+            afterDatasetsDraw(chart) {
+                const { ctx } = chart;
+                ctx.save();
+                ctx.font = 'bold 10px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    meta.data.forEach((point, index) => {
+                        if(!point) return;
+                        ctx.fillStyle = dataset.borderColor;
+                        ctx.fillText(fmtB(dataset.data[index]), point.x, point.y - (12 + (datasetIndex * 12)));
+                    });
+                });
+                ctx.restore();
+            }
+        };
+
+        chartWeeklyMakroInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    { label: 'Aset Gabungan', data: dataAset, borderColor: '#0284c7', backgroundColor: 'rgba(2,132,199,0.10)', borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false },
+                    { label: 'Kredit', data: dataKredit, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.10)', borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false },
+                    { label: 'DPK', data: dataDpk, borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.10)', borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false },
+                    { label: 'Laba Net', data: dataLaba, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.10)', borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false }
+                ]
+            },
+            options: {
+                layout: { padding: { top: 48, right: 18, bottom: 12, left: 10 } },
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { position: 'top', labels: { color: theme.text, usePointStyle: true, boxWidth: 10, font: { family: 'sans-serif', size: 12, weight: 'bold' } } },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                        padding: 12,
+                        titleFont: { size: 13, family: 'sans-serif' },
+                        bodyFont: { size: 12, family: 'sans-serif' },
+                        callbacks: {
+                            labelColor: context => ({ borderColor: context.dataset.borderColor, backgroundColor: context.dataset.borderColor }),
+                            label: c => `${c.dataset.label}: Rp ${fmtB(c.raw)}`,
+                            afterBody: c => {
+                                if(!c.length) return [];
+                                const item = data.weeks[c[0].dataIndex] || {};
+                                return [
+                                    `Tanggal data: ${item.tanggal || '-'}`,
+                                    item.keterangan ? `Rentang: ${item.keterangan}` : ''
+                                ].filter(Boolean);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: { ticks: { color: theme.muted }, grid: { display: false } },
+                    y: { ticks: { color: theme.muted, callback: val => fmtB(val) }, grid: { color: theme.grid, borderDash: [4,4] } }
+                }
+            },
+            plugins: [valueLabelPlugin]
         });
-
-        chartCoaMtMInstance = new Chart(ctxMtM, getConf(data.mtm.map(d => d.label), data.mtm.map(d => d.saldo)));
-        chartCoaYtYInstance = new Chart(ctxYtY, getConf(data.yty.map(d => d.label), data.yty.map(d => d.saldo)));
     }
 
     // ==========================================
@@ -953,13 +1078,21 @@
         if(!dataArray || dataArray.length === 0) return box.innerHTML = `<p class="text-[11px] text-gray-500 italic py-2 text-center">Tidak ada data.</p>`;
         dataArray = tvLimit(dataArray, 5);
         let maxVal = Math.max(...dataArray.map(o => Math.abs(Number(o[valKey]) || 0))); if(maxVal === 0) maxVal = 1;
+        const isBestPanel = ['best_realisasi', 'best_realisasi_ao', 'best_npl', 'best_npl_turun', 'best_rr'].includes(elId);
+        const itemClass = isBestPanel ? 'mb-2.5 group relative' : 'mb-3 group relative';
+        const rowClass = isBestPanel ? 'flex justify-between items-end mb-0.5 gap-2' : 'flex justify-between items-end mb-1 gap-2';
+        const nameClass = isBestPanel ? 'text-[11px] md:text-xs font-bold text-gray-800 truncate' : 'text-xs font-bold text-gray-800 truncate';
+        const subClass = isBestPanel ? 'text-[9px] md:text-[10px] text-gray-500 truncate' : 'text-[10px] text-gray-500 truncate';
+        const valClass = isBestPanel ? 'text-[11px] md:text-xs font-black text-gray-900 whitespace-nowrap' : 'text-xs font-black text-gray-900 whitespace-nowrap';
+        const barWrapClass = isBestPanel ? 'w-full bg-gray-100 h-1.5 md:h-2 rounded-full overflow-hidden' : 'w-full bg-gray-100 h-2 rounded-full overflow-hidden';
+        const barClass = isBestPanel ? `${colorClass} h-1.5 md:h-2 rounded-full bar-fill` : `${colorClass} h-2 rounded-full bar-fill`;
         dataArray.forEach(item => {
             let val = Number(item[valKey] || 0); let sub = Number(item[subKey] || 0); let wPct = Math.abs((val / maxVal) * 100);
             let displayVal = isPercent ? pct(Math.abs(val)) : fmtB(Math.abs(val));
             let displaySub = subLabel === 'Rp' ? `Rp ${fmtB(sub)}` : (subLabel === 'NPL Now' ? `NPL saat ini: ${pct(sub)}` : `${fmt(sub)} ${subLabel}`);
             if(elId === 'box_top_biaya') displaySub = `<span class="text-gray-500 font-mono">${item[subKey]}</span>`;
             
-            box.innerHTML += `<div class="mb-3 group relative"><div class="flex justify-between items-end mb-1 gap-2"><div class="flex flex-col min-w-0 w-2/3"><span class="text-xs font-bold text-gray-800 truncate" title="${(item[nameKey]||'-').replace(/Kc\. /gi, '')}">${(item[nameKey]||'-').replace(/Kc\. /gi, '')}</span><span class="text-[10px] text-gray-500 truncate">${displaySub}</span></div><span class="text-xs font-black text-gray-900 whitespace-nowrap">${val < 0 ? '-' : ''}${displayVal}</span></div><div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden"><div class="${colorClass} h-2 rounded-full bar-fill" style="width: ${Math.max(2, wPct)}%"></div></div></div>`;
+            box.innerHTML += `<div class="${itemClass}"><div class="${rowClass}"><div class="flex flex-col min-w-0 w-2/3"><span class="${nameClass}" title="${(item[nameKey]||'-').replace(/Kc\. /gi, '')}">${(item[nameKey]||'-').replace(/Kc\. /gi, '')}</span><span class="${subClass}">${displaySub}</span></div><span class="${valClass}">${val < 0 ? '-' : ''}${displayVal}</span></div><div class="${barWrapClass}"><div class="${barClass}" style="width: ${Math.max(2, wPct)}%"></div></div></div>`;
         });
     }
 

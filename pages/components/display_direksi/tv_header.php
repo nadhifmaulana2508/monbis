@@ -32,14 +32,12 @@
 
             <div class="tv-field">
                 <span>Closing</span>
-                <button type="button" id="tv_filter_closing_trigger" class="tv-field-trigger" data-select-target="tv_filter_closing">-</button>
-                <select id="tv_filter_closing" class="tv-native-select sr-only"></select>
+                <input type="date" id="tv_filter_closing" class="tv-date-input" />
             </div>
 
             <div class="tv-field">
                 <span>Harian</span>
-                <button type="button" id="tv_filter_harian_trigger" class="tv-field-trigger" data-select-target="tv_filter_harian">-</button>
-                <select id="tv_filter_harian" class="tv-native-select sr-only"></select>
+                <input type="date" id="tv_filter_harian" class="tv-date-input" />
             </div>
 
             <div class="tv-field tv-field-wide">
