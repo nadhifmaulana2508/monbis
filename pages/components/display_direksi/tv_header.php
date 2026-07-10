@@ -1,14 +1,16 @@
 <div id="tvFloatingControls" class="tv-floating-controls">
     <button type="button" class="tv-control-tab" onclick="toggleTvControls()" title="Buka filter display">
-        <span id="theme_icon" class="text-base leading-none">â˜¾</span>
+        <span id="theme_icon" class="text-base leading-none">◐</span>
         <svg xmlns="http://www.w3.org/2000/svg" class="tv-filter-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5h18"/><path d="M6 12h12"/><path d="M10 19h4"/></svg>
         <span id="tv_scope_badge">KONSOLIDASI</span>
     </button>
 
+    <button type="button" id="tvControlBackdrop" class="tv-control-backdrop" onclick="closeTvControlsNow()" aria-label="Tutup panel filter"></button>
+
     <div class="tv-control-panel">
         <div class="tv-control-row">
             <button onclick="toggleTvTheme()" class="tv-icon-btn" title="Ubah Tema">
-                <span id="theme_icon_panel" class="text-lg leading-none">â˜¾</span>
+                <span id="theme_icon_panel" class="text-lg leading-none">◐</span>
             </button>
             <label class="tv-field">
                 <span>Layar</span>
@@ -27,11 +29,11 @@
             </label>
             <label class="tv-field">
                 <span>Closing</span>
-                <input type="date" id="tv_filter_closing">
+                <select id="tv_filter_closing"></select>
             </label>
             <label class="tv-field">
                 <span>Harian</span>
-                <input type="date" id="tv_filter_harian">
+                <select id="tv_filter_harian"></select>
             </label>
             <label class="tv-field tv-field-wide">
                 <span>Filter</span>

@@ -162,10 +162,15 @@
         document.getElementById('tvFloatingControls')?.classList.add('is-open');
     }
 
+    function closeTvControlsNow() {
+        if(tvControlCloseTimer) clearTimeout(tvControlCloseTimer);
+        document.getElementById('tvFloatingControls')?.classList.remove('is-open');
+    }
+
     function closeTvControlsSoon() {
         if(tvControlCloseTimer) clearTimeout(tvControlCloseTimer);
         tvControlCloseTimer = setTimeout(() => {
-            document.getElementById('tvFloatingControls')?.classList.remove('is-open');
+            closeTvControlsNow();
         }, 700);
     }
 
@@ -179,6 +184,47 @@
         let d = new Date(dateStr);
         d.setDate(d.getDate() - 1);
         return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
+    function formatTvOptionDate(date) {
+        const d = new Date(date);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+
+    function buildTvDateOptions(selectId, endDate, totalDays = 31, monthEndOnly = false) {
+        const select = document.getElementById(selectId);
+        if(!select || !endDate) return;
+        const end = new Date(endDate);
+        if(Number.isNaN(end.getTime())) return;
+        const options = [];
+
+        if(monthEndOnly) {
+            const cursor = new Date(end.getFullYear(), end.getMonth() + 1, 0);
+            for(let i = 0; i < totalDays; i++) {
+                const current = new Date(cursor.getFullYear(), cursor.getMonth() - i + 1, 0);
+                options.push(formatTvOptionDate(current));
+            }
+        } else {
+            for(let i = 0; i < totalDays; i++) {
+                const current = new Date(end);
+                current.setDate(end.getDate() - i);
+                options.push(formatTvOptionDate(current));
+            }
+        }
+
+        select.innerHTML = [...new Set(options)].map(val => `<option value="${val}">${val}</option>`).join('');
+    }
+
+    function ensureTvDateOption(selectId, value) {
+        const select = document.getElementById(selectId);
+        if(!select || !value) return;
+        if(![...select.options].some(opt => opt.value === value)) {
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = value;
+            select.prepend(option);
+        }
+        select.value = value;
     }
 
     function isTvKonsolidasi() {
@@ -217,8 +263,8 @@
         const harian = document.getElementById('tv_filter_harian');
         const kantor = document.getElementById('tv_filter_kantor');
         const screen = document.getElementById('tv_screen_profile');
-        if(closing) closing.value = TV_CONFIG.closing_date || '';
-        if(harian) harian.value = TV_CONFIG.harian_date || '';
+        if(closing) ensureTvDateOption('tv_filter_closing', TV_CONFIG.closing_date || '');
+        if(harian) ensureTvDateOption('tv_filter_harian', TV_CONFIG.harian_date || '');
         if(screen) screen.value = TV_CONFIG.screen_profile || 'auto';
         if(kantor) {
             kantor.value = TV_CONFIG.kantor;
@@ -339,6 +385,8 @@
 
         TV_CONFIG.screen_profile = localStorage.getItem('tv_screen_profile') || 'auto';
         await loadTvKantorOptions();
+        buildTvDateOptions('tv_filter_closing', TV_CONFIG.closing_date, 12, true);
+        buildTvDateOptions('tv_filter_harian', TV_CONFIG.harian_date, 31, false);
         syncTvFilterControls();
         applyTvScreenProfile();
         bindTvFilterEvents();

@@ -93,26 +93,35 @@
         backdrop-filter: blur(12px);
     }
     .tv-filter-icon { color: #2563eb; }
-    .tv-control-panel {
-        position: absolute;
-        bottom: calc(100% + .5rem);
-        left: 0;
-        width: max-content;
-        max-width: calc(100vw - 7rem);
+    .tv-control-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, .18);
         opacity: 0;
-        transform: translateY(6px) scale(.98);
+        pointer-events: none;
+        border: 0;
+    }
+    .tv-control-panel {
+        position: fixed;
+        left: .75rem;
+        bottom: 4.2rem;
+        width: auto;
+        max-width: min(calc(100vw - 1.5rem), 1080px);
+        opacity: 0;
+        transform: translateY(6px);
         pointer-events: none;
         transition: opacity .18s ease, transform .18s ease;
         border: 1px solid #dbe3ef;
         border-radius: 1rem;
         padding: .55rem;
-        background: rgba(255,255,255,.94);
+        background: #ffffff;
         box-shadow: 0 20px 50px rgba(15, 23, 42, .16);
-        backdrop-filter: blur(16px);
+        z-index: 81;
     }
+    .tv-floating-controls.is-open .tv-control-backdrop { opacity: 1; pointer-events: auto; }
     .tv-floating-controls.is-open .tv-control-panel {
         opacity: 1;
-        transform: translateY(0) scale(1);
+        transform: translateY(0);
         pointer-events: auto;
     }
     .tv-control-row {
@@ -121,10 +130,10 @@
         gap: .45rem;
         min-width: 0;
         flex-wrap: nowrap;
-        overflow-x: auto;
+        overflow-x: visible;
         overflow-y: hidden;
         scrollbar-width: thin;
-        max-width: calc(100vw - 8.25rem);
+        max-width: min(calc(100vw - 2.6rem), 1040px);
     }
     .tv-control-hint { font-size: .68rem; font-weight: 900; color: #64748b; white-space: nowrap; padding: 0 .35rem; }
     .tv-icon-btn, .tv-nav-btn, .tv-segment, .tv-field {
@@ -162,10 +171,13 @@
         width: 100%;
         border: 0;
         outline: 0;
-        background: transparent;
+        background: #ffffff;
         color: #0f172a;
         font-weight: 800;
         font-size: .82rem;
+        appearance: auto;
+        -webkit-appearance: auto;
+        pointer-events: auto;
     }
     .tv-field select:disabled { opacity: .45; }
     #tv_scope_badge {
@@ -239,6 +251,7 @@
     body.dark-mode .tv-icon-btn,
     body.dark-mode .tv-control-tab,
     body.dark-mode .tv-control-panel,
+    body.dark-mode .tv-control-backdrop,
     body.dark-mode .tv-slide-controls,
     body.dark-mode .tv-segment,
     body.dark-mode .tv-field {
@@ -249,7 +262,10 @@
     }
     body.dark-mode .tv-nav-btn { color: #e5e7eb; }
     body.dark-mode .tv-field input,
-    body.dark-mode .tv-field select { color: #f8fafc; }
+    body.dark-mode .tv-field select {
+        color: #f8fafc;
+        background: #1f2937;
+    }
     body.dark-mode .tv-field span { color: #9ca3af; }
     body.dark-mode #tv_scope_badge,
     body.dark-mode .tv-slide-count { color: #bfdbfe; }
