@@ -61,7 +61,7 @@ if ($url === '') {
 // =========================
 // 1. Kalau belum login tapi maksa buka halaman selain login dan atv_direksi, lempar ke login!
 // (atv_direksi di-whitelist agar bisa diakses langsung lewat URL)
-if (!$isLoggedIn && $page !== 'login' && $page !== 'atv_direksi') {
+if (!$isLoggedIn && $page !== 'login' && $page !== 'tv') {
     header("Location: " . BASE_APP . "/login");
     exit;
 }
@@ -83,7 +83,7 @@ include $baseDir . "/views/header.php";
 // LOAD NAVBAR
 // =========================
 // login dan atv_direksi tidak pakai navbar (tampilan full screen)
-if ($page !== 'login' && $page !== 'atv_direksi') {
+if ($page !== 'login' && $page !== 'tv') {
     include $baseDir . "/views/navbar.php";
 }
 
