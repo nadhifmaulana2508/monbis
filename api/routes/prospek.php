@@ -63,3 +63,4 @@ switch ($method) {
         sendResponse(405, "Metode tidak diizinkan (Gunakan POST)");
         break;
 }
+

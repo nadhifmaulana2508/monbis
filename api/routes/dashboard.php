@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/DashboardController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 $controller = new DashboardController($pdo);
 
@@ -94,3 +94,4 @@ switch ($method) {
         sendResponse(405, "Metode tidak diizinkan");
         break;
 }
+

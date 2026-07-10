@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/TransaksiController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 $controller = new TransaksiController($pdo);
 
@@ -63,3 +63,4 @@ switch ($method) {
         sendResponse(405, "Metode tidak diizinkan");
         break;
 }
+

@@ -2,7 +2,7 @@
 
 // 1. Load Controller & Database
 require_once __DIR__ . '/../controllers/BucketFeController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 // Helper Response (Jika belum ada di global)
 if (!function_exists('sendResponse')) {
@@ -43,3 +43,4 @@ switch ($method) {
         sendResponse(405, "Metode tidak diizinkan");
         break;
 }
+

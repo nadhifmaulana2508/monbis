@@ -44,9 +44,22 @@
 
 <style>
     /* Styling scrollbar umum */
-    html, body { height: 100%; overflow: hidden; font-size: 16px; }
+    :root {
+        --tv-base-font-size: 16px;
+        --tv-wrapper-max-width: 1920px;
+        --tv-wrapper-padding-x: 1rem;
+        --tv-wrapper-padding-y: 1rem;
+    }
+    html, body { height: 100%; overflow: hidden; font-size: var(--tv-base-font-size); }
     body { background: #f8fafc; }
-    .tv-shell { container-type: size; }
+    .tv-shell {
+        container-type: size;
+        max-width: var(--tv-wrapper-max-width) !important;
+        padding-left: var(--tv-wrapper-padding-x) !important;
+        padding-right: var(--tv-wrapper-padding-x) !important;
+        padding-top: var(--tv-wrapper-padding-y) !important;
+        padding-bottom: var(--tv-wrapper-padding-y) !important;
+    }
     .tv-slide { height: 100%; }
     .tv-fit { height: 100%; min-height: 0; overflow: hidden; }
     .tv-card { min-height: 0; overflow: hidden; color: #111827; }
@@ -66,42 +79,53 @@
         color: #111827;
     }
     .tv-control-tab {
-        height: 40px;
+        height: 38px;
         display: inline-flex;
         align-items: center;
-        gap: .65rem;
+        gap: .45rem;
         border: 1px solid #dbe3ef;
         border-radius: 999px;
-        padding: 0 .85rem;
+        padding: 0 .75rem;
         background: rgba(255,255,255,.92);
         color: #0f172a;
         font-weight: 900;
         box-shadow: 0 10px 30px rgba(15, 23, 42, .12);
         backdrop-filter: blur(12px);
     }
+    .tv-filter-icon { color: #2563eb; }
     .tv-control-panel {
         position: absolute;
         bottom: calc(100% + .5rem);
         left: 0;
-        width: min(1180px, calc(100vw - 7rem));
+        width: max-content;
+        max-width: calc(100vw - 7rem);
         opacity: 0;
         transform: translateY(6px) scale(.98);
         pointer-events: none;
         transition: opacity .18s ease, transform .18s ease;
         border: 1px solid #dbe3ef;
         border-radius: 1rem;
-        padding: .6rem;
+        padding: .55rem;
         background: rgba(255,255,255,.94);
         box-shadow: 0 20px 50px rgba(15, 23, 42, .16);
         backdrop-filter: blur(16px);
     }
-    .tv-floating-controls.is-open .tv-control-panel,
-    .tv-floating-controls:hover .tv-control-panel {
+    .tv-floating-controls.is-open .tv-control-panel {
         opacity: 1;
         transform: translateY(0) scale(1);
         pointer-events: auto;
     }
-    .tv-control-row { display: flex; align-items: center; gap: .5rem; min-width: 0; }
+    .tv-control-row {
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        min-width: 0;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: thin;
+        max-width: calc(100vw - 8.25rem);
+    }
     .tv-control-hint { font-size: .68rem; font-weight: 900; color: #64748b; white-space: nowrap; padding: 0 .35rem; }
     .tv-icon-btn, .tv-nav-btn, .tv-segment, .tv-field {
         border: 1px solid #dbe3ef;
@@ -127,11 +151,11 @@
         align-items: center;
         gap: .5rem;
         border-radius: .85rem;
-        padding: .35rem .65rem;
+        padding: .35rem .7rem;
         color: #334155;
-        min-width: 170px;
+        min-width: clamp(150px, 16vw, 205px);
     }
-    .tv-field-wide { min-width: 300px; flex: 1; }
+    .tv-field-wide { min-width: clamp(220px, 23vw, 360px); flex: 0 0 auto; }
     .tv-field span { font-size: .62rem; line-height: 1; font-weight: 900; text-transform: uppercase; letter-spacing: .04em; color: #64748b; }
     .tv-field input, .tv-field select {
         min-width: 0;
@@ -151,6 +175,9 @@
         font-weight: 1000;
         font-size: .78rem;
         white-space: nowrap;
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .tv-slide-controls {
         position: fixed;
@@ -229,16 +256,67 @@
     body.dark-mode .tv-slide-btn { color: #e5e7eb; }
     body.dark-mode .tv-control-hint { color: #9ca3af; }
 
+    body[data-tv-screen-profile="tv_nhd"] {
+        --tv-base-font-size: 11px;
+        --tv-wrapper-max-width: 854px;
+        --tv-wrapper-padding-x: .7rem;
+        --tv-wrapper-padding-y: .65rem;
+    }
+    body[data-tv-screen-profile="tv_sd"] {
+        --tv-base-font-size: 12px;
+        --tv-wrapper-max-width: 960px;
+        --tv-wrapper-padding-x: .75rem;
+        --tv-wrapper-padding-y: .75rem;
+    }
+    body[data-tv-screen-profile="tv_xga"] {
+        --tv-base-font-size: 13px;
+        --tv-wrapper-max-width: 1120px;
+        --tv-wrapper-padding-x: .85rem;
+        --tv-wrapper-padding-y: .85rem;
+    }
+    body[data-tv-screen-profile="tv_hd"] {
+        --tv-base-font-size: 14px;
+        --tv-wrapper-max-width: 1400px;
+        --tv-wrapper-padding-x: 1rem;
+        --tv-wrapper-padding-y: 1rem;
+    }
+    body[data-tv-screen-profile="tv_fhd"] {
+        --tv-base-font-size: 16px;
+        --tv-wrapper-max-width: 1920px;
+        --tv-wrapper-padding-x: 1rem;
+        --tv-wrapper-padding-y: 1rem;
+    }
+    body[data-tv-screen-profile="tv_qhd"] {
+        --tv-base-font-size: 18px;
+        --tv-wrapper-max-width: 2360px;
+        --tv-wrapper-padding-x: 1.15rem;
+        --tv-wrapper-padding-y: 1.1rem;
+    }
+    body[data-tv-screen-profile="tv_4k"] {
+        --tv-base-font-size: 21px;
+        --tv-wrapper-max-width: 3400px;
+        --tv-wrapper-padding-x: 1.35rem;
+        --tv-wrapper-padding-y: 1.2rem;
+    }
+    body[data-tv-screen-profile="tablet"] {
+        --tv-base-font-size: 14px;
+        --tv-wrapper-max-width: 1024px;
+    }
+    body[data-tv-screen-profile="mobile"] {
+        --tv-base-font-size: 13px;
+        --tv-wrapper-max-width: 640px;
+    }
+
     @media (max-height: 760px), (max-width: 900px) {
         #tvWrapper { padding-top: .75rem; padding-bottom: .75rem; }
         .tv-card { padding: .75rem !important; border-radius: .75rem !important; }
         .tv-compact-gap { gap: .75rem !important; }
         .tv-list > div { margin-bottom: .5rem !important; }
         .tv-list .bar-fill, .tv-list .bg-gray-700, .tv-list .bg-gray-100 { height: .35rem !important; }
-        .tv-control-panel { width: min(520px, calc(100vw - 1.5rem)); }
-        .tv-control-row { flex-wrap: wrap; }
-        .tv-field { min-width: calc(50% - .25rem); flex: 1; }
-        .tv-field-wide { min-width: 100%; }
+        .tv-control-panel { width: max-content; max-width: calc(100vw - 1.5rem); }
+        .tv-control-row { flex-wrap: nowrap; }
+        .tv-field { min-width: 150px; flex: 0 0 auto; }
+        .tv-field-wide { min-width: 220px; flex: 0 0 auto; }
         #tv_scope_badge { max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
     }
 
@@ -246,23 +324,78 @@
         html, body { font-size: 17px; }
     }
 
+    html.tv-mobile-layout,
+    body.tv-mobile-layout { height: auto; min-height: 100%; overflow-y: auto; overflow-x: hidden; }
+    body.tv-mobile-layout #tvWrapper {
+        height: auto !important;
+        max-height: none !important;
+        min-height: 100vh;
+        overflow: visible !important;
+        padding-bottom: 5.75rem !important;
+    }
+    body.tv-mobile-layout #contentDash {
+        position: relative;
+        display: block;
+        height: auto;
+        min-height: 0;
+        overflow: visible !important;
+    }
+    body.tv-mobile-layout .tv-slide {
+        position: relative !important;
+        inset: auto !important;
+        height: auto !important;
+        min-height: auto;
+        overflow: visible !important;
+        opacity: 1 !important;
+        z-index: auto !important;
+        pointer-events: auto !important;
+        display: none;
+    }
+    body.tv-mobile-layout .tv-slide:not(.pointer-events-none) { display: block; }
+    body.tv-mobile-layout .tv-fit {
+        height: auto !important;
+        min-height: auto;
+        overflow: visible !important;
+    }
+    body.tv-mobile-layout .tv-card,
+    body.tv-mobile-layout .tv-list {
+        overflow: visible !important;
+    }
+    body.tv-mobile-layout .tv-chart {
+        height: clamp(260px, 58vh, 520px);
+        min-height: 260px;
+    }
+    body.tv-mobile-layout .tv-fit.grid,
+    body.tv-mobile-layout .tv-fit .grid {
+        grid-auto-rows: auto;
+    }
+    body.tv-mobile-layout .tv-floating-controls,
+    body.tv-mobile-layout .tv-slide-controls {
+        position: fixed;
+    }
+
     @media (max-width: 1023px) {
+        body:not(.tv-desktop-layout) {
+            min-height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
         html, body { height: auto; min-height: 100%; overflow-y: auto; overflow-x: hidden; }
-        #tvWrapper {
+        body:not(.tv-desktop-layout) #tvWrapper {
             height: auto !important;
             max-height: none !important;
             min-height: 100vh;
             overflow: visible !important;
             padding-bottom: 5.75rem;
         }
-        #contentDash {
+        body:not(.tv-desktop-layout) #contentDash {
             position: relative;
             display: block;
             height: auto;
             min-height: 0;
             overflow: visible !important;
         }
-        .tv-slide {
+        body:not(.tv-desktop-layout) .tv-slide {
             position: relative !important;
             inset: auto !important;
             height: auto !important;
@@ -273,26 +406,26 @@
             pointer-events: auto !important;
             display: none;
         }
-        .tv-slide:not(.pointer-events-none) { display: block; }
-        .tv-fit {
+        body:not(.tv-desktop-layout) .tv-slide:not(.pointer-events-none) { display: block; }
+        body:not(.tv-desktop-layout) .tv-fit {
             height: auto !important;
             min-height: auto;
             overflow: visible !important;
         }
-        .tv-card,
-        .tv-list {
+        body:not(.tv-desktop-layout) .tv-card,
+        body:not(.tv-desktop-layout) .tv-list {
             overflow: visible !important;
         }
-        .tv-chart {
+        body:not(.tv-desktop-layout) .tv-chart {
             height: clamp(260px, 58vh, 520px);
             min-height: 260px;
         }
-        .tv-fit.grid,
-        .tv-fit .grid {
+        body:not(.tv-desktop-layout) .tv-fit.grid,
+        body:not(.tv-desktop-layout) .tv-fit .grid {
             grid-auto-rows: auto;
         }
-        .tv-floating-controls,
-        .tv-slide-controls {
+        body:not(.tv-desktop-layout) .tv-floating-controls,
+        body:not(.tv-desktop-layout) .tv-slide-controls {
             position: fixed;
         }
     }

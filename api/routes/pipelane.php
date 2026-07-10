@@ -3,7 +3,7 @@
 
 // 1. Load Dependencies (Mundur 2 folder ke root api)
 require_once __DIR__ . '/../controllers/PipelaneController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 // 2. Init Database
 // Cek fungsi getPDO (jika pakai pattern singleton) atau ambil variabel $pdo langsung
@@ -60,3 +60,4 @@ switch ($method) {
         break;
 }
 ?>
+

@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/LapkeuController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 require_once __DIR__ . '/../helpers/response.php';
 
 // Inisialisasi Controller
@@ -65,3 +65,4 @@ switch ($method) {
         sendResponse(405, "Method $method kagak boleh masuk sini!");
         break;
 }
+

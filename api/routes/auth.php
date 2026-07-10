@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/AuthController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 $authController = new AuthController($pdo);
 $method = $_SERVER['REQUEST_METHOD'];
@@ -31,3 +31,4 @@ switch ($endpoint) {
     default:
         sendResponse(404, "Auth endpoint tidak ditemukan");
 }
+

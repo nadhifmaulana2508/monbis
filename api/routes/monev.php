@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../helpers/guard.php';        // requireAuth()
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 require_once __DIR__ . '/../controllers/MonevController.php';
 
 $pdo = function_exists('getPDO') ? getPDO() : ($pdo ?? null);
@@ -58,3 +58,4 @@ switch ($method) {
     sendResponse(405, "Method not allowed.");
     break;
 }
+

@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/RegisterController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 
 $registerController = new RegisterController($pdo);
@@ -55,3 +55,4 @@ switch ($method) {
 }
 
 ?>
+

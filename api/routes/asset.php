@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../controllers/DummyController.php';
 require_once __DIR__ . '/../helpers/response.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 require_once __DIR__ . '/../middlewares/authMiddleware.php';
 
 $catalogController = new CatalogController($pdo); // Ganti jika kamu pakai DummyController
@@ -38,3 +38,4 @@ switch ($method) {
         sendResponse(405, "Method tidak diizinkan");
         break;
 }
+

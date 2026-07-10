@@ -83,6 +83,15 @@
     const unwrapData = (raw, key) => raw?.[key] || raw || {};
     const setText = (id, text) => { const el = document.getElementById(id); if(el) el.textContent = text; };
     const setHtml = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
+    const setDeltaSummary = (id, label, val, invertGoodBad = false) => {
+        const el = document.getElementById(id);
+        if(!el) return;
+        const numVal = Number(val || 0);
+        const sign = numVal >= 0 ? '+' : '-';
+        const isGood = invertGoodBad ? numVal < 0 : numVal > 0;
+        const color = numVal === 0 ? 'text-gray-600' : (isGood ? 'text-green-600' : 'text-red-600');
+        el.innerHTML = `${label}: <span class="${color} font-black">${sign} Rp ${fmtB(Math.abs(numVal))}</span>`;
+    };
     
     const getDeltaHTML = (val, isPercent = false, invertGoodBad = false, tight = false) => {
         let numVal = Number(val || 0);
@@ -127,9 +136,22 @@
         closing_date: '',
         harian_date: '',
         filter_mode: 'konsolidasi',
-        kantor: '000'
+        kantor: 'konsolidasi',
+        screen_profile: 'auto'
     };
     const TV_KORWIL = ['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'];
+    const TV_SCREEN_PROFILES = {
+        auto: { layout: 'auto' },
+        tv_nhd: { layout: 'desktop', width: 640, height: 360 },
+        tv_sd: { layout: 'desktop', width: 854, height: 480 },
+        tv_xga: { layout: 'desktop', width: 1024, height: 576 },
+        tv_hd: { layout: 'desktop', width: 1366, height: 768 },
+        tv_fhd: { layout: 'desktop', width: 1920, height: 1080 },
+        tv_qhd: { layout: 'desktop', width: 2560, height: 1440 },
+        tv_4k: { layout: 'desktop', width: 3840, height: 2160 },
+        tablet: { layout: 'mobile', width: 1024, height: 768 },
+        mobile: { layout: 'mobile', width: 430, height: 932 }
+    };
     let tvFilterApplyTimer = null;
     let tvControlCloseTimer = null;
 
@@ -160,7 +182,7 @@
     }
 
     function isTvKonsolidasi() {
-        return TV_CONFIG.filter_mode === 'konsolidasi';
+        return TV_CONFIG.kantor === 'konsolidasi';
     }
 
     function updateTvScopeBadge() {
@@ -181,7 +203,7 @@
         try {
             const res = await apiCall('./api/kode/', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({type:'kode_kantor'}) });
             const j = await res.json();
-            let html = `<option value="000">000 - Kantor Pusat</option><option value="SEMARANG">Korwil Semarang</option><option value="SOLO">Korwil Solo</option><option value="BANYUMAS">Korwil Banyumas</option><option value="PEKALONGAN">Korwil Pekalongan</option>`;
+            let html = `<option value="konsolidasi">Konsolidasi</option><option value="000">000 - Kantor Pusat</option><option value="SEMARANG">Korwil Semarang</option><option value="SOLO">Korwil Solo</option><option value="BANYUMAS">Korwil Banyumas</option><option value="PEKALONGAN">Korwil Pekalongan</option>`;
             if(j.data) j.data.filter(x => x.kode_kantor !== '000').forEach(k => html += `<option value="${k.kode_kantor}">${k.kode_kantor} - ${k.nama_kantor || k.nama_cabang || ''}</option>`);
             optKantor.innerHTML = html;
             optKantor.value = TV_CONFIG.kantor;
@@ -193,23 +215,71 @@
     function syncTvFilterControls() {
         const closing = document.getElementById('tv_filter_closing');
         const harian = document.getElementById('tv_filter_harian');
-        const mode = document.getElementById('tv_filter_mode');
         const kantor = document.getElementById('tv_filter_kantor');
+        const screen = document.getElementById('tv_screen_profile');
         if(closing) closing.value = TV_CONFIG.closing_date || '';
         if(harian) harian.value = TV_CONFIG.harian_date || '';
-        if(mode) mode.value = TV_CONFIG.filter_mode;
+        if(screen) screen.value = TV_CONFIG.screen_profile || 'auto';
         if(kantor) {
             kantor.value = TV_CONFIG.kantor;
-            kantor.disabled = isTvKonsolidasi();
         }
         updateTvScopeBadge();
     }
 
+    function getTvResolvedLayout() {
+        const profile = TV_SCREEN_PROFILES[TV_CONFIG.screen_profile] || TV_SCREEN_PROFILES.auto;
+        if(profile.layout === 'desktop') return 'desktop';
+        if(profile.layout === 'mobile') return 'mobile';
+        return window.innerWidth <= 1023 ? 'mobile' : 'desktop';
+    }
+
+    function applyTvScreenProfile() {
+        const profileKey = TV_CONFIG.screen_profile || 'auto';
+        const profile = TV_SCREEN_PROFILES[profileKey] || TV_SCREEN_PROFILES.auto;
+        const layout = getTvResolvedLayout();
+        document.body.dataset.tvScreenProfile = profileKey;
+        document.body.classList.toggle('tv-desktop-layout', layout === 'desktop');
+        document.body.classList.toggle('tv-mobile-layout', layout === 'mobile');
+        document.documentElement.classList.toggle('tv-desktop-layout', layout === 'desktop');
+        document.documentElement.classList.toggle('tv-mobile-layout', layout === 'mobile');
+
+        const wrapper = document.getElementById('tvWrapper');
+        if(wrapper) {
+            if(profile.width) wrapper.style.maxWidth = `${profile.width}px`;
+            else wrapper.style.removeProperty('max-width');
+        }
+
+        if(layout === 'desktop') {
+            document.documentElement.style.height = '100%';
+            document.body.style.height = '100%';
+            document.documentElement.style.overflow = 'hidden';
+            document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflowX = 'hidden';
+            document.documentElement.style.overflowY = 'hidden';
+            document.body.style.overflowX = 'hidden';
+            document.body.style.overflowY = 'hidden';
+        } else {
+            document.documentElement.style.height = 'auto';
+            document.body.style.height = 'auto';
+            document.documentElement.style.overflow = 'visible';
+            document.body.style.overflow = 'visible';
+            document.documentElement.style.overflowX = 'hidden';
+            document.documentElement.style.overflowY = 'auto';
+            document.body.style.overflowX = 'hidden';
+            document.body.style.overflowY = 'auto';
+        }
+    }
+
+    function handleTvScreenProfileChange() {
+        TV_CONFIG.screen_profile = document.getElementById('tv_screen_profile')?.value || 'auto';
+        localStorage.setItem('tv_screen_profile', TV_CONFIG.screen_profile);
+        applyTvScreenProfile();
+        showSlide(currentSlide);
+    }
+
     function handleTvFilterModeChange() {
-        const mode = document.getElementById('tv_filter_mode');
-        const kantor = document.getElementById('tv_filter_kantor');
-        TV_CONFIG.filter_mode = mode?.value || 'konsolidasi';
-        if(kantor) kantor.disabled = isTvKonsolidasi();
+        TV_CONFIG.kantor = document.getElementById('tv_filter_kantor')?.value || 'konsolidasi';
+        TV_CONFIG.filter_mode = isTvKonsolidasi() ? 'konsolidasi' : 'kantor';
         updateTvScopeBadge();
         scheduleTvFilterApply();
     }
@@ -217,10 +287,11 @@
     function applyTvFilters() {
         TV_CONFIG.closing_date = document.getElementById('tv_filter_closing')?.value || TV_CONFIG.closing_date;
         TV_CONFIG.harian_date = document.getElementById('tv_filter_harian')?.value || TV_CONFIG.harian_date;
-        TV_CONFIG.filter_mode = document.getElementById('tv_filter_mode')?.value || 'konsolidasi';
-        TV_CONFIG.kantor = document.getElementById('tv_filter_kantor')?.value || '000';
+        TV_CONFIG.kantor = document.getElementById('tv_filter_kantor')?.value || 'konsolidasi';
+        TV_CONFIG.filter_mode = isTvKonsolidasi() ? 'konsolidasi' : 'kantor';
         syncTvFilterControls();
         fetchAllDataSlide();
+        document.getElementById('tvFloatingControls')?.classList.remove('is-open');
     }
 
     function scheduleTvFilterApply() {
@@ -232,9 +303,14 @@
         ['tv_filter_closing', 'tv_filter_harian', 'tv_filter_kantor'].forEach(id => {
             const el = document.getElementById(id);
             if(!el || el.dataset.tvBound === '1') return;
-            el.addEventListener('change', scheduleTvFilterApply);
+            el.addEventListener('change', id === 'tv_filter_kantor' ? handleTvFilterModeChange : scheduleTvFilterApply);
             el.dataset.tvBound = '1';
         });
+        const screen = document.getElementById('tv_screen_profile');
+        if(screen && screen.dataset.tvBound !== '1') {
+            screen.addEventListener('change', handleTvScreenProfileChange);
+            screen.dataset.tvBound = '1';
+        }
     }
 
     function attachTvOfficeFilter(payload, isLapkeu = false) {
@@ -261,8 +337,10 @@
             console.error("Gagal get date", e);
         }
 
+        TV_CONFIG.screen_profile = localStorage.getItem('tv_screen_profile') || 'auto';
         await loadTvKantorOptions();
         syncTvFilterControls();
+        applyTvScreenProfile();
         bindTvFilterEvents();
 
         document.getElementById('loadingDash').classList.add('hidden');
@@ -422,10 +500,12 @@
             if(ro?.grand_total) {
                 setText('summary_runoff_realisasi', `Rp ${fmtB(ro.grand_total.realisasi)}`);
                 setText('summary_runoff_total', `Rp ${fmtB(ro.grand_total.total_runoff)}`);
+                setDeltaSummary('summary_runoff_growth', 'Growth', ro.grand_total.growth, false);
             }
             if(flow?.grand_total) {
                 setText('summary_flow_npl', `Rp ${fmtB(flow.grand_total.flow_npl)}`);
                 setText('summary_recovery_npl', `Rp ${fmtB(flow.grand_total.total_recovery)}`);
+                setDeltaSummary('summary_flow_os_npl', 'OS NPL', Number(flow.grand_total.flow_npl || 0) - Number(flow.grand_total.total_recovery || 0), true);
             }
 
             if(ro?.detail_korwil) renderKorwilCompare('box_runoff_realisasi', ro.detail_korwil, 'realisasi', 'total_runoff', 'bg-green-500', 'bg-red-500', 4, 'Realisasi', 'Run Off', true);
@@ -606,7 +686,17 @@
         const dataAngsuran = arr.map(d => Number(d.total_angsuran) || 0);
         const dataNoaAngsuran = arr.map(d => Number(d.noa_angsuran) || 0);
         const dataGrowth = arr.map(d => Number(d.growth) || 0);
+        const lastRunoff = arr[arr.length - 1] || {};
         setText('label_runoff_date', `Berdasarkan Tanggal: ${TV_CONFIG.harian_date || '-'}`);
+        setText('summary_tren_runoff', `Rp ${fmtB(lastRunoff.total_runoff)}`);
+        setText('summary_tren_lunas', `Rp ${fmtB(lastRunoff.total_lunas)}`);
+        const growthSummary = document.getElementById('summary_tren_growth');
+        if(growthSummary) {
+            const growthVal = Number(lastRunoff.growth || 0);
+            const arrow = growthVal >= 0 ? '▲' : '▼';
+            growthSummary.innerHTML = `<span class="${growthVal >= 0 ? 'text-green-600' : 'text-red-600'}">${arrow}</span> Rp ${fmtB(Math.abs(growthVal))}`;
+            growthSummary.className = `text-sm md:text-lg font-black ${growthVal >= 0 ? 'text-green-600' : 'text-red-600'}`;
+        }
 
         let gradReal = ctx.createLinearGradient(0, 0, 0, 300);
         gradReal.addColorStop(0, 'rgba(16, 185, 129, 0.20)');
@@ -676,7 +766,7 @@
                                     `  - Lunas: Rp ${fmtB(dataLunas[idx])} (${fmt(dataNoaLunas[idx])} NOA)`,
                                     `  - Angsuran: Rp ${fmtB(dataAngsuran[idx])} (${fmt(dataNoaAngsuran[idx])} NOA)`,
                                     '',
-                                    `Growth: ${growth >= 0 ? 'Naik' : 'Turun'} Rp ${fmtB(Math.abs(growth))}`
+                                    `Growth: ${growth >= 0 ? '▲' : '▼'} Rp ${fmtB(Math.abs(growth))}`
                                 ];
                             }
                         }
@@ -776,6 +866,11 @@
     }
 
     window.addEventListener('DOMContentLoaded', checkTvLogin);
+    window.addEventListener('resize', () => {
+        if((TV_CONFIG.screen_profile || 'auto') === 'auto') {
+            applyTvScreenProfile();
+        }
+    });
 
     // ==========================================
     // FITUR TEMA LIGHT / DARK

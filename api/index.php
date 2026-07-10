@@ -85,6 +85,9 @@ switch ($endpoint) {
     case 'dev_tracking':
         require __DIR__ . '/routes/dev_tracking.php';
         break;
+    case 'rbb':
+        require __DIR__ . '/routes/rbb.php';
+        break;
 
     default:
         sendResponse(404, "Endpoint tidak ditemukan");

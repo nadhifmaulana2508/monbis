@@ -7,7 +7,7 @@
 // 1. Load Dependencies (Gunakan require_once ke helper pusat)
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../controllers/config/database.php';
-require_once __DIR__ . '/../controllers/RepaymentRateController.php';
+require_once __DIR__ . '/../controllers/RbbController.php';
 
 // 2. Init Database (Cara Aman agar $pdo tidak null)
 // Cek apakah function getPDO ada (dari config), atau ambil variabel $pdo langsung
@@ -19,7 +19,7 @@ if (!$pdo) {
 
 // 3. Init Controller
 try {
-    $controller = new RepaymentRateController($pdo);
+    $controller = new RbbController($pdo);
 } catch (Exception $e) {
     sendResponse(500, "Controller Init Failed: " . $e->getMessage());
 }
@@ -46,30 +46,12 @@ switch ($method) {
         $type = strtolower(trim($input['type']));
 
         // --- A. REKAP UTAMA (RR) ---
-        if ($type === 'rekap_rr') {
-            $controller->getRepaymentRate($input);
+        if ($type === 'aset_realisasi') {
+            $controller->getAsetRealisasi($input);
 
         // --- B. DETAIL DRILL DOWN ---
-        } elseif ($type === 'detail_rr') {
-            $controller->getDetailRepaymentRate($input);
-
-        // --- C. MONITORING (EARLY WARNING) ---
-        } elseif ($type === 'monitoring_rr') {
-            $controller->getMonitoringLatePayers($input);
-
-        // --- D. DETAIL PELUNASAN ---
-        } elseif ($type === 'detail_lunas_rr') {
-            $controller->getDetailLunasRR($input);
-        
-        // --- D. DETAIL PELUNASAN ---
-        } elseif ($type === 'rr') {
-            $controller->getRekapRr($input);
-        
-        } elseif ($type === 'otp_fe') {
-            $controller->getRekapOtpBucket($input);
-
-        } elseif ($type === 'detail_otp_fe') {
-            $controller->getDetailOtpBucket($input);
+        } elseif ($type === 'aset_mom_yoy') {
+            $controller->getAsetMomYoy($input);
 
         // --- ERROR: TYPE TIDAK DIKENAL ---
         } else {

@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/KreditController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 $controller = new KreditController($pdo);
 
@@ -72,3 +72,4 @@ switch ($method) {
         sendResponse(405, "Metode tidak diizinkan");
         break;
 }
+

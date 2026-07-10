@@ -2,7 +2,7 @@
 
 require_once __DIR__ . '/../controllers/CatalogController.php';
 require_once __DIR__ . '/../helpers/response.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 require_once __DIR__ . '/../middlewares/authMiddleware.php';
 
 $catalogController = new CatalogController($pdo);
@@ -69,3 +69,4 @@ switch ($method) {
     default:
         sendResponse(405, "Metode tidak diizinkan");
 }
+
