@@ -385,44 +385,44 @@
     body.dark-mode .tv-control-hint { color: #9ca3af; }
 
     body[data-tv-screen-profile="tv_nhd"] {
-        --tv-base-font-size: 11px;
-        --tv-wrapper-max-width: 854px;
+        --tv-base-font-size: 13px;
+        --tv-wrapper-max-width: 100vw;
         --tv-wrapper-padding-x: .7rem;
         --tv-wrapper-padding-y: .65rem;
     }
     body[data-tv-screen-profile="tv_sd"] {
-        --tv-base-font-size: 12px;
-        --tv-wrapper-max-width: 960px;
+        --tv-base-font-size: 14px;
+        --tv-wrapper-max-width: 100vw;
         --tv-wrapper-padding-x: .75rem;
         --tv-wrapper-padding-y: .75rem;
     }
     body[data-tv-screen-profile="tv_xga"] {
-        --tv-base-font-size: 13px;
-        --tv-wrapper-max-width: 1120px;
+        --tv-base-font-size: 14px;
+        --tv-wrapper-max-width: 100vw;
         --tv-wrapper-padding-x: .85rem;
         --tv-wrapper-padding-y: .85rem;
     }
     body[data-tv-screen-profile="tv_hd"] {
-        --tv-base-font-size: 14px;
-        --tv-wrapper-max-width: 1400px;
+        --tv-base-font-size: 15px;
+        --tv-wrapper-max-width: 100vw;
         --tv-wrapper-padding-x: 1rem;
         --tv-wrapper-padding-y: 1rem;
     }
     body[data-tv-screen-profile="tv_fhd"] {
         --tv-base-font-size: 16px;
-        --tv-wrapper-max-width: 1920px;
+        --tv-wrapper-max-width: 100vw;
         --tv-wrapper-padding-x: 1rem;
         --tv-wrapper-padding-y: 1rem;
     }
     body[data-tv-screen-profile="tv_qhd"] {
         --tv-base-font-size: 18px;
-        --tv-wrapper-max-width: 2360px;
+        --tv-wrapper-max-width: 100vw;
         --tv-wrapper-padding-x: 1.15rem;
         --tv-wrapper-padding-y: 1.1rem;
     }
     body[data-tv-screen-profile="tv_4k"] {
         --tv-base-font-size: 21px;
-        --tv-wrapper-max-width: 3400px;
+        --tv-wrapper-max-width: 100vw;
         --tv-wrapper-padding-x: 1.35rem;
         --tv-wrapper-padding-y: 1.2rem;
     }
@@ -501,6 +501,39 @@
     body.tv-mobile-layout .tv-slide-controls {
         position: fixed;
     }
+
+    body.tv-desktop-layout .tv-shell {
+        width: 100%;
+        max-width: none !important;
+    }
+    body.tv-desktop-layout .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    body.tv-desktop-layout .md\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+    body.tv-desktop-layout .lg\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+    body.tv-desktop-layout .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+    body.tv-desktop-layout .lg\:grid-cols-5 { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+    body.tv-desktop-layout .lg\:grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)) !important; }
+    body.tv-desktop-layout .xl\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
+    body.tv-desktop-layout .md\:col-span-1 { grid-column: span 1 / span 1 !important; }
+    body.tv-desktop-layout .lg\:col-span-2 { grid-column: span 2 / span 2 !important; }
+    body.tv-desktop-layout .lg\:col-span-3 { grid-column: span 3 / span 3 !important; }
+    body.tv-desktop-layout .lg\:col-span-4 { grid-column: span 4 / span 4 !important; }
+    body.tv-desktop-layout .lg\:col-span-5 { grid-column: span 5 / span 5 !important; }
+    body.tv-desktop-layout .lg\:col-span-7 { grid-column: span 7 / span 7 !important; }
+    body.tv-desktop-layout .lg\:col-span-8 { grid-column: span 8 / span 8 !important; }
+    body.tv-desktop-layout .md\:flex-row,
+    body.tv-desktop-layout .xl\:flex-row { flex-direction: row !important; }
+    body.tv-desktop-layout .md\:items-center,
+    body.tv-desktop-layout .xl\:items-center { align-items: center !important; }
+    body.tv-desktop-layout .md\:w-auto,
+    body.tv-desktop-layout .xl\:w-auto { width: auto !important; }
+    body.tv-desktop-layout .md\:w-1\/2 { width: 50% !important; }
+    body.tv-desktop-layout .lg\:w-1\/3 { width: 33.333333% !important; }
+    body.tv-desktop-layout .md\:gap-1 { gap: .25rem !important; }
+    body.tv-desktop-layout .md\:gap-2 { gap: .5rem !important; }
+    body.tv-desktop-layout .md\:gap-3 { gap: .75rem !important; }
+    body.tv-desktop-layout .md\:gap-4 { gap: 1rem !important; }
+    body.tv-desktop-layout .md\:gap-5 { gap: 1.25rem !important; }
+    body.tv-desktop-layout .md\:gap-6 { gap: 1.5rem !important; }
 
     @media (max-width: 1023px) {
         body:not(.tv-desktop-layout) {

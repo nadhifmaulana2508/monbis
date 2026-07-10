@@ -349,8 +349,9 @@
 
         const wrapper = document.getElementById('tvWrapper');
         if(wrapper) {
-            if(profile.width) wrapper.style.maxWidth = `${profile.width}px`;
-            else wrapper.style.removeProperty('max-width');
+            wrapper.style.width = '100%';
+            if(layout === 'mobile' && profile.width) wrapper.style.maxWidth = `${profile.width}px`;
+            else wrapper.style.maxWidth = 'none';
         }
 
         if(layout === 'desktop') {
