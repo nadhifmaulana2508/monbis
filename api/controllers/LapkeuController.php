@@ -16,13 +16,18 @@ class LaporanKeuanganController
     {
         $korwil = strtoupper(trim((string) $korwil));
 
-        return match ($korwil) {
-            'SEMARANG' => ['001', '007'],
-            'SOLO' => ['008', '014'],
-            'BANYUMAS' => ['015', '021'],
-            'PEKALONGAN' => ['022', '028'],
-            default => null,
-        };
+        switch ($korwil) {
+            case 'SEMARANG':
+                return ['001', '007'];
+            case 'SOLO':
+                return ['008', '014'];
+            case 'BANYUMAS':
+                return ['015', '021'];
+            case 'PEKALONGAN':
+                return ['022', '028'];
+            default:
+                return null;
+        }
     }
 
 
