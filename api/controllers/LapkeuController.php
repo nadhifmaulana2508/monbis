@@ -374,14 +374,14 @@ class LaporanKeuanganController
             ];
 
             if ($korwilRange) {
-                $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN :kw_start AND :kw_end";
-                $params[':kw_start'] = $korwilRange[0];
-                $params[':kw_end'] = $korwilRange[1];
+                $sqlKantor = "AND kode_kantor BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $params[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
             } elseif (strtolower($kodeKantorReq) === 'konsolidasi') {
-                $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN '000' AND '028'";
+                $sqlKantor = "AND kode_kantor BETWEEN '000' AND '028'";
             } else {
-                $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') = :kode_kantor";
-                $params[':kode_kantor'] = str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT);
+                $sqlKantor = "AND kode_kantor = :kode_kantor";
+                $params[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
             }
 
             $asetCodes = [
@@ -399,10 +399,8 @@ class LaporanKeuanganController
                     - SUM(CASE WHEN kode_perk = 210 THEN saldo_akhir ELSE 0 END) AS aset_gabungan,
                     SUM(CASE WHEN kode_perk = 10601 THEN saldo_akhir ELSE 0 END) AS kredit_baki_debet,
                     SUM(CASE WHEN kode_perk = 204 THEN saldo_akhir ELSE 0 END) AS dpk,
-                    (
-                        SUM(CASE WHEN kode_perk = 4 THEN saldo_akhir ELSE 0 END) -
-                        SUM(CASE WHEN kode_perk = 5 THEN saldo_akhir ELSE 0 END)
-                    ) AS laba_net
+                    SUM(CASE WHEN kode_perk = 4 THEN saldo_akhir ELSE 0 END)
+                    - SUM(CASE WHEN kode_perk = 5 THEN saldo_akhir ELSE 0 END) AS laba_net
                 FROM acc_history
                 WHERE tanggal BETWEEN :start_date AND :end_date
                   $sqlKantor

@@ -167,7 +167,11 @@
 
     let chartTrenInstance = null;
     let chartRunoffInstance = null; 
-    let chartWeeklyMakroInstance = null;
+    let chartTrendAsetInstance = null;
+    let chartTrendKreditInstance = null;
+    let chartTrendDpkInstance = null;
+    let chartTrendLabaInstance = null;
+    let trendCoaRequestToken = 0;
 
     // ==========================================
     // 3. GLOBAL CONFIG & DATA FETCHING (FIXED LOGIC)
@@ -180,6 +184,9 @@
         screen_profile: 'tv_sd'
     };
     const TV_KORWIL = ['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'];
+    const TV_STORAGE_KEYS = {
+        kantor: 'tv_filter_kantor'
+    };
     const TV_SCREEN_PROFILES = {
         auto: { layout: 'auto' },
         tv_nhd: { layout: 'desktop', width: 640, height: 360 },
@@ -233,6 +240,18 @@
     function getTodayRealtimeTV() {
         const now = new Date();
         return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+
+    function getTvCurrentClosingDate() {
+        return document.getElementById('tv_filter_closing')?.value || TV_CONFIG.closing_date;
+    }
+
+    function getTvCurrentHarianDate() {
+        return document.getElementById('tv_filter_harian')?.value || TV_CONFIG.harian_date;
+    }
+
+    function getTvCurrentKantor() {
+        return document.getElementById('tv_filter_kantor')?.value || TV_CONFIG.kantor || 'konsolidasi';
     }
 
     function refreshTvTriggerLabel(selectId) {
@@ -335,7 +354,7 @@
     }
 
     function isTvKonsolidasi() {
-        return TV_CONFIG.kantor === 'konsolidasi';
+        return getTvCurrentKantor() === 'konsolidasi';
     }
 
     function updateTvScopeBadge() {
@@ -435,17 +454,18 @@
     }
 
     function handleTvFilterModeChange() {
-        TV_CONFIG.kantor = document.getElementById('tv_filter_kantor')?.value || 'konsolidasi';
+        TV_CONFIG.kantor = getTvCurrentKantor();
         TV_CONFIG.filter_mode = isTvKonsolidasi() ? 'konsolidasi' : 'kantor';
         updateTvScopeBadge();
         scheduleTvFilterApply();
     }
 
     function applyTvFilters() {
-        TV_CONFIG.closing_date = document.getElementById('tv_filter_closing')?.value || TV_CONFIG.closing_date;
-        TV_CONFIG.harian_date = document.getElementById('tv_filter_harian')?.value || TV_CONFIG.harian_date;
-        TV_CONFIG.kantor = document.getElementById('tv_filter_kantor')?.value || 'konsolidasi';
+        TV_CONFIG.closing_date = getTvCurrentClosingDate();
+        TV_CONFIG.harian_date = getTvCurrentHarianDate();
+        TV_CONFIG.kantor = getTvCurrentKantor();
         TV_CONFIG.filter_mode = isTvKonsolidasi() ? 'konsolidasi' : 'kantor';
+        localStorage.setItem(TV_STORAGE_KEYS.kantor, TV_CONFIG.kantor || 'konsolidasi');
         syncTvFilterControls();
         fetchAllDataSlide();
         document.getElementById('tvFloatingControls')?.classList.remove('is-open');
@@ -460,7 +480,9 @@
         ['tv_filter_closing', 'tv_filter_harian', 'tv_filter_kantor'].forEach(id => {
             const el = document.getElementById(id);
             if(!el || el.dataset.tvBound === '1') return;
-            el.addEventListener('change', id === 'tv_filter_kantor' ? handleTvFilterModeChange : scheduleTvFilterApply);
+            const handler = id === 'tv_filter_kantor' ? handleTvFilterModeChange : scheduleTvFilterApply;
+            el.addEventListener('change', handler);
+            if(id !== 'tv_filter_kantor') el.addEventListener('input', handler);
             el.dataset.tvBound = '1';
         });
         const screen = document.getElementById('tv_screen_profile');
@@ -485,18 +507,19 @@
     function attachTvOfficeFilter(payload, isLapkeu = false) {
         if(isLapkeu) {
             if(isTvKonsolidasi()) payload.kode_kantor = 'konsolidasi';
-            else if(TV_KORWIL.includes(TV_CONFIG.kantor)) payload.korwil = TV_CONFIG.kantor;
-            else payload.kode_kantor = (TV_CONFIG.kantor === '000' ? '000' : TV_CONFIG.kantor);
+            else if(TV_KORWIL.includes(getTvCurrentKantor())) payload.korwil = getTvCurrentKantor();
+            else payload.kode_kantor = (getTvCurrentKantor() === '000' ? '000' : getTvCurrentKantor());
             return payload;
         }
         if(!isTvKonsolidasi()) {
-            if(TV_KORWIL.includes(TV_CONFIG.kantor)) payload.korwil = TV_CONFIG.kantor;
-            else payload.kode_kantor = TV_CONFIG.kantor;
+            if(TV_KORWIL.includes(getTvCurrentKantor())) payload.korwil = getTvCurrentKantor();
+            else payload.kode_kantor = getTvCurrentKantor();
         }
         return payload;
     }
 
     async function initTvDashboard() {
+        const savedKantor = localStorage.getItem(TV_STORAGE_KEYS.kantor) || '';
         try { 
             const r = await apiCall('./api/date/'); 
             const j = await r.json(); 
@@ -508,6 +531,8 @@
         } catch(e) {
             console.error("Gagal get date", e);
         }
+
+        if(savedKantor) TV_CONFIG.kantor = savedKantor;
 
         TV_CONFIG.screen_profile = localStorage.getItem('tv_screen_profile') || 'tv_sd';
         await loadTvKantorOptions();
@@ -532,14 +557,14 @@
 
     // FUNGSI INI SUDAH DISAMAKAN PERSIS DENGAN KODE ASLI BAPAK
     async function fetchWidgetDataTV(type, isH1 = false) {
-        let currDate = TV_CONFIG.harian_date;
+        let currDate = getTvCurrentHarianDate();
         if (isH1 && currDate === tvInitialHarianDate) currDate = getH1DateTV(currDate);
         let targetRealisasiDate = (currDate === tvInitialHarianDate) ? getTodayRealtimeTV() : currDate;
 
         // Payload dasar
         let payload = { 
             type: type, 
-            closing_date: TV_CONFIG.closing_date, 
+            closing_date: getTvCurrentClosingDate(), 
             harian_date: currDate,
             harian_date_realisasi: targetRealisasiDate
         };
@@ -965,10 +990,13 @@
 
     async function fetchTrenCoaTV() {
         if (typeof Chart === 'undefined') {
-            console.error('Chart.js belum termuat untuk canvas COA');
+            console.error('Chart.js belum termuat untuk chart tren makro');
             return;
         }
-        let currDate = TV_CONFIG.harian_date;
+        const loadingEl = document.getElementById('loadingChartCoa');
+        const requestToken = ++trendCoaRequestToken;
+        if(loadingEl) loadingEl.classList.remove('hidden');
+        let currDate = getTvCurrentHarianDate();
 
         const payload = {
             type: 'tren_makro_mingguan',
@@ -976,98 +1004,131 @@
         };
         attachTvOfficeFilter(payload, true);
 
-        const res = await apiCall('./api/lapkeu/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-        const json = await res.json();
-        const data = json.data;
+        try {
+            const res = await apiCall('./api/lapkeu/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+            const json = await res.json();
+            if(requestToken !== trendCoaRequestToken) return;
+            const data = json.data;
+            if(!data || !Array.isArray(data.weeks) || !data.weeks.length) return;
 
-        if(!data || !Array.isArray(data.weeks) || !data.weeks.length) return;
+            const latest = data.summary || {};
+            setText('txt_tren_weekly_period', `${data.periode?.start || '-'} s/d ${data.periode?.end || '-'}`);
+            setText('txt_tren_weekly_date', `Posisi data terakhir: ${latest.tanggal || currDate || '-'}`);
+            setText('summary_tren_aset', `Rp ${fmtB(latest.aset_gabungan)}`);
+            setText('summary_tren_kredit', `Rp ${fmtB(latest.kredit_baki_debet)}`);
+            setText('summary_tren_dpk', `Rp ${fmtB(latest.dpk)}`);
+            setText('summary_tren_laba', `Rp ${fmtB(latest.laba_net)}`);
+            setHtml('delta_tren_aset', getDeltaHTML(latest.growth_aset, true, false, true));
+            setHtml('delta_tren_kredit', getDeltaHTML(latest.growth_kredit, true, false, true));
+            setHtml('delta_tren_dpk', getDeltaHTML(latest.growth_dpk, true, false, true));
+            setHtml('delta_tren_laba', getDeltaHTML(latest.growth_laba, true, false, true));
+            const theme = tvChartTheme();
 
-        const latest = data.summary || {};
-        setText('txt_tren_weekly_period', latest.label || '-');
-        setText('txt_tren_weekly_date', `Posisi data: ${latest.tanggal || currDate || '-'}`);
-        setText('summary_tren_aset', `Rp ${fmtB(latest.aset_gabungan)}`);
-        setText('summary_tren_kredit', `Rp ${fmtB(latest.kredit_baki_debet)}`);
-        setText('summary_tren_dpk', `Rp ${fmtB(latest.dpk)}`);
-        setText('summary_tren_laba', `Rp ${fmtB(latest.laba_net)}`);
-        setHtml('delta_tren_aset', getDeltaHTML(latest.growth_aset, true, false, true));
-        setHtml('delta_tren_kredit', getDeltaHTML(latest.growth_kredit, true, false, true));
-        setHtml('delta_tren_dpk', getDeltaHTML(latest.growth_dpk, true, false, true));
-        setHtml('delta_tren_laba', getDeltaHTML(latest.growth_laba, true, false, true));
+            const labels = data.weeks.map(d => d.label);
+            const dataAset = data.weeks.map(d => Number(d.aset_gabungan) || 0);
+            const dataKredit = data.weeks.map(d => Number(d.kredit_baki_debet) || 0);
+            const dataDpk = data.weeks.map(d => Number(d.dpk) || 0);
+            const dataLaba = data.weeks.map(d => Number(d.laba_net) || 0);
 
-        const ctx = document.getElementById('canvasWeeklyMakro').getContext('2d');
-        const theme = tvChartTheme();
-        if(chartWeeklyMakroInstance) chartWeeklyMakroInstance.destroy();
+            const buildMiniInfo = (arr, growth, mode = 'nominal') => {
+                const active = arr.filter(v => Number(v || 0) !== 0);
+                const lastVal = active.length ? active[active.length - 1] : 0;
+                const lastText = mode === 'percent' ? pct(lastVal) : `Rp ${fmtB(lastVal)}`;
+                const growthHtml = getDeltaHTML(growth, true, false, true);
+                return `<div class="mb-0.5">${lastText}</div><div>${growthHtml}</div>`;
+            };
+            setHtml('mini_tren_aset', buildMiniInfo(dataAset, latest.growth_aset));
+            setHtml('mini_tren_kredit', buildMiniInfo(dataKredit, latest.growth_kredit));
+            setHtml('mini_tren_dpk', buildMiniInfo(dataDpk, latest.growth_dpk));
+            setHtml('mini_tren_laba', buildMiniInfo(dataLaba, latest.growth_laba));
 
-        const labels = data.weeks.map(d => d.label);
-        const dataAset = data.weeks.map(d => Number(d.aset_gabungan) || 0);
-        const dataKredit = data.weeks.map(d => Number(d.kredit_baki_debet) || 0);
-        const dataDpk = data.weeks.map(d => Number(d.dpk) || 0);
-        const dataLaba = data.weeks.map(d => Number(d.laba_net) || 0);
-
-        const valueLabelPlugin = {
-            id: 'tvWeeklyMakroLabels',
-            afterDatasetsDraw(chart) {
-                const { ctx } = chart;
-                ctx.save();
-                ctx.font = 'bold 10px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                chart.data.datasets.forEach((dataset, datasetIndex) => {
-                    const meta = chart.getDatasetMeta(datasetIndex);
-                    meta.data.forEach((point, index) => {
-                        if(!point) return;
-                        ctx.fillStyle = dataset.borderColor;
-                        ctx.fillText(fmtB(dataset.data[index]), point.x, point.y - (12 + (datasetIndex * 12)));
+            const valueLabelPlugin = {
+                id: 'tvMiniMakroLabels',
+                afterDatasetsDraw(chart) {
+                    const { ctx } = chart;
+                    ctx.save();
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    chart.data.datasets.forEach((dataset, datasetIndex) => {
+                        const meta = chart.getDatasetMeta(datasetIndex);
+                        meta.data.forEach((point, index) => {
+                            if(!point) return;
+                            ctx.fillStyle = dataset.borderColor;
+                            ctx.fillText(fmtB(dataset.data[index]), point.x, point.y - 12);
+                        });
                     });
-                });
-                ctx.restore();
-            }
-        };
-
-        chartWeeklyMakroInstance = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels,
-                datasets: [
-                    { label: 'Aset Gabungan', data: dataAset, borderColor: '#0284c7', backgroundColor: 'rgba(2,132,199,0.10)', borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false },
-                    { label: 'Kredit', data: dataKredit, borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.10)', borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false },
-                    { label: 'DPK', data: dataDpk, borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.10)', borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false },
-                    { label: 'Laba Net', data: dataLaba, borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.10)', borderWidth: 3, pointRadius: 3, pointHoverRadius: 5, tension: 0.35, fill: false }
-                ]
-            },
-            options: {
-                layout: { padding: { top: 48, right: 18, bottom: 12, left: 10 } },
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                plugins: {
-                    legend: { position: 'top', labels: { color: theme.text, usePointStyle: true, boxWidth: 10, font: { family: 'sans-serif', size: 12, weight: 'bold' } } },
-                    tooltip: {
-                        backgroundColor: 'rgba(17, 24, 39, 0.95)',
-                        padding: 12,
-                        titleFont: { size: 13, family: 'sans-serif' },
-                        bodyFont: { size: 12, family: 'sans-serif' },
-                        callbacks: {
-                            labelColor: context => ({ borderColor: context.dataset.borderColor, backgroundColor: context.dataset.borderColor }),
-                            label: c => `${c.dataset.label}: Rp ${fmtB(c.raw)}`,
-                            afterBody: c => {
-                                if(!c.length) return [];
-                                const item = data.weeks[c[0].dataIndex] || {};
-                                return [
-                                    `Tanggal data: ${item.tanggal || '-'}`,
-                                    item.keterangan ? `Rentang: ${item.keterangan}` : ''
-                                ].filter(Boolean);
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: { ticks: { color: theme.muted }, grid: { display: false } },
-                    y: { ticks: { color: theme.muted, callback: val => fmtB(val) }, grid: { color: theme.grid, borderDash: [4,4] } }
+                    ctx.restore();
                 }
-            },
-            plugins: [valueLabelPlugin]
-        });
+            };
+
+            function renderSingleTrendChart(canvasId, existingInstance, label, series, borderColor, bgColor) {
+                const canvas = document.getElementById(canvasId);
+                if(!canvas) return existingInstance;
+                if(existingInstance) existingInstance.destroy();
+                const ctx = canvas.getContext('2d');
+                return new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [
+                            {
+                                label,
+                                data: series,
+                                borderColor,
+                                backgroundColor: bgColor,
+                                borderWidth: 3,
+                                pointRadius: 3,
+                                pointHoverRadius: 5,
+                                tension: 0.35,
+                                fill: true
+                            }
+                        ]
+                    },
+                    options: {
+                        layout: { padding: { top: 24, right: 14, bottom: 6, left: 8 } },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                                padding: 12,
+                                titleFont: { size: 13, family: 'sans-serif' },
+                                bodyFont: { size: 12, family: 'sans-serif' },
+                                callbacks: {
+                                    labelColor: () => ({ borderColor, backgroundColor: borderColor }),
+                                    label: c => `${label}: Rp ${fmtB(c.raw)}`,
+                                    afterBody: c => {
+                                        if(!c.length) return [];
+                                        const item = data.weeks[c[0].dataIndex] || {};
+                                        return [
+                                            `Tanggal data: ${item.tanggal || '-'}`,
+                                            item.keterangan ? `Rentang: ${item.keterangan}` : ''
+                                        ].filter(Boolean);
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { ticks: { color: theme.muted }, grid: { display: false } },
+                            y: { ticks: { color: theme.muted, callback: val => fmtB(val) }, grid: { color: theme.grid, borderDash: [4,4] } }
+                        }
+                    },
+                    plugins: [valueLabelPlugin]
+                });
+            }
+
+            chartTrendAsetInstance = renderSingleTrendChart('canvasTrendAset', chartTrendAsetInstance, 'Aset Gabungan', dataAset, '#0284c7', 'rgba(2,132,199,0.10)');
+            chartTrendKreditInstance = renderSingleTrendChart('canvasTrendKredit', chartTrendKreditInstance, 'Kredit Baki Debet', dataKredit, '#10b981', 'rgba(16,185,129,0.10)');
+            chartTrendDpkInstance = renderSingleTrendChart('canvasTrendDpk', chartTrendDpkInstance, 'DPK', dataDpk, '#8b5cf6', 'rgba(139,92,246,0.10)');
+            chartTrendLabaInstance = renderSingleTrendChart('canvasTrendLaba', chartTrendLabaInstance, 'Laba Net', dataLaba, '#f59e0b', 'rgba(245,158,11,0.10)');
+        } catch (error) {
+            console.error('Gagal memuat tren makro TV:', error, payload);
+        } finally {
+            if(requestToken === trendCoaRequestToken && loadingEl) loadingEl.classList.add('hidden');
+        }
     }
 
     // ==========================================

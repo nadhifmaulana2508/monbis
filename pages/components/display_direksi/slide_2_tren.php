@@ -6,10 +6,10 @@
                     <h2 class="text-base md:text-xl xl:text-2xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
                         <span class="text-blue-500 bg-blue-50 p-1.5 rounded-lg">TREND</span> Tren Aset, Kredit, DPK, Laba
                     </h2>
-                    <p class="text-[10px] md:text-sm text-gray-500 font-medium mt-1">Pergerakan mingguan dalam bulan berjalan berdasarkan data lapkeu</p>
+                    <p class="text-[10px] md:text-sm text-gray-500 font-medium mt-1">Histori mingguan mengikuti bulan pada harian date yang dipilih</p>
                 </div>
                 <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 px-5 flex flex-col items-end min-w-[220px] shrink-0 w-full md:w-auto">
-                    <span class="text-[10px] text-blue-600 font-extrabold uppercase tracking-wider mb-1" id="lbl_tren_makro_weekly">PEKAN AKTUAL</span>
+                    <span class="text-[10px] text-blue-600 font-extrabold uppercase tracking-wider mb-1" id="lbl_tren_makro_weekly">PERIODE HISTORI</span>
                     <span class="text-xl md:text-3xl font-black text-gray-900" id="txt_tren_weekly_period">-</span>
                     <div id="txt_tren_weekly_date" class="mt-1 text-[10px] md:text-xs text-gray-500 font-semibold"></div>
                 </div>
@@ -43,11 +43,57 @@
             <div id="loadingChartCoa" class="absolute inset-0 flex justify-center items-center bg-white bg-opacity-90 z-20 hidden rounded-xl">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
             </div>
-            <div class="tv-card border border-gray-100 rounded-xl p-4 md:p-5 bg-white shadow-sm flex flex-col h-full">
-                <h3 class="font-bold text-gray-800 mb-1 text-sm md:text-lg">Tren Mingguan Bulan Berjalan</h3>
-                <p class="text-[10px] md:text-xs text-gray-400 mb-4">Aset gabungan, kredit baki debet, DPK, dan laba net per pekan</p>
-                <div class="tv-chart relative w-full flex-grow min-h-0">
-                    <canvas id="canvasWeeklyMakro" class="w-full h-full"></canvas>
+            <div class="grid md:grid-cols-2 gap-4 h-full">
+                <div class="tv-card border border-sky-100 rounded-xl p-4 bg-sky-50 shadow-sm flex flex-col min-h-0">
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                            <h3 class="font-bold text-sky-900 text-sm md:text-lg">Tren Aset</h3>
+                            <p class="text-[10px] md:text-xs text-sky-700/80">Aset gabungan per pekan</p>
+                        </div>
+                        <div id="mini_tren_aset" class="text-right text-[10px] md:text-xs font-bold text-sky-700"></div>
+                    </div>
+                    <div class="tv-chart relative w-full flex-grow min-h-0">
+                        <canvas id="canvasTrendAset" class="w-full h-full"></canvas>
+                    </div>
+                </div>
+
+                <div class="tv-card border border-emerald-100 rounded-xl p-4 bg-emerald-50 shadow-sm flex flex-col min-h-0">
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                            <h3 class="font-bold text-emerald-900 text-sm md:text-lg">Tren Kredit</h3>
+                            <p class="text-[10px] md:text-xs text-emerald-700/80">Kredit baki debet per pekan</p>
+                        </div>
+                        <div id="mini_tren_kredit" class="text-right text-[10px] md:text-xs font-bold text-emerald-700"></div>
+                    </div>
+                    <div class="tv-chart relative w-full flex-grow min-h-0">
+                        <canvas id="canvasTrendKredit" class="w-full h-full"></canvas>
+                    </div>
+                </div>
+
+                <div class="tv-card border border-violet-100 rounded-xl p-4 bg-violet-50 shadow-sm flex flex-col min-h-0">
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                            <h3 class="font-bold text-violet-900 text-sm md:text-lg">Tren DPK</h3>
+                            <p class="text-[10px] md:text-xs text-violet-700/80">DPK per pekan</p>
+                        </div>
+                        <div id="mini_tren_dpk" class="text-right text-[10px] md:text-xs font-bold text-violet-700"></div>
+                    </div>
+                    <div class="tv-chart relative w-full flex-grow min-h-0">
+                        <canvas id="canvasTrendDpk" class="w-full h-full"></canvas>
+                    </div>
+                </div>
+
+                <div class="tv-card border border-amber-100 rounded-xl p-4 bg-amber-50 shadow-sm flex flex-col min-h-0">
+                    <div class="flex items-start justify-between gap-3 mb-3">
+                        <div>
+                            <h3 class="font-bold text-amber-900 text-sm md:text-lg">Tren Laba</h3>
+                            <p class="text-[10px] md:text-xs text-amber-700/80">Laba net per pekan</p>
+                        </div>
+                        <div id="mini_tren_laba" class="text-right text-[10px] md:text-xs font-bold text-amber-700"></div>
+                    </div>
+                    <div class="tv-chart relative w-full flex-grow min-h-0">
+                        <canvas id="canvasTrendLaba" class="w-full h-full"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
