@@ -24,11 +24,11 @@
         </div>
 
         <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-4">
-            <?php include 'components/display_direksi/slide_4_kredit_dpk.php'; ?>
+            <?php include 'components/display_direksi/slide_5_portofolio.php'; ?>
         </div>
 
         <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-5">
-            <?php include 'components/display_direksi/slide_5_portofolio.php'; ?>
+            <?php include 'components/display_direksi/slide_4_kredit_dpk.php'; ?>
         </div>
 
         <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-6">
@@ -41,6 +41,14 @@
 
         <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-8">
             <?php include 'components/display_direksi/slide_8_tabungan.php'; ?>
+        </div>
+
+        <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-9">
+            <?php include 'components/display_direksi/slide_9_aset_laba.php'; ?>
+        </div>
+
+        <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-10">
+            <?php include 'components/display_direksi/slide_10_pendapatan_beban.php'; ?>
         </div>
 
     </div>
@@ -79,6 +87,98 @@
     .tv-list { min-height: 0; overflow: hidden; }
     .tv-chart { min-height: 0; height: 100%; }
     .tv-chart canvas { display: block; width: 100% !important; height: 100% !important; }
+    .tv-distribution-chart { position: relative; height: 100%; }
+    .tv-distribution-chart canvas { display: block; width: 100% !important; height: 100% !important; cursor: pointer; }
+    .tv-distribution-toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: .2rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 999px;
+        padding: .18rem;
+        background: #f8fafc;
+        flex: 0 0 auto;
+    }
+    .tv-distribution-toggle button {
+        height: 28px;
+        border-radius: 999px;
+        padding: 0 .65rem;
+        font-size: .68rem;
+        font-weight: 900;
+        color: #64748b;
+    }
+    .tv-distribution-toggle button.is-active {
+        background: #ffffff;
+        color: #2563eb;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, .12);
+    }
+    .tv-distribution-table {
+        overflow-y: auto;
+        overflow-x: hidden;
+        border: 1px solid #eef2f7;
+        border-radius: .85rem;
+        background: #fff;
+        scrollbar-width: thin;
+        min-height: 0;
+    }
+    .tv-distribution-table::-webkit-scrollbar { width: 6px; }
+    .tv-distribution-table::-webkit-scrollbar-track { background: transparent; }
+    .tv-distribution-table::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+    .tv-distribution-table table { width: 100%; border-collapse: collapse; font-size: .72rem; }
+    .tv-distribution-table th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        text-align: left;
+        padding: .65rem .75rem;
+        color: #94a3b8;
+        text-transform: uppercase;
+        letter-spacing: .08em;
+        font-size: .62rem;
+        background: #f8fafc;
+    }
+    .tv-distribution-table td {
+        padding: .62rem .75rem;
+        border-top: 1px solid #eef2f7;
+        color: #1e3a8a;
+        font-weight: 800;
+    }
+    .tv-distribution-table td:last-child,
+    .tv-distribution-table th:last-child { text-align: right; }
+    .tv-distribution-summary {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .65rem;
+    }
+    .tv-distribution-summary-card {
+        border-radius: .9rem;
+        background: #f8fafc;
+        padding: .7rem;
+        min-width: 0;
+    }
+    .tv-distribution-summary-card .label {
+        font-size: .58rem;
+        text-transform: uppercase;
+        letter-spacing: .12em;
+        color: #94a3b8;
+        font-weight: 900;
+        margin-bottom: .35rem;
+    }
+    .tv-distribution-summary-card .value {
+        color: #111827;
+        font-size: .86rem;
+        font-weight: 1000;
+        line-height: 1.15;
+    }
+    .tv-distribution-summary-card .sub {
+        margin-top: .25rem;
+        color: #64748b;
+        font-size: .62rem;
+        font-weight: 800;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
     .bar-fill { transition: height 1s cubic-bezier(0.4, 0, 0.2, 1), width 1s ease-in-out; }
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -518,6 +618,19 @@
         border-color: #60a5fa;
         color: #bfdbfe;
     }
+    body.dark-mode .tv-distribution-toggle,
+    body.dark-mode .tv-distribution-table,
+    body.dark-mode .tv-distribution-summary-card {
+        background: #111827;
+        border-color: #374151;
+    }
+    body.dark-mode .tv-distribution-toggle button.is-active {
+        background: #1f2937;
+        color: #bfdbfe;
+    }
+    body.dark-mode .tv-distribution-table th { background: #111827; color: #9ca3af; }
+    body.dark-mode .tv-distribution-table td { border-color: #374151; color: #bfdbfe; }
+    body.dark-mode .tv-distribution-summary-card .value { color: #f8fafc; }
     body.dark-mode #tv_scope_badge,
     body.dark-mode .tv-slide-count { color: #bfdbfe; }
     body.dark-mode .tv-slide-btn { color: #e5e7eb; }
@@ -661,6 +774,7 @@
     body.tv-desktop-layout .lg\:col-span-5 { grid-column: span 5 / span 5 !important; }
     body.tv-desktop-layout .lg\:col-span-7 { grid-column: span 7 / span 7 !important; }
     body.tv-desktop-layout .lg\:col-span-8 { grid-column: span 8 / span 8 !important; }
+    body.tv-desktop-layout .lg\:col-span-9 { grid-column: span 9 / span 9 !important; }
     body.tv-desktop-layout .md\:flex-row,
     body.tv-desktop-layout .xl\:flex-row { flex-direction: row !important; }
     body.tv-desktop-layout .md\:items-center,

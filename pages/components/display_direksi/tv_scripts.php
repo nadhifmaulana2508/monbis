@@ -190,6 +190,10 @@
     let chartTrendKreditInstance = null;
     let chartTrendDpkInstance = null;
     let chartTrendLabaInstance = null;
+    let chartDistAsetInstance = null;
+    let chartDistLabaInstance = null;
+    let chartDistPendapatanInstance = null;
+    let chartDistBebanInstance = null;
     let trendCoaRequestToken = 0;
 
     // ==========================================
@@ -536,7 +540,11 @@
                 fit.style.setProperty('--tv-fit-scale', String(nextScale));
 
                 setTimeout(() => {
-                    [chartTrenInstance, chartRunoffInstance, chartTrendAsetInstance, chartTrendKreditInstance, chartTrendDpkInstance, chartTrendLabaInstance]
+                    [
+                        chartTrenInstance, chartRunoffInstance, chartTrendAsetInstance, chartTrendKreditInstance,
+                        chartTrendDpkInstance, chartTrendLabaInstance, chartDistAsetInstance, chartDistLabaInstance,
+                        chartDistPendapatanInstance, chartDistBebanInstance
+                    ]
                         .filter(Boolean)
                         .forEach(chart => chart.resize());
                 }, 60);
@@ -745,8 +753,8 @@
         const pRrCabang     = fetchWidgetDataTV('test rr cabang');
         const pRunoffKorwil = fetchWidgetDataTV('test runoff korwil');
         const pFlowKorwil   = fetchWidgetDataTV('test flow recovery npl');
-        const pTopReal      = fetchWidgetDataTV('test top realisasi');
         const pTopNpl       = fetchWidgetDataTV('test top bottom npl');
+        const pTopReal      = fetchWidgetDataTV('test top realisasi');
         const pDeltaNpl     = fetchWidgetDataTV('test delta npl');
         const pDeposito     = fetchWidgetDataTV('test perkembangan deposito');
         const pTabungan     = fetchWidgetDataTV('test perkembangan tabungan', true);
@@ -757,10 +765,11 @@
         const pChartPorto = fetchTrenPortoTV();
         const pChartRunoff = fetchTrenRunoffTV();
         const pChartCoa = fetchTrenCoaTV();
+        const pDistribusiMakro = fetchDistribusiMakroTV();
         Promise.allSettled([
             pSaldoBank, pRealProduk, pTrenNpl, pRrCabang, pRunoffKorwil, pFlowKorwil,
             pTopReal, pTopNpl, pDeltaNpl, pDeposito, pTabungan, pSummaryMakro, pHealthKpi,
-            pChartPorto, pChartRunoff, pChartCoa
+            pChartPorto, pChartRunoff, pChartCoa, pDistribusiMakro
         ]).then(() => {
             scheduleTvFit(80);
             setTimeout(fitTvSlides, 450);
@@ -1309,6 +1318,169 @@
         }
     }
 
+    function setDistributionView(metric, view) {
+        const bar = document.getElementById(`dist_${metric}_bar`);
+        const table = document.getElementById(`dist_${metric}_table`);
+        const btnBar = document.getElementById(`btn_dist_${metric}_bar`);
+        const btnTable = document.getElementById(`btn_dist_${metric}_table`);
+        if(!bar || !table) return;
+        const showBar = view === 'bar';
+        bar.classList.toggle('hidden', !showBar);
+        table.classList.toggle('hidden', showBar);
+        btnBar?.classList.toggle('is-active', showBar);
+        btnTable?.classList.toggle('is-active', !showBar);
+        setTimeout(() => {
+            [
+                chartDistAsetInstance, chartDistLabaInstance,
+                chartDistPendapatanInstance, chartDistBebanInstance
+            ].filter(Boolean).forEach(chart => chart.resize());
+            scheduleTvFit(80);
+        }, 60);
+    }
+
+    function distributionMetricMeta(metric) {
+        const map = {
+            aset: { label: 'Aset', canvas: 'canvasDistAset', color: '#4f6df5', bg: 'rgba(79, 109, 245, 0.14)' },
+            laba: { label: 'Laba', canvas: 'canvasDistLaba', color: '#2563eb', bg: 'rgba(37, 99, 235, 0.12)' },
+            pendapatan: { label: 'Pendapatan', canvas: 'canvasDistPendapatan', color: '#10b981', bg: 'rgba(16, 185, 129, 0.13)' },
+            beban: { label: 'Beban', canvas: 'canvasDistBeban', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' }
+        };
+        return map[metric] || map.aset;
+    }
+
+    function renderDistributionTable(metric, items) {
+        const box = document.getElementById(`dist_${metric}_table`);
+        if(!box) return;
+        const rows = [...(items || [])].sort((a, b) => Math.abs(Number(b.nominal || 0)) - Math.abs(Number(a.nominal || 0))).slice(0, 10);
+        box.innerHTML = `
+            <table>
+                <thead><tr><th>Kantor</th><th>Nominal</th></tr></thead>
+                <tbody>
+                    ${rows.map(item => `
+                        <tr>
+                            <td>${item.kode_kantor || '-'} - ${(item.nama_kantor || '-').replace(/^Kc\.\s*/i, '')}</td>
+                            <td>${Number(item.nominal || 0) < 0 ? '-' : ''}Rp ${fmtB(Math.abs(Number(item.nominal || 0)))}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function renderDistributionSummary(metric, summary) {
+        const box = document.getElementById(`dist_${metric}_summary`);
+        if(!box || !summary) return;
+        const top = summary.top || [];
+        const bottom = summary.bottom || [];
+        const formatList = arr => arr.map((item, idx) => `
+            <div class="sub">${idx + 1}. ${(item.nama_kantor || '-').replace(/^Kc\.\s*/i, '')}: ${Number(item.nominal || 0) < 0 ? '-' : ''}Rp ${fmtB(Math.abs(Number(item.nominal || 0)))}</div>
+        `).join('');
+
+        box.innerHTML = `
+            <div class="tv-distribution-summary-card">
+                <div class="label">Top Performers</div>
+                <div class="value">3 Kantor Teratas</div>
+                ${formatList(top)}
+            </div>
+            <div class="tv-distribution-summary-card">
+                <div class="label">Rata-rata Nominal</div>
+                <div class="value">${Number(summary.average || 0) < 0 ? '-' : ''}Rp ${fmtB(Math.abs(Number(summary.average || 0)))}</div>
+                <div class="sub">Benchmark pasar</div>
+            </div>
+            <div class="tv-distribution-summary-card">
+                <div class="label">Need Attention</div>
+                <div class="value">3 Kantor Terbawah</div>
+                ${formatList(bottom)}
+            </div>
+        `;
+    }
+
+    function renderDistributionChart(metric, items, existingInstance) {
+        const meta = distributionMetricMeta(metric);
+        const canvas = document.getElementById(meta.canvas);
+        if(!canvas || typeof Chart === 'undefined') return existingInstance;
+        if(existingInstance) existingInstance.destroy();
+
+        const rows = [...(items || [])].sort((a, b) => String(a.kode_kantor).localeCompare(String(b.kode_kantor)));
+        const labels = rows.map(item => item.kode_kantor);
+        const values = rows.map(item => Number(item.nominal || 0));
+        const names = rows.map(item => item.nama_kantor || item.kode_kantor || '-');
+        const theme = tvChartTheme();
+
+        return new Chart(canvas.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: meta.label,
+                    data: values,
+                    backgroundColor: meta.color,
+                    borderRadius: 7,
+                    barPercentage: 0.78,
+                    categoryPercentage: 0.82
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { top: 8, right: 10, bottom: 0, left: 4 } },
+                interaction: { mode: 'index', axis: 'x', intersect: false },
+                hover: { mode: 'index', axis: 'x', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                        padding: 12,
+                        titleFont: { size: 13, family: 'sans-serif' },
+                        bodyFont: { size: 12, family: 'sans-serif' },
+                        callbacks: {
+                            title: c => `${labels[c[0].dataIndex]} - ${String(names[c[0].dataIndex]).replace(/^Kc\.\s*/i, '')}`,
+                            label: c => `${meta.label}: ${Number(c.raw || 0) < 0 ? '-' : ''}Rp ${fmtB(Math.abs(Number(c.raw || 0)))}`
+                        }
+                    }
+                },
+                scales: {
+                    x: { ticks: { color: theme.muted, maxRotation: 35, minRotation: 35, font: { size: 9 } }, grid: { display: false } },
+                    y: { ticks: { color: theme.muted, callback: val => fmtB(val) }, grid: { color: theme.grid, borderDash: [4, 4] } }
+                }
+            }
+        });
+    }
+
+    async function fetchDistribusiMakroTV() {
+        const payload = {
+            type: 'distribusi_makro_kantor',
+            harian_date: getTvCurrentHarianDate()
+        };
+        attachTvOfficeFilter(payload, true);
+
+        try {
+            const res = await apiCall('./api/lapkeu/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const json = await res.json();
+            const metrics = json.data?.metrics || {};
+
+            ['aset', 'laba', 'pendapatan', 'beban'].forEach(metric => {
+                renderDistributionTable(metric, metrics[metric]?.items || []);
+                renderDistributionSummary(metric, metrics[metric]?.summary || {});
+            });
+
+            chartDistAsetInstance = renderDistributionChart('aset', metrics.aset?.items || [], chartDistAsetInstance);
+            chartDistLabaInstance = renderDistributionChart('laba', metrics.laba?.items || [], chartDistLabaInstance);
+            chartDistPendapatanInstance = renderDistributionChart('pendapatan', metrics.pendapatan?.items || [], chartDistPendapatanInstance);
+            chartDistBebanInstance = renderDistributionChart('beban', metrics.beban?.items || [], chartDistBebanInstance);
+            scheduleTvFit(120);
+        } catch (error) {
+            console.error('Gagal memuat distribusi makro kantor:', error, payload);
+        }
+    }
+
     // ==========================================
     // 6. DOM RENDER HELPERS
     // ==========================================
@@ -1318,11 +1490,11 @@
         dataArray = tvLimit(dataArray, 5);
         let maxVal = Math.max(...dataArray.map(o => Math.abs(Number(o[valKey]) || 0))); if(maxVal === 0) maxVal = 1;
         const isBestPanel = ['best_realisasi', 'best_realisasi_ao', 'best_npl', 'best_npl_turun', 'best_rr'].includes(elId);
-        const itemClass = isBestPanel ? 'mb-2.5 group relative' : 'mb-3 group relative';
+        const itemClass = isBestPanel ? 'mb-2 group relative' : 'mb-3 group relative';
         const rowClass = isBestPanel ? 'flex justify-between items-end mb-0.5 gap-2' : 'flex justify-between items-end mb-1 gap-2';
-        const nameClass = isBestPanel ? 'text-[11px] md:text-xs font-bold text-gray-800 truncate' : 'text-xs font-bold text-gray-800 truncate';
+        const nameClass = isBestPanel ? 'text-[10px] md:text-[11px] font-bold text-gray-800 truncate' : 'text-xs font-bold text-gray-800 truncate';
         const subClass = isBestPanel ? 'text-[9px] md:text-[10px] text-gray-500 truncate' : 'text-[10px] text-gray-500 truncate';
-        const valClass = isBestPanel ? 'text-[11px] md:text-xs font-black text-gray-900 whitespace-nowrap' : 'text-xs font-black text-gray-900 whitespace-nowrap';
+        const valClass = isBestPanel ? 'text-[10px] md:text-[11px] font-black text-gray-900 whitespace-nowrap' : 'text-xs font-black text-gray-900 whitespace-nowrap';
         const barWrapClass = isBestPanel ? 'w-full bg-gray-100 h-1.5 md:h-2 rounded-full overflow-hidden' : 'w-full bg-gray-100 h-2 rounded-full overflow-hidden';
         const barClass = isBestPanel ? `${colorClass} h-1.5 md:h-2 rounded-full bar-fill` : `${colorClass} h-2 rounded-full bar-fill`;
         dataArray.forEach(item => {

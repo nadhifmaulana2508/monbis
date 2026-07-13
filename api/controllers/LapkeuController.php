@@ -562,6 +562,122 @@ class LaporanKeuanganController
         }
     }
 
+    public function apiGetDistribusiMakroKantor(array $input)
+    {
+        try {
+            $baseDate = $input['harian_date'] ?? date('Y-m-d');
+            $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
+            $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
+
+            $params = [':tanggal' => $baseDate];
+            $sqlKantor = "AND ah.kode_kantor BETWEEN '001' AND '028'";
+
+            if ($korwilRange) {
+                $sqlKantor = "AND ah.kode_kantor BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $params[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
+            } elseif (strtolower($kodeKantorReq) !== 'konsolidasi' && $kodeKantorReq !== '000') {
+                $sqlKantor = "AND ah.kode_kantor = :kode_kantor";
+                $params[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
+            }
+
+            $asetCodes = [
+                '101','102','103','104','105','10601','10602','10604','10605','10606',
+                '107','108','109','110','11102','112','113','116','117','118','119','120','121'
+            ];
+            $asetIn = "'" . implode("','", $asetCodes) . "'";
+            $trackedCodes = array_merge($asetCodes, ['210', '4', '5']);
+            $trackedIn = "'" . implode("','", array_unique($trackedCodes)) . "'";
+
+            $sql = "
+                SELECT
+                    ah.kode_kantor,
+                    COALESCE(kk.nama_kantor, CONCAT('Kc. ', ah.kode_kantor)) AS nama_kantor,
+                    SUM(CASE WHEN TRIM(CAST(ah.kode_perk AS CHAR)) IN ($asetIn) THEN ah.saldo_akhir ELSE 0 END)
+                    - SUM(CASE WHEN TRIM(CAST(ah.kode_perk AS CHAR)) = '210' THEN ah.saldo_akhir ELSE 0 END) AS aset,
+                    SUM(CASE WHEN TRIM(CAST(ah.kode_perk AS CHAR)) = '4' THEN ah.saldo_akhir ELSE 0 END) AS pendapatan,
+                    SUM(CASE WHEN TRIM(CAST(ah.kode_perk AS CHAR)) = '5' THEN ah.saldo_akhir ELSE 0 END) AS beban,
+                    SUM(CASE WHEN TRIM(CAST(ah.kode_perk AS CHAR)) = '4' THEN ah.saldo_akhir ELSE 0 END)
+                    - SUM(CASE WHEN TRIM(CAST(ah.kode_perk AS CHAR)) = '5' THEN ah.saldo_akhir ELSE 0 END) AS laba
+                FROM acc_history ah
+                LEFT JOIN kode_kantor kk ON kk.kode_kantor = ah.kode_kantor
+                WHERE ah.tanggal = :tanggal
+                  $sqlKantor
+                  AND TRIM(CAST(ah.kode_perk AS CHAR)) IN ($trackedIn)
+                GROUP BY ah.kode_kantor, kk.nama_kantor
+                ORDER BY ah.kode_kantor ASC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $metrics = [
+                'aset' => [],
+                'laba' => [],
+                'pendapatan' => [],
+                'beban' => [],
+            ];
+
+            foreach ($rows as $row) {
+                foreach (array_keys($metrics) as $metric) {
+                    $metrics[$metric][] = [
+                        'kode_kantor' => str_pad((string) $row['kode_kantor'], 3, '0', STR_PAD_LEFT),
+                        'nama_kantor' => $row['nama_kantor'] ?: ('Kc. ' . $row['kode_kantor']),
+                        'nominal' => (float) ($row[$metric] ?? 0),
+                    ];
+                }
+            }
+
+            $buildSummary = function (array $items, bool $ascendingWorst = false) {
+                $total = array_sum(array_map(function ($item) {
+                    return (float) $item['nominal'];
+                }, $items));
+                $count = count($items);
+                $avg = $count ? $total / $count : 0;
+                $top = $items;
+                usort($top, function ($a, $b) {
+                    return $b['nominal'] <=> $a['nominal'];
+                });
+                $bottom = $items;
+                if ($ascendingWorst) {
+                    usort($bottom, function ($a, $b) {
+                        return $a['nominal'] <=> $b['nominal'];
+                    });
+                } else {
+                    usort($bottom, function ($a, $b) {
+                        return abs($a['nominal']) <=> abs($b['nominal']);
+                    });
+                }
+
+                return [
+                    'total' => $total,
+                    'average' => $avg,
+                    'top' => array_slice($top, 0, 3),
+                    'bottom' => array_slice($bottom, 0, 3),
+                ];
+            };
+
+            $scopeLabel = $korwilRange ? ('KORWIL ' . $korwilReq) : strtoupper($kodeKantorReq);
+            $response = [];
+            foreach ($metrics as $key => $items) {
+                $response[$key] = [
+                    'items' => $items,
+                    'summary' => $buildSummary($items, in_array($key, ['laba'], true)),
+                ];
+            }
+
+            sendResponse(200, "Berhasil memuat distribusi makro kantor (" . $scopeLabel . ")", [
+                'scope' => $scopeLabel,
+                'tanggal' => $baseDate,
+                'metrics' => $response,
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, "Gagal memuat distribusi makro kantor: " . $e->getMessage(), null);
+        }
+    }
+
     /**
      * =================================================================
      * ENDPOINT: API FINANCIAL KPI DASHBOARD
