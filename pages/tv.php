@@ -188,6 +188,21 @@
         max-width: min(calc(100vw - 2.6rem), 1040px);
     }
     .tv-control-hint { font-size: .68rem; font-weight: 900; color: #64748b; white-space: nowrap; padding: 0 .35rem; }
+    .tv-filter-apply-status {
+        height: 42px;
+        display: inline-flex;
+        align-items: center;
+        border-radius: .85rem;
+        padding: 0 .75rem;
+        background: #fff7ed;
+        border: 1px solid #fed7aa;
+        color: #c2410c;
+        font-size: .68rem;
+        font-weight: 1000;
+        white-space: nowrap;
+        flex: 0 0 auto;
+    }
+    .tv-filter-apply-status.hidden { display: none; }
     .tv-icon-btn, .tv-nav-btn, .tv-segment, .tv-field, .tv-zoom-control {
         border: 1px solid #dbe3ef;
         background: #ffffff;
@@ -470,6 +485,11 @@
         box-shadow: none;
     }
     body.dark-mode .tv-nav-btn { color: #e5e7eb; }
+    body.dark-mode .tv-filter-apply-status {
+        background: rgba(251, 146, 60, .12);
+        border-color: rgba(251, 146, 60, .35);
+        color: #fdba74;
+    }
     body.dark-mode .tv-zoom-control > span { color: #9ca3af; }
     body.dark-mode .tv-zoom-btn,
     body.dark-mode .tv-zoom-value {

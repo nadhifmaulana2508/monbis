@@ -104,6 +104,24 @@
         let displayVal = isPercent ? pct(Math.abs(numVal)) : fmtB(Math.abs(numVal));
         return `<span class="${color} font-black ${sizeClass}">${icon} ${displayVal}</span>`;
     };
+    const getTrendSummaryDetailHTML = (previous, delta, growth, colorClass = 'text-gray-700') => {
+        const deltaNum = Number(delta || 0);
+        const sign = deltaNum > 0 ? '+' : (deltaNum < 0 ? '-' : '');
+        const status = deltaNum > 0 ? 'Naik' : (deltaNum < 0 ? 'Turun' : 'Tetap');
+        const deltaColor = deltaNum > 0 ? 'text-green-600' : (deltaNum < 0 ? 'text-red-600' : 'text-gray-500');
+        return `
+            <div class="mt-1.5 pt-1.5 border-t border-white/70 grid grid-cols-2 gap-2 text-[8px] md:text-[9px] leading-tight">
+                <div class="min-w-0">
+                    <div class="font-extrabold uppercase tracking-wider text-gray-400">Closing</div>
+                    <div class="font-black ${colorClass} truncate">Rp ${fmtB(previous)}</div>
+                </div>
+                <div class="text-right min-w-0">
+                    <div class="font-extrabold uppercase tracking-wider text-gray-400">Selisih</div>
+                    <div class="font-black ${deltaColor} truncate">${status} ${sign}Rp ${fmtB(Math.abs(deltaNum))} (${pct(Math.abs(growth || 0))})</div>
+                </div>
+            </div>
+        `;
+    };
     const getPreviousValueHTML = (val, prefix = 'Rp ') => {
         const numVal = Number(val || 0);
         return `<div class="leading-tight"><div class="text-[8px] md:text-[9px] font-bold uppercase tracking-wider text-gray-400">Bulan Lalu</div><div class="text-[10px] md:text-[11px] font-black text-gray-700">${prefix}${fmtB(numVal)}</div></div>`;
@@ -211,6 +229,7 @@
         tv_screen_profile: 'Resolusi layar TV',
         tv_filter_kantor: 'Pilih Filter Kantor'
     };
+    const TV_FILTER_APPLY_DELAY = 4000;
     let tvFilterApplyTimer = null;
     let tvControlCloseTimer = null;
     let tvActiveSelectModalId = null;
@@ -579,6 +598,9 @@
     }
 
     function applyTvFilters() {
+        if(tvFilterApplyTimer) clearTimeout(tvFilterApplyTimer);
+        tvFilterApplyTimer = null;
+        document.getElementById('tv_filter_apply_status')?.classList.add('hidden');
         TV_CONFIG.closing_date = getTvCurrentClosingDate();
         TV_CONFIG.harian_date = getTvCurrentHarianDate();
         TV_CONFIG.kantor = getTvCurrentKantor();
@@ -591,7 +613,12 @@
 
     function scheduleTvFilterApply() {
         if(tvFilterApplyTimer) clearTimeout(tvFilterApplyTimer);
-        tvFilterApplyTimer = setTimeout(applyTvFilters, 900);
+        const status = document.getElementById('tv_filter_apply_status');
+        if(status) {
+            status.textContent = `Apply ${Math.round(TV_FILTER_APPLY_DELAY / 1000)} detik...`;
+            status.classList.remove('hidden');
+        }
+        tvFilterApplyTimer = setTimeout(applyTvFilters, TV_FILTER_APPLY_DELAY);
     }
 
     function bindTvFilterEvents() {
@@ -773,10 +800,6 @@
         Promise.all([pDeposito, pTabungan]).then(([depRaw, tabRaw]) => {
             let dep = unwrapData(depRaw, 'perkembangan_deposito');
             let tab = unwrapData(tabRaw, 'perkembangan_tabungan');
-            const dpkCurr = ((dep.grand_total?.saldo_curr||0) + (tab.grand_total?.saldo_curr||0)); 
-            const dpkPrev = ((dep.grand_total?.saldo_prev||0) + (tab.grand_total?.saldo_prev||0));
-            setText('kpi_dpk', `Rp ${fmtB(dpkCurr)}`);
-            setHtml('kpi_dpk_pill', `<div class="flex gap-2"><div class="bg-gray-100 px-2 py-0.5 rounded text-[11px] text-gray-500">Closing: <span class="text-gray-900">Rp ${fmtB(dpkPrev)}</span></div>${getDeltaHTML(dpkCurr - dpkPrev, false, false, true)}</div>`);
 
             if(Object.keys(dep).length > 0) {
                 renderUniversalList('list_dep_saldo_top', dep.top_saldo, 'nama_cabang', 'saldo_curr', 'noa_curr', 'bg-yellow-500', false, 'Rek');
@@ -803,6 +826,10 @@
                 document.getElementById('delta_makro_pendapatan').innerHTML = getNominalAndPercentHTML(m.pendapatan?.nominal_bulan_lalu, m.pendapatan?.growth_mom);
                 document.getElementById('txt_makro_biaya').textContent = `Rp ${fmtB(m.biaya?.nominal_aktual)}`;
                 document.getElementById('delta_makro_biaya').innerHTML = getNominalAndPercentHTML(m.biaya?.nominal_bulan_lalu, m.biaya?.growth_mom, true);
+                if(m.dpk) {
+                    setText('kpi_dpk', `Rp ${fmtB(m.dpk.nominal_aktual)}`);
+                    setHtml('kpi_dpk_pill', `<div class="flex gap-2"><div class="bg-gray-100 px-2 py-0.5 rounded text-[11px] text-gray-500">Closing: <span class="text-gray-900">Rp ${fmtB(m.dpk.nominal_bulan_lalu)}</span></div>${getDeltaHTML((m.dpk.nominal_aktual || 0) - (m.dpk.nominal_bulan_lalu || 0), false, false, true)}</div>`);
+                }
             }
             if(kRaw && kRaw.rasio) {
                 let r = kRaw.rasio;
@@ -1143,16 +1170,26 @@
             if(!data || !Array.isArray(data.weeks) || !data.weeks.length) return;
 
             const latest = data.summary || {};
+            const previous = latest.previous || {};
+            const previousClosing = latest.previous_closing || previous || {};
+            const labaNet = Number(latest.laba_net) || 0;
+            const pajakLaba = Number(latest.pajak_laba ?? (labaNet * 0.22)) || 0;
+            const labaSetelahPajak = Number(latest.laba_setelah_pajak ?? (labaNet - pajakLaba)) || 0;
             setText('txt_tren_weekly_period', `${data.periode?.start || '-'} s/d ${data.periode?.end || '-'}`);
             setText('txt_tren_weekly_date', `Posisi data terakhir: ${latest.tanggal || currDate || '-'}`);
+            setText('txt_tren_laba_net', `Rp ${fmtB(labaSetelahPajak)}`);
+            setHtml('txt_tren_laba_net_detail', `
+                <div>Laba saat ini: <span class="font-black text-gray-700">Rp ${fmtB(labaNet)}</span></div>
+                <div>Pajak 22%: <span class="font-black text-red-500">Rp ${fmtB(pajakLaba)}</span></div>
+            `);
             setText('summary_tren_aset', `Rp ${fmtB(latest.aset_gabungan)}`);
             setText('summary_tren_kredit', `Rp ${fmtB(latest.kredit_baki_debet)}`);
             setText('summary_tren_dpk', `Rp ${fmtB(latest.dpk)}`);
             setText('summary_tren_laba', `Rp ${fmtB(latest.laba_net)}`);
-            setHtml('delta_tren_aset', getDeltaHTML(latest.growth_aset, true, false, true));
-            setHtml('delta_tren_kredit', getDeltaHTML(latest.growth_kredit, true, false, true));
-            setHtml('delta_tren_dpk', getDeltaHTML(latest.growth_dpk, true, false, true));
-            setHtml('delta_tren_laba', getDeltaHTML(latest.growth_laba, true, false, true));
+            setHtml('delta_tren_aset', getTrendSummaryDetailHTML(previousClosing.aset_gabungan, latest.delta_closing_aset ?? latest.delta_aset, latest.growth_closing_aset ?? latest.growth_aset, 'text-sky-900'));
+            setHtml('delta_tren_kredit', getTrendSummaryDetailHTML(previousClosing.kredit_baki_debet, latest.delta_closing_kredit ?? latest.delta_kredit, latest.growth_closing_kredit ?? latest.growth_kredit, 'text-emerald-900'));
+            setHtml('delta_tren_dpk', getTrendSummaryDetailHTML(previousClosing.dpk, latest.delta_closing_dpk ?? latest.delta_dpk, latest.growth_closing_dpk ?? latest.growth_dpk, 'text-violet-900'));
+            setHtml('delta_tren_laba', getTrendSummaryDetailHTML(previousClosing.laba_net, latest.delta_closing_laba ?? latest.delta_laba, latest.growth_closing_laba ?? latest.growth_laba, 'text-amber-900'));
             const theme = tvChartTheme();
 
             const labels = data.weeks.map(d => d.label);
@@ -1161,17 +1198,19 @@
             const dataDpk = data.weeks.map(d => Number(d.dpk) || 0);
             const dataLaba = data.weeks.map(d => Number(d.laba_net) || 0);
 
-            const buildMiniInfo = (arr, growth, mode = 'nominal') => {
+            const buildMiniInfo = (arr, growth, delta, mode = 'nominal') => {
                 const active = arr.filter(v => Number(v || 0) !== 0);
                 const lastVal = active.length ? active[active.length - 1] : 0;
                 const lastText = mode === 'percent' ? pct(lastVal) : `Rp ${fmtB(lastVal)}`;
-                const growthHtml = getDeltaHTML(growth, true, false, true);
-                return `<div class="mb-0.5">${lastText}</div><div>${growthHtml}</div>`;
+                const deltaNum = Number(delta || 0);
+                const deltaColor = deltaNum > 0 ? 'text-green-600' : (deltaNum < 0 ? 'text-red-500' : 'text-gray-500');
+                const deltaIcon = deltaNum > 0 ? '▲' : (deltaNum < 0 ? '▼' : '');
+                return `<div class="mb-0.5">${lastText}</div><div class="${deltaColor} font-black">${deltaIcon} Rp ${fmtB(Math.abs(deltaNum))} (${pct(Math.abs(growth || 0))})</div>`;
             };
-            setHtml('mini_tren_aset', buildMiniInfo(dataAset, latest.growth_aset));
-            setHtml('mini_tren_kredit', buildMiniInfo(dataKredit, latest.growth_kredit));
-            setHtml('mini_tren_dpk', buildMiniInfo(dataDpk, latest.growth_dpk));
-            setHtml('mini_tren_laba', buildMiniInfo(dataLaba, latest.growth_laba));
+            setHtml('mini_tren_aset', buildMiniInfo(dataAset, latest.growth_aset, latest.delta_aset));
+            setHtml('mini_tren_kredit', buildMiniInfo(dataKredit, latest.growth_kredit, latest.delta_kredit));
+            setHtml('mini_tren_dpk', buildMiniInfo(dataDpk, latest.growth_dpk, latest.delta_dpk));
+            setHtml('mini_tren_laba', buildMiniInfo(dataLaba, latest.growth_laba, latest.delta_laba));
 
             const valueLabelPlugin = {
                 id: 'tvMiniMakroLabels',
@@ -1234,7 +1273,15 @@
                                     afterBody: c => {
                                         if(!c.length) return [];
                                         const item = data.weeks[c[0].dataIndex] || {};
+                                        const idx = c[0].dataIndex;
+                                        const currentVal = Number(series[idx] || 0);
+                                        const previousVal = idx > 0 ? Number(series[idx - 1] || 0) : 0;
+                                        const deltaVal = idx > 0 ? currentVal - previousVal : 0;
+                                        const growthVal = idx > 0 && previousVal !== 0 ? ((deltaVal / Math.abs(previousVal)) * 100) : (currentVal === 0 ? 0 : 100);
+                                        const trendText = deltaVal > 0 ? 'Naik' : (deltaVal < 0 ? 'Turun' : 'Tetap');
+                                        const sign = deltaVal > 0 ? '+' : (deltaVal < 0 ? '-' : '');
                                         return [
+                                            idx > 0 ? `${trendText}: ${sign}Rp ${fmtB(Math.abs(deltaVal))} (${pct(Math.abs(growthVal))})` : 'Pekan awal: belum ada pembanding',
                                             `Tanggal data: ${item.tanggal || '-'}`,
                                             item.keterangan ? `Rentang: ${item.keterangan}` : ''
                                         ].filter(Boolean);
@@ -1254,7 +1301,7 @@
             chartTrendAsetInstance = renderSingleTrendChart('canvasTrendAset', chartTrendAsetInstance, 'Aset Gabungan', dataAset, '#0284c7', 'rgba(2,132,199,0.10)');
             chartTrendKreditInstance = renderSingleTrendChart('canvasTrendKredit', chartTrendKreditInstance, 'Kredit Baki Debet', dataKredit, '#10b981', 'rgba(16,185,129,0.10)');
             chartTrendDpkInstance = renderSingleTrendChart('canvasTrendDpk', chartTrendDpkInstance, 'DPK', dataDpk, '#8b5cf6', 'rgba(139,92,246,0.10)');
-            chartTrendLabaInstance = renderSingleTrendChart('canvasTrendLaba', chartTrendLabaInstance, 'Laba Net', dataLaba, '#f59e0b', 'rgba(245,158,11,0.10)');
+            chartTrendLabaInstance = renderSingleTrendChart('canvasTrendLaba', chartTrendLabaInstance, 'Laba', dataLaba, '#f59e0b', 'rgba(245,158,11,0.10)');
         } catch (error) {
             console.error('Gagal memuat tren makro TV:', error, payload);
         } finally {

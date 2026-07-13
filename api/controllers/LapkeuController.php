@@ -371,6 +371,9 @@ class LaporanKeuanganController
             $monthStart = $baseDateObj->format('Y-m-01');
             $monthEnd = $baseDateObj->format('Y-m-t');
             $effectiveEnd = min($baseDate, $monthEnd);
+            $closingDateObj = clone $baseDateObj;
+            $closingDateObj->modify('last day of previous month');
+            $closingDate = $closingDateObj->format('Y-m-d');
 
             $sqlKantor = '';
             $params = [
@@ -394,7 +397,7 @@ class LaporanKeuanganController
                 '107','108','109','110','11102','112','113','116','117','118','119','120','121'
             ];
             $asetQuoted = implode(',', array_map('intval', $asetCodes));
-            $trackedCodes = array_merge($asetCodes, ['210', '204', '4', '5']);
+            $trackedCodes = array_merge($asetCodes, ['210', '20401', '20402', '4', '5']);
             $trackedQuoted = implode(',', array_map('intval', array_unique($trackedCodes)));
 
             $sql = "
@@ -403,7 +406,7 @@ class LaporanKeuanganController
                     SUM(CASE WHEN kode_perk IN ($asetQuoted) THEN saldo_akhir ELSE 0 END)
                     - SUM(CASE WHEN kode_perk = 210 THEN saldo_akhir ELSE 0 END) AS aset_gabungan,
                     SUM(CASE WHEN kode_perk = 10601 THEN saldo_akhir ELSE 0 END) AS kredit_baki_debet,
-                    SUM(CASE WHEN kode_perk = 204 THEN saldo_akhir ELSE 0 END) AS dpk,
+                    SUM(CASE WHEN kode_perk IN (20401, 20402) THEN saldo_akhir ELSE 0 END) AS dpk,
                     SUM(CASE WHEN kode_perk = 4 THEN saldo_akhir ELSE 0 END)
                     - SUM(CASE WHEN kode_perk = 5 THEN saldo_akhir ELSE 0 END) AS laba_net
                 FROM acc_history
@@ -417,6 +420,38 @@ class LaporanKeuanganController
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $closingParams = [':closing_date' => $closingDate];
+            if ($korwilRange) {
+                $closingParams[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $closingParams[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
+            } elseif (strtolower($kodeKantorReq) !== 'konsolidasi') {
+                $closingParams[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
+            }
+
+            $sqlClosing = "
+                SELECT
+                    SUM(CASE WHEN kode_perk IN ($asetQuoted) THEN saldo_akhir ELSE 0 END)
+                    - SUM(CASE WHEN kode_perk = 210 THEN saldo_akhir ELSE 0 END) AS aset_gabungan,
+                    SUM(CASE WHEN kode_perk = 10601 THEN saldo_akhir ELSE 0 END) AS kredit_baki_debet,
+                    SUM(CASE WHEN kode_perk IN (20401, 20402) THEN saldo_akhir ELSE 0 END) AS dpk,
+                    SUM(CASE WHEN kode_perk = 4 THEN saldo_akhir ELSE 0 END)
+                    - SUM(CASE WHEN kode_perk = 5 THEN saldo_akhir ELSE 0 END) AS laba_net
+                FROM acc_history
+                WHERE tanggal = :closing_date
+                  $sqlKantor
+                  AND kode_perk IN ($trackedQuoted)
+            ";
+            $stmtClosing = $this->pdo->prepare($sqlClosing);
+            $stmtClosing->execute($closingParams);
+            $closingRow = $stmtClosing->fetch(PDO::FETCH_ASSOC) ?: [];
+            $previousClosing = [
+                'tanggal' => $closingDate,
+                'aset_gabungan' => (float) ($closingRow['aset_gabungan'] ?? 0),
+                'kredit_baki_debet' => (float) ($closingRow['kredit_baki_debet'] ?? 0),
+                'dpk' => (float) ($closingRow['dpk'] ?? 0),
+                'laba_net' => (float) ($closingRow['laba_net'] ?? 0),
+            ];
 
             $rowsByWeek = [];
             foreach ($rows as $row) {
@@ -476,10 +511,33 @@ class LaporanKeuanganController
                 'kredit_baki_debet' => $latest['kredit_baki_debet'],
                 'dpk' => $latest['dpk'],
                 'laba_net' => $latest['laba_net'],
+                'laba_setelah_pajak' => $latest['laba_net'] - ($latest['laba_net'] * 0.22),
+                'pajak_laba' => $latest['laba_net'] * 0.22,
+                'previous' => [
+                    'label' => $previous['label'] ?? null,
+                    'tanggal' => $previous['tanggal'] ?? null,
+                    'aset_gabungan' => $previous['aset_gabungan'] ?? 0,
+                    'kredit_baki_debet' => $previous['kredit_baki_debet'] ?? 0,
+                    'dpk' => $previous['dpk'] ?? 0,
+                    'laba_net' => $previous['laba_net'] ?? 0,
+                ],
+                'previous_closing' => $previousClosing,
+                'delta_aset' => $latest['aset_gabungan'] - ($previous['aset_gabungan'] ?? 0),
+                'delta_kredit' => $latest['kredit_baki_debet'] - ($previous['kredit_baki_debet'] ?? 0),
+                'delta_dpk' => $latest['dpk'] - ($previous['dpk'] ?? 0),
+                'delta_laba' => $latest['laba_net'] - ($previous['laba_net'] ?? 0),
+                'delta_closing_aset' => $latest['aset_gabungan'] - $previousClosing['aset_gabungan'],
+                'delta_closing_kredit' => $latest['kredit_baki_debet'] - $previousClosing['kredit_baki_debet'],
+                'delta_closing_dpk' => $latest['dpk'] - $previousClosing['dpk'],
+                'delta_closing_laba' => $latest['laba_net'] - $previousClosing['laba_net'],
                 'growth_aset' => $calcGrowth($latest['aset_gabungan'], $previous['aset_gabungan'] ?? 0),
                 'growth_kredit' => $calcGrowth($latest['kredit_baki_debet'], $previous['kredit_baki_debet'] ?? 0),
                 'growth_dpk' => $calcGrowth($latest['dpk'], $previous['dpk'] ?? 0),
                 'growth_laba' => $calcGrowth($latest['laba_net'], $previous['laba_net'] ?? 0),
+                'growth_closing_aset' => $calcGrowth($latest['aset_gabungan'], $previousClosing['aset_gabungan']),
+                'growth_closing_kredit' => $calcGrowth($latest['kredit_baki_debet'], $previousClosing['kredit_baki_debet']),
+                'growth_closing_dpk' => $calcGrowth($latest['dpk'], $previousClosing['dpk']),
+                'growth_closing_laba' => $calcGrowth($latest['laba_net'], $previousClosing['laba_net']),
             ] : null;
 
             $scopeLabel = $korwilRange ? ('KORWIL ' . $korwilReq) : strtoupper($kodeKantorReq);
@@ -493,7 +551,7 @@ class LaporanKeuanganController
                 'formula' => [
                     'aset_gabungan' => "101 + 102 + 103 + 104 + 105 + 10601 + 10602 + 10604 + 10605 + 10606 + 107 + 108 + 109 + 110 + 11102 + 112 + 113 + 116 + 117 + 118 + 119 + 120 + 121 - 210",
                     'kredit_baki_debet' => "10601",
-                    'dpk' => "204",
+                    'dpk' => "20401 + 20402",
                     'laba_net' => "4 - 5",
                 ],
                 'summary' => $summary,
@@ -756,10 +814,16 @@ class LaporanKeuanganController
             }
 
             // 3. Query Super Cepat: Tarik Akun Makro (1-5) & Akun Mikro Pembentuk Rasio
+            $asetCodes = [
+                '101','102','103','104','105','10601','10602','10604','10605','10606',
+                '107','108','109','110','11102','112','113','116','117','118','119','120','121'
+            ];
+            $asetIn = "'" . implode("','", $asetCodes) . "'";
             $sql = "
                 SELECT 
                     tanggal,
-                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '1' THEN saldo_akhir ELSE 0 END) AS aset,
+                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) IN ($asetIn) THEN saldo_akhir ELSE 0 END)
+                    - SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '210' THEN saldo_akhir ELSE 0 END) AS aset,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '2' THEN saldo_akhir ELSE 0 END) AS kewajiban,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '3' THEN saldo_akhir ELSE 0 END) AS ekuitas,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '101' THEN saldo_akhir ELSE 0 END) AS kas,
@@ -770,6 +834,7 @@ class LaporanKeuanganController
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '106' THEN saldo_akhir ELSE 0 END) AS kredit,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '20401' THEN saldo_akhir ELSE 0 END) AS tabungan,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '20402' THEN saldo_akhir ELSE 0 END) AS deposito,
+                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) IN ('20401', '20402') THEN saldo_akhir ELSE 0 END) AS dpk,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '401' THEN saldo_akhir ELSE 0 END) AS pend_ops,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '501' THEN saldo_akhir ELSE 0 END) AS biaya_ops
                 FROM acc_history
@@ -783,7 +848,7 @@ class LaporanKeuanganController
 
             // 4. Mapping Data berdasarkan Tanggal (Siapkan default 0)
             $defaultData = [
-                'aset' => 0, 'kewajiban' => 0, 'ekuitas' => 0, 'pendapatan' => 0, 'biaya' => 0,
+                'aset' => 0, 'kewajiban' => 0, 'ekuitas' => 0, 'pendapatan' => 0, 'biaya' => 0, 'dpk' => 0,
                 'kredit' => 0, 'tabungan' => 0, 'deposito' => 0, 'pend_ops' => 0, 'biaya_ops' => 0,
                 'kas' => 0, 'penempatan_bank' => 0, 'kewajiban_segera' => 0
             ];
@@ -799,6 +864,7 @@ class LaporanKeuanganController
                 foreach ($defaultData as $key => $val) {
                     $dataMap[$tgl][$key] = (float) $row[$key];
                 }
+                $dataMap[$tgl]['dpk'] = ((float) ($row['tabungan'] ?? 0)) + ((float) ($row['deposito'] ?? 0));
             }
 
             // 5. Fungsi Helper Buat Ngitung Pertumbuhan Nominal (%)
@@ -853,6 +919,18 @@ class LaporanKeuanganController
                 'nominal_tahun_lalu' => $lrPrevY,
                 'growth_mom'         => $calculateGrowth($lrCurr, $lrPrevM),
                 'growth_yoy'         => $calculateGrowth($lrCurr, $lrPrevY)
+            ];
+
+            $dpkCurr  = $dataMap[$dateCurrent]['tabungan'] + $dataMap[$dateCurrent]['deposito'];
+            $dpkPrevM = $dataMap[$dateLastMonth]['tabungan'] + $dataMap[$dateLastMonth]['deposito'];
+            $dpkPrevY = $dataMap[$dateLastYear]['tabungan'] + $dataMap[$dateLastYear]['deposito'];
+
+            $summaryData['dpk'] = [
+                'nominal_aktual'     => $dpkCurr,
+                'nominal_bulan_lalu' => $dpkPrevM,
+                'nominal_tahun_lalu' => $dpkPrevY,
+                'growth_mom'         => $calculateGrowth($dpkCurr, $dpkPrevM),
+                'growth_yoy'         => $calculateGrowth($dpkCurr, $dpkPrevY)
             ];
 
             // 7. Format Response Rasio Kesehatan (Khusus Persentase)

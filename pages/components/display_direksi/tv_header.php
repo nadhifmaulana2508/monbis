@@ -58,6 +58,8 @@
                     <option value="konsolidasi">Memuat kantor...</option>
                 </select>
             </div>
+
+            <div id="tv_filter_apply_status" class="tv-filter-apply-status hidden">Apply 4 detik...</div>
         </div>
     </div>
 </div>
