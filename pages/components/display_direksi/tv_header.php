@@ -13,6 +13,17 @@
                 <span id="theme_icon_panel" class="text-lg leading-none">◐</span>
             </button>
 
+            <div class="tv-zoom-control" title="Zoom tampilan slide">
+                <span>Zoom</span>
+                <button type="button" class="tv-zoom-btn" onclick="adjustTvZoom(-5)" aria-label="Zoom out">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"/></svg>
+                </button>
+                <button type="button" id="tv_zoom_value" class="tv-zoom-value" onclick="resetTvZoom()" title="Reset zoom">100%</button>
+                <button type="button" class="tv-zoom-btn" onclick="adjustTvZoom(5)" aria-label="Zoom in">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+                </button>
+            </div>
+
             <div class="tv-field">
                 <span>Layar</span>
                 <button type="button" id="tv_screen_profile_trigger" class="tv-field-trigger" data-select-target="tv_screen_profile">SD - 854 x 480</button>
@@ -50,6 +61,19 @@
         </div>
     </div>
 </div>
+
+<button type="button" id="tvHeaderToggle" class="tv-header-toggle" onclick="toggleTvHeaderChrome()" title="Sembunyikan kontrol layar" aria-label="Sembunyikan kontrol layar">
+    <svg id="tvHeaderToggleIconOpen" xmlns="http://www.w3.org/2000/svg" class="tv-header-eye tv-header-eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/>
+        <circle cx="12" cy="12" r="3"/>
+    </svg>
+    <svg id="tvHeaderToggleIconClosed" xmlns="http://www.w3.org/2000/svg" class="tv-header-eye tv-header-eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m3 3 18 18"/>
+        <path d="M10.6 10.6A2 2 0 0 0 12 14a2 2 0 0 0 1.4-.6"/>
+        <path d="M9.9 4.2A10.6 10.6 0 0 1 12 4c6.5 0 10 8 10 8a18.5 18.5 0 0 1-3.2 4.4"/>
+        <path d="M6.1 6.1C3.5 7.9 2 12 2 12s3.5 8 10 8a10.5 10.5 0 0 0 4.1-.8"/>
+    </svg>
+</button>
 
 <div class="tv-slide-controls">
     <button onclick="prevTvSlide()" class="tv-slide-btn" title="Slide Sebelumnya">

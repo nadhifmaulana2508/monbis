@@ -182,11 +182,14 @@
         harian_date: '',
         filter_mode: 'konsolidasi',
         kantor: 'konsolidasi',
-        screen_profile: 'tv_sd'
+        screen_profile: 'tv_sd',
+        zoom: 100
     };
     const TV_KORWIL = ['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'];
     const TV_STORAGE_KEYS = {
-        kantor: 'tv_filter_kantor'
+        kantor: 'tv_filter_kantor',
+        header_hidden: 'tv_header_hidden',
+        zoom: 'tv_display_zoom'
     };
     const TV_SCREEN_PROFILES = {
         auto: { layout: 'auto' },
@@ -237,6 +240,54 @@
         const box = document.getElementById('tvFloatingControls');
         if(!box) return;
         box.classList.toggle('is-open');
+    }
+
+    function syncTvHeaderToggle() {
+        const hidden = document.body.classList.contains('tv-header-hidden');
+        const btn = document.getElementById('tvHeaderToggle');
+        if(btn) {
+            const label = hidden ? 'Tampilkan kontrol layar' : 'Sembunyikan kontrol layar';
+            btn.title = label;
+            btn.setAttribute('aria-label', label);
+        }
+    }
+
+    function setTvHeaderChromeHidden(hidden) {
+        document.body.classList.toggle('tv-header-hidden', hidden);
+        if(hidden) closeTvControlsNow();
+        localStorage.setItem(TV_STORAGE_KEYS.header_hidden, hidden ? '1' : '0');
+        syncTvHeaderToggle();
+        scheduleTvFit(120);
+    }
+
+    function toggleTvHeaderChrome() {
+        setTvHeaderChromeHidden(!document.body.classList.contains('tv-header-hidden'));
+    }
+
+    function clampTvZoom(value) {
+        const num = Number(value);
+        if(!Number.isFinite(num)) return 100;
+        return Math.max(70, Math.min(120, Math.round(num / 5) * 5));
+    }
+
+    function syncTvZoomControl() {
+        const value = document.getElementById('tv_zoom_value');
+        if(value) value.textContent = `${TV_CONFIG.zoom || 100}%`;
+    }
+
+    function setTvZoom(value) {
+        TV_CONFIG.zoom = clampTvZoom(value);
+        localStorage.setItem(TV_STORAGE_KEYS.zoom, String(TV_CONFIG.zoom));
+        syncTvZoomControl();
+        scheduleTvFit(60);
+    }
+
+    function adjustTvZoom(delta) {
+        setTvZoom((TV_CONFIG.zoom || 100) + Number(delta || 0));
+    }
+
+    function resetTvZoom() {
+        setTvZoom(100);
     }
 
     function getTodayRealtimeTV() {
@@ -460,7 +511,9 @@
                 const contentHeight = measured.height;
                 const scaleX = slideRect.width / Math.max(contentWidth, 1);
                 const scaleY = slideRect.height / Math.max(contentHeight, 1);
-                const nextScale = Math.max(0.56, Math.min(1, scaleX, scaleY) * 0.985);
+                const autoScale = Math.max(0.56, Math.min(1, scaleX, scaleY) * 0.985);
+                const manualScale = clampTvZoom(TV_CONFIG.zoom || 100) / 100;
+                const nextScale = Math.max(0.48, Math.min(1.2, autoScale * manualScale));
                 fit.style.setProperty('--tv-fit-scale', String(nextScale));
 
                 setTimeout(() => {
@@ -600,9 +653,12 @@
         if(savedKantor) TV_CONFIG.kantor = savedKantor;
 
         TV_CONFIG.screen_profile = localStorage.getItem('tv_screen_profile') || 'tv_sd';
+        TV_CONFIG.zoom = clampTvZoom(localStorage.getItem(TV_STORAGE_KEYS.zoom) || 100);
         await loadTvKantorOptions();
         syncTvFilterControls();
+        syncTvZoomControl();
         applyTvScreenProfile();
+        setTvHeaderChromeHidden(localStorage.getItem(TV_STORAGE_KEYS.header_hidden) === '1');
         bindTvFilterEvents();
 
         document.getElementById('loadingDash').classList.add('hidden');
