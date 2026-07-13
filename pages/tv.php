@@ -65,7 +65,16 @@
         padding-bottom: var(--tv-wrapper-padding-y) !important;
     }
     .tv-slide { height: 100%; }
-    .tv-fit { height: 100%; min-height: 0; overflow: hidden; }
+    .tv-fit {
+        --tv-fit-scale: 1;
+        height: calc(100% / var(--tv-fit-scale));
+        width: calc(100% / var(--tv-fit-scale));
+        min-height: 0;
+        overflow: hidden;
+        transform: scale(var(--tv-fit-scale));
+        transform-origin: top left;
+        will-change: transform;
+    }
     .tv-card { min-height: 0; overflow: hidden; color: #111827; }
     .tv-list { min-height: 0; overflow: hidden; }
     .tv-chart { min-height: 0; height: 100%; }
@@ -501,8 +510,10 @@
     body.tv-mobile-layout .tv-slide:not(.pointer-events-none) { display: block; }
     body.tv-mobile-layout .tv-fit {
         height: auto !important;
+        width: auto !important;
         min-height: auto;
         overflow: visible !important;
+        transform: none !important;
     }
     body.tv-mobile-layout .tv-card,
     body.tv-mobile-layout .tv-list {
@@ -589,8 +600,10 @@
         body:not(.tv-desktop-layout) .tv-slide:not(.pointer-events-none) { display: block; }
         body:not(.tv-desktop-layout) .tv-fit {
             height: auto !important;
+            width: auto !important;
             min-height: auto;
             overflow: visible !important;
+            transform: none !important;
         }
         body:not(.tv-desktop-layout) .tv-card,
         body:not(.tv-desktop-layout) .tv-list {

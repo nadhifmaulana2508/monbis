@@ -45,6 +45,7 @@
 
         const indicator = document.getElementById('slide_indicator');
         if(indicator) indicator.innerText = `${currentSlide + 1} / ${totalSlides}`;
+        scheduleTvFit();
     }
 
     function nextTvSlide() {
@@ -211,6 +212,7 @@
     let tvControlCloseTimer = null;
     let tvActiveSelectModalId = null;
     let tvInitialHarianDate = null;
+    let tvFitTimer = null;
 
     const apiCall = (url, opt={}) => fetch(url, opt);
 
@@ -408,6 +410,68 @@
         return window.innerWidth <= 1023 ? 'mobile' : 'desktop';
     }
 
+    function scheduleTvFit(delay = 80) {
+        if(tvFitTimer) clearTimeout(tvFitTimer);
+        tvFitTimer = setTimeout(fitTvSlides, delay);
+    }
+
+    function measureTvFitContent(fit) {
+        const fitRect = fit.getBoundingClientRect();
+        let contentWidth = Math.max(fit.scrollWidth, fit.offsetWidth);
+        let contentHeight = Math.max(fit.scrollHeight, fit.offsetHeight);
+
+        fit.querySelectorAll('*').forEach(el => {
+            if(el.offsetParent === null && getComputedStyle(el).position !== 'fixed') return;
+            const rect = el.getBoundingClientRect();
+            if(!rect.width && !rect.height) return;
+            contentWidth = Math.max(contentWidth, rect.right - fitRect.left + fit.scrollLeft);
+            contentHeight = Math.max(contentHeight, rect.bottom - fitRect.top + fit.scrollTop);
+        });
+
+        return { width: contentWidth, height: contentHeight };
+    }
+
+    function fitTvSlides() {
+        const slides = document.querySelectorAll('.tv-slide');
+        if(!slides.length) return;
+
+        if(getTvResolvedLayout() !== 'desktop') {
+            slides.forEach(slide => {
+                const fit = slide.querySelector('.tv-fit');
+                if(fit) fit.style.setProperty('--tv-fit-scale', '1');
+            });
+            return;
+        }
+
+        slides.forEach((slide, index) => {
+            const fit = slide.querySelector('.tv-fit');
+            if(!fit) return;
+            fit.style.setProperty('--tv-fit-scale', '1');
+
+            if(index !== currentSlide) return;
+
+            requestAnimationFrame(() => {
+                const slideRect = slide.getBoundingClientRect();
+                if(!slideRect.width || !slideRect.height) return;
+
+                fit.style.setProperty('--tv-fit-scale', '1');
+                const measured = measureTvFitContent(fit);
+                const contentWidth = measured.width;
+                const contentHeight = measured.height;
+                const scaleX = slideRect.width / Math.max(contentWidth, 1);
+                const scaleY = slideRect.height / Math.max(contentHeight, 1);
+                const nextScale = Math.max(0.56, Math.min(1, scaleX, scaleY) * 0.985);
+                fit.style.setProperty('--tv-fit-scale', String(nextScale));
+
+                setTimeout(() => {
+                    [chartTrenInstance, chartRunoffInstance, chartTrendAsetInstance, chartTrendKreditInstance, chartTrendDpkInstance, chartTrendLabaInstance]
+                        .filter(Boolean)
+                        .forEach(chart => chart.resize());
+                }, 60);
+            });
+        });
+    }
+
     function applyTvScreenProfile() {
         const profileKey = TV_CONFIG.screen_profile || 'auto';
         const profile = TV_SCREEN_PROFILES[profileKey] || TV_SCREEN_PROFILES.auto;
@@ -444,6 +508,7 @@
             document.body.style.overflowX = 'hidden';
             document.body.style.overflowY = 'auto';
         }
+        scheduleTvFit();
     }
 
     function handleTvScreenProfileChange() {
@@ -605,9 +670,19 @@
         const pSummaryMakro = fetchWidgetDataTV('summary_perbandingan');
         const pHealthKpi    = fetchWidgetDataTV('financial_kpi');
         
-        fetchTrenPortoTV();
-        fetchTrenRunoffTV();
-        fetchTrenCoaTV();
+        scheduleTvFit(120);
+        const pChartPorto = fetchTrenPortoTV();
+        const pChartRunoff = fetchTrenRunoffTV();
+        const pChartCoa = fetchTrenCoaTV();
+        Promise.allSettled([
+            pSaldoBank, pRealProduk, pTrenNpl, pRrCabang, pRunoffKorwil, pFlowKorwil,
+            pTopReal, pTopNpl, pDeltaNpl, pDeposito, pTabungan, pSummaryMakro, pHealthKpi,
+            pChartPorto, pChartRunoff, pChartCoa
+        ]).then(() => {
+            scheduleTvFit(80);
+            setTimeout(fitTvSlides, 450);
+            setTimeout(fitTvSlides, 1200);
+        });
 
         pSaldoBank.then(sb => {
             if(!sb) return;
@@ -1189,6 +1264,7 @@
         if((TV_CONFIG.screen_profile || 'auto') === 'auto') {
             applyTvScreenProfile();
         }
+        scheduleTvFit(120);
     });
 
     // ==========================================
