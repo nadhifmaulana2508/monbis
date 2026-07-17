@@ -87,6 +87,53 @@
     .tv-list { min-height: 0; overflow: hidden; }
     .tv-chart { min-height: 0; height: 100%; }
     .tv-chart canvas { display: block; width: 100% !important; height: 100% !important; }
+    .tv-makro-slide { min-height: 0; overflow: hidden; }
+    .tv-makro-kpi-grid { min-height: 0; }
+    .tv-makro-kpi { min-height: 5.15rem; }
+    .tv-makro-kpi [id$="_pill"] > div {
+        flex-wrap: nowrap;
+        min-width: 0;
+        gap: .35rem !important;
+        overflow: hidden;
+    }
+    .tv-makro-kpi [id$="_pill"] .bg-gray-100 {
+        min-width: 0;
+        max-width: 68%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .tv-makro-main-grid {
+        min-height: 0;
+        grid-template-rows: minmax(0, 1fr);
+    }
+    .tv-makro-panel {
+        min-height: 0;
+        height: 100%;
+    }
+    .tv-makro-summary-list {
+        display: grid;
+        grid-template-rows: repeat(4, minmax(0, 1fr));
+        gap: .5rem;
+        height: 100%;
+    }
+    .tv-makro-summary-list > div { margin-bottom: 0 !important; }
+    .tv-makro-summary-item {
+        min-height: 0;
+        overflow: hidden;
+    }
+    .tv-makro-summary-item > div:first-child { min-width: 0; }
+    .tv-makro-summary-item p { line-height: 1.1; }
+    .tv-makro-ratio-grid {
+        min-height: 0;
+        height: 100%;
+        grid-template-rows: repeat(2, minmax(0, 1fr));
+    }
+    .tv-ratio-card { min-height: 0; overflow: hidden; }
+    .tv-ratio-card > div {
+        align-items: flex-end;
+        min-width: 0;
+    }
     .tv-makro-detail-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -956,6 +1003,21 @@
         height: 260px;
         min-height: 260px;
     }
+    body.tv-mobile-layout .tv-makro-slide,
+    body.tv-mobile-layout .tv-makro-panel,
+    body.tv-mobile-layout .tv-makro-summary-list,
+    body.tv-mobile-layout .tv-makro-ratio-grid {
+        height: auto !important;
+        min-height: auto !important;
+    }
+    body.tv-mobile-layout .tv-makro-main-grid,
+    body.tv-mobile-layout .tv-makro-ratio-grid {
+        grid-template-columns: 1fr !important;
+        grid-template-rows: none !important;
+    }
+    body.tv-mobile-layout .tv-makro-summary-list {
+        display: block;
+    }
     body.tv-mobile-layout .tv-floating-controls,
     body.tv-mobile-layout .tv-slide-controls {
         position: fixed;
@@ -994,6 +1056,76 @@
     body.tv-desktop-layout .md\:gap-4 { gap: 1rem !important; }
     body.tv-desktop-layout .md\:gap-5 { gap: 1.25rem !important; }
     body.tv-desktop-layout .md\:gap-6 { gap: 1.5rem !important; }
+    body.tv-desktop-layout .tv-makro-slide {
+        display: grid !important;
+        grid-template-rows: auto minmax(0, 1fr);
+        gap: .75rem !important;
+    }
+    body.tv-desktop-layout .tv-makro-kpi-grid {
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+        gap: .65rem !important;
+    }
+    body.tv-desktop-layout .tv-makro-kpi {
+        grid-column: span 1 / span 1 !important;
+        padding: .72rem .82rem !important;
+        min-height: 4.85rem;
+    }
+    body.tv-desktop-layout .tv-makro-kpi h3 {
+        font-size: clamp(1rem, 1.8vw, 1.38rem) !important;
+        line-height: 1.05 !important;
+        margin-bottom: .35rem !important;
+    }
+    body.tv-desktop-layout .tv-makro-kpi p {
+        font-size: .56rem !important;
+        line-height: 1.05 !important;
+    }
+    body.tv-desktop-layout .tv-makro-main-grid {
+        grid-template-columns: minmax(0, 3fr) minmax(0, 5.5fr) minmax(0, 3.5fr) !important;
+        gap: .75rem !important;
+    }
+    body.tv-desktop-layout .tv-makro-main-grid > .tv-card {
+        grid-column: auto !important;
+        padding: .85rem !important;
+    }
+    body.tv-desktop-layout .tv-makro-panel h3 {
+        font-size: .72rem !important;
+        line-height: 1.12 !important;
+        margin-bottom: .55rem !important;
+        padding-bottom: .45rem !important;
+    }
+    body.tv-desktop-layout .tv-makro-summary-list {
+        gap: .45rem !important;
+    }
+    body.tv-desktop-layout .tv-makro-summary-item {
+        padding: .48rem .55rem !important;
+    }
+    body.tv-desktop-layout .tv-makro-summary-item p:first-child {
+        font-size: .55rem !important;
+    }
+    body.tv-desktop-layout .tv-makro-summary-item p:last-child {
+        font-size: .78rem !important;
+        line-height: 1.05 !important;
+        white-space: nowrap;
+    }
+    body.tv-desktop-layout .tv-makro-ratio-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        gap: .55rem !important;
+    }
+    body.tv-desktop-layout .tv-ratio-card {
+        padding: .56rem .62rem !important;
+        border-radius: .65rem !important;
+    }
+    body.tv-desktop-layout .tv-ratio-card span[id^="txt_rasio_"] {
+        font-size: clamp(.92rem, 1.45vw, 1.16rem) !important;
+        line-height: 1.05 !important;
+    }
+    body.tv-desktop-layout .tv-ratio-card > span:first-child {
+        font-size: .52rem !important;
+        line-height: 1.05 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
 
     @media (max-width: 1023px) {
         body:not(.tv-desktop-layout) {
@@ -1065,6 +1197,21 @@
         body:not(.tv-desktop-layout) .tv-trend-panel .tv-chart {
             height: 260px;
             min-height: 260px;
+        }
+        body:not(.tv-desktop-layout) .tv-makro-slide,
+        body:not(.tv-desktop-layout) .tv-makro-panel,
+        body:not(.tv-desktop-layout) .tv-makro-summary-list,
+        body:not(.tv-desktop-layout) .tv-makro-ratio-grid {
+            height: auto !important;
+            min-height: auto !important;
+        }
+        body:not(.tv-desktop-layout) .tv-makro-main-grid,
+        body:not(.tv-desktop-layout) .tv-makro-ratio-grid {
+            grid-template-columns: 1fr !important;
+            grid-template-rows: none !important;
+        }
+        body:not(.tv-desktop-layout) .tv-makro-summary-list {
+            display: block;
         }
         body:not(.tv-desktop-layout) .tv-floating-controls,
         body:not(.tv-desktop-layout) .tv-slide-controls {
