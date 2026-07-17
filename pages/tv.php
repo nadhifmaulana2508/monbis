@@ -126,8 +126,9 @@
     .tv-makro-summary-item p { line-height: 1.1; }
     .tv-makro-ratio-grid {
         min-height: 0;
-        height: 100%;
-        grid-template-rows: repeat(2, minmax(0, 1fr));
+        height: auto;
+        align-content: start;
+        grid-template-rows: none;
     }
     .tv-ratio-card { min-height: 0; overflow: hidden; }
     .tv-ratio-card > div {
@@ -1109,14 +1110,18 @@
     }
     body.tv-desktop-layout .tv-makro-ratio-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-        gap: .55rem !important;
+        grid-template-rows: none !important;
+        align-content: start !important;
+        height: auto !important;
+        gap: .62rem !important;
     }
     body.tv-desktop-layout .tv-ratio-card {
-        padding: .56rem .62rem !important;
-        border-radius: .65rem !important;
+        min-height: 4.55rem !important;
+        padding: .68rem .75rem !important;
+        border-radius: .7rem !important;
     }
     body.tv-desktop-layout .tv-ratio-card span[id^="txt_rasio_"] {
-        font-size: clamp(.92rem, 1.45vw, 1.16rem) !important;
+        font-size: clamp(1rem, 1.55vw, 1.22rem) !important;
         line-height: 1.05 !important;
     }
     body.tv-desktop-layout .tv-ratio-card > span:first-child {
