@@ -57,7 +57,7 @@
 
         <div class="tv-card tv-makro-panel bg-white p-3 md:p-4 rounded-xl md:rounded-2xl shadow-sm border border-gray-100 lg:col-span-6 flex flex-col">
             <h3 class="font-bold text-gray-800 flex items-center gap-1.5 md:gap-2 mb-2.5 border-b border-gray-100 pb-2 text-[12px] md:text-sm"><span class="text-emerald-500">Rasio</span> Indikator Kesehatan Bank (Actual)</h3>
-            <div class="tv-makro-ratio-grid grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-2.5">
+            <div class="tv-makro-ratio-grid grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-2.5">
                 <div class="tv-ratio-card bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between" data-ratio-key="bopo">
                     <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1" title="BOPO = Biaya Operasional / Pendapatan Operasional x 100%">BOPO</span>
                     <div class="flex items-end justify-between gap-2">

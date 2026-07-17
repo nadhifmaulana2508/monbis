@@ -1124,19 +1124,19 @@
         white-space: nowrap;
     }
     body.tv-desktop-layout .tv-makro-ratio-grid {
-        grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
         grid-template-rows: none !important;
         align-content: start !important;
         height: auto !important;
-        gap: .62rem !important;
+        gap: .62rem .72rem !important;
     }
     body.tv-desktop-layout .tv-ratio-card {
-        min-height: 4.55rem !important;
+        min-height: 4.25rem !important;
         padding: .68rem .66rem !important;
         border-radius: .7rem !important;
     }
     body.tv-desktop-layout .tv-ratio-card span[id^="txt_rasio_"] {
-        font-size: clamp(.9rem, 1.22vw, 1.08rem) !important;
+        font-size: clamp(.96rem, 1.32vw, 1.16rem) !important;
         line-height: 1.05 !important;
         letter-spacing: 0 !important;
     }
