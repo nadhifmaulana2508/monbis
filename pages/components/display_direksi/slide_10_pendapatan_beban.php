@@ -4,7 +4,8 @@
             <div class="bg-emerald-50 px-2 py-1.5 rounded-lg text-emerald-600 font-black text-sm">P</div>
             <div class="min-w-0">
                 <p class="text-[9px] font-black tracking-[0.25em] text-emerald-400 uppercase">Analytics Overview</p>
-                <h2 class="text-base md:text-xl font-extrabold text-gray-900 tracking-tight leading-tight">Distribusi Pendapatan dan Beban per Kantor</h2>
+                <h2 class="text-base md:text-xl font-extrabold text-gray-900 tracking-tight leading-tight">Net Pendapatan dan Beban per Kantor</h2>
+                <p id="label_dist_pendapatan_beban_period" class="text-[10px] text-gray-500 font-bold">Aktual dikurangi bulan sebelumnya</p>
             </div>
         </div>
 
@@ -13,7 +14,7 @@
                 <div class="flex items-start justify-between gap-3 mb-2 shrink-0">
                     <div>
                         <p class="text-[9px] font-black tracking-[0.2em] text-emerald-400 uppercase">Pendapatan</p>
-                        <h3 class="font-extrabold text-gray-900 text-sm md:text-base">Distribusi Pendapatan per Kantor</h3>
+                        <h3 class="font-extrabold text-gray-900 text-sm md:text-base">Net Pendapatan per Kantor</h3>
                     </div>
                     <div class="tv-distribution-toggle">
                         <button type="button" id="btn_dist_pendapatan_bar" class="is-active" onclick="setDistributionView('pendapatan','bar')">Bar</button>
@@ -29,7 +30,7 @@
                 <div class="flex items-start justify-between gap-3 mb-2 shrink-0">
                     <div>
                         <p class="text-[9px] font-black tracking-[0.2em] text-red-400 uppercase">Beban</p>
-                        <h3 class="font-extrabold text-gray-900 text-sm md:text-base">Distribusi Beban per Kantor</h3>
+                        <h3 class="font-extrabold text-gray-900 text-sm md:text-base">Net Beban per Kantor</h3>
                     </div>
                     <div class="tv-distribution-toggle">
                         <button type="button" id="btn_dist_beban_bar" onclick="setDistributionView('beban','bar')">Bar</button>

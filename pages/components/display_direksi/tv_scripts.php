@@ -156,13 +156,112 @@
         const delta = Number(deltaVal || 0);
         const deltaHtml = getDeltaHTML(delta, true, invertGoodBad, true);
         return `
-            <div class="leading-tight space-y-1">
-                <div class="text-[9px] md:text-[10px] text-gray-500 font-bold">M-1: <span class="text-gray-700">${pct(prev)}</span></div>
+            <div class="leading-tight">
+                <div class="text-[8px] md:text-[9px] text-gray-500 font-bold whitespace-nowrap">M-1: <span class="text-gray-700">${pct(prev)}</span></div>
                 <div>${deltaHtml}</div>
             </div>
         `;
     };
     const getPercentCompareHTML = (label, val) => `<div class="text-[9px] md:text-[10px] text-gray-500 font-bold">${label}: <span class="text-gray-700">${pct(val)}</span></div>`;
+
+    const RATIO_PERK_CODES = {
+        bopo: ['501', '401'],
+        ldr: ['10601', '204', '20603', '30106'],
+        casa: ['20401', '20402'],
+        roa: ['4', '5', '101', '102', '103', '104', '105', '10601', '10602', '10604', '10605', '10606', '107', '108', '109', '110', '11102', '112', '113', '116', '117', '118', '119', '120', '121', '210'],
+        roe: ['4', '5', '3'],
+        cash: ['101', '10401', '10402', '201', '20401', '20202', '205', '211'],
+        nim: ['40101', '50101', '104', '10601', '10606'],
+        aset_likuid: ['101', '10401', '10402']
+    };
+    const RATIO_LABELS = {
+        bopo: 'BOPO',
+        ldr: 'LDR',
+        casa: 'CASA Ratio',
+        roa: 'ROA',
+        roe: 'ROE',
+        cash: 'Cash Ratio',
+        nim: 'NIM',
+        aset_likuid: 'Aset Likuid'
+    };
+    const RATIO_FORMULAS = {
+        bopo: '501 / 401 x 100%',
+        ldr: '10601 / (204 + 20603 + 30106) x 100%',
+        casa: '20401 / (20401 + 20402) x 100%',
+        roa: '((4 - 5) / bulan x 12) / Aset x 100%',
+        roe: '((4 - 5) / bulan x 12) / 3 x 100%',
+        cash: '(101 + 10401 + 10402) / (201 + 20401 + 20202 + 205 + 211) x 100%',
+        nim: '((40101 - 50101) / bulan x 12) / rata-rata (104 + 10601 + 10606) x 100%',
+        aset_likuid: '(101 + 10401 + 10402) / Total Aset x 100%'
+    };
+    let ratioTooltipHideTimer = null;
+
+    function getRatioPerkTooltip() {
+        let tooltipEl = document.getElementById('tvRatioPerkTooltip');
+        if(!tooltipEl) {
+            tooltipEl = document.createElement('div');
+            tooltipEl.id = 'tvRatioPerkTooltip';
+            tooltipEl.className = 'tv-trend-perk-tooltip';
+            tooltipEl.addEventListener('mouseenter', () => {
+                if(ratioTooltipHideTimer) clearTimeout(ratioTooltipHideTimer);
+            });
+            tooltipEl.addEventListener('mouseleave', hideRatioPerkTooltipSoon);
+            document.body.appendChild(tooltipEl);
+        }
+        return tooltipEl;
+    }
+
+    function showRatioPerkTooltip(card, key, perkiraan) {
+        if(ratioTooltipHideTimer) clearTimeout(ratioTooltipHideTimer);
+        const tooltipEl = getRatioPerkTooltip();
+        const codes = RATIO_PERK_CODES[key] || [];
+        tooltipEl.innerHTML = `
+            <div class="tv-trend-perk-title">${RATIO_LABELS[key] || 'Rasio'}</div>
+            <div class="tv-trend-perk-formula">
+                <span>Rumus</span>
+                <strong>${RATIO_FORMULAS[key] || '-'}</strong>
+            </div>
+            <div class="tv-trend-perk-sub">Kode Perkiraan</div>
+            <div class="tv-trend-perk-list">
+                ${codes.map(kode => `
+                    <div class="tv-trend-perk-row">
+                        <span class="code">${kode}</span>
+                        <span class="name">${perkiraan?.[kode] || kode}</span>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        const rect = card.getBoundingClientRect();
+        const left = rect.left + window.pageXOffset + rect.width + 10;
+        const top = rect.top + window.pageYOffset;
+        tooltipEl.style.opacity = 1;
+        tooltipEl.style.pointerEvents = 'auto';
+        tooltipEl.style.left = `${Math.min(left, window.pageXOffset + window.innerWidth - tooltipEl.offsetWidth - 12)}px`;
+        tooltipEl.style.top = `${Math.min(top, window.pageYOffset + window.innerHeight - tooltipEl.offsetHeight - 12)}px`;
+    }
+
+    function hideRatioPerkTooltip() {
+        if(ratioTooltipHideTimer) clearTimeout(ratioTooltipHideTimer);
+        const tooltipEl = document.getElementById('tvRatioPerkTooltip');
+        if(tooltipEl) {
+            tooltipEl.style.opacity = 0;
+            tooltipEl.style.pointerEvents = 'none';
+        }
+    }
+
+    function hideRatioPerkTooltipSoon() {
+        if(ratioTooltipHideTimer) clearTimeout(ratioTooltipHideTimer);
+        ratioTooltipHideTimer = setTimeout(hideRatioPerkTooltip, 180);
+    }
+
+    function bindRatioPerkTooltips(perkiraan) {
+        document.querySelectorAll('.tv-ratio-card[data-ratio-key]').forEach(card => {
+            const key = card.dataset.ratioKey;
+            card.onmouseenter = () => showRatioPerkTooltip(card, key, perkiraan || {});
+            card.onmousemove = () => showRatioPerkTooltip(card, key, perkiraan || {});
+            card.onmouseleave = hideRatioPerkTooltipSoon;
+        });
+    }
 
     function getRasioColor(key, val) {
         let num = Number(val);
@@ -171,6 +270,8 @@
         if(key === 'casa') return num > 60 ? 'text-green-500' : 'text-red-500';
         if(key === 'roa')  return num > 1.25 ? 'text-green-500' : 'text-red-500';
         if(key === 'cash') return num > 4.05 ? 'text-green-500' : 'text-red-500';
+        if(key === 'nim')  return num > 0 ? 'text-green-500' : 'text-red-500';
+        if(key === 'aset_likuid') return num > 0 ? 'text-green-500' : 'text-red-500';
         if(key === 'cov')  return num >= 100 ? 'text-green-500' : 'text-red-500';
         return 'text-gray-100';
     }
@@ -195,6 +296,7 @@
     let chartDistPendapatanInstance = null;
     let chartDistBebanInstance = null;
     let trendCoaRequestToken = 0;
+    const trendCoaCache = new Map();
 
     // ==========================================
     // 3. GLOBAL CONFIG & DATA FETCHING (FIXED LOGIC)
@@ -728,7 +830,7 @@
         let endpointUrl = './api/dashboard/';
 
         // LOGIKA KANTOR KONSOLIDASI (SAMA PERSIS DENGAN ASLINYA)
-        if (type === 'summary_perbandingan' || type === 'financial_kpi') {
+        if (type === 'summary_perbandingan' || type === 'financial_kpi' || type === 'tv_makro_summary') {
             endpointUrl = './api/lapkeu/';
             attachTvOfficeFilter(payload, true);
         } else {
@@ -758,8 +860,8 @@
         const pDeltaNpl     = fetchWidgetDataTV('test delta npl');
         const pDeposito     = fetchWidgetDataTV('test perkembangan deposito');
         const pTabungan     = fetchWidgetDataTV('test perkembangan tabungan', true);
-        const pSummaryMakro = fetchWidgetDataTV('summary_perbandingan');
-        const pHealthKpi    = fetchWidgetDataTV('financial_kpi');
+        const pSummaryMakro = fetchWidgetDataTV('tv_makro_summary');
+        const pHealthKpi    = pSummaryMakro;
         
         scheduleTvFit(120);
         const pChartPorto = fetchTrenPortoTV();
@@ -839,6 +941,7 @@
                     setText('kpi_dpk', `Rp ${fmtB(m.dpk.nominal_aktual)}`);
                     setHtml('kpi_dpk_pill', `<div class="flex gap-2"><div class="bg-gray-100 px-2 py-0.5 rounded text-[11px] text-gray-500">Closing: <span class="text-gray-900">Rp ${fmtB(m.dpk.nominal_bulan_lalu)}</span></div>${getDeltaHTML((m.dpk.nominal_aktual || 0) - (m.dpk.nominal_bulan_lalu || 0), false, false, true)}</div>`);
                 }
+                bindRatioPerkTooltips(mRaw.perkiraan || {});
             }
             if(kRaw && kRaw.rasio) {
                 let r = kRaw.rasio;
@@ -848,6 +951,8 @@
                 document.getElementById('txt_rasio_roa').textContent = `${r.roa_persen}%`; document.getElementById('txt_rasio_roa').className = `text-lg font-black ${getRasioColor('roa', r.roa_persen)}`;
                 document.getElementById('txt_rasio_roe').textContent = `${r.roe_persen}%`; document.getElementById('txt_rasio_roe').className = `text-lg font-black ${Number(r.roe_persen || 0) > 0 ? 'text-green-500' : 'text-red-500'}`;
                 document.getElementById('txt_rasio_cash').textContent = `${r.cash_ratio_persen}%`; document.getElementById('txt_rasio_cash').className = `text-lg font-black ${getRasioColor('cash', r.cash_ratio_persen)}`;
+                document.getElementById('txt_rasio_nim').textContent = `${r.nim_persen || 0}%`; document.getElementById('txt_rasio_nim').className = `text-lg font-black ${getRasioColor('nim', r.nim_persen)}`;
+                document.getElementById('txt_rasio_aset_likuid').textContent = `${r.aset_likuid_persen || 0}%`; document.getElementById('txt_rasio_aset_likuid').className = `text-lg font-black ${getRasioColor('aset_likuid', r.aset_likuid_persen)}`;
                 const rasioSummary = mRaw?.kesehatan_rasio || {};
                 setHtml('delta_rasio_bopo', getRatioCompareHTML(rasioSummary.bopo?.persen_bulan_lalu, rasioSummary.bopo?.delta_mom, true));
                 setHtml('delta_rasio_ldr', getRatioCompareHTML(rasioSummary.ldr?.persen_bulan_lalu, rasioSummary.ldr?.delta_mom));
@@ -855,6 +960,8 @@
                 setHtml('delta_rasio_roa', getRatioCompareHTML(rasioSummary.roa?.persen_bulan_lalu, rasioSummary.roa?.delta_mom));
                 setHtml('delta_rasio_roe', getRatioCompareHTML(rasioSummary.roe?.persen_bulan_lalu, rasioSummary.roe?.delta_mom));
                 setHtml('delta_rasio_cash', getRatioCompareHTML(rasioSummary.cash?.persen_bulan_lalu, rasioSummary.cash?.delta_mom));
+                setHtml('delta_rasio_nim', getRatioCompareHTML(rasioSummary.nim?.persen_bulan_lalu, rasioSummary.nim?.delta_mom));
+                setHtml('delta_rasio_aset_likuid', getRatioCompareHTML(rasioSummary.aset_likuid?.persen_bulan_lalu, rasioSummary.aset_likuid?.delta_mom));
                 
                 if(kRaw.top_5_biaya) renderUniversalList('box_top_biaya', kRaw.top_5_biaya, 'nama', 'nominal', 'kode', 'bg-red-500', false, '');
             }
@@ -1170,10 +1277,22 @@
             harian_date: currDate
         };
         attachTvOfficeFilter(payload, true);
+        const cacheKey = JSON.stringify(payload);
 
         try {
-            const res = await apiCall('./api/lapkeu/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            const json = await res.json();
+            let json;
+            if(trendCoaCache.has(cacheKey)) {
+                json = { data: trendCoaCache.get(cacheKey) };
+            } else {
+                const res = await apiCall('./api/lapkeu/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                json = await res.json();
+                if(json?.data) {
+                    trendCoaCache.set(cacheKey, json.data);
+                    if(trendCoaCache.size > 8) {
+                        trendCoaCache.delete(trendCoaCache.keys().next().value);
+                    }
+                }
+            }
             if(requestToken !== trendCoaRequestToken) return;
             const data = json.data;
             if(!data || !Array.isArray(data.weeks) || !data.weeks.length) return;
@@ -1206,7 +1325,6 @@
             const dataKredit = data.weeks.map(d => Number(d.kredit_baki_debet) || 0);
             const dataDpk = data.weeks.map(d => Number(d.dpk) || 0);
             const dataLaba = data.weeks.map(d => Number(d.laba_net) || 0);
-
             const buildMiniInfo = (arr, growth, delta, mode = 'nominal') => {
                 const active = arr.filter(v => Number(v || 0) !== 0);
                 const lastVal = active.length ? active[active.length - 1] : 0;
@@ -1268,6 +1386,7 @@
                         layout: { padding: { top: 24, right: 14, bottom: 6, left: 8 } },
                         responsive: true,
                         maintainAspectRatio: false,
+                        animation: false,
                         interaction: { mode: 'index', intersect: false },
                         plugins: {
                             legend: { display: false },
@@ -1340,12 +1459,17 @@
 
     function distributionMetricMeta(metric) {
         const map = {
-            aset: { label: 'Aset', canvas: 'canvasDistAset', color: '#4f6df5', bg: 'rgba(79, 109, 245, 0.14)' },
-            laba: { label: 'Laba', canvas: 'canvasDistLaba', color: '#2563eb', bg: 'rgba(37, 99, 235, 0.12)' },
-            pendapatan: { label: 'Pendapatan', canvas: 'canvasDistPendapatan', color: '#10b981', bg: 'rgba(16, 185, 129, 0.13)' },
-            beban: { label: 'Beban', canvas: 'canvasDistBeban', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' }
+            aset: { label: 'Net Aset', canvas: 'canvasDistAset', color: '#4f6df5', bg: 'rgba(79, 109, 245, 0.14)' },
+            laba: { label: 'Net Laba', canvas: 'canvasDistLaba', color: '#2563eb', bg: 'rgba(37, 99, 235, 0.12)' },
+            pendapatan: { label: 'Net Pendapatan', canvas: 'canvasDistPendapatan', color: '#10b981', bg: 'rgba(16, 185, 129, 0.13)' },
+            beban: { label: 'Net Beban', canvas: 'canvasDistBeban', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' }
         };
         return map[metric] || map.aset;
+    }
+
+    function formatSignedRp(value) {
+        const num = Number(value || 0);
+        return `${num < 0 ? '-' : ''}Rp ${fmtB(Math.abs(num))}`;
     }
 
     function renderDistributionTable(metric, items) {
@@ -1354,12 +1478,15 @@
         const rows = [...(items || [])].sort((a, b) => Math.abs(Number(b.nominal || 0)) - Math.abs(Number(a.nominal || 0))).slice(0, 10);
         box.innerHTML = `
             <table>
-                <thead><tr><th>Kantor</th><th>Nominal</th></tr></thead>
+                <thead><tr><th>Kantor</th><th>Net</th></tr></thead>
                 <tbody>
                     ${rows.map(item => `
                         <tr>
-                            <td>${item.kode_kantor || '-'} - ${(item.nama_kantor || '-').replace(/^Kc\.\s*/i, '')}</td>
-                            <td>${Number(item.nominal || 0) < 0 ? '-' : ''}Rp ${fmtB(Math.abs(Number(item.nominal || 0)))}</td>
+                            <td>
+                                ${item.kode_kantor || '-'} - ${(item.nama_kantor || '-').replace(/^Kc\.\s*/i, '')}
+                                <div class="text-[9px] text-gray-400 font-bold mt-0.5">Aktual ${formatSignedRp(item.aktual)} | Bulan lalu ${formatSignedRp(item.bulan_lalu)}</div>
+                            </td>
+                            <td>${formatSignedRp(item.nominal)}</td>
                         </tr>
                     `).join('')}
                 </tbody>
@@ -1373,22 +1500,22 @@
         const top = summary.top || [];
         const bottom = summary.bottom || [];
         const formatList = arr => arr.map((item, idx) => `
-            <div class="sub">${idx + 1}. ${(item.nama_kantor || '-').replace(/^Kc\.\s*/i, '')}: ${Number(item.nominal || 0) < 0 ? '-' : ''}Rp ${fmtB(Math.abs(Number(item.nominal || 0)))}</div>
+            <div class="sub">${idx + 1}. ${(item.nama_kantor || '-').replace(/^Kc\.\s*/i, '')}: ${formatSignedRp(item.nominal)}</div>
         `).join('');
 
         box.innerHTML = `
             <div class="tv-distribution-summary-card">
-                <div class="label">Top Performers</div>
+                <div class="label">Net Tertinggi</div>
                 <div class="value">3 Kantor Teratas</div>
                 ${formatList(top)}
             </div>
             <div class="tv-distribution-summary-card">
-                <div class="label">Rata-rata Nominal</div>
-                <div class="value">${Number(summary.average || 0) < 0 ? '-' : ''}Rp ${fmtB(Math.abs(Number(summary.average || 0)))}</div>
-                <div class="sub">Benchmark pasar</div>
+                <div class="label">Rata-rata Net</div>
+                <div class="value">${formatSignedRp(summary.average)}</div>
+                <div class="sub">Aktual - bulan sebelumnya</div>
             </div>
             <div class="tv-distribution-summary-card">
-                <div class="label">Need Attention</div>
+                <div class="label">Net Terendah</div>
                 <div class="value">3 Kantor Terbawah</div>
                 ${formatList(bottom)}
             </div>
@@ -1405,6 +1532,9 @@
         const labels = rows.map(item => item.kode_kantor);
         const values = rows.map(item => Number(item.nominal || 0));
         const names = rows.map(item => item.nama_kantor || item.kode_kantor || '-');
+        const actualValues = rows.map(item => Number(item.aktual || 0));
+        const prevValues = rows.map(item => Number(item.bulan_lalu || 0));
+        const growthValues = rows.map(item => Number(item.growth || 0));
         const theme = tvChartTheme();
 
         return new Chart(canvas.getContext('2d'), {
@@ -1438,7 +1568,16 @@
                         bodyFont: { size: 12, family: 'sans-serif' },
                         callbacks: {
                             title: c => `${labels[c[0].dataIndex]} - ${String(names[c[0].dataIndex]).replace(/^Kc\.\s*/i, '')}`,
-                            label: c => `${meta.label}: ${Number(c.raw || 0) < 0 ? '-' : ''}Rp ${fmtB(Math.abs(Number(c.raw || 0)))}`
+                            label: c => `${meta.label}: ${formatSignedRp(c.raw)}`,
+                            afterBody: c => {
+                                if(!c.length) return [];
+                                const idx = c[0].dataIndex;
+                                return [
+                                    `Aktual: ${formatSignedRp(actualValues[idx])}`,
+                                    `Bulan lalu: ${formatSignedRp(prevValues[idx])}`,
+                                    `Growth: ${growthValues[idx] >= 0 ? '+' : ''}${pct(growthValues[idx])}`
+                                ];
+                            }
                         }
                     }
                 },
@@ -1465,6 +1604,9 @@
             });
             const json = await res.json();
             const metrics = json.data?.metrics || {};
+            const periodText = `Net ${json.data?.tanggal || '-'} - ${json.data?.tanggal_bulan_lalu || '-'}`;
+            setText('label_dist_aset_laba_period', periodText);
+            setText('label_dist_pendapatan_beban_period', periodText);
 
             ['aset', 'laba', 'pendapatan', 'beban'].forEach(metric => {
                 renderDistributionTable(metric, metrics[metric]?.items || []);

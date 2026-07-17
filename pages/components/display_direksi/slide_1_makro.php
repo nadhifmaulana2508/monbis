@@ -33,9 +33,9 @@
     </div>
 
     <div class="grid lg:grid-cols-12 gap-3 md:gap-4 flex-grow min-h-0">
-        <div class="tv-card bg-white p-4 md:p-5 rounded-xl md:rounded-2xl shadow-sm border border-gray-100 lg:col-span-4 flex flex-col">
+        <div class="tv-card bg-white p-4 md:p-5 rounded-xl md:rounded-2xl shadow-sm border border-gray-100 lg:col-span-3 flex flex-col">
             <h3 class="font-bold text-gray-800 flex items-center gap-1.5 md:gap-2 mb-3 md:mb-4 border-b border-gray-100 pb-2 text-[13px] md:text-sm"><span class="text-indigo-500">Bank</span> Ringkasan Keuangan (Actual)</h3>
-            <div class="tv-list space-y-3">
+            <div class="tv-list space-y-2.5">
                 <div id="makro_aset" class="flex justify-between items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
                     <div><p class="text-[10px] text-gray-500 font-bold uppercase">Total Aset</p><p class="text-sm font-black text-gray-800" id="txt_makro_aset">Rp 0</p></div>
                     <div class="text-right shrink-0 pl-3" id="delta_makro_aset"></div>
@@ -55,38 +55,64 @@
             </div>
         </div>
 
-        <div class="tv-card bg-white p-4 md:p-5 rounded-xl md:rounded-2xl shadow-sm border border-gray-100 lg:col-span-5 flex flex-col">
+        <div class="tv-card bg-white p-4 md:p-5 rounded-xl md:rounded-2xl shadow-sm border border-gray-100 lg:col-span-6 flex flex-col">
             <h3 class="font-bold text-gray-800 flex items-center gap-1.5 md:gap-2 mb-3 md:mb-4 border-b border-gray-100 pb-2 text-[13px] md:text-sm"><span class="text-emerald-500">Rasio</span> Indikator Kesehatan Bank (Actual)</h3>
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-2.5 md:gap-3">
-                <div class="bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
+                <div class="tv-ratio-card bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between" data-ratio-key="bopo">
                     <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1" title="BOPO = Biaya Operasional / Pendapatan Operasional x 100%">BOPO</span>
-                    <span class="text-lg font-black" id="txt_rasio_bopo">0%</span>
-                    <div id="delta_rasio_bopo" class="mt-1"></div>
+                    <div class="flex items-end justify-between gap-2">
+                        <span class="text-lg font-black" id="txt_rasio_bopo">0%</span>
+                        <div id="delta_rasio_bopo" class="text-right shrink-0"></div>
+                    </div>
                 </div>
-                <div class="bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between">
-                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1" title="LDR = Total Kredit / Total DPK x 100%">LDR</span>
-                    <span class="text-lg font-black" id="txt_rasio_ldr">0%</span>
-                    <div id="delta_rasio_ldr" class="mt-1"></div>
+                <div class="tv-ratio-card bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between" data-ratio-key="ldr">
+                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1" title="LDR = 10601 / (204 + 20603 + 30106) x 100%">LDR</span>
+                    <div class="flex items-end justify-between gap-2">
+                        <span class="text-lg font-black" id="txt_rasio_ldr">0%</span>
+                        <div id="delta_rasio_ldr" class="text-right shrink-0"></div>
+                    </div>
                 </div>
-                <div class="bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between">
+                <div class="tv-ratio-card bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between" data-ratio-key="casa">
                     <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1" title="CASA = Tabungan / Total DPK x 100%">CASA Ratio</span>
-                    <span class="text-lg font-black" id="txt_rasio_casa">0%</span>
-                    <div id="delta_rasio_casa" class="mt-1"></div>
+                    <div class="flex items-end justify-between gap-2">
+                        <span class="text-lg font-black" id="txt_rasio_casa">0%</span>
+                        <div id="delta_rasio_casa" class="text-right shrink-0"></div>
+                    </div>
                 </div>
-                <div class="bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between">
+                <div class="tv-ratio-card bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between" data-ratio-key="roa">
                     <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1" title="ROA = Laba Disetahunkan / Total Aset x 100%">ROA</span>
-                    <span class="text-lg font-black" id="txt_rasio_roa">0%</span>
-                    <div id="delta_rasio_roa" class="mt-1"></div>
+                    <div class="flex items-end justify-between gap-2">
+                        <span class="text-lg font-black" id="txt_rasio_roa">0%</span>
+                        <div id="delta_rasio_roa" class="text-right shrink-0"></div>
+                    </div>
                 </div>
-                <div class="bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between">
+                <div class="tv-ratio-card bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between" data-ratio-key="roe">
                     <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1" title="ROE = Laba Disetahunkan / Total Ekuitas x 100%">ROE</span>
-                    <span class="text-lg font-black" id="txt_rasio_roe">0%</span>
-                    <div id="delta_rasio_roe" class="mt-1"></div>
+                    <div class="flex items-end justify-between gap-2">
+                        <span class="text-lg font-black" id="txt_rasio_roe">0%</span>
+                        <div id="delta_rasio_roe" class="text-right shrink-0"></div>
+                    </div>
                 </div>
-                <div class="bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between">
-                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1" title="Cash Ratio = Alat Likuid / Kewajiban Segera x 100%">Cash Ratio</span>
-                    <span class="text-lg font-black" id="txt_rasio_cash">0%</span>
-                    <div id="delta_rasio_cash" class="mt-1"></div>
+                <div class="tv-ratio-card bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between" data-ratio-key="cash">
+                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1" title="Cash Ratio = (101 + 10401 + 10402) / (201 + 20401 + 20202 + 205 + 211) x 100%">Cash Ratio</span>
+                    <div class="flex items-end justify-between gap-2">
+                        <span class="text-lg font-black" id="txt_rasio_cash">0%</span>
+                        <div id="delta_rasio_cash" class="text-right shrink-0"></div>
+                    </div>
+                </div>
+                <div class="tv-ratio-card bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between" data-ratio-key="nim">
+                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1" title="NIM = Pendapatan bunga bersih disetahunkan / rata-rata aset produktif x 100%">NIM</span>
+                    <div class="flex items-end justify-between gap-2">
+                        <span class="text-lg font-black" id="txt_rasio_nim">0%</span>
+                        <div id="delta_rasio_nim" class="text-right shrink-0"></div>
+                    </div>
+                </div>
+                <div class="tv-ratio-card bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between" data-ratio-key="aset_likuid">
+                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1" title="Aset Likuid = (101 + 10401 + 10402) / Total Aset x 100%">Aset Likuid</span>
+                    <div class="flex items-end justify-between gap-2">
+                        <span class="text-lg font-black" id="txt_rasio_aset_likuid">0%</span>
+                        <div id="delta_rasio_aset_likuid" class="text-right shrink-0"></div>
+                    </div>
                 </div>
             </div>
         </div>

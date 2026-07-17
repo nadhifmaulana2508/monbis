@@ -51,6 +51,9 @@ switch ($method) {
         } elseif ($type === 'financial_kpi') {
             $controller->apiGetFinancialKPI($input);
 
+        } elseif ($type === 'tv_makro_summary') {
+            $controller->apiGetTvMakroSummary($input);
+
         } elseif ($type === 'summary_perbandingan') {
             $controller->GetSummaryPerbandingan($input);
 

@@ -87,6 +87,150 @@
     .tv-list { min-height: 0; overflow: hidden; }
     .tv-chart { min-height: 0; height: 100%; }
     .tv-chart canvas { display: block; width: 100% !important; height: 100% !important; }
+    .tv-makro-detail-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: .45rem;
+        overflow: hidden;
+    }
+    .tv-makro-detail-item {
+        min-width: 0;
+        border: 1px solid #eef2f7;
+        border-radius: .65rem;
+        background: #f8fafc;
+        padding: .42rem .48rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .45rem;
+    }
+    .tv-makro-detail-item .label {
+        color: #64748b;
+        font-size: .56rem;
+        line-height: 1;
+        font-weight: 900;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+    }
+    .tv-makro-detail-item .sub {
+        margin-top: .18rem;
+        color: #94a3b8;
+        font-size: .55rem;
+        line-height: 1;
+        font-weight: 700;
+    }
+    .tv-makro-detail-item .value {
+        flex: 0 0 auto;
+        max-width: 54%;
+        text-align: right;
+        font-size: .64rem;
+        line-height: 1;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+    .tv-trend-shell { gap: .75rem; }
+    .tv-trend-header { padding-bottom: .7rem; }
+    .tv-trend-title { line-height: 1.08; }
+    .tv-trend-net { max-width: 320px; }
+    .tv-trend-summary { min-width: 0; }
+    .tv-trend-summary > div:first-child,
+    .tv-trend-panel h3,
+    .tv-trend-panel p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tv-trend-grid {
+        grid-template-rows: repeat(2, minmax(0, 1fr));
+        min-height: 0;
+    }
+    .tv-trend-panel { min-height: 0; }
+    .tv-trend-panel .tv-chart { min-height: 118px; }
+    .tv-trend-perk-tooltip {
+        position: absolute;
+        z-index: 80;
+        width: min(390px, calc(100vw - 24px));
+        max-height: min(390px, calc(100vh - 24px));
+        overflow: auto;
+        opacity: 0;
+        pointer-events: none;
+        transform: translateZ(0);
+        transition: opacity .12s ease;
+        border-radius: .85rem;
+        border: 1px solid rgba(148, 163, 184, .26);
+        background: rgba(15, 23, 42, .96);
+        color: #f8fafc;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, .28);
+        padding: .8rem;
+        overscroll-behavior: contain;
+        scrollbar-width: thin;
+        scrollbar-color: #94a3b8 transparent;
+    }
+    .tv-trend-perk-tooltip::-webkit-scrollbar { width: 7px; }
+    .tv-trend-perk-tooltip::-webkit-scrollbar-track { background: transparent; }
+    .tv-trend-perk-tooltip::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 999px; }
+    .tv-trend-perk-title {
+        font-size: .88rem;
+        line-height: 1.1;
+        font-weight: 950;
+        margin-bottom: .25rem;
+    }
+    .tv-trend-perk-sub {
+        font-size: .58rem;
+        line-height: 1;
+        font-weight: 900;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: #93c5fd;
+        margin-bottom: .55rem;
+    }
+    .tv-trend-perk-formula {
+        border: 1px solid rgba(147, 197, 253, .18);
+        border-radius: .65rem;
+        background: rgba(37, 99, 235, .12);
+        padding: .45rem .55rem;
+        margin-bottom: .6rem;
+    }
+    .tv-trend-perk-formula span {
+        display: block;
+        color: #93c5fd;
+        font-size: .55rem;
+        font-weight: 950;
+        letter-spacing: .12em;
+        line-height: 1;
+        text-transform: uppercase;
+        margin-bottom: .25rem;
+    }
+    .tv-trend-perk-formula strong {
+        display: block;
+        color: #f8fafc;
+        font-size: .68rem;
+        line-height: 1.25;
+        font-weight: 900;
+    }
+    .tv-trend-perk-list {
+        display: grid;
+        gap: .32rem;
+    }
+    .tv-trend-perk-row {
+        display: grid;
+        grid-template-columns: 4.8rem minmax(0, 1fr);
+        gap: .45rem;
+        align-items: start;
+        border-radius: .55rem;
+        background: rgba(255, 255, 255, .06);
+        padding: .38rem .45rem;
+    }
+    .tv-trend-perk-row .code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: .68rem;
+        line-height: 1.2;
+        font-weight: 900;
+        color: #bfdbfe;
+    }
+    .tv-trend-perk-row .name {
+        min-width: 0;
+        font-size: .68rem;
+        line-height: 1.2;
+        font-weight: 800;
+        color: #e5e7eb;
+    }
     .tv-distribution-chart { position: relative; height: 100%; }
     .tv-distribution-chart canvas { display: block; width: 100% !important; height: 100% !important; cursor: pointer; }
     .tv-distribution-toggle {
@@ -631,6 +775,11 @@
     body.dark-mode .tv-distribution-table th { background: #111827; color: #9ca3af; }
     body.dark-mode .tv-distribution-table td { border-color: #374151; color: #bfdbfe; }
     body.dark-mode .tv-distribution-summary-card .value { color: #f8fafc; }
+    body.dark-mode .tv-makro-detail-item {
+        background: #111827;
+        border-color: #374151;
+    }
+    body.dark-mode .tv-makro-detail-item .value { color: #e5e7eb; }
     body.dark-mode #tv_scope_badge,
     body.dark-mode .tv-slide-count { color: #bfdbfe; }
     body.dark-mode .tv-slide-btn { color: #e5e7eb; }
@@ -698,6 +847,43 @@
         .tv-field { min-width: 150px; flex: 0 0 auto; }
         .tv-field-wide { min-width: 220px; flex: 0 0 auto; }
         #tv_scope_badge { max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+        .tv-trend-shell { gap: .55rem; }
+        .tv-trend-header { gap: .45rem !important; padding-bottom: .55rem; }
+        .tv-trend-title { font-size: .95rem !important; }
+        .tv-trend-subtitle { display: none; }
+        .tv-trend-net { min-width: 190px; max-width: 250px; padding: .45rem .6rem !important; }
+        .tv-trend-summary-grid { gap: .45rem !important; }
+        .tv-trend-summary { padding: .5rem .6rem !important; border-radius: .7rem !important; }
+        .tv-trend-summary .text-base,
+        .tv-trend-summary .md\:text-xl { font-size: 1rem !important; line-height: 1.1 !important; }
+        .tv-trend-summary [id^="delta_tren_"] > div {
+            margin-top: .3rem !important;
+            padding-top: .3rem !important;
+            gap: .35rem !important;
+        }
+        .tv-trend-grid { gap: .55rem !important; }
+        .tv-trend-panel { padding: .65rem !important; border-radius: .75rem !important; }
+        .tv-trend-panel .tv-chart { min-height: 92px; }
+        .tv-trend-perk-tooltip {
+            width: min(320px, calc(100vw - 20px));
+            max-height: min(290px, calc(100vh - 20px));
+            padding: .65rem;
+        }
+        .tv-trend-perk-formula { padding: .38rem .45rem; margin-bottom: .45rem; }
+        .tv-trend-perk-formula strong { font-size: .6rem; }
+        .tv-trend-perk-row {
+            grid-template-columns: 4rem minmax(0, 1fr);
+            padding: .32rem .4rem;
+        }
+        .tv-trend-perk-row .code,
+        .tv-trend-perk-row .name {
+            font-size: .6rem;
+        }
+        .tv-makro-detail-grid { gap: .32rem; }
+        .tv-makro-detail-item { padding: .35rem .4rem; border-radius: .55rem; }
+        .tv-makro-detail-item .label { font-size: .5rem; }
+        .tv-makro-detail-item .sub { display: none; }
+        .tv-makro-detail-item .value { font-size: .58rem; }
     }
 
     @media (min-width: 1500px) {
@@ -750,6 +936,25 @@
     body.tv-mobile-layout .tv-fit.grid,
     body.tv-mobile-layout .tv-fit .grid {
         grid-auto-rows: auto;
+    }
+    body.tv-mobile-layout .tv-trend-header > div:first-child {
+        flex-direction: column;
+    }
+    body.tv-mobile-layout .tv-trend-net {
+        width: 100%;
+        max-width: none;
+    }
+    body.tv-mobile-layout .tv-trend-summary-grid,
+    body.tv-mobile-layout .tv-trend-grid {
+        grid-template-columns: 1fr !important;
+        grid-template-rows: none;
+    }
+    body.tv-mobile-layout .tv-makro-detail-grid {
+        grid-template-columns: 1fr;
+    }
+    body.tv-mobile-layout .tv-trend-panel .tv-chart {
+        height: 260px;
+        min-height: 260px;
     }
     body.tv-mobile-layout .tv-floating-controls,
     body.tv-mobile-layout .tv-slide-controls {
@@ -841,6 +1046,25 @@
         body:not(.tv-desktop-layout) .tv-fit.grid,
         body:not(.tv-desktop-layout) .tv-fit .grid {
             grid-auto-rows: auto;
+        }
+        body:not(.tv-desktop-layout) .tv-trend-header > div:first-child {
+            flex-direction: column;
+        }
+        body:not(.tv-desktop-layout) .tv-trend-net {
+            width: 100%;
+            max-width: none;
+        }
+        body:not(.tv-desktop-layout) .tv-trend-summary-grid,
+        body:not(.tv-desktop-layout) .tv-trend-grid {
+            grid-template-columns: 1fr !important;
+            grid-template-rows: none;
+        }
+        body:not(.tv-desktop-layout) .tv-makro-detail-grid {
+            grid-template-columns: 1fr;
+        }
+        body:not(.tv-desktop-layout) .tv-trend-panel .tv-chart {
+            height: 260px;
+            min-height: 260px;
         }
         body:not(.tv-desktop-layout) .tv-floating-controls,
         body:not(.tv-desktop-layout) .tv-slide-controls {

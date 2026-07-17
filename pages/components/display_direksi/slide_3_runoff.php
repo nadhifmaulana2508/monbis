@@ -20,11 +20,7 @@
                     <p id="summary_runoff_total" class="text-base md:text-xl font-black text-red-600">Rp 0</p>
                 </div>
             </div>
-            <div id="box_runoff_realisasi" class="tv-list grid grid-cols-2 gap-x-3 gap-y-2 flex-grow mb-2"></div>
-            <div class="mt-auto pt-2 border-t border-gray-50 flex items-center justify-center gap-3 md:gap-4 text-[9px] md:text-[10px] font-bold text-gray-500 shrink-0">
-                <div class="flex items-center gap-1 md:gap-1.5"><span class="w-2.5 h-1.5 md:w-3 md:h-1.5 rounded-full bg-green-400"></span> Realisasi</div>
-                <div class="flex items-center gap-1 md:gap-1.5"><span class="w-2.5 h-1.5 md:w-3 md:h-1.5 rounded-full bg-red-400"></span> Run Off</div>
-            </div>
+            <div id="box_runoff_realisasi" class="tv-list grid grid-cols-2 gap-x-3 gap-y-2 flex-grow"></div>
         </div>
 
         <div class="tv-card bg-white p-3 md:p-4 rounded-xl md:rounded-3xl shadow-sm border border-gray-100 flex flex-col">
@@ -47,11 +43,7 @@
                     <p id="summary_recovery_npl" class="text-base md:text-xl font-black text-green-600">Rp 0</p>
                 </div>
             </div>
-            <div id="box_flow_recovery" class="tv-list grid grid-cols-2 gap-x-3 gap-y-2 flex-grow mb-2"></div>
-            <div class="mt-auto pt-2 border-t border-gray-50 flex items-center justify-center gap-3 md:gap-4 text-[9px] md:text-[10px] font-bold text-gray-500 shrink-0">
-                <div class="flex items-center gap-1 md:gap-1.5"><span class="w-2.5 h-1.5 md:w-3 md:h-1.5 rounded-full bg-red-400"></span> Flow NPL</div>
-                <div class="flex items-center gap-1 md:gap-1.5"><span class="w-2.5 h-1.5 md:w-3 md:h-1.5 rounded-full bg-green-400"></span> Recovery</div>
-            </div>
+            <div id="box_flow_recovery" class="tv-list grid grid-cols-2 gap-x-3 gap-y-2 flex-grow"></div>
         </div>
     </div>
 
