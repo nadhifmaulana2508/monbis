@@ -135,6 +135,21 @@
         align-items: flex-end;
         min-width: 0;
     }
+    .tv-ratio-card [id^="delta_rasio_"] {
+        min-width: 3.75rem;
+        max-width: 4.4rem;
+        overflow: visible;
+    }
+    .tv-ratio-card [id^="delta_rasio_"] .leading-tight {
+        width: 100%;
+    }
+    .tv-ratio-card [id^="delta_rasio_"] .whitespace-nowrap {
+        white-space: nowrap;
+    }
+    #box_top_biaya .group > div:first-child > span:last-child {
+        font-size: .92rem;
+        line-height: 1;
+    }
     .tv-makro-detail-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1117,11 +1132,26 @@
     }
     body.tv-desktop-layout .tv-ratio-card {
         min-height: 4.55rem !important;
-        padding: .68rem .75rem !important;
+        padding: .68rem .66rem !important;
         border-radius: .7rem !important;
     }
     body.tv-desktop-layout .tv-ratio-card span[id^="txt_rasio_"] {
-        font-size: clamp(1rem, 1.55vw, 1.22rem) !important;
+        font-size: clamp(.9rem, 1.22vw, 1.08rem) !important;
+        line-height: 1.05 !important;
+        letter-spacing: 0 !important;
+    }
+    body.tv-desktop-layout .tv-ratio-card [id^="delta_rasio_"] {
+        min-width: 3.95rem;
+        max-width: 4.45rem;
+    }
+    body.tv-desktop-layout .tv-ratio-card [id^="delta_rasio_"] .text-\[8px\],
+    body.tv-desktop-layout .tv-ratio-card [id^="delta_rasio_"] .md\:text-\[9px\] {
+        font-size: .49rem !important;
+        line-height: 1.05 !important;
+    }
+    body.tv-desktop-layout .tv-ratio-card [id^="delta_rasio_"] .text-\[10px\],
+    body.tv-desktop-layout .tv-ratio-card [id^="delta_rasio_"] .md\:text-\[11px\] {
+        font-size: .56rem !important;
         line-height: 1.05 !important;
     }
     body.tv-desktop-layout .tv-ratio-card > span:first-child {
@@ -1130,6 +1160,17 @@
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
+    }
+    body.tv-desktop-layout #box_top_biaya .group {
+        margin-bottom: .8rem !important;
+    }
+    body.tv-desktop-layout #box_top_biaya .group > div:first-child > span:last-child {
+        font-size: .96rem !important;
+        line-height: 1 !important;
+    }
+    body.tv-desktop-layout #box_top_biaya .group .text-xs,
+    body.tv-desktop-layout #box_top_biaya .group .text-\[10px\] {
+        line-height: 1.05 !important;
     }
 
     @media (max-width: 1023px) {
