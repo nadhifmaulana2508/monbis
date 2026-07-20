@@ -217,8 +217,8 @@
     .tv-realisasi-top-meta > div { min-width: 0; }
     .tv-realisasi-period .tv-list {
         scrollbar-width: thin;
-        height: min(100%, 26rem);
-        max-height: min(100%, 26rem);
+        height: min(100%, 31rem);
+        max-height: min(100%, 31rem);
         overflow-y: auto;
     }
     .tv-real-zero-row { min-width: 0; }

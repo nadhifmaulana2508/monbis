@@ -1129,16 +1129,16 @@
             const isMinus = growth < 0;
             const isZeroReal = Number(row.total_realisasi || 0) <= 0;
             return `
-            <div class="tv-real-zero-row bg-white/90 border border-white rounded-lg px-3.5 py-3 mb-1.5 shadow-sm"
+            <div class="tv-real-zero-row bg-white/90 border border-white rounded-lg px-4 py-3 mb-1.5 shadow-sm"
                  title="${escapeTv(row.nama_unit || '-')}\nRealisasi: Rp ${fmtB(row.total_realisasi)}\nRun Off: Rp ${fmtB(row.total_runoff)}\nGrowth: ${isMinus ? '-' : '+'}Rp ${fmtB(Math.abs(growth))}\nNOA Realisasi: ${fmt(row.noa_realisasi || 0)}">
                 <div class="flex items-center justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="tv-real-branch text-base md:text-lg font-black truncate">${escapeTv(row.nama_unit || '-')}</p>
-                        <p class="tv-real-meta text-xs md:text-sm font-extrabold mt-1">Realisasi Rp ${fmtB(row.total_realisasi)} - ${fmt(row.noa_realisasi || 0)} NOA</p>
+                        <p class="tv-real-branch text-lg md:text-xl font-black truncate">${escapeTv(row.nama_unit || '-')}</p>
+                        <p class="tv-real-meta text-sm md:text-base font-extrabold mt-1">Realisasi Rp ${fmtB(row.total_realisasi)} - ${fmt(row.noa_realisasi || 0)} NOA</p>
                     </div>
                     <div class="shrink-0 text-right">
-                        ${isZeroReal ? '<span class="inline-block px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-xs md:text-sm font-black mb-1">0 Real</span>' : ''}
-                        <p class="${isMinus ? 'text-red-600' : 'text-green-600'} text-sm md:text-base font-black">${isMinus ? '-' : '+'} Rp ${fmtB(Math.abs(growth))}</p>
+                        ${isZeroReal ? '<span class="inline-block px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-sm md:text-base font-black mb-1">0 Real</span>' : ''}
+                        <p class="${isMinus ? 'text-red-600' : 'text-green-600'} text-base md:text-lg font-black">${isMinus ? '-' : '+'} Rp ${fmtB(Math.abs(growth))}</p>
                     </div>
                 </div>
             </div>
