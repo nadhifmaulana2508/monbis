@@ -1133,7 +1133,7 @@
                  title="${escapeTv(row.nama_unit || '-')}\nRealisasi: Rp ${fmtB(row.total_realisasi)}\nRun Off: Rp ${fmtB(row.total_runoff)}\nGrowth: ${isMinus ? '-' : '+'}Rp ${fmtB(Math.abs(growth))}\nNOA Realisasi: ${fmt(row.noa_realisasi || 0)}">
                 <div class="flex items-center justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="tv-real-branch text-base md:text-lg font-black truncate">${idx + 1}. ${escapeTv(row.kode_unit || '-')} - ${escapeTv(row.nama_unit || '-')}</p>
+                        <p class="tv-real-branch text-base md:text-lg font-black truncate">${escapeTv(row.nama_unit || '-')}</p>
                         <p class="tv-real-meta text-xs md:text-sm font-extrabold mt-1">Realisasi Rp ${fmtB(row.total_realisasi)} - ${fmt(row.noa_realisasi || 0)} NOA</p>
                     </div>
                     <div class="shrink-0 text-right">
