@@ -1054,23 +1054,31 @@
 
         const summaryEl = document.getElementById('tv_realisasi_summary');
         if(summaryEl) {
-            summaryEl.innerHTML = keys.map(key => {
-                const p = data.periods[key] || {};
-                const c = colorMap[key];
+            const weekColors = [
+                { bg: 'bg-blue-50', border: 'border-blue-100', accent: 'text-blue-600' },
+                { bg: 'bg-emerald-50', border: 'border-emerald-100', accent: 'text-emerald-600' },
+                { bg: 'bg-amber-50', border: 'border-amber-100', accent: 'text-amber-600' },
+                { bg: 'bg-rose-50', border: 'border-rose-100', accent: 'text-rose-600' },
+                { bg: 'bg-indigo-50', border: 'border-indigo-100', accent: 'text-indigo-600' }
+            ];
+            const weekly = Array.isArray(data.weekly_summary) && data.weekly_summary.length ? data.weekly_summary : keys.map(key => data.periods[key] || {});
+            summaryEl.innerHTML = weekly.map((p, idx) => {
+                const c = weekColors[idx] || weekColors[0];
+                const growth = Number(p.growth || 0);
                 return `
-                    <div class="rounded-xl ${c.bg} ${c.border} border p-2.5 min-w-0">
+                    <div class="rounded-xl ${c.bg} ${c.border} border p-2.5 md:p-3 min-w-0">
                         <div class="flex items-start justify-between gap-2">
                             <div class="min-w-0">
                                 <p class="text-[9px] font-extrabold uppercase tracking-wider ${c.accent}">${escapeTv(p.label || '-')}</p>
-                                <p class="text-base md:text-xl font-black ${Number(p.growth || 0) < 0 ? 'text-red-600' : 'text-green-600'} leading-tight mt-0.5">${Number(p.growth || 0) < 0 ? '-' : '+'} Rp ${fmtB(Math.abs(Number(p.growth || 0)))}</p>
+                                <p class="text-lg md:text-2xl font-black text-gray-950 leading-tight mt-0.5">Rp ${fmtB(p.total_realisasi)}</p>
                             </div>
                             <div class="text-right shrink-0">
-                                <p class="text-[8px] font-extrabold text-gray-400 uppercase">Minus</p>
-                                <p class="text-base md:text-lg font-black ${Number(p.negative_count || 0) > 0 ? 'text-red-600' : 'text-green-600'}">${fmt(p.negative_count || 0)}</p>
+                                <p class="text-[8px] font-extrabold text-gray-400 uppercase">Growth</p>
+                                <p class="text-xs md:text-sm font-black ${growth < 0 ? 'text-red-600' : 'text-green-600'}">${growth < 0 ? '-' : '+'} Rp ${fmtB(Math.abs(growth))}</p>
                             </div>
                         </div>
-                        <div class="mt-1.5 text-[9px] md:text-[10px] font-bold text-gray-500 flex justify-between gap-2">
-                            <span>Real: Rp ${fmtB(p.total_realisasi)}</span>
+                        <div class="mt-1.5 text-[9px] md:text-[10px] font-bold text-gray-500 flex justify-between gap-2 border-t border-white/70 pt-1.5">
+                            <span>${escapeTv(p.start || '-')} s/d ${escapeTv(p.end || '-')}</span>
                             <span>Run Off: Rp ${fmtB(p.total_runoff)}</span>
                         </div>
                     </div>`;
@@ -1080,38 +1088,47 @@
         keys.forEach(key => {
             const p = data.periods[key] || {};
             setText(`tv_real_period_${key}`, `${p.start || '-'} s/d ${p.end || '-'}`);
-            setText(`tv_real_badge_${key}`, `${fmt(p.negative_count || 0)} minus`);
-            renderTvNegativeGrowthList(`tv_real_list_${key}`, p.negative_growth || []);
+            const zeroFirst = key === 'minggu_ini' || key === 'hari_ini';
+            setText(`tv_real_badge_${key}`, zeroFirst ? `${fmt(p.zero_count || 0)} belum` : `${fmt(p.negative_count || 0)} minus`);
+            renderTvNegativeGrowthList(`tv_real_list_${key}`, p.display_rows || (zeroFirst ? p.ranking : p.negative_growth) || [], zeroFirst);
         });
     }
 
-    function renderTvNegativeGrowthList(elId, rows) {
+    function renderTvNegativeGrowthList(elId, rows, zeroFirst) {
         const box = document.getElementById(elId);
         if(!box) return;
-        const list = Array.isArray(rows) ? rows.slice(0, 14) : [];
+        const list = Array.isArray(rows) ? rows : [];
         if(list.length === 0) {
             box.innerHTML = `
                 <div class="h-full min-h-[90px] flex items-center justify-center rounded-lg border border-dashed border-green-200 bg-white/70 text-center px-3">
                     <div>
-                        <p class="text-sm md:text-base font-black text-green-600">Tidak ada growth minus</p>
-                        <p class="text-[9px] md:text-[10px] font-bold text-gray-400 mt-1">Realisasi masih menutup run off pada periode ini.</p>
+                        <p class="text-sm md:text-base font-black text-green-600">${zeroFirst ? 'Semua sudah realisasi' : 'Tidak ada growth minus'}</p>
+                        <p class="text-[9px] md:text-[10px] font-bold text-gray-400 mt-1">${zeroFirst ? 'Tidak ada cabang dengan realisasi 0.' : 'Realisasi masih menutup run off pada periode ini.'}</p>
                     </div>
                 </div>`;
             return;
         }
 
-        box.innerHTML = list.map((row, idx) => `
+        box.innerHTML = list.map((row, idx) => {
+            const growth = Number(row.growth || 0);
+            const isMinus = growth < 0;
+            const isZeroReal = Number(row.total_realisasi || 0) <= 0;
+            return `
             <div class="tv-real-zero-row bg-white/85 border border-white rounded-lg px-2.5 py-2 mb-1.5 shadow-sm"
-                 title="${escapeTv(row.nama_unit || '-')}\nRealisasi: Rp ${fmtB(row.total_realisasi)}\nRun Off: Rp ${fmtB(row.total_runoff)}\nGrowth: -Rp ${fmtB(Math.abs(Number(row.growth || 0)))}\nNOA Realisasi: ${fmt(row.noa_realisasi || 0)}">
+                 title="${escapeTv(row.nama_unit || '-')}\nRealisasi: Rp ${fmtB(row.total_realisasi)}\nRun Off: Rp ${fmtB(row.total_runoff)}\nGrowth: ${isMinus ? '-' : '+'}Rp ${fmtB(Math.abs(growth))}\nNOA Realisasi: ${fmt(row.noa_realisasi || 0)}">
                 <div class="flex items-center justify-between gap-2">
                     <div class="min-w-0">
-                        <p class="text-[10px] md:text-xs font-black text-gray-900 truncate">${idx + 1}. ${escapeTv(row.nama_unit || '-')}</p>
-                        <p class="text-[8px] md:text-[9px] font-bold text-gray-400 mt-0.5">${escapeTv(row.kode_unit || '-')} - Real Rp ${fmtB(row.total_realisasi)}</p>
+                        <p class="text-xs md:text-sm font-black text-gray-900 truncate">${idx + 1}. ${escapeTv(row.nama_unit || '-')}</p>
+                        <p class="text-[9px] md:text-[10px] font-bold text-gray-400 mt-0.5">${escapeTv(row.kode_unit || '-')} - Real Rp ${fmtB(row.total_realisasi)} - ${fmt(row.noa_realisasi || 0)} NOA</p>
                     </div>
-                    <span class="shrink-0 px-2 py-1 rounded-full bg-red-50 text-red-600 text-[9px] md:text-[10px] font-black">- Rp ${fmtB(Math.abs(Number(row.growth || 0)))}</span>
+                    <div class="shrink-0 text-right">
+                        ${isZeroReal ? '<span class="inline-block px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[9px] md:text-[10px] font-black mb-1">0 Real</span>' : ''}
+                        <p class="${isMinus ? 'text-red-600' : 'text-green-600'} text-[10px] md:text-xs font-black">${isMinus ? '-' : '+'} Rp ${fmtB(Math.abs(growth))}</p>
+                    </div>
                 </div>
             </div>
-        `).join('');
+        `;
+        }).join('');
     }
 
     // ==========================================

@@ -1867,6 +1867,32 @@ class DashboardController{
         $lastWeekStart = date('Y-m-d', strtotime('-7 days', strtotime($weekStart)));
         $lastWeekEnd = date('Y-m-d', strtotime('-1 day', strtotime($weekStart)));
         $queryStart = min($monthStart, $lastWeekStart);
+        $monthEnd = $harian_date;
+        $monthLastDay = (int) date('t', $endTs);
+
+        $makeMonthWeek = function($label, $dayStart, $dayEnd) use ($monthStart, $monthEnd) {
+            $monthPrefix = substr($monthStart, 0, 8);
+            $start = $monthPrefix . str_pad((string) $dayStart, 2, '0', STR_PAD_LEFT);
+            $end = $monthPrefix . str_pad((string) $dayEnd, 2, '0', STR_PAD_LEFT);
+            $queryStart = $start;
+            $queryEnd = $end;
+            if ($start > $monthEnd) {
+                $queryStart = '9999-12-31';
+                $queryEnd = '0000-00-00';
+            } elseif ($end > $monthEnd) {
+                $end = $monthEnd;
+                $queryEnd = $monthEnd;
+            }
+            return ['label' => $label, 'start' => $start, 'end' => $end, 'query_start' => $queryStart, 'query_end' => $queryEnd];
+        };
+
+        $weeklyRanges = [
+            'minggu_1' => $makeMonthWeek('Minggu 1', 1, 7),
+            'minggu_2' => $makeMonthWeek('Minggu 2', 8, 14),
+            'minggu_3' => $makeMonthWeek('Minggu 3', 15, 21),
+            'minggu_4' => $makeMonthWeek('Minggu 4', 22, $monthLastDay),
+            'total' => ['label' => 'Total', 'start' => $monthStart, 'end' => $monthEnd, 'query_start' => $monthStart, 'query_end' => $monthEnd],
+        ];
 
         $periods = [
             'bulan_ini' => ['label' => 'Bulan Ini', 'short_label' => 'Bulan', 'start' => $monthStart, 'end' => $harian_date],
@@ -1977,7 +2003,12 @@ class DashboardController{
                         'noa_realisasi' => (int) ($baseRow["noa_{$key}"] ?? 0),
                     ];
                 }
-                usort($rows, function($a, $b) {
+                usort($rows, function($a, $b) use ($key) {
+                    if ($key === 'minggu_ini' || $key === 'hari_ini') {
+                        $aZero = ((float) ($a['total_realisasi'] ?? 0) <= 0) ? 0 : 1;
+                        $bZero = ((float) ($b['total_realisasi'] ?? 0) <= 0) ? 0 : 1;
+                        if ($aZero !== $bZero) return $aZero <=> $bZero;
+                    }
                     $cmp = $a['growth'] <=> $b['growth'];
                     if ($cmp !== 0) return $cmp;
                     return strcmp((string) $a['kode_unit'], (string) $b['kode_unit']);
@@ -2005,6 +2036,7 @@ class DashboardController{
                 $negativeRows = array_values(array_filter($rows, function($row) {
                     return (float) ($row['growth'] ?? 0) < 0;
                 }));
+                $displayRows = ($key === 'minggu_ini' || $key === 'hari_ini') ? $rows : $negativeRows;
 
                 $periodResults[$key] = [
                     'key' => $key,
@@ -2024,13 +2056,86 @@ class DashboardController{
                         return (float) ($row['total_realisasi'] ?? 0) <= 0;
                     })),
                     'negative_growth' => $negativeRows,
+                    'display_rows' => $displayRows,
                     'ranking' => $rows,
+                ];
+            }
+
+            $summaryWhere = "WHERE t.created >= :summary_month_start AND t.created <= :summary_month_end";
+            $summaryParams = [
+                ':summary_month_start' => $monthStart,
+                ':summary_month_end' => $monthEnd,
+            ];
+            if ($kode_kantor !== '000' && empty($korwil)) {
+                $summaryWhere .= " AND t.kode_kantor = :summary_kode_kantor";
+                $summaryParams[':summary_kode_kantor'] = str_pad((string) $kode_kantor, 3, '0', STR_PAD_LEFT);
+            } elseif (!empty($korwil)) {
+                if ($korwil === 'SEMARANG') {
+                    $summaryWhere .= " AND t.kode_kantor BETWEEN '001' AND '007'";
+                } elseif ($korwil === 'SOLO') {
+                    $summaryWhere .= " AND t.kode_kantor BETWEEN '008' AND '014'";
+                } elseif ($korwil === 'BANYUMAS') {
+                    $summaryWhere .= " AND t.kode_kantor BETWEEN '015' AND '021'";
+                } elseif ($korwil === 'PEKALONGAN') {
+                    $summaryWhere .= " AND t.kode_kantor BETWEEN '022' AND '028'";
+                }
+            }
+
+            $weeklySummarySql = "
+                SELECT
+                    COALESCE(SUM(CASE WHEN t.created >= :w1_start AND t.created <= :w1_end THEN t.realisasi ELSE 0 END), 0) AS realisasi_minggu_1,
+                    COALESCE(SUM(CASE WHEN t.created >= :w1_start_runoff AND t.created <= :w1_end_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_minggu_1,
+                    COALESCE(SUM(CASE WHEN t.created >= :w1_start_noa AND t.created <= :w1_end_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_minggu_1,
+                    COALESCE(SUM(CASE WHEN t.created >= :w2_start AND t.created <= :w2_end THEN t.realisasi ELSE 0 END), 0) AS realisasi_minggu_2,
+                    COALESCE(SUM(CASE WHEN t.created >= :w2_start_runoff AND t.created <= :w2_end_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_minggu_2,
+                    COALESCE(SUM(CASE WHEN t.created >= :w2_start_noa AND t.created <= :w2_end_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_minggu_2,
+                    COALESCE(SUM(CASE WHEN t.created >= :w3_start AND t.created <= :w3_end THEN t.realisasi ELSE 0 END), 0) AS realisasi_minggu_3,
+                    COALESCE(SUM(CASE WHEN t.created >= :w3_start_runoff AND t.created <= :w3_end_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_minggu_3,
+                    COALESCE(SUM(CASE WHEN t.created >= :w3_start_noa AND t.created <= :w3_end_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_minggu_3,
+                    COALESCE(SUM(CASE WHEN t.created >= :w4_start AND t.created <= :w4_end THEN t.realisasi ELSE 0 END), 0) AS realisasi_minggu_4,
+                    COALESCE(SUM(CASE WHEN t.created >= :w4_start_runoff AND t.created <= :w4_end_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_minggu_4,
+                    COALESCE(SUM(CASE WHEN t.created >= :w4_start_noa AND t.created <= :w4_end_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_minggu_4,
+                    COALESCE(SUM(t.realisasi), 0) AS realisasi_total,
+                    COALESCE(SUM(t.angsuran), 0) AS runoff_total,
+                    COALESCE(SUM(t.noa_realisasi), 0) AS noa_total
+                FROM summary_kredit_harian t
+                {$summaryWhere}
+            ";
+            $summaryStmt = $this->pdo->prepare($weeklySummarySql);
+            foreach ($summaryParams as $param => $value) {
+                $summaryStmt->bindValue($param, $value);
+            }
+            foreach (['minggu_1' => 'w1', 'minggu_2' => 'w2', 'minggu_3' => 'w3', 'minggu_4' => 'w4'] as $rangeKey => $prefix) {
+                $summaryStmt->bindValue(":{$prefix}_start", $weeklyRanges[$rangeKey]['query_start']);
+                $summaryStmt->bindValue(":{$prefix}_end", $weeklyRanges[$rangeKey]['query_end']);
+                $summaryStmt->bindValue(":{$prefix}_start_runoff", $weeklyRanges[$rangeKey]['query_start']);
+                $summaryStmt->bindValue(":{$prefix}_end_runoff", $weeklyRanges[$rangeKey]['query_end']);
+                $summaryStmt->bindValue(":{$prefix}_start_noa", $weeklyRanges[$rangeKey]['query_start']);
+                $summaryStmt->bindValue(":{$prefix}_end_noa", $weeklyRanges[$rangeKey]['query_end']);
+            }
+            $summaryStmt->execute();
+            $summaryRow = $summaryStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+            $weeklySummary = [];
+            foreach ($weeklyRanges as $rangeKey => $range) {
+                $suffix = $rangeKey;
+                $realisasi = (float) ($summaryRow["realisasi_{$suffix}"] ?? 0);
+                $runoff = (float) ($summaryRow["runoff_{$suffix}"] ?? 0);
+                $weeklySummary[] = [
+                    'key' => $rangeKey,
+                    'label' => $range['label'],
+                    'start' => $range['start'],
+                    'end' => $range['end'],
+                    'total_realisasi' => $realisasi,
+                    'total_runoff' => $runoff,
+                    'growth' => $realisasi - $runoff,
+                    'noa_realisasi' => (int) ($summaryRow["noa_{$suffix}"] ?? 0),
                 ];
             }
 
             return [
                 'mode' => $displayMode,
                 'harian_date' => $harian_date,
+                'weekly_summary' => $weeklySummary,
                 'periods' => $periodResults,
             ];
         } catch (PDOException $e) {
