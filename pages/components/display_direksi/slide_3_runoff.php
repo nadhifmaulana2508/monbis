@@ -13,11 +13,11 @@
             <div class="grid grid-cols-2 gap-3 mb-2 shrink-0">
                 <div class="bg-green-50 border border-green-100 rounded-lg p-2">
                     <p class="text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider text-green-700">Total Realisasi</p>
-                    <p id="summary_runoff_realisasi" class="text-base md:text-xl font-black text-green-600">Rp 0</p>
+                    <p id="summary_runoff_realisasi" class="text-base md:text-xl font-black text-green-600 whitespace-nowrap">Rp 0</p>
                 </div>
                 <div class="bg-red-50 border border-red-100 rounded-lg p-2">
                     <p class="text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider text-red-700">Total Run Off</p>
-                    <p id="summary_runoff_total" class="text-base md:text-xl font-black text-red-600">Rp 0</p>
+                    <p id="summary_runoff_total" class="text-base md:text-xl font-black text-red-600 whitespace-nowrap">Rp 0</p>
                 </div>
             </div>
             <div id="box_runoff_realisasi" class="tv-list grid grid-cols-2 gap-x-3 gap-y-2 flex-grow"></div>
@@ -36,11 +36,11 @@
             <div class="grid grid-cols-2 gap-3 mb-2 shrink-0">
                 <div class="bg-red-50 border border-red-100 rounded-lg p-2">
                     <p class="text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider text-red-700">Total Flow NPL</p>
-                    <p id="summary_flow_npl" class="text-base md:text-xl font-black text-red-600">Rp 0</p>
+                    <p id="summary_flow_npl" class="text-base md:text-xl font-black text-red-600 whitespace-nowrap">Rp 0</p>
                 </div>
                 <div class="bg-green-50 border border-green-100 rounded-lg p-2">
                     <p class="text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider text-green-700">Total Recovery</p>
-                    <p id="summary_recovery_npl" class="text-base md:text-xl font-black text-green-600">Rp 0</p>
+                    <p id="summary_recovery_npl" class="text-base md:text-xl font-black text-green-600 whitespace-nowrap">Rp 0</p>
                 </div>
             </div>
             <div id="box_flow_recovery" class="tv-list grid grid-cols-2 gap-x-3 gap-y-2 flex-grow"></div>
@@ -59,13 +59,13 @@
                 <span class="text-[10px] md:text-sm text-gray-400 font-medium" id="label_runoff_date">Berdasarkan Tanggal: -</span>
             </div>
             <div class="grid grid-cols-2 gap-2 w-full xl:w-auto">
-                <div class="bg-red-50 border border-red-100 rounded-lg px-3 py-2 min-w-[110px]">
+                <div class="bg-red-50 border border-red-100 rounded-lg px-3 py-2 min-w-[135px]">
                     <p class="text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider text-red-700">Run Off</p>
-                    <p id="summary_tren_runoff" class="text-sm md:text-lg font-black text-red-600">Rp 0</p>
+                    <p id="summary_tren_runoff" class="text-sm md:text-lg font-black text-red-600 whitespace-nowrap">Rp 0</p>
                 </div>
-                <div class="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 min-w-[110px]">
+                <div class="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 min-w-[135px]">
                     <p class="text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider text-blue-700">Lunas</p>
-                    <p id="summary_tren_lunas" class="text-sm md:text-lg font-black text-blue-600">Rp 0</p>
+                    <p id="summary_tren_lunas" class="text-sm md:text-lg font-black text-blue-600 whitespace-nowrap">Rp 0</p>
                 </div>
             </div>
             <select id="filter_tren_runoff" class="hidden"><option value="bulanan" selected>Periode Bulanan</option></select>

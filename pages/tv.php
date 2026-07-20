@@ -209,16 +209,16 @@
     }
     .tv-trend-panel { min-height: 0; }
     .tv-trend-panel .tv-chart { min-height: 118px; }
-    .tv-realisasi-shell { gap: 0; }
+    .tv-realisasi-shell { gap: 0; min-height: 0; }
     .tv-realisasi-summary { min-height: 0; }
-    .tv-realisasi-period-grid { min-height: 0; }
+    .tv-realisasi-period-grid { min-height: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .tv-realisasi-period { min-width: 0; overflow: hidden; }
     .tv-realisasi-top-meta { min-width: min(430px, 42vw); }
     .tv-realisasi-top-meta > div { min-width: 0; }
     .tv-realisasi-period .tv-list {
         scrollbar-width: thin;
-        height: min(100%, 31rem);
-        max-height: min(100%, 31rem);
+        height: min(100%, 30rem);
+        max-height: min(100%, 30rem);
         overflow-y: auto;
     }
     .tv-real-zero-row { min-width: 0; }
@@ -236,15 +236,22 @@
             grid-template-columns: repeat(4, minmax(0, 1fr));
         }
     }
+    @container (max-width: 1180px) {
+        .tv-realisasi-period-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            overflow-y: auto;
+        }
+        .tv-realisasi-period .tv-list {
+            height: min(100%, 24rem);
+            max-height: min(100%, 24rem);
+        }
+    }
     @container (max-width: 980px) {
         .tv-realisasi-top-meta {
             min-width: 0;
             width: 100%;
         }
         .tv-realisasi-summary {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-        .tv-realisasi-period-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
     }
@@ -265,6 +272,22 @@
         .tv-realisasi-period-grid {
             grid-template-columns: minmax(0, 1fr);
             overflow-y: auto;
+        }
+        .tv-realisasi-period .tv-list {
+            height: auto;
+            max-height: 28rem;
+        }
+        .tv-real-zero-row {
+            padding: .75rem !important;
+        }
+        .tv-real-branch {
+            font-size: 1rem !important;
+            line-height: 1.1 !important;
+        }
+        .tv-real-meta,
+        .tv-real-zero-row .text-base,
+        .tv-real-zero-row .md\:text-lg {
+            font-size: .82rem !important;
         }
     }
     .tv-trend-perk-tooltip {
