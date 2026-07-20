@@ -1953,15 +1953,19 @@ class DashboardController{
                     m.kode_unit,
                     m.nama_unit,
                     COALESCE(SUM(CASE WHEN t.created >= :month_start_sum THEN t.realisasi ELSE 0 END), 0) AS realisasi_bulan_ini,
+                    COALESCE(SUM(CASE WHEN t.created >= :month_start_restruck THEN t.restrukturisasi ELSE 0 END), 0) AS restruck_bulan_ini,
                     COALESCE(SUM(CASE WHEN t.created >= :month_start_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_bulan_ini,
                     COALESCE(SUM(CASE WHEN t.created >= :month_start_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_bulan_ini,
                     COALESCE(SUM(CASE WHEN t.created >= :last_week_start AND t.created <= :last_week_end THEN t.realisasi ELSE 0 END), 0) AS realisasi_minggu_lalu,
+                    COALESCE(SUM(CASE WHEN t.created >= :last_week_start_restruck AND t.created <= :last_week_end_restruck THEN t.restrukturisasi ELSE 0 END), 0) AS restruck_minggu_lalu,
                     COALESCE(SUM(CASE WHEN t.created >= :last_week_start_runoff AND t.created <= :last_week_end_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_minggu_lalu,
                     COALESCE(SUM(CASE WHEN t.created >= :last_week_start_noa AND t.created <= :last_week_end_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_minggu_lalu,
                     COALESCE(SUM(CASE WHEN t.created >= :week_start THEN t.realisasi ELSE 0 END), 0) AS realisasi_minggu_ini,
+                    COALESCE(SUM(CASE WHEN t.created >= :week_start_restruck THEN t.restrukturisasi ELSE 0 END), 0) AS restruck_minggu_ini,
                     COALESCE(SUM(CASE WHEN t.created >= :week_start_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_minggu_ini,
                     COALESCE(SUM(CASE WHEN t.created >= :week_start_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_minggu_ini,
                     COALESCE(SUM(CASE WHEN t.created = :today_date THEN t.realisasi ELSE 0 END), 0) AS realisasi_hari_ini,
+                    COALESCE(SUM(CASE WHEN t.created = :today_date_restruck THEN t.restrukturisasi ELSE 0 END), 0) AS restruck_hari_ini,
                     COALESCE(SUM(CASE WHEN t.created = :today_date_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_hari_ini,
                     COALESCE(SUM(CASE WHEN t.created = :today_date_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_hari_ini
                 FROM ({$masterSql}) m
@@ -1975,18 +1979,23 @@ class DashboardController{
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':query_start', $queryStart);
             $stmt->bindValue(':month_start_sum', $monthStart);
+            $stmt->bindValue(':month_start_restruck', $monthStart);
             $stmt->bindValue(':month_start_runoff', $monthStart);
             $stmt->bindValue(':month_start_noa', $monthStart);
             $stmt->bindValue(':last_week_start', $lastWeekStart);
             $stmt->bindValue(':last_week_end', $lastWeekEnd);
+            $stmt->bindValue(':last_week_start_restruck', $lastWeekStart);
+            $stmt->bindValue(':last_week_end_restruck', $lastWeekEnd);
             $stmt->bindValue(':last_week_start_runoff', $lastWeekStart);
             $stmt->bindValue(':last_week_end_runoff', $lastWeekEnd);
             $stmt->bindValue(':last_week_start_noa', $lastWeekStart);
             $stmt->bindValue(':last_week_end_noa', $lastWeekEnd);
             $stmt->bindValue(':week_start', $weekStart);
+            $stmt->bindValue(':week_start_restruck', $weekStart);
             $stmt->bindValue(':week_start_runoff', $weekStart);
             $stmt->bindValue(':week_start_noa', $weekStart);
             $stmt->bindValue(':today_date', $harian_date);
+            $stmt->bindValue(':today_date_restruck', $harian_date);
             $stmt->bindValue(':today_date_runoff', $harian_date);
             $stmt->bindValue(':today_date_noa', $harian_date);
             $stmt->bindValue(':end_date', $harian_date);
@@ -2003,8 +2012,9 @@ class DashboardController{
                         'kode_unit' => $baseRow['kode_unit'],
                         'nama_unit' => $baseRow['nama_unit'],
                         'total_realisasi' => (float) ($baseRow["realisasi_{$key}"] ?? 0),
+                        'total_restruck' => (float) ($baseRow["restruck_{$key}"] ?? 0),
                         'total_runoff' => (float) ($baseRow["runoff_{$key}"] ?? 0),
-                        'growth' => (float) ($baseRow["realisasi_{$key}"] ?? 0) - (float) ($baseRow["runoff_{$key}"] ?? 0),
+                        'growth' => (float) ($baseRow["realisasi_{$key}"] ?? 0) + (float) ($baseRow["restruck_{$key}"] ?? 0) - (float) ($baseRow["runoff_{$key}"] ?? 0),
                         'noa_realisasi' => (int) ($baseRow["noa_{$key}"] ?? 0),
                     ];
                 }
@@ -2020,6 +2030,7 @@ class DashboardController{
                 });
 
                 $totalNominal = 0;
+                $totalRestruck = 0;
                 $totalRunoff = 0;
                 $totalGrowth = 0;
                 $totalNoa = 0;
@@ -2027,12 +2038,14 @@ class DashboardController{
                 $negativeCount = 0;
                 foreach ($rows as &$row) {
                     $row['total_realisasi'] = (float) ($row['total_realisasi'] ?? 0);
+                    $row['total_restruck'] = (float) ($row['total_restruck'] ?? 0);
                     $row['total_runoff'] = (float) ($row['total_runoff'] ?? 0);
                     $row['growth'] = (float) ($row['growth'] ?? 0);
                     $row['noa_realisasi'] = (int) ($row['noa_realisasi'] ?? 0);
                     if ($row['total_realisasi'] <= 0) $zeroCount++;
                     if ($row['growth'] < 0) $negativeCount++;
                     $totalNominal += $row['total_realisasi'];
+                    $totalRestruck += $row['total_restruck'];
                     $totalRunoff += $row['total_runoff'];
                     $totalGrowth += $row['growth'];
                     $totalNoa += $row['noa_realisasi'];
@@ -2050,6 +2063,7 @@ class DashboardController{
                     'start' => $period['start'],
                     'end' => $period['end'],
                     'total_realisasi' => $totalNominal,
+                    'total_restruck' => $totalRestruck,
                     'total_runoff' => $totalRunoff,
                     'growth' => $totalGrowth,
                     'noa_realisasi' => $totalNoa,
@@ -2089,18 +2103,23 @@ class DashboardController{
             $weeklySummarySql = "
                 SELECT
                     COALESCE(SUM(CASE WHEN t.created >= :w1_start AND t.created <= :w1_end THEN t.realisasi ELSE 0 END), 0) AS realisasi_minggu_1,
+                    COALESCE(SUM(CASE WHEN t.created >= :w1_start_restruck AND t.created <= :w1_end_restruck THEN t.restrukturisasi ELSE 0 END), 0) AS restruck_minggu_1,
                     COALESCE(SUM(CASE WHEN t.created >= :w1_start_runoff AND t.created <= :w1_end_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_minggu_1,
                     COALESCE(SUM(CASE WHEN t.created >= :w1_start_noa AND t.created <= :w1_end_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_minggu_1,
                     COALESCE(SUM(CASE WHEN t.created >= :w2_start AND t.created <= :w2_end THEN t.realisasi ELSE 0 END), 0) AS realisasi_minggu_2,
+                    COALESCE(SUM(CASE WHEN t.created >= :w2_start_restruck AND t.created <= :w2_end_restruck THEN t.restrukturisasi ELSE 0 END), 0) AS restruck_minggu_2,
                     COALESCE(SUM(CASE WHEN t.created >= :w2_start_runoff AND t.created <= :w2_end_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_minggu_2,
                     COALESCE(SUM(CASE WHEN t.created >= :w2_start_noa AND t.created <= :w2_end_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_minggu_2,
                     COALESCE(SUM(CASE WHEN t.created >= :w3_start AND t.created <= :w3_end THEN t.realisasi ELSE 0 END), 0) AS realisasi_minggu_3,
+                    COALESCE(SUM(CASE WHEN t.created >= :w3_start_restruck AND t.created <= :w3_end_restruck THEN t.restrukturisasi ELSE 0 END), 0) AS restruck_minggu_3,
                     COALESCE(SUM(CASE WHEN t.created >= :w3_start_runoff AND t.created <= :w3_end_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_minggu_3,
                     COALESCE(SUM(CASE WHEN t.created >= :w3_start_noa AND t.created <= :w3_end_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_minggu_3,
                     COALESCE(SUM(CASE WHEN t.created >= :w4_start AND t.created <= :w4_end THEN t.realisasi ELSE 0 END), 0) AS realisasi_minggu_4,
+                    COALESCE(SUM(CASE WHEN t.created >= :w4_start_restruck AND t.created <= :w4_end_restruck THEN t.restrukturisasi ELSE 0 END), 0) AS restruck_minggu_4,
                     COALESCE(SUM(CASE WHEN t.created >= :w4_start_runoff AND t.created <= :w4_end_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_minggu_4,
                     COALESCE(SUM(CASE WHEN t.created >= :w4_start_noa AND t.created <= :w4_end_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_minggu_4,
                     COALESCE(SUM(t.realisasi), 0) AS realisasi_total,
+                    COALESCE(SUM(t.restrukturisasi), 0) AS restruck_total,
                     COALESCE(SUM(t.angsuran), 0) AS runoff_total,
                     COALESCE(SUM(t.noa_realisasi), 0) AS noa_total
                 FROM summary_kredit_harian_update t
@@ -2113,6 +2132,8 @@ class DashboardController{
             foreach (['minggu_1' => 'w1', 'minggu_2' => 'w2', 'minggu_3' => 'w3', 'minggu_4' => 'w4'] as $rangeKey => $prefix) {
                 $summaryStmt->bindValue(":{$prefix}_start", $weeklyRanges[$rangeKey]['query_start']);
                 $summaryStmt->bindValue(":{$prefix}_end", $weeklyRanges[$rangeKey]['query_end']);
+                $summaryStmt->bindValue(":{$prefix}_start_restruck", $weeklyRanges[$rangeKey]['query_start']);
+                $summaryStmt->bindValue(":{$prefix}_end_restruck", $weeklyRanges[$rangeKey]['query_end']);
                 $summaryStmt->bindValue(":{$prefix}_start_runoff", $weeklyRanges[$rangeKey]['query_start']);
                 $summaryStmt->bindValue(":{$prefix}_end_runoff", $weeklyRanges[$rangeKey]['query_end']);
                 $summaryStmt->bindValue(":{$prefix}_start_noa", $weeklyRanges[$rangeKey]['query_start']);
@@ -2124,6 +2145,7 @@ class DashboardController{
             foreach ($weeklyRanges as $rangeKey => $range) {
                 $suffix = $rangeKey;
                 $realisasi = (float) ($summaryRow["realisasi_{$suffix}"] ?? 0);
+                $restruck = (float) ($summaryRow["restruck_{$suffix}"] ?? 0);
                 $runoff = (float) ($summaryRow["runoff_{$suffix}"] ?? 0);
                 $weeklySummary[] = [
                     'key' => $rangeKey,
@@ -2131,8 +2153,9 @@ class DashboardController{
                     'start' => $range['start'],
                     'end' => $range['end'],
                     'total_realisasi' => $realisasi,
+                    'total_restruck' => $restruck,
                     'total_runoff' => $runoff,
-                    'growth' => $realisasi - $runoff,
+                    'growth' => $realisasi + $restruck - $runoff,
                     'noa_realisasi' => (int) ($summaryRow["noa_{$suffix}"] ?? 0),
                 ];
             }
