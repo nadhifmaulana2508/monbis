@@ -820,7 +820,7 @@
   // ==========================================
   // 5. FETCH API MODULAR (WIDGET-BASED / PARALEL)
   // ==========================================
-  async function fetchWidgetData(type, isH1 = false) {
+  async function fetchWidgetData(type, isH1 = false, extraPayload = {}) {
     let kantor = document.getElementById('filter_kantor').value;
     let currDate = document.getElementById('filter_harian').value;
     
@@ -834,7 +834,8 @@
       type: type, 
       closing_date: document.getElementById('filter_closing').value, 
       harian_date: currDate,
-      harian_date_realisasi: targetRealisasiDate
+      harian_date_realisasi: targetRealisasiDate,
+      ...extraPayload
     };
     
     if(kantor !== '000') { 
@@ -872,7 +873,7 @@
     const pTopNpl       = fetchWidgetData('test top bottom npl');
     const pDeltaNpl     = fetchWidgetData('test delta npl');
     const pDeposito     = fetchWidgetData('test perkembangan deposito');
-    const pTabungan     = fetchWidgetData('test perkembangan tabungan', true);
+    const pTabungan     = fetchWidgetData('test perkembangan tabungan', true, { include_ao: true });
 
     // WIDGET A: SALDO BANK
     pSaldoBank.then(sb => {
