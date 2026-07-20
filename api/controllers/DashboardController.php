@@ -1911,18 +1911,22 @@ class DashboardController{
             {$masterWhere}
         ";
         $joinField = 't.kode_kantor';
+        $joinExtra = '';
         $masterParams = [];
 
         if ($kode_kantor !== '000' && empty($korwil)) {
-            $displayMode = 'CABANG';
+            $displayMode = 'KANKAS';
             $masterSql = "
                 SELECT
-                    k.kode_kantor AS kode_unit,
-                    REPLACE(k.nama_kantor, 'Kc. ', '') AS nama_unit
-                FROM kode_kantor k
-                WHERE k.kode_kantor = :kode_kantor_master
+                    g.kode_group1 AS kode_unit,
+                    COALESCE(g.deskripsi_group1, CONCAT('KAS ', g.kode_group1)) AS nama_unit
+                FROM kankas g
+                WHERE g.kode_kantor = :kode_kantor_master
             ";
+            $joinField = "COALESCE(NULLIF(TRIM(t.kode_group_1), ''), CONCAT(t.kode_kantor, '000'))";
+            $joinExtra = " AND t.kode_kantor = :kode_kantor_data";
             $masterParams[':kode_kantor_master'] = str_pad((string) $kode_kantor, 3, '0', STR_PAD_LEFT);
+            $masterParams[':kode_kantor_data'] = str_pad((string) $kode_kantor, 3, '0', STR_PAD_LEFT);
         } elseif (!empty($korwil)) {
             if ($korwil === 'SEMARANG') {
                 $masterWhere = "WHERE k.kode_kantor BETWEEN '001' AND '007'";
@@ -1961,8 +1965,9 @@ class DashboardController{
                     COALESCE(SUM(CASE WHEN t.created = :today_date_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_hari_ini,
                     COALESCE(SUM(CASE WHEN t.created = :today_date_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_hari_ini
                 FROM ({$masterSql}) m
-                LEFT JOIN summary_kredit_harian t
+                LEFT JOIN summary_kredit_harian_update t
                     ON {$joinField} = m.kode_unit
+                    {$joinExtra}
                     AND t.created >= :query_start
                     AND t.created <= :end_date
                 GROUP BY m.kode_unit, m.nama_unit
@@ -2036,7 +2041,7 @@ class DashboardController{
                 $negativeRows = array_values(array_filter($rows, function($row) {
                     return (float) ($row['growth'] ?? 0) < 0;
                 }));
-                $displayRows = ($key === 'minggu_ini' || $key === 'hari_ini') ? $rows : $negativeRows;
+                $displayRows = $rows;
 
                 $periodResults[$key] = [
                     'key' => $key,
@@ -2098,7 +2103,7 @@ class DashboardController{
                     COALESCE(SUM(t.realisasi), 0) AS realisasi_total,
                     COALESCE(SUM(t.angsuran), 0) AS runoff_total,
                     COALESCE(SUM(t.noa_realisasi), 0) AS noa_total
-                FROM summary_kredit_harian t
+                FROM summary_kredit_harian_update t
                 {$summaryWhere}
             ";
             $summaryStmt = $this->pdo->prepare($weeklySummarySql);
