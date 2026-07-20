@@ -73,7 +73,7 @@
                     </div>
                 </div>
                 <div class="tv-ratio-card bg-gray-50 border border-gray-100 p-2.5 rounded-lg flex flex-col justify-between" data-ratio-key="casa">
-                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1" title="CASA = Tabungan / Total DPK x 100%">CASA Ratio</span>
+                    <span class="text-[9px] font-bold text-gray-500 uppercase tracking-wider mb-1" title="CASA = Tabungan / Total DPK x 100%">CASA</span>
                     <div class="flex items-end justify-between gap-2">
                         <span class="text-lg font-black" id="txt_rasio_casa">0%</span>
                         <div id="delta_rasio_casa" class="text-right shrink-0"></div>

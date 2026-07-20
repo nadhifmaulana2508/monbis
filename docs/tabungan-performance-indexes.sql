@@ -3,6 +3,8 @@
 -- Index pertama mempercepat query top AO tabungan per tanggal.
 -- Index kedua mempercepat query tabungan baru berbasis tgl_register.
 
+
+
 ALTER TABLE nominatif_tabungan
     ADD INDEX idx_tab_created_ao (created, nama_ao, kode_kantor, saldo);
 
