@@ -638,12 +638,13 @@ class LaporanKeuanganController
                     $aktual = (float) ($kantor['aktual'][$metric] ?? 0);
                     $bulanLalu = (float) ($kantor['bulan_lalu'][$metric] ?? 0);
                     $net = $aktual - $bulanLalu;
+                    $nominal = ($metric === 'aset') ? $aktual : $net;
                     $growth = $bulanLalu != 0 ? round(($net / abs($bulanLalu)) * 100, 2) : ($aktual != 0 ? 100 : 0);
 
                     $metrics[$metric][] = [
                         'kode_kantor' => $kantor['kode_kantor'],
                         'nama_kantor' => $kantor['nama_kantor'],
-                        'nominal' => $net,
+                        'nominal' => $nominal,
                         'net' => $net,
                         'aktual' => $aktual,
                         'bulan_lalu' => $bulanLalu,
@@ -688,8 +689,8 @@ class LaporanKeuanganController
                 'scope' => $scopeLabel,
                 'tanggal' => $baseDate,
                 'tanggal_bulan_lalu' => $previousDate,
-                'mode' => 'net_mom',
-                'keterangan' => 'Net = aktual tanggal dipilih dikurangi posisi akhir bulan sebelumnya',
+                'mode' => 'distribusi_makro',
+                'keterangan' => 'Aset memakai posisi aktual; metrik lainnya tetap memakai aktual dikurangi posisi akhir bulan sebelumnya',
                 'metrics' => $response,
             ]);
         } catch (Exception $e) {

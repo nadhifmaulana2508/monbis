@@ -1581,10 +1581,10 @@
 
     function distributionMetricMeta(metric) {
         const map = {
-            aset: { label: 'Net Aset', canvas: 'canvasDistAset', color: '#4f6df5', bg: 'rgba(79, 109, 245, 0.14)' },
-            laba: { label: 'Net Laba', canvas: 'canvasDistLaba', color: '#2563eb', bg: 'rgba(37, 99, 235, 0.12)' },
-            pendapatan: { label: 'Net Pendapatan', canvas: 'canvasDistPendapatan', color: '#10b981', bg: 'rgba(16, 185, 129, 0.13)' },
-            beban: { label: 'Net Beban', canvas: 'canvasDistBeban', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' }
+            aset: { label: 'Aset', canvas: 'canvasDistAset', color: '#4f6df5', bg: 'rgba(79, 109, 245, 0.14)' },
+            laba: { label: 'Laba', canvas: 'canvasDistLaba', color: '#2563eb', bg: 'rgba(37, 99, 235, 0.12)' },
+            pendapatan: { label: 'Pendapatan', canvas: 'canvasDistPendapatan', color: '#10b981', bg: 'rgba(16, 185, 129, 0.13)' },
+            beban: { label: 'Beban', canvas: 'canvasDistBeban', color: '#ef4444', bg: 'rgba(239, 68, 68, 0.12)' }
         };
         return map[metric] || map.aset;
     }
@@ -1600,7 +1600,7 @@
         const rows = [...(items || [])].sort((a, b) => Math.abs(Number(b.nominal || 0)) - Math.abs(Number(a.nominal || 0))).slice(0, 10);
         box.innerHTML = `
             <table>
-                <thead><tr><th>Kantor</th><th>Net</th></tr></thead>
+                <thead><tr><th>Kantor</th><th>Nominal</th></tr></thead>
                 <tbody>
                     ${rows.map(item => `
                         <tr>
@@ -1627,17 +1627,17 @@
 
         box.innerHTML = `
             <div class="tv-distribution-summary-card">
-                <div class="label">Net Tertinggi</div>
+                <div class="label">Nominal Tertinggi</div>
                 <div class="value">3 Kantor Teratas</div>
                 ${formatList(top)}
             </div>
             <div class="tv-distribution-summary-card">
-                <div class="label">Rata-rata Net</div>
+                <div class="label">Rata-rata Nominal</div>
                 <div class="value">${formatSignedRp(summary.average)}</div>
-                <div class="sub">Aktual - bulan sebelumnya</div>
+                <div class="sub">Posisi data terpilih</div>
             </div>
             <div class="tv-distribution-summary-card">
-                <div class="label">Net Terendah</div>
+                <div class="label">Nominal Terendah</div>
                 <div class="value">3 Kantor Terbawah</div>
                 ${formatList(bottom)}
             </div>
@@ -1726,7 +1726,7 @@
             });
             const json = await res.json();
             const metrics = json.data?.metrics || {};
-            const periodText = `Net ${json.data?.tanggal || '-'} - ${json.data?.tanggal_bulan_lalu || '-'}`;
+            const periodText = `Posisi ${json.data?.tanggal || '-'} | Pembanding ${json.data?.tanggal_bulan_lalu || '-'}`;
             setText('label_dist_aset_laba_period', periodText);
             setText('label_dist_pendapatan_beban_period', periodText);
 
