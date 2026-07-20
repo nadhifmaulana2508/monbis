@@ -826,6 +826,9 @@
             harian_date: currDate,
             harian_date_realisasi: targetRealisasiDate
         };
+        if (type === 'test perkembangan tabungan') {
+            payload.include_ao = false;
+        }
 
         let endpointUrl = './api/dashboard/';
 

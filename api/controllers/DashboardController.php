@@ -981,7 +981,7 @@ class DashboardController{
     public function getRealisasiRealtimeByProduk($input) {
         $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian_date  = $input['harian_date']  ?? date('Y-m-d');
-        
+
         $kode_kantor = $input['kode_kantor'] ?? '000';
         $korwil      = strtoupper($input['korwil'] ?? '');
 
@@ -2986,6 +2986,7 @@ class DashboardController{
         $harian_date  = $input['harian_date']  ?? date('Y-m-d');
 
         $kode_kantor = $input['kode_kantor'] ?? '000';
+        $includeAo = !array_key_exists('include_ao', $input) || filter_var($input['include_ao'], FILTER_VALIDATE_BOOLEAN);
 
         // 2. Panggil helper filter (beri alias 'nt' untuk nominatif_tabungan)
         $filter = $this->buildFilterQuery($input, 'nt');
@@ -3005,78 +3006,86 @@ class DashboardController{
         // 4. KONDISIONAL QUERY UTAMA (BREAKDOWN KANKAS VS PUSAT)
         // =========================================================
         if ($displayMode === 'CABANG') {
-            // MODE CABANG: Breakdown ke Kankas (Sudah kebal teks "NULL")
+            // MODE CABANG: Breakdown ke Kankas tanpa GROUP BY rekening agar query lebih ringan.
             $sql_main = "
-                WITH rekap_rek AS (
-                    SELECT 
-                        no_rekening,
-                        MAX(kode_kantor) AS kode_kantor,
-                        MAX(nama_kankas) AS nama_kankas, 
-                        SUM(CASE WHEN created = :closing_date_1 THEN 1 ELSE 0 END) AS is_prev,
-                        SUM(CASE WHEN created = :harian_date_1 THEN 1 ELSE 0 END) AS is_curr,
-                        SUM(CASE WHEN created = :closing_date_2 THEN saldo ELSE 0 END) AS saldo_prev,
-                        SUM(CASE WHEN created = :harian_date_2 THEN saldo ELSE 0 END) AS saldo_curr
-                    FROM nominatif_tabungan nt
-                    WHERE created IN (:closing_date_3, :harian_date_3)
-                    {$filter['sql']} {$filterSql_cabang}
-                    GROUP BY no_rekening
-                )
                 SELECT 
-                    -- Jika kosong/NULL, fallback ke kode_kantor + '000' (Misal: 004000)
-                    COALESCE(k.kode_group1, CONCAT(r.kode_kantor, '000')) AS kode_cabang,
-                    
-                   
+                    COALESCE(k.kode_group1, CONCAT(nt.kode_kantor, '000')) AS kode_cabang,
                     COALESCE(
-                        NULLIF(NULLIF(TRIM(r.nama_kankas), ''), 'NULL'), 
+                        NULLIF(NULLIF(TRIM(nt.nama_kankas), ''), 'NULL'), 
                         k.deskripsi_group1, 
-                        (SELECT nama_kantor FROM kode_kantor WHERE kode_kantor = r.kode_kantor LIMIT 1),
-                        CONCAT('CABANG ', r.kode_kantor)
+                        MAX(nt.nama_kantor),
+                        CONCAT('CABANG ', nt.kode_kantor)
                     ) AS nama_cabang, 
-                    
-                    SUM(CASE WHEN r.is_curr > 0 THEN 1 ELSE 0 END) AS noa_curr, 
-                    SUM(CASE WHEN r.is_prev = 0 AND r.is_curr > 0 THEN 1 ELSE 0 END) AS noa_tambah,
-                    SUM(CASE WHEN r.is_prev > 0 AND r.is_curr = 0 THEN 1 ELSE 0 END) AS noa_kurang,
-                    SUM(r.saldo_prev) AS saldo_prev,
-                    SUM(r.saldo_curr) AS saldo_curr,
-                    SUM(CASE WHEN r.is_prev = 0 AND r.is_curr > 0 THEN r.saldo_curr ELSE 0 END) AS saldo_baru,
-                    SUM(CASE WHEN r.is_prev > 0 AND r.is_curr = 0 THEN r.saldo_prev ELSE 0 END) AS saldo_cair
-                FROM rekap_rek r
+                    COUNT(*) AS noa_curr,
+                    0 AS noa_prev,
+                    0 AS noa_tambah,
+                    0 AS noa_kurang,
+                    0 AS saldo_prev,
+                    SUM(nt.saldo) AS saldo_curr,
+                    0 AS saldo_baru,
+                    0 AS saldo_cair
+                FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
                 LEFT JOIN kankas k 
-                    ON r.nama_kankas IS NOT NULL 
-                    AND TRIM(r.nama_kankas) != '' 
-                    AND TRIM(r.nama_kankas) != 'NULL'
-                    AND TRIM(r.nama_kankas) = TRIM(k.deskripsi_group1)
-                    AND k.kode_kantor = r.kode_kantor
+                    ON nt.nama_kankas IS NOT NULL 
+                    AND TRIM(nt.nama_kankas) != '' 
+                    AND TRIM(nt.nama_kankas) != 'NULL'
+                    AND TRIM(nt.nama_kankas) = TRIM(k.deskripsi_group1)
+                    AND k.kode_kantor = nt.kode_kantor
+                WHERE nt.created = :harian_date_3
+                    {$filter['sql']} {$filterSql_cabang}
+                GROUP BY kode_cabang, nama_cabang
+            ";
+            $sql_prev = "
+                SELECT
+                    COALESCE(k.kode_group1, CONCAT(nt.kode_kantor, '000')) AS kode_cabang,
+                    COALESCE(
+                        NULLIF(NULLIF(TRIM(nt.nama_kankas), ''), 'NULL'),
+                        k.deskripsi_group1,
+                        MAX(nt.nama_kantor),
+                        CONCAT('CABANG ', nt.kode_kantor)
+                    ) AS nama_cabang,
+                    COUNT(*) AS noa_prev,
+                    SUM(nt.saldo) AS saldo_prev
+                FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
+                LEFT JOIN kankas k
+                    ON nt.nama_kankas IS NOT NULL
+                    AND TRIM(nt.nama_kankas) != ''
+                    AND TRIM(nt.nama_kankas) != 'NULL'
+                    AND TRIM(nt.nama_kankas) = TRIM(k.deskripsi_group1)
+                    AND k.kode_kantor = nt.kode_kantor
+                WHERE nt.created = :closing_date_3
+                    {$filter['sql']} {$filterSql_cabang}
                 GROUP BY kode_cabang, nama_cabang
             ";
         } else {
-            // MODE PUSAT: Konsolidasi per Cabang
+            // MODE PUSAT: Konsolidasi per Cabang tanpa GROUP BY rekening.
             $sql_main = "
-                WITH rekap_rek AS (
-                    SELECT 
-                        no_rekening,
-                        MAX(kode_kantor) AS kode_target,
-                        SUM(CASE WHEN created = :closing_date_1 THEN 1 ELSE 0 END) AS is_prev,
-                        SUM(CASE WHEN created = :harian_date_1 THEN 1 ELSE 0 END) AS is_curr,
-                        SUM(CASE WHEN created = :closing_date_2 THEN saldo ELSE 0 END) AS saldo_prev,
-                        SUM(CASE WHEN created = :harian_date_2 THEN saldo ELSE 0 END) AS saldo_curr
-                    FROM nominatif_tabungan nt
-                    WHERE created IN (:closing_date_3, :harian_date_3)
-                    {$filter['sql']} {$filterSql_cabang}
-                    GROUP BY no_rekening
-                )
                 SELECT 
-                    r.kode_target AS kode_cabang,
-                    COALESCE((SELECT nama_kantor FROM nominatif_tabungan WHERE kode_kantor = r.kode_target ORDER BY created DESC LIMIT 1), CONCAT('CABANG ', r.kode_target)) AS nama_cabang,
-                    SUM(CASE WHEN r.is_curr > 0 THEN 1 ELSE 0 END) AS noa_curr, 
-                    SUM(CASE WHEN r.is_prev = 0 AND r.is_curr > 0 THEN 1 ELSE 0 END) AS noa_tambah,
-                    SUM(CASE WHEN r.is_prev > 0 AND r.is_curr = 0 THEN 1 ELSE 0 END) AS noa_kurang,
-                    SUM(r.saldo_prev) AS saldo_prev,
-                    SUM(r.saldo_curr) AS saldo_curr,
-                    SUM(CASE WHEN r.is_prev = 0 AND r.is_curr > 0 THEN r.saldo_curr ELSE 0 END) AS saldo_baru,
-                    SUM(CASE WHEN r.is_prev > 0 AND r.is_curr = 0 THEN r.saldo_prev ELSE 0 END) AS saldo_cair
-                FROM rekap_rek r
-                GROUP BY r.kode_target
+                    nt.kode_kantor AS kode_cabang,
+                    COALESCE(MAX(nt.nama_kantor), CONCAT('CABANG ', nt.kode_kantor)) AS nama_cabang,
+                    COUNT(*) AS noa_curr,
+                    0 AS noa_prev,
+                    0 AS noa_tambah,
+                    0 AS noa_kurang,
+                    0 AS saldo_prev,
+                    SUM(nt.saldo) AS saldo_curr,
+                    0 AS saldo_baru,
+                    0 AS saldo_cair
+                FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
+                WHERE nt.created = :harian_date_3
+                    {$filter['sql']} {$filterSql_cabang}
+                GROUP BY nt.kode_kantor
+            ";
+            $sql_prev = "
+                SELECT
+                    nt.kode_kantor AS kode_cabang,
+                    COALESCE(MAX(nt.nama_kantor), CONCAT('CABANG ', nt.kode_kantor)) AS nama_cabang,
+                    COUNT(*) AS noa_prev,
+                    SUM(nt.saldo) AS saldo_prev
+                FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
+                WHERE nt.created = :closing_date_3
+                    {$filter['sql']} {$filterSql_cabang}
+                GROUP BY nt.kode_kantor
             ";
         }
 
@@ -3086,23 +3095,62 @@ class DashboardController{
         $sql_ao = "
             SELECT 
                 nama_ao,
-                SUM(CASE WHEN created = :closing_date_2 THEN saldo ELSE 0 END) AS saldo_prev,
-                SUM(CASE WHEN created = :harian_date_2 THEN saldo ELSE 0 END) AS saldo_curr
-            FROM nominatif_tabungan nt
-            WHERE created IN (:closing_date_3, :harian_date_3)
+                0 AS saldo_prev,
+                SUM(saldo) AS saldo_curr
+            FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
+            WHERE created = :harian_date_2
+            AND nama_ao IS NOT NULL AND TRIM(nama_ao) != ''
+            {$filter['sql']} {$filterSql_cabang}
+            GROUP BY nama_ao
+        ";
+        $sql_ao_prev = "
+            SELECT 
+                nama_ao,
+                SUM(saldo) AS saldo_prev
+            FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
+            WHERE created = :closing_date_2
             AND nama_ao IS NOT NULL AND TRIM(nama_ao) != ''
             {$filter['sql']} {$filterSql_cabang}
             GROUP BY nama_ao
         ";
 
+        if ($displayMode === 'CABANG') {
+            $sql_baru = "
+                SELECT
+                    COALESCE(k.kode_group1, CONCAT(nt.kode_kantor, '000')) AS kode_cabang,
+                    COUNT(*) AS noa_tambah,
+                    SUM(nt.saldo) AS saldo_baru
+                FROM nominatif_tabungan nt FORCE INDEX (idx_speed_nom_tab)
+                LEFT JOIN kankas k
+                    ON nt.nama_kankas IS NOT NULL
+                    AND TRIM(nt.nama_kankas) != ''
+                    AND TRIM(nt.nama_kankas) != 'NULL'
+                    AND TRIM(nt.nama_kankas) = TRIM(k.deskripsi_group1)
+                    AND k.kode_kantor = nt.kode_kantor
+                WHERE nt.created = :harian_date_baru
+                  AND nt.tgl_register > :closing_date_baru
+                  AND nt.tgl_register <= :harian_date_register
+                  {$filter['sql']} {$filterSql_cabang}
+                GROUP BY kode_cabang
+            ";
+        } else {
+            $sql_baru = "
+                SELECT
+                    nt.kode_kantor AS kode_cabang,
+                    COUNT(*) AS noa_tambah,
+                    SUM(nt.saldo) AS saldo_baru
+                FROM nominatif_tabungan nt FORCE INDEX (idx_speed_nom_tab)
+                WHERE nt.created = :harian_date_baru
+                  AND nt.tgl_register > :closing_date_baru
+                  AND nt.tgl_register <= :harian_date_register
+                  {$filter['sql']} {$filterSql_cabang}
+                GROUP BY nt.kode_kantor
+            ";
+        }
+
         try {
             // --- EKSEKUSI QUERY UTAMA ---
             $stmt = $this->pdo->prepare($sql_main);
-            $stmt->bindValue(':closing_date_1', $closing_date);
-            $stmt->bindValue(':closing_date_2', $closing_date);
-            $stmt->bindValue(':closing_date_3', $closing_date);
-            $stmt->bindValue(':harian_date_1', $harian_date);
-            $stmt->bindValue(':harian_date_2', $harian_date);
             $stmt->bindValue(':harian_date_3', $harian_date);
             
             if ($displayMode === 'CABANG') {
@@ -3115,22 +3163,106 @@ class DashboardController{
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // --- EKSEKUSI QUERY AO ---
-            $stmt_ao = $this->pdo->prepare($sql_ao);
-            $stmt_ao->bindValue(':closing_date_2', $closing_date);
-            $stmt_ao->bindValue(':closing_date_3', $closing_date);
-            $stmt_ao->bindValue(':harian_date_2', $harian_date);
-            $stmt_ao->bindValue(':harian_date_3', $harian_date);
-            
+            // --- EKSEKUSI QUERY CLOSING TERPISAH agar index created tetap efektif ---
+            $stmt_prev = $this->pdo->prepare($sql_prev);
+            $stmt_prev->bindValue(':closing_date_3', $closing_date);
             if ($displayMode === 'CABANG') {
-                $stmt_ao->bindValue(':kode_kantor_master', $kode_kantor);
+                $stmt_prev->bindValue(':kode_kantor_master', $kode_kantor);
+            }
+            foreach ($filter['params'] as $key => $val) {
+                $stmt_prev->bindValue($key, $val);
+            }
+            $stmt_prev->execute();
+            $prev_rows = $stmt_prev->fetchAll(PDO::FETCH_ASSOC);
+            $row_map = [];
+            foreach ($rows as $idx => $row) {
+                $row_map[str_pad((string) ($row['kode_cabang'] ?? '000'), 3, '0', STR_PAD_LEFT)] = $idx;
+            }
+            foreach ($prev_rows as $prevRow) {
+                $prevKey = str_pad((string) ($prevRow['kode_cabang'] ?? '000'), 3, '0', STR_PAD_LEFT);
+                if (isset($row_map[$prevKey])) {
+                    $rows[$row_map[$prevKey]]['noa_prev'] = (int) ($prevRow['noa_prev'] ?? 0);
+                    $rows[$row_map[$prevKey]]['saldo_prev'] = (float) ($prevRow['saldo_prev'] ?? 0);
+                } else {
+                    $rows[] = [
+                        'kode_cabang' => $prevKey,
+                        'nama_cabang' => $prevRow['nama_cabang'] ?? ('CABANG ' . $prevKey),
+                        'noa_curr' => 0,
+                        'noa_prev' => (int) ($prevRow['noa_prev'] ?? 0),
+                        'noa_tambah' => 0,
+                        'noa_kurang' => 0,
+                        'saldo_prev' => (float) ($prevRow['saldo_prev'] ?? 0),
+                        'saldo_curr' => 0,
+                        'saldo_baru' => 0,
+                        'saldo_cair' => 0,
+                    ];
+                }
             }
 
-            foreach ($filter['params'] as $key => $val) {
-                $stmt_ao->bindValue($key, $val);
+            // --- EKSEKUSI QUERY TABUNGAN BARU (pakai tgl_register, jauh lebih ringan daripada anti-join rekening) ---
+            $stmt_baru = $this->pdo->prepare($sql_baru);
+            $stmt_baru->bindValue(':closing_date_baru', $closing_date);
+            $stmt_baru->bindValue(':harian_date_baru', $harian_date);
+            $stmt_baru->bindValue(':harian_date_register', $harian_date);
+            if ($displayMode === 'CABANG') {
+                $stmt_baru->bindValue(':kode_kantor_master', $kode_kantor);
             }
-            $stmt_ao->execute();
-            $ao_rows = $stmt_ao->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($filter['params'] as $key => $val) {
+                $stmt_baru->bindValue($key, $val);
+            }
+            $stmt_baru->execute();
+            $baru_rows = $stmt_baru->fetchAll(PDO::FETCH_ASSOC);
+            $baru_map = [];
+            foreach ($baru_rows as $rowBaru) {
+                $baru_map[str_pad((string) ($rowBaru['kode_cabang'] ?? '000'), 3, '0', STR_PAD_LEFT)] = [
+                    'noa_tambah' => (int) ($rowBaru['noa_tambah'] ?? 0),
+                    'saldo_baru' => (float) ($rowBaru['saldo_baru'] ?? 0),
+                ];
+            }
+
+            $ao_rows = [];
+            if ($includeAo) {
+                // --- EKSEKUSI QUERY AO ---
+                $stmt_ao = $this->pdo->prepare($sql_ao);
+                $stmt_ao->bindValue(':harian_date_2', $harian_date);
+                
+                if ($displayMode === 'CABANG') {
+                    $stmt_ao->bindValue(':kode_kantor_master', $kode_kantor);
+                }
+
+                foreach ($filter['params'] as $key => $val) {
+                    $stmt_ao->bindValue($key, $val);
+                }
+                $stmt_ao->execute();
+                $ao_rows = $stmt_ao->fetchAll(PDO::FETCH_ASSOC);
+
+                $stmt_ao_prev = $this->pdo->prepare($sql_ao_prev);
+                $stmt_ao_prev->bindValue(':closing_date_2', $closing_date);
+                if ($displayMode === 'CABANG') {
+                    $stmt_ao_prev->bindValue(':kode_kantor_master', $kode_kantor);
+                }
+                foreach ($filter['params'] as $key => $val) {
+                    $stmt_ao_prev->bindValue($key, $val);
+                }
+                $stmt_ao_prev->execute();
+                $ao_prev_rows = $stmt_ao_prev->fetchAll(PDO::FETCH_ASSOC);
+                $ao_map = [];
+                foreach ($ao_rows as $idx => $aoRow) {
+                    $ao_map[(string) ($aoRow['nama_ao'] ?? '')] = $idx;
+                }
+                foreach ($ao_prev_rows as $aoPrev) {
+                    $namaAo = (string) ($aoPrev['nama_ao'] ?? '');
+                    if (isset($ao_map[$namaAo])) {
+                        $ao_rows[$ao_map[$namaAo]]['saldo_prev'] = (float) ($aoPrev['saldo_prev'] ?? 0);
+                    } else {
+                        $ao_rows[] = [
+                            'nama_ao' => $namaAo,
+                            'saldo_prev' => (float) ($aoPrev['saldo_prev'] ?? 0),
+                            'saldo_curr' => 0,
+                        ];
+                    }
+                }
+            }
 
             $cabang_array = [];
             
@@ -3160,12 +3292,12 @@ class DashboardController{
                 $saldo_curr = (float) $r['saldo_curr'];
                 $delta      = $saldo_curr - $saldo_prev;
                 
-                $saldo_baru = (float) $r['saldo_baru'];
-                $saldo_cair = (float) $r['saldo_cair'];
+                $saldo_baru = (float) ($baru_map[$kd]['saldo_baru'] ?? 0);
+                $saldo_cair = max(0, $saldo_prev - $saldo_curr);
 
                 $noa_curr   = (int) $r['noa_curr'];
-                $noa_tambah = (int) $r['noa_tambah'];
-                $noa_kurang = (int) $r['noa_kurang'];
+                $noa_tambah = (int) ($baru_map[$kd]['noa_tambah'] ?? 0);
+                $noa_kurang = max(0, (int) (($r['noa_prev'] ?? 0) - $noa_curr));
                 $delta_noa  = $noa_tambah - $noa_kurang; // Net Penambahan NOA
 
                 // Masukkan ke Grand Total
