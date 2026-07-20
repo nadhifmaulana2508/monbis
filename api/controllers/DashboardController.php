@@ -2986,7 +2986,7 @@ class DashboardController{
         $harian_date  = $input['harian_date']  ?? date('Y-m-d');
 
         $kode_kantor = $input['kode_kantor'] ?? '000';
-        $includeAo = !array_key_exists('include_ao', $input) || filter_var($input['include_ao'], FILTER_VALIDATE_BOOLEAN);
+        $includeAo = array_key_exists('include_ao', $input) && filter_var($input['include_ao'], FILTER_VALIDATE_BOOLEAN);
 
         // 2. Panggil helper filter (beri alias 'nt' untuk nominatif_tabungan)
         $filter = $this->buildFilterQuery($input, 'nt');
@@ -3009,10 +3009,9 @@ class DashboardController{
             // MODE CABANG: Breakdown ke Kankas tanpa GROUP BY rekening agar query lebih ringan.
             $sql_main = "
                 SELECT 
-                    COALESCE(k.kode_group1, CONCAT(nt.kode_kantor, '000')) AS kode_cabang,
+                    COALESCE(NULLIF(NULLIF(TRIM(nt.nama_kankas), ''), 'NULL'), CONCAT(nt.kode_kantor, '000')) AS kode_cabang,
                     COALESCE(
                         NULLIF(NULLIF(TRIM(nt.nama_kankas), ''), 'NULL'), 
-                        k.deskripsi_group1, 
                         MAX(nt.nama_kantor),
                         CONCAT('CABANG ', nt.kode_kantor)
                     ) AS nama_cabang, 
@@ -3025,37 +3024,24 @@ class DashboardController{
                     0 AS saldo_baru,
                     0 AS saldo_cair
                 FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
-                LEFT JOIN kankas k 
-                    ON nt.nama_kankas IS NOT NULL 
-                    AND TRIM(nt.nama_kankas) != '' 
-                    AND TRIM(nt.nama_kankas) != 'NULL'
-                    AND TRIM(nt.nama_kankas) = TRIM(k.deskripsi_group1)
-                    AND k.kode_kantor = nt.kode_kantor
                 WHERE nt.created = :harian_date_3
                     {$filter['sql']} {$filterSql_cabang}
-                GROUP BY kode_cabang, nama_cabang
+                GROUP BY kode_cabang
             ";
             $sql_prev = "
                 SELECT
-                    COALESCE(k.kode_group1, CONCAT(nt.kode_kantor, '000')) AS kode_cabang,
+                    COALESCE(NULLIF(NULLIF(TRIM(nt.nama_kankas), ''), 'NULL'), CONCAT(nt.kode_kantor, '000')) AS kode_cabang,
                     COALESCE(
                         NULLIF(NULLIF(TRIM(nt.nama_kankas), ''), 'NULL'),
-                        k.deskripsi_group1,
                         MAX(nt.nama_kantor),
                         CONCAT('CABANG ', nt.kode_kantor)
                     ) AS nama_cabang,
                     COUNT(*) AS noa_prev,
                     SUM(nt.saldo) AS saldo_prev
                 FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
-                LEFT JOIN kankas k
-                    ON nt.nama_kankas IS NOT NULL
-                    AND TRIM(nt.nama_kankas) != ''
-                    AND TRIM(nt.nama_kankas) != 'NULL'
-                    AND TRIM(nt.nama_kankas) = TRIM(k.deskripsi_group1)
-                    AND k.kode_kantor = nt.kode_kantor
                 WHERE nt.created = :closing_date_3
                     {$filter['sql']} {$filterSql_cabang}
-                GROUP BY kode_cabang, nama_cabang
+                GROUP BY kode_cabang
             ";
         } else {
             // MODE PUSAT: Konsolidasi per Cabang tanpa GROUP BY rekening.
@@ -3117,16 +3103,10 @@ class DashboardController{
         if ($displayMode === 'CABANG') {
             $sql_baru = "
                 SELECT
-                    COALESCE(k.kode_group1, CONCAT(nt.kode_kantor, '000')) AS kode_cabang,
+                    COALESCE(NULLIF(NULLIF(TRIM(nt.nama_kankas), ''), 'NULL'), CONCAT(nt.kode_kantor, '000')) AS kode_cabang,
                     COUNT(*) AS noa_tambah,
                     SUM(nt.saldo) AS saldo_baru
                 FROM nominatif_tabungan nt FORCE INDEX (idx_speed_nom_tab)
-                LEFT JOIN kankas k
-                    ON nt.nama_kankas IS NOT NULL
-                    AND TRIM(nt.nama_kankas) != ''
-                    AND TRIM(nt.nama_kankas) != 'NULL'
-                    AND TRIM(nt.nama_kankas) = TRIM(k.deskripsi_group1)
-                    AND k.kode_kantor = nt.kode_kantor
                 WHERE nt.created = :harian_date_baru
                   AND nt.tgl_register > :closing_date_baru
                   AND nt.tgl_register <= :harian_date_register
