@@ -981,9 +981,8 @@ class DashboardController{
     public function getRealisasiRealtimeByProduk($input) {
         $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian_date  = $input['harian_date']  ?? date('Y-m-d');
-
+        
         $kode_kantor = $input['kode_kantor'] ?? '000';
-        $tvLight = !empty($input['tv_light']);
         $korwil      = strtoupper($input['korwil'] ?? '');
 
         // =========================================================
@@ -2987,9 +2986,6 @@ class DashboardController{
         $harian_date  = $input['harian_date']  ?? date('Y-m-d');
 
         $kode_kantor = $input['kode_kantor'] ?? '000';
-        if (!empty($input['tv_light'])) {
-            return $this->getPerkembanganTabunganTvLight($input, $closing_date, $harian_date, $kode_kantor);
-        }
 
         // 2. Panggil helper filter (beri alias 'nt' untuk nominatif_tabungan)
         $filter = $this->buildFilterQuery($input, 'nt');
@@ -3119,25 +3115,22 @@ class DashboardController{
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $ao_rows = [];
-            if (!$tvLight) {
-                // --- EKSEKUSI QUERY AO ---
-                $stmt_ao = $this->pdo->prepare($sql_ao);
-                $stmt_ao->bindValue(':closing_date_2', $closing_date);
-                $stmt_ao->bindValue(':closing_date_3', $closing_date);
-                $stmt_ao->bindValue(':harian_date_2', $harian_date);
-                $stmt_ao->bindValue(':harian_date_3', $harian_date);
-                
-                if ($displayMode === 'CABANG') {
-                    $stmt_ao->bindValue(':kode_kantor_master', $kode_kantor);
-                }
-
-                foreach ($filter['params'] as $key => $val) {
-                    $stmt_ao->bindValue($key, $val);
-                }
-                $stmt_ao->execute();
-                $ao_rows = $stmt_ao->fetchAll(PDO::FETCH_ASSOC);
+            // --- EKSEKUSI QUERY AO ---
+            $stmt_ao = $this->pdo->prepare($sql_ao);
+            $stmt_ao->bindValue(':closing_date_2', $closing_date);
+            $stmt_ao->bindValue(':closing_date_3', $closing_date);
+            $stmt_ao->bindValue(':harian_date_2', $harian_date);
+            $stmt_ao->bindValue(':harian_date_3', $harian_date);
+            
+            if ($displayMode === 'CABANG') {
+                $stmt_ao->bindValue(':kode_kantor_master', $kode_kantor);
             }
+
+            foreach ($filter['params'] as $key => $val) {
+                $stmt_ao->bindValue($key, $val);
+            }
+            $stmt_ao->execute();
+            $ao_rows = $stmt_ao->fetchAll(PDO::FETCH_ASSOC);
 
             $cabang_array = [];
             
@@ -3249,17 +3242,6 @@ class DashboardController{
             usort($cair, function($a, $b) { return $b['saldo_cair'] <=> $a['saldo_cair']; });
             $top_cair = array_slice($cair, 0, 5);
 
-            if ($tvLight) {
-                return [
-                    'per_korwil' => [],
-                    'grand_total' => $grand_total,
-                    'detail_cabang' => [],
-                    'top_saldo' => $top_kelolaan,
-                    'bottom_saldo' => $bottom_saldo,
-                    'top_baru' => $top_baru,
-                    'top_pencairan' => $top_cair,
-                ];
-            }
 
             // =========================================================
             // 8. OLAH DATA KINERJA AO (TOP & BOTTOM)
@@ -3330,177 +3312,9 @@ class DashboardController{
         }
     }
 
-    private function getPerkembanganTabunganTvLight($input, $closing_date, $harian_date, $kode_kantor) {
-        try {
-            $kode_kantor = !empty($kode_kantor) ? str_pad((string) $kode_kantor, 3, '0', STR_PAD_LEFT) : '000';
-            $korwil = !empty($input['korwil']) ? strtoupper((string) $input['korwil']) : '';
-            $whereCurr = "nt.created = :harian_date";
-            $wherePrev = "nt.created = :closing_date";
-            $params = [':harian_date' => $harian_date, ':closing_date' => $closing_date];
 
-            if ($kode_kantor !== '000') {
-                $whereCurr .= " AND nt.kode_kantor = :kode_kantor";
-                $wherePrev .= " AND nt.kode_kantor = :kode_kantor";
-                $params[':kode_kantor'] = $kode_kantor;
-            } elseif ($korwil) {
-                $range = null;
-                if ($korwil === 'SEMARANG') $range = ['001', '007'];
-                if ($korwil === 'SOLO') $range = ['008', '014'];
-                if ($korwil === 'BANYUMAS') $range = ['015', '021'];
-                if ($korwil === 'PEKALONGAN') $range = ['022', '028'];
-                if ($range) {
-                    $whereCurr .= " AND nt.kode_kantor BETWEEN :kw_start AND :kw_end";
-                    $wherePrev .= " AND nt.kode_kantor BETWEEN :kw_start AND :kw_end";
-                    $params[':kw_start'] = $range[0];
-                    $params[':kw_end'] = $range[1];
-                }
-            }
 
-            $isCabang = $kode_kantor !== '000';
-            $groupExpr = $isCabang
-                ? "COALESCE(NULLIF(NULLIF(TRIM(nt.nama_kankas), ''), 'NULL'), CONCAT(nt.kode_kantor, '000'))"
-                : "nt.kode_kantor";
-            $nameExpr = $isCabang
-                ? "COALESCE(NULLIF(NULLIF(TRIM(nt.nama_kankas), ''), 'NULL'), MAX(nt.nama_kantor), CONCAT('CABANG ', nt.kode_kantor))"
-                : "COALESCE(MAX(nt.nama_kantor), CONCAT('CABANG ', nt.kode_kantor))";
 
-            $fetchRows = function ($sql, $queryParams) {
-                $stmt = $this->pdo->prepare($sql);
-                foreach ($queryParams as $key => $val) {
-                    if (strpos($sql, $key) === false) {
-                        continue;
-                    }
-                    $stmt->bindValue($key, $val);
-                }
-                $stmt->execute();
-                return $stmt->fetchAll(PDO::FETCH_ASSOC);
-            };
 
-            $saldoRows = $fetchRows("
-                SELECT {$groupExpr} AS kode_cabang, {$nameExpr} AS nama_cabang,
-                       COUNT(*) AS noa_curr, SUM(nt.saldo) AS saldo_curr
-                FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
-                WHERE {$whereCurr}
-                GROUP BY kode_cabang
-            ", $params);
-
-            $prevRows = $fetchRows("
-                SELECT {$groupExpr} AS kode_cabang, COUNT(*) AS noa_prev, SUM(nt.saldo) AS saldo_prev
-                FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
-                WHERE {$wherePrev}
-                GROUP BY kode_cabang
-            ", $params);
-
-            $prevMap = [];
-            foreach ($prevRows as $row) {
-                $prevMap[(string) $row['kode_cabang']] = $row;
-            }
-
-            $newParams = $params;
-            $newParams[':join_closing_date'] = $closing_date;
-            $newParams[':register_end'] = $harian_date;
-            $topBaruRaw = $fetchRows("
-                SELECT {$groupExpr} AS kode_cabang, {$nameExpr} AS nama_cabang,
-                       COUNT(*) AS noa_tambah, SUM(nt.saldo) AS saldo_baru
-                FROM nominatif_tabungan nt FORCE INDEX (idx_speed_nom_tab)
-                WHERE {$whereCurr}
-                  AND nt.tgl_register > :join_closing_date
-                  AND nt.tgl_register <= :register_end
-                GROUP BY kode_cabang
-                ORDER BY saldo_baru DESC
-                LIMIT 5
-            ", $newParams);
-
-            $detail = [];
-            $grand = [
-                'nama_cabang' => 'TOTAL KESELURUHAN',
-                'noa_curr' => 0, 'noa_tambah' => 0, 'noa_kurang' => 0, 'delta_noa' => 0,
-                'saldo_prev' => 0, 'saldo_curr' => 0, 'delta_saldo' => 0,
-                'saldo_baru' => 0, 'saldo_cair' => 0,
-            ];
-
-            foreach ($saldoRows as $row) {
-                $kode = (string) $row['kode_cabang'];
-                $prev = $prevMap[$kode] ?? ['noa_prev' => 0, 'saldo_prev' => 0];
-                $saldoCurr = (float) ($row['saldo_curr'] ?? 0);
-                $saldoPrev = (float) ($prev['saldo_prev'] ?? 0);
-                $noaCurr = (int) ($row['noa_curr'] ?? 0);
-                $noaPrev = (int) ($prev['noa_prev'] ?? 0);
-                $item = [
-                    'kode_cabang' => str_pad($kode, 3, '0', STR_PAD_LEFT),
-                    'nama_cabang' => str_replace('Kc. ', 'Cab. ', trim((string) ($row['nama_cabang'] ?? ''))),
-                    'noa_curr' => $noaCurr,
-                    'noa_tambah' => max(0, $noaCurr - $noaPrev),
-                    'noa_kurang' => max(0, $noaPrev - $noaCurr),
-                    'delta_noa' => $noaCurr - $noaPrev,
-                    'saldo_prev' => $saldoPrev,
-                    'saldo_curr' => $saldoCurr,
-                    'delta_saldo' => $saldoCurr - $saldoPrev,
-                    'saldo_baru' => 0,
-                    'saldo_cair' => 0,
-                ];
-                $detail[] = $item;
-                foreach (['noa_curr', 'noa_tambah', 'noa_kurang', 'delta_noa', 'saldo_prev', 'saldo_curr', 'delta_saldo'] as $key) {
-                    $grand[$key] += $item[$key];
-                }
-            }
-
-            $normalizeTop = function ($rows, $saldoKey, $noaKey) {
-                return array_map(function ($row) use ($saldoKey, $noaKey) {
-                    $kode = (string) ($row['kode_cabang'] ?? '');
-                    return [
-                        'kode_cabang' => str_pad($kode, 3, '0', STR_PAD_LEFT),
-                        'nama_cabang' => str_replace('Kc. ', 'Cab. ', trim((string) ($row['nama_cabang'] ?? ''))),
-                        'noa_curr' => (int) ($row[$noaKey] ?? 0),
-                        'noa_tambah' => (int) ($row[$noaKey] ?? 0),
-                        'noa_kurang' => (int) ($row[$noaKey] ?? 0),
-                        'saldo_curr' => (float) ($row[$saldoKey] ?? 0),
-                        'saldo_baru' => (float) ($row[$saldoKey] ?? 0),
-                        'saldo_cair' => (float) ($row[$saldoKey] ?? 0),
-                    ];
-                }, $rows);
-            };
-
-            usort($detail, function($a, $b) { return $b['saldo_curr'] <=> $a['saldo_curr']; });
-            $topSaldo = array_slice($detail, 0, 5);
-            $bottomSaldo = $detail;
-            usort($bottomSaldo, function($a, $b) { return $a['saldo_curr'] <=> $b['saldo_curr']; });
-            $bottomSaldo = array_slice($bottomSaldo, 0, 5);
-            $topCairRaw = array_values(array_filter(array_map(function ($item) {
-                $penurunan = max(0, (float) $item['saldo_prev'] - (float) $item['saldo_curr']);
-                if ($penurunan <= 0) return null;
-                return [
-                    'kode_cabang' => $item['kode_cabang'],
-                    'nama_cabang' => $item['nama_cabang'],
-                    'noa_kurang' => max(0, (int) $item['noa_kurang']),
-                    'saldo_cair' => $penurunan,
-                ];
-            }, $detail)));
-            usort($topCairRaw, function($a, $b) { return $b['saldo_cair'] <=> $a['saldo_cair']; });
-            $topCairRaw = array_slice($topCairRaw, 0, 5);
-            $topBaru = $normalizeTop($topBaruRaw, 'saldo_baru', 'noa_tambah');
-            $topCair = $normalizeTop($topCairRaw, 'saldo_cair', 'noa_kurang');
-            foreach ($topBaru as $item) $grand['saldo_baru'] += $item['saldo_baru'];
-            foreach ($topCair as $item) $grand['saldo_cair'] += $item['saldo_cair'];
-
-            return [
-                'per_korwil' => [],
-                'grand_total' => $grand,
-                'detail_cabang' => [],
-                'top_saldo' => $topSaldo,
-                'bottom_saldo' => $bottomSaldo,
-                'top_baru' => $topBaru,
-                'top_pencairan' => $topCair,
-            ];
-        } catch (\Exception $e) {
-            error_log("Error getPerkembanganTabunganTvLight: " . $e->getMessage());
-            return [
-                'ERROR_DETEKSI' => 'Terjadi masalah di sistem Tabungan TV!',
-                'pesan_error' => $e->getMessage(),
-                'file_error' => $e->getFile(),
-                'baris_error' => $e->getLine(),
-            ];
-        }
-    }
 
 }
