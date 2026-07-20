@@ -8,10 +8,10 @@
                     </h2>
                     <p class="tv-trend-subtitle text-[10px] md:text-xs text-gray-500 font-medium mt-1">Histori mingguan mengikuti bulan pada harian date yang dipilih</p>
                 </div>
-                <div class="tv-trend-net bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 flex items-center justify-between gap-3 min-w-[220px] shrink-0 w-full md:w-auto">
+                <div class="tv-trend-net bg-amber-50 border border-amber-100 rounded-xl px-4 py-2 flex items-center justify-between gap-4 min-w-[340px] shrink-0 w-full md:w-auto">
                     <div class="min-w-0">
                         <span class="block text-[9px] text-amber-700 font-extrabold uppercase tracking-wider">Laba Net</span>
-                        <span class="block text-lg md:text-xl font-black text-amber-900 leading-tight" id="txt_tren_laba_net">Rp 0</span>
+                        <span class="block text-lg md:text-xl font-black text-amber-900 leading-tight whitespace-nowrap" id="txt_tren_laba_net">Rp 0</span>
                     </div>
                     <div id="txt_tren_laba_net_detail" class="text-[9px] md:text-[10px] text-gray-500 font-semibold text-right leading-tight shrink-0"></div>
                 </div>

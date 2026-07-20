@@ -198,7 +198,7 @@
     .tv-trend-shell { gap: .75rem; }
     .tv-trend-header { padding-bottom: .7rem; }
     .tv-trend-title { line-height: 1.08; }
-    .tv-trend-net { max-width: 320px; }
+    .tv-trend-net { max-width: 460px; }
     .tv-trend-summary { min-width: 0; }
     .tv-trend-summary > div:first-child,
     .tv-trend-panel h3,
@@ -999,7 +999,7 @@
         .tv-trend-header { gap: .45rem !important; padding-bottom: .55rem; }
         .tv-trend-title { font-size: .95rem !important; }
         .tv-trend-subtitle { display: none; }
-        .tv-trend-net { min-width: 190px; max-width: 250px; padding: .45rem .6rem !important; }
+        .tv-trend-net { min-width: 280px; max-width: 380px; padding: .45rem .75rem !important; }
         .tv-trend-summary-grid { gap: .45rem !important; }
         .tv-trend-summary { padding: .5rem .6rem !important; border-radius: .7rem !important; }
         .tv-trend-summary .text-base,
