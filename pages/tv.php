@@ -218,6 +218,14 @@
     .tv-realisasi-period .tv-list { scrollbar-width: thin; }
     .tv-real-zero-row { min-width: 0; }
     .tv-real-zero-row p { line-height: 1.05; }
+    .tv-real-branch { color: #0f172a; }
+    .tv-real-meta { color: #64748b; }
+    body.dark-mode .tv-real-zero-row {
+        background: rgba(15, 23, 42, 0.92) !important;
+        border-color: rgba(71, 85, 105, 0.95) !important;
+    }
+    body.dark-mode .tv-real-branch { color: #f8fafc !important; }
+    body.dark-mode .tv-real-meta { color: #cbd5e1 !important; }
     @container (min-width: 1180px) {
         .tv-realisasi-summary {
             grid-template-columns: repeat(4, minmax(0, 1fr));

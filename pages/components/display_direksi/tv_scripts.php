@@ -1133,8 +1133,8 @@
                  title="${escapeTv(row.nama_unit || '-')}\nRealisasi: Rp ${fmtB(row.total_realisasi)}\nRun Off: Rp ${fmtB(row.total_runoff)}\nGrowth: ${isMinus ? '-' : '+'}Rp ${fmtB(Math.abs(growth))}\nNOA Realisasi: ${fmt(row.noa_realisasi || 0)}">
                 <div class="flex items-center justify-between gap-2">
                     <div class="min-w-0">
-                        <p class="text-sm md:text-base font-black text-gray-900 truncate">${idx + 1}. ${escapeTv(row.kode_unit || '-')} - ${escapeTv(row.nama_unit || '-')}</p>
-                        <p class="text-[10px] md:text-xs font-extrabold text-gray-500 mt-0.5">Realisasi Rp ${fmtB(row.total_realisasi)} - ${fmt(row.noa_realisasi || 0)} NOA</p>
+                        <p class="tv-real-branch text-sm md:text-base font-black truncate">${idx + 1}. ${escapeTv(row.kode_unit || '-')} - ${escapeTv(row.nama_unit || '-')}</p>
+                        <p class="tv-real-meta text-[10px] md:text-xs font-extrabold mt-0.5">Realisasi Rp ${fmtB(row.total_realisasi)} - ${fmt(row.noa_realisasi || 0)} NOA</p>
                     </div>
                     <div class="shrink-0 text-right">
                         ${isZeroReal ? '<span class="inline-block px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] md:text-xs font-black mb-1">0 Real</span>' : ''}
