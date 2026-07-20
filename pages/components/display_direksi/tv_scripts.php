@@ -1164,6 +1164,8 @@
 
         const labels = arr.map(d => d.label); 
         const dataReal = arr.map(d => Number(d.total_realisasi) || 0); 
+        const dataRealisasiKredit = arr.map(d => Number(d.realisasi_kredit) || 0);
+        const dataRestruckKredit = arr.map(d => Number(d.restruck_kredit ?? d.restrukturisasi) || 0);
         const dataRunoff = arr.map(d => Number(d.total_runoff) || 0);
         const dataLunas = arr.map(d => Number(d.total_lunas) || 0);
         const dataNoaLunas = arr.map(d => Number(d.noa_lunas) || 0);
@@ -1246,6 +1248,10 @@
                                 const growth = dataGrowth[idx];
                                 return [
                                     '------------------------',
+                                    'Detail Realisasi:',
+                                    `  - Realisasi Kredit: Rp ${fmtB(dataRealisasiKredit[idx])}`,
+                                    `  - Restruck Kredit: Rp ${fmtB(dataRestruckKredit[idx])}`,
+                                    '',
                                     'Detail Run Off:',
                                     `  - Lunas: Rp ${fmtB(dataLunas[idx])} (${fmt(dataNoaLunas[idx])} NOA)`,
                                     `  - Angsuran: Rp ${fmtB(dataAngsuran[idx])} (${fmt(dataNoaAngsuran[idx])} NOA)`,

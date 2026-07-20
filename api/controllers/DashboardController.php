@@ -826,8 +826,11 @@ class DashboardController{
         $sql = "
             SELECT 
                 s.created AS tanggal,
-                SUM(COALESCE(s.realisasi, 0)) AS total_realisasi,
-                SUM(COALESCE(s.noa_realisasi, 0)) AS noa_realisasi,
+                SUM(COALESCE(s.realisasi, 0)) AS realisasi_kredit,
+                SUM(COALESCE(s.restrukturisasi, 0)) AS restruck_kredit,
+                SUM(COALESCE(s.realisasi, 0) + COALESCE(s.restrukturisasi, 0)) AS total_realisasi,
+                SUM(COALESCE(s.noa_realisasi, 0) + COALESCE(s.noa_restrukturisasi, 0)) AS noa_realisasi,
+                SUM(COALESCE(s.noa_restrukturisasi, 0)) AS noa_restruck,
                 
                 SUM(COALESCE(s.pelunasan, 0)) AS total_lunas,
                 SUM(COALESCE(s.noa_pelunasan, 0)) AS noa_lunas,
@@ -836,7 +839,7 @@ class DashboardController{
                 SUM(COALESCE(s.noa_angsuran, 0) - COALESCE(s.noa_pelunasan, 0)) AS noa_angsuran,
                 
                 SUM(COALESCE(s.angsuran, 0)) AS total_runoff
-            FROM summary_kredit_harian s
+            FROM summary_kredit_harian_update s
             WHERE s.created >= :start_date AND s.created <= :end_date
             {$filterSql}
             GROUP BY s.created
@@ -868,7 +871,7 @@ class DashboardController{
                     $lbl = date('Y-m-d', $curr);
                     $groupedData[$lbl] = [
                         'label' => date('d M', $curr), 
-                        'realisasi' => 0, 'noa_realisasi' => 0, 
+                        'realisasi' => 0, 'realisasi_kredit' => 0, 'restruck_kredit' => 0, 'noa_realisasi' => 0, 'noa_restruck' => 0,
                         'lunas' => 0, 'noa_lunas' => 0, 
                         'angsuran' => 0, 'noa_angsuran' => 0, 
                         'runoff' => 0
@@ -883,7 +886,7 @@ class DashboardController{
                     if (!isset($groupedData[$lbl])) {
                         $groupedData[$lbl] = [
                             'label' => "Mg " . date('W', $curr) . " '" . date('y', $curr), 
-                            'realisasi' => 0, 'noa_realisasi' => 0, 
+                            'realisasi' => 0, 'realisasi_kredit' => 0, 'restruck_kredit' => 0, 'noa_realisasi' => 0, 'noa_restruck' => 0,
                             'lunas' => 0, 'noa_lunas' => 0, 
                             'angsuran' => 0, 'noa_angsuran' => 0, 
                             'runoff' => 0
@@ -898,7 +901,7 @@ class DashboardController{
                     $lbl = date('Y-m', $curr); 
                     $groupedData[$lbl] = [
                         'label' => date('M Y', $curr), 
-                        'realisasi' => 0, 'noa_realisasi' => 0, 
+                        'realisasi' => 0, 'realisasi_kredit' => 0, 'restruck_kredit' => 0, 'noa_realisasi' => 0, 'noa_restruck' => 0,
                         'lunas' => 0, 'noa_lunas' => 0, 
                         'angsuran' => 0, 'noa_angsuran' => 0, 
                         'runoff' => 0
@@ -914,7 +917,7 @@ class DashboardController{
                     $lbl = (string)$y;
                     $groupedData[$lbl] = [
                         'label' => $lbl, // Output misal: "2020", "2021"
-                        'realisasi' => 0, 'noa_realisasi' => 0, 
+                        'realisasi' => 0, 'realisasi_kredit' => 0, 'restruck_kredit' => 0, 'noa_realisasi' => 0, 'noa_restruck' => 0,
                         'lunas' => 0, 'noa_lunas' => 0, 
                         'angsuran' => 0, 'noa_angsuran' => 0, 
                         'runoff' => 0
@@ -935,7 +938,10 @@ class DashboardController{
 
                 if (isset($groupedData[$lblKey])) {
                     $groupedData[$lblKey]['realisasi']     += (float) $row['total_realisasi'];
+                    $groupedData[$lblKey]['realisasi_kredit'] += (float) $row['realisasi_kredit'];
+                    $groupedData[$lblKey]['restruck_kredit']  += (float) $row['restruck_kredit'];
                     $groupedData[$lblKey]['noa_realisasi'] += (int) $row['noa_realisasi'];
+                    $groupedData[$lblKey]['noa_restruck']   += (int) $row['noa_restruck'];
                     $groupedData[$lblKey]['lunas']         += (float) $row['total_lunas'];
                     $groupedData[$lblKey]['noa_lunas']     += (int) $row['noa_lunas'];
                     $groupedData[$lblKey]['angsuran']      += (float) $row['total_angsuran'];
@@ -955,7 +961,11 @@ class DashboardController{
                     'tanggal'         => $key,
                     'label'           => $val['label'],
                     'total_realisasi' => $val['realisasi'],
+                    'realisasi_kredit'=> $val['realisasi_kredit'],
+                    'restruck_kredit' => $val['restruck_kredit'],
+                    'restrukturisasi' => $val['restruck_kredit'],
                     'noa_realisasi'   => $val['noa_realisasi'],
+                    'noa_restruck'    => $val['noa_restruck'],
                     'total_lunas'     => $val['lunas'],            
                     'noa_lunas'       => $val['noa_lunas'],        
                     'total_angsuran'  => $val['angsuran'],         
@@ -1492,11 +1502,13 @@ class DashboardController{
                             WHEN s.kode_kantor BETWEEN '022' AND '028' THEN 'PEKALONGAN'
                             ELSE 'LAINNYA' 
                         END AS nama_korwil,
-                        SUM(COALESCE(s.realisasi, 0)) AS total_realisasi,
+                        SUM(COALESCE(s.realisasi, 0)) AS realisasi_kredit,
+                        SUM(COALESCE(s.restrukturisasi, 0)) AS restruck_kredit,
+                        SUM(COALESCE(s.realisasi, 0) + COALESCE(s.restrukturisasi, 0)) AS total_realisasi,
                         SUM(COALESCE(s.pelunasan, 0)) AS total_lunas,
                         SUM(COALESCE(s.angsuran, 0) - COALESCE(s.pelunasan, 0)) AS total_angsuran,
                         SUM(COALESCE(s.angsuran, 0)) AS total_runoff
-                    FROM summary_kredit_harian s
+                    FROM summary_kredit_harian_update s
                     WHERE s.created >= :start_date AND s.created <= :end_date
                     GROUP BY 
                         CASE 
@@ -1510,6 +1522,8 @@ class DashboardController{
                 SELECT 
                     mk.nama_korwil,
                     COALESCE(sd.total_realisasi, 0) AS realisasi,
+                    COALESCE(sd.realisasi_kredit, 0) AS realisasi_kredit,
+                    COALESCE(sd.restruck_kredit, 0) AS restruck_kredit,
                     COALESCE(sd.total_lunas, 0) AS lunas,
                     COALESCE(sd.total_angsuran, 0) AS angsuran,
                     COALESCE(sd.total_runoff, 0) AS total_runoff,
@@ -1523,12 +1537,14 @@ class DashboardController{
             $sql = "
                 SELECT 
                     COALESCE(k.nama_kantor, CONCAT('CABANG ', s.kode_kantor)) AS nama_korwil,
-                    SUM(COALESCE(s.realisasi, 0)) AS realisasi,
+                    SUM(COALESCE(s.realisasi, 0)) AS realisasi_kredit,
+                    SUM(COALESCE(s.restrukturisasi, 0)) AS restruck_kredit,
+                    SUM(COALESCE(s.realisasi, 0) + COALESCE(s.restrukturisasi, 0)) AS realisasi,
                     SUM(COALESCE(s.pelunasan, 0)) AS lunas,
                     SUM(COALESCE(s.angsuran, 0) - COALESCE(s.pelunasan, 0)) AS angsuran,
                     SUM(COALESCE(s.angsuran, 0)) AS total_runoff,
-                    SUM(COALESCE(s.realisasi, 0)) - SUM(COALESCE(s.angsuran, 0)) AS growth
-                FROM summary_kredit_harian s
+                    SUM(COALESCE(s.realisasi, 0) + COALESCE(s.restrukturisasi, 0)) - SUM(COALESCE(s.angsuran, 0)) AS growth
+                FROM summary_kredit_harian_update s
                 LEFT JOIN kode_kantor k ON s.kode_kantor = k.kode_kantor
                 WHERE s.created >= :start_date AND s.created <= :end_date
                 {$filterSql}
@@ -1560,6 +1576,8 @@ class DashboardController{
             $grand_total = [
                 'nama_korwil'  => 'TOTAL KONSOLIDASI',
                 'realisasi'    => 0,
+                'realisasi_kredit' => 0,
+                'restruck_kredit'  => 0,
                 'lunas'        => 0,
                 'angsuran'     => 0,
                 'total_runoff' => 0,
@@ -1569,6 +1587,8 @@ class DashboardController{
             $formattedData = [];
             foreach ($rows as $r) {
                 $realisasi = (float) $r['realisasi'];
+                $realisasiKredit = (float) ($r['realisasi_kredit'] ?? $realisasi);
+                $restruckKredit  = (float) ($r['restruck_kredit'] ?? 0);
                 $lunas     = (float) $r['lunas'];
                 $angsuran  = (float) $r['angsuran'];
                 $runoff    = (float) $r['total_runoff'];
@@ -1577,6 +1597,9 @@ class DashboardController{
                 $formattedData[] = [
                     'nama_korwil'  => str_replace('Kc. ', '', $r['nama_korwil']), // Bersihkan nama cabang
                     'realisasi'    => $realisasi,
+                    'realisasi_kredit' => $realisasiKredit,
+                    'restruck_kredit'  => $restruckKredit,
+                    'restrukturisasi'  => $restruckKredit,
                     'lunas'        => $lunas,
                     'angsuran'     => $angsuran,
                     'total_runoff' => $runoff,
@@ -1584,6 +1607,8 @@ class DashboardController{
                 ];
 
                 $grand_total['realisasi']    += $realisasi;
+                $grand_total['realisasi_kredit'] += $realisasiKredit;
+                $grand_total['restruck_kredit']  += $restruckKredit;
                 $grand_total['lunas']        += $lunas;
                 $grand_total['angsuran']     += $angsuran;
                 $grand_total['total_runoff'] += $runoff;
@@ -1663,6 +1688,8 @@ class DashboardController{
                         -- 🔥 FIX: realisasi ditambah restrukturisasi
                         SUM(COALESCE(s.realisasi, 0) + COALESCE(s.restrukturisasi, 0)) AS total_realisasi,
                         SUM(COALESCE(s.pelunasan, 0)) AS total_lunas,
+                        SUM(COALESCE(s.realisasi, 0)) AS realisasi_kredit,
+                        SUM(COALESCE(s.restrukturisasi, 0)) AS restruck_kredit,
                         SUM(COALESCE(s.angsuran, 0) - COALESCE(s.pelunasan, 0)) AS total_angsuran,
                         SUM(COALESCE(s.angsuran, 0)) AS total_runoff
                     FROM summary_kredit_harian_update s
@@ -1679,6 +1706,8 @@ class DashboardController{
                 SELECT 
                     mk.nama_korwil,
                     COALESCE(sd.total_realisasi, 0) AS realisasi,
+                    COALESCE(sd.realisasi_kredit, 0) AS realisasi_kredit,
+                    COALESCE(sd.restruck_kredit, 0) AS restruck_kredit,
                     COALESCE(sd.total_lunas, 0) AS lunas,
                     COALESCE(sd.total_angsuran, 0) AS angsuran,
                     COALESCE(sd.total_runoff, 0) AS total_runoff,
@@ -1694,6 +1723,8 @@ class DashboardController{
                     SELECT 
                         s.kode_kantor,
                         -- 🔥 FIX: realisasi ditambah restrukturisasi
+                        SUM(COALESCE(s.realisasi, 0)) AS realisasi_kredit,
+                        SUM(COALESCE(s.restrukturisasi, 0)) AS restruck_kredit,
                         SUM(COALESCE(s.realisasi, 0) + COALESCE(s.restrukturisasi, 0)) AS total_realisasi,
                         SUM(COALESCE(s.pelunasan, 0)) AS total_lunas,
                         SUM(COALESCE(s.angsuran, 0) - COALESCE(s.pelunasan, 0)) AS total_angsuran,
@@ -1705,6 +1736,8 @@ class DashboardController{
                 SELECT 
                     k.nama_kantor AS nama_korwil,
                     COALESCE(sd.total_realisasi, 0) AS realisasi,
+                    COALESCE(sd.realisasi_kredit, 0) AS realisasi_kredit,
+                    COALESCE(sd.restruck_kredit, 0) AS restruck_kredit,
                     COALESCE(sd.total_lunas, 0) AS lunas,
                     COALESCE(sd.total_angsuran, 0) AS angsuran,
                     COALESCE(sd.total_runoff, 0) AS total_runoff,
@@ -1721,6 +1754,8 @@ class DashboardController{
                     SELECT 
                         s.kode_group_1,
                         -- 🔥 FIX: realisasi ditambah restrukturisasi
+                        SUM(COALESCE(s.realisasi, 0)) AS realisasi_kredit,
+                        SUM(COALESCE(s.restrukturisasi, 0)) AS restruck_kredit,
                         SUM(COALESCE(s.realisasi, 0) + COALESCE(s.restrukturisasi, 0)) AS total_realisasi,
                         SUM(COALESCE(s.pelunasan, 0)) AS total_lunas,
                         SUM(COALESCE(s.angsuran, 0) - COALESCE(s.pelunasan, 0)) AS total_angsuran,
@@ -1732,6 +1767,8 @@ class DashboardController{
                 SELECT 
                     g.deskripsi_group1 AS nama_korwil,
                     COALESCE(sd.total_realisasi, 0) AS realisasi,
+                    COALESCE(sd.realisasi_kredit, 0) AS realisasi_kredit,
+                    COALESCE(sd.restruck_kredit, 0) AS restruck_kredit,
                     COALESCE(sd.total_lunas, 0) AS lunas,
                     COALESCE(sd.total_angsuran, 0) AS angsuran,
                     COALESCE(sd.total_runoff, 0) AS total_runoff,
@@ -1766,6 +1803,8 @@ class DashboardController{
             $grand_total = [
                 'nama_korwil'  => 'TOTAL KONSOLIDASI',
                 'realisasi'    => 0,
+                'realisasi_kredit' => 0,
+                'restruck_kredit'  => 0,
                 'lunas'        => 0,
                 'angsuran'     => 0,
                 'total_runoff' => 0,
@@ -1775,6 +1814,8 @@ class DashboardController{
             $formattedData = [];
             foreach ($rows as $r) {
                 $realisasi = (float) $r['realisasi'];
+                $realisasiKredit = (float) ($r['realisasi_kredit'] ?? $realisasi);
+                $restruckKredit  = (float) ($r['restruck_kredit'] ?? 0);
                 $lunas     = (float) $r['lunas'];
                 $angsuran  = (float) $r['angsuran'];
                 $runoff    = (float) $r['total_runoff'];
@@ -1783,6 +1824,9 @@ class DashboardController{
                 $formattedData[] = [
                     'nama_korwil'  => str_replace('Kc. ', '', $r['nama_korwil'] ?? 'KAS TANPA NAMA'), 
                     'realisasi'    => $realisasi,
+                    'realisasi_kredit' => $realisasiKredit,
+                    'restruck_kredit'  => $restruckKredit,
+                    'restrukturisasi'  => $restruckKredit,
                     'lunas'        => $lunas,
                     'angsuran'     => $angsuran,
                     'total_runoff' => $runoff,
@@ -1790,6 +1834,8 @@ class DashboardController{
                 ];
 
                 $grand_total['realisasi']    += $realisasi;
+                $grand_total['realisasi_kredit'] += $realisasiKredit;
+                $grand_total['restruck_kredit']  += $restruckKredit;
                 $grand_total['lunas']        += $lunas;
                 $grand_total['angsuran']     += $angsuran;
                 $grand_total['total_runoff'] += $runoff;

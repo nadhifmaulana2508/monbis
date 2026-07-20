@@ -358,6 +358,8 @@
 
     const labels = dataArray.map(d => d.label); 
     const dataRealisasi = dataArray.map(d => Number(d.total_realisasi) || 0); 
+    const dataRealisasiKredit = dataArray.map(d => Number(d.realisasi_kredit) || 0);
+    const dataRestruckKredit = dataArray.map(d => Number(d.restruck_kredit ?? d.restrukturisasi) || 0);
     const dataRunoff = dataArray.map(d => Number(d.total_runoff) || 0); 
     const dataLunas = dataArray.map(d => Number(d.total_lunas) || 0);
     const dataNoaLunas = dataArray.map(d => Number(d.noa_lunas) || 0);
@@ -437,11 +439,17 @@
               afterBody: function(c) {
                 if (c.length > 0) { 
                   let idx = c[0].dataIndex;
+                  let realisasiKredit = dataRealisasiKredit[idx];
+                  let restruckKredit = dataRestruckKredit[idx];
                   let lunas = dataLunas[idx]; let noaLunas = dataNoaLunas[idx];
                   let angsuran = dataAngsuran[idx]; let noaAngsuran = dataNoaAngsuran[idx];
                   let g = dataGrowth[idx]; 
                   let lines = [];
                   lines.push('------------------------');
+                  lines.push(`Detail Realisasi:`);
+                  lines.push(`  • Realisasi Kredit: Rp ${fmtB(realisasiKredit)}`);
+                  lines.push(`  • Restruck Kredit: Rp ${fmtB(restruckKredit)}`);
+                  lines.push('');
                   lines.push(`Detail Run Off:`);
                   lines.push(`  • Lunas: Rp ${fmtB(lunas)} (${fmt(noaLunas)} NOA)`);
                   lines.push(`  • Angsuran: Rp ${fmtB(angsuran)} (${fmt(noaAngsuran)} NOA)`);
