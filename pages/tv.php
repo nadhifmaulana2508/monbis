@@ -215,7 +215,10 @@
     .tv-realisasi-period { min-width: 0; overflow: hidden; }
     .tv-realisasi-top-meta { min-width: min(430px, 42vw); }
     .tv-realisasi-top-meta > div { min-width: 0; }
-    .tv-realisasi-period .tv-list { scrollbar-width: thin; }
+    .tv-realisasi-period .tv-list {
+        scrollbar-width: thin;
+        max-height: min(100%, 20.5rem);
+    }
     .tv-real-zero-row { min-width: 0; }
     .tv-real-zero-row p { line-height: 1.05; }
     .tv-real-branch { color: #0f172a; }
