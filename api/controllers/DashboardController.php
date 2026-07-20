@@ -1864,12 +1864,14 @@ class DashboardController{
 
         $monthStart = date('Y-m-01', $endTs);
         $weekStart = date('Y-m-d', strtotime('monday this week', $endTs));
-        $threeDayStart = date('Y-m-d', strtotime('-2 days', $endTs));
+        $lastWeekStart = date('Y-m-d', strtotime('-7 days', strtotime($weekStart)));
+        $lastWeekEnd = date('Y-m-d', strtotime('-1 day', strtotime($weekStart)));
+        $queryStart = min($monthStart, $lastWeekStart);
 
         $periods = [
             'bulan_ini' => ['label' => 'Bulan Ini', 'short_label' => 'Bulan', 'start' => $monthStart, 'end' => $harian_date],
+            'minggu_lalu' => ['label' => 'Minggu Lalu', 'short_label' => 'M-1', 'start' => $lastWeekStart, 'end' => $lastWeekEnd],
             'minggu_ini' => ['label' => 'Minggu Ini', 'short_label' => 'Minggu', 'start' => $weekStart, 'end' => $harian_date],
-            'tiga_hari' => ['label' => '3 Hari', 'short_label' => '3 Hari', 'start' => $threeDayStart, 'end' => $harian_date],
             'hari_ini' => ['label' => 'Hari Ini', 'short_label' => 'Hari Ini', 'start' => $harian_date, 'end' => $harian_date],
         ];
 
@@ -1886,15 +1888,14 @@ class DashboardController{
         $masterParams = [];
 
         if ($kode_kantor !== '000' && empty($korwil)) {
-            $displayMode = 'KANKAS';
+            $displayMode = 'CABANG';
             $masterSql = "
                 SELECT
-                    g.kode_group1 AS kode_unit,
-                    COALESCE(NULLIF(TRIM(g.deskripsi_group1), ''), CONCAT('Kankas ', g.kode_group1)) AS nama_unit
-                FROM kankas g
-                WHERE g.kode_kantor = :kode_kantor_master
+                    k.kode_kantor AS kode_unit,
+                    REPLACE(k.nama_kantor, 'Kc. ', '') AS nama_unit
+                FROM kode_kantor k
+                WHERE k.kode_kantor = :kode_kantor_master
             ";
-            $joinField = 't.kode_group1';
             $masterParams[':kode_kantor_master'] = str_pad((string) $kode_kantor, 3, '0', STR_PAD_LEFT);
         } elseif (!empty($korwil)) {
             if ($korwil === 'SEMARANG') {
@@ -1921,28 +1922,41 @@ class DashboardController{
                 SELECT
                     m.kode_unit,
                     m.nama_unit,
-                    COALESCE(SUM(t.realisasi_pokok), 0) AS total_bulan_ini,
-                    COUNT(t.no_rekening) AS noa_bulan_ini,
-                    COALESCE(SUM(CASE WHEN t.tanggal_realisasi >= :week_start THEN t.realisasi_pokok ELSE 0 END), 0) AS total_minggu_ini,
-                    COUNT(CASE WHEN t.tanggal_realisasi >= :week_start_noa THEN t.no_rekening END) AS noa_minggu_ini,
-                    COALESCE(SUM(CASE WHEN t.tanggal_realisasi >= :three_day_start THEN t.realisasi_pokok ELSE 0 END), 0) AS total_tiga_hari,
-                    COUNT(CASE WHEN t.tanggal_realisasi >= :three_day_start_noa THEN t.no_rekening END) AS noa_tiga_hari,
-                    COALESCE(SUM(CASE WHEN t.tanggal_realisasi = :today_date THEN t.realisasi_pokok ELSE 0 END), 0) AS total_hari_ini,
-                    COUNT(CASE WHEN t.tanggal_realisasi = :today_date_noa THEN t.no_rekening END) AS noa_hari_ini
+                    COALESCE(SUM(CASE WHEN t.created >= :month_start_sum THEN t.realisasi ELSE 0 END), 0) AS realisasi_bulan_ini,
+                    COALESCE(SUM(CASE WHEN t.created >= :month_start_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_bulan_ini,
+                    COALESCE(SUM(CASE WHEN t.created >= :month_start_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_bulan_ini,
+                    COALESCE(SUM(CASE WHEN t.created >= :last_week_start AND t.created <= :last_week_end THEN t.realisasi ELSE 0 END), 0) AS realisasi_minggu_lalu,
+                    COALESCE(SUM(CASE WHEN t.created >= :last_week_start_runoff AND t.created <= :last_week_end_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_minggu_lalu,
+                    COALESCE(SUM(CASE WHEN t.created >= :last_week_start_noa AND t.created <= :last_week_end_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_minggu_lalu,
+                    COALESCE(SUM(CASE WHEN t.created >= :week_start THEN t.realisasi ELSE 0 END), 0) AS realisasi_minggu_ini,
+                    COALESCE(SUM(CASE WHEN t.created >= :week_start_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_minggu_ini,
+                    COALESCE(SUM(CASE WHEN t.created >= :week_start_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_minggu_ini,
+                    COALESCE(SUM(CASE WHEN t.created = :today_date THEN t.realisasi ELSE 0 END), 0) AS realisasi_hari_ini,
+                    COALESCE(SUM(CASE WHEN t.created = :today_date_runoff THEN t.angsuran ELSE 0 END), 0) AS runoff_hari_ini,
+                    COALESCE(SUM(CASE WHEN t.created = :today_date_noa THEN t.noa_realisasi ELSE 0 END), 0) AS noa_hari_ini
                 FROM ({$masterSql}) m
-                LEFT JOIN update_realisasi_kredit t
+                LEFT JOIN summary_kredit_harian t
                     ON {$joinField} = m.kode_unit
-                    AND t.tanggal_realisasi >= :month_start
-                    AND t.tanggal_realisasi <= :end_date
+                    AND t.created >= :query_start
+                    AND t.created <= :end_date
                 GROUP BY m.kode_unit, m.nama_unit
             ";
             $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':month_start', $monthStart);
+            $stmt->bindValue(':query_start', $queryStart);
+            $stmt->bindValue(':month_start_sum', $monthStart);
+            $stmt->bindValue(':month_start_runoff', $monthStart);
+            $stmt->bindValue(':month_start_noa', $monthStart);
+            $stmt->bindValue(':last_week_start', $lastWeekStart);
+            $stmt->bindValue(':last_week_end', $lastWeekEnd);
+            $stmt->bindValue(':last_week_start_runoff', $lastWeekStart);
+            $stmt->bindValue(':last_week_end_runoff', $lastWeekEnd);
+            $stmt->bindValue(':last_week_start_noa', $lastWeekStart);
+            $stmt->bindValue(':last_week_end_noa', $lastWeekEnd);
             $stmt->bindValue(':week_start', $weekStart);
+            $stmt->bindValue(':week_start_runoff', $weekStart);
             $stmt->bindValue(':week_start_noa', $weekStart);
-            $stmt->bindValue(':three_day_start', $threeDayStart);
-            $stmt->bindValue(':three_day_start_noa', $threeDayStart);
             $stmt->bindValue(':today_date', $harian_date);
+            $stmt->bindValue(':today_date_runoff', $harian_date);
             $stmt->bindValue(':today_date_noa', $harian_date);
             $stmt->bindValue(':end_date', $harian_date);
             foreach ($masterParams as $param => $value) {
@@ -1957,27 +1971,40 @@ class DashboardController{
                     $rows[] = [
                         'kode_unit' => $baseRow['kode_unit'],
                         'nama_unit' => $baseRow['nama_unit'],
-                        'total_realisasi' => (float) ($baseRow["total_{$key}"] ?? 0),
+                        'total_realisasi' => (float) ($baseRow["realisasi_{$key}"] ?? 0),
+                        'total_runoff' => (float) ($baseRow["runoff_{$key}"] ?? 0),
+                        'growth' => (float) ($baseRow["realisasi_{$key}"] ?? 0) - (float) ($baseRow["runoff_{$key}"] ?? 0),
                         'noa_realisasi' => (int) ($baseRow["noa_{$key}"] ?? 0),
                     ];
                 }
                 usort($rows, function($a, $b) {
-                    $cmp = $a['total_realisasi'] <=> $b['total_realisasi'];
+                    $cmp = $a['growth'] <=> $b['growth'];
                     if ($cmp !== 0) return $cmp;
                     return strcmp((string) $a['kode_unit'], (string) $b['kode_unit']);
                 });
 
                 $totalNominal = 0;
+                $totalRunoff = 0;
+                $totalGrowth = 0;
                 $totalNoa = 0;
                 $zeroCount = 0;
+                $negativeCount = 0;
                 foreach ($rows as &$row) {
                     $row['total_realisasi'] = (float) ($row['total_realisasi'] ?? 0);
+                    $row['total_runoff'] = (float) ($row['total_runoff'] ?? 0);
+                    $row['growth'] = (float) ($row['growth'] ?? 0);
                     $row['noa_realisasi'] = (int) ($row['noa_realisasi'] ?? 0);
                     if ($row['total_realisasi'] <= 0) $zeroCount++;
+                    if ($row['growth'] < 0) $negativeCount++;
                     $totalNominal += $row['total_realisasi'];
+                    $totalRunoff += $row['total_runoff'];
+                    $totalGrowth += $row['growth'];
                     $totalNoa += $row['noa_realisasi'];
                 }
                 unset($row);
+                $negativeRows = array_values(array_filter($rows, function($row) {
+                    return (float) ($row['growth'] ?? 0) < 0;
+                }));
 
                 $periodResults[$key] = [
                     'key' => $key,
@@ -1986,13 +2013,17 @@ class DashboardController{
                     'start' => $period['start'],
                     'end' => $period['end'],
                     'total_realisasi' => $totalNominal,
+                    'total_runoff' => $totalRunoff,
+                    'growth' => $totalGrowth,
                     'noa_realisasi' => $totalNoa,
                     'unit_count' => count($rows),
                     'zero_count' => $zeroCount,
+                    'negative_count' => $negativeCount,
                     'active_count' => count($rows) - $zeroCount,
                     'belum_realisasi' => array_values(array_filter($rows, function($row) {
                         return (float) ($row['total_realisasi'] ?? 0) <= 0;
                     })),
+                    'negative_growth' => $negativeRows,
                     'ranking' => $rows,
                 ];
             }

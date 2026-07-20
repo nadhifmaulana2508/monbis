@@ -4,10 +4,10 @@
             <div class="min-w-0">
                 <h2 class="text-base md:text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
                     <span class="text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">REALISASI</span>
-                    Monitoring Cabang Belum Realisasi
+                    Monitoring Growth Realisasi
                 </h2>
                 <p class="text-[10px] md:text-xs text-gray-500 font-medium mt-1">
-                    Realisasi kredit murni dari update_realisasi_kredit, restruck tidak dihitung
+                    Realisasi vs run off dari summary_kredit_harian, diurutkan dari growth minus terbesar
                 </p>
             </div>
             <div class="text-right shrink-0 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 min-w-[180px]">
@@ -26,7 +26,7 @@
                         <h3 class="text-sm md:text-base font-black text-slate-900">Bulan Ini</h3>
                         <p id="tv_real_period_bulan_ini" class="text-[9px] md:text-[10px] font-bold text-slate-500">-</p>
                     </div>
-                    <span id="tv_real_badge_bulan_ini" class="px-2 py-1 rounded-lg bg-white border border-slate-200 text-[10px] font-black text-red-600">0 belum</span>
+                    <span id="tv_real_badge_bulan_ini" class="px-2 py-1 rounded-lg bg-white border border-slate-200 text-[10px] font-black text-red-600">0 minus</span>
                 </div>
                 <div id="tv_real_list_bulan_ini" class="tv-list flex-grow min-h-0"></div>
             </section>
@@ -34,23 +34,23 @@
             <section class="tv-realisasi-period border border-emerald-100 rounded-xl bg-emerald-50 p-3 flex flex-col min-h-0">
                 <div class="flex items-start justify-between gap-2 mb-2 shrink-0">
                     <div>
-                        <h3 class="text-sm md:text-base font-black text-emerald-950">Minggu Ini</h3>
-                        <p id="tv_real_period_minggu_ini" class="text-[9px] md:text-[10px] font-bold text-emerald-700/70">-</p>
+                        <h3 class="text-sm md:text-base font-black text-emerald-950">Minggu Lalu</h3>
+                        <p id="tv_real_period_minggu_lalu" class="text-[9px] md:text-[10px] font-bold text-emerald-700/70">-</p>
                     </div>
-                    <span id="tv_real_badge_minggu_ini" class="px-2 py-1 rounded-lg bg-white border border-emerald-100 text-[10px] font-black text-red-600">0 belum</span>
+                    <span id="tv_real_badge_minggu_lalu" class="px-2 py-1 rounded-lg bg-white border border-emerald-100 text-[10px] font-black text-red-600">0 minus</span>
                 </div>
-                <div id="tv_real_list_minggu_ini" class="tv-list flex-grow min-h-0"></div>
+                <div id="tv_real_list_minggu_lalu" class="tv-list flex-grow min-h-0"></div>
             </section>
 
             <section class="tv-realisasi-period border border-amber-100 rounded-xl bg-amber-50 p-3 flex flex-col min-h-0">
                 <div class="flex items-start justify-between gap-2 mb-2 shrink-0">
                     <div>
-                        <h3 class="text-sm md:text-base font-black text-amber-950">3 Hari</h3>
-                        <p id="tv_real_period_tiga_hari" class="text-[9px] md:text-[10px] font-bold text-amber-700/70">-</p>
+                        <h3 class="text-sm md:text-base font-black text-amber-950">Minggu Ini</h3>
+                        <p id="tv_real_period_minggu_ini" class="text-[9px] md:text-[10px] font-bold text-amber-700/70">-</p>
                     </div>
-                    <span id="tv_real_badge_tiga_hari" class="px-2 py-1 rounded-lg bg-white border border-amber-100 text-[10px] font-black text-red-600">0 belum</span>
+                    <span id="tv_real_badge_minggu_ini" class="px-2 py-1 rounded-lg bg-white border border-amber-100 text-[10px] font-black text-red-600">0 minus</span>
                 </div>
-                <div id="tv_real_list_tiga_hari" class="tv-list flex-grow min-h-0"></div>
+                <div id="tv_real_list_minggu_ini" class="tv-list flex-grow min-h-0"></div>
             </section>
 
             <section class="tv-realisasi-period border border-rose-100 rounded-xl bg-rose-50 p-3 flex flex-col min-h-0">
@@ -59,7 +59,7 @@
                         <h3 class="text-sm md:text-base font-black text-rose-950">Hari Ini</h3>
                         <p id="tv_real_period_hari_ini" class="text-[9px] md:text-[10px] font-bold text-rose-700/70">-</p>
                     </div>
-                    <span id="tv_real_badge_hari_ini" class="px-2 py-1 rounded-lg bg-white border border-rose-100 text-[10px] font-black text-red-600">0 belum</span>
+                    <span id="tv_real_badge_hari_ini" class="px-2 py-1 rounded-lg bg-white border border-rose-100 text-[10px] font-black text-red-600">0 minus</span>
                 </div>
                 <div id="tv_real_list_hari_ini" class="tv-list flex-grow min-h-0"></div>
             </section>
