@@ -10,14 +10,21 @@
                     Pantauan realisasi dan growth cabang per periode untuk percepatan follow up
                 </p>
             </div>
-            <div class="text-right shrink-0 bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 min-w-[180px]">
-                <p class="text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider text-blue-700">Posisi Data</p>
-                <p id="tv_realisasi_date" class="text-sm md:text-lg font-black text-blue-950 leading-tight">-</p>
-                <p id="tv_realisasi_mode" class="text-[9px] md:text-[10px] font-bold text-blue-500 mt-0.5">Konsolidasi</p>
+            <div class="tv-realisasi-top-meta flex items-stretch justify-end gap-2 shrink-0">
+                <div id="tv_realisasi_total_card" class="hidden text-right bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2 min-w-[190px]">
+                    <p class="text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider text-indigo-700">Total Bulan Ini</p>
+                    <p id="tv_realisasi_total_nominal" class="text-base md:text-xl font-black text-indigo-950 leading-tight">Rp 0</p>
+                    <p id="tv_realisasi_total_growth" class="text-[10px] md:text-xs font-black mt-0.5">Growth Rp 0</p>
+                </div>
+                <div class="text-right bg-blue-50 border border-blue-100 rounded-xl px-3 py-2 min-w-[160px]">
+                    <p class="text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider text-blue-700">Posisi Data</p>
+                    <p id="tv_realisasi_date" class="text-sm md:text-lg font-black text-blue-950 leading-tight">-</p>
+                    <p id="tv_realisasi_mode" class="text-[9px] md:text-[10px] font-bold text-blue-500 mt-0.5">Konsolidasi</p>
+                </div>
             </div>
         </div>
 
-        <div id="tv_realisasi_summary" class="tv-realisasi-summary grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-2.5 py-3 shrink-0"></div>
+        <div id="tv_realisasi_summary" class="tv-realisasi-summary grid grid-cols-2 xl:grid-cols-4 gap-2.5 py-3 shrink-0"></div>
 
         <div class="tv-realisasi-period-grid grid grid-cols-2 xl:grid-cols-4 gap-3 flex-grow min-h-0">
             <section class="tv-realisasi-period border border-slate-100 rounded-xl bg-slate-50 p-3 flex flex-col min-h-0">

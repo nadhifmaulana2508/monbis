@@ -1058,10 +1058,25 @@
                 { bg: 'bg-blue-50', border: 'border-blue-100', accent: 'text-blue-600' },
                 { bg: 'bg-emerald-50', border: 'border-emerald-100', accent: 'text-emerald-600' },
                 { bg: 'bg-amber-50', border: 'border-amber-100', accent: 'text-amber-600' },
-                { bg: 'bg-rose-50', border: 'border-rose-100', accent: 'text-rose-600' },
-                { bg: 'bg-indigo-50', border: 'border-indigo-100', accent: 'text-indigo-600' }
+                { bg: 'bg-rose-50', border: 'border-rose-100', accent: 'text-rose-600' }
             ];
-            const weekly = Array.isArray(data.weekly_summary) && data.weekly_summary.length ? data.weekly_summary : keys.map(key => data.periods[key] || {});
+            const allWeekly = Array.isArray(data.weekly_summary) && data.weekly_summary.length ? data.weekly_summary : keys.map(key => data.periods[key] || {});
+            const totalWeekly = allWeekly.find(item => item && item.key === 'total') || null;
+            const weekly = allWeekly.filter(item => item && item.key !== 'total').slice(0, 4);
+            const totalCard = document.getElementById('tv_realisasi_total_card');
+            const totalNominal = document.getElementById('tv_realisasi_total_nominal');
+            const totalGrowth = document.getElementById('tv_realisasi_total_growth');
+            if(totalCard && totalWeekly) {
+                const growth = Number(totalWeekly.growth || 0);
+                totalCard.classList.remove('hidden');
+                if(totalNominal) totalNominal.textContent = `Rp ${fmtB(totalWeekly.total_realisasi)}`;
+                if(totalGrowth) {
+                    totalGrowth.textContent = `${growth < 0 ? '-' : '+'} Rp ${fmtB(Math.abs(growth))}`;
+                    totalGrowth.className = `text-[10px] md:text-xs font-black mt-0.5 ${growth < 0 ? 'text-red-600' : 'text-green-600'}`;
+                }
+            } else if(totalCard) {
+                totalCard.classList.add('hidden');
+            }
             summaryEl.innerHTML = weekly.map((p, idx) => {
                 const c = weekColors[idx] || weekColors[0];
                 const growth = Number(p.growth || 0);
@@ -1069,8 +1084,8 @@
                     <div class="rounded-xl ${c.bg} ${c.border} border p-2.5 md:p-3 min-w-0">
                         <div class="flex items-start justify-between gap-2">
                             <div class="min-w-0">
-                                <p class="text-[9px] font-extrabold uppercase tracking-wider ${c.accent}">${escapeTv(p.label || '-')}</p>
-                                <p class="text-lg md:text-2xl font-black text-gray-950 leading-tight mt-0.5">Rp ${fmtB(p.total_realisasi)}</p>
+                                <p class="text-[10px] font-extrabold uppercase tracking-wider ${c.accent}">${escapeTv(p.label || '-')}</p>
+                                <p class="text-xl md:text-2xl font-black text-gray-950 leading-tight mt-0.5">Rp ${fmtB(p.total_realisasi)}</p>
                             </div>
                             <div class="text-right shrink-0">
                                 <p class="text-[8px] font-extrabold text-gray-400 uppercase">Growth</p>
@@ -1114,16 +1129,16 @@
             const isMinus = growth < 0;
             const isZeroReal = Number(row.total_realisasi || 0) <= 0;
             return `
-            <div class="tv-real-zero-row bg-white/85 border border-white rounded-lg px-2.5 py-2 mb-1.5 shadow-sm"
+            <div class="tv-real-zero-row bg-white/90 border border-white rounded-lg px-3 py-2.5 mb-1.5 shadow-sm"
                  title="${escapeTv(row.nama_unit || '-')}\nRealisasi: Rp ${fmtB(row.total_realisasi)}\nRun Off: Rp ${fmtB(row.total_runoff)}\nGrowth: ${isMinus ? '-' : '+'}Rp ${fmtB(Math.abs(growth))}\nNOA Realisasi: ${fmt(row.noa_realisasi || 0)}">
                 <div class="flex items-center justify-between gap-2">
                     <div class="min-w-0">
-                        <p class="text-xs md:text-sm font-black text-gray-900 truncate">${idx + 1}. ${escapeTv(row.nama_unit || '-')}</p>
-                        <p class="text-[9px] md:text-[10px] font-bold text-gray-400 mt-0.5">${escapeTv(row.kode_unit || '-')} - Real Rp ${fmtB(row.total_realisasi)} - ${fmt(row.noa_realisasi || 0)} NOA</p>
+                        <p class="text-sm md:text-base font-black text-gray-900 truncate">${idx + 1}. ${escapeTv(row.kode_unit || '-')} - ${escapeTv(row.nama_unit || '-')}</p>
+                        <p class="text-[10px] md:text-xs font-extrabold text-gray-500 mt-0.5">Realisasi Rp ${fmtB(row.total_realisasi)} - ${fmt(row.noa_realisasi || 0)} NOA</p>
                     </div>
                     <div class="shrink-0 text-right">
-                        ${isZeroReal ? '<span class="inline-block px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[9px] md:text-[10px] font-black mb-1">0 Real</span>' : ''}
-                        <p class="${isMinus ? 'text-red-600' : 'text-green-600'} text-[10px] md:text-xs font-black">${isMinus ? '-' : '+'} Rp ${fmtB(Math.abs(growth))}</p>
+                        ${isZeroReal ? '<span class="inline-block px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[10px] md:text-xs font-black mb-1">0 Real</span>' : ''}
+                        <p class="${isMinus ? 'text-red-600' : 'text-green-600'} text-xs md:text-sm font-black">${isMinus ? '-' : '+'} Rp ${fmtB(Math.abs(growth))}</p>
                     </div>
                 </div>
             </div>
