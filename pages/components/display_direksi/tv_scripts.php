@@ -84,6 +84,7 @@
     const unwrapData = (raw, key) => raw?.[key] || raw || {};
     const setText = (id, text) => { const el = document.getElementById(id); if(el) el.textContent = text; };
     const setHtml = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
+    const escapeTv = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
     const setDeltaSummary = (id, label, val, invertGoodBad = false) => {
         const el = document.getElementById(id);
         if(!el) return;
@@ -865,6 +866,7 @@
         const pTabungan     = fetchWidgetDataTV('test perkembangan tabungan', true);
         const pSummaryMakro = fetchWidgetDataTV('tv_makro_summary');
         const pHealthKpi    = pSummaryMakro;
+        const pRealisasiMonitor = fetchWidgetDataTV('tv realisasi monitoring');
         
         scheduleTvFit(120);
         const pChartPorto = fetchTrenPortoTV();
@@ -874,7 +876,7 @@
         Promise.allSettled([
             pSaldoBank, pRealProduk, pTrenNpl, pRrCabang, pRunoffKorwil, pFlowKorwil,
             pTopReal, pTopNpl, pDeltaNpl, pDeposito, pTabungan, pSummaryMakro, pHealthKpi,
-            pChartPorto, pChartRunoff, pChartCoa, pDistribusiMakro
+            pRealisasiMonitor, pChartPorto, pChartRunoff, pChartCoa, pDistribusiMakro
         ]).then(() => {
             scheduleTvFit(80);
             setTimeout(fitTvSlides, 450);
@@ -977,6 +979,8 @@
             renderUniversalList('box_realisasi_produk', rp.detail_produk || [], 'nama_produk', 'total_realisasi', 'noa_realisasi', 'bg-indigo-500', false, 'NOA');
         });
 
+        pRealisasiMonitor.then(renderTvRealisasiMonitoring);
+
         Promise.all([pRunoffKorwil, pFlowKorwil]).then(([roRaw, flowRaw]) => {
             const ro = unwrapData(roRaw, 'runoff_vs_realisasi');
             const flow = unwrapData(flowRaw, 'flow_vs_recovery_npl');
@@ -1031,6 +1035,82 @@
             if(tTurun) html += `<div><span class="text-teal-300 font-bold">Penurunan NPL Terbesar</span><span class="block text-white mt-0.5">${(tTurun.nama_cabang || '-').replace('Kc. ','')} (${pct(Math.abs(tTurun.delta_npl))})</span></div>`;
             setHtml('dynamic_insights', html || '<span class="text-gray-400">Menunggu data insight.</span>');
         });
+    }
+
+    function renderTvRealisasiMonitoring(raw) {
+        const data = unwrapData(raw, 'tv_realisasi_monitoring');
+        if(!data || !data.periods) return;
+
+        setText('tv_realisasi_date', data.harian_date || getTvCurrentHarianDate() || '-');
+        setText('tv_realisasi_mode', data.mode === 'KANKAS' ? 'Breakdown Kankas' : 'Breakdown Cabang');
+
+        const keys = ['bulan_ini', 'minggu_ini', 'tiga_hari', 'hari_ini'];
+        const colorMap = {
+            bulan_ini: { bg: 'bg-slate-50', border: 'border-slate-100', text: 'text-slate-900', accent: 'text-blue-600' },
+            minggu_ini: { bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-950', accent: 'text-emerald-600' },
+            tiga_hari: { bg: 'bg-amber-50', border: 'border-amber-100', text: 'text-amber-950', accent: 'text-amber-600' },
+            hari_ini: { bg: 'bg-rose-50', border: 'border-rose-100', text: 'text-rose-950', accent: 'text-rose-600' }
+        };
+
+        const summaryEl = document.getElementById('tv_realisasi_summary');
+        if(summaryEl) {
+            summaryEl.innerHTML = keys.map(key => {
+                const p = data.periods[key] || {};
+                const c = colorMap[key];
+                return `
+                    <div class="rounded-xl ${c.bg} ${c.border} border p-2.5 min-w-0">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0">
+                                <p class="text-[9px] font-extrabold uppercase tracking-wider ${c.accent}">${escapeTv(p.label || '-')}</p>
+                                <p class="text-base md:text-xl font-black ${c.text} leading-tight mt-0.5">Rp ${fmtB(p.total_realisasi)}</p>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <p class="text-[8px] font-extrabold text-gray-400 uppercase">Belum</p>
+                                <p class="text-base md:text-lg font-black ${Number(p.zero_count || 0) > 0 ? 'text-red-600' : 'text-green-600'}">${fmt(p.zero_count || 0)}</p>
+                            </div>
+                        </div>
+                        <div class="mt-1.5 text-[9px] md:text-[10px] font-bold text-gray-500 flex justify-between gap-2">
+                            <span>${fmt(p.noa_realisasi || 0)} NOA</span>
+                            <span>${fmt(p.active_count || 0)} aktif / ${fmt(p.unit_count || 0)} unit</span>
+                        </div>
+                    </div>`;
+            }).join('');
+        }
+
+        keys.forEach(key => {
+            const p = data.periods[key] || {};
+            setText(`tv_real_period_${key}`, `${p.start || '-'} s/d ${p.end || '-'}`);
+            setText(`tv_real_badge_${key}`, `${fmt(p.zero_count || 0)} belum`);
+            renderTvBelumRealisasiList(`tv_real_list_${key}`, p.belum_realisasi || []);
+        });
+    }
+
+    function renderTvBelumRealisasiList(elId, rows) {
+        const box = document.getElementById(elId);
+        if(!box) return;
+        const list = Array.isArray(rows) ? rows.slice(0, 8) : [];
+        if(list.length === 0) {
+            box.innerHTML = `
+                <div class="h-full min-h-[90px] flex items-center justify-center rounded-lg border border-dashed border-green-200 bg-white/70 text-center px-3">
+                    <div>
+                        <p class="text-sm md:text-base font-black text-green-600">Semua sudah realisasi</p>
+                        <p class="text-[9px] md:text-[10px] font-bold text-gray-400 mt-1">Tidak ada unit nol realisasi pada periode ini.</p>
+                    </div>
+                </div>`;
+            return;
+        }
+
+        box.innerHTML = list.map((row, idx) => `
+            <div class="tv-real-zero-row bg-white/80 border border-white rounded-lg px-2.5 py-2 mb-2 shadow-sm">
+                <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                        <p class="text-[10px] md:text-xs font-black text-gray-900 truncate">${idx + 1}. ${escapeTv(row.nama_unit || '-')}</p>
+                        <p class="text-[8px] md:text-[9px] font-bold text-gray-400 mt-0.5">${escapeTv(row.kode_unit || '-')} • 0 NOA</p>
+                    </div>
+                    <span class="shrink-0 px-2 py-1 rounded-full bg-red-50 text-red-600 text-[9px] md:text-[10px] font-black">Belum</span>
+                </div>
+            </div>
+        `).join('');
     }
 
     // ==========================================

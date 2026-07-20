@@ -1853,6 +1853,166 @@ class DashboardController{
         }
     }
 
+    public function getTvRealisasiMonitoring($input) {
+        $harian_date = $input['harian_date_realisasi'] ?? ($input['harian_date'] ?? date('Y-m-d'));
+        $kode_kantor = $input['kode_kantor'] ?? '000';
+        $korwil = strtoupper($input['korwil'] ?? '');
+
+        $endTs = strtotime($harian_date);
+        if ($endTs === false) $endTs = time();
+        $harian_date = date('Y-m-d', $endTs);
+
+        $monthStart = date('Y-m-01', $endTs);
+        $weekStart = date('Y-m-d', strtotime('monday this week', $endTs));
+        $threeDayStart = date('Y-m-d', strtotime('-2 days', $endTs));
+
+        $periods = [
+            'bulan_ini' => ['label' => 'Bulan Ini', 'short_label' => 'Bulan', 'start' => $monthStart, 'end' => $harian_date],
+            'minggu_ini' => ['label' => 'Minggu Ini', 'short_label' => 'Minggu', 'start' => $weekStart, 'end' => $harian_date],
+            'tiga_hari' => ['label' => '3 Hari', 'short_label' => '3 Hari', 'start' => $threeDayStart, 'end' => $harian_date],
+            'hari_ini' => ['label' => 'Hari Ini', 'short_label' => 'Hari Ini', 'start' => $harian_date, 'end' => $harian_date],
+        ];
+
+        $displayMode = 'CABANG';
+        $masterWhere = "WHERE k.kode_kantor BETWEEN '001' AND '028'";
+        $masterSql = "
+            SELECT
+                k.kode_kantor AS kode_unit,
+                REPLACE(k.nama_kantor, 'Kc. ', '') AS nama_unit
+            FROM kode_kantor k
+            {$masterWhere}
+        ";
+        $joinField = 't.kode_kantor';
+        $masterParams = [];
+
+        if ($kode_kantor !== '000' && empty($korwil)) {
+            $displayMode = 'KANKAS';
+            $masterSql = "
+                SELECT
+                    g.kode_group1 AS kode_unit,
+                    COALESCE(NULLIF(TRIM(g.deskripsi_group1), ''), CONCAT('Kankas ', g.kode_group1)) AS nama_unit
+                FROM kankas g
+                WHERE g.kode_kantor = :kode_kantor_master
+            ";
+            $joinField = 't.kode_group1';
+            $masterParams[':kode_kantor_master'] = str_pad((string) $kode_kantor, 3, '0', STR_PAD_LEFT);
+        } elseif (!empty($korwil)) {
+            if ($korwil === 'SEMARANG') {
+                $masterWhere = "WHERE k.kode_kantor BETWEEN '001' AND '007'";
+            } elseif ($korwil === 'SOLO') {
+                $masterWhere = "WHERE k.kode_kantor BETWEEN '008' AND '014'";
+            } elseif ($korwil === 'BANYUMAS') {
+                $masterWhere = "WHERE k.kode_kantor BETWEEN '015' AND '021'";
+            } elseif ($korwil === 'PEKALONGAN') {
+                $masterWhere = "WHERE k.kode_kantor BETWEEN '022' AND '028'";
+            }
+            $masterSql = "
+                SELECT
+                    k.kode_kantor AS kode_unit,
+                    REPLACE(k.nama_kantor, 'Kc. ', '') AS nama_unit
+                FROM kode_kantor k
+                {$masterWhere}
+            ";
+        }
+
+        $periodResults = [];
+        try {
+            $sql = "
+                SELECT
+                    m.kode_unit,
+                    m.nama_unit,
+                    COALESCE(SUM(t.realisasi_pokok), 0) AS total_bulan_ini,
+                    COUNT(t.no_rekening) AS noa_bulan_ini,
+                    COALESCE(SUM(CASE WHEN t.tanggal_realisasi >= :week_start THEN t.realisasi_pokok ELSE 0 END), 0) AS total_minggu_ini,
+                    COUNT(CASE WHEN t.tanggal_realisasi >= :week_start_noa THEN t.no_rekening END) AS noa_minggu_ini,
+                    COALESCE(SUM(CASE WHEN t.tanggal_realisasi >= :three_day_start THEN t.realisasi_pokok ELSE 0 END), 0) AS total_tiga_hari,
+                    COUNT(CASE WHEN t.tanggal_realisasi >= :three_day_start_noa THEN t.no_rekening END) AS noa_tiga_hari,
+                    COALESCE(SUM(CASE WHEN t.tanggal_realisasi = :today_date THEN t.realisasi_pokok ELSE 0 END), 0) AS total_hari_ini,
+                    COUNT(CASE WHEN t.tanggal_realisasi = :today_date_noa THEN t.no_rekening END) AS noa_hari_ini
+                FROM ({$masterSql}) m
+                LEFT JOIN update_realisasi_kredit t
+                    ON {$joinField} = m.kode_unit
+                    AND t.tanggal_realisasi >= :month_start
+                    AND t.tanggal_realisasi <= :end_date
+                GROUP BY m.kode_unit, m.nama_unit
+            ";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':month_start', $monthStart);
+            $stmt->bindValue(':week_start', $weekStart);
+            $stmt->bindValue(':week_start_noa', $weekStart);
+            $stmt->bindValue(':three_day_start', $threeDayStart);
+            $stmt->bindValue(':three_day_start_noa', $threeDayStart);
+            $stmt->bindValue(':today_date', $harian_date);
+            $stmt->bindValue(':today_date_noa', $harian_date);
+            $stmt->bindValue(':end_date', $harian_date);
+            foreach ($masterParams as $param => $value) {
+                $stmt->bindValue($param, $value);
+            }
+            $stmt->execute();
+            $baseRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($periods as $key => $period) {
+                $rows = [];
+                foreach ($baseRows as $baseRow) {
+                    $rows[] = [
+                        'kode_unit' => $baseRow['kode_unit'],
+                        'nama_unit' => $baseRow['nama_unit'],
+                        'total_realisasi' => (float) ($baseRow["total_{$key}"] ?? 0),
+                        'noa_realisasi' => (int) ($baseRow["noa_{$key}"] ?? 0),
+                    ];
+                }
+                usort($rows, function($a, $b) {
+                    $cmp = $a['total_realisasi'] <=> $b['total_realisasi'];
+                    if ($cmp !== 0) return $cmp;
+                    return strcmp((string) $a['kode_unit'], (string) $b['kode_unit']);
+                });
+
+                $totalNominal = 0;
+                $totalNoa = 0;
+                $zeroCount = 0;
+                foreach ($rows as &$row) {
+                    $row['total_realisasi'] = (float) ($row['total_realisasi'] ?? 0);
+                    $row['noa_realisasi'] = (int) ($row['noa_realisasi'] ?? 0);
+                    if ($row['total_realisasi'] <= 0) $zeroCount++;
+                    $totalNominal += $row['total_realisasi'];
+                    $totalNoa += $row['noa_realisasi'];
+                }
+                unset($row);
+
+                $periodResults[$key] = [
+                    'key' => $key,
+                    'label' => $period['label'],
+                    'short_label' => $period['short_label'],
+                    'start' => $period['start'],
+                    'end' => $period['end'],
+                    'total_realisasi' => $totalNominal,
+                    'noa_realisasi' => $totalNoa,
+                    'unit_count' => count($rows),
+                    'zero_count' => $zeroCount,
+                    'active_count' => count($rows) - $zeroCount,
+                    'belum_realisasi' => array_values(array_filter($rows, function($row) {
+                        return (float) ($row['total_realisasi'] ?? 0) <= 0;
+                    })),
+                    'ranking' => $rows,
+                ];
+            }
+
+            return [
+                'mode' => $displayMode,
+                'harian_date' => $harian_date,
+                'periods' => $periodResults,
+            ];
+        } catch (PDOException $e) {
+            error_log("Error getTvRealisasiMonitoring: " . $e->getMessage());
+            return [
+                'mode' => $displayMode,
+                'harian_date' => $harian_date,
+                'periods' => [],
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
     public function getFlowVsRecoveryNPL($input) {
         $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian_date  = $input['harian_date']  ?? date('Y-m-d');

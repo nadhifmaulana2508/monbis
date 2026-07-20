@@ -16,38 +16,42 @@
         </div>
         
         <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-2">
-            <?php include 'components/display_direksi/slide_2_tren.php'; ?>
+            <?php include 'components/display_direksi/slide_2_realisasi.php'; ?>
         </div>
 
         <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-3">
-            <?php include 'components/display_direksi/slide_3_runoff.php'; ?>
+            <?php include 'components/display_direksi/slide_2_tren.php'; ?>
         </div>
 
         <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-4">
-            <?php include 'components/display_direksi/slide_5_portofolio.php'; ?>
+            <?php include 'components/display_direksi/slide_3_runoff.php'; ?>
         </div>
 
         <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-5">
-            <?php include 'components/display_direksi/slide_4_kredit_dpk.php'; ?>
+            <?php include 'components/display_direksi/slide_5_portofolio.php'; ?>
         </div>
 
         <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-6">
-            <?php include 'components/display_direksi/slide_6_npl.php'; ?>
+            <?php include 'components/display_direksi/slide_4_kredit_dpk.php'; ?>
         </div>
 
         <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-7">
-            <?php include 'components/display_direksi/slide_7_dpk.php'; ?>
+            <?php include 'components/display_direksi/slide_6_npl.php'; ?>
         </div>
 
         <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-8">
-            <?php include 'components/display_direksi/slide_8_tabungan.php'; ?>
+            <?php include 'components/display_direksi/slide_7_dpk.php'; ?>
         </div>
 
         <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-9">
-            <?php include 'components/display_direksi/slide_9_aset_laba.php'; ?>
+            <?php include 'components/display_direksi/slide_8_tabungan.php'; ?>
         </div>
 
         <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-10">
+            <?php include 'components/display_direksi/slide_9_aset_laba.php'; ?>
+        </div>
+
+        <div class="tv-slide absolute inset-0 transition-opacity duration-1000 opacity-0 pointer-events-none z-0 overflow-hidden" id="slide-11">
             <?php include 'components/display_direksi/slide_10_pendapatan_beban.php'; ?>
         </div>
 
@@ -205,6 +209,32 @@
     }
     .tv-trend-panel { min-height: 0; }
     .tv-trend-panel .tv-chart { min-height: 118px; }
+    .tv-realisasi-shell { gap: 0; }
+    .tv-realisasi-summary { min-height: 0; }
+    .tv-realisasi-period-grid { min-height: 0; }
+    .tv-realisasi-period { min-width: 0; overflow: hidden; }
+    .tv-real-zero-row { min-width: 0; }
+    .tv-real-zero-row p { line-height: 1.05; }
+    @container (max-width: 980px) {
+        .tv-realisasi-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .tv-realisasi-period-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+    @container (max-width: 620px) {
+        .tv-realisasi-header {
+            flex-direction: column;
+        }
+        .tv-realisasi-header > div:last-child {
+            width: 100%;
+        }
+        .tv-realisasi-period-grid {
+            grid-template-columns: minmax(0, 1fr);
+            overflow-y: auto;
+        }
+    }
     .tv-trend-perk-tooltip {
         position: absolute;
         z-index: 80;

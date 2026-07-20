@@ -45,6 +45,10 @@ switch ($method) {
             $data = $controller->getRunOffRealisasi($input);
             sendResponse(200, "Testing Run Off vs Realisasi (Per Korwil)", $data);
 
+        } elseif ($type === 'tv realisasi monitoring') {
+            $data = $controller->getTvRealisasiMonitoring($input);
+            sendResponse(200, "TV Monitoring Realisasi Kredit", $data);
+
         } elseif ($type === 'test flow recovery npl') {
             $data = $controller->getFlowVsRecoveryNPL($input);
             sendResponse(200, "Testing Flow NPL vs Recovery NPL", $data);
