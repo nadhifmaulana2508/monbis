@@ -1,12 +1,12 @@
 <div class="tv-fit tv-realisasi-slide flex flex-col">
     <div class="tv-card tv-realisasi-shell bg-white p-3 md:p-4 rounded-xl md:rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full">
         <div class="tv-realisasi-header flex items-start justify-between gap-3 border-b border-gray-100 pb-3 shrink-0">
-            <div class="min-w-0">
-                <h2 class="text-base md:text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
+            <div class="tv-realisasi-title-wrap min-w-0">
+                <h2 class="tv-realisasi-title text-base md:text-xl font-extrabold text-gray-900 tracking-tight flex items-center gap-2">
                     <span class="text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">REALISASI</span>
                     Monitoring Realisasi Cabang
                 </h2>
-                <p class="text-[10px] md:text-xs text-gray-500 font-medium mt-1">
+                <p class="tv-realisasi-desc text-[10px] md:text-xs text-gray-500 font-medium mt-1">
                     Pantauan realisasi dan growth cabang per periode untuk percepatan follow up
                 </p>
             </div>

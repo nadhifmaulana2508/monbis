@@ -210,6 +210,23 @@
     .tv-trend-panel { min-height: 0; }
     .tv-trend-panel .tv-chart { min-height: 118px; }
     .tv-realisasi-shell { gap: 0; min-height: 0; }
+    .tv-realisasi-header { min-width: 0; }
+    .tv-realisasi-title-wrap {
+        flex: 1 1 auto;
+        min-width: min(28rem, 48vw);
+        max-width: calc(100% - 28rem);
+    }
+    .tv-realisasi-title,
+    .tv-realisasi-desc {
+        max-width: 100%;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .tv-realisasi-title span {
+        flex: 0 0 auto;
+    }
     .tv-realisasi-summary { min-height: 0; }
     .tv-realisasi-period-grid {
         min-height: 0;
@@ -257,6 +274,10 @@
         }
     }
     @container (max-width: 980px) {
+        .tv-realisasi-title-wrap {
+            min-width: 0;
+            max-width: none;
+        }
         .tv-realisasi-top-meta {
             min-width: 0;
             width: 100%;
@@ -268,6 +289,10 @@
     @container (max-width: 620px) {
         .tv-realisasi-header {
             flex-direction: column;
+        }
+        .tv-realisasi-title,
+        .tv-realisasi-desc {
+            white-space: normal;
         }
         .tv-realisasi-top-meta,
         .tv-realisasi-header > div:last-child {
@@ -1213,6 +1238,22 @@
     body.tv-desktop-layout .md\:gap-4 { gap: 1rem !important; }
     body.tv-desktop-layout .md\:gap-5 { gap: 1.25rem !important; }
     body.tv-desktop-layout .md\:gap-6 { gap: 1.5rem !important; }
+    body.tv-desktop-layout .tv-realisasi-header {
+        flex-direction: row !important;
+        align-items: flex-start !important;
+    }
+    body.tv-desktop-layout .tv-realisasi-title-wrap {
+        min-width: 30rem;
+        max-width: calc(100% - 25rem);
+    }
+    body.tv-desktop-layout .tv-realisasi-title,
+    body.tv-desktop-layout .tv-realisasi-desc {
+        white-space: nowrap !important;
+    }
+    body.tv-desktop-layout .tv-realisasi-top-meta {
+        flex: 0 0 auto;
+        min-width: min(380px, 34vw);
+    }
     body.tv-desktop-layout .tv-makro-slide {
         display: grid !important;
         grid-template-rows: auto minmax(0, 1fr);
