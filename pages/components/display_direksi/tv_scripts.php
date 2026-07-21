@@ -1134,7 +1134,9 @@
                 <div class="flex items-center justify-between gap-3">
                     <div class="min-w-0">
                         <p class="tv-real-branch text-lg md:text-xl font-black truncate">${escapeTv(row.nama_unit || '-')}</p>
-                        <p class="tv-real-meta text-sm md:text-base font-extrabold mt-1">${fmt(row.noa_realisasi || 0)} NOA - Growth ${isMinus ? '-' : '+'} Rp ${fmtB(Math.abs(growth))}</p>
+                        <p class="tv-real-meta text-sm md:text-base font-extrabold mt-1">
+                            ${fmt(row.noa_realisasi || 0)} NOA - Growth <span class="${isMinus ? 'text-red-600' : 'text-green-600'}">${isMinus ? '-' : '+'} Rp ${fmtB(Math.abs(growth))}</span>
+                        </p>
                     </div>
                     <div class="shrink-0 text-right">
                         ${isZeroReal ? '<span class="inline-block px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-sm md:text-base font-black mb-1">0 Real</span>' : ''}
