@@ -10,6 +10,12 @@
                     <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 17v-6h6v6m-8 4h10a2 2 0 002-2V9.5a2 2 0 00-.586-1.414l-4.5-4.5A2 2 0 0012.5 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                 </span>
                 Realisasi vs RBB
+                <span class="relative group inline-flex">
+                    <button type="button" class="rbb-info-btn" aria-label="Info nominal tabel">i</button>
+                    <span class="rbb-info-pop">
+                        Nominal pada tabel ditampilkan dalam ribuan rupiah. Contoh: Rp 1.000.000.000 tampil menjadi Rp 1.000.000. Kartu ringkasan tetap memakai format singkat.
+                    </span>
+                </span>
             </h1>
 
             <button type="button" onclick="toggleRbbFilter()" class="xl:hidden h-[30px] px-3 bg-white border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm transition font-bold text-[10px] whitespace-nowrap ml-2 shrink-0">
@@ -67,6 +73,9 @@
     .rbb-card .label{font-size:.62rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#64748b}
     .rbb-card .value{font-size:clamp(1rem,2vw,1.45rem);line-height:1.05;font-weight:950;color:#0f172a;margin-top:.25rem}
     .rbb-card .sub{font-size:.68rem;font-weight:800;color:#64748b;margin-top:.35rem}
+    .rbb-info-btn{width:1.35rem;height:1.35rem;border-radius:999px;border:1px solid #c7d2fe;background:#eef2ff;color:#4f46e5;font-size:.78rem;font-weight:950;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+    .rbb-info-pop{position:absolute;left:0;top:calc(100% + .5rem);width:min(21rem,calc(100vw - 2rem));padding:.7rem .8rem;border-radius:.75rem;background:#0f172a;color:#f8fafc;border:1px solid rgba(148,163,184,.35);box-shadow:0 18px 40px rgba(15,23,42,.22);font-size:.72rem;line-height:1.45;font-weight:700;white-space:normal;z-index:80;opacity:0;pointer-events:none;transform:translateY(-.2rem);transition:.14s ease}
+    .group:hover .rbb-info-pop{opacity:1;transform:translateY(0)}
     .rbb-th{position:sticky;top:0;background:#f1f5f9;border-bottom:1px solid #cbd5e1}
     .rbb-sort{cursor:pointer;transition:background .15s}
     .rbb-sort:hover{background:#e0e7ff}
@@ -122,6 +131,10 @@ function rbbNominal(value) {
     if (abs >= 1e9) return `${rbbFmt.format(Math.round(n / 1e7) / 100)} M`;
     if (abs >= 1e6) return `${rbbFmt.format(Math.round(n / 1e4) / 100)} Jt`;
     return rbbFmt.format(Math.round(n));
+}
+
+function rbbTableNominal(value) {
+    return rbbFmt.format(Math.round(Number(value || 0) / 1000));
 }
 
 function rbbPct(value) {
@@ -289,11 +302,11 @@ function renderRbbTable() {
         <tr>
             <th class="rbb-th rbb-sticky-code rbb-sort px-2 py-2 text-left w-16" onclick="sortRbb('kode_kantor')">Kode${rbbSortIcon('kode_kantor')}</th>
             <th class="rbb-th rbb-sticky-name rbb-sort px-2 py-2 text-left w-44" onclick="sortRbb('nama_kantor')">Kantor${rbbSortIcon('nama_kantor')}</th>
-            <th class="rbb-th rbb-sort px-2 py-2 text-right w-32" onclick="sortRbb('nilai_rbb')">Nilai RBB${rbbSortIcon('nilai_rbb')}</th>
-            <th class="rbb-th rbb-sort px-2 py-2 text-right w-32" onclick="sortRbb('realisasi_bulan_ini')">Realisasi${rbbSortIcon('realisasi_bulan_ini')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-32" onclick="sortRbb('nilai_rbb')">RBB (Rb)${rbbSortIcon('nilai_rbb')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-32" onclick="sortRbb('realisasi_bulan_ini')">Realisasi (Rb)${rbbSortIcon('realisasi_bulan_ini')}</th>
             <th class="rbb-th rbb-sort px-2 py-2 text-right w-24" onclick="sortRbb('persentase_rbb_bulan_ini')">% RBB${rbbSortIcon('persentase_rbb_bulan_ini')}</th>
-            <th class="rbb-th rbb-sort px-2 py-2 text-right w-36" onclick="sortRbb('kekurangan_sd_bulan_lalu')">Kurang Lalu${rbbSortIcon('kekurangan_sd_bulan_lalu')}</th>
-            <th class="rbb-th rbb-sort px-2 py-2 text-right w-36" onclick="sortRbb('total_beban_target')">Total Beban${rbbSortIcon('total_beban_target')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-36" onclick="sortRbb('kekurangan_sd_bulan_lalu')">Kurang Lalu (Rb)${rbbSortIcon('kekurangan_sd_bulan_lalu')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-36" onclick="sortRbb('total_beban_target')">Total Beban (Rb)${rbbSortIcon('total_beban_target')}</th>
             <th class="rbb-th rbb-sort px-2 py-2 text-right w-24" onclick="sortRbb('persentase_rbb_plus_kekurangan')">% Beban${rbbSortIcon('persentase_rbb_plus_kekurangan')}</th>
         </tr>
     `;
@@ -321,11 +334,11 @@ function renderRbbTable() {
             <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[42px]">
                 <td class="rbb-sticky-code px-2 py-2 text-left font-mono font-bold text-slate-500">${rbbEscape(r.kode_kantor)}</td>
                 <td class="rbb-sticky-name px-2 py-2 text-left font-bold text-slate-800 truncate" title="${rbbEscape(r.nama_kantor)}">${rbbEscape(r.nama_kantor)}</td>
-                <td class="px-2 py-2 text-right font-mono font-bold text-indigo-700">Rp ${rbbNominal(r.nilai_rbb)}</td>
-                <td class="px-2 py-2 text-right font-mono font-bold text-blue-700">Rp ${rbbNominal(r.realisasi_bulan_ini)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-indigo-700">Rp ${rbbTableNominal(r.nilai_rbb)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-blue-700">Rp ${rbbTableNominal(r.realisasi_bulan_ini)}</td>
                 <td class="px-2 py-2 text-right font-black ${pctColor}">${rbbPct(r.persentase_rbb_bulan_ini)}</td>
-                <td class="px-2 py-2 text-right font-mono font-bold text-red-700">Rp ${rbbNominal(r.kekurangan_sd_bulan_lalu)}</td>
-                <td class="px-2 py-2 text-right font-mono font-bold text-orange-700">Rp ${rbbNominal(r.total_beban_target)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-red-700">Rp ${rbbTableNominal(r.kekurangan_sd_bulan_lalu)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-orange-700">Rp ${rbbTableNominal(r.total_beban_target)}</td>
                 <td class="px-2 py-2 text-right font-black ${bebanColor}">${rbbPct(r.persentase_rbb_plus_kekurangan)}</td>
             </tr>
         `;
@@ -337,11 +350,11 @@ function renderRbbMonthlyTable(head, body) {
         <tr>
             <th class="rbb-th rbb-sort px-3 py-2 text-left w-44" onclick="sortRbb('periode')">Bulan${rbbSortIcon('periode')}</th>
             <th class="rbb-th px-3 py-2 text-left w-52">Kantor</th>
-            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('nilai_rbb')">RBB Bulan Ini${rbbSortIcon('nilai_rbb')}</th>
-            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('realisasi_bulan_ini')">Realisasi${rbbSortIcon('realisasi_bulan_ini')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('nilai_rbb')">RBB (Rb)${rbbSortIcon('nilai_rbb')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('realisasi_bulan_ini')">Realisasi (Rb)${rbbSortIcon('realisasi_bulan_ini')}</th>
             <th class="rbb-th rbb-sort px-3 py-2 text-right w-28" onclick="sortRbb('persentase_rbb_bulan_ini')">% RBB${rbbSortIcon('persentase_rbb_bulan_ini')}</th>
-            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('selisih')">Selisih${rbbSortIcon('selisih')}</th>
-            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('kekurangan')">Kekurangan${rbbSortIcon('kekurangan')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('selisih')">Selisih (Rb)${rbbSortIcon('selisih')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('kekurangan')">Kekurangan (Rb)${rbbSortIcon('kekurangan')}</th>
         </tr>
     `;
 
@@ -370,11 +383,11 @@ function renderRbbMonthlyTable(head, body) {
             <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[44px]">
                 <td class="px-3 py-2 text-left font-black text-slate-800">${rbbEscape(rbbMonthLabel(r.periode))}</td>
                 <td class="px-3 py-2 text-left font-bold text-slate-600 truncate" title="${rbbEscape(r.nama_kantor)}">${rbbEscape(r.nama_kantor)}</td>
-                <td class="px-3 py-2 text-right font-mono font-bold text-indigo-700">Rp ${rbbNominal(r.nilai_rbb)}</td>
-                <td class="px-3 py-2 text-right font-mono font-bold text-blue-700">Rp ${rbbNominal(r.realisasi_bulan_ini)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-indigo-700">Rp ${rbbTableNominal(r.nilai_rbb)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-blue-700">Rp ${rbbTableNominal(r.realisasi_bulan_ini)}</td>
                 <td class="px-3 py-2 text-right font-black ${pctColor}">${rbbPct(r.persentase_rbb_bulan_ini)}</td>
-                <td class="px-3 py-2 text-right font-mono font-black ${selisihColor}">${selisih >= 0 ? '+' : '-'} Rp ${rbbNominal(Math.abs(selisih))}</td>
-                <td class="px-3 py-2 text-right font-mono font-bold text-orange-700">Rp ${rbbNominal(r.kekurangan)}</td>
+                <td class="px-3 py-2 text-right font-mono font-black ${selisihColor}">${selisih >= 0 ? '+' : '-'} Rp ${rbbTableNominal(Math.abs(selisih))}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-orange-700">Rp ${rbbTableNominal(r.kekurangan)}</td>
             </tr>
         `;
     }).join('');
