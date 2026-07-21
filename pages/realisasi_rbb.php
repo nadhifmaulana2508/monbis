@@ -1,0 +1,311 @@
+<?php
+// Laporan Realisasi Kredit vs RBB bulan berjalan.
+?>
+
+<div class="max-w-[1920px] w-full mx-auto px-2 md:px-4 py-4 md:py-6 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
+    <div class="relative z-20 flex-none mb-3 md:mb-4 w-full bg-white p-2 md:p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center justify-between w-full xl:w-auto shrink-0 px-1">
+            <h1 class="text-base md:text-xl font-extrabold text-slate-800 flex items-center gap-2 whitespace-nowrap">
+                <span class="p-1.5 md:p-2 bg-indigo-600 rounded-lg text-white shadow-sm shrink-0">
+                    <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 17v-6h6v6m-8 4h10a2 2 0 002-2V9.5a2 2 0 00-.586-1.414l-4.5-4.5A2 2 0 0012.5 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                </span>
+                Realisasi vs RBB
+            </h1>
+
+            <button type="button" onclick="toggleRbbFilter()" class="xl:hidden h-[30px] px-3 bg-white border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm transition font-bold text-[10px] whitespace-nowrap ml-2 shrink-0">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M6 12h12M10 20h4"></path></svg> Filter
+            </button>
+        </div>
+
+        <div id="filterWrapperRbb" class="hidden xl:flex w-full xl:w-auto flex-1 min-w-0 justify-end transition-all duration-300 shrink-0 border-t xl:border-none pt-3 xl:pt-0 mt-2 xl:mt-0">
+            <form class="flex flex-row flex-wrap xl:flex-nowrap items-end gap-2 md:gap-2.5 w-full xl:w-auto" onsubmit="event.preventDefault(); fetchRbb();">
+                <div class="field shrink-0 w-[calc(50%-4px)] xl:w-[140px]">
+                    <label class="lbl">HARIAN</label>
+                    <input type="date" id="rbb_harian_date" class="inp font-bold text-slate-700 cursor-pointer" onclick="this.showPicker && this.showPicker()" onchange="fetchRbb()">
+                </div>
+                <div class="field shrink-0 w-[calc(50%-4px)] xl:w-[190px]">
+                    <label class="lbl">KANTOR</label>
+                    <select id="rbb_kantor" class="inp font-bold text-slate-700 truncate" onchange="fetchRbb()">
+                        <option value="000">000 - Konsolidasi</option>
+                        <option value="SEMARANG">Korwil Semarang</option>
+                        <option value="SOLO">Korwil Solo</option>
+                        <option value="BANYUMAS">Korwil Banyumas</option>
+                        <option value="PEKALONGAN">Korwil Pekalongan</option>
+                    </select>
+                </div>
+                <button type="button" onclick="exportRbbExcel()" class="btn-icon w-[32px] md:w-[42px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shrink-0 ml-auto xl:ml-0 mt-2 xl:mt-0" title="Download Excel">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline></svg>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="rbb_summary" class="grid grid-cols-2 lg:grid-cols-5 gap-2 md:gap-3 mb-3 shrink-0"></div>
+
+    <div class="flex-1 min-h-0 overflow-hidden bg-white rounded-xl shadow-sm border border-slate-200 relative flex flex-col z-10">
+        <div id="rbb_loading" class="hidden absolute inset-0 bg-white/80 z-[100] flex flex-col items-center justify-center text-indigo-600 font-bold uppercase tracking-widest text-[10px] md:text-sm backdrop-blur-sm">
+            <div class="animate-spin h-8 w-8 md:h-10 md:w-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full mb-2 md:mb-3"></div>
+            <span>Menyiapkan Data...</span>
+        </div>
+
+        <div class="flex-1 w-full h-full overflow-auto custom-scrollbar relative">
+            <table class="w-max min-w-full text-center border-separate border-spacing-0 text-slate-700 table-fixed" id="rbb_table">
+                <thead class="sticky top-0 z-20 bg-slate-100 font-bold tracking-wider text-[9px] md:text-[11px] select-none" id="rbb_head"></thead>
+                <tbody id="rbb_body" class="divide-y divide-slate-100 bg-white text-[9.5px] md:text-xs"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .field{display:flex;flex-direction:column;gap:.25rem}
+    .lbl{font-size:.62rem;font-weight:900;letter-spacing:.08em;color:#64748b}
+    .inp{height:2.25rem;border:1px solid #cbd5e1;border-radius:.65rem;padding:0 .75rem;font-size:.76rem;outline:none;background:white}
+    .inp:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,.14)}
+    .btn-icon{height:2.25rem;border-radius:.65rem;display:inline-flex;align-items:center;justify-content:center}
+    .rbb-card{background:white;border:1px solid #e2e8f0;border-radius:.85rem;padding:.75rem;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+    .rbb-card .label{font-size:.62rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#64748b}
+    .rbb-card .value{font-size:clamp(1rem,2vw,1.45rem);line-height:1.05;font-weight:950;color:#0f172a;margin-top:.25rem}
+    .rbb-card .sub{font-size:.68rem;font-weight:800;color:#64748b;margin-top:.35rem}
+    .rbb-th{position:sticky;top:0;background:#f1f5f9;border-bottom:1px solid #cbd5e1}
+    .rbb-sort{cursor:pointer;transition:background .15s}
+    .rbb-sort:hover{background:#e0e7ff}
+</style>
+
+<script>
+const RBB_API = './api/rbb/';
+const RBB_KODE_API = './api/kode/';
+const RBB_DATE_API = './api/date/';
+const RBB_KORWIL = ['SEMARANG', 'SOLO', 'BANYUMAS', 'PEKALONGAN'];
+const rbbFmt = new Intl.NumberFormat('id-ID');
+let rbbRows = [];
+let rbbGrand = {};
+let rbbSort = { key: 'kode_kantor', asc: true };
+let rbbAbort = null;
+
+function rbbApiCall(url, options = {}) {
+    return window.apiFetch ? window.apiFetch(url, options) : fetch(url, options);
+}
+
+function toggleRbbFilter() {
+    const el = document.getElementById('filterWrapperRbb');
+    if (!el) return;
+    el.classList.toggle('hidden');
+    el.classList.toggle('flex');
+}
+
+function rbbEscape(value) {
+    return String(value ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+}
+
+function rbbNominal(value) {
+    const n = Number(value || 0);
+    const abs = Math.abs(n);
+    if (abs >= 1e12) return `${rbbFmt.format(Math.round(n / 1e10) / 100)} T`;
+    if (abs >= 1e9) return `${rbbFmt.format(Math.round(n / 1e7) / 100)} M`;
+    if (abs >= 1e6) return `${rbbFmt.format(Math.round(n / 1e4) / 100)} Jt`;
+    return rbbFmt.format(Math.round(n));
+}
+
+function rbbPct(value) {
+    return `${rbbFmt.format(Number(value || 0).toFixed(2))}%`;
+}
+
+function rbbSortIcon(key) {
+    if (rbbSort.key !== key) return '<span class="opacity-30 ml-1">↕</span>';
+    return rbbSort.asc ? '<span class="text-indigo-600 ml-1">▲</span>' : '<span class="text-indigo-600 ml-1">▼</span>';
+}
+
+async function initRbbPage() {
+    await loadRbbDate();
+    await loadRbbKantor();
+    fetchRbb();
+}
+
+async function loadRbbDate() {
+    try {
+        const res = await rbbApiCall(RBB_DATE_API);
+        const json = await res.json();
+        document.getElementById('rbb_harian_date').value = json.data?.last_created || new Date().toISOString().slice(0, 10);
+    } catch (e) {
+        document.getElementById('rbb_harian_date').value = new Date().toISOString().slice(0, 10);
+    }
+}
+
+async function loadRbbKantor() {
+    const select = document.getElementById('rbb_kantor');
+    if (!select) return;
+
+    try {
+        const res = await rbbApiCall(RBB_KODE_API, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({type: 'kode_kantor'})
+        });
+        const json = await res.json();
+        let html = `
+            <option value="000">000 - Konsolidasi</option>
+            <option value="SEMARANG">Korwil Semarang</option>
+            <option value="SOLO">Korwil Solo</option>
+            <option value="BANYUMAS">Korwil Banyumas</option>
+            <option value="PEKALONGAN">Korwil Pekalongan</option>
+        `;
+
+        (json.data || []).forEach(item => {
+            const kode = String(item.kode_kantor || '').padStart(3, '0');
+            html += `<option value="${rbbEscape(kode)}">${rbbEscape(kode)} - ${rbbEscape(item.nama_kantor || '')}</option>`;
+        });
+        select.innerHTML = html;
+    } catch (e) {
+        select.innerHTML = `<option value="000">000 - Konsolidasi</option>`;
+    }
+}
+
+async function fetchRbb() {
+    const loading = document.getElementById('rbb_loading');
+    const body = document.getElementById('rbb_body');
+    const kantor = document.getElementById('rbb_kantor')?.value || '000';
+    const harian = document.getElementById('rbb_harian_date')?.value || '';
+
+    if (rbbAbort) rbbAbort.abort();
+    rbbAbort = new AbortController();
+
+    loading?.classList.remove('hidden');
+    body.innerHTML = `<tr><td colspan="9" class="py-12 text-center text-slate-400 italic">Sedang mengambil data...</td></tr>`;
+
+    const payload = {
+        type: 'realisasi_rbb_bulan_berjalan',
+        harian_date: harian
+    };
+
+    if (RBB_KORWIL.includes(kantor)) {
+        payload.korwil = kantor;
+    } else if (kantor !== '000') {
+        payload.kode_kantor = kantor;
+    }
+
+    try {
+        const res = await rbbApiCall(RBB_API, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload),
+            signal: rbbAbort.signal
+        });
+        const json = await res.json();
+        if (json.status !== 200) throw new Error(json.message || 'Gagal mengambil data');
+
+        rbbRows = json.data?.data || [];
+        rbbGrand = json.data?.grand_total || {};
+        renderRbbSummary();
+        renderRbbTable();
+    } catch (e) {
+        if (e.name !== 'AbortError') {
+            body.innerHTML = `<tr><td colspan="9" class="py-12 text-center text-red-500 font-bold">Error: ${rbbEscape(e.message)}</td></tr>`;
+        }
+    } finally {
+        loading?.classList.add('hidden');
+    }
+}
+
+function renderRbbSummary() {
+    const box = document.getElementById('rbb_summary');
+    if (!box) return;
+
+    const cards = [
+        ['Target RBB Bulan Ini', rbbGrand.nilai_rbb, 'text-indigo-700', 'bg-indigo-50'],
+        ['Realisasi Bulan Ini', rbbGrand.realisasi_bulan_ini, 'text-blue-700', 'bg-blue-50'],
+        ['Pencapaian RBB', rbbGrand.persentase_rbb_bulan_ini, 'text-emerald-700', 'bg-emerald-50', true],
+        ['Kekurangan s/d Bulan Lalu', rbbGrand.kekurangan_sd_bulan_lalu, 'text-red-700', 'bg-red-50'],
+        ['Pencapaian Total Beban', rbbGrand.persentase_rbb_plus_kekurangan, 'text-orange-700', 'bg-orange-50', true]
+    ];
+
+    box.innerHTML = cards.map(([label, value, color, bg, percent]) => `
+        <div class="rbb-card ${bg}">
+            <div class="label">${label}</div>
+            <div class="value ${color}">${percent ? rbbPct(value) : `Rp ${rbbNominal(value)}`}</div>
+            <div class="sub">${rbbRows.length} kantor</div>
+        </div>
+    `).join('');
+}
+
+function renderRbbTable() {
+    const head = document.getElementById('rbb_head');
+    const body = document.getElementById('rbb_body');
+    if (!head || !body) return;
+
+    head.innerHTML = `
+        <tr>
+            <th class="rbb-th rbb-sort px-3 py-2 text-left w-[90px]" onclick="sortRbb('kode_kantor')">Kode${rbbSortIcon('kode_kantor')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-left w-[210px]" onclick="sortRbb('nama_kantor')">Kantor${rbbSortIcon('nama_kantor')}</th>
+            <th class="rbb-th px-3 py-2 text-left w-[210px]">Keterangan</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-[150px]" onclick="sortRbb('nilai_rbb')">Nilai RBB${rbbSortIcon('nilai_rbb')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-[150px]" onclick="sortRbb('realisasi_bulan_ini')">Realisasi${rbbSortIcon('realisasi_bulan_ini')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-[120px]" onclick="sortRbb('persentase_rbb_bulan_ini')">% RBB${rbbSortIcon('persentase_rbb_bulan_ini')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-[170px]" onclick="sortRbb('kekurangan_sd_bulan_lalu')">Kekurangan Lalu${rbbSortIcon('kekurangan_sd_bulan_lalu')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-[170px]" onclick="sortRbb('total_beban_target')">Total Beban${rbbSortIcon('total_beban_target')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-[130px]" onclick="sortRbb('persentase_rbb_plus_kekurangan')">% Beban${rbbSortIcon('persentase_rbb_plus_kekurangan')}</th>
+        </tr>
+    `;
+
+    if (!rbbRows.length) {
+        body.innerHTML = `<tr><td colspan="9" class="py-12 text-center text-slate-400 italic">Tidak ada data.</td></tr>`;
+        return;
+    }
+
+    const rows = [...rbbRows].sort((a, b) => {
+        const av = a[rbbSort.key];
+        const bv = b[rbbSort.key];
+        if (!isNaN(parseFloat(av)) && isFinite(av)) {
+            return rbbSort.asc ? Number(av || 0) - Number(bv || 0) : Number(bv || 0) - Number(av || 0);
+        }
+        return rbbSort.asc
+            ? String(av || '').localeCompare(String(bv || ''))
+            : String(bv || '').localeCompare(String(av || ''));
+    });
+
+    body.innerHTML = rows.map(r => {
+        const pctColor = Number(r.persentase_rbb_bulan_ini || 0) >= 100 ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50';
+        const bebanColor = Number(r.persentase_rbb_plus_kekurangan || 0) >= 100 ? 'text-emerald-700 bg-emerald-50' : 'text-orange-700 bg-orange-50';
+        return `
+            <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[42px]">
+                <td class="px-3 py-2 text-left font-mono font-bold text-slate-500">${rbbEscape(r.kode_kantor)}</td>
+                <td class="px-3 py-2 text-left font-bold text-slate-800 truncate" title="${rbbEscape(r.nama_kantor)}">${rbbEscape(r.nama_kantor)}</td>
+                <td class="px-3 py-2 text-left text-slate-500 truncate" title="${rbbEscape(r.keterangan)}">${rbbEscape(r.keterangan)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-indigo-700">Rp ${rbbNominal(r.nilai_rbb)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-blue-700">Rp ${rbbNominal(r.realisasi_bulan_ini)}</td>
+                <td class="px-3 py-2 text-right font-black ${pctColor}">${rbbPct(r.persentase_rbb_bulan_ini)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-red-700">Rp ${rbbNominal(r.kekurangan_sd_bulan_lalu)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-orange-700">Rp ${rbbNominal(r.total_beban_target)}</td>
+                <td class="px-3 py-2 text-right font-black ${bebanColor}">${rbbPct(r.persentase_rbb_plus_kekurangan)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function sortRbb(key) {
+    if (rbbSort.key === key) {
+        rbbSort.asc = !rbbSort.asc;
+    } else {
+        rbbSort = { key, asc: true };
+    }
+    renderRbbTable();
+}
+
+function exportRbbExcel() {
+    if (!rbbRows.length) return alert('Tidak ada data untuk diexport.');
+
+    let csv = 'Kode\tKantor\tKeterangan\tNilai RBB\tRealisasi Bulan Ini\t% RBB\tKekurangan s/d Bulan Lalu\tTotal Beban Target\t% Beban\n';
+    rbbRows.forEach(r => {
+        csv += `'${r.kode_kantor}\t${r.nama_kantor}\t${r.keterangan}\t${Math.round(r.nilai_rbb || 0)}\t${Math.round(r.realisasi_bulan_ini || 0)}\t${r.persentase_rbb_bulan_ini}\t${Math.round(r.kekurangan_sd_bulan_lalu || 0)}\t${Math.round(r.total_beban_target || 0)}\t${r.persentase_rbb_plus_kekurangan}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Realisasi_vs_RBB.xls';
+    a.click();
+    URL.revokeObjectURL(a.href);
+}
+
+window.addEventListener('DOMContentLoaded', initRbbPage);
+</script>

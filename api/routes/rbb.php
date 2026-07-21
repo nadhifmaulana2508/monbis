@@ -53,6 +53,9 @@ switch ($method) {
         } elseif ($type === 'aset_mom_yoy') {
             $controller->getAsetMomYoy($input);
 
+        } elseif ($type === 'realisasi_rbb_bulan_berjalan') {
+            $controller->getRealisasiRbbBulanBerjalan($input);
+
         // --- ERROR: TYPE TIDAK DIKENAL ---
         } else {
             sendResponse(400, "Type request tidak dikenali: " . $type);

@@ -417,4 +417,183 @@ class RbbController
             return sendResponse(500, "Database Query Error: " . $e->getMessage(), null);
         }
     }
+
+    public function getRealisasiRbbBulanBerjalan($input = null)
+    {
+        set_time_limit(120);
+        ini_set('memory_limit', '512M');
+
+        $b = is_array($input) ? $input : [];
+
+        $harianDate = !empty($b['harian_date']) ? $b['harian_date'] : (!empty($b['tanggal']) ? $b['tanggal'] : date('Y-m-d'));
+        $time = strtotime($harianDate);
+        if (!$time) {
+            return sendResponse(400, "Format harian_date tidak valid.");
+        }
+
+        $monthStart = date('Y-m-01', $time);
+        $yearStart = date('Y-01-01', $time);
+        $harianNext = date('Y-m-d', strtotime('+1 day', $time));
+        $sqlMonthStart = $this->pdo->quote($monthStart);
+        $sqlYearStart = $this->pdo->quote($yearStart);
+        $sqlHarianNext = $this->pdo->quote($harianNext);
+        $kodePerkiraan = !empty($b['kode_perkiraan']) ? $b['kode_perkiraan'] : 'produksi.total';
+
+        $kodeKantor = '';
+        if (!empty($b['kode_kantor']) && $b['kode_kantor'] !== '000' && strtolower((string)$b['kode_kantor']) !== 'konsolidasi') {
+            $kodeKantor = str_pad((string)$b['kode_kantor'], 3, '0', STR_PAD_LEFT);
+        }
+
+        $korwil = strtoupper((string)($b['korwil'] ?? ''));
+        $whereFinal = "WHERE ref.kode_perkiraan = :kode_perkiraan";
+        $params = [
+            ':kode_perkiraan' => $kodePerkiraan
+        ];
+
+        if ($kodeKantor !== '') {
+            $whereFinal .= " AND data_gabungan.kode_kantor = :kode_kantor";
+            $params[':kode_kantor'] = $kodeKantor;
+        } elseif ($korwil === 'SEMARANG') {
+            $whereFinal .= " AND data_gabungan.kode_kantor BETWEEN '001' AND '007'";
+        } elseif ($korwil === 'SOLO') {
+            $whereFinal .= " AND data_gabungan.kode_kantor BETWEEN '008' AND '014'";
+        } elseif ($korwil === 'BANYUMAS') {
+            $whereFinal .= " AND data_gabungan.kode_kantor BETWEEN '015' AND '021'";
+        } elseif ($korwil === 'PEKALONGAN') {
+            $whereFinal .= " AND data_gabungan.kode_kantor BETWEEN '022' AND '028'";
+        } else {
+            $whereFinal .= " AND data_gabungan.kode_kantor BETWEEN '001' AND '028'";
+        }
+
+        $branchColumns = ['001','002','003','004','005','006','007','008','009','010','011','012','013','014','015','016','017','018','019','020','021','022','023','024','025','026','027','028'];
+        $sumColumns = [];
+        $monthUnion = [];
+        $laluUnion = [];
+
+        foreach ($branchColumns as $code) {
+            $sumColumns[] = "IFNULL(`{$code}`,0)";
+            $monthUnion[] = "SELECT kode_monbis, periode, '{$code}' AS kode_kantor, IFNULL(`{$code}`,0) AS rbb_target FROM rbb WHERE periode = {$sqlMonthStart}";
+            $laluUnion[] = "SELECT kode_monbis, '{$code}' AS kode_kantor, SUM(IFNULL(`{$code}`,0)) AS target_s_d_lalu FROM rbb WHERE periode >= {$sqlYearStart} AND periode < {$sqlMonthStart} GROUP BY kode_monbis";
+        }
+
+        $sumExpression = implode('+', $sumColumns);
+        array_unshift($monthUnion, "SELECT kode_monbis, periode, '000' AS kode_kantor, ({$sumExpression}) AS rbb_target FROM rbb WHERE periode = {$sqlMonthStart}");
+        array_unshift($laluUnion, "SELECT kode_monbis, '000' AS kode_kantor, SUM({$sumExpression}) AS target_s_d_lalu FROM rbb WHERE periode >= {$sqlYearStart} AND periode < {$sqlMonthStart} GROUP BY kode_monbis");
+
+        $sql = "
+            WITH data_gabungan AS (
+                " . implode("\nUNION ALL\n", $monthUnion) . "
+            ),
+            rbb_lalu AS (
+                " . implode("\nUNION ALL\n", $laluUnion) . "
+            ),
+            real_bln_ini AS (
+                SELECT kode_kantor, SUM(realisasi_pokok) AS total_realisasi
+                FROM update_realisasi_kredit
+                WHERE kode_trans = '110'
+                  AND tanggal_realisasi >= {$sqlMonthStart}
+                  AND tanggal_realisasi < {$sqlHarianNext}
+                GROUP BY kode_kantor
+                UNION ALL
+                SELECT '000' AS kode_kantor, SUM(realisasi_pokok) AS total_realisasi
+                FROM update_realisasi_kredit
+                WHERE kode_trans = '110'
+                  AND tanggal_realisasi >= {$sqlMonthStart}
+                  AND tanggal_realisasi < {$sqlHarianNext}
+            ),
+            real_lalu AS (
+                SELECT kode_kantor, SUM(realisasi_pokok) AS realisasi_s_d_lalu
+                FROM update_realisasi_kredit
+                WHERE kode_trans = '110'
+                  AND tanggal_realisasi >= {$sqlYearStart}
+                  AND tanggal_realisasi < {$sqlMonthStart}
+                GROUP BY kode_kantor
+                UNION ALL
+                SELECT '000' AS kode_kantor, SUM(realisasi_pokok) AS realisasi_s_d_lalu
+                FROM update_realisasi_kredit
+                WHERE kode_trans = '110'
+                  AND tanggal_realisasi >= {$sqlYearStart}
+                  AND tanggal_realisasi < {$sqlMonthStart}
+            )
+            SELECT
+                data_gabungan.kode_monbis,
+                ref.keterangan,
+                data_gabungan.kode_kantor,
+                IFNULL(k.nama_kantor, 'Konsolidasi') AS nama_kantor,
+                data_gabungan.periode,
+                IFNULL(data_gabungan.rbb_target, 0) AS nilai_rbb,
+                IFNULL(real_bln_ini.total_realisasi, 0) AS realisasi_bulan_ini,
+                ROUND(IFNULL(real_bln_ini.total_realisasi, 0) / NULLIF(data_gabungan.rbb_target, 0) * 100, 2) AS persentase_rbb_bulan_ini,
+                GREATEST(IFNULL(rbb_lalu.target_s_d_lalu, 0) - IFNULL(real_lalu.realisasi_s_d_lalu, 0), 0) AS kekurangan_sd_bulan_lalu,
+                (
+                    IFNULL(data_gabungan.rbb_target, 0) +
+                    GREATEST(IFNULL(rbb_lalu.target_s_d_lalu, 0) - IFNULL(real_lalu.realisasi_s_d_lalu, 0), 0)
+                ) AS total_beban_target,
+                ROUND(
+                    IFNULL(real_bln_ini.total_realisasi, 0) /
+                    NULLIF(
+                        IFNULL(data_gabungan.rbb_target, 0) +
+                        GREATEST(IFNULL(rbb_lalu.target_s_d_lalu, 0) - IFNULL(real_lalu.realisasi_s_d_lalu, 0), 0),
+                        0
+                    ) * 100,
+                    2
+                ) AS persentase_rbb_plus_kekurangan
+            FROM data_gabungan
+            LEFT JOIN rbb_lalu ON data_gabungan.kode_kantor = rbb_lalu.kode_kantor AND data_gabungan.kode_monbis = rbb_lalu.kode_monbis
+            LEFT JOIN real_bln_ini ON data_gabungan.kode_kantor = real_bln_ini.kode_kantor
+            LEFT JOIN real_lalu ON data_gabungan.kode_kantor = real_lalu.kode_kantor
+            INNER JOIN ref_rbb ref ON data_gabungan.kode_monbis = ref.kode_monbis
+            LEFT JOIN kode_kantor k ON data_gabungan.kode_kantor = k.kode_kantor
+            {$whereFinal}
+            ORDER BY data_gabungan.kode_kantor ASC
+        ";
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value, PDO::PARAM_STR);
+            }
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $grand = [
+                'nilai_rbb' => 0,
+                'realisasi_bulan_ini' => 0,
+                'kekurangan_sd_bulan_lalu' => 0,
+                'total_beban_target' => 0
+            ];
+
+            foreach ($rows as &$r) {
+                $numericKeys = ['nilai_rbb', 'realisasi_bulan_ini', 'persentase_rbb_bulan_ini', 'kekurangan_sd_bulan_lalu', 'total_beban_target', 'persentase_rbb_plus_kekurangan'];
+                foreach ($numericKeys as $key) {
+                    $r[$key] = (float)($r[$key] ?? 0);
+                }
+
+                $grand['nilai_rbb'] += $r['nilai_rbb'];
+                $grand['realisasi_bulan_ini'] += $r['realisasi_bulan_ini'];
+                $grand['kekurangan_sd_bulan_lalu'] += $r['kekurangan_sd_bulan_lalu'];
+                $grand['total_beban_target'] += $r['total_beban_target'];
+            }
+            unset($r);
+
+            $grand['persentase_rbb_bulan_ini'] = $grand['nilai_rbb'] == 0 ? 0 : round(($grand['realisasi_bulan_ini'] / $grand['nilai_rbb']) * 100, 2);
+            $grand['persentase_rbb_plus_kekurangan'] = $grand['total_beban_target'] == 0 ? 0 : round(($grand['realisasi_bulan_ini'] / $grand['total_beban_target']) * 100, 2);
+
+            return sendResponse(200, "Berhasil meload Realisasi vs RBB bulan berjalan", [
+                'meta' => [
+                    'harian_date' => $harianDate,
+                    'periode_bulan' => $monthStart,
+                    'tahun_start' => $yearStart,
+                    'kode_perkiraan' => $kodePerkiraan,
+                    'kode_kantor' => $kodeKantor !== '' ? $kodeKantor : '000',
+                    'korwil' => $korwil
+                ],
+                'grand_total' => $grand,
+                'data' => $rows
+            ]);
+        } catch (PDOException $e) {
+            error_log("PDO Error Realisasi vs RBB: " . $e->getMessage());
+            return sendResponse(500, "Database Query Error: " . $e->getMessage(), null);
+        }
+    }
 }
