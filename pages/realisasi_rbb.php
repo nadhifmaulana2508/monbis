@@ -70,6 +70,14 @@
     .rbb-th{position:sticky;top:0;background:#f1f5f9;border-bottom:1px solid #cbd5e1}
     .rbb-sort{cursor:pointer;transition:background .15s}
     .rbb-sort:hover{background:#e0e7ff}
+    .rbb-sticky-code{position:sticky;left:0;z-index:12;background:inherit}
+    .rbb-sticky-name{position:sticky;left:4rem;z-index:12;background:inherit;box-shadow:6px 0 10px rgba(15,23,42,.05)}
+    thead .rbb-sticky-code,
+    thead .rbb-sticky-name{z-index:30;background:#f1f5f9}
+    tbody tr{background:#fff}
+    tbody tr:hover{background:#f8fafc}
+    tbody tr:hover .rbb-sticky-code,
+    tbody tr:hover .rbb-sticky-name{background:#f8fafc}
 </style>
 
 <script>
@@ -85,6 +93,14 @@ let rbbAbort = null;
 
 function rbbApiCall(url, options = {}) {
     return window.apiFetch ? window.apiFetch(url, options) : fetch(url, options);
+}
+
+function getRbbUserKode() {
+    const user = (window.getUser && window.getUser()) || null;
+    const raw = user?.kode ?? user?.kode_kantor ?? user?.branch_code ?? user?.kode_cabang ?? '';
+    if (!raw) return '000';
+    const kode = String(raw).replace(/\D/g, '').padStart(3, '0').slice(-3);
+    return kode === '099' ? '000' : kode;
 }
 
 function toggleRbbFilter() {
@@ -136,6 +152,8 @@ async function loadRbbKantor() {
     const select = document.getElementById('rbb_kantor');
     if (!select) return;
 
+    const userKode = getRbbUserKode();
+
     try {
         const res = await rbbApiCall(RBB_KODE_API, {
             method: 'POST',
@@ -155,9 +173,26 @@ async function loadRbbKantor() {
             const kode = String(item.kode_kantor || '').padStart(3, '0');
             html += `<option value="${rbbEscape(kode)}">${rbbEscape(kode)} - ${rbbEscape(item.nama_kantor || '')}</option>`;
         });
+
+        if (userKode !== '000' && !html.includes(`value="${userKode}"`)) {
+            const user = (window.getUser && window.getUser()) || {};
+            html += `<option value="${rbbEscape(userKode)}">${rbbEscape(userKode)} - ${rbbEscape(user.branch_name || user.nama_kantor || 'Cabang User')}</option>`;
+        }
+
         select.innerHTML = html;
     } catch (e) {
-        select.innerHTML = `<option value="000">000 - Konsolidasi</option>`;
+        select.innerHTML = userKode === '000'
+            ? `<option value="000">000 - Konsolidasi</option>`
+            : `<option value="${rbbEscape(userKode)}">${rbbEscape(userKode)} - Cabang User</option>`;
+    }
+
+    if (userKode !== '000') {
+        select.value = userKode;
+        select.disabled = true;
+        select.classList.add('bg-slate-100', 'cursor-not-allowed', 'text-slate-500');
+    } else {
+        select.disabled = false;
+        select.classList.remove('bg-slate-100', 'cursor-not-allowed', 'text-slate-500');
     }
 }
 
@@ -171,7 +206,7 @@ async function fetchRbb() {
     rbbAbort = new AbortController();
 
     loading?.classList.remove('hidden');
-    body.innerHTML = `<tr><td colspan="9" class="py-12 text-center text-slate-400 italic">Sedang mengambil data...</td></tr>`;
+    body.innerHTML = `<tr><td colspan="8" class="py-12 text-center text-slate-400 italic">Sedang mengambil data...</td></tr>`;
 
     const payload = {
         type: 'realisasi_rbb_bulan_berjalan',
@@ -200,7 +235,7 @@ async function fetchRbb() {
         renderRbbTable();
     } catch (e) {
         if (e.name !== 'AbortError') {
-            body.innerHTML = `<tr><td colspan="9" class="py-12 text-center text-red-500 font-bold">Error: ${rbbEscape(e.message)}</td></tr>`;
+            body.innerHTML = `<tr><td colspan="8" class="py-12 text-center text-red-500 font-bold">Error: ${rbbEscape(e.message)}</td></tr>`;
         }
     } finally {
         loading?.classList.add('hidden');
@@ -235,20 +270,19 @@ function renderRbbTable() {
 
     head.innerHTML = `
         <tr>
-            <th class="rbb-th rbb-sort px-3 py-2 text-left w-[90px]" onclick="sortRbb('kode_kantor')">Kode${rbbSortIcon('kode_kantor')}</th>
-            <th class="rbb-th rbb-sort px-3 py-2 text-left w-[210px]" onclick="sortRbb('nama_kantor')">Kantor${rbbSortIcon('nama_kantor')}</th>
-            <th class="rbb-th px-3 py-2 text-left w-[210px]">Keterangan</th>
-            <th class="rbb-th rbb-sort px-3 py-2 text-right w-[150px]" onclick="sortRbb('nilai_rbb')">Nilai RBB${rbbSortIcon('nilai_rbb')}</th>
-            <th class="rbb-th rbb-sort px-3 py-2 text-right w-[150px]" onclick="sortRbb('realisasi_bulan_ini')">Realisasi${rbbSortIcon('realisasi_bulan_ini')}</th>
-            <th class="rbb-th rbb-sort px-3 py-2 text-right w-[120px]" onclick="sortRbb('persentase_rbb_bulan_ini')">% RBB${rbbSortIcon('persentase_rbb_bulan_ini')}</th>
-            <th class="rbb-th rbb-sort px-3 py-2 text-right w-[170px]" onclick="sortRbb('kekurangan_sd_bulan_lalu')">Kekurangan Lalu${rbbSortIcon('kekurangan_sd_bulan_lalu')}</th>
-            <th class="rbb-th rbb-sort px-3 py-2 text-right w-[170px]" onclick="sortRbb('total_beban_target')">Total Beban${rbbSortIcon('total_beban_target')}</th>
-            <th class="rbb-th rbb-sort px-3 py-2 text-right w-[130px]" onclick="sortRbb('persentase_rbb_plus_kekurangan')">% Beban${rbbSortIcon('persentase_rbb_plus_kekurangan')}</th>
+            <th class="rbb-th rbb-sticky-code rbb-sort px-2 py-2 text-left w-16" onclick="sortRbb('kode_kantor')">Kode${rbbSortIcon('kode_kantor')}</th>
+            <th class="rbb-th rbb-sticky-name rbb-sort px-2 py-2 text-left w-44" onclick="sortRbb('nama_kantor')">Kantor${rbbSortIcon('nama_kantor')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-32" onclick="sortRbb('nilai_rbb')">Nilai RBB${rbbSortIcon('nilai_rbb')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-32" onclick="sortRbb('realisasi_bulan_ini')">Realisasi${rbbSortIcon('realisasi_bulan_ini')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-24" onclick="sortRbb('persentase_rbb_bulan_ini')">% RBB${rbbSortIcon('persentase_rbb_bulan_ini')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-36" onclick="sortRbb('kekurangan_sd_bulan_lalu')">Kurang Lalu${rbbSortIcon('kekurangan_sd_bulan_lalu')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-36" onclick="sortRbb('total_beban_target')">Total Beban${rbbSortIcon('total_beban_target')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-24" onclick="sortRbb('persentase_rbb_plus_kekurangan')">% Beban${rbbSortIcon('persentase_rbb_plus_kekurangan')}</th>
         </tr>
     `;
 
     if (!rbbRows.length) {
-        body.innerHTML = `<tr><td colspan="9" class="py-12 text-center text-slate-400 italic">Tidak ada data.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="8" class="py-12 text-center text-slate-400 italic">Tidak ada data.</td></tr>`;
         return;
     }
 
@@ -268,15 +302,14 @@ function renderRbbTable() {
         const bebanColor = Number(r.persentase_rbb_plus_kekurangan || 0) >= 100 ? 'text-emerald-700 bg-emerald-50' : 'text-orange-700 bg-orange-50';
         return `
             <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[42px]">
-                <td class="px-3 py-2 text-left font-mono font-bold text-slate-500">${rbbEscape(r.kode_kantor)}</td>
-                <td class="px-3 py-2 text-left font-bold text-slate-800 truncate" title="${rbbEscape(r.nama_kantor)}">${rbbEscape(r.nama_kantor)}</td>
-                <td class="px-3 py-2 text-left text-slate-500 truncate" title="${rbbEscape(r.keterangan)}">${rbbEscape(r.keterangan)}</td>
-                <td class="px-3 py-2 text-right font-mono font-bold text-indigo-700">Rp ${rbbNominal(r.nilai_rbb)}</td>
-                <td class="px-3 py-2 text-right font-mono font-bold text-blue-700">Rp ${rbbNominal(r.realisasi_bulan_ini)}</td>
-                <td class="px-3 py-2 text-right font-black ${pctColor}">${rbbPct(r.persentase_rbb_bulan_ini)}</td>
-                <td class="px-3 py-2 text-right font-mono font-bold text-red-700">Rp ${rbbNominal(r.kekurangan_sd_bulan_lalu)}</td>
-                <td class="px-3 py-2 text-right font-mono font-bold text-orange-700">Rp ${rbbNominal(r.total_beban_target)}</td>
-                <td class="px-3 py-2 text-right font-black ${bebanColor}">${rbbPct(r.persentase_rbb_plus_kekurangan)}</td>
+                <td class="rbb-sticky-code px-2 py-2 text-left font-mono font-bold text-slate-500">${rbbEscape(r.kode_kantor)}</td>
+                <td class="rbb-sticky-name px-2 py-2 text-left font-bold text-slate-800 truncate" title="${rbbEscape(r.nama_kantor)}">${rbbEscape(r.nama_kantor)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-indigo-700">Rp ${rbbNominal(r.nilai_rbb)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-blue-700">Rp ${rbbNominal(r.realisasi_bulan_ini)}</td>
+                <td class="px-2 py-2 text-right font-black ${pctColor}">${rbbPct(r.persentase_rbb_bulan_ini)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-red-700">Rp ${rbbNominal(r.kekurangan_sd_bulan_lalu)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-orange-700">Rp ${rbbNominal(r.total_beban_target)}</td>
+                <td class="px-2 py-2 text-right font-black ${bebanColor}">${rbbPct(r.persentase_rbb_plus_kekurangan)}</td>
             </tr>
         `;
     }).join('');
@@ -294,9 +327,9 @@ function sortRbb(key) {
 function exportRbbExcel() {
     if (!rbbRows.length) return alert('Tidak ada data untuk diexport.');
 
-    let csv = 'Kode\tKantor\tKeterangan\tNilai RBB\tRealisasi Bulan Ini\t% RBB\tKekurangan s/d Bulan Lalu\tTotal Beban Target\t% Beban\n';
+    let csv = 'Kode\tKantor\tNilai RBB\tRealisasi Bulan Ini\t% RBB\tKekurangan s/d Bulan Lalu\tTotal Beban Target\t% Beban\n';
     rbbRows.forEach(r => {
-        csv += `'${r.kode_kantor}\t${r.nama_kantor}\t${r.keterangan}\t${Math.round(r.nilai_rbb || 0)}\t${Math.round(r.realisasi_bulan_ini || 0)}\t${r.persentase_rbb_bulan_ini}\t${Math.round(r.kekurangan_sd_bulan_lalu || 0)}\t${Math.round(r.total_beban_target || 0)}\t${r.persentase_rbb_plus_kekurangan}\n`;
+        csv += `'${r.kode_kantor}\t${r.nama_kantor}\t${Math.round(r.nilai_rbb || 0)}\t${Math.round(r.realisasi_bulan_ini || 0)}\t${r.persentase_rbb_bulan_ini}\t${Math.round(r.kekurangan_sd_bulan_lalu || 0)}\t${Math.round(r.total_beban_target || 0)}\t${r.persentase_rbb_plus_kekurangan}\n`;
     });
 
     const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
