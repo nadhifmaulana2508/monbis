@@ -87,6 +87,7 @@ const RBB_DATE_API = './api/date/';
 const RBB_KORWIL = ['SEMARANG', 'SOLO', 'BANYUMAS', 'PEKALONGAN'];
 const rbbFmt = new Intl.NumberFormat('id-ID');
 let rbbRows = [];
+let rbbMonthlyRows = [];
 let rbbGrand = {};
 let rbbSort = { key: 'kode_kantor', asc: true };
 let rbbAbort = null;
@@ -125,6 +126,13 @@ function rbbNominal(value) {
 
 function rbbPct(value) {
     return `${rbbFmt.format(Number(value || 0).toFixed(2))}%`;
+}
+
+function rbbMonthLabel(value) {
+    if (!value) return '-';
+    const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
 }
 
 function rbbSortIcon(key) {
@@ -230,7 +238,11 @@ async function fetchRbb() {
         if (json.status !== 200) throw new Error(json.message || 'Gagal mengambil data');
 
         rbbRows = json.data?.data || [];
+        rbbMonthlyRows = json.data?.monthly_breakdown || [];
         rbbGrand = json.data?.grand_total || {};
+        if (rbbMonthlyRows.length && !['periode', 'nilai_rbb', 'realisasi_bulan_ini', 'persentase_rbb_bulan_ini', 'selisih', 'kekurangan'].includes(rbbSort.key)) {
+            rbbSort = { key: 'periode', asc: true };
+        }
         renderRbbSummary();
         renderRbbTable();
     } catch (e) {
@@ -258,7 +270,7 @@ function renderRbbSummary() {
         <div class="rbb-card ${bg}">
             <div class="label">${label}</div>
             <div class="value ${color}">${percent ? rbbPct(value) : `Rp ${rbbNominal(value)}`}</div>
-            <div class="sub">${rbbRows.length} kantor</div>
+            <div class="sub">${rbbMonthlyRows.length ? `${rbbMonthlyRows.length} bulan` : `${rbbRows.length} kantor`}</div>
         </div>
     `).join('');
 }
@@ -267,6 +279,11 @@ function renderRbbTable() {
     const head = document.getElementById('rbb_head');
     const body = document.getElementById('rbb_body');
     if (!head || !body) return;
+
+    if (rbbMonthlyRows.length) {
+        renderRbbMonthlyTable(head, body);
+        return;
+    }
 
     head.innerHTML = `
         <tr>
@@ -315,6 +332,54 @@ function renderRbbTable() {
     }).join('');
 }
 
+function renderRbbMonthlyTable(head, body) {
+    head.innerHTML = `
+        <tr>
+            <th class="rbb-th rbb-sort px-3 py-2 text-left w-44" onclick="sortRbb('periode')">Bulan${rbbSortIcon('periode')}</th>
+            <th class="rbb-th px-3 py-2 text-left w-52">Kantor</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('nilai_rbb')">RBB Bulan Ini${rbbSortIcon('nilai_rbb')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('realisasi_bulan_ini')">Realisasi${rbbSortIcon('realisasi_bulan_ini')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-28" onclick="sortRbb('persentase_rbb_bulan_ini')">% RBB${rbbSortIcon('persentase_rbb_bulan_ini')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('selisih')">Selisih${rbbSortIcon('selisih')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('kekurangan')">Kekurangan${rbbSortIcon('kekurangan')}</th>
+        </tr>
+    `;
+
+    if (!rbbMonthlyRows.length) {
+        body.innerHTML = `<tr><td colspan="7" class="py-12 text-center text-slate-400 italic">Tidak ada breakdown bulanan.</td></tr>`;
+        return;
+    }
+
+    const rows = [...rbbMonthlyRows].sort((a, b) => {
+        const av = a[rbbSort.key];
+        const bv = b[rbbSort.key];
+        if (!isNaN(parseFloat(av)) && isFinite(av)) {
+            return rbbSort.asc ? Number(av || 0) - Number(bv || 0) : Number(bv || 0) - Number(av || 0);
+        }
+        return rbbSort.asc
+            ? String(av || '').localeCompare(String(bv || ''))
+            : String(bv || '').localeCompare(String(av || ''));
+    });
+
+    body.innerHTML = rows.map(r => {
+        const pctColor = Number(r.persentase_rbb_bulan_ini || 0) >= 100 ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50';
+        const selisih = Number(r.selisih || 0);
+        const selisihColor = selisih >= 0 ? 'text-emerald-700' : 'text-red-700';
+
+        return `
+            <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[44px]">
+                <td class="px-3 py-2 text-left font-black text-slate-800">${rbbEscape(rbbMonthLabel(r.periode))}</td>
+                <td class="px-3 py-2 text-left font-bold text-slate-600 truncate" title="${rbbEscape(r.nama_kantor)}">${rbbEscape(r.nama_kantor)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-indigo-700">Rp ${rbbNominal(r.nilai_rbb)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-blue-700">Rp ${rbbNominal(r.realisasi_bulan_ini)}</td>
+                <td class="px-3 py-2 text-right font-black ${pctColor}">${rbbPct(r.persentase_rbb_bulan_ini)}</td>
+                <td class="px-3 py-2 text-right font-mono font-black ${selisihColor}">${selisih >= 0 ? '+' : '-'} Rp ${rbbNominal(Math.abs(selisih))}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-orange-700">Rp ${rbbNominal(r.kekurangan)}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
 function sortRbb(key) {
     if (rbbSort.key === key) {
         rbbSort.asc = !rbbSort.asc;
@@ -325,7 +390,23 @@ function sortRbb(key) {
 }
 
 function exportRbbExcel() {
-    if (!rbbRows.length) return alert('Tidak ada data untuk diexport.');
+    const exportRows = rbbMonthlyRows.length ? rbbMonthlyRows : rbbRows;
+    if (!exportRows.length) return alert('Tidak ada data untuk diexport.');
+
+    if (rbbMonthlyRows.length) {
+        let csv = 'Bulan\tKantor\tNilai RBB\tRealisasi\t% RBB\tSelisih\tKekurangan\n';
+        rbbMonthlyRows.forEach(r => {
+            csv += `${rbbMonthLabel(r.periode)}\t${r.nama_kantor}\t${Math.round(r.nilai_rbb || 0)}\t${Math.round(r.realisasi_bulan_ini || 0)}\t${r.persentase_rbb_bulan_ini}\t${Math.round(r.selisih || 0)}\t${Math.round(r.kekurangan || 0)}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'Breakdown_RBB_Cabang.xls';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        return;
+    }
 
     let csv = 'Kode\tKantor\tNilai RBB\tRealisasi Bulan Ini\t% RBB\tKekurangan s/d Bulan Lalu\tTotal Beban Target\t% Beban\n';
     rbbRows.forEach(r => {

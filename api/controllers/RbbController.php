@@ -579,6 +579,58 @@ class RbbController
             $grand['persentase_rbb_bulan_ini'] = $grand['nilai_rbb'] == 0 ? 0 : round(($grand['realisasi_bulan_ini'] / $grand['nilai_rbb']) * 100, 2);
             $grand['persentase_rbb_plus_kekurangan'] = $grand['total_beban_target'] == 0 ? 0 : round(($grand['realisasi_bulan_ini'] / $grand['total_beban_target']) * 100, 2);
 
+            $monthlyBreakdown = [];
+            if ($kodeKantor !== '') {
+                $branchCol = "`{$kodeKantor}`";
+                $sqlBreakdown = "
+                    SELECT
+                        r.kode_monbis,
+                        ref.keterangan,
+                        :breakdown_kode_kantor AS kode_kantor,
+                        IFNULL(k.nama_kantor, CONCAT('Cabang ', :breakdown_kode_kantor_name)) AS nama_kantor,
+                        r.periode,
+                        IFNULL(r.{$branchCol}, 0) AS nilai_rbb,
+                        IFNULL(real_month.total_realisasi, 0) AS realisasi_bulan_ini,
+                        ROUND(IFNULL(real_month.total_realisasi, 0) / NULLIF(IFNULL(r.{$branchCol}, 0), 0) * 100, 2) AS persentase_rbb_bulan_ini,
+                        (IFNULL(real_month.total_realisasi, 0) - IFNULL(r.{$branchCol}, 0)) AS selisih,
+                        GREATEST(IFNULL(r.{$branchCol}, 0) - IFNULL(real_month.total_realisasi, 0), 0) AS kekurangan
+                    FROM rbb r
+                    INNER JOIN ref_rbb ref ON r.kode_monbis = ref.kode_monbis
+                    LEFT JOIN kode_kantor k ON k.kode_kantor = :breakdown_kode_kantor_join
+                    LEFT JOIN (
+                        SELECT
+                            DATE_FORMAT(tanggal_realisasi, '%Y-%m-01') AS periode,
+                            SUM(realisasi_pokok) AS total_realisasi
+                        FROM update_realisasi_kredit
+                        WHERE kode_trans = '110'
+                          AND kode_kantor = :breakdown_kode_kantor_real
+                          AND tanggal_realisasi >= {$sqlYearStart}
+                          AND tanggal_realisasi < {$sqlHarianNext}
+                        GROUP BY DATE_FORMAT(tanggal_realisasi, '%Y-%m-01')
+                    ) real_month ON real_month.periode = r.periode
+                    WHERE ref.kode_perkiraan = :breakdown_kode_perkiraan
+                      AND r.periode >= {$sqlYearStart}
+                      AND r.periode <= {$sqlMonthStart}
+                    ORDER BY r.periode ASC
+                ";
+
+                $stmtBreakdown = $this->pdo->prepare($sqlBreakdown);
+                $stmtBreakdown->bindValue(':breakdown_kode_kantor', $kodeKantor, PDO::PARAM_STR);
+                $stmtBreakdown->bindValue(':breakdown_kode_kantor_name', $kodeKantor, PDO::PARAM_STR);
+                $stmtBreakdown->bindValue(':breakdown_kode_kantor_join', $kodeKantor, PDO::PARAM_STR);
+                $stmtBreakdown->bindValue(':breakdown_kode_kantor_real', $kodeKantor, PDO::PARAM_STR);
+                $stmtBreakdown->bindValue(':breakdown_kode_perkiraan', $kodePerkiraan, PDO::PARAM_STR);
+                $stmtBreakdown->execute();
+                $monthlyBreakdown = $stmtBreakdown->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($monthlyBreakdown as &$monthRow) {
+                    foreach (['nilai_rbb', 'realisasi_bulan_ini', 'persentase_rbb_bulan_ini', 'selisih', 'kekurangan'] as $key) {
+                        $monthRow[$key] = (float)($monthRow[$key] ?? 0);
+                    }
+                }
+                unset($monthRow);
+            }
+
             return sendResponse(200, "Berhasil meload Realisasi vs RBB bulan berjalan", [
                 'meta' => [
                     'harian_date' => $harianDate,
@@ -589,6 +641,7 @@ class RbbController
                     'korwil' => $korwil
                 ],
                 'grand_total' => $grand,
+                'monthly_breakdown' => $monthlyBreakdown,
                 'data' => $rows
             ]);
         } catch (PDOException $e) {
