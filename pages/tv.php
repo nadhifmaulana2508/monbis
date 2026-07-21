@@ -311,10 +311,10 @@
         transform: translateZ(0);
         transition: opacity .12s ease;
         border-radius: .85rem;
-        border: 1px solid rgba(148, 163, 184, .26);
-        background: rgba(15, 23, 42, .96);
-        color: #f8fafc;
-        box-shadow: 0 18px 45px rgba(15, 23, 42, .28);
+        border: 1px solid rgba(203, 213, 225, .9);
+        background: rgba(255, 255, 255, .98);
+        color: #0f172a;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, .16);
         padding: .8rem;
         overscroll-behavior: contain;
         scrollbar-width: thin;
@@ -328,6 +328,7 @@
         line-height: 1.1;
         font-weight: 950;
         margin-bottom: .25rem;
+        color: #0f172a;
     }
     .tv-trend-perk-sub {
         font-size: .58rem;
@@ -335,19 +336,19 @@
         font-weight: 900;
         letter-spacing: .12em;
         text-transform: uppercase;
-        color: #93c5fd;
+        color: #2563eb;
         margin-bottom: .55rem;
     }
     .tv-trend-perk-formula {
-        border: 1px solid rgba(147, 197, 253, .18);
+        border: 1px solid rgba(147, 197, 253, .55);
         border-radius: .65rem;
-        background: rgba(37, 99, 235, .12);
+        background: #eff6ff;
         padding: .45rem .55rem;
         margin-bottom: .6rem;
     }
     .tv-trend-perk-formula span {
         display: block;
-        color: #93c5fd;
+        color: #2563eb;
         font-size: .55rem;
         font-weight: 950;
         letter-spacing: .12em;
@@ -357,7 +358,7 @@
     }
     .tv-trend-perk-formula strong {
         display: block;
-        color: #f8fafc;
+        color: #172554;
         font-size: .68rem;
         line-height: 1.25;
         font-weight: 900;
@@ -372,7 +373,8 @@
         gap: .45rem;
         align-items: start;
         border-radius: .55rem;
-        background: rgba(255, 255, 255, .06);
+        border: 1px solid rgba(226, 232, 240, .9);
+        background: #f8fafc;
         padding: .38rem .45rem;
     }
     .tv-trend-perk-row .code {
@@ -380,14 +382,14 @@
         font-size: .68rem;
         line-height: 1.2;
         font-weight: 900;
-        color: #bfdbfe;
+        color: #1d4ed8;
     }
     .tv-trend-perk-row .name {
         min-width: 0;
         font-size: .68rem;
         line-height: 1.2;
         font-weight: 800;
-        color: #e5e7eb;
+        color: #334155;
     }
     .tv-distribution-chart { position: relative; height: 100%; }
     .tv-distribution-chart canvas { display: block; width: 100% !important; height: 100% !important; cursor: pointer; }
@@ -933,6 +935,50 @@
     body.dark-mode .tv-distribution-table th { background: #111827; color: #9ca3af; }
     body.dark-mode .tv-distribution-table td { border-color: #374151; color: #bfdbfe; }
     body.dark-mode .tv-distribution-summary-card .value { color: #f8fafc; }
+    body.dark-mode .tv-makro-kpi,
+    body.dark-mode .tv-makro-panel,
+    body.dark-mode .tv-makro-summary-item,
+    body.dark-mode .tv-ratio-card {
+        background-color: #111827 !important;
+        border-color: #374151 !important;
+    }
+    body.dark-mode .tv-makro-panel {
+        background-color: #1f2937 !important;
+    }
+    body.dark-mode .tv-makro-summary-item,
+    body.dark-mode .tv-ratio-card {
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03);
+    }
+    body.dark-mode .tv-trend-perk-tooltip {
+        border-color: rgba(51, 65, 85, .95);
+        background: rgba(15, 23, 42, .97);
+        color: #f8fafc;
+        box-shadow: 0 18px 45px rgba(0, 0, 0, .34);
+    }
+    body.dark-mode .tv-trend-perk-title {
+        color: #f8fafc;
+    }
+    body.dark-mode .tv-trend-perk-sub,
+    body.dark-mode .tv-trend-perk-formula span {
+        color: #93c5fd;
+    }
+    body.dark-mode .tv-trend-perk-formula {
+        border-color: rgba(147, 197, 253, .18);
+        background: rgba(37, 99, 235, .12);
+    }
+    body.dark-mode .tv-trend-perk-formula strong {
+        color: #f8fafc;
+    }
+    body.dark-mode .tv-trend-perk-row {
+        border-color: rgba(51, 65, 85, .72);
+        background: rgba(255, 255, 255, .06);
+    }
+    body.dark-mode .tv-trend-perk-row .code {
+        color: #bfdbfe;
+    }
+    body.dark-mode .tv-trend-perk-row .name {
+        color: #e5e7eb;
+    }
     body.dark-mode .tv-makro-detail-item {
         background: #111827;
         border-color: #374151;
