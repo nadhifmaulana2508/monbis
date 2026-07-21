@@ -211,26 +211,37 @@
     .tv-trend-panel .tv-chart { min-height: 118px; }
     .tv-realisasi-shell { gap: 0; min-height: 0; }
     .tv-realisasi-summary { min-height: 0; }
-    .tv-realisasi-period-grid { min-height: 0; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .tv-realisasi-period { min-width: 0; overflow: hidden; }
+    .tv-realisasi-period-grid {
+        min-height: 0;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        overflow: hidden;
+    }
+    .tv-realisasi-period {
+        min-width: 0;
+        min-height: 0;
+        overflow: hidden;
+    }
     .tv-realisasi-top-meta { min-width: min(430px, 42vw); }
     .tv-realisasi-top-meta > div { min-width: 0; }
     .tv-realisasi-period .tv-list {
         scrollbar-width: thin;
-        height: min(100%, 30rem);
-        max-height: min(100%, 30rem);
+        flex: 1 1 auto;
+        height: auto;
+        max-height: 100%;
         overflow-y: auto;
     }
     .tv-real-zero-row { min-width: 0; }
     .tv-real-zero-row p { line-height: 1.05; }
     .tv-real-branch { color: #0f172a; }
     .tv-real-meta { color: #64748b; }
+    .tv-real-value { color: #0f172a; }
     body.dark-mode .tv-real-zero-row {
         background: rgba(15, 23, 42, 0.92) !important;
         border-color: rgba(71, 85, 105, 0.95) !important;
     }
     body.dark-mode .tv-real-branch { color: #f8fafc !important; }
     body.dark-mode .tv-real-meta { color: #cbd5e1 !important; }
+    body.dark-mode .tv-real-value { color: #f8fafc !important; }
     @container (min-width: 1180px) {
         .tv-realisasi-summary {
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -242,8 +253,7 @@
             overflow-y: auto;
         }
         .tv-realisasi-period .tv-list {
-            height: min(100%, 24rem);
-            max-height: min(100%, 24rem);
+            max-height: 24rem;
         }
     }
     @container (max-width: 980px) {

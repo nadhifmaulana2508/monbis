@@ -1042,9 +1042,9 @@
         if(!data || !data.periods) return;
 
         setText('tv_realisasi_date', data.harian_date || getTvCurrentHarianDate() || '-');
-        setText('tv_realisasi_mode', 'Growth Cabang');
+        setText('tv_realisasi_mode', 'Realisasi Cabang');
 
-        const keys = ['bulan_ini', 'minggu_lalu', 'minggu_ini', 'hari_ini'];
+        const keys = ['minggu_lalu', 'hari_ini', 'minggu_ini', 'bulan_ini'];
         const colorMap = {
             bulan_ini: { bg: 'bg-slate-50', border: 'border-slate-100', text: 'text-slate-900', accent: 'text-blue-600' },
             minggu_lalu: { bg: 'bg-emerald-50', border: 'border-emerald-100', text: 'text-emerald-950', accent: 'text-emerald-600' },
@@ -1088,8 +1088,8 @@
                                 <p class="text-xl md:text-2xl font-black text-gray-950 leading-tight mt-0.5">Rp ${fmtB(p.total_realisasi)}</p>
                             </div>
                             <div class="text-right shrink-0">
-                                <p class="text-[8px] font-extrabold text-gray-400 uppercase">Growth</p>
-                                <p class="text-xs md:text-sm font-black ${growth < 0 ? 'text-red-600' : 'text-green-600'}">${growth < 0 ? '-' : '+'} Rp ${fmtB(Math.abs(growth))}</p>
+                                <p class="text-[8px] font-extrabold text-gray-400 uppercase">Realisasi</p>
+                                <p class="text-xs md:text-sm font-black text-slate-900">Rp ${fmtB(p.total_realisasi)}</p>
                             </div>
                         </div>
                         <div class="mt-1.5 text-[9px] md:text-[10px] font-bold text-gray-500 flex justify-between gap-2 border-t border-white/70 pt-1.5">
@@ -1134,11 +1134,11 @@
                 <div class="flex items-center justify-between gap-3">
                     <div class="min-w-0">
                         <p class="tv-real-branch text-lg md:text-xl font-black truncate">${escapeTv(row.nama_unit || '-')}</p>
-                        <p class="tv-real-meta text-sm md:text-base font-extrabold mt-1">Realisasi Rp ${fmtB(row.total_realisasi)} - ${fmt(row.noa_realisasi || 0)} NOA</p>
+                        <p class="tv-real-meta text-sm md:text-base font-extrabold mt-1">${fmt(row.noa_realisasi || 0)} NOA - Growth ${isMinus ? '-' : '+'} Rp ${fmtB(Math.abs(growth))}</p>
                     </div>
                     <div class="shrink-0 text-right">
                         ${isZeroReal ? '<span class="inline-block px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-sm md:text-base font-black mb-1">0 Real</span>' : ''}
-                        <p class="${isMinus ? 'text-red-600' : 'text-green-600'} text-base md:text-lg font-black">${isMinus ? '-' : '+'} Rp ${fmtB(Math.abs(growth))}</p>
+                        <p class="tv-real-value text-base md:text-lg font-black">Rp ${fmtB(row.total_realisasi)}</p>
                     </div>
                 </div>
             </div>
