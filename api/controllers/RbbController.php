@@ -714,6 +714,9 @@ class RbbController
                     k.nama_kantor,
                     IFNULL(cur.total_realisasi, 0) AS realisasi_bulan_ini,
                     IFNULL(prev.total_realisasi, 0) AS realisasi_tahun_lalu,
+                    IFNULL(runoff.angsuran, 0) AS angsuran,
+                    IFNULL(runoff.pelunasan, 0) AS pelunasan,
+                    IFNULL(runoff.run_off, 0) AS run_off,
                     (IFNULL(cur.total_realisasi, 0) - IFNULL(prev.total_realisasi, 0)) AS selisih,
                     ROUND(
                         (IFNULL(cur.total_realisasi, 0) - IFNULL(prev.total_realisasi, 0)) /
@@ -737,6 +740,17 @@ class RbbController
                       AND tanggal_realisasi < {$sqlPrevHarianNext}
                     GROUP BY kode_kantor
                 ) prev ON prev.kode_kantor = k.kode_kantor
+                LEFT JOIN (
+                    SELECT
+                        kode_kantor,
+                        SUM(COALESCE(angsuran, 0)) AS angsuran,
+                        SUM(COALESCE(pelunasan, 0)) AS pelunasan,
+                        SUM(COALESCE(angsuran, 0) + COALESCE(pelunasan, 0)) AS run_off
+                    FROM summary_kredit_harian_update
+                    WHERE created >= {$sqlYearStart}
+                      AND created < {$sqlHarianNext}
+                    GROUP BY kode_kantor
+                ) runoff ON runoff.kode_kantor = k.kode_kantor
                 WHERE {$whereKantor}
                 ORDER BY selisih ASC, realisasi_bulan_ini DESC
             ";
@@ -751,16 +765,22 @@ class RbbController
             $grand = [
                 'realisasi_bulan_ini' => 0,
                 'realisasi_tahun_lalu' => 0,
+                'angsuran' => 0,
+                'pelunasan' => 0,
+                'run_off' => 0,
                 'selisih' => 0,
                 'growth_persen' => 0
             ];
 
             foreach ($rows as &$row) {
-                foreach (['realisasi_bulan_ini', 'realisasi_tahun_lalu', 'selisih', 'growth_persen'] as $key) {
+                foreach (['realisasi_bulan_ini', 'realisasi_tahun_lalu', 'angsuran', 'pelunasan', 'run_off', 'selisih', 'growth_persen'] as $key) {
                     $row[$key] = (float)($row[$key] ?? 0);
                 }
                 $grand['realisasi_bulan_ini'] += $row['realisasi_bulan_ini'];
                 $grand['realisasi_tahun_lalu'] += $row['realisasi_tahun_lalu'];
+                $grand['angsuran'] += $row['angsuran'];
+                $grand['pelunasan'] += $row['pelunasan'];
+                $grand['run_off'] += $row['run_off'];
                 $grand['selisih'] += $row['selisih'];
             }
             unset($row);
@@ -776,6 +796,9 @@ class RbbController
                         IFNULL(k.nama_kantor, CONCAT('Cabang ', :breakdown_kode_kantor_name)) AS nama_kantor,
                         IFNULL(cur.total_realisasi, 0) AS realisasi_bulan_ini,
                         IFNULL(prev.total_realisasi, 0) AS realisasi_tahun_lalu,
+                        IFNULL(runoff.angsuran, 0) AS angsuran,
+                        IFNULL(runoff.pelunasan, 0) AS pelunasan,
+                        IFNULL(runoff.run_off, 0) AS run_off,
                         (IFNULL(cur.total_realisasi, 0) - IFNULL(prev.total_realisasi, 0)) AS selisih,
                         ROUND(
                             (IFNULL(cur.total_realisasi, 0) - IFNULL(prev.total_realisasi, 0)) /
@@ -818,6 +841,18 @@ class RbbController
                           AND tanggal_realisasi < {$sqlPrevHarianNext}
                         GROUP BY DATE_FORMAT(tanggal_realisasi, '%Y-%m-01')
                     ) prev ON prev.periode = months.periode
+                    LEFT JOIN (
+                        SELECT
+                            DATE_FORMAT(created, '%Y-%m-01') AS periode,
+                            SUM(COALESCE(angsuran, 0)) AS angsuran,
+                            SUM(COALESCE(pelunasan, 0)) AS pelunasan,
+                            SUM(COALESCE(angsuran, 0) + COALESCE(pelunasan, 0)) AS run_off
+                        FROM summary_kredit_harian_update
+                        WHERE kode_kantor = :breakdown_kode_kantor_runoff
+                          AND created >= {$sqlYearStart}
+                          AND created < {$sqlHarianNext}
+                        GROUP BY DATE_FORMAT(created, '%Y-%m-01')
+                    ) runoff ON runoff.periode = months.periode
                     ORDER BY months.periode DESC
                 ";
 
@@ -829,7 +864,8 @@ class RbbController
                     ':breakdown_kode_kantor_prev_month' => $kodeKantor,
                     ':breakdown_kode_kantor_join' => $kodeKantor,
                     ':breakdown_kode_kantor_cur' => $kodeKantor,
-                    ':breakdown_kode_kantor_prev' => $kodeKantor
+                    ':breakdown_kode_kantor_prev' => $kodeKantor,
+                    ':breakdown_kode_kantor_runoff' => $kodeKantor
                 ] as $key => $value) {
                     $stmtMonthly->bindValue($key, $value, PDO::PARAM_STR);
                 }
@@ -837,7 +873,7 @@ class RbbController
                 $monthlyBreakdown = $stmtMonthly->fetchAll(PDO::FETCH_ASSOC);
 
                 foreach ($monthlyBreakdown as &$monthRow) {
-                    foreach (['realisasi_bulan_ini', 'realisasi_tahun_lalu', 'selisih', 'growth_persen'] as $key) {
+                    foreach (['realisasi_bulan_ini', 'realisasi_tahun_lalu', 'angsuran', 'pelunasan', 'run_off', 'selisih', 'growth_persen'] as $key) {
                         $monthRow[$key] = (float)($monthRow[$key] ?? 0);
                     }
                 }
