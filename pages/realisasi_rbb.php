@@ -39,6 +39,14 @@
                         <option value="PEKALONGAN">Korwil Pekalongan</option>
                     </select>
                 </div>
+                <div class="field shrink-0 w-[calc(50%-4px)] xl:w-[150px]">
+                    <label class="lbl">PEMBANDING</label>
+                    <select id="rbb_compare_mode" class="inp font-bold text-slate-700 truncate" onchange="fetchRbb()">
+                        <option value="auto">Auto</option>
+                        <option value="rbb">RBB</option>
+                        <option value="history">History YoY</option>
+                    </select>
+                </div>
                 <button type="button" onclick="exportRbbExcel()" class="btn-icon w-[32px] md:w-[42px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shrink-0 ml-auto xl:ml-0 mt-2 xl:mt-0" title="Download Excel">
                     <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline></svg>
                 </button>
@@ -98,6 +106,7 @@ const rbbFmt = new Intl.NumberFormat('id-ID');
 let rbbRows = [];
 let rbbMonthlyRows = [];
 let rbbGrand = {};
+let rbbMeta = {};
 let rbbSort = { key: 'kode_kantor', asc: true };
 let rbbAbort = null;
 
@@ -222,6 +231,7 @@ async function fetchRbb() {
     const body = document.getElementById('rbb_body');
     const kantor = document.getElementById('rbb_kantor')?.value || '000';
     const harian = document.getElementById('rbb_harian_date')?.value || '';
+    const compareMode = document.getElementById('rbb_compare_mode')?.value || 'auto';
 
     if (rbbAbort) rbbAbort.abort();
     rbbAbort = new AbortController();
@@ -231,7 +241,8 @@ async function fetchRbb() {
 
     const payload = {
         type: 'realisasi_rbb_bulan_berjalan',
-        harian_date: harian
+        harian_date: harian,
+        compare_mode: compareMode
     };
 
     if (RBB_KORWIL.includes(kantor)) {
@@ -253,8 +264,11 @@ async function fetchRbb() {
         rbbRows = json.data?.data || [];
         rbbMonthlyRows = json.data?.monthly_breakdown || [];
         rbbGrand = json.data?.grand_total || {};
+        rbbMeta = json.data?.meta || {};
         if (rbbMonthlyRows.length) {
             rbbSort = { key: 'periode', asc: false };
+        } else if (rbbMeta.compare_mode === 'history') {
+            rbbSort = { key: 'selisih', asc: true };
         }
         renderRbbSummary();
         renderRbbTable();
@@ -270,6 +284,26 @@ async function fetchRbb() {
 function renderRbbSummary() {
     const box = document.getElementById('rbb_summary');
     if (!box) return;
+
+    if (rbbMeta.compare_mode === 'history') {
+        const suffix = rbbMeta.fallback_history ? 'Fallback karena RBB kosong' : 'Mode history';
+        const cards = [
+            [`Realisasi ${rbbMeta.tahun || 'Tahun Ini'}`, rbbGrand.realisasi_bulan_ini, 'text-blue-700', 'bg-blue-50'],
+            [`Realisasi ${rbbMeta.tahun_pembanding || 'Tahun Lalu'}`, rbbGrand.realisasi_tahun_lalu, 'text-slate-700', 'bg-slate-50'],
+            ['Growth YoY', rbbGrand.growth_persen, Number(rbbGrand.growth_persen || 0) >= 0 ? 'text-emerald-700' : 'text-red-700', 'bg-emerald-50', true],
+            ['Selisih YoY', rbbGrand.selisih, Number(rbbGrand.selisih || 0) >= 0 ? 'text-emerald-700' : 'text-red-700', 'bg-orange-50'],
+            ['Pembanding', suffix, 'text-indigo-700', 'bg-indigo-50', false, true]
+        ];
+
+        box.innerHTML = cards.map(([label, value, color, bg, percent, plain]) => `
+            <div class="rbb-card ${bg}">
+                <div class="label">${label}</div>
+                <div class="value ${color}">${plain ? rbbEscape(value) : (percent ? rbbPct(value) : `Rp ${rbbNominal(value)}`)}</div>
+                <div class="sub">${rbbMonthlyRows.length ? `${rbbMonthlyRows.length} bulan` : `${rbbRows.length} kantor`}</div>
+            </div>
+        `).join('');
+        return;
+    }
 
     const cards = [
         ['Target RBB Bulan Ini', rbbGrand.nilai_rbb, 'text-indigo-700', 'bg-indigo-50'],
@@ -292,6 +326,15 @@ function renderRbbTable() {
     const head = document.getElementById('rbb_head');
     const body = document.getElementById('rbb_body');
     if (!head || !body) return;
+
+    if (rbbMeta.compare_mode === 'history') {
+        if (rbbMonthlyRows.length) {
+            renderRbbHistoryMonthlyTable(head, body);
+        } else {
+            renderRbbHistoryTable(head, body);
+        }
+        return;
+    }
 
     if (rbbMonthlyRows.length) {
         renderRbbMonthlyTable(head, body);
@@ -343,6 +386,91 @@ function renderRbbTable() {
             </tr>
         `;
     }).join('');
+}
+
+function renderRbbHistoryTable(head, body) {
+    const year = rbbMeta.tahun || 'Tahun Ini';
+    const prevYear = rbbMeta.tahun_pembanding || 'Tahun Lalu';
+    head.innerHTML = `
+        <tr>
+            <th class="rbb-th rbb-sticky-code rbb-sort px-2 py-2 text-left w-16" onclick="sortRbb('kode_kantor')">Kode${rbbSortIcon('kode_kantor')}</th>
+            <th class="rbb-th rbb-sticky-name rbb-sort px-2 py-2 text-left w-44" onclick="sortRbb('nama_kantor')">Kantor${rbbSortIcon('nama_kantor')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-36" onclick="sortRbb('realisasi_bulan_ini')">Realisasi ${year} (Rb)${rbbSortIcon('realisasi_bulan_ini')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-36" onclick="sortRbb('realisasi_tahun_lalu')">Realisasi ${prevYear} (Rb)${rbbSortIcon('realisasi_tahun_lalu')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-28" onclick="sortRbb('growth_persen')">Growth${rbbSortIcon('growth_persen')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-36" onclick="sortRbb('selisih')">Selisih (Rb)${rbbSortIcon('selisih')}</th>
+        </tr>
+    `;
+
+    if (!rbbRows.length) {
+        body.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-400 italic">Tidak ada data realisasi history.</td></tr>`;
+        return;
+    }
+
+    const rows = sortedRbbRows(rbbRows);
+    body.innerHTML = rows.map(r => {
+        const selisih = Number(r.selisih || 0);
+        const color = selisih >= 0 ? 'text-emerald-700' : 'text-red-700';
+        return `
+            <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[42px]">
+                <td class="rbb-sticky-code px-2 py-2 text-left font-mono font-bold text-slate-500">${rbbEscape(r.kode_kantor)}</td>
+                <td class="rbb-sticky-name px-2 py-2 text-left font-bold text-slate-800 truncate" title="${rbbEscape(r.nama_kantor)}">${rbbEscape(r.nama_kantor)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-blue-700">${rbbTableNominal(r.realisasi_bulan_ini)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-slate-700">${rbbTableNominal(r.realisasi_tahun_lalu)}</td>
+                <td class="px-2 py-2 text-right font-black ${color}">${rbbPct(r.growth_persen)}</td>
+                <td class="px-2 py-2 text-right font-mono font-black ${color}">${selisih >= 0 ? '+' : '-'} ${rbbTableNominal(Math.abs(selisih))}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function renderRbbHistoryMonthlyTable(head, body) {
+    const year = rbbMeta.tahun || 'Tahun Ini';
+    const prevYear = rbbMeta.tahun_pembanding || 'Tahun Lalu';
+    head.innerHTML = `
+        <tr>
+            <th class="rbb-th rbb-sort px-3 py-2 text-left w-44" onclick="sortRbb('periode')">Bulan${rbbSortIcon('periode')}</th>
+            <th class="rbb-th px-3 py-2 text-left w-52">Kantor</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('realisasi_bulan_ini')">Realisasi ${year} (Rb)${rbbSortIcon('realisasi_bulan_ini')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('realisasi_tahun_lalu')">Realisasi ${prevYear} (Rb)${rbbSortIcon('realisasi_tahun_lalu')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-28" onclick="sortRbb('growth_persen')">Growth${rbbSortIcon('growth_persen')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('selisih')">Selisih (Rb)${rbbSortIcon('selisih')}</th>
+        </tr>
+    `;
+
+    if (!rbbMonthlyRows.length) {
+        body.innerHTML = `<tr><td colspan="6" class="py-12 text-center text-slate-400 italic">Tidak ada breakdown history bulanan.</td></tr>`;
+        return;
+    }
+
+    const rows = sortedRbbRows(rbbMonthlyRows);
+    body.innerHTML = rows.map(r => {
+        const selisih = Number(r.selisih || 0);
+        const color = selisih >= 0 ? 'text-emerald-700' : 'text-red-700';
+        return `
+            <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[44px]">
+                <td class="px-3 py-2 text-left font-black text-slate-800">${rbbEscape(rbbMonthLabel(r.periode))}</td>
+                <td class="px-3 py-2 text-left font-bold text-slate-600 truncate" title="${rbbEscape(r.nama_kantor)}">${rbbEscape(r.nama_kantor)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-blue-700">${rbbTableNominal(r.realisasi_bulan_ini)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-slate-700">${rbbTableNominal(r.realisasi_tahun_lalu)}</td>
+                <td class="px-3 py-2 text-right font-black ${color}">${rbbPct(r.growth_persen)}</td>
+                <td class="px-3 py-2 text-right font-mono font-black ${color}">${selisih >= 0 ? '+' : '-'} ${rbbTableNominal(Math.abs(selisih))}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function sortedRbbRows(sourceRows) {
+    return [...sourceRows].sort((a, b) => {
+        const av = a[rbbSort.key];
+        const bv = b[rbbSort.key];
+        if (!isNaN(parseFloat(av)) && isFinite(av)) {
+            return rbbSort.asc ? Number(av || 0) - Number(bv || 0) : Number(bv || 0) - Number(av || 0);
+        }
+        return rbbSort.asc
+            ? String(av || '').localeCompare(String(bv || ''))
+            : String(bv || '').localeCompare(String(av || ''));
+    });
 }
 
 function renderRbbMonthlyTable(head, body) {
@@ -405,6 +533,25 @@ function sortRbb(key) {
 function exportRbbExcel() {
     const exportRows = rbbMonthlyRows.length ? rbbMonthlyRows : rbbRows;
     if (!exportRows.length) return alert('Tidak ada data untuk diexport.');
+
+    if (rbbMeta.compare_mode === 'history') {
+        const year = rbbMeta.tahun || 'Tahun Ini';
+        const prevYear = rbbMeta.tahun_pembanding || 'Tahun Lalu';
+        const title = rbbMonthlyRows.length ? 'Bulan\tKantor' : 'Kode\tKantor';
+        let csv = `${title}\tRealisasi ${year}\tRealisasi ${prevYear}\tGrowth\tSelisih\n`;
+        exportRows.forEach(r => {
+            const first = rbbMonthlyRows.length ? rbbMonthLabel(r.periode) : `'${r.kode_kantor}`;
+            csv += `${first}\t${r.nama_kantor}\t${Math.round(r.realisasi_bulan_ini || 0)}\t${Math.round(r.realisasi_tahun_lalu || 0)}\t${r.growth_persen}\t${Math.round(r.selisih || 0)}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = rbbMonthlyRows.length ? 'History_Realisasi_Bulanan.xls' : 'History_Realisasi_YoY.xls';
+        a.click();
+        URL.revokeObjectURL(a.href);
+        return;
+    }
 
     if (rbbMonthlyRows.length) {
         let csv = 'Bulan\tKantor\tNilai RBB\tRealisasi\t% RBB\tSelisih\tKekurangan\n';

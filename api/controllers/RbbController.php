@@ -438,6 +438,10 @@ class RbbController
         $sqlYearStart = $this->pdo->quote($yearStart);
         $sqlHarianNext = $this->pdo->quote($harianNext);
         $kodePerkiraan = !empty($b['kode_perkiraan']) ? $b['kode_perkiraan'] : 'produksi.total';
+        $compareMode = strtolower((string)($b['compare_mode'] ?? 'auto'));
+        if (!in_array($compareMode, ['auto', 'rbb', 'history'], true)) {
+            $compareMode = 'auto';
+        }
 
         $kodeKantor = '';
         if (!empty($b['kode_kantor']) && $b['kode_kantor'] !== '000' && strtolower((string)$b['kode_kantor']) !== 'konsolidasi') {
@@ -463,6 +467,10 @@ class RbbController
             $whereFinal .= " AND data_gabungan.kode_kantor BETWEEN '022' AND '028'";
         } else {
             $whereFinal .= " AND data_gabungan.kode_kantor BETWEEN '001' AND '028'";
+        }
+
+        if ($compareMode === 'history') {
+            return $this->getRealisasiHistoryComparison($b, false);
         }
 
         $branchColumns = ['001','002','003','004','005','006','007','008','009','010','011','012','013','014','015','016','017','018','019','020','021','022','023','024','025','026','027','028'];
@@ -579,6 +587,10 @@ class RbbController
             $grand['persentase_rbb_bulan_ini'] = $grand['nilai_rbb'] == 0 ? 0 : round(($grand['realisasi_bulan_ini'] / $grand['nilai_rbb']) * 100, 2);
             $grand['persentase_rbb_plus_kekurangan'] = $grand['total_beban_target'] == 0 ? 0 : round(($grand['realisasi_bulan_ini'] / $grand['total_beban_target']) * 100, 2);
 
+            if ($compareMode === 'auto' && $grand['nilai_rbb'] == 0) {
+                return $this->getRealisasiHistoryComparison($b, true);
+            }
+
             $monthlyBreakdown = [];
             if ($kodeKantor !== '') {
                 $branchCol = "`{$kodeKantor}`";
@@ -638,7 +650,9 @@ class RbbController
                     'tahun_start' => $yearStart,
                     'kode_perkiraan' => $kodePerkiraan,
                     'kode_kantor' => $kodeKantor !== '' ? $kodeKantor : '000',
-                    'korwil' => $korwil
+                    'korwil' => $korwil,
+                    'compare_mode' => 'rbb',
+                    'fallback_history' => false
                 ],
                 'grand_total' => $grand,
                 'monthly_breakdown' => $monthlyBreakdown,
@@ -646,6 +660,208 @@ class RbbController
             ]);
         } catch (PDOException $e) {
             error_log("PDO Error Realisasi vs RBB: " . $e->getMessage());
+            return sendResponse(500, "Database Query Error: " . $e->getMessage(), null);
+        }
+    }
+
+    private function getRealisasiHistoryComparison($input = null, $fallbackHistory = false)
+    {
+        $b = is_array($input) ? $input : [];
+        $harianDate = !empty($b['harian_date']) ? $b['harian_date'] : (!empty($b['tanggal']) ? $b['tanggal'] : date('Y-m-d'));
+        $time = strtotime($harianDate);
+        if (!$time) {
+            return sendResponse(400, "Format harian_date tidak valid.");
+        }
+
+        $yearStart = date('Y-01-01', $time);
+        $harianNext = date('Y-m-d', strtotime('+1 day', $time));
+        $prevYearStart = date('Y-01-01', strtotime('-1 year', $time));
+        $prevHarianNext = date('Y-m-d', strtotime('-1 year +1 day', $time));
+        $year = date('Y', $time);
+        $prevYear = date('Y', strtotime('-1 year', $time));
+
+        $sqlYearStart = $this->pdo->quote($yearStart);
+        $sqlHarianNext = $this->pdo->quote($harianNext);
+        $sqlPrevYearStart = $this->pdo->quote($prevYearStart);
+        $sqlPrevHarianNext = $this->pdo->quote($prevHarianNext);
+
+        $kodeKantor = '';
+        if (!empty($b['kode_kantor']) && $b['kode_kantor'] !== '000' && strtolower((string)$b['kode_kantor']) !== 'konsolidasi') {
+            $kodeKantor = str_pad((string)$b['kode_kantor'], 3, '0', STR_PAD_LEFT);
+        }
+
+        $korwil = strtoupper((string)($b['korwil'] ?? ''));
+        $whereKantor = "k.kode_kantor BETWEEN '001' AND '028'";
+        $params = [];
+
+        if ($kodeKantor !== '') {
+            $whereKantor = "k.kode_kantor = :kode_kantor";
+            $params[':kode_kantor'] = $kodeKantor;
+        } elseif ($korwil === 'SEMARANG') {
+            $whereKantor = "k.kode_kantor BETWEEN '001' AND '007'";
+        } elseif ($korwil === 'SOLO') {
+            $whereKantor = "k.kode_kantor BETWEEN '008' AND '014'";
+        } elseif ($korwil === 'BANYUMAS') {
+            $whereKantor = "k.kode_kantor BETWEEN '015' AND '021'";
+        } elseif ($korwil === 'PEKALONGAN') {
+            $whereKantor = "k.kode_kantor BETWEEN '022' AND '028'";
+        }
+
+        try {
+            $sql = "
+                SELECT
+                    k.kode_kantor,
+                    k.nama_kantor,
+                    IFNULL(cur.total_realisasi, 0) AS realisasi_bulan_ini,
+                    IFNULL(prev.total_realisasi, 0) AS realisasi_tahun_lalu,
+                    (IFNULL(cur.total_realisasi, 0) - IFNULL(prev.total_realisasi, 0)) AS selisih,
+                    ROUND(
+                        (IFNULL(cur.total_realisasi, 0) - IFNULL(prev.total_realisasi, 0)) /
+                        NULLIF(IFNULL(prev.total_realisasi, 0), 0) * 100,
+                        2
+                    ) AS growth_persen
+                FROM kode_kantor k
+                LEFT JOIN (
+                    SELECT kode_kantor, SUM(realisasi_pokok) AS total_realisasi
+                    FROM update_realisasi_kredit
+                    WHERE kode_trans = '110'
+                      AND tanggal_realisasi >= {$sqlYearStart}
+                      AND tanggal_realisasi < {$sqlHarianNext}
+                    GROUP BY kode_kantor
+                ) cur ON cur.kode_kantor = k.kode_kantor
+                LEFT JOIN (
+                    SELECT kode_kantor, SUM(realisasi_pokok) AS total_realisasi
+                    FROM update_realisasi_kredit
+                    WHERE kode_trans = '110'
+                      AND tanggal_realisasi >= {$sqlPrevYearStart}
+                      AND tanggal_realisasi < {$sqlPrevHarianNext}
+                    GROUP BY kode_kantor
+                ) prev ON prev.kode_kantor = k.kode_kantor
+                WHERE {$whereKantor}
+                ORDER BY selisih ASC, realisasi_bulan_ini DESC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => $value) {
+                $stmt->bindValue($key, $value, PDO::PARAM_STR);
+            }
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $grand = [
+                'realisasi_bulan_ini' => 0,
+                'realisasi_tahun_lalu' => 0,
+                'selisih' => 0,
+                'growth_persen' => 0
+            ];
+
+            foreach ($rows as &$row) {
+                foreach (['realisasi_bulan_ini', 'realisasi_tahun_lalu', 'selisih', 'growth_persen'] as $key) {
+                    $row[$key] = (float)($row[$key] ?? 0);
+                }
+                $grand['realisasi_bulan_ini'] += $row['realisasi_bulan_ini'];
+                $grand['realisasi_tahun_lalu'] += $row['realisasi_tahun_lalu'];
+                $grand['selisih'] += $row['selisih'];
+            }
+            unset($row);
+
+            $grand['growth_persen'] = $grand['realisasi_tahun_lalu'] == 0 ? 0 : round(($grand['selisih'] / $grand['realisasi_tahun_lalu']) * 100, 2);
+
+            $monthlyBreakdown = [];
+            if ($kodeKantor !== '') {
+                $sqlMonthly = "
+                    SELECT
+                        months.periode,
+                        :breakdown_kode_kantor AS kode_kantor,
+                        IFNULL(k.nama_kantor, CONCAT('Cabang ', :breakdown_kode_kantor_name)) AS nama_kantor,
+                        IFNULL(cur.total_realisasi, 0) AS realisasi_bulan_ini,
+                        IFNULL(prev.total_realisasi, 0) AS realisasi_tahun_lalu,
+                        (IFNULL(cur.total_realisasi, 0) - IFNULL(prev.total_realisasi, 0)) AS selisih,
+                        ROUND(
+                            (IFNULL(cur.total_realisasi, 0) - IFNULL(prev.total_realisasi, 0)) /
+                            NULLIF(IFNULL(prev.total_realisasi, 0), 0) * 100,
+                            2
+                        ) AS growth_persen
+                    FROM (
+                        SELECT DATE_FORMAT(tanggal_realisasi, '%Y-%m-01') AS periode
+                        FROM update_realisasi_kredit
+                        WHERE kode_trans = '110'
+                          AND kode_kantor = :breakdown_kode_kantor_cur_month
+                          AND tanggal_realisasi >= {$sqlYearStart}
+                          AND tanggal_realisasi < {$sqlHarianNext}
+                        GROUP BY DATE_FORMAT(tanggal_realisasi, '%Y-%m-01')
+                        UNION
+                        SELECT DATE_ADD(DATE_FORMAT(tanggal_realisasi, '%Y-%m-01'), INTERVAL 1 YEAR) AS periode
+                        FROM update_realisasi_kredit
+                        WHERE kode_trans = '110'
+                          AND kode_kantor = :breakdown_kode_kantor_prev_month
+                          AND tanggal_realisasi >= {$sqlPrevYearStart}
+                          AND tanggal_realisasi < {$sqlPrevHarianNext}
+                        GROUP BY DATE_FORMAT(tanggal_realisasi, '%Y-%m-01')
+                    ) months
+                    LEFT JOIN kode_kantor k ON k.kode_kantor = :breakdown_kode_kantor_join
+                    LEFT JOIN (
+                        SELECT DATE_FORMAT(tanggal_realisasi, '%Y-%m-01') AS periode, SUM(realisasi_pokok) AS total_realisasi
+                        FROM update_realisasi_kredit
+                        WHERE kode_trans = '110'
+                          AND kode_kantor = :breakdown_kode_kantor_cur
+                          AND tanggal_realisasi >= {$sqlYearStart}
+                          AND tanggal_realisasi < {$sqlHarianNext}
+                        GROUP BY DATE_FORMAT(tanggal_realisasi, '%Y-%m-01')
+                    ) cur ON cur.periode = months.periode
+                    LEFT JOIN (
+                        SELECT DATE_ADD(DATE_FORMAT(tanggal_realisasi, '%Y-%m-01'), INTERVAL 1 YEAR) AS periode, SUM(realisasi_pokok) AS total_realisasi
+                        FROM update_realisasi_kredit
+                        WHERE kode_trans = '110'
+                          AND kode_kantor = :breakdown_kode_kantor_prev
+                          AND tanggal_realisasi >= {$sqlPrevYearStart}
+                          AND tanggal_realisasi < {$sqlPrevHarianNext}
+                        GROUP BY DATE_FORMAT(tanggal_realisasi, '%Y-%m-01')
+                    ) prev ON prev.periode = months.periode
+                    ORDER BY months.periode DESC
+                ";
+
+                $stmtMonthly = $this->pdo->prepare($sqlMonthly);
+                foreach ([
+                    ':breakdown_kode_kantor' => $kodeKantor,
+                    ':breakdown_kode_kantor_name' => $kodeKantor,
+                    ':breakdown_kode_kantor_cur_month' => $kodeKantor,
+                    ':breakdown_kode_kantor_prev_month' => $kodeKantor,
+                    ':breakdown_kode_kantor_join' => $kodeKantor,
+                    ':breakdown_kode_kantor_cur' => $kodeKantor,
+                    ':breakdown_kode_kantor_prev' => $kodeKantor
+                ] as $key => $value) {
+                    $stmtMonthly->bindValue($key, $value, PDO::PARAM_STR);
+                }
+                $stmtMonthly->execute();
+                $monthlyBreakdown = $stmtMonthly->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($monthlyBreakdown as &$monthRow) {
+                    foreach (['realisasi_bulan_ini', 'realisasi_tahun_lalu', 'selisih', 'growth_persen'] as $key) {
+                        $monthRow[$key] = (float)($monthRow[$key] ?? 0);
+                    }
+                }
+                unset($monthRow);
+            }
+
+            return sendResponse(200, "Berhasil meload History Realisasi YoY", [
+                'meta' => [
+                    'harian_date' => $harianDate,
+                    'tahun_start' => $yearStart,
+                    'tahun_pembanding_start' => $prevYearStart,
+                    'tahun' => $year,
+                    'tahun_pembanding' => $prevYear,
+                    'kode_kantor' => $kodeKantor !== '' ? $kodeKantor : '000',
+                    'korwil' => $korwil,
+                    'compare_mode' => 'history',
+                    'fallback_history' => $fallbackHistory
+                ],
+                'grand_total' => $grand,
+                'monthly_breakdown' => $monthlyBreakdown,
+                'data' => $rows
+            ]);
+        } catch (PDOException $e) {
+            error_log("PDO Error History Realisasi RBB: " . $e->getMessage());
             return sendResponse(500, "Database Query Error: " . $e->getMessage(), null);
         }
     }
