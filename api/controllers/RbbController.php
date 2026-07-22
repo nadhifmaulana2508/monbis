@@ -611,7 +611,7 @@ class RbbController
                     WHERE ref.kode_perkiraan = :breakdown_kode_perkiraan
                       AND r.periode >= {$sqlYearStart}
                       AND r.periode <= {$sqlMonthStart}
-                    ORDER BY r.periode ASC
+                    ORDER BY r.periode DESC
                 ";
 
                 $stmtBreakdown = $this->pdo->prepare($sqlBreakdown);

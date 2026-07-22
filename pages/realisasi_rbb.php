@@ -13,7 +13,7 @@
                 <span class="relative group inline-flex">
                     <button type="button" class="rbb-info-btn" aria-label="Info nominal tabel">i</button>
                     <span class="rbb-info-pop">
-                        Nominal pada tabel ditampilkan dalam ribuan rupiah. Contoh: Rp 1.000.000.000 tampil menjadi Rp 1.000.000. Kartu ringkasan tetap memakai format singkat.
+                        Nominal pada tabel ditampilkan dalam ribuan rupiah. Contoh: 1.000.000.000 tampil menjadi 1.000.000. Kartu ringkasan tetap memakai format singkat.
                     </span>
                 </span>
             </h1>
@@ -253,8 +253,8 @@ async function fetchRbb() {
         rbbRows = json.data?.data || [];
         rbbMonthlyRows = json.data?.monthly_breakdown || [];
         rbbGrand = json.data?.grand_total || {};
-        if (rbbMonthlyRows.length && !['periode', 'nilai_rbb', 'realisasi_bulan_ini', 'persentase_rbb_bulan_ini', 'selisih', 'kekurangan'].includes(rbbSort.key)) {
-            rbbSort = { key: 'periode', asc: true };
+        if (rbbMonthlyRows.length) {
+            rbbSort = { key: 'periode', asc: false };
         }
         renderRbbSummary();
         renderRbbTable();
@@ -334,11 +334,11 @@ function renderRbbTable() {
             <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[42px]">
                 <td class="rbb-sticky-code px-2 py-2 text-left font-mono font-bold text-slate-500">${rbbEscape(r.kode_kantor)}</td>
                 <td class="rbb-sticky-name px-2 py-2 text-left font-bold text-slate-800 truncate" title="${rbbEscape(r.nama_kantor)}">${rbbEscape(r.nama_kantor)}</td>
-                <td class="px-2 py-2 text-right font-mono font-bold text-indigo-700">Rp ${rbbTableNominal(r.nilai_rbb)}</td>
-                <td class="px-2 py-2 text-right font-mono font-bold text-blue-700">Rp ${rbbTableNominal(r.realisasi_bulan_ini)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-indigo-700">${rbbTableNominal(r.nilai_rbb)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-blue-700">${rbbTableNominal(r.realisasi_bulan_ini)}</td>
                 <td class="px-2 py-2 text-right font-black ${pctColor}">${rbbPct(r.persentase_rbb_bulan_ini)}</td>
-                <td class="px-2 py-2 text-right font-mono font-bold text-red-700">Rp ${rbbTableNominal(r.kekurangan_sd_bulan_lalu)}</td>
-                <td class="px-2 py-2 text-right font-mono font-bold text-orange-700">Rp ${rbbTableNominal(r.total_beban_target)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-red-700">${rbbTableNominal(r.kekurangan_sd_bulan_lalu)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-orange-700">${rbbTableNominal(r.total_beban_target)}</td>
                 <td class="px-2 py-2 text-right font-black ${bebanColor}">${rbbPct(r.persentase_rbb_plus_kekurangan)}</td>
             </tr>
         `;
@@ -383,11 +383,11 @@ function renderRbbMonthlyTable(head, body) {
             <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[44px]">
                 <td class="px-3 py-2 text-left font-black text-slate-800">${rbbEscape(rbbMonthLabel(r.periode))}</td>
                 <td class="px-3 py-2 text-left font-bold text-slate-600 truncate" title="${rbbEscape(r.nama_kantor)}">${rbbEscape(r.nama_kantor)}</td>
-                <td class="px-3 py-2 text-right font-mono font-bold text-indigo-700">Rp ${rbbTableNominal(r.nilai_rbb)}</td>
-                <td class="px-3 py-2 text-right font-mono font-bold text-blue-700">Rp ${rbbTableNominal(r.realisasi_bulan_ini)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-indigo-700">${rbbTableNominal(r.nilai_rbb)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-blue-700">${rbbTableNominal(r.realisasi_bulan_ini)}</td>
                 <td class="px-3 py-2 text-right font-black ${pctColor}">${rbbPct(r.persentase_rbb_bulan_ini)}</td>
-                <td class="px-3 py-2 text-right font-mono font-black ${selisihColor}">${selisih >= 0 ? '+' : '-'} Rp ${rbbTableNominal(Math.abs(selisih))}</td>
-                <td class="px-3 py-2 text-right font-mono font-bold text-orange-700">Rp ${rbbTableNominal(r.kekurangan)}</td>
+                <td class="px-3 py-2 text-right font-mono font-black ${selisihColor}">${selisih >= 0 ? '+' : '-'} ${rbbTableNominal(Math.abs(selisih))}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-orange-700">${rbbTableNominal(r.kekurangan)}</td>
             </tr>
         `;
     }).join('');
