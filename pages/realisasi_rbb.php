@@ -47,19 +47,18 @@
                         <option value="history">History YoY</option>
                     </select>
                 </div>
-                <button type="button" onclick="exportRbbExcel()" class="btn-icon w-[32px] md:w-[42px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shrink-0 ml-auto xl:ml-0 mt-2 xl:mt-0" title="Download Excel">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline></svg>
-                </button>
+                <div class="flex items-end gap-2 shrink-0 ml-auto xl:ml-0 mt-2 xl:mt-0">
+                    <button type="button" id="rbb_summary_toggle" onclick="toggleRbbSummary()" class="h-9 px-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-black text-[10px] md:text-xs shadow-sm">
+                        Hide
+                    </button>
+                    <button type="button" onclick="exportRbbExcel()" class="btn-icon w-[32px] md:w-[42px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shrink-0" title="Download Excel">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline></svg>
+                    </button>
+                </div>
             </form>
         </div>
     </div>
 
-    <div class="flex items-center justify-between mb-2 shrink-0">
-        <div class="text-[10px] md:text-xs font-black uppercase tracking-wider text-slate-500">Ringkasan</div>
-        <button type="button" id="rbb_summary_toggle" onclick="toggleRbbSummary()" class="h-8 px-3 rounded-lg border border-slate-200 bg-white text-slate-700 font-black text-[10px] md:text-xs shadow-sm">
-            Hide
-        </button>
-    </div>
     <div id="rbb_summary" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 md:gap-3 mb-3 shrink-0"></div>
 
     <div class="flex-1 min-h-0 overflow-hidden bg-white rounded-xl shadow-sm border border-slate-200 relative flex flex-col z-10">
