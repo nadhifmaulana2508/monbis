@@ -286,7 +286,7 @@ function renderRbbSummary() {
     if (!box) return;
 
     if (rbbMeta.compare_mode === 'history') {
-        const suffix = rbbMeta.fallback_history ? 'Fallback karena RBB kosong' : 'Mode history';
+        const suffix = rbbMeta.fallback_history ? 'Auto History' : 'History YoY';
         const cards = [
             [`Realisasi ${rbbMeta.tahun || 'Tahun Ini'}`, rbbGrand.realisasi_bulan_ini, 'text-blue-700', 'bg-blue-50'],
             [`Realisasi ${rbbMeta.tahun_pembanding || 'Tahun Lalu'}`, rbbGrand.realisasi_tahun_lalu, 'text-slate-700', 'bg-slate-50'],
