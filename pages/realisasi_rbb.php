@@ -410,11 +410,13 @@ function renderRbbTable() {
 
 function renderRbbHistoryTable(head, body) {
     const year = rbbMeta.tahun || 'Tahun Ini';
+    const prevYear = rbbMeta.tahun_pembanding || 'Tahun Lalu';
     head.innerHTML = `
         <tr>
             <th class="rbb-th rbb-sticky-code rbb-sort px-2 py-2 text-left w-16" onclick="sortRbb('kode_kantor')">Kode${rbbSortIcon('kode_kantor')}</th>
             <th class="rbb-th rbb-sticky-name rbb-sort px-2 py-2 text-left w-44" onclick="sortRbb('nama_kantor')">Kantor${rbbSortIcon('nama_kantor')}</th>
             <th class="rbb-th rbb-sort px-2 py-2 text-right w-36" onclick="sortRbb('realisasi_bulan_ini')">Realisasi ${year} (Rb)${rbbSortIcon('realisasi_bulan_ini')}</th>
+            <th class="rbb-th rbb-sort px-2 py-2 text-right w-36" onclick="sortRbb('realisasi_tahun_lalu')">Realisasi ${prevYear} (Rb)${rbbSortIcon('realisasi_tahun_lalu')}</th>
             <th class="rbb-th rbb-sort px-2 py-2 text-right w-32" onclick="sortRbb('run_off')">Run Off (Rb)${rbbSortIcon('run_off')}</th>
             <th class="rbb-th rbb-sort px-2 py-2 text-right w-32" onclick="sortRbb('growth')">Growth (Rb)${rbbSortIcon('growth')}</th>
             <th class="rbb-th rbb-sort px-2 py-2 text-right w-24" onclick="sortRbb('growth_persen')">% Growth${rbbSortIcon('growth_persen')}</th>
@@ -425,7 +427,7 @@ function renderRbbHistoryTable(head, body) {
     `;
 
     if (!rbbRows.length) {
-        body.innerHTML = `<tr><td colspan="8" class="py-12 text-center text-slate-400 italic">Tidak ada data realisasi history.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="9" class="py-12 text-center text-slate-400 italic">Tidak ada data realisasi history.</td></tr>`;
         return;
     }
 
@@ -440,6 +442,7 @@ function renderRbbHistoryTable(head, body) {
                 <td class="rbb-sticky-code px-2 py-2 text-left font-mono font-bold text-slate-500">${rbbEscape(r.kode_kantor)}</td>
                 <td class="rbb-sticky-name px-2 py-2 text-left font-bold text-slate-800 truncate" title="${rbbEscape(r.nama_kantor)}">${rbbEscape(r.nama_kantor)}</td>
                 <td class="px-2 py-2 text-right font-mono font-bold text-blue-700">${rbbTableNominal(r.realisasi_bulan_ini)}</td>
+                <td class="px-2 py-2 text-right font-mono font-bold text-slate-700">${rbbTableNominal(r.realisasi_tahun_lalu)}</td>
                 <td class="px-2 py-2 text-right font-mono font-bold text-orange-700">${rbbTableNominal(r.run_off)}</td>
                 <td class="px-2 py-2 text-right font-mono font-black ${growthColor}">${growth >= 0 ? '+' : '-'} ${rbbTableNominal(Math.abs(growth))}</td>
                 <td class="px-2 py-2 text-right font-black ${growthColor}">${rbbPct(r.growth_persen)}</td>
@@ -452,11 +455,13 @@ function renderRbbHistoryTable(head, body) {
 
 function renderRbbHistoryMonthlyTable(head, body) {
     const year = rbbMeta.tahun || 'Tahun Ini';
+    const prevYear = rbbMeta.tahun_pembanding || 'Tahun Lalu';
     head.innerHTML = `
         <tr>
             <th class="rbb-th rbb-sort px-3 py-2 text-left w-44" onclick="sortRbb('periode')">Bulan${rbbSortIcon('periode')}</th>
             <th class="rbb-th px-3 py-2 text-left w-52">Kantor</th>
             <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('realisasi_bulan_ini')">Realisasi ${year} (Rb)${rbbSortIcon('realisasi_bulan_ini')}</th>
+            <th class="rbb-th rbb-sort px-3 py-2 text-right w-36" onclick="sortRbb('realisasi_tahun_lalu')">Realisasi ${prevYear} (Rb)${rbbSortIcon('realisasi_tahun_lalu')}</th>
             <th class="rbb-th rbb-sort px-3 py-2 text-right w-32" onclick="sortRbb('run_off')">Run Off (Rb)${rbbSortIcon('run_off')}</th>
             <th class="rbb-th rbb-sort px-3 py-2 text-right w-32" onclick="sortRbb('growth')">Growth (Rb)${rbbSortIcon('growth')}</th>
             <th class="rbb-th rbb-sort px-3 py-2 text-right w-24" onclick="sortRbb('growth_persen')">% Growth${rbbSortIcon('growth_persen')}</th>
@@ -467,7 +472,7 @@ function renderRbbHistoryMonthlyTable(head, body) {
     `;
 
     if (!rbbMonthlyRows.length) {
-        body.innerHTML = `<tr><td colspan="8" class="py-12 text-center text-slate-400 italic">Tidak ada breakdown history bulanan.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="9" class="py-12 text-center text-slate-400 italic">Tidak ada breakdown history bulanan.</td></tr>`;
         return;
     }
 
@@ -482,6 +487,7 @@ function renderRbbHistoryMonthlyTable(head, body) {
                 <td class="px-3 py-2 text-left font-black text-slate-800">${rbbEscape(rbbMonthLabel(r.periode))}</td>
                 <td class="px-3 py-2 text-left font-bold text-slate-600 truncate" title="${rbbEscape(r.nama_kantor)}">${rbbEscape(r.nama_kantor)}</td>
                 <td class="px-3 py-2 text-right font-mono font-bold text-blue-700">${rbbTableNominal(r.realisasi_bulan_ini)}</td>
+                <td class="px-3 py-2 text-right font-mono font-bold text-slate-700">${rbbTableNominal(r.realisasi_tahun_lalu)}</td>
                 <td class="px-3 py-2 text-right font-mono font-bold text-orange-700">${rbbTableNominal(r.run_off)}</td>
                 <td class="px-3 py-2 text-right font-mono font-black ${growthColor}">${growth >= 0 ? '+' : '-'} ${rbbTableNominal(Math.abs(growth))}</td>
                 <td class="px-3 py-2 text-right font-black ${growthColor}">${rbbPct(r.growth_persen)}</td>
@@ -505,6 +511,7 @@ function renderRbbHistoryTotalRow(withStickyName) {
             <th class="rbb-total-th ${labelClass} px-2 py-2 text-left font-black text-slate-700">${withStickyName ? '' : 'TOTAL'}</th>
             <th class="rbb-total-th ${nameClass} px-2 py-2 text-left font-black text-slate-700">${withStickyName ? 'TOTAL' : ''}</th>
             <th class="rbb-total-th px-2 py-2 text-right font-mono font-black text-blue-700">${rbbTableNominal(rbbGrand.realisasi_bulan_ini)}</th>
+            <th class="rbb-total-th px-2 py-2 text-right font-mono font-black text-slate-700">${rbbTableNominal(rbbGrand.realisasi_tahun_lalu)}</th>
             <th class="rbb-total-th px-2 py-2 text-right font-mono font-black text-orange-700">${rbbTableNominal(rbbGrand.run_off)}</th>
             <th class="rbb-total-th px-2 py-2 text-right font-mono font-black ${growthColor}">${growth >= 0 ? '+' : '-'} ${rbbTableNominal(Math.abs(growth))}</th>
             <th class="rbb-total-th px-2 py-2 text-right font-black ${growthColor}">${rbbPct(rbbGrand.growth_persen)}</th>
@@ -590,11 +597,12 @@ function exportRbbExcel() {
 
     if (rbbMeta.compare_mode === 'history') {
         const year = rbbMeta.tahun || 'Tahun Ini';
+        const prevYear = rbbMeta.tahun_pembanding || 'Tahun Lalu';
         const title = rbbMonthlyRows.length ? 'Bulan\tKantor' : 'Kode\tKantor';
-        let csv = `${title}\tRealisasi ${year}\tRun Off\tGrowth\t% Growth\tSelisih YoY\t% YoY\n`;
+        let csv = `${title}\tRealisasi ${year}\tRealisasi ${prevYear}\tRun Off\tGrowth\t% Growth\tSelisih YoY\t% YoY\n`;
         exportRows.forEach(r => {
             const first = rbbMonthlyRows.length ? rbbMonthLabel(r.periode) : `'${r.kode_kantor}`;
-            csv += `${first}\t${r.nama_kantor}\t${Math.round(r.realisasi_bulan_ini || 0)}\t${Math.round(r.run_off || 0)}\t${Math.round(r.growth || 0)}\t${r.growth_persen}\t${Math.round(r.selisih || 0)}\t${r.yoy_persen}\n`;
+            csv += `${first}\t${r.nama_kantor}\t${Math.round(r.realisasi_bulan_ini || 0)}\t${Math.round(r.realisasi_tahun_lalu || 0)}\t${Math.round(r.run_off || 0)}\t${Math.round(r.growth || 0)}\t${r.growth_persen}\t${Math.round(r.selisih || 0)}\t${r.yoy_persen}\n`;
         });
 
         const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
