@@ -1,4 +1,5 @@
 api/.env
+.env
 data
 api/va
 .htaccess

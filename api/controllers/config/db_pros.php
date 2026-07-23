@@ -50,10 +50,12 @@ $env = loadEnv($envFile);
  * Helper ambil ENV
  */
 $ENV = function (string $key, $default = null) use ($env) {
+  if (array_key_exists($key, $env)) return $env[$key];
+
   $v = getenv($key);
   if ($v !== false) return $v;
 
-  return $env[$key] ?? $default;
+  return $default;
 };
 
 // ================== CONFIG DB ==================
