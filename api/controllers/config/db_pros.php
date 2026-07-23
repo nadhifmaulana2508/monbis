@@ -61,7 +61,7 @@ $DB_HOST = (string)$ENV('DB_HOST1', '127.0.0.1');
 $DB_USER = (string)$ENV('DB_USER1', 'root');
 $DB_PASS = (string)$ENV('DB_PASS1', '');
 $DB_NAME = (string)$ENV('DB_NAME1', '');
-$DB_PORT = (int)$ENV('DB_ROOT1', 3306);
+$DB_PORT = (int)$ENV('DB_PORT1', $ENV('DB_ROOT1', 3306));
 
 // ================== CONNECT ==================
 try {

@@ -6,7 +6,7 @@
 
 // 1. Load Dependencies (Gunakan require_once ke helper pusat)
 require_once __DIR__ . '/../helpers/response.php';
-require_once __DIR__ . '/../config/db_pros.php';
+require_once __DIR__ . '/../controllers/config/db_pros.php';
 require_once __DIR__ . '/../controllers/ProspekController.php';
 
 // 2. Init Database (Cara Aman agar $pdo tidak null)
