@@ -752,7 +752,7 @@ class RbbController
                         SUM(COALESCE(angsuran, 0)) AS run_off,
                         SUM(COALESCE(realisasi, 0)) + SUM(COALESCE(restrukturisasi, 0)) - SUM(COALESCE(angsuran, 0)) AS growth
                     FROM summary_kredit_harian_update
-                    WHERE created >= {$sqlMonthStart}
+                    WHERE created >= {$sqlYearStart}
                       AND created < {$sqlHarianNext}
                     GROUP BY kode_kantor
                 ) runoff ON runoff.kode_kantor = k.kode_kantor
@@ -854,16 +854,35 @@ class RbbController
                     ) prev ON prev.periode = months.periode
                     LEFT JOIN (
                         SELECT
-                            DATE_FORMAT(created, '%Y-%m-01') AS periode,
-                            SUM(COALESCE(angsuran, 0)) - SUM(COALESCE(pelunasan, 0)) AS angsuran,
-                            SUM(COALESCE(pelunasan, 0)) AS pelunasan,
-                            SUM(COALESCE(angsuran, 0)) AS run_off,
-                            SUM(COALESCE(realisasi, 0)) + SUM(COALESCE(restrukturisasi, 0)) - SUM(COALESCE(angsuran, 0)) AS growth
-                        FROM summary_kredit_harian_update
-                        WHERE kode_kantor = :breakdown_kode_kantor_runoff
-                          AND created >= {$sqlMonthStart}
-                          AND created < {$sqlHarianNext}
-                        GROUP BY DATE_FORMAT(created, '%Y-%m-01')
+                            months_runoff.periode,
+                            SUM(COALESCE(s.angsuran, 0)) - SUM(COALESCE(s.pelunasan, 0)) AS angsuran,
+                            SUM(COALESCE(s.pelunasan, 0)) AS pelunasan,
+                            SUM(COALESCE(s.angsuran, 0)) AS run_off,
+                            SUM(COALESCE(s.realisasi, 0)) + SUM(COALESCE(s.restrukturisasi, 0)) - SUM(COALESCE(s.angsuran, 0)) AS growth
+                        FROM (
+                            SELECT periode FROM (
+                                SELECT DATE_FORMAT(tanggal_realisasi, '%Y-%m-01') AS periode
+                                FROM update_realisasi_kredit
+                                WHERE kode_trans = '110'
+                                  AND kode_kantor = :breakdown_kode_kantor_cur_runoff_month
+                                  AND tanggal_realisasi >= {$sqlYearStart}
+                                  AND tanggal_realisasi < {$sqlHarianNext}
+                                GROUP BY DATE_FORMAT(tanggal_realisasi, '%Y-%m-01')
+                                UNION
+                                SELECT DATE_ADD(DATE_FORMAT(tanggal_realisasi, '%Y-%m-01'), INTERVAL 1 YEAR) AS periode
+                                FROM update_realisasi_kredit
+                                WHERE kode_trans = '110'
+                                  AND kode_kantor = :breakdown_kode_kantor_prev_runoff_month
+                                  AND tanggal_realisasi >= {$sqlPrevYearStart}
+                                  AND tanggal_realisasi < {$sqlPrevHarianNext}
+                                GROUP BY DATE_FORMAT(tanggal_realisasi, '%Y-%m-01')
+                            ) month_source
+                        ) months_runoff
+                        LEFT JOIN summary_kredit_harian_update s
+                          ON s.kode_kantor = :breakdown_kode_kantor_runoff
+                         AND s.created >= {$sqlYearStart}
+                         AND s.created < LEAST(DATE_ADD(months_runoff.periode, INTERVAL 1 MONTH), {$sqlHarianNext})
+                        GROUP BY months_runoff.periode
                     ) runoff ON runoff.periode = months.periode
                     ORDER BY months.periode DESC
                 ";
@@ -877,6 +896,8 @@ class RbbController
                     ':breakdown_kode_kantor_join' => $kodeKantor,
                     ':breakdown_kode_kantor_cur' => $kodeKantor,
                     ':breakdown_kode_kantor_prev' => $kodeKantor,
+                    ':breakdown_kode_kantor_cur_runoff_month' => $kodeKantor,
+                    ':breakdown_kode_kantor_prev_runoff_month' => $kodeKantor,
                     ':breakdown_kode_kantor_runoff' => $kodeKantor
                 ] as $key => $value) {
                     $stmtMonthly->bindValue($key, $value, PDO::PARAM_STR);
