@@ -29,16 +29,16 @@
   @media (min-width: 768px) {
       .head-lapis-1 th { height: 40px; }
       .head-lapis-2 th { top: 40px !important; height: 34px; }
-      .head-lapis-1 th.freeze-col-2 { left: 60px !important; }
+      .head-lapis-1 th.freeze-col-2 { left: 48px !important; }
       .mob-row-tot th { top: 74px !important; height: 42px; }
-      .mob-row-tot th.freeze-col-2 { left: 60px !important; }
+      .mob-row-tot th.freeze-col-2 { left: 48px !important; }
   }
 
   /* Freeze Kiri (Body) */
   #bodyUtama td { position: relative; z-index: 10 !important; }
   #bodyUtama td.freeze-col-1 { position: sticky !important; left: 0 !important; z-index: 30 !important; background-color: #ffffff !important; box-shadow: inset -1px 0 0 #e2e8f0; font-weight: bold; }
   #bodyUtama td.freeze-col-2 { position: sticky !important; left: 0 !important; z-index: 29 !important; background-color: #ffffff !important; box-shadow: inset -1px 0 0 #e2e8f0; font-weight: bold; }
-  @media (min-width: 768px) { #bodyUtama td.freeze-col-2 { left: 60px !important; } }
+  @media (min-width: 768px) { #bodyUtama td.freeze-col-2 { left: 48px !important; } }
 
   /* Hover Effects */
   .cell-hover:hover { background-color: #e0f2fe !important; cursor: pointer; transform: scale(1.05); transition: 0.1s; z-index: 35 !important; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #3b82f6; border-radius: 6px; }

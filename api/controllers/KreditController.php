@@ -201,15 +201,35 @@ class KreditController {
                     SUM(COALESCE(t.angsuran, 0) - COALESCE(t.pelunasan, 0)) AS angsuran_murni,
                     SUM(COALESCE(t.angsuran, 0)) AS total_run_off,
                     
-                    (SUM(COALESCE(t.realisasi, 0)) + SUM(COALESCE(t.restrukturisasi, 0)) - SUM(COALESCE(t.angsuran, 0))) AS growth
+                    (SUM(COALESCE(t.realisasi, 0)) + SUM(COALESCE(t.restrukturisasi, 0)) - SUM(COALESCE(t.angsuran, 0))) AS growth,
+                    COALESCE(pc.portofolio_closing, 0) AS portofolio_closing,
+                    COALESCE(ph.portofolio_harian, 0) AS portofolio_harian
                 FROM summary_kredit_harian_update t
                 LEFT JOIN kankas k ON k.kode_group1 = COALESCE(NULLIF(t.kode_group_1, ''), CONCAT(t.kode_kantor, '000'))
+                LEFT JOIN (
+                    SELECT kode_group1, SUM(COALESCE(baki_debet, 0)) AS portofolio_closing
+                    FROM nominatif
+                    WHERE created = :closing_date_porto
+                      AND kode_cabang = :kode_kantor_porto_c
+                    GROUP BY kode_group1
+                ) pc ON pc.kode_group1 = COALESCE(NULLIF(t.kode_group_1, ''), CONCAT(t.kode_kantor, '000'))
+                LEFT JOIN (
+                    SELECT kode_group1, SUM(COALESCE(baki_debet, 0)) AS portofolio_harian
+                    FROM nominatif
+                    WHERE created = :harian_date_porto
+                      AND kode_cabang = :kode_kantor_porto_h
+                    GROUP BY kode_group1
+                ) ph ON ph.kode_group1 = COALESCE(NULLIF(t.kode_group_1, ''), CONCAT(t.kode_kantor, '000'))
                 WHERE t.created > :closing_date 
                   AND t.created <= :harian_date
                   {$filterSql}
-                GROUP BY 1, 2
+                GROUP BY 1, 2, pc.portofolio_closing, ph.portofolio_harian
                 ORDER BY 1 ASC
             ";
+            $paramsBind[':closing_date_porto'] = $closing_date;
+            $paramsBind[':harian_date_porto'] = $harian_date;
+            $paramsBind[':kode_kantor_porto_c'] = str_pad((string)$kode_kantor, 3, '0', STR_PAD_LEFT);
+            $paramsBind[':kode_kantor_porto_h'] = str_pad((string)$kode_kantor, 3, '0', STR_PAD_LEFT);
         } else {
             // --- MODE KONSOLIDASI: Breakdown Data per Cabang ---
             $sql = "
@@ -227,15 +247,31 @@ class KreditController {
                     SUM(COALESCE(t.angsuran, 0) - COALESCE(t.pelunasan, 0)) AS angsuran_murni,
                     SUM(COALESCE(t.angsuran, 0)) AS total_run_off,
                     
-                    (SUM(COALESCE(t.realisasi, 0)) + SUM(COALESCE(t.restrukturisasi, 0)) - SUM(COALESCE(t.angsuran, 0))) AS growth
+                    (SUM(COALESCE(t.realisasi, 0)) + SUM(COALESCE(t.restrukturisasi, 0)) - SUM(COALESCE(t.angsuran, 0))) AS growth,
+                    COALESCE(pc.portofolio_closing, 0) AS portofolio_closing,
+                    COALESCE(ph.portofolio_harian, 0) AS portofolio_harian
                 FROM summary_kredit_harian_update t
                 LEFT JOIN kode_kantor k ON t.kode_kantor = k.kode_kantor
+                LEFT JOIN (
+                    SELECT kode_cabang, SUM(COALESCE(baki_debet, 0)) AS portofolio_closing
+                    FROM nominatif
+                    WHERE created = :closing_date_porto
+                    GROUP BY kode_cabang
+                ) pc ON pc.kode_cabang = t.kode_kantor
+                LEFT JOIN (
+                    SELECT kode_cabang, SUM(COALESCE(baki_debet, 0)) AS portofolio_harian
+                    FROM nominatif
+                    WHERE created = :harian_date_porto
+                    GROUP BY kode_cabang
+                ) ph ON ph.kode_cabang = t.kode_kantor
                 WHERE t.created > :closing_date 
                   AND t.created <= :harian_date
                   {$filterSql}
-                GROUP BY t.kode_kantor, k.nama_kantor
+                GROUP BY t.kode_kantor, k.nama_kantor, pc.portofolio_closing, ph.portofolio_harian
                 ORDER BY t.kode_kantor ASC
             ";
+            $paramsBind[':closing_date_porto'] = $closing_date;
+            $paramsBind[':harian_date_porto'] = $harian_date;
         }
 
         try {
@@ -259,7 +295,9 @@ class KreditController {
                 'pelunasan'       => 0,
                 'angsuran_murni'  => 0,
                 'total_run_off'   => 0, 
-                'growth'          => 0
+                'growth'          => 0,
+                'portofolio_closing' => 0,
+                'portofolio_harian'  => 0
             ];
 
             $cleanedRows = [];
@@ -273,6 +311,8 @@ class KreditController {
                 $angsuran_murni = (float) $row['angsuran_murni']; 
                 $tot_run        = (float) $row['total_run_off'];
                 $growth         = (float) $row['growth'];
+                $portoClosing   = (float) $row['portofolio_closing'];
+                $portoHarian    = (float) $row['portofolio_harian'];
 
                 $cleanedRows[] = [
                     'kode_kantor'     => $row['kode_kantor'],
@@ -284,7 +324,9 @@ class KreditController {
                     'pelunasan'       => $pelunasan,
                     'angsuran_murni'  => $angsuran_murni,
                     'total_run_off'   => $tot_run,
-                    'growth'          => $growth
+                    'growth'          => $growth,
+                    'portofolio_closing' => $portoClosing,
+                    'portofolio_harian'  => $portoHarian
                 ];
 
                 $grandTotal['noa_realisasi']   += $noa_real;
@@ -295,6 +337,8 @@ class KreditController {
                 $grandTotal['angsuran_murni']  += $angsuran_murni;
                 $grandTotal['total_run_off']   += $tot_run;
                 $grandTotal['growth']          += $growth;
+                $grandTotal['portofolio_closing'] += $portoClosing;
+                $grandTotal['portofolio_harian']  += $portoHarian;
             }
 
             sendResponse(200, "Sukses Realisasi & Growth ($displayMode)", [
@@ -976,6 +1020,7 @@ class KreditController {
         // 1. Ambil Parameter
         $harian_date = isset($input['harian_date']) ? $input['harian_date'] : date('Y-m-d');
         $kc          = isset($input['kode_kantor']) ? $input['kode_kantor'] : null;
+        $korwil      = strtoupper(trim($input['korwil'] ?? ''));
         
         // --- LOGIK TAMBAHAN: Pilih Kolom Nominal ---
         $modeHitung = $input['hitung_berdasarkan'] ?? 'baki_debet';
@@ -1000,6 +1045,15 @@ class KreditController {
             $joinTable    = "LEFT JOIN kode_kantor k ON d.kode_key = k.kode_kantor";
             
             $filterClause = ""; 
+            if ($korwil === 'SEMARANG') {
+                $filterClause = "AND kode_cabang BETWEEN '001' AND '007'";
+            } elseif ($korwil === 'SOLO') {
+                $filterClause = "AND kode_cabang BETWEEN '008' AND '014'";
+            } elseif ($korwil === 'BANYUMAS') {
+                $filterClause = "AND kode_cabang BETWEEN '015' AND '021'";
+            } elseif ($korwil === 'PEKALONGAN') {
+                $filterClause = "AND kode_cabang BETWEEN '022' AND '028'";
+            }
             $kc_val       = null;
         }
 
@@ -1008,7 +1062,7 @@ class KreditController {
                 SELECT 
                     $colKey as kode_key,
                     kolektibilitas,
-                    $colValue as nilai_nominal -- Menggunakan kolom dinamis $colValue
+                    $colValue as nilai_nominal
                 FROM nominatif
                 WHERE created = :harian_date
                 $filterClause
@@ -1138,9 +1192,17 @@ class KreditController {
 
         $kode_kantor = $b['kode_kantor'] ?? null;
         $kode_ao     = $b['kode_ao'] ?? null;
+        $korwil      = strtoupper(trim($b['korwil'] ?? ''));
 
         $kode_kantor_norm = $kode_kantor ? str_pad((string)$kode_kantor, 3, '0', STR_PAD_LEFT) : null;
         $is_konsolidasi = empty($kode_kantor) || $kode_kantor === '000' || strtolower((string)$kode_kantor) === 'konsolidasi';
+        $korwilRanges = [
+            'SEMARANG' => ['001', '007'],
+            'SOLO' => ['008', '014'],
+            'BANYUMAS' => ['015', '021'],
+            'PEKALONGAN' => ['022', '028'],
+        ];
+        $korwilRange = $korwilRanges[$korwil] ?? null;
 
         /*
         * Bulan berjalan:
@@ -1162,6 +1224,10 @@ class KreditController {
             if (!$is_konsolidasi) {
                 $aoWhere[] = "LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = :ao_kode_kantor";
                 $aoParams[':ao_kode_kantor'] = $kode_kantor_norm;
+            } elseif ($korwilRange) {
+                $aoWhere[] = "LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') BETWEEN :ao_korwil_awal AND :ao_korwil_akhir";
+                $aoParams[':ao_korwil_awal'] = $korwilRange[0];
+                $aoParams[':ao_korwil_akhir'] = $korwilRange[1];
             }
 
             if (!empty($kode_ao) && strtoupper((string)$kode_ao) !== 'ALL') {
@@ -1194,6 +1260,10 @@ class KreditController {
             if (!$is_konsolidasi) {
                 $trxWhere[] = "LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') = :trx_kode_kantor";
                 $trxParams[':trx_kode_kantor'] = $kode_kantor_norm;
+            } elseif ($korwilRange) {
+                $trxWhere[] = "LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') BETWEEN :trx_korwil_awal AND :trx_korwil_akhir";
+                $trxParams[':trx_korwil_awal'] = $korwilRange[0];
+                $trxParams[':trx_korwil_akhir'] = $korwilRange[1];
             }
 
             if (!empty($kode_ao) && strtoupper((string)$kode_ao) !== 'ALL') {
@@ -1269,7 +1339,7 @@ class KreditController {
                     ao.nama_ao ASC
             ";
 
-            if ($is_konsolidasi) {
+            if ($is_konsolidasi && !$korwilRange) {
                 $sql .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
             }
 
@@ -1318,6 +1388,7 @@ class KreditController {
                 ],
                 'filter_aktif' => [
                     'kode_kantor' => $kode_kantor ?? 'ALL',
+                    'korwil'      => $korwil ?: 'ALL',
                     'kode_ao'     => $kode_ao ?? 'ALL',
                 ],
                 'dropdown_lists' => $dropdownData,
@@ -1325,10 +1396,10 @@ class KreditController {
                 'data' => $data,
                 'pagination' => [
                     'total_data'     => $totalData,
-                    'total_page'     => $is_konsolidasi ? (int)ceil($totalData / $limit) : 1,
+                    'total_page'     => ($is_konsolidasi && !$korwilRange) ? (int)ceil($totalData / $limit) : 1,
                     'current_page'   => $page,
                     'limit'          => $limit,
-                    'is_konsolidasi' => $is_konsolidasi,
+                    'is_konsolidasi' => $is_konsolidasi && !$korwilRange,
                 ],
             ]);
         } catch (Exception $e) {
@@ -1352,8 +1423,16 @@ class KreditController {
         $kode_ao = $b['kode_ao'] ?? null;
 
         $kode_kantor = $b['kode_kantor'] ?? null;
+        $korwil = strtoupper(trim($b['korwil'] ?? ''));
         $kode_kantor_norm = $kode_kantor ? str_pad((string)$kode_kantor, 3, '0', STR_PAD_LEFT) : null;
         $is_konsolidasi = empty($kode_kantor) || $kode_kantor === '000' || strtolower((string)$kode_kantor) === 'konsolidasi';
+        $korwilRanges = [
+            'SEMARANG' => ['001', '007'],
+            'SOLO' => ['008', '014'],
+            'BANYUMAS' => ['015', '021'],
+            'PEKALONGAN' => ['022', '028'],
+        ];
+        $korwilRange = $korwilRanges[$korwil] ?? null;
 
         if (!$harian_date || !$closing_date) {
             return sendResponse(400, "Parameter harian_date / closing_date tidak lengkap");
@@ -1385,6 +1464,8 @@ class KreditController {
 
             if (!$is_konsolidasi) {
                 $sqlAo .= " AND LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = :master_kode_kantor";
+            } elseif ($korwilRange) {
+                $sqlAo .= " AND LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') BETWEEN :master_korwil_awal AND :master_korwil_akhir";
             }
 
             $sqlAo .= " LIMIT 1";
@@ -1394,6 +1475,9 @@ class KreditController {
 
             if (!$is_konsolidasi) {
                 $stmtAo->bindValue(':master_kode_kantor', $kode_kantor_norm);
+            } elseif ($korwilRange) {
+                $stmtAo->bindValue(':master_korwil_awal', $korwilRange[0]);
+                $stmtAo->bindValue(':master_korwil_akhir', $korwilRange[1]);
             }
 
             $stmtAo->execute();
@@ -1420,6 +1504,10 @@ class KreditController {
             if (!$is_konsolidasi) {
                 $where[] = "LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') = :kode_kantor";
                 $params[':kode_kantor'] = $kode_kantor_norm;
+            } elseif ($korwilRange) {
+                $where[] = "LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') BETWEEN :korwil_awal AND :korwil_akhir";
+                $params[':korwil_awal'] = $korwilRange[0];
+                $params[':korwil_akhir'] = $korwilRange[1];
             }
 
             $whereSql = implode(" AND ", $where);
@@ -1493,6 +1581,7 @@ class KreditController {
                 ],
                 'filter_aktif' => [
                     'kode_kantor' => $kode_kantor ?? 'ALL',
+                    'korwil'      => $korwil ?: 'ALL',
                     'kode_ao'     => $kode_ao,
                 ],
                 'ao' => $masterAo,
@@ -1663,12 +1752,13 @@ class KreditController {
         $harian_date   = $b['harian_date'] ?? date('Y-m-d');
         $bln_realisasi = $b['bulan_realisasi'] ?? null; 
         $bucket_label  = isset($b['bucket_label']) ? (string)$b['bucket_label'] : null;
+        $isAllExport   = !empty($b['export_all']) || strtoupper((string)$bln_realisasi) === 'ALL' || strtoupper((string)$bucket_label) === 'ALL';
         
         $page   = isset($b['page']) ? (int)$b['page'] : 1;
-        $limit  = 10; 
+        $limit  = isset($b['limit']) ? max(1, min((int)$b['limit'], 50000)) : 10; 
         $offset = ($page - 1) * $limit;
 
-        if (!$bln_realisasi || $bucket_label === null || $bucket_label === '') {
+        if (!$isAllExport && (!$bln_realisasi || $bucket_label === null || $bucket_label === '')) {
             return sendResponse(400, "Parameter 'bulan_realisasi' dan 'bucket_label' wajib diisi.");
         }
 
@@ -1679,7 +1769,8 @@ class KreditController {
 
         // 2. Mapping Bucket DPD
         $dpd_min = 0; $dpd_max = 99999;
-        if ($bucket_label === '0')           { $dpd_min = 0;  $dpd_max = 0; }
+        if ($isAllExport)                    { $dpd_min = null; $dpd_max = null; }
+        elseif ($bucket_label === '0')       { $dpd_min = 0;  $dpd_max = 0; }
         elseif ($bucket_label === '1 - 7')   { $dpd_min = 1;  $dpd_max = 7; }
         elseif ($bucket_label === '8 - 14')  { $dpd_min = 8;  $dpd_max = 14; }
         elseif ($bucket_label === '15 - 21') { $dpd_min = 15; $dpd_max = 21; }
@@ -1691,8 +1782,22 @@ class KreditController {
             return sendResponse(400, "Label Bucket tidak valid: " . $bucket_label);
         }
 
-        $tgl_awal_bulan  = $bln_realisasi . '-01';
-        $tgl_akhir_bulan = date('Y-m-t', strtotime($tgl_awal_bulan));
+        if ($isAllExport) {
+            $tgl_data_obj = new DateTime($harian_date);
+            $end_obj = clone $tgl_data_obj;
+            $end_obj->modify('last day of previous month');
+            $tgl_akhir_bulan = $end_obj->format('Y-m-d');
+
+            $start_obj = clone $end_obj;
+            $start_obj->modify('-5 months');
+            $start_obj->modify('first day of this month');
+            $tgl_awal_bulan = $start_obj->format('Y-m-d');
+        } else {
+            $tgl_awal_bulan  = $bln_realisasi . '-01';
+            $tgl_akhir_bulan = date('Y-m-t', strtotime($tgl_awal_bulan));
+        }
+
+        $dpdSql = $isAllExport ? "" : "AND n.hari_menunggak BETWEEN :dpd_min AND :dpd_max";
 
         try {
             // 3. Hitung Total Data (Untuk Pagination)
@@ -1701,7 +1806,7 @@ class KreditController {
                 FROM nominatif n
                 WHERE DATE(n.created) = :harian_date
                 AND n.tgl_realisasi BETWEEN :start AND :end
-                AND n.hari_menunggak BETWEEN :dpd_min AND :dpd_max
+                {$dpdSql}
                 {$filterSql}
             ";
 
@@ -1709,8 +1814,10 @@ class KreditController {
             $stmtCount->bindValue(':harian_date', $harian_date);
             $stmtCount->bindValue(':start', $tgl_awal_bulan);
             $stmtCount->bindValue(':end', $tgl_akhir_bulan);
-            $stmtCount->bindValue(':dpd_min', $dpd_min);
-            $stmtCount->bindValue(':dpd_max', $dpd_max);
+            if (!$isAllExport) {
+                $stmtCount->bindValue(':dpd_min', $dpd_min);
+                $stmtCount->bindValue(':dpd_max', $dpd_max);
+            }
             
             // Bind parameter filter helper
             foreach ($paramsBind as $key => $val) {
@@ -1742,6 +1849,7 @@ class KreditController {
                     GREATEST((COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)), 0) as totung,
                     n.kolektibilitas,
                     n.kode_cabang,
+                    DATE_FORMAT(n.tgl_realisasi, '%Y-%m') as bulan_realisasi,
                     t.tgl_trans,
                     COALESCE(t.total_bayar, 0) as transaksi
                 FROM nominatif n
@@ -1765,7 +1873,7 @@ class KreditController {
                 
                 WHERE DATE(n.created) = :harian_date
                 AND n.tgl_realisasi BETWEEN :start AND :end
-                AND n.hari_menunggak BETWEEN :dpd_min AND :dpd_max
+                {$dpdSql}
                 {$filterSql}
                 ORDER BY n.baki_debet DESC LIMIT :limit OFFSET :offset
             ";
@@ -1777,8 +1885,10 @@ class KreditController {
             $stmt->bindValue(':trans_date_2', $harian_date); 
             $stmt->bindValue(':start', $tgl_awal_bulan);
             $stmt->bindValue(':end', $tgl_akhir_bulan);
-            $stmt->bindValue(':dpd_min', $dpd_min);
-            $stmt->bindValue(':dpd_max', $dpd_max);
+            if (!$isAllExport) {
+                $stmt->bindValue(':dpd_min', $dpd_min);
+                $stmt->bindValue(':dpd_max', $dpd_max);
+            }
             
             // Bind parameter filter helper lagi untuk query utama
             foreach ($paramsBind as $key => $val) {
@@ -1808,6 +1918,16 @@ class KreditController {
                 } else {
                     $row['status_tabungan'] = 'Belum Aman';
                 }
+
+                $dpd = $row['hari_menunggak'];
+                if ($dpd <= 0) $row['bucket_label'] = '0';
+                elseif ($dpd <= 7) $row['bucket_label'] = '1 - 7';
+                elseif ($dpd <= 14) $row['bucket_label'] = '8 - 14';
+                elseif ($dpd <= 21) $row['bucket_label'] = '15 - 21';
+                elseif ($dpd <= 30) $row['bucket_label'] = '22 - 30';
+                elseif ($dpd <= 60) $row['bucket_label'] = '31 - 60';
+                elseif ($dpd <= 90) $row['bucket_label'] = '61 - 90';
+                else $row['bucket_label'] = '> 90';
             }
             unset($row); 
 

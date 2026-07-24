@@ -12,6 +12,23 @@ let detailParamsMob = {};
 let detailPageMob = 1;
 let rekapDataCacheMob = null; 
 
+function getActiveMobFilterPayload() {
+    const areaVal = document.getElementById('opt_area').value;
+    const subVal = document.getElementById('opt_sub_main').value;
+    const aoVal  = document.getElementById('opt_ao_main').value;
+    const payload = {};
+
+    if(areaVal === 'ALL') {
+        if(subVal !== 'ALL') payload.korwil = subVal;
+    } else {
+        payload.kode_kantor = areaVal.replace('CAB-', '');
+        if(subVal !== 'ALL') payload.kode_kankas = subVal;
+        if(aoVal !== 'ALL') payload.kode_ao = aoVal;
+    }
+
+    return payload;
+}
+
 function toggleFilter(id) {
     const el = document.getElementById(id);
     if(el.classList.contains('hidden')) {
@@ -20,6 +37,26 @@ function toggleFilter(id) {
         el.classList.add('hidden'); el.classList.remove('flex');
     }
 }
+
+window.toggleExportMobMenu = function(e) {
+    if (e) e.stopPropagation();
+    const menu = document.getElementById('mobExportMenu');
+    if (!menu) return;
+    menu.classList.toggle('hidden');
+}
+
+window.downloadMobExcelChoice = function(type) {
+    const menu = document.getElementById('mobExportMenu');
+    if (menu) menu.classList.add('hidden');
+    if (type === 'nominatif') return exportExcelNominatifMob();
+    return exportExcelRekapMob();
+}
+
+document.addEventListener('click', e => {
+    const wrap = document.getElementById('mobExportWrap');
+    const menu = document.getElementById('mobExportMenu');
+    if (wrap && menu && !wrap.contains(e.target)) menu.classList.add('hidden');
+});
 
 // --- INIT ---
 window.addEventListener('DOMContentLoaded', async () => {
@@ -125,13 +162,7 @@ async function fetchRekapMob(){
     try {
         let payload = { type: "mob_vintage", harian_date: harian, rekap_by: "bulan" };
         
-        if(areaVal === 'ALL') {
-            if(subVal !== 'ALL') payload.korwil = subVal;
-        } else {
-            payload.kode_kantor = areaVal.replace('CAB-', '');
-            if(subVal !== 'ALL') payload.kode_kankas = subVal;
-            if(aoVal !== 'ALL') payload.kode_ao = aoVal;
-        }
+        Object.assign(payload, getActiveMobFilterPayload());
         
         const res = await apiCall(API_URL, {
             method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload), signal: abortMainMob.signal
@@ -277,13 +308,7 @@ async function openModalMob(bulanReal, bucket){
         bucket_label: bucket
     };
 
-    if(areaVal === 'ALL') {
-        if(subVal !== 'ALL') detailParamsMob.korwil = subVal;
-    } else {
-        detailParamsMob.kode_kantor = areaVal.replace('CAB-','');
-        if(subVal !== 'ALL') detailParamsMob.kode_kankas = subVal;
-        if(aoVal !== 'ALL') detailParamsMob.kode_ao = aoVal;
-    }
+    Object.assign(detailParamsMob, getActiveMobFilterPayload());
 
     detailPageMob = 1;
 
@@ -413,6 +438,54 @@ window.exportExcelDetailMob = async function() {
         const a = document.createElement('a'); a.href = window.URL.createObjectURL(blob);
         a.download = `Detail_MOB_${detailParamsMob.bulan_realisasi}_Bucket_${detailParamsMob.bucket_label}.xls`; a.click();
     } catch(e) { alert("Gagal export data."); } finally { btn.innerHTML = txt; btn.disabled = false; }
+}
+
+window.exportExcelNominatifMob = async function() {
+    const harian = document.getElementById('harian_date_mob').value;
+    const btn = document.querySelector('#mobExportWrap button');
+    const oldHtml = btn ? btn.innerHTML : '';
+    if (btn) { btn.innerHTML = `...`; btn.disabled = true; }
+
+    try {
+        const payload = {
+            type: "detail_mob_debitur",
+            harian_date: harian,
+            bulan_realisasi: "ALL",
+            bucket_label: "ALL",
+            page: 1,
+            limit: 50000,
+            export_all: true,
+            ...getActiveMobFilterPayload()
+        };
+
+        const res = await apiCall(API_URL, {
+            method: 'POST',
+            headers: {'Content-Type':'application/json'},
+            body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if(json.status !== 200) throw new Error(json.message || 'Gagal mengambil data nominatif');
+
+        const rows = json.data?.data || [];
+        if(rows.length === 0) return alert("Tidak ada data nominatif untuk didownload.");
+
+        let csv = `No Rekening\tNama Nasabah\tAO\tKankas\tBulan Realisasi\tBucket\tTgl Realisasi\tPlafond\tBaki Debet\tKol\tDPD\tTot Tunggakan\tTotal Bayar\tTabungan\tStatus Tabungan\n`;
+        rows.forEach(x => {
+            const bulan = x.bulan_realisasi || (x.tgl_realisasi ? String(x.tgl_realisasi).substring(0, 7) : '');
+            const bucket = x.bucket_label || '';
+            csv += `'${x.no_rekening}\t${x.nama_nasabah}\t${x.nama_ao||''}\t${x.nama_kankas||''}\t${bulan}\t${bucket}\t${x.tgl_realisasi}\t${Math.round(x.plafond)}\t${Math.round(x.os)}\t${x.kolektibilitas||''}\t${x.hari_menunggak||0}\t${Math.round(x.totung)}\t${Math.round(x.transaksi)}\t${Math.round(x.tabungan)}\t${x.status_tabungan||''}\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
+        const a = document.createElement('a');
+        a.href = window.URL.createObjectURL(blob);
+        a.download = `Nominatif_MOB_${harian}.xls`;
+        a.click();
+    } catch(e) {
+        alert(e.message || "Gagal export nominatif.");
+    } finally {
+        if (btn) { btn.innerHTML = oldHtml; btn.disabled = false; }
+    }
 }
 
 window.closeModalMob = function(){ document.getElementById('modalDetailMob').classList.add('hidden'); }

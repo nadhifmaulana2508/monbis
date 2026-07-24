@@ -19,7 +19,7 @@
                 <h1 class="text-[13px] md:text-2xl font-extrabold text-slate-900 tracking-tight leading-none truncate">Recovery PH</h1>
                 <button type="button" onclick="toggleInfoPH()" class="w-4 h-4 md:w-5 md:h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] md:text-xs font-black hover:bg-blue-600 transition shrink-0" title="Informasi Recovery PH">i</button>
               </div>
-              <p class="text-[7.5px] md:text-[11px] text-slate-500 italic mt-0.5 md:mt-1 truncate">*Recovery Pinjaman Hapus Buku, default posisi data H-1.</p>
+              <p class="text-[7.5px] md:text-[11px] text-slate-500 italic mt-0.5 md:mt-1 truncate">*Recovery Pinjaman Hapus Buku, default posisi data actual.</p>
             </div>
           </div>
 
@@ -55,7 +55,7 @@
           <div class="border border-slate-200 rounded-lg p-2 bg-slate-50"><b>Pokok</b>: nominal pembayaran pokok pada periode yang dipilih.</div>
           <div class="border border-slate-200 rounded-lg p-2 bg-slate-50"><b>Bunga</b>: nominal pembayaran bunga pada periode yang dipilih.</div>
           <div class="border border-slate-200 rounded-lg p-2 bg-slate-50"><b>Total</b>: akumulasi pokok + bunga.</div>
-          <div class="border-t border-slate-200 pt-2 font-bold text-slate-900">Default tanggal memakai awal bulan sampai H-1 karena data belum realtime.</div>
+          <div class="border-t border-slate-200 pt-2 font-bold text-slate-900">Default tanggal memakai tanggal 1 bulan berjalan sampai hari ini.</div>
         </div>
       </div>
     </div>
@@ -302,9 +302,6 @@
 </style>
 
 <script>
-  const today = new Date();
-  const startDef = new Date(today.getFullYear(), today.getMonth(), 1, 12);
-  const endDef   = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1, 12);
   const ymd = d => d.toISOString().split('T')[0];
 
   let phAbortCtrl = null;
@@ -315,8 +312,17 @@
   let currentDetailStart = '';
   let currentDetailEnd = '';
 
-  start_date.value = ymd(startDef);
-  end_date.value = ymd(endDef);
+  initRecoveryPHDefaultDate();
+
+  function initRecoveryPHDefaultDate() {
+    const today = new Date();
+    const startDef = new Date(today.getFullYear(), today.getMonth(), 1, 12);
+    const endDef = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 12);
+
+    start_date.value = ymd(startDef);
+    end_date.value = ymd(endDef);
+    fetchData(start_date.value, end_date.value);
+  }
 
   function toggleFilterPH() {
     const el = document.getElementById('filterWrapperPH');
@@ -353,8 +359,6 @@
     e.preventDefault();
     fetchData(start_date.value, end_date.value);
   });
-
-  fetchData(ymd(startDef), ymd(endDef));
 
   function fetchData(start_date, end_date){
     if(phAbortCtrl) phAbortCtrl.abort();

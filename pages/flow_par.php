@@ -1,18 +1,36 @@
 <style>
+  .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  @keyframes scaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .animate-scale-up { animation: scaleUp 0.2s ease-out forwards; }
+
   :root { --primary: #2563eb; --bg: #f8fafc; --text: #334155; }
   
   /* === GLOBAL === */
   body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
   
   /* === CONTROLS === */
-  .inp { 
+  .inp {
       box-sizing: border-box;
-      border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0 0.5rem; 
-      font-size: 13px; background: #fff; width: 100%; height: 36px; 
+      border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 8px;
+      font-size: 10px; background: #fff; width: 100%; height: 32px;
       min-width: 0; transition: all 0.2s; outline: none; color: #334155;
   }
-  .inp:focus { border-color: var(--primary); outline: 2px solid #bfdbfe; }
+  .inp:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
   .inp:disabled { background-color: #f8fafc; color: #475569; font-weight: 600; cursor: not-allowed; border-color: #e2e8f0; }
+  select.inp { appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 0.5rem center; background-size: 1em; padding-right: 1.5rem; }
+  .lbl { font-size:9px; color:#475569; font-weight:800; margin-bottom:2px; text-transform:uppercase; letter-spacing:0.05em; display:block; white-space:nowrap; }
+  .field { display:flex; flex-direction:column; min-width:0; }
+  .btn-icon { display:inline-flex; align-items:center; justify-content:center; border:none; cursor:pointer; transition:transform 0.2s; height:32px; border-radius:6px; }
+  .btn-icon:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); }
+  @media (min-width: 768px) {
+      .lbl { font-size:10px; }
+      .inp { border-radius:8px; padding:0 10px; font-size:12px; height:36px; }
+      select.inp { padding-right:2rem; }
+      .btn-icon { height:36px; border-radius:8px; }
+  }
   
   /* === DATEPICKER FIX === */
   input[type="date"] { position: relative; cursor: pointer; }
@@ -25,17 +43,17 @@
   /* === TABLE CONTAINER === */
   #fpScroller {
       --col1: 60px;   /* Lebar Kode */
-      --col2: 220px;  /* Lebar Nama Kantor */
+      --col2: 190px;  /* Lebar Nama Kantor */
       --fp_headH: 40px; 
       
       position: relative;
-      border: 1px solid #e2e8f0; border-radius: 8px; background: white;
+      border: 0; border-radius: 0; background: white;
       height: 100%; overflow: auto;
       -webkit-overflow-scrolling: touch; 
   }
 
-  table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 12px; }
-  th, td { white-space: nowrap; padding: 10px 14px; vertical-align: middle; }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; font-size: 12px; }
+  th, td { white-space: nowrap; padding: 9px 10px; vertical-align: middle; }
   
   /* === HEADER STYLES === */
   #tabelFlowPar thead th { 
@@ -43,6 +61,11 @@
       background: #f1f5f9; color: #475569; 
       font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px;
       border-bottom: 1px solid #cbd5e1; 
+  }
+  #tabelFlowPar thead th.sticky-left-1,
+  #tabelFlowPar thead th.sticky-left-2 {
+      background-color: #e0f2fe !important;
+      color: #1e3a8a;
   }
   
   /* === TOTAL ROW STICKY === */
@@ -74,6 +97,9 @@
 
   #fpBody td { background-color: #fff; border-bottom: 1px solid #f1f5f9; color: #334155; }
   #fpBody tr:hover td { background-color: #f8fafc; }
+  .flow-metric { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; min-width:0; }
+  .flow-metric .metric-nom { min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  .flow-metric .metric-noa { flex:0 0 auto; font-size:10px; color:#64748b; font-weight:800; }
 
   /* === MODAL STYLES === */
   #modalScroll { --colRek: 130px; --colNama: 200px; }
@@ -110,13 +136,13 @@
   }
 </style>
 
-<div class="max-w-7xl mx-auto px-3 md:px-4 py-4 h-[calc(100vh-80px)] md:h-[calc(100vh-120px)] flex flex-col font-sans bg-slate-50">
+<div class="max-w-[1920px] w-full mx-auto px-2 md:px-4 py-4 md:py-6 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
 
-  <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4 shrink-0">
+  <div class="relative z-20 flex-none mb-3 md:mb-4 w-full bg-white p-2 md:p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 shrink-0">
     
-    <div class="flex items-start justify-between w-full md:w-auto">
+    <div class="flex items-center justify-between w-full xl:w-auto shrink-0 px-1">
       <div>
-        <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
+        <h1 class="text-base md:text-xl font-extrabold flex items-center gap-2 text-slate-800 whitespace-nowrap">
             <span class="bg-blue-600 text-white p-1.5 rounded-lg text-sm md:text-base shadow-sm">📊</span> 
             <span>Rekap Flow PAR</span>
             <span id="badgeUnit" class="hidden"></span>
@@ -124,39 +150,35 @@
         <p class="text-[10px] md:text-xs text-slate-500 mt-1 ml-1 font-medium">*Data Posisi Closing vs Harian</p>
       </div>
       
-      <button id="btnToggleFilter" class="md:hidden flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-sm font-semibold text-slate-700 shadow-sm hover:bg-gray-50 focus:outline-none transition">
+      <button id="btnToggleFilter" class="xl:hidden h-[30px] px-3 bg-white border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm transition font-bold text-[10px] whitespace-nowrap ml-2 shrink-0">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
           Filter
       </button>
     </div>
 
-    <div id="filterPanel" class="hidden md:block bg-white border border-gray-200 rounded-xl p-3 shadow-sm w-full md:w-auto transition-all origin-top">
-      <form id="filterForm" class="flex flex-col md:flex-row items-end gap-2 md:gap-3 w-full">
+    <div id="filterPanel" class="hidden xl:flex w-full xl:w-auto flex-1 min-w-0 justify-end transition-all duration-300 shrink-0 border-t xl:border-none pt-3 xl:pt-0 mt-2 xl:mt-0">
+      <form id="filterForm" class="flex flex-row flex-wrap xl:flex-nowrap items-end gap-2 md:gap-2.5 w-full xl:w-auto">
         
-        <div class="flex gap-2 w-full md:w-auto shrink-0">
-            <div class="flex flex-col w-1/2 md:w-[130px]">
-                <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">CLOSING (M-1)</label>
-                <input type="date" id="closing_date" class="inp shadow-sm" required>
+        <div class="flex gap-2 w-full xl:w-auto shrink-0">
+            <div class="field w-1/2 xl:w-[120px]">
+                <label class="lbl">CLOSING (M-1)</label>
+                <input type="date" id="closing_date" class="inp font-bold text-slate-700 cursor-pointer" required onclick="this.showPicker && this.showPicker()">
             </div>
             
-            <div class="flex flex-col w-1/2 md:w-[130px]">
-                <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">ACTUAL (HARIAN)</label>
-                <input type="date" id="harian_date" class="inp shadow-sm" required>
+            <div class="field w-1/2 xl:w-[120px]">
+                <label class="lbl">HARIAN (ACTUAL)</label>
+                <input type="date" id="harian_date" class="inp font-bold text-slate-700 cursor-pointer" required onclick="this.showPicker && this.showPicker()">
             </div>
         </div>
 
-        <div class="flex gap-2 w-full md:w-auto md:flex-1 items-end">
-            <div class="flex flex-col flex-1 min-w-[120px] md:w-[220px]">
-                <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">CABANG</label>
-                <select id="opt_kantor_rec" class="inp font-medium text-slate-700 shadow-sm truncate"><option value="">Memuat...</option></select>
+        <div class="flex gap-2 w-full xl:w-auto xl:flex-1 items-end">
+            <div class="field flex-1 min-w-[180px] xl:w-[260px]">
+                <label class="lbl">AREA/CABANG</label>
+                <select id="opt_kantor_rec" class="inp font-bold text-slate-700 truncate"><option value="ALL">Konsolidasi</option></select>
             </div>
             
-            <div class="flex items-center gap-2 shrink-0">
-              <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white h-9 px-3 md:px-4 rounded-lg font-bold text-sm shadow-sm flex items-center justify-center gap-1.5 transition" title="Cari Data">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <span>CARI</span>
-              </button>
-              <button type="button" onclick="exportFlowParExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white h-9 w-10 md:w-11 rounded-lg font-bold text-sm shadow-sm flex items-center justify-center shrink-0 transition" title="Download Excel">
+            <div class="flex items-center gap-2 shrink-0 ml-auto xl:ml-0 mt-2 xl:mt-0">
+              <button type="button" onclick="exportFlowParExcel()" class="btn-icon w-[32px] md:w-[42px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shrink-0" title="Download Excel">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
               </button>
             </div>
@@ -165,20 +187,24 @@
       </form>
     </div>
   </div>
-  <div class="flex-1 min-h-0 relative flex flex-col">
+  <div class="flex-1 min-h-0 overflow-hidden bg-white rounded-xl shadow-sm border border-slate-200 relative flex flex-col z-10">
     <div id="loadingFP" class="hidden absolute inset-0 bg-white/80 z-[100] flex flex-col items-center justify-center text-blue-600 font-bold backdrop-blur-sm rounded-lg">
        <div class="animate-spin h-10 w-10 border-4 border-blue-200 border-t-blue-600 rounded-full mb-3"></div>
        <span class="text-sm tracking-wide">MEMUAT DATA...</span>
     </div>
 
-    <div id="fpScroller" class="table-wrapper">
-      <table id="tabelFlowPar">
+    <div id="fpScroller" class="table-wrapper custom-scrollbar">
+      <table id="tabelFlowPar" class="w-full min-w-full text-center border-separate border-spacing-0 text-slate-700 table-fixed">
         <thead id="theadFP">
           <tr>
             <th class="sticky-left-1 text-center">KODE</th>
             <th class="sticky-left-2 text-left" id="thNamaFP">NAMA KANTOR</th>
             <th class="text-center w-[120px] cursor-pointer hover:bg-slate-200 transition" id="sortNoa" title="Urutkan">NOA FLOW ⬍</th>
             <th class="text-right w-[180px] cursor-pointer hover:bg-slate-200 transition" id="sortBaki" title="Urutkan">BAKI DEBET FLOW ⬍</th>
+            <th class="text-center w-[120px]" title="Jatuh tempo, lainnya, atau one obligor">JT / Lain</th>
+            <th class="text-center w-[120px]" title="KL karena hari menunggak pokok > 90 hari">Pokok &gt; 90</th>
+            <th class="text-center w-[120px]" title="KL karena hari menunggak bunga > 90 hari">Bunga &gt; 90</th>
+            <th class="text-center w-[140px]" title="KL karena pokok dan bunga > 90 hari">Pokok+Bunga</th>
           </tr>
         </thead>
         <tbody id="fpTotalRow"></tbody>
@@ -300,7 +326,76 @@
   let sortState = { column: null, direction: 1 };
   let currentFilter = { closing:'', harian:'' };
   let currentDetailKode = ''; 
+  let currentDetailKorwil = '';
+  let currentDetailKlasifikasi = '';
   let fpAbort;
+
+  const flowClassLabels = {
+      jt_lain: 'JT / Lain / One Obligor',
+      pokok_90: 'Pokok > 90',
+      bunga_90: 'Bunga > 90',
+      pokok_bunga_90: 'Pokok + Bunga > 90'
+  };
+
+  function detailTargetCode(defaultKode) {
+      const dropVal = document.getElementById('opt_kantor_rec')?.value || '';
+      if (dropVal.startsWith('CAB-')) return dropVal.replace('CAB-', '');
+      return defaultKode || '000';
+  }
+
+  function flowLinkClass(noa, color = 'blue') {
+      if (num(noa) <= 0) return 'text-slate-300 pointer-events-none';
+      const colors = {
+          blue: 'text-blue-700 hover:bg-blue-100 hover:text-blue-900 decoration-blue-300',
+          slate: 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 decoration-slate-300',
+          orange: 'text-orange-700 hover:bg-orange-100 hover:text-orange-900 decoration-orange-300',
+          amber: 'text-amber-700 hover:bg-amber-100 hover:text-amber-900 decoration-amber-300',
+          red: 'text-red-700 hover:bg-red-100 hover:text-red-900 decoration-red-300'
+      };
+      return `${colors[color] || colors.blue} font-bold px-2 py-1 rounded transition cursor-pointer underline underline-offset-2`;
+  }
+
+  function flowCellNoa(noa, kode, klasifikasi = '', color = 'blue') {
+      const safeKode = String(kode || '000');
+      const safeKlas = String(klasifikasi || '');
+      return `<a href="#" class="${flowLinkClass(noa, color)}" onclick="event.preventDefault(); checkAccessAndOpenModal('${safeKode}', '${safeKlas}')">${fmtInt(noa)}</a>`;
+  }
+
+  function flowCellNom(noa, nominal, kode, klasifikasi = '', color = 'slate') {
+      const safeKode = String(kode || '000');
+      const safeKlas = String(klasifikasi || '');
+      return `<a href="#" class="${flowLinkClass(noa, color)}" onclick="event.preventDefault(); checkAccessAndOpenModal('${safeKode}', '${safeKlas}')">${fmtNom(nominal)}</a>`;
+  }
+
+  function flowMetricCell(noa, nominal, kode, klasifikasi = '', color = 'blue') {
+      const safeKode = String(kode || '000');
+      const safeKlas = String(klasifikasi || '');
+      const disabled = num(noa) <= 0 ? 'pointer-events-none opacity-45' : '';
+      return `
+          <a href="#" class="flow-metric ${disabled}" onclick="event.preventDefault(); checkAccessAndOpenModal('${safeKode}', '${safeKlas}')">
+              <span class="metric-nom ${flowLinkClass(noa, color)}">${fmtNom(nominal)}</span>
+              <span class="metric-noa">${fmtInt(noa)} NOA</span>
+          </a>
+      `;
+  }
+
+  function renderFlowParHeader() {
+      const thead = document.getElementById('theadFP');
+      if(!thead) return;
+      thead.innerHTML = `
+          <tr>
+            <th class="sticky-left-1 text-center">KODE</th>
+            <th class="sticky-left-2 text-left" id="thNamaFP">AREA</th>
+            <th class="text-left cursor-pointer hover:bg-slate-200 transition" id="sortBaki" title="Urutkan nominal Flow PAR">FLOW PAR</th>
+            <th class="text-left" title="Jatuh tempo, lainnya, atau one obligor">JT / LAIN</th>
+            <th class="text-left" title="KL karena hari menunggak pokok > 90 hari">POKOK &gt; 90</th>
+            <th class="text-left" title="KL karena hari menunggak bunga > 90 hari">BUNGA &gt; 90</th>
+            <th class="text-left" title="KL karena pokok dan bunga > 90 hari">POKOK+BUNGA</th>
+          </tr>
+      `;
+      document.getElementById('sortBaki').onclick = () => doSort('baki');
+      setTimeout(updateFpStickyHeader, 20);
+  }
 
   // TOGGLE FILTER MOBILE LOGIC (Main Page)
   document.getElementById('btnToggleFilter').addEventListener('click', function() {
@@ -326,6 +421,7 @@
 
   // --- INIT ---
   window.addEventListener('DOMContentLoaded', async () => {
+    renderFlowParHeader();
     const user = (window.getUser && window.getUser()) || null;
     const uKode = user?.kode ? String(user.kode).padStart(3,'0') : '000';
     window.currentUser = { kode: uKode };
@@ -355,8 +451,8 @@
       const optKantor = document.getElementById('opt_kantor_rec');
 
       if(userKode && userKode !== '000'){
-          optKantor.innerHTML = `<option value="${userKode}">CABANG ${userKode}</option>`;
-          optKantor.value = userKode;
+          optKantor.innerHTML = `<option value="CAB-${userKode}">CABANG ${userKode}</option>`;
+          optKantor.value = `CAB-${userKode}`;
           optKantor.disabled = true;
           return; 
       }
@@ -368,31 +464,43 @@
           const json = await res.json();
           let list = json.data || [];
           
-          let html = `<option value="">ALL | SEMUA CABANG</option>`;
+          let html = `
+              <option value="ALL">Konsolidasi</option>
+              <option value="KOR-SEMARANG">Korwil Semarang</option>
+              <option value="KOR-SOLO">Korwil Solo</option>
+              <option value="KOR-BANYUMAS">Korwil Banyumas</option>
+              <option value="KOR-PEKALONGAN">Korwil Pekalongan</option>
+          `;
           list.filter(x => x.kode_kantor !== '000').sort((a,b) => String(a.kode_kantor).localeCompare(b.kode_kantor)).forEach(it => {
-              html += `<option value="${String(it.kode_kantor).padStart(3,'0')}">${String(it.kode_kantor).padStart(3,'0')} - ${it.nama_kantor}</option>`;
+              const kode = String(it.kode_kantor).padStart(3,'0');
+              html += `<option value="CAB-${kode}">${kode} - ${it.nama_kantor}</option>`;
           });
           optKantor.innerHTML = html;
           optKantor.disabled = false;
       } catch(e){
-          optKantor.innerHTML = `<option value="">Error Load</option>`;
+          optKantor.innerHTML = `<option value="ALL">Error Load Area</option>`;
       }
   }
 
   // --- FILTER SUBMIT ---
   document.getElementById('filterForm').addEventListener('submit', e => {
     e.preventDefault();
-    currentFilter.closing = document.getElementById('closing_date').value;
-    currentFilter.harian  = document.getElementById('harian_date').value;
-    sortState = { column:null, direction:1 }; 
-    
-    // Auto tutup filter di mobile setelah di submit
-    if(window.innerWidth < 768) {
-        document.getElementById('filterPanel').classList.add('hidden');
-    }
-
-    fetchFlowPar();
+    applyFlowParFilter();
   });
+
+  ['closing_date', 'harian_date', 'opt_kantor_rec'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', applyFlowParFilter);
+  });
+
+  function applyFlowParFilter() {
+      currentFilter.closing = document.getElementById('closing_date').value;
+      currentFilter.harian  = document.getElementById('harian_date').value;
+      sortState = { column:null, direction:1 };
+      if(window.innerWidth < 1280) {
+          document.getElementById('filterPanel').classList.add('hidden');
+      }
+      fetchFlowPar();
+  }
 
   // --- FETCH REKAP ---
   async function fetchFlowPar(){
@@ -406,16 +514,20 @@
     const ttotal = document.getElementById('fpTotalRow');
     tbody.innerHTML = ''; ttotal.innerHTML = '';
 
-    const kantor = document.getElementById('opt_kantor_rec').value || '';
+    const kantor = document.getElementById('opt_kantor_rec').value || 'ALL';
     document.getElementById('thNamaFP').innerText = "NAMA KANTOR";
 
     try {
         const payload = { 
             type: 'Flow Par', 
             closing_date: currentFilter.closing, 
-            harian_date: currentFilter.harian,
-            kode_kantor: kantor
+            harian_date: currentFilter.harian
         };
+        if(kantor.startsWith('KOR-')) {
+            payload.korwil = kantor.replace('KOR-', '');
+        } else if(kantor.startsWith('CAB-')) {
+            payload.kode_kantor = kantor.replace('CAB-', '');
+        }
 
         const res = await fetch('./api/flow_par/', {
             method: 'POST', headers: {'Content-Type':'application/json'},
@@ -446,7 +558,7 @@
     } catch(err){
         if(err.name !== 'AbortError') {
             console.error(err);
-            tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-red-500 font-bold bg-red-50">Gagal memuat data.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-red-500 font-bold bg-red-50">Gagal memuat data.</td></tr>`;
         }
     } finally {
         loading.classList.add('hidden'); 
@@ -459,51 +571,44 @@
       const el = document.getElementById('fpTotalRow');
       if(!tot) return;
 
-      const dropVal = document.getElementById('opt_kantor_rec').value || '';
-      const targetKode = dropVal !== '' ? dropVal : '000'; 
-
-      const linkClass = num(tot.noa_flow) > 0 
-          ? "text-blue-700 font-bold hover:bg-blue-100 hover:text-blue-900 px-2 py-1 rounded transition cursor-pointer underline decoration-blue-300 underline-offset-2" 
-          : "text-slate-400 pointer-events-none";
+      const targetKode = detailTargetCode('000');
 
       el.innerHTML = `
         <tr class="row-total">
             <td class="sticky-left-1 font-mono font-bold text-slate-500 text-xs">ALL</td>
-            <td class="sticky-left-2 font-bold text-slate-800 text-xs md:text-sm uppercase text-blue-900">${tot.nama_kantor || 'TOTAL KONSOLIDASI'}</td>
-            <td class="text-center font-bold text-blue-700 bg-blue-50/50">
-                <a href="#" class="${linkClass}" onclick="event.preventDefault(); checkAccessAndOpenModal('${targetKode}')">${fmtInt(tot.noa_flow)}</a>
-            </td>
-            <td class="text-right font-bold text-blue-700 bg-blue-50/50 pr-4">${fmtNom(tot.baki_debet_flow)}</td>
+            <td class="sticky-left-2 font-bold text-slate-800 text-xs md:text-sm uppercase text-blue-900">TOTAL</td>
+            <td class="font-bold bg-blue-50/50">${flowMetricCell(tot.noa_flow, tot.baki_debet_flow, targetKode, '', 'blue')}</td>
+            <td class="font-bold bg-slate-50">${flowMetricCell(tot.noa_jt_lain, tot.nom_jt_lain, targetKode, 'jt_lain', 'slate')}</td>
+            <td class="font-bold bg-orange-50/70">${flowMetricCell(tot.noa_pokok_90, tot.nom_pokok_90, targetKode, 'pokok_90', 'orange')}</td>
+            <td class="font-bold bg-amber-50/70">${flowMetricCell(tot.noa_bunga_90, tot.nom_bunga_90, targetKode, 'bunga_90', 'amber')}</td>
+            <td class="font-bold bg-red-50/70">${flowMetricCell(tot.noa_pokok_bunga_90, tot.nom_pokok_bunga_90, targetKode, 'pokok_bunga_90', 'red')}</td>
         </tr>
       `;
   }
 
   function renderRows(rows){
       const tbody = document.getElementById('fpBody');
-      if(rows.length === 0){ tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-slate-400">Tidak ada data.</td></tr>`; return; }
+      if(rows.length === 0){ tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">Tidak ada data.</td></tr>`; return; }
       
       tbody.innerHTML = rows.map(r => {
           const rawKode = r.kode_cabang || r.kode_unit || '';
           const kode = String(rawKode).padStart(3,'0');
           const nama = r.nama_kantor || r.nama_unit || '-';
           
-          const linkClass = num(r.noa_flow) > 0 
-              ? "text-blue-600 font-bold hover:bg-blue-50 hover:text-blue-800 px-2 py-1 rounded transition cursor-pointer underline decoration-blue-200 underline-offset-2" 
-              : "text-slate-300 pointer-events-none";
-          
           return `
             <tr class="transition border-b">
                 <td class="sticky-left-1 font-mono font-bold text-slate-500 text-xs">${kode}</td>
                 <td class="sticky-left-2 font-semibold text-slate-700 text-xs md:text-sm"><div class="truncate" title="${nama}">${nama}</div></td>
-                <td class="text-center">
-                    <a href="#" class="${linkClass}" onclick="event.preventDefault(); checkAccessAndOpenModal('${kode}')">${fmtInt(r.noa_flow)}</a>
-                </td>
-                <td class="text-right text-slate-600 text-xs font-medium pr-4">${fmtNom(r.baki_debet_flow)}</td>
+                <td class="text-xs">${flowMetricCell(r.noa_flow, r.baki_debet_flow, kode, '', 'blue')}</td>
+                <td class="text-xs">${flowMetricCell(r.noa_jt_lain, r.nom_jt_lain, kode, 'jt_lain', 'slate')}</td>
+                <td class="text-xs">${flowMetricCell(r.noa_pokok_90, r.nom_pokok_90, kode, 'pokok_90', 'orange')}</td>
+                <td class="text-xs">${flowMetricCell(r.noa_bunga_90, r.nom_bunga_90, kode, 'bunga_90', 'amber')}</td>
+                <td class="text-xs">${flowMetricCell(r.noa_pokok_bunga_90, r.nom_pokok_bunga_90, kode, 'pokok_bunga_90', 'red')}</td>
             </tr>
           `;
       }).join('');
 
-      tbody.innerHTML += `<tr style="height: 60px;"><td colspan="4" class="border-none bg-transparent"></td></tr>`;
+      tbody.innerHTML += `<tr style="height: 60px;"><td colspan="7" class="border-none bg-transparent"></td></tr>`;
   }
 
   // --- SORTING REKAP ---
@@ -514,12 +619,9 @@
           const valB = num(b[col === 'noa' ? 'noa_flow' : 'baki_debet_flow']);
           return (valA - valB) * sortState.direction;
       });
-      document.getElementById('sortNoa').innerText = `NOA FLOW ${col==='noa' ? (sortState.direction>0?'⬆':'⬇') : '⬍'}`;
-      document.getElementById('sortBaki').innerText = `BAKI DEBET FLOW ${col==='baki' ? (sortState.direction>0?'⬆':'⬇') : '⬍'}`;
+      document.getElementById('sortBaki').innerText = `FLOW PAR ${sortState.direction>0?'ASC':'DESC'}`;
       renderRows(sorted);
   };
-  document.getElementById('sortNoa').onclick = () => doSort('noa');
-  document.getElementById('sortBaki').onclick = () => doSort('baki');
 
   // --- EXPORT EXCEL REKAP ---
   function exportFlowParExcel() {
@@ -533,7 +635,15 @@
                   <th style="background-color:#eff6ff;">KODE</th>
                   <th style="background-color:#eff6ff;">NAMA KANTOR</th>
                   <th style="background-color:#eff6ff;">NOA FLOW</th>
-                  <th style="background-color:#eff6ff;">BAKI DEBET FLOW</th>
+                  <th style="background-color:#eff6ff;">NOM FLOW</th>
+                  <th style="background-color:#eff6ff;">NOA JT / LAIN / ONE OBLIGOR</th>
+                  <th style="background-color:#eff6ff;">NOM JT / LAIN / ONE OBLIGOR</th>
+                  <th style="background-color:#eff6ff;">NOA POKOK > 90</th>
+                  <th style="background-color:#eff6ff;">NOM POKOK > 90</th>
+                  <th style="background-color:#eff6ff;">NOA BUNGA > 90</th>
+                  <th style="background-color:#eff6ff;">NOM BUNGA > 90</th>
+                  <th style="background-color:#eff6ff;">NOA POKOK + BUNGA > 90</th>
+                  <th style="background-color:#eff6ff;">NOM POKOK + BUNGA > 90</th>
               </tr>
           </thead>
           <tbody>`;
@@ -544,6 +654,14 @@
               <td style="font-weight:bold;">${gt.nama_kantor || 'GRAND TOTAL'}</td>
               <td style="font-weight:bold;">${gt.noa_flow}</td>
               <td style="font-weight:bold;">${gt.baki_debet_flow}</td>
+              <td style="font-weight:bold;">${gt.noa_jt_lain || 0}</td>
+              <td style="font-weight:bold;">${gt.nom_jt_lain || 0}</td>
+              <td style="font-weight:bold;">${gt.noa_pokok_90 || 0}</td>
+              <td style="font-weight:bold;">${gt.nom_pokok_90 || 0}</td>
+              <td style="font-weight:bold;">${gt.noa_bunga_90 || 0}</td>
+              <td style="font-weight:bold;">${gt.nom_bunga_90 || 0}</td>
+              <td style="font-weight:bold;">${gt.noa_pokok_bunga_90 || 0}</td>
+              <td style="font-weight:bold;">${gt.nom_pokok_bunga_90 || 0}</td>
           </tr>`;
       }
 
@@ -555,6 +673,14 @@
               <td>${nama}</td>
               <td>${r.noa_flow}</td>
               <td>${r.baki_debet_flow}</td>
+              <td>${r.noa_jt_lain || 0}</td>
+              <td>${r.nom_jt_lain || 0}</td>
+              <td>${r.noa_pokok_90 || 0}</td>
+              <td>${r.nom_pokok_90 || 0}</td>
+              <td>${r.noa_bunga_90 || 0}</td>
+              <td>${r.nom_bunga_90 || 0}</td>
+              <td>${r.noa_pokok_bunga_90 || 0}</td>
+              <td>${r.nom_pokok_bunga_90 || 0}</td>
           </tr>`;
       });
       table += `</tbody></table>`;
@@ -574,7 +700,7 @@
       modal.classList.remove('flex');
   }
 
-  window.checkAccessAndOpenModal = function(targetKode) {
+  window.checkAccessAndOpenModal = function(targetKode, klasifikasi = '') {
       const userKode = window.currentUser.kode;
       const targetCabang = targetKode.length >= 3 ? targetKode.substring(0,3) : targetKode; 
       
@@ -586,23 +712,27 @@
           modalWarn.classList.add('flex');
           return;
       }
-      openModalDetail(targetKode);
+      openModalDetail(targetKode, klasifikasi);
   };
 
-  async function openModalDetail(kode){
+  async function openModalDetail(kode, klasifikasi = ''){
       const targetCabang = kode.length >= 3 ? kode.substring(0,3) : kode;
       const targetKankas = kode.length > 3 ? kode : '';
+      const areaVal = document.getElementById('opt_kantor_rec')?.value || 'ALL';
       
       currentDetailKode = targetCabang; 
+      currentDetailKorwil = (targetCabang === '000' && areaVal.startsWith('KOR-')) ? areaVal.replace('KOR-', '') : '';
+      currentDetailKlasifikasi = klasifikasi || '';
       
       const modal = document.getElementById('modalDebiturFlowPar');
       const title = document.getElementById('modalTitleFlowPar');
       const sub   = document.getElementById('modalSubtitleFP');
       
       modal.classList.remove('hidden'); modal.classList.add('flex');
-      let titleLabel = kode === '000' ? 'KONSOLIDASI' : kode;
+      let titleLabel = currentDetailKorwil ? `KORWIL ${currentDetailKorwil}` : (kode === '000' ? 'KONSOLIDASI' : kode);
       title.innerHTML = `Detail Debitur <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded font-mono border border-blue-200">${titleLabel}</span>`;
-      sub.innerText = `Posisi: ${formatDate(currentFilter.closing)} vs ${formatDate(currentFilter.harian)}`;
+      const labelKlas = currentDetailKlasifikasi ? ` | ${flowClassLabels[currentDetailKlasifikasi] || currentDetailKlasifikasi}` : '';
+      sub.innerText = `Posisi: ${formatDate(currentFilter.closing)} vs ${formatDate(currentFilter.harian)}${labelKlas}`;
       
       const selKankas = document.getElementById('modalFilterKankas');
       selKankas.innerHTML = '<option value="">Semua Kankas</option>';
@@ -647,9 +777,11 @@
           const payload = { 
               type: 'KL Baru', 
               kode_kantor: currentDetailKode === '000' ? '' : currentDetailKode, 
+              korwil: currentDetailKorwil,
               kode_kankas: kankas,             
               closing_date: currentFilter.closing, 
-              harian_date: currentFilter.harian 
+              harian_date: currentFilter.harian,
+              klasifikasi_flow: currentDetailKlasifikasi
           };
           
           const res = await fetch('./api/flow_par/', {

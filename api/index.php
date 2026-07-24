@@ -82,11 +82,17 @@ switch ($endpoint) {
     case 'prospek':
         require __DIR__ . '/routes/prospek.php';
         break;
+    case 'prospek_sync':
+        require __DIR__ . '/routes/prospek_sync.php';
+        break;
     case 'dev_tracking':
         require __DIR__ . '/routes/dev_tracking.php';
         break;
     case 'rbb':
         require __DIR__ . '/routes/rbb.php';
+        break;
+    case 'pipelane_monitoring_kredit':
+        require __DIR__ . '/routes/pipelane_monitoring_kredit.php';
         break;
 
     default:

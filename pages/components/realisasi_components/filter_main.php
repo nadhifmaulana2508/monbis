@@ -37,18 +37,12 @@
             </div>
             <div class="field shrink-0 w-[calc(50%-4px)] xl:w-[120px]">
                 <label class="lbl">HARIAN (ACTUAL)</label>
-                <input type="date" id="harian_date" class="inp font-bold text-slate-700 cursor-pointer" required onclick="this.showPicker()" onchange="fetchRekap()">
+                <input type="date" id="harian_date" class="inp font-bold text-slate-700 cursor-pointer" required onclick="this.showPicker()" onchange="syncClosingFromHarianReal(); fetchRekap()">
             </div>
-            <div class="field shrink-0 w-[calc(50%-4px)] xl:w-[160px]">
-                <label class="lbl">AREA / CABANG</label>
-                <select id="opt_area" class="inp font-bold text-slate-700 truncate" onchange="updateFilterUI()">
-                    <option value="ALL">ALL KONSOLIDASI</option>
-                </select>
-            </div>
-            <div class="field flex-1 min-w-[100px] xl:w-[150px] xl:max-w-[200px]">
-                <label id="lbl_sub" class="lbl">KORWIL</label>
-                <select id="opt_sub_main" class="inp font-bold text-slate-700 truncate" onchange="fetchRekap()">
-                    <option value="ALL">ALL KORWIL</option>
+            <div class="field flex-1 min-w-[180px] xl:w-[260px]">
+                <label class="lbl">AREA/CABANG</label>
+                <select id="opt_area" class="inp font-bold text-slate-700 truncate" onchange="fetchRekap()">
+                    <option value="ALL">Konsolidasi</option>
                 </select>
             </div>
             

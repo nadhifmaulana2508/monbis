@@ -142,7 +142,9 @@
             <th class="px-3 py-2.5 border-r border-slate-200 w-12 text-center">HMB</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-blue-50/50">Plafon</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-blue-50/50">Nilai CKPN</th>
+            <th class="px-3 py-2.5 border-r border-slate-200 w-28 text-right bg-emerald-50/50">Baki Debet M-1</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-emerald-50/50">Baki Debet</th>
+            <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-cyan-50/50">Saldo Bank</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-orange-50/50">T. Pokok</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-orange-50/50">T. Bunga</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-red-50/50">Totung</th>
@@ -165,7 +167,7 @@
         </thead>
         <tbody id="SD_totalRow" class="sticky top-[33px] font-bold bg-blue-50/95 text-blue-800 border-b-2 border-blue-200 text-[10px] backdrop-blur-sm" style="z-index: 9;"></tbody>
         <tbody id="SD_tbody" class="text-slate-700 divide-y divide-slate-100">
-          <tr><td colspan="36" class="px-4 py-12 text-center text-slate-400 font-medium text-xs">Mencari data debitur otomatis...</td></tr>
+          <tr><td colspan="37" class="px-4 py-12 text-center text-slate-400 font-medium text-xs">Mencari data debitur otomatis...</td></tr>
         </tbody>
       </table>
     </div>
@@ -632,7 +634,7 @@
               updateSummarySD(json.data.summary); updatePaginationSD(json.data.pagination);
           } else { throw new Error(json.message); }
       } catch(e) {
-          document.getElementById('SD_tbody').innerHTML = `<tr><td colspan="36" class="px-4 py-12 text-center text-red-500 font-bold">${e.message}</td></tr>`;
+          document.getElementById('SD_tbody').innerHTML = `<tr><td colspan="37" class="px-4 py-12 text-center text-red-500 font-bold">${e.message}</td></tr>`;
       } finally { loading.classList.add('hidden'); }
   }
 
@@ -640,11 +642,12 @@
       const el = document.getElementById('SD_totalRow');
       if (!sum || dataList.length === 0) { el.innerHTML = ''; return; }
       
-      let totalPlafon = 0, totalCkpn = 0, totalTotung = 0, totalTab = 0, totalTPokok = 0, totalTBunga = 0;
+      let totalPlafon = 0, totalCkpn = 0, totalBdH1 = 0, totalSaldoBankAct = 0, totalTotung = 0, totalTab = 0, totalTPokok = 0, totalTBunga = 0;
       let sumPokokLalu = 0, sumBungaLalu = 0, sumBayarSkrg = 0, sumNomPTP = 0;
 
       dataList.forEach(d => {
           totalPlafon += Number(d.plafon || 0); totalCkpn += Number(d.nilai_ckpn || 0); 
+          totalBdH1 += Number(d.baki_debet_m1 || 0); totalSaldoBankAct += Number(d.saldo_bank_actual || 0);
           totalTotung += Number(d.totung || 0); totalTab += Number(d.saldo_tabungan || 0);
           totalTPokok += Number(d.tunggakan_pokok || 0); totalTBunga += Number(d.tunggakan_bunga || 0);
           sumPokokLalu += Number(d.pokok_lalu || 0); sumBungaLalu += Number(d.bunga_lalu || 0);
@@ -660,7 +663,9 @@
           <td colspan="12" class="border-r text-center opacity-30">-</td>
           <td class="px-3 py-2 border-r text-right bg-blue-100/50">${nf.format(totalPlafon)}</td>
           <td class="px-3 py-2 border-r text-right bg-blue-100/50">${nf.format(totalCkpn)}</td>
+          <td class="px-3 py-2 border-r text-right">${nf.format(totalBdH1)}</td>
           <td class="px-3 py-2 border-r text-right">${nf.format(sum.bd_act || 0)}</td>
+          <td class="px-3 py-2 border-r text-right">${nf.format(totalSaldoBankAct)}</td>
           <td class="px-3 py-2 border-r text-right">${nf.format(totalTPokok)}</td>
           <td class="px-3 py-2 border-r text-right">${nf.format(totalTBunga)}</td>
           <td class="px-3 py-2 border-r text-right text-red-700">${nf.format(totalTotung)}</td>
@@ -686,7 +691,7 @@
   function renderTableSD(list) {
       const tbody = document.getElementById('SD_tbody');
       if (!list || list.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="36" class="px-4 py-12 text-center text-slate-400 font-medium">Debitur tidak ditemukan.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="37" class="px-4 py-12 text-center text-slate-400 font-medium">Debitur tidak ditemukan.</td></tr>`;
           return;
       }
       tbody.innerHTML = list.map(d => {
@@ -727,7 +732,9 @@
           <td class="px-3 py-2 border-r text-center">${d.hmb||'0'}</td>
           <td class="px-3 py-2 border-r text-right text-blue-700 font-bold bg-blue-50/20">${nf.format(d.plafon||0)}</td>
           <td class="px-3 py-2 border-r text-right text-blue-700 font-bold bg-blue-50/20">${nf.format(d.nilai_ckpn||0)}</td>
+          <td class="px-3 py-2 border-r text-right text-emerald-700 font-bold bg-emerald-50/20">${nf.format(d.baki_debet_m1||0)}</td>
           <td class="px-3 py-2 border-r text-right text-emerald-700 font-bold bg-emerald-50/20">${nf.format(d.baki_debet||0)}</td>
+          <td class="px-3 py-2 border-r text-right text-cyan-700 font-bold bg-cyan-50/20">${nf.format(d.saldo_bank_actual||0)}</td>
           <td class="px-3 py-2 border-r text-right text-orange-700 font-bold bg-orange-50/20">${nf.format(d.tunggakan_pokok||0)}</td>
           <td class="px-3 py-2 border-r text-right text-orange-700 font-bold bg-orange-50/20">${nf.format(d.tunggakan_bunga||0)}</td>
           <td class="px-3 py-2 border-r text-right text-red-600 font-bold bg-red-50/20">${nf.format(d.totung||0)}</td>
@@ -782,8 +789,8 @@
           const res = await fetch('./api/flow_par/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
           const json = await res.json();
           if (json.status === 200 && json.data?.data) {
-              let table = `<table border="1"><thead><tr><th>KANTOR</th><th>REKENING</th><th>NAMA</th><th>ALAMAT</th><th>KANKAS</th><th>AO KREDIT</th><th>KECAMATAN</th><th>KELURAHAN</th><th>PRODUK</th><th>JATUH TEMPO</th><th>KOLEK AWAL</th><th>KOLEK</th><th>DPD</th><th>HMP</th><th>HMB</th><th>PLAFON</th><th>NILAI CKPN</th><th>BAKI DEBET</th><th>T. POKOK</th><th>T. BUNGA</th><th>TOTUNG</th><th>TABUNGAN</th><th>TGL TRX LALU</th><th>POKOK LALU</th><th>BUNGA LALU</th><th>TGL TRX SKRG</th><th>BAYAR SKRG</th><th>STATUS BAYAR</th><th>PIPELINE</th><th>KODE TINDAKAN</th><th>PLAN AO REMEDIAL</th><th>NOM PTP</th><th>TGL PTP</th><th>STATUS BUCKET</th><th>KETERANGAN</th></tr></thead><tbody>`;
-              json.data.data.forEach(d => { table += `<tr><td>${d.kode_cabang||''}</td><td style="mso-number-format:'\\@'">${d.no_rekening||''}</td><td>${d.nama_nasabah||''}</td><td>${d.alamat||''}</td><td>${d.nama_kankas||''}</td><td>${d.nama_ao||''}</td><td>${d.deskripsi_kode_kecamatan||''}</td><td>${d.deskripsi_kode_kelurahan||''}</td><td>${d.kode_produk||''}</td><td>${d.tgl_jatuh_tempo||''}</td><td>${d.kolek_lalu||''}</td><td>${d.kolek||''}</td><td>${d.dpd||'0'}</td><td>${d.hmp||'0'}</td><td>${d.hmb||'0'}</td><td>${d.plafon||'0'}</td><td>${d.nilai_ckpn||'0'}</td><td>${d.baki_debet||'0'}</td><td>${d.tunggakan_pokok||'0'}</td><td>${d.tunggakan_bunga||'0'}</td><td>${d.totung||'0'}</td><td>${d.saldo_tabungan||'0'}</td><td>${d.tgl_trans_lalu||''}</td><td>${d.pokok_lalu||'0'}</td><td>${d.bunga_lalu||'0'}</td><td>${d.tgl_trans_sekarang||''}</td><td>${d.total_bayar_sekarang||'0'}</td><td>${d.status_bayar_berjalan||'-'}</td><td>${d.pipeline||'-'}</td><td>${d.kode_tindakan||'-'}</td><td>${d.plan_ao_remedial||'-'}</td><td>${d.nom_ptp||'0'}</td><td>${d.komitmen_tgl_ptp||'-'}</td><td>${d.status_bucket||'-'}</td><td>${d.keterangan_komitmen||'-'}</td></tr>`; });
+              let table = `<table border="1"><thead><tr><th>KANTOR</th><th>REKENING</th><th>NAMA</th><th>ALAMAT</th><th>KANKAS</th><th>AO KREDIT</th><th>KECAMATAN</th><th>KELURAHAN</th><th>PRODUK</th><th>JATUH TEMPO</th><th>KOLEK AWAL</th><th>KOLEK</th><th>DPD</th><th>HMP</th><th>HMB</th><th>PLAFON</th><th>NILAI CKPN</th><th>BAKI DEBET M-1</th><th>BAKI DEBET</th><th>SALDO BANK</th><th>T. POKOK</th><th>T. BUNGA</th><th>TOTUNG</th><th>TABUNGAN</th><th>TGL TRX LALU</th><th>POKOK LALU</th><th>BUNGA LALU</th><th>TGL TRX SKRG</th><th>BAYAR SKRG</th><th>STATUS BAYAR</th><th>PIPELINE</th><th>KODE TINDAKAN</th><th>PLAN AO REMEDIAL</th><th>NOM PTP</th><th>TGL PTP</th><th>STATUS BUCKET</th><th>KETERANGAN</th></tr></thead><tbody>`;
+              json.data.data.forEach(d => { table += `<tr><td>${d.kode_cabang||''}</td><td style="mso-number-format:'\\@'">${d.no_rekening||''}</td><td>${d.nama_nasabah||''}</td><td>${d.alamat||''}</td><td>${d.nama_kankas||''}</td><td>${d.nama_ao||''}</td><td>${d.deskripsi_kode_kecamatan||''}</td><td>${d.deskripsi_kode_kelurahan||''}</td><td>${d.kode_produk||''}</td><td>${d.tgl_jatuh_tempo||''}</td><td>${d.kolek_lalu||''}</td><td>${d.kolek||''}</td><td>${d.dpd||'0'}</td><td>${d.hmp||'0'}</td><td>${d.hmb||'0'}</td><td>${d.plafon||'0'}</td><td>${d.nilai_ckpn||'0'}</td><td>${d.baki_debet_m1||'0'}</td><td>${d.baki_debet||'0'}</td><td>${d.saldo_bank_actual||'0'}</td><td>${d.tunggakan_pokok||'0'}</td><td>${d.tunggakan_bunga||'0'}</td><td>${d.totung||'0'}</td><td>${d.saldo_tabungan||'0'}</td><td>${d.tgl_trans_lalu||''}</td><td>${d.pokok_lalu||'0'}</td><td>${d.bunga_lalu||'0'}</td><td>${d.tgl_trans_sekarang||''}</td><td>${d.total_bayar_sekarang||'0'}</td><td>${d.status_bayar_berjalan||'-'}</td><td>${d.pipeline||'-'}</td><td>${d.kode_tindakan||'-'}</td><td>${d.plan_ao_remedial||'-'}</td><td>${d.nom_ptp||'0'}</td><td>${d.komitmen_tgl_ptp||'-'}</td><td>${d.status_bucket||'-'}</td><td>${d.keterangan_komitmen||'-'}</td></tr>`; });
               table += `</tbody></table>`;
               const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
               const a = document.createElement('a'); a.href = URL.createObjectURL(blob);

@@ -48,13 +48,13 @@
             <input
               type="date"
               id="tgl_akhir"
-              onchange="fetchTopData(1)"
+              onchange="syncClosingFromHarian(); syncMobileFiltersFromDesktop(); fetchTopData(1)"
               class="h-9 w-32 rounded-lg border border-slate-300 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             >
           </div>
 
           <div class="flex flex-col gap-1">
-            <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Area / Cabang</label>
+              <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Area/Cabang</label>
             <select
               id="filter_kantor"
               onchange="syncMobileFiltersFromDesktop(); fetchTopData(1)"
@@ -117,7 +117,7 @@
 
           <div class="col-span-2 grid grid-cols-[1fr_44px] gap-2">
             <div class="flex min-w-0 flex-col gap-1">
-              <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Cabang</label>
+            <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Area/Cabang</label>
               <select
                 id="filter_kantor_mobile"
                 onchange="syncKantorFromMobile(); fetchTopData(1)"
@@ -177,8 +177,8 @@
         </p>
 
         <p>
-          <b class="text-slate-800">Area / Cabang:</b>
-          filter kantor cabang. Pilih <b>ALL Konsolidasi</b> untuk melihat seluruh cabang.
+          <b class="text-slate-800">Area/Cabang:</b>
+          filter kantor cabang. Pilih <b>Konsolidasi</b> untuk melihat seluruh cabang.
         </p>
 
         <p>
@@ -350,6 +350,12 @@
 
   const id = (x) => document.getElementById(x);
   const fmt = (n) => new Intl.NumberFormat("id-ID").format(+n || 0);
+  const formatLocalDate = (date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
 
   window.addEventListener("DOMContentLoaded", async () => {
     setDefaultDates();
@@ -361,10 +367,20 @@
   function setDefaultDates() {
     const now = new Date();
 
-    id("tgl_akhir").value = now.toISOString().split("T")[0];
+    id("tgl_akhir").value = formatLocalDate(now);
 
     const closing = new Date(now.getFullYear(), now.getMonth(), 0);
-    id("tgl_awal").value = closing.toISOString().split("T")[0];
+    id("tgl_awal").value = formatLocalDate(closing);
+  }
+
+  function syncClosingFromHarian() {
+    const harian = id("tgl_akhir").value;
+    if (!harian) return;
+
+    const [year, month] = harian.split("-").map(Number);
+    if (!year || !month) return;
+
+    id("tgl_awal").value = formatLocalDate(new Date(year, month - 1, 0));
   }
 
   function toggleMobileFilter() {
@@ -415,7 +431,14 @@
   });
 
   function getCurrentKantor() {
-    return String(id("filter_kantor").value || "000").padStart(3, "0");
+    const val = String(id("filter_kantor").value || "ALL");
+    if (val === "ALL" || val.startsWith("KOR-")) return "000";
+    return val.replace("CAB-", "").padStart(3, "0");
+  }
+
+  function getCurrentKorwil() {
+    const val = String(id("filter_kantor").value || "ALL");
+    return val.startsWith("KOR-") ? val.replace("KOR-", "") : "";
   }
 
   async function populateKantor() {
@@ -442,13 +465,19 @@
       let html = "";
 
       if (userKode === "000") {
-        html = `<option value="000">ALL KONSOLIDASI</option>`;
+        html = `
+          <option value="ALL">Konsolidasi</option>
+          <option value="KOR-SEMARANG">Korwil Semarang</option>
+          <option value="KOR-SOLO">Korwil Solo</option>
+          <option value="KOR-BANYUMAS">Korwil Banyumas</option>
+          <option value="KOR-PEKALONGAN">Korwil Pekalongan</option>
+        `;
 
         listKantor
           .filter(x => String(x.kode_kantor).padStart(3, "0") !== "000")
           .forEach(x => {
             const kode = String(x.kode_kantor).padStart(3, "0");
-            html += `<option value="${escapeAttr(kode)}">${kode} - ${x.nama_kantor}</option>`;
+            html += `<option value="CAB-${escapeAttr(kode)}">${kode} - ${x.nama_kantor}</option>`;
           });
 
         desktop.innerHTML = html;
@@ -459,9 +488,9 @@
         const cabangUser = listKantor.find(x => String(x.kode_kantor).padStart(3, "0") === userKode);
 
         if (cabangUser) {
-          html = `<option value="${escapeAttr(userKode)}">${userKode} - ${cabangUser.nama_kantor}</option>`;
+          html = `<option value="CAB-${escapeAttr(userKode)}">${userKode} - ${cabangUser.nama_kantor}</option>`;
         } else {
-          html = `<option value="${escapeAttr(userKode)}">CABANG ${userKode}</option>`;
+          html = `<option value="CAB-${escapeAttr(userKode)}">Cabang ${userKode}</option>`;
         }
 
         desktop.innerHTML = html;
@@ -470,7 +499,7 @@
         mobile.disabled = true;
       }
     } catch (e) {
-      const html = `<option value="000">ALL KONSOLIDASI</option>`;
+      const html = `<option value="ALL">Konsolidasi</option>`;
       desktop.innerHTML = html;
       mobile.innerHTML = html;
     }
@@ -485,6 +514,8 @@
   function syncDateFromMobile() {
     id("tgl_awal").value = id("tgl_awal_mobile").value;
     id("tgl_akhir").value = id("tgl_akhir_mobile").value;
+    syncClosingFromHarian();
+    id("tgl_awal_mobile").value = id("tgl_awal").value;
   }
 
   function syncKantorFromMobile() {
@@ -492,14 +523,21 @@
   }
 
   function buildPayload(page = 1, customLimit = null) {
-    return {
+    const payload = {
       type: "top realisasi",
       closing_date: id("tgl_awal").value,
       harian_date: id("tgl_akhir").value,
-      kode_kantor: getCurrentKantor(),
       page: page,
       limit: customLimit || 10
     };
+
+    const kodeKantor = getCurrentKantor();
+    const korwil = getCurrentKorwil();
+
+    if (kodeKantor !== "000") payload.kode_kantor = kodeKantor;
+    if (korwil) payload.korwil = korwil;
+
+    return payload;
   }
 
   async function fetchTopData(page) {
@@ -659,8 +697,12 @@
         kode_ao: kodeAO,
         closing_date: id("tgl_awal").value,
         harian_date: id("tgl_akhir").value,
-        kode_kantor: getCurrentKantor()
       };
+
+      const kodeKantor = getCurrentKantor();
+      const korwil = getCurrentKorwil();
+      if (kodeKantor !== "000") payload.kode_kantor = kodeKantor;
+      if (korwil) payload.korwil = korwil;
 
       const r = await fetch("./api/kredit/", {
         method: "POST",

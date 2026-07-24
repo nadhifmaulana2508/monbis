@@ -8,6 +8,7 @@ const API_DATE = './api/date/';
 
 const nfID = new Intl.NumberFormat('id-ID');
 const fmt = n => nfID.format(Math.round(Number(n || 0)));
+const fmtNominal = n => nfID.format(Math.round(Number(n || 0) / 1000));
 
 const apiCall = (url, opt = {}) => {
     return window.apiFetch ? window.apiFetch(url, opt) : fetch(url, opt);
@@ -80,14 +81,32 @@ function toggleFilter(id) {
 
 function getCurrentAreaState() {
     const areaVal = document.getElementById('opt_area')?.value || 'ALL';
-    const subVal  = document.getElementById('opt_sub_main')?.value || 'ALL';
-
-    return { areaVal, subVal };
+    return { areaVal, subVal: 'ALL' };
 }
 
 function normalizeKodeKantor(value) {
     if (!value || value === 'ALL' || value === '000') return '000';
     return String(value).replace('CAB-', '').padStart(3, '0');
+}
+
+function formatLocalDateReal(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function getPreviousMonthEndReal(dateValue) {
+    if (!dateValue) return '';
+    const [year, month] = String(dateValue).split('-').map(Number);
+    if (!year || !month) return '';
+    return formatLocalDateReal(new Date(year, month - 1, 0));
+}
+
+function syncClosingFromHarianReal() {
+    const harian = document.getElementById('harian_date')?.value || '';
+    const closing = getPreviousMonthEndReal(harian);
+    if (closing) document.getElementById('closing_date').value = closing;
 }
 
 
@@ -121,12 +140,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     const d = await getLastHarianData();
 
     if (d) {
-        document.getElementById('closing_date').value = d.last_closing;
         document.getElementById('harian_date').value  = d.last_created;
+        document.getElementById('closing_date').value = getPreviousMonthEndReal(d.last_created) || d.last_closing;
     } else {
         const now = new Date();
-        document.getElementById('closing_date').value = `${now.getFullYear() - 1}-12-31`;
-        document.getElementById('harian_date').value  = now.toISOString().split('T')[0];
+        const today = formatLocalDateReal(now);
+        document.getElementById('harian_date').value  = today;
+        document.getElementById('closing_date').value = getPreviousMonthEndReal(today);
     }
 
     await populateAreaDropdown();
@@ -167,7 +187,13 @@ async function populateAreaDropdown() {
 
         const json = await res.json();
 
-        let html = `<option value="ALL">ALL KONSOLIDASI</option>`;
+        let html = `
+            <option value="ALL">Konsolidasi</option>
+            <option value="KOR-SEMARANG">Korwil Semarang</option>
+            <option value="KOR-SOLO">Korwil Solo</option>
+            <option value="KOR-BANYUMAS">Korwil Banyumas</option>
+            <option value="KOR-PEKALONGAN">Korwil Pekalongan</option>
+        `;
 
         (json.data || [])
             .filter(x => x.kode_kantor && x.kode_kantor !== '000')
@@ -184,56 +210,7 @@ async function populateAreaDropdown() {
 }
 
 async function updateFilterUI() {
-    const areaVal = document.getElementById('opt_area')?.value || 'ALL';
-    const lblSub  = document.getElementById('lbl_sub');
-    const optSub  = document.getElementById('opt_sub_main');
-
-    if (!lblSub || !optSub) return;
-
-    if (areaVal === 'ALL') {
-        lblSub.innerText = "KORWIL";
-        optSub.innerHTML = `
-            <option value="ALL">ALL KORWIL</option>
-            <option value="SEMARANG">SEMARANG</option>
-            <option value="SOLO">SOLO</option>
-            <option value="BANYUMAS">BANYUMAS</option>
-            <option value="PEKALONGAN">PEKALONGAN</option>
-        `;
-
-        fetchRekap();
-    } else {
-        lblSub.innerText = "KANKAS";
-        optSub.innerHTML = `<option value="ALL">Memuat...</option>`;
-
-        const cabang = areaVal.replace('CAB-', '');
-
-        try {
-            const r = await apiCall(API_KODE, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    type: 'kode_kankas',
-                    kode_kantor: cabang
-                })
-            });
-
-            const j = await r.json();
-
-            let html = `<option value="ALL">ALL KANKAS</option>`;
-
-            if (j.data && Array.isArray(j.data)) {
-                j.data.forEach(x => {
-                    html += `<option value="${escapeHtml(x.kode_group1)}">${escapeHtml(x.kode_group1)} - ${escapeHtml(x.deskripsi_group1 || x.kode_group1)}</option>`;
-                });
-            }
-
-            optSub.innerHTML = html;
-        } catch (e) {
-            optSub.innerHTML = `<option value="ALL">ALL KANKAS</option>`;
-        }
-
-        fetchRekap();
-    }
+    fetchRekap();
 }
 
 
@@ -247,7 +224,6 @@ async function fetchRekap() {
     const harian  = document.getElementById('harian_date')?.value || '';
     const closing = document.getElementById('closing_date')?.value || '';
     const areaVal = document.getElementById('opt_area')?.value || 'ALL';
-    const subVal  = document.getElementById('opt_sub_main')?.value || 'ALL';
 
     if (!tbody) return;
 
@@ -255,7 +231,7 @@ async function fetchRekap() {
     abortMain = new AbortController();
 
     loading?.classList.remove('hidden');
-    tbody.innerHTML = `<tr><td colspan="10" class="py-12 text-center text-slate-400 italic">Sedang mengambil data...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="py-12 text-center text-slate-400 italic">Sedang mengambil data...</td></tr>`;
 
     rekapDataCache = [];
     rekapGtCache = null;
@@ -269,11 +245,10 @@ async function fetchRekap() {
             harian_date: harian
         };
 
-        if (areaVal === 'ALL') {
-            if (subVal !== 'ALL') payload.korwil = subVal;
-        } else {
+        if (areaVal.startsWith('KOR-')) {
+            payload.korwil = areaVal.replace('KOR-', '');
+        } else if (areaVal.startsWith('CAB-')) {
             payload.kode_kantor = areaVal.replace('CAB-', '');
-            if (subVal !== 'ALL') payload.kode_kankas = subVal;
         }
 
         const res = await apiCall(API_URL, {
@@ -294,7 +269,7 @@ async function fetchRekap() {
         processAndRenderTable(rekapDataCache, rekapGtCache);
     } catch (err) {
         if (err.name !== 'AbortError') {
-            tbody.innerHTML = `<tr><td colspan="10" class="py-12 text-center text-red-500 font-bold">Error: ${escapeHtml(err.message)}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="12" class="py-12 text-center text-red-500 font-bold">Error: ${escapeHtml(err.message)}</td></tr>`;
         }
     } finally {
         loading?.classList.add('hidden');
@@ -311,33 +286,37 @@ function renderHeaderClickable() {
 
     thead.innerHTML = `
         <tr class="head-lapis-1">
-            <th rowspan="2" class="freeze-col-1 hidden md:table-cell w-[50px] md:w-[60px] uppercase align-middle border-r border-slate-200 text-center cursor-pointer hover:bg-slate-200 transition" onclick="sortMainData('kode_kantor')">
+            <th rowspan="2" class="freeze-col-1 hidden md:table-cell w-[42px] md:w-[48px] uppercase align-middle border-r border-slate-200 text-center cursor-pointer hover:bg-slate-200 transition" onclick="sortMainData('kode_kantor')">
                 <div class="flex items-center justify-center">KODE${getSortIcon('kode_kantor')}</div>
             </th>
 
-            <th rowspan="2" class="freeze-col-2 w-[120px] md:w-[150px] uppercase align-middle border-r border-slate-200 text-left pl-3 cursor-pointer hover:bg-slate-200 transition" onclick="sortMainData('nama_kantor')">
-                <div class="flex items-center">NAMA AREA${getSortIcon('nama_kantor')}</div>
+            <th rowspan="2" class="freeze-col-2 w-[104px] md:w-[124px] uppercase align-middle border-r border-slate-200 text-left pl-2 cursor-pointer hover:bg-slate-200 transition" onclick="sortMainData('nama_kantor')">
+                <div class="flex items-center">AREA${getSortIcon('nama_kantor')}</div>
             </th>
 
-            <th colspan="2" class="py-1.5 border-b border-r border-slate-200 text-blue-800 bg-blue-50/40">REALISASI BARU</th>
-            <th colspan="2" class="py-1.5 border-b border-r border-slate-200 text-purple-800 bg-purple-50/40">RESTRUKTURISASI</th>
-            <th colspan="3" class="py-1.5 border-b border-slate-200 text-orange-800 bg-orange-50/40">RUN OFF (PENGURANGAN)</th>
+            <th colspan="2" class="py-1.5 border-b border-r border-slate-200 text-blue-800 bg-blue-50/40">REALISASI</th>
+            <th colspan="2" class="py-1.5 border-b border-r border-slate-200 text-purple-800 bg-purple-50/40">RESTRUCK</th>
+            <th colspan="3" class="py-1.5 border-b border-slate-200 text-orange-800 bg-orange-50/40">RUN OFF</th>
+            <th colspan="2" class="py-1.5 border-b border-l border-slate-200 text-cyan-800 bg-cyan-50/50">PORTO</th>
 
-            <th rowspan="2" class="w-[100px] md:w-[130px] border-l border-slate-200 align-middle text-right pr-3 text-slate-900 bg-slate-100/70 cursor-pointer hover:bg-slate-200 transition" onclick="sortMainData('growth')">
-                <div class="flex items-center justify-end">GROWTH NET${getSortIcon('growth')}</div>
+            <th rowspan="2" class="w-[76px] md:w-[88px] border-l border-slate-200 align-middle text-right pr-2 text-slate-900 bg-slate-100/70 cursor-pointer hover:bg-slate-200 transition" onclick="sortMainData('growth')">
+                <div class="flex items-center justify-end">GROWTH${getSortIcon('growth')}</div>
             </th>
         </tr>
 
         <tr class="head-lapis-2 text-[8.5px] md:text-[10px]">
-            <th class="px-1 py-1 border-r border-slate-200 w-[45px] md:w-[60px] text-blue-700 cursor-pointer hover:bg-blue-100 transition" onclick="sortMainData('noa_realisasi')">NOA${getSortIcon('noa_realisasi')}</th>
-            <th class="px-2 py-1 border-r border-slate-200 w-[100px] md:w-[125px] text-right text-blue-700 cursor-pointer hover:bg-blue-100 transition" onclick="sortMainData('total_realisasi')">NOMINAL${getSortIcon('total_realisasi')}</th>
+            <th class="px-1 py-1 border-r border-slate-200 w-[36px] md:w-[42px] text-blue-700 cursor-pointer hover:bg-blue-100 transition" onclick="sortMainData('noa_realisasi')">NOA${getSortIcon('noa_realisasi')}</th>
+            <th class="px-1 py-1 border-r border-slate-200 w-[72px] md:w-[84px] text-right text-blue-700 cursor-pointer hover:bg-blue-100 transition" onclick="sortMainData('total_realisasi')">NOM${getSortIcon('total_realisasi')}</th>
 
-            <th class="px-1 py-1 border-r border-slate-200 w-[45px] md:w-[60px] text-purple-700 cursor-pointer hover:bg-purple-100 transition" onclick="sortMainData('noa_restruck')">NOA${getSortIcon('noa_restruck')}</th>
-            <th class="px-2 py-1 border-r border-slate-200 w-[100px] md:w-[125px] text-right text-purple-700 cursor-pointer hover:bg-purple-100 transition" onclick="sortMainData('total_restruck')">NOMINAL${getSortIcon('total_restruck')}</th>
+            <th class="px-1 py-1 border-r border-slate-200 w-[36px] md:w-[42px] text-purple-700 cursor-pointer hover:bg-purple-100 transition" onclick="sortMainData('noa_restruck')">NOA${getSortIcon('noa_restruck')}</th>
+            <th class="px-1 py-1 border-r border-slate-200 w-[72px] md:w-[84px] text-right text-purple-700 cursor-pointer hover:bg-purple-100 transition" onclick="sortMainData('total_restruck')">NOM${getSortIcon('total_restruck')}</th>
 
-            <th class="px-2 py-1 border-r border-slate-200 w-[95px] md:w-[120px] text-right text-emerald-700 cursor-pointer hover:bg-orange-100 transition" onclick="sortMainData('pelunasan')">PELUNASAN${getSortIcon('pelunasan')}</th>
-            <th class="px-2 py-1 border-r border-slate-200 w-[95px] md:w-[120px] text-right text-blue-700 cursor-pointer hover:bg-orange-100 transition" onclick="sortMainData('angsuran_murni')">ANGSURAN${getSortIcon('angsuran_murni')}</th>
-            <th class="px-2 py-1 border-r border-slate-200 w-[95px] md:w-[120px] text-right text-orange-700 cursor-pointer hover:bg-orange-100 transition" onclick="sortMainData('total_run_off')">TOT RUNOFF${getSortIcon('total_run_off')}</th>
+            <th class="px-1 py-1 border-r border-slate-200 w-[70px] md:w-[82px] text-right text-emerald-700 cursor-pointer hover:bg-orange-100 transition" onclick="sortMainData('pelunasan')">LUNAS${getSortIcon('pelunasan')}</th>
+            <th class="px-1 py-1 border-r border-slate-200 w-[70px] md:w-[82px] text-right text-blue-700 cursor-pointer hover:bg-orange-100 transition" onclick="sortMainData('angsuran_murni')">ANGS${getSortIcon('angsuran_murni')}</th>
+            <th class="px-1 py-1 border-r border-slate-200 w-[70px] md:w-[82px] text-right text-orange-700 cursor-pointer hover:bg-orange-100 transition" onclick="sortMainData('total_run_off')">TOTAL${getSortIcon('total_run_off')}</th>
+
+            <th class="px-1 py-1 border-l border-r border-slate-200 w-[78px] md:w-[90px] text-right text-cyan-700 cursor-pointer hover:bg-cyan-100 transition" onclick="sortMainData('portofolio_closing')">CLOSING${getSortIcon('portofolio_closing')}</th>
+            <th class="px-1 py-1 border-r border-slate-200 w-[78px] md:w-[90px] text-right text-cyan-700 cursor-pointer hover:bg-cyan-100 transition" onclick="sortMainData('portofolio_harian')">HARIAN${getSortIcon('portofolio_harian')}</th>
         </tr>
 
         <tr id="rowTotalAtas" class="mob-row-tot text-[9px] md:text-xs font-extrabold tracking-wide"></tr>
@@ -389,7 +368,7 @@ function processAndRenderTable(rows, gt) {
     if (!tbody) return;
 
     if (!rows || rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" class="py-12 text-center text-slate-400 italic">Tidak ada transaksi.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" class="py-12 text-center text-slate-400 italic">Tidak ada transaksi.</td></tr>`;
         const rowTotal = document.getElementById('rowTotalAtas');
         if (rowTotal) rowTotal.innerHTML = '';
         return;
@@ -412,20 +391,22 @@ function processAndRenderTable(rows, gt) {
             : '';
 
         html += `
-            <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[40px] md:h-[46px]">
+            <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[38px] md:h-[42px]">
                 <td class="freeze-col-1 hidden md:table-cell text-center font-mono font-bold text-slate-500 border-r border-slate-100">${escapeHtml(r.kode_kantor || '-')}</td>
-                <td class="freeze-col-2 text-left font-bold text-slate-700 truncate pl-3 border-r border-slate-100" title="${escapeHtml(r.nama_kantor)}">${escapeHtml(r.nama_kantor)}</td>
+                <td class="freeze-col-2 text-left font-bold text-slate-700 truncate pl-2 border-r border-slate-100" title="${escapeHtml(r.nama_kantor)}">${escapeHtml(r.nama_kantor)}</td>
 
                 <td class="text-center text-blue-700 bg-blue-50/10 font-bold border-r border-slate-100 transition ${curReal}" ${clkReal}>${fmt(r.noa_realisasi)}</td>
-                <td class="text-right text-blue-800 bg-blue-50/10 font-mono pr-2 border-r border-slate-200 transition ${curReal}" ${clkReal}>${fmt(r.total_realisasi)}</td>
+                <td class="text-right text-blue-800 bg-blue-50/10 font-mono pr-1.5 border-r border-slate-200 transition ${curReal}" ${clkReal} title="${fmt(r.total_realisasi)}">${fmtNominal(r.total_realisasi)}</td>
 
                 <td class="text-center text-purple-700 bg-purple-50/10 font-bold border-r border-slate-100 transition ${curRes}" ${clkRes}>${fmt(r.noa_restruck || 0)}</td>
-                <td class="text-right text-purple-800 bg-purple-50/10 font-mono pr-2 border-r border-slate-200 transition ${curRes}" ${clkRes}>${fmt(r.total_restruck || 0)}</td>
+                <td class="text-right text-purple-800 bg-purple-50/10 font-mono pr-1.5 border-r border-slate-200 transition ${curRes}" ${clkRes} title="${fmt(r.total_restruck || 0)}">${fmtNominal(r.total_restruck || 0)}</td>
 
-                <td class="text-right text-emerald-700 font-mono pr-2 border-r border-slate-100">${fmt(r.pelunasan)}</td>
-                <td class="text-right text-blue-700 font-mono pr-2 border-r border-slate-100">${fmt(r.angsuran_murni)}</td>
-                <td class="text-right text-orange-700 bg-orange-50/10 font-mono pr-2 border-r border-slate-200">${fmt(r.total_run_off)}</td>
-                <td class="text-right font-mono font-extrabold pr-3 ${gColor}">${fmt(nGrowth)}</td>
+                <td class="text-right text-emerald-700 font-mono pr-1.5 border-r border-slate-100" title="${fmt(r.pelunasan)}">${fmtNominal(r.pelunasan)}</td>
+                <td class="text-right text-blue-700 font-mono pr-1.5 border-r border-slate-100" title="${fmt(r.angsuran_murni)}">${fmtNominal(r.angsuran_murni)}</td>
+                <td class="text-right text-orange-700 bg-orange-50/10 font-mono pr-1.5 border-r border-slate-200" title="${fmt(r.total_run_off)}">${fmtNominal(r.total_run_off)}</td>
+                <td class="text-right text-cyan-800 bg-cyan-50/10 font-mono font-bold pr-1.5 border-l border-r border-slate-100" title="${fmt(r.portofolio_closing)}">${fmtNominal(r.portofolio_closing)}</td>
+                <td class="text-right text-cyan-800 bg-cyan-50/10 font-mono font-bold pr-1.5 border-r border-slate-200" title="${fmt(r.portofolio_harian)}">${fmtNominal(r.portofolio_harian)}</td>
+                <td class="text-right font-mono font-extrabold pr-2 ${gColor}" title="${fmt(nGrowth)}">${fmtNominal(nGrowth)}</td>
             </tr>
         `;
     });
@@ -453,18 +434,20 @@ function processAndRenderTable(rows, gt) {
 
     rowTotalAtas.innerHTML = `
         <th class="freeze-col-1 hidden md:table-cell text-center text-blue-900 font-extrabold border-r border-blue-300">ALL</th>
-        <th class="freeze-col-2 text-left font-extrabold text-blue-900 pl-3 border-r border-blue-300">GRAND TOTAL</th>
+        <th class="freeze-col-2 text-left font-extrabold text-blue-900 pl-2 border-r border-blue-300">GRAND TOTAL</th>
 
         <th class="text-center text-blue-900 bg-blue-100/30 font-extrabold border-r border-blue-300 transition ${gtRealClickable}" ${gtRealClick}>${fmt(gt.noa_realisasi)}</th>
-        <th class="text-right text-blue-900 bg-blue-100/30 font-mono font-bold pr-2 border-r border-blue-300 transition ${gtRealClickable}" ${gtRealClick}>${fmt(gt.total_realisasi)}</th>
+        <th class="text-right text-blue-900 bg-blue-100/30 font-mono font-bold pr-1.5 border-r border-blue-300 transition ${gtRealClickable}" ${gtRealClick} title="${fmt(gt.total_realisasi)}">${fmtNominal(gt.total_realisasi)}</th>
 
         <th class="text-center text-purple-900 bg-purple-100/30 font-extrabold border-r border-blue-300 transition ${gtResClickable}" ${gtResClick}>${fmt(gt.noa_restruck || 0)}</th>
-        <th class="text-right text-purple-900 bg-purple-100/30 font-mono font-bold pr-2 border-r border-blue-300 transition ${gtResClickable}" ${gtResClick}>${fmt(gt.total_restruck || 0)}</th>
+        <th class="text-right text-purple-900 bg-purple-100/30 font-mono font-bold pr-1.5 border-r border-blue-300 transition ${gtResClickable}" ${gtResClick} title="${fmt(gt.total_restruck || 0)}">${fmtNominal(gt.total_restruck || 0)}</th>
 
-        <th class="text-right text-emerald-800 font-mono font-bold pr-2 border-r border-blue-300">${fmt(gt.pelunasan)}</th>
-        <th class="text-right text-blue-800 font-mono font-bold pr-2 border-r border-blue-300">${fmt(gt.angsuran_murni)}</th>
-        <th class="text-right text-orange-900 bg-orange-100/30 font-mono font-bold pr-2 border-r border-blue-300">${fmt(gt.total_run_off)}</th>
-        <th class="text-right font-mono font-black pr-3 ${gtColor}">${fmt(gtGrowth)}</th>
+        <th class="text-right text-emerald-800 font-mono font-bold pr-1.5 border-r border-blue-300" title="${fmt(gt.pelunasan)}">${fmtNominal(gt.pelunasan)}</th>
+        <th class="text-right text-blue-800 font-mono font-bold pr-1.5 border-r border-blue-300" title="${fmt(gt.angsuran_murni)}">${fmtNominal(gt.angsuran_murni)}</th>
+        <th class="text-right text-orange-900 bg-orange-100/30 font-mono font-bold pr-1.5 border-r border-blue-300" title="${fmt(gt.total_run_off)}">${fmtNominal(gt.total_run_off)}</th>
+        <th class="text-right text-cyan-900 bg-cyan-100/40 font-mono font-bold pr-1.5 border-l border-r border-blue-300" title="${fmt(gt.portofolio_closing)}">${fmtNominal(gt.portofolio_closing)}</th>
+        <th class="text-right text-cyan-900 bg-cyan-100/40 font-mono font-bold pr-1.5 border-r border-blue-300" title="${fmt(gt.portofolio_harian)}">${fmtNominal(gt.portofolio_harian)}</th>
+        <th class="text-right font-mono font-black pr-2 ${gtColor}" title="${fmt(gtGrowth)}">${fmtNominal(gtGrowth)}</th>
     `;
 }
 
@@ -475,10 +458,10 @@ function processAndRenderTable(rows, gt) {
 window.exportExcelRekap = function() {
     if (rekapDataCache.length === 0) return alert("Tidak ada data untuk diexport.");
 
-    let csv = "Kode\tNama Kantor\tNOA Realisasi\tNominal Realisasi\tNOA Restruck\tNominal Restruck\tPelunasan\tAngsuran Murni\tTotal Run Off\tGrowth Net\n";
+    let csv = "Kode\tNama Kantor\tNOA Realisasi\tNominal Realisasi\tNOA Restruck\tNominal Restruck\tPelunasan\tAngsuran Murni\tTotal Run Off\tPortofolio Closing\tPortofolio Harian\tGrowth Net\n";
 
     rekapDataCache.forEach(r => {
-        csv += `'${r.kode_kantor}\t${r.nama_kantor}\t${r.noa_realisasi}\t${Math.round(r.total_realisasi)}\t${r.noa_restruck || 0}\t${Math.round(r.total_restruck || 0)}\t${Math.round(r.pelunasan)}\t${Math.round(r.angsuran_murni)}\t${Math.round(r.total_run_off)}\t${Math.round(r.growth)}\n`;
+        csv += `'${r.kode_kantor}\t${r.nama_kantor}\t${r.noa_realisasi}\t${Math.round(r.total_realisasi)}\t${r.noa_restruck || 0}\t${Math.round(r.total_restruck || 0)}\t${Math.round(r.pelunasan)}\t${Math.round(r.angsuran_murni)}\t${Math.round(r.total_run_off)}\t${Math.round(r.portofolio_closing || 0)}\t${Math.round(r.portofolio_harian || 0)}\t${Math.round(r.growth)}\n`;
     });
 
     const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
@@ -496,7 +479,7 @@ window.exportExcelRekap = function() {
 // MODAL DETAIL
 // =========================================================================
 window.openDetailModal = function(kode_area, kode_trans, nama_area) {
-    const { areaVal, subVal } = getCurrentAreaState();
+    const { areaVal } = getCurrentAreaState();
 
     detailParamsReal = {
         type: "detail_realisasi_growth",
@@ -505,20 +488,15 @@ window.openDetailModal = function(kode_area, kode_trans, nama_area) {
         kode_trans: String(kode_trans)
     };
 
-    if (areaVal === 'ALL') {
-        if (subVal !== 'ALL') {
-            detailParamsReal.korwil = subVal;
-        }
-
-        if (kode_area && kode_area !== 'ALL' && String(kode_area).length === 3) {
-            detailParamsReal.kode_kantor = kode_area;
-        }
-    } else {
+    if (areaVal.startsWith('KOR-')) {
+        detailParamsReal.korwil = areaVal.replace('KOR-', '');
+    } else if (areaVal.startsWith('CAB-')) {
         detailParamsReal.kode_kantor = areaVal.replace('CAB-', '');
+    }
 
-        if (kode_area && kode_area !== 'ALL') {
-            detailParamsReal.kode_kankas = kode_area;
-        }
+    if (kode_area && kode_area !== 'ALL' && String(kode_area).length === 3) {
+        detailParamsReal.kode_kantor = kode_area;
+        delete detailParamsReal.korwil;
     }
 
     detailPageReal = 1;

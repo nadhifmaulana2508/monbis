@@ -74,9 +74,15 @@
                 </select>
             </div>
             
-            <button type="button" onclick="exportExcelRekapMob()" class="btn-icon h-[34px] md:h-[36px] w-[38px] md:w-[42px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm shrink-0 ml-auto xl:ml-0 mt-2 xl:mt-0" title="Download Excel">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></line></svg>
-            </button>
+            <div id="mobExportWrap" class="relative shrink-0 ml-auto xl:ml-0 mt-2 xl:mt-0">
+                <button type="button" onclick="toggleExportMobMenu(event)" class="btn-icon h-[34px] md:h-[36px] w-[38px] md:w-[42px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm" title="Download Excel">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></line></svg>
+                </button>
+                <div id="mobExportMenu" class="hidden absolute right-0 top-full mt-2 w-36 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden z-[80]">
+                    <button type="button" onclick="downloadMobExcelChoice('rekap')" class="w-full px-3 py-2 text-left text-[11px] md:text-xs font-extrabold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700">Rekap</button>
+                    <button type="button" onclick="downloadMobExcelChoice('nominatif')" class="w-full px-3 py-2 text-left text-[11px] md:text-xs font-extrabold text-slate-700 hover:bg-emerald-50 hover:text-emerald-700 border-t border-slate-100">Nominatif</button>
+                </div>
+            </div>
         </form>
     </div>
 </div>

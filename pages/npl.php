@@ -62,8 +62,8 @@
 
 <div class="max-w-7xl mx-auto px-3 md:px-4 py-4 h-[calc(100vh-80px)] md:h-[calc(100vh-120px)] flex flex-col">
   
-  <div class="flex flex-col md:flex-row md:items-start justify-between gap-3 mb-3 shrink-0">
-    <div class="flex items-start justify-between w-full md:w-auto">
+  <div class="relative z-20 flex-none mb-3 md:mb-4 w-full bg-white p-2 md:p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 shrink-0">
+    <div class="flex items-center justify-between w-full xl:w-auto shrink-0 px-1">
         <div>
             <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
                 <span class="bg-blue-600 text-white p-1 rounded text-sm md:text-base shadow-sm">💳</span> 
@@ -72,40 +72,36 @@
             <p class="text-[10px] md:text-xs text-slate-500 mt-0.5 ml-1">*Posisi Harian (NOA & Saldo)</p>
         </div>
 
-        <button id="btnToggleKolekFilter" class="md:hidden flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-sm font-semibold text-slate-700 shadow-sm transition">
+        <button id="btnToggleKolekFilter" class="xl:hidden flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-sm font-semibold text-slate-700 shadow-sm transition">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
             Filter
         </button>
     </div>
 
-    <div id="panelFilterKolek" class="hidden md:block bg-white border border-gray-200 rounded-xl p-3 shadow-sm w-full md:w-auto transition-all">
-        <form id="formFilterKolek" class="flex flex-col md:flex-row items-end gap-3 w-full">
+    <div id="panelFilterKolek" class="hidden xl:flex w-full xl:w-auto flex-1 min-w-0 justify-end transition-all duration-300 shrink-0 border-t xl:border-none pt-3 xl:pt-0 mt-2 xl:mt-0">
+        <form id="formFilterKolek" class="flex flex-row flex-wrap xl:flex-nowrap items-end gap-2 md:gap-2.5 w-full xl:w-auto" onsubmit="event.preventDefault();">
             
-            <div class="flex gap-2 w-full md:w-auto">
-                <div class="flex flex-col w-1/2 md:w-[130px]">
+            <div class="flex gap-2 w-full xl:w-auto">
+                <div class="flex flex-col w-1/2 xl:w-[130px]">
                     <label class="text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">TIPE SALDO</label>
                     <select id="hitung_berdasarkan" class="inp font-bold text-blue-700 shadow-sm auto-refresh">
                         <option value="baki_debet">BAKI DEBET</option>
                         <option value="saldo_bank">SALDO BANK</option>
                     </select>
                 </div>
-                <div class="flex flex-col w-1/2 md:w-[130px]">
+                <div class="flex flex-col w-1/2 xl:w-[130px]">
                     <label class="text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">TANGGAL</label>
-                    <input type="date" id="harian_date_kolek" class="inp shadow-sm" required>
+                    <input type="date" id="harian_date_kolek" class="inp shadow-sm auto-refresh" required onclick="this.showPicker && this.showPicker()">
                 </div>
             </div>
 
-            <div class="flex gap-2 w-full md:w-auto md:flex-1 items-end">
-                <div class="flex flex-col flex-1 md:w-[220px]">
-                    <label class="text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">CABANG</label>
-                    <select id="opt_kantor_kolek" class="inp font-medium text-slate-700 shadow-sm truncate auto-refresh"><option value="">Memuat...</option></select>
+            <div class="flex gap-2 w-full xl:w-auto xl:flex-1 items-end">
+                <div class="flex flex-col flex-1 xl:w-[260px]">
+                    <label class="text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">AREA/CABANG</label>
+                    <select id="opt_filter_kolek" class="inp font-bold text-slate-700 shadow-sm truncate auto-refresh"><option value="ALL">Memuat...</option></select>
                 </div>
                 
                 <div class="flex gap-2 shrink-0">
-                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white h-9 px-4 rounded-lg font-bold text-sm shadow-sm flex items-center justify-center gap-2 transition">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <span>CARI</span>
-                    </button>
                     <button type="button" onclick="exportKolekExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white h-9 w-11 rounded-lg shadow-sm flex items-center justify-center transition">
                         <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
                     </button>
@@ -156,14 +152,43 @@
   window.kolekDataRaw = [];
   window.kolekGtRaw = null;
   let currentSort = { col: null, dir: 'asc' }; // 'asc' atau 'desc'
+  let allKantorKolek = [];
+  let kolekFetchTimer = null;
 
   document.getElementById('btnToggleKolekFilter').addEventListener('click', function() {
       document.getElementById('panelFilterKolek').classList.toggle('hidden');
   });
 
   document.querySelectorAll('.auto-refresh').forEach(el => {
-      el.addEventListener('change', () => fetchKolektibilitas());
+      el.addEventListener('change', () => scheduleFetchKolektibilitas());
   });
+
+  function scheduleFetchKolektibilitas(delay = 350) {
+      clearTimeout(kolekFetchTimer);
+      kolekFetchTimer = setTimeout(() => fetchKolektibilitas(), delay);
+  }
+
+  function renderFilterOptionsKolek() {
+      const optFilter = document.getElementById('opt_filter_kolek');
+      if (!optFilter || optFilter.disabled) return;
+
+      let html = `
+          <option value="ALL">Konsolidasi</option>
+          <option value="KOR-SEMARANG">Korwil Semarang</option>
+          <option value="KOR-SOLO">Korwil Solo</option>
+          <option value="KOR-BANYUMAS">Korwil Banyumas</option>
+          <option value="KOR-PEKALONGAN">Korwil Pekalongan</option>
+      `;
+
+      allKantorKolek
+          .filter(x => x.kode_kantor && x.kode_kantor !== '000')
+          .sort((a,b) => String(a.kode_kantor).localeCompare(String(b.kode_kantor)))
+          .forEach(it => {
+              const kode = String(it.kode_kantor).padStart(3,'0');
+              html += `<option value="CAB-${kode}">${kode} - ${it.nama_kantor}</option>`;
+          });
+      optFilter.innerHTML = html;
+  }
 
   function updateStickyHeader() {
       const thead = document.getElementById('theadKolek');
@@ -212,7 +237,8 @@
 
   window.addEventListener('DOMContentLoaded', async () => {
     const user = (window.getUser && window.getUser()) || null;
-    const uKode = user?.kode ? String(user.kode).padStart(3,'0') : '000';
+    let uKode = user?.kode ? String(user.kode).padStart(3,'0') : '000';
+    if (uKode === '099') uKode = '000';
     await populateKantorKolek(uKode);
     try { 
         const r = await fetch(API_DATE); 
@@ -225,41 +251,42 @@
   });
 
   async function populateKantorKolek(userKode){
-    const optKantor = document.getElementById('opt_kantor_kolek');
+    const optFilter = document.getElementById('opt_filter_kolek');
     if(userKode && userKode !== '000'){
-        optKantor.innerHTML = `<option value="${userKode}">CABANG ${userKode}</option>`;
-        optKantor.value = userKode;
-        optKantor.disabled = true;
+        optFilter.innerHTML = `<option value="CAB-${userKode}">Cabang ${userKode}</option>`;
+        optFilter.value = `CAB-${userKode}`;
+        optFilter.disabled = true;
         return; 
     }
     try {
         const res = await fetch(API_KODE, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_kantor'}) });
         const json = await res.json();
-        const list = json.data || [];
-        let html = `<option value="">ALL | SEMUA CABANG</option>`;
-        list.filter(x => x.kode_kantor && x.kode_kantor !== '000').sort((a,b) => String(a.kode_kantor).localeCompare(b.kode_kantor)).forEach(it => {
-            html += `<option value="${String(it.kode_kantor).padStart(3,'0')}">${String(it.kode_kantor).padStart(3,'0')} - ${it.nama_kantor}</option>`;
-        });
-        optKantor.innerHTML = html;
-    } catch(e){ optKantor.innerHTML = `<option value="">Error Load</option>`; }
+        allKantorKolek = json.data || [];
+        renderFilterOptionsKolek();
+    } catch(e){ optFilter.innerHTML = `<option value="ALL">Error Load</option>`; }
   }
 
   document.getElementById('formFilterKolek').addEventListener('submit', e => { 
       e.preventDefault(); 
-      if(window.innerWidth < 768) document.getElementById('panelFilterKolek').classList.add('hidden');
-      fetchKolektibilitas(); 
+      if(window.innerWidth < 1280) document.getElementById('panelFilterKolek').classList.add('hidden');
+      scheduleFetchKolektibilitas(0); 
   });
 
   async function fetchKolektibilitas() {
       const loading = document.getElementById('loadingKolek');
       const harian = document.getElementById('harian_date_kolek').value;
-      const kantor = document.getElementById('opt_kantor_rec')?.value || document.getElementById('opt_kantor_kolek').value;
+      const filterVal = document.getElementById('opt_filter_kolek')?.value || 'ALL';
       const mode   = document.getElementById('hitung_berdasarkan').value;
 
       loading.classList.remove('hidden');
       
       try {
-          const payload = { type: 'kolektibilitas', harian_date: harian, kode_kantor: kantor, hitung_berdasarkan: mode };
+          const payload = { type: 'kolektibilitas', harian_date: harian, kode_kantor: '', hitung_berdasarkan: mode };
+          if (filterVal.startsWith('CAB-')) {
+              payload.kode_kantor = filterVal.replace('CAB-', '');
+          } else if (filterVal.startsWith('KOR-')) {
+              payload.korwil = filterVal.replace('KOR-', '');
+          }
           const res = await fetch(API_KOLEK, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
           const json = await res.json();
           
