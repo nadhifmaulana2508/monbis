@@ -42,18 +42,42 @@
 
   /* === TABLE CONTAINER === */
   #fpScroller {
-      --col1: 60px;   /* Lebar Kode */
-      --col2: 190px;  /* Lebar Nama Kantor */
-      --fp_headH: 40px; 
-      
+      /* Semua lebar kolom utama dikontrol dari variabel ini. */
+      --col1: 56px;          /* Kode kantor */
+      --col2: 190px;         /* Nama area/kantor */
+      --colNoa: 58px;        /* Kolom NOA */
+      --colNom: 138px;       /* Kolom nominal kategori */
+      --colNomTotal: 146px;  /* Kolom nominal total */
+      --fp_headH: 88px;
+
       position: relative;
       border: 0; border-radius: 0; background: white;
       height: 100%; overflow: auto;
-      -webkit-overflow-scrolling: touch; 
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      scrollbar-gutter: stable;
   }
 
-  table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; font-size: 12px; }
-  th, td { white-space: nowrap; padding: 9px 10px; vertical-align: middle; }
+  table { border-collapse: separate; border-spacing: 0; width: max-content; min-width: 100%; table-layout: fixed; font-size: 12px; }
+  #tabelFlowPar {
+      width: calc(
+          var(--col1) + var(--col2) +
+          var(--colNoa) + var(--colNom) +
+          var(--colNoa) + var(--colNom) +
+          var(--colNoa) + var(--colNom) +
+          var(--colNoa) + var(--colNom) +
+          var(--colNoa) + var(--colNomTotal)
+      );
+      min-width: 100%;
+  }
+
+  #tabelFlowPar col.fp-col-code { width: var(--col1) !important; }
+  #tabelFlowPar col.fp-col-area { width: var(--col2) !important; }
+  #tabelFlowPar col.fp-col-noa { width: var(--colNoa) !important; }
+  #tabelFlowPar col.fp-col-nom { width: var(--colNom) !important; }
+  #tabelFlowPar col.fp-col-nom-total { width: var(--colNomTotal) !important; }
+
+  th, td { white-space: nowrap; padding: 8px 8px; vertical-align: middle; }
   
   /* === HEADER STYLES === */
   #tabelFlowPar thead th { 
@@ -62,10 +86,34 @@
       font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; font-size: 11px;
       border-bottom: 1px solid #cbd5e1; 
   }
+  #tabelFlowPar .fp-head-1 th {
+      top: 0;
+      height: 40px;
+      background-color: #f1f5f9 !important;
+      color: #1e3a8a;
+      font-weight: 800;
+      box-shadow: inset 0 -1px 0 #cbd5e1, inset 0 1px 0 #cbd5e1;
+  }
+  #tabelFlowPar .fp-head-2 th {
+      top: 40px;
+      height: 34px;
+      background-color: #f8fafc !important;
+      color: #334155;
+      box-shadow: inset 0 -1px 0 #cbd5e1;
+  }
+  #tabelFlowPar .head-jt { color:#1e40af !important; background:#eff6ff !important; }
+  #tabelFlowPar .head-pokok { color:#7e22ce !important; background:#faf5ff !important; }
+  #tabelFlowPar .head-bunga { color:#b45309 !important; background:#fffbeb !important; }
+  #tabelFlowPar .head-pokok-bunga { color:#be123c !important; background:#fff1f2 !important; }
+  #tabelFlowPar .head-total { color:#0e7490 !important; background:#ecfeff !important; }
   #tabelFlowPar thead th.sticky-left-1,
   #tabelFlowPar thead th.sticky-left-2 {
       background-color: #e0f2fe !important;
       color: #1e3a8a;
+  }
+  #tabelFlowPar thead th.sticky-left-1,
+  #tabelFlowPar thead th.sticky-left-2 {
+      top: 0 !important;
   }
   
   /* === TOTAL ROW STICKY === */
@@ -96,10 +144,45 @@
   #fpTotalRow td.sticky-left-2 { z-index: 58; background: #eff6ff; border-right: 1px solid #bfdbfe; }
 
   #fpBody td { background-color: #fff; border-bottom: 1px solid #f1f5f9; color: #334155; }
+  #fpBody tr { height: 38px; }
   #fpBody tr:hover td { background-color: #f8fafc; }
   .flow-metric { display:flex; align-items:center; justify-content:space-between; gap:10px; width:100%; min-width:0; }
   .flow-metric .metric-nom { min-width:0; overflow:hidden; text-overflow:ellipsis; }
   .flow-metric .metric-noa { flex:0 0 auto; font-size:10px; color:#64748b; font-weight:800; }
+  .fp-cell-link {
+      display:block; width:100%; border-radius:4px; padding:2px 4px;
+      text-decoration:none !important; overflow:hidden; text-overflow:ellipsis;
+      font-variant-numeric: tabular-nums;
+  }
+  .fp-cell-empty { color:#94a3b8; font-weight:700; }
+  .fp-mobile-noa { display:none; }
+  .fp-nom-value { display:block; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+  .fp-noa-cell {
+      width:var(--colNoa); min-width:var(--colNoa); max-width:var(--colNoa);
+      padding-left:2px !important; padding-right:2px !important;
+  }
+  .fp-noa-cell .fp-cell-link { text-align:center; padding-left:2px; padding-right:2px; }
+  .fp-nom-cell {
+      width:var(--colNom); min-width:var(--colNom); max-width:var(--colNom);
+      padding-left:4px !important; padding-right:6px !important;
+  }
+  .fp-nom-cell .fp-cell-link { text-align:right; padding-left:2px; padding-right:3px; }
+  #tabelFlowPar tr > .fp-nom-cell:last-child {
+      width:var(--colNomTotal); min-width:var(--colNomTotal); max-width:var(--colNomTotal);
+  }
+  #tabelFlowPar .fp-head-1 th:not(.sticky-left-1):not(.sticky-left-2) {
+      white-space:normal; line-height:1.15; padding-left:4px; padding-right:4px;
+  }
+  #tabelFlowPar .fp-head-2 th { padding-left:2px; padding-right:2px; }
+  #tabelFlowPar .fp-head-noa {
+      width:var(--colNoa); min-width:var(--colNoa); max-width:var(--colNoa);
+  }
+  #tabelFlowPar .fp-head-nom {
+      width:var(--colNom); min-width:var(--colNom); max-width:var(--colNom);
+  }
+  #tabelFlowPar .fp-head-nom-total {
+      width:var(--colNomTotal); min-width:var(--colNomTotal); max-width:var(--colNomTotal);
+  }
 
   /* === MODAL STYLES === */
   #modalScroll { --colRek: 130px; --colNama: 200px; }
@@ -118,21 +201,236 @@
   .overdue td { background-color: #fef2f2 !important; color: #991b1b; }
   .hot90 { background-color: #fee2e2 !important; font-weight: bold; color: #7f1d1d; }
 
+  /* === RESPONSIVE TABLE WIDTHS === */
+  @media (min-width: 1440px) {
+      #fpScroller {
+          --col1: 60px;
+          --col2: 220px;
+          --colNoa: 62px;
+          --colNom: 150px;
+          --colNomTotal: 160px;
+      }
+  }
+
+  @media (min-width: 1024px) and (max-width: 1439px) {
+      #fpScroller {
+          --col1: 54px;
+          --col2: 180px;
+          --colNoa: 54px;
+          --colNom: 128px;
+          --colNomTotal: 138px;
+      }
+      #tabelFlowPar thead th { font-size:10px; }
+      #fpBody td { font-size:11px; }
+  }
+
+  @media (min-width: 768px) and (max-width: 1023px) {
+      #fpScroller {
+          --col1: 50px;
+          --col2: 160px;
+          --colNoa: 50px;
+          --colNom: 118px;
+          --colNomTotal: 126px;
+      }
+      #tabelFlowPar thead th { font-size:9px; letter-spacing:0.025em; }
+      #tabelFlowPar .fp-head-1 th { height:38px; }
+      #tabelFlowPar .fp-head-2 th { top:38px; height:32px; }
+      #fpBody td, #fpTotalRow td { font-size:10px; }
+      #fpBody tr { height:36px; }
+  }
+
+  @media (min-width: 480px) and (max-width: 767px) {
+      #fpScroller {
+          --col1: 0px;
+          --col2: 126px;
+          --colNoa: 0px;
+          --colNom: 104px;
+          --colNomTotal: 110px;
+      }
+  }
+
+  @media (max-width: 479px) {
+      #fpScroller {
+          --col1: 0px;
+          --col2: 104px;
+          --colNoa: 0px;
+          --colNom: 92px;
+          --colNomTotal: 98px;
+      }
+  }
+
   /* === RESPONSIVE FIX (MOBILE) === */
   @media (max-width: 767px) {
-      #opt_kantor_rec, #closing_date, #harian_date { font-size: 12px; padding: 0 8px; text-align: left; width: 100%; }
+      #opt_kantor_rec, #closing_date, #harian_date {
+          font-size:12px; padding:0 8px; text-align:left; width:100%;
+      }
 
-      table { font-size: 11px; }
-      th, td { padding: 6px 8px; }
+      #fpScroller {
+          --col1: 0px;
+          --col2: 116px;
+          --colMobileMetric: 88px;
+          --colMobileTotal: 96px;
+          overflow-x:auto;
+          overflow-y:auto;
+          -webkit-overflow-scrolling:touch;
+          scroll-padding-left:var(--col2);
+          isolation:isolate;
+      }
+      #fpScroller::-webkit-scrollbar { height:4px; width:4px; }
 
-      .sticky-left-1 { display: none !important; }
-      .sticky-left-2 { left: 0 !important; z-index: 45 !important; min-width: 140px; max-width: 160px; white-space: normal; line-height: 1.2; }
-      #tabelFlowPar thead th.sticky-left-2 { z-index: 70 !important; }
-      #fpTotalRow td.sticky-left-2 { z-index: 65 !important; }
+      table { font-size:10px; }
+      th, td { padding:4px; }
 
-      #modalScroll { --colRek: 0px; --colNama: 120px; }
-      .modal-freeze-1 { display: none; }
-      .modal-freeze-2 { left: 0; }
+      #tabelFlowPar.mobile-view {
+          width: calc(var(--col2) + (var(--colMobileMetric) * 4) + var(--colMobileTotal));
+          min-width: calc(var(--col2) + (var(--colMobileMetric) * 4) + var(--colMobileTotal));
+      }
+      #tabelFlowPar.mobile-view col.fp-col-area { width:var(--col2) !important; }
+      #tabelFlowPar.mobile-view col.fp-col-mobile-metric { width:var(--colMobileMetric) !important; }
+      #tabelFlowPar.mobile-view col.fp-col-mobile-total { width:var(--colMobileTotal) !important; }
+
+      #tabelFlowPar.mobile-view thead th {
+          font-size:8px;
+          letter-spacing:0;
+          line-height:1.1;
+          white-space:normal;
+          padding:4px 3px;
+      }
+      #tabelFlowPar.mobile-view .fp-head-1 th {
+          height:38px;
+      }
+      #tabelFlowPar.mobile-view .fp-head-2 {
+          display:none !important;
+      }
+
+      #tabelFlowPar.mobile-view .sticky-left-1 { display:none !important; }
+      #tabelFlowPar.mobile-view .sticky-left-2 {
+          display:table-cell !important;
+          position:-webkit-sticky !important;
+          position:sticky !important;
+          left:0 !important;
+          z-index:70 !important;
+          width:var(--col2) !important;
+          min-width:var(--col2) !important;
+          max-width:var(--col2) !important;
+          padding:4px 6px !important;
+          white-space:normal !important;
+          line-height:1.15;
+          background:#fff !important;
+          background-clip:padding-box;
+          box-shadow:4px 0 8px -6px rgba(15,23,42,.7);
+          border-right:1px solid #cbd5e1 !important;
+      }
+      #tabelFlowPar.mobile-view thead th.sticky-left-2 {
+          top:0 !important;
+          z-index:95 !important;
+          background:#e0f2fe !important;
+          text-align:left;
+      }
+      #tabelFlowPar.mobile-view #fpTotalRow td.sticky-left-2 {
+          z-index:82 !important;
+          background:#eff6ff !important;
+      }
+      #tabelFlowPar.mobile-view #fpBody td.sticky-left-2 {
+          z-index:72 !important;
+      }
+      #tabelFlowPar.mobile-view #fpBody .sticky-left-2 > div,
+      #tabelFlowPar.mobile-view #fpTotalRow .sticky-left-2 > div {
+          display:-webkit-box;
+          -webkit-line-clamp:2;
+          -webkit-box-orient:vertical;
+          overflow:hidden;
+          white-space:normal;
+          overflow-wrap:anywhere;
+          font-size:9px;
+          line-height:1.15;
+      }
+
+      #tabelFlowPar.mobile-view .fp-mobile-metric-cell,
+      #tabelFlowPar.mobile-view .fp-mobile-total-cell {
+          padding:2px 4px !important;
+          text-align:right;
+          vertical-align:middle;
+      }
+      #tabelFlowPar.mobile-view .fp-mobile-metric-cell {
+          width:var(--colMobileMetric);
+          min-width:var(--colMobileMetric);
+          max-width:var(--colMobileMetric);
+      }
+      #tabelFlowPar.mobile-view .fp-mobile-total-cell {
+          width:var(--colMobileTotal);
+          min-width:var(--colMobileTotal);
+          max-width:var(--colMobileTotal);
+      }
+      #tabelFlowPar.mobile-view .fp-mobile-metric-cell .fp-cell-link,
+      #tabelFlowPar.mobile-view .fp-mobile-total-cell .fp-cell-link {
+          display:flex;
+          min-height:34px;
+          flex-direction:column;
+          align-items:flex-end;
+          justify-content:center;
+          gap:2px;
+          padding:2px 1px;
+          overflow:visible;
+          text-overflow:clip;
+          line-height:1;
+      }
+      #tabelFlowPar.mobile-view .fp-mobile-metric-cell .fp-cell-empty,
+      #tabelFlowPar.mobile-view .fp-mobile-total-cell .fp-cell-empty {
+          display:flex;
+          min-height:34px;
+          align-items:center;
+          justify-content:center;
+          padding:0;
+      }
+      #tabelFlowPar.mobile-view .fp-mobile-noa {
+          display:block;
+          width:100%;
+          font-size:7px;
+          font-weight:800;
+          text-align:right;
+          opacity:.78;
+          white-space:nowrap;
+      }
+      #tabelFlowPar.mobile-view .fp-nom-value {
+          display:block;
+          width:100%;
+          font-size:9px;
+          font-weight:800;
+          line-height:1.05;
+          text-align:right;
+          white-space:nowrap;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          font-variant-numeric:tabular-nums;
+      }
+      #tabelFlowPar.mobile-view #fpBody tr { height:44px; }
+      #tabelFlowPar.mobile-view #fpBody td,
+      #tabelFlowPar.mobile-view #fpTotalRow td { font-size:9px; }
+
+      #modalScroll { --colRek:0px; --colNama:120px; }
+      .modal-freeze-1 { display:none; }
+      .modal-freeze-2 { left:0; }
+  }
+
+  @media (max-width: 479px) {
+      #fpScroller {
+          --col2: 108px;
+          --colMobileMetric: 82px;
+          --colMobileTotal: 90px;
+      }
+  }
+
+  @media (max-width: 374px) {
+      #fpScroller {
+          --col2: 98px;
+          --colMobileMetric: 76px;
+          --colMobileTotal: 84px;
+      }
+      #tabelFlowPar.mobile-view thead th { font-size:7px; }
+      #tabelFlowPar.mobile-view .fp-nom-value { font-size:8px; }
+      #tabelFlowPar.mobile-view #fpBody .sticky-left-2 > div,
+      #tabelFlowPar.mobile-view #fpTotalRow .sticky-left-2 > div { font-size:8px; }
   }
 </style>
 
@@ -143,7 +441,9 @@
     <div class="flex items-center justify-between w-full xl:w-auto shrink-0 px-1">
       <div>
         <h1 class="text-base md:text-xl font-extrabold flex items-center gap-2 text-slate-800 whitespace-nowrap">
-            <span class="bg-blue-600 text-white p-1.5 rounded-lg text-sm md:text-base shadow-sm">📊</span> 
+            <span class="p-1.5 md:p-2 bg-blue-600 rounded-lg text-white shadow-sm shrink-0">
+                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 17v-6m4 6V7m4 10v-4M5 19h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </span> 
             <span>Rekap Flow PAR</span>
             <span id="badgeUnit" class="hidden"></span>
         </h1>
@@ -195,6 +495,7 @@
 
     <div id="fpScroller" class="table-wrapper custom-scrollbar">
       <table id="tabelFlowPar" class="w-full min-w-full text-center border-separate border-spacing-0 text-slate-700 table-fixed">
+        <colgroup id="colgroupFP"></colgroup>
         <thead id="theadFP">
           <tr>
             <th class="sticky-left-1 text-center">KODE</th>
@@ -346,25 +647,32 @@
   function flowLinkClass(noa, color = 'blue') {
       if (num(noa) <= 0) return 'text-slate-300 pointer-events-none';
       const colors = {
-          blue: 'text-blue-700 hover:bg-blue-100 hover:text-blue-900 decoration-blue-300',
-          slate: 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 decoration-slate-300',
-          orange: 'text-orange-700 hover:bg-orange-100 hover:text-orange-900 decoration-orange-300',
-          amber: 'text-amber-700 hover:bg-amber-100 hover:text-amber-900 decoration-amber-300',
-          red: 'text-red-700 hover:bg-red-100 hover:text-red-900 decoration-red-300'
+          blue: 'text-blue-800 hover:bg-blue-100 hover:text-blue-900',
+          slate: 'text-blue-700 hover:bg-blue-100 hover:text-blue-900',
+          orange: 'text-purple-700 hover:bg-purple-100 hover:text-purple-900',
+          amber: 'text-amber-700 hover:bg-amber-100 hover:text-amber-900',
+          red: 'text-rose-700 hover:bg-rose-100 hover:text-rose-900'
       };
-      return `${colors[color] || colors.blue} font-bold px-2 py-1 rounded transition cursor-pointer underline underline-offset-2`;
+      return `${colors[color] || colors.blue} font-mono font-bold px-1.5 py-1 rounded transition cursor-pointer`;
   }
 
   function flowCellNoa(noa, kode, klasifikasi = '', color = 'blue') {
       const safeKode = String(kode || '000');
       const safeKlas = String(klasifikasi || '');
-      return `<a href="#" class="${flowLinkClass(noa, color)}" onclick="event.preventDefault(); checkAccessAndOpenModal('${safeKode}', '${safeKlas}')">${fmtInt(noa)}</a>`;
+      if (num(noa) <= 0) return `<span class="fp-cell-empty">-</span>`;
+      return `<a href="#" class="fp-cell-link ${flowLinkClass(noa, color)}" onclick="event.preventDefault(); checkAccessAndOpenModal('${safeKode}', '${safeKlas}')">${fmtInt(noa)}</a>`;
   }
 
   function flowCellNom(noa, nominal, kode, klasifikasi = '', color = 'slate') {
       const safeKode = String(kode || '000');
       const safeKlas = String(klasifikasi || '');
-      return `<a href="#" class="${flowLinkClass(noa, color)}" onclick="event.preventDefault(); checkAccessAndOpenModal('${safeKode}', '${safeKlas}')">${fmtNom(nominal)}</a>`;
+      if (num(noa) <= 0) return `<span class="fp-cell-empty">-</span>`;
+      return `
+          <a href="#" class="fp-cell-link ${flowLinkClass(noa, color)}" onclick="event.preventDefault(); checkAccessAndOpenModal('${safeKode}', '${safeKlas}')">
+              <span class="fp-mobile-noa">${fmtInt(noa)} NOA</span>
+              <span class="fp-nom-value">${fmtNom(nominal)}</span>
+          </a>
+      `;
   }
 
   function flowMetricCell(noa, nominal, kode, klasifikasi = '', color = 'blue') {
@@ -379,21 +687,117 @@
       `;
   }
 
+
+  function isMobileFlowPar() {
+      return window.innerWidth < 768;
+  }
+
+  function renderFlowParColgroup() {
+      const cg = document.getElementById('colgroupFP');
+      const table = document.getElementById('tabelFlowPar');
+      if (!cg || !table) return;
+
+      if (isMobileFlowPar()) {
+          table.classList.add('mobile-view');
+          cg.innerHTML = `
+              <col class="fp-col-area">
+              <col class="fp-col-mobile-metric">
+              <col class="fp-col-mobile-metric">
+              <col class="fp-col-mobile-metric">
+              <col class="fp-col-mobile-metric">
+              <col class="fp-col-mobile-total">
+          `;
+      } else {
+          table.classList.remove('mobile-view');
+          cg.innerHTML = `
+              <col class="fp-col-code">
+              <col class="fp-col-area">
+              <col class="fp-col-noa">
+              <col class="fp-col-nom">
+              <col class="fp-col-noa">
+              <col class="fp-col-nom">
+              <col class="fp-col-noa">
+              <col class="fp-col-nom">
+              <col class="fp-col-noa">
+              <col class="fp-col-nom">
+              <col class="fp-col-noa">
+              <col class="fp-col-nom-total">
+          `;
+      }
+  }
+
+  function flowCellStacked(noa, nominal, kode, klasifikasi = '', color = 'slate') {
+      const safeKode = String(kode || '000');
+      const safeKlas = String(klasifikasi || '');
+      if (num(noa) <= 0) return `<span class="fp-cell-empty">-</span>`;
+      return `
+          <a href="#" class="fp-cell-link ${flowLinkClass(noa, color)}" onclick="event.preventDefault(); checkAccessAndOpenModal('${safeKode}', '${safeKlas}')">
+              <span class="fp-mobile-noa">${fmtInt(noa)} NOA</span>
+              <span class="fp-nom-value">${fmtNom(nominal)}</span>
+          </a>
+      `;
+  }
+
+  let fpViewMode = null;
+  function syncFlowParResponsiveView(force = false) {
+      const mode = isMobileFlowPar() ? 'mobile' : 'desktop';
+      if (!force && fpViewMode === mode) {
+          setTimeout(updateFpStickyHeader, 20);
+          return;
+      }
+      fpViewMode = mode;
+      renderFlowParColgroup();
+      renderFlowParHeader();
+      if (window.fpGtRaw) renderTotal(window.fpGtRaw); else document.getElementById('fpTotalRow').innerHTML = '';
+      if (Array.isArray(window.fpDataRaw)) renderRows(window.fpDataRaw);
+      setTimeout(updateFpStickyHeader, 20);
+  }
+
   function renderFlowParHeader() {
       const thead = document.getElementById('theadFP');
       if(!thead) return;
-      thead.innerHTML = `
-          <tr>
-            <th class="sticky-left-1 text-center">KODE</th>
-            <th class="sticky-left-2 text-left" id="thNamaFP">AREA</th>
-            <th class="text-left cursor-pointer hover:bg-slate-200 transition" id="sortBaki" title="Urutkan nominal Flow PAR">FLOW PAR</th>
-            <th class="text-left" title="Jatuh tempo, lainnya, atau one obligor">JT / LAIN</th>
-            <th class="text-left" title="KL karena hari menunggak pokok > 90 hari">POKOK &gt; 90</th>
-            <th class="text-left" title="KL karena hari menunggak bunga > 90 hari">BUNGA &gt; 90</th>
-            <th class="text-left" title="KL karena pokok dan bunga > 90 hari">POKOK+BUNGA</th>
-          </tr>
-      `;
-      document.getElementById('sortBaki').onclick = () => doSort('baki');
+
+      if (isMobileFlowPar()) {
+          thead.innerHTML = `
+              <tr class="fp-head-1 fp-mobile-head">
+                <th class="sticky-left-2 text-left align-middle border-r border-slate-200 cursor-pointer hover:bg-slate-200 transition" id="thNamaFP" onclick="doSort('nama')">AREA</th>
+                <th class="text-center head-jt border-r border-slate-200" title="Jatuh tempo, lainnya, atau one obligor">JATUH TEMPO / LAINNYA</th>
+                <th class="text-center head-pokok border-r border-slate-200" title="KL karena hari menunggak pokok > 90 hari">DPD POKOK &gt; 90</th>
+                <th class="text-center head-bunga border-r border-slate-200" title="KL karena hari menunggak bunga > 90 hari">DPD BUNGA &gt; 90</th>
+                <th class="text-center head-pokok-bunga border-r border-slate-200" title="KL karena pokok dan bunga > 90 hari">DPD POKOK + BUNGA &gt; 90</th>
+                <th class="text-center head-total cursor-pointer hover:bg-cyan-100 transition" id="sortBaki" title="Urutkan berdasarkan nominal total">TOTAL FLOW</th>
+              </tr>
+          `;
+      } else {
+          thead.innerHTML = `
+              <tr class="fp-head-1">
+                <th class="sticky-left-1 hidden md:table-cell text-center w-[48px] align-middle border-r border-slate-200 cursor-pointer hover:bg-slate-200 transition" rowspan="2" onclick="doSort('kode')">KODE</th>
+                <th class="sticky-left-2 text-left w-[124px] align-middle border-r border-slate-200 cursor-pointer hover:bg-slate-200 transition" id="thNamaFP" rowspan="2" onclick="doSort('nama')">AREA</th>
+                <th class="text-center head-jt border-r border-slate-200" colspan="2" title="Jatuh tempo, lainnya, atau one obligor">JATUH TEMPO / LAINNYA</th>
+                <th class="text-center head-pokok border-r border-slate-200" colspan="2" title="KL karena hari menunggak pokok > 90 hari">DPD POKOK &gt; 90</th>
+                <th class="text-center head-bunga border-r border-slate-200" colspan="2" title="KL karena hari menunggak bunga > 90 hari">DPD BUNGA &gt; 90</th>
+                <th class="text-center head-pokok-bunga border-r border-slate-200" colspan="2" title="KL karena pokok dan bunga > 90 hari">DPD POKOK + BUNGA &gt; 90</th>
+                <th class="text-center head-total" colspan="2">TOTAL FLOW</th>
+              </tr>
+              <tr class="fp-head-2 text-[9px] md:text-[10px]">
+                <th class="text-center fp-head-noa head-jt border-r border-slate-200">NOA</th>
+                <th class="text-right fp-head-nom head-jt border-r border-slate-200">NOM</th>
+                <th class="text-center fp-head-noa head-pokok border-r border-slate-200">NOA</th>
+                <th class="text-right fp-head-nom head-pokok border-r border-slate-200">NOM</th>
+                <th class="text-center fp-head-noa head-bunga border-r border-slate-200">NOA</th>
+                <th class="text-right fp-head-nom head-bunga border-r border-slate-200">NOM</th>
+                <th class="text-center fp-head-noa head-pokok-bunga border-r border-slate-200">NOA</th>
+                <th class="text-right fp-head-nom head-pokok-bunga border-r border-slate-200">NOM</th>
+                <th class="text-center fp-head-noa head-total cursor-pointer hover:bg-cyan-100 transition border-r border-slate-200" id="sortNoa" title="Urutkan NOA total">NOA</th>
+                <th class="text-right fp-head-nom-total head-total cursor-pointer hover:bg-cyan-100 transition" id="sortBaki" title="Urutkan nominal total">NOM</th>
+              </tr>
+          `;
+      }
+
+      const sortNoa = document.getElementById('sortNoa');
+      const sortBaki = document.getElementById('sortBaki');
+      if (sortNoa) sortNoa.onclick = () => doSort('noa');
+      if (sortBaki) sortBaki.onclick = () => doSort('baki');
       setTimeout(updateFpStickyHeader, 20);
   }
 
@@ -417,11 +821,14 @@
           scroller.style.setProperty('--fp_headH', (thead.offsetHeight - 1) + 'px');
       }
   }
-  window.addEventListener('resize', updateFpStickyHeader);
+  window.addEventListener('resize', () => {
+      clearTimeout(window.__fpResizeDebounce);
+      window.__fpResizeDebounce = setTimeout(() => syncFlowParResponsiveView(false), 120);
+  });
 
   // --- INIT ---
   window.addEventListener('DOMContentLoaded', async () => {
-    renderFlowParHeader();
+    syncFlowParResponsiveView(true);
     const user = (window.getUser && window.getUser()) || null;
     const uKode = user?.kode ? String(user.kode).padStart(3,'0') : '000';
     window.currentUser = { kode: uKode };
@@ -552,13 +959,22 @@
         window.fpDataRaw = data;
         window.fpDataRaw.sort((a,b) => kodeNum(a.kode_cabang || a.kode_unit) - kodeNum(b.kode_cabang || b.kode_unit));
 
+        syncFlowParResponsiveView(false);
         renderTotal(totalRow);
         renderRows(window.fpDataRaw);
+
+        // Selalu kembali ke sisi kiri pada mobile agar kolom AREA terlihat.
+        if (window.innerWidth < 768) {
+            const scroller = document.getElementById('fpScroller');
+            requestAnimationFrame(() => {
+                if (scroller) scroller.scrollLeft = 0;
+            });
+        }
 
     } catch(err){
         if(err.name !== 'AbortError') {
             console.error(err);
-            tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-red-500 font-bold bg-red-50">Gagal memuat data.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="12" class="p-8 text-center text-red-500 font-bold bg-red-50">Gagal memuat data.</td></tr>`;
         }
     } finally {
         loading.classList.add('hidden'); 
@@ -573,53 +989,103 @@
 
       const targetKode = detailTargetCode('000');
 
-      el.innerHTML = `
-        <tr class="row-total">
-            <td class="sticky-left-1 font-mono font-bold text-slate-500 text-xs">ALL</td>
-            <td class="sticky-left-2 font-bold text-slate-800 text-xs md:text-sm uppercase text-blue-900">TOTAL</td>
-            <td class="font-bold bg-blue-50/50">${flowMetricCell(tot.noa_flow, tot.baki_debet_flow, targetKode, '', 'blue')}</td>
-            <td class="font-bold bg-slate-50">${flowMetricCell(tot.noa_jt_lain, tot.nom_jt_lain, targetKode, 'jt_lain', 'slate')}</td>
-            <td class="font-bold bg-orange-50/70">${flowMetricCell(tot.noa_pokok_90, tot.nom_pokok_90, targetKode, 'pokok_90', 'orange')}</td>
-            <td class="font-bold bg-amber-50/70">${flowMetricCell(tot.noa_bunga_90, tot.nom_bunga_90, targetKode, 'bunga_90', 'amber')}</td>
-            <td class="font-bold bg-red-50/70">${flowMetricCell(tot.noa_pokok_bunga_90, tot.nom_pokok_bunga_90, targetKode, 'pokok_bunga_90', 'red')}</td>
-        </tr>
-      `;
+      if (isMobileFlowPar()) {
+          el.innerHTML = `
+            <tr class="row-total">
+                <td class="sticky-left-2 text-left font-extrabold text-blue-900 pl-2 border-r border-blue-300"><div>TOTAL</div></td>
+                <td class="text-right font-bold bg-blue-100/30 border-r border-blue-300 fp-mobile-metric-cell">${flowCellStacked(tot.noa_jt_lain, tot.nom_jt_lain, targetKode, 'jt_lain', 'slate')}</td>
+                <td class="text-right font-bold bg-purple-100/30 border-r border-blue-300 fp-mobile-metric-cell">${flowCellStacked(tot.noa_pokok_90, tot.nom_pokok_90, targetKode, 'pokok_90', 'orange')}</td>
+                <td class="text-right font-bold bg-amber-100/30 border-r border-blue-300 fp-mobile-metric-cell">${flowCellStacked(tot.noa_bunga_90, tot.nom_bunga_90, targetKode, 'bunga_90', 'amber')}</td>
+                <td class="text-right font-bold bg-rose-100/30 border-r border-blue-300 fp-mobile-metric-cell">${flowCellStacked(tot.noa_pokok_bunga_90, tot.nom_pokok_bunga_90, targetKode, 'pokok_bunga_90', 'red')}</td>
+                <td class="text-right font-bold bg-cyan-100/40 fp-mobile-total-cell">${flowCellStacked(tot.noa_flow, tot.baki_debet_flow, targetKode, '', 'blue')}</td>
+            </tr>
+          `;
+      } else {
+          el.innerHTML = `
+            <tr class="row-total">
+                <td class="sticky-left-1 hidden md:table-cell font-mono font-bold text-slate-500 text-xs border-r border-blue-300">ALL</td>
+                <td class="sticky-left-2 text-left font-extrabold text-blue-900 pl-2 border-r border-blue-300">TOTAL</td>
+                <td class="text-center font-bold bg-blue-100/30 border-r border-blue-300 fp-noa-cell">${flowCellNoa(tot.noa_jt_lain, targetKode, 'jt_lain', 'slate')}</td>
+                <td class="text-right font-bold bg-blue-100/30 border-r border-blue-300 fp-nom-cell">${flowCellNom(tot.noa_jt_lain, tot.nom_jt_lain, targetKode, 'jt_lain', 'slate')}</td>
+                <td class="text-center font-bold bg-purple-100/30 border-r border-blue-300 fp-noa-cell">${flowCellNoa(tot.noa_pokok_90, targetKode, 'pokok_90', 'orange')}</td>
+                <td class="text-right font-bold bg-purple-100/30 border-r border-blue-300 fp-nom-cell">${flowCellNom(tot.noa_pokok_90, tot.nom_pokok_90, targetKode, 'pokok_90', 'orange')}</td>
+                <td class="text-center font-bold bg-amber-100/30 border-r border-blue-300 fp-noa-cell">${flowCellNoa(tot.noa_bunga_90, targetKode, 'bunga_90', 'amber')}</td>
+                <td class="text-right font-bold bg-amber-100/30 border-r border-blue-300 fp-nom-cell">${flowCellNom(tot.noa_bunga_90, tot.nom_bunga_90, targetKode, 'bunga_90', 'amber')}</td>
+                <td class="text-center font-bold bg-rose-100/30 border-r border-blue-300 fp-noa-cell">${flowCellNoa(tot.noa_pokok_bunga_90, targetKode, 'pokok_bunga_90', 'red')}</td>
+                <td class="text-right font-bold bg-rose-100/30 border-r border-blue-300 fp-nom-cell">${flowCellNom(tot.noa_pokok_bunga_90, tot.nom_pokok_bunga_90, targetKode, 'pokok_bunga_90', 'red')}</td>
+                <td class="text-center font-bold bg-cyan-100/40 border-r border-blue-300 fp-noa-cell">${flowCellNoa(tot.noa_flow, targetKode, '', 'blue')}</td>
+                <td class="text-right font-bold bg-cyan-100/40 fp-nom-cell">${flowCellNom(tot.noa_flow, tot.baki_debet_flow, targetKode, '', 'blue')}</td>
+            </tr>
+          `;
+      }
   }
 
   function renderRows(rows){
       const tbody = document.getElementById('fpBody');
-      if(rows.length === 0){ tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400">Tidak ada data.</td></tr>`; return; }
-      
-      tbody.innerHTML = rows.map(r => {
-          const rawKode = r.kode_cabang || r.kode_unit || '';
-          const kode = String(rawKode).padStart(3,'0');
-          const nama = r.nama_kantor || r.nama_unit || '-';
-          
-          return `
-            <tr class="transition border-b">
-                <td class="sticky-left-1 font-mono font-bold text-slate-500 text-xs">${kode}</td>
-                <td class="sticky-left-2 font-semibold text-slate-700 text-xs md:text-sm"><div class="truncate" title="${nama}">${nama}</div></td>
-                <td class="text-xs">${flowMetricCell(r.noa_flow, r.baki_debet_flow, kode, '', 'blue')}</td>
-                <td class="text-xs">${flowMetricCell(r.noa_jt_lain, r.nom_jt_lain, kode, 'jt_lain', 'slate')}</td>
-                <td class="text-xs">${flowMetricCell(r.noa_pokok_90, r.nom_pokok_90, kode, 'pokok_90', 'orange')}</td>
-                <td class="text-xs">${flowMetricCell(r.noa_bunga_90, r.nom_bunga_90, kode, 'bunga_90', 'amber')}</td>
-                <td class="text-xs">${flowMetricCell(r.noa_pokok_bunga_90, r.nom_pokok_bunga_90, kode, 'pokok_bunga_90', 'red')}</td>
-            </tr>
-          `;
-      }).join('');
+      if(rows.length === 0){
+          const colspan = isMobileFlowPar() ? 6 : 12;
+          tbody.innerHTML = `<tr><td colspan="${colspan}" class="p-8 text-center text-slate-400">Tidak ada data.</td></tr>`;
+          return;
+      }
 
-      tbody.innerHTML += `<tr style="height: 60px;"><td colspan="7" class="border-none bg-transparent"></td></tr>`;
+      if (isMobileFlowPar()) {
+          tbody.innerHTML = rows.map(r => {
+              const rawKode = r.kode_cabang || r.kode_unit || '';
+              const kode = String(rawKode).padStart(3,'0');
+              const nama = r.nama_kantor || r.nama_unit || '-';
+
+              return `
+                <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+                    <td class="sticky-left-2 text-left font-bold text-slate-700 text-xs pl-2 border-r border-slate-100"><div title="${nama}">${nama}</div></td>
+                    <td class="text-right text-xs bg-blue-50/10 border-r border-slate-200 fp-mobile-metric-cell">${flowCellStacked(r.noa_jt_lain, r.nom_jt_lain, kode, 'jt_lain', 'slate')}</td>
+                    <td class="text-right text-xs bg-purple-50/10 border-r border-slate-200 fp-mobile-metric-cell">${flowCellStacked(r.noa_pokok_90, r.nom_pokok_90, kode, 'pokok_90', 'orange')}</td>
+                    <td class="text-right text-xs bg-amber-50/10 border-r border-slate-200 fp-mobile-metric-cell">${flowCellStacked(r.noa_bunga_90, r.nom_bunga_90, kode, 'bunga_90', 'amber')}</td>
+                    <td class="text-right text-xs bg-rose-50/10 border-r border-slate-200 fp-mobile-metric-cell">${flowCellStacked(r.noa_pokok_bunga_90, r.nom_pokok_bunga_90, kode, 'pokok_bunga_90', 'red')}</td>
+                    <td class="text-right text-xs bg-cyan-50/10 fp-mobile-total-cell">${flowCellStacked(r.noa_flow, r.baki_debet_flow, kode, '', 'blue')}</td>
+                </tr>
+              `;
+          }).join('');
+
+          tbody.innerHTML += `<tr style="height: 44px;"><td colspan="6" class="border-none bg-transparent"></td></tr>`;
+      } else {
+          tbody.innerHTML = rows.map(r => {
+              const rawKode = r.kode_cabang || r.kode_unit || '';
+              const kode = String(rawKode).padStart(3,'0');
+              const nama = r.nama_kantor || r.nama_unit || '-';
+
+              return `
+                <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+                    <td class="sticky-left-1 hidden md:table-cell font-mono font-bold text-slate-500 text-xs border-r border-slate-100">${kode}</td>
+                    <td class="sticky-left-2 text-left font-bold text-slate-700 text-xs md:text-sm pl-2 border-r border-slate-100"><div class="truncate" title="${nama}">${nama}</div></td>
+                    <td class="text-center text-xs bg-blue-50/10 border-r border-slate-100 fp-noa-cell">${flowCellNoa(r.noa_jt_lain, kode, 'jt_lain', 'slate')}</td>
+                    <td class="text-right text-xs bg-blue-50/10 border-r border-slate-200 fp-nom-cell">${flowCellNom(r.noa_jt_lain, r.nom_jt_lain, kode, 'jt_lain', 'slate')}</td>
+                    <td class="text-center text-xs bg-purple-50/10 border-r border-slate-100 fp-noa-cell">${flowCellNoa(r.noa_pokok_90, kode, 'pokok_90', 'orange')}</td>
+                    <td class="text-right text-xs bg-purple-50/10 border-r border-slate-200 fp-nom-cell">${flowCellNom(r.noa_pokok_90, r.nom_pokok_90, kode, 'pokok_90', 'orange')}</td>
+                    <td class="text-center text-xs bg-amber-50/10 border-r border-slate-100 fp-noa-cell">${flowCellNoa(r.noa_bunga_90, kode, 'bunga_90', 'amber')}</td>
+                    <td class="text-right text-xs bg-amber-50/10 border-r border-slate-200 fp-nom-cell">${flowCellNom(r.noa_bunga_90, r.nom_bunga_90, kode, 'bunga_90', 'amber')}</td>
+                    <td class="text-center text-xs bg-rose-50/10 border-r border-slate-100 fp-noa-cell">${flowCellNoa(r.noa_pokok_bunga_90, kode, 'pokok_bunga_90', 'red')}</td>
+                    <td class="text-right text-xs bg-rose-50/10 border-r border-slate-200 fp-nom-cell">${flowCellNom(r.noa_pokok_bunga_90, r.nom_pokok_bunga_90, kode, 'pokok_bunga_90', 'red')}</td>
+                    <td class="text-center text-xs bg-cyan-50/10 border-r border-slate-100 fp-noa-cell">${flowCellNoa(r.noa_flow, kode, '', 'blue')}</td>
+                    <td class="text-right text-xs bg-cyan-50/10 fp-nom-cell">${flowCellNom(r.noa_flow, r.baki_debet_flow, kode, '', 'blue')}</td>
+                </tr>
+              `;
+          }).join('');
+
+          tbody.innerHTML += `<tr style="height: 60px;"><td colspan="12" class="border-none bg-transparent"></td></tr>`;
+      }
   }
 
   // --- SORTING REKAP ---
   const doSort = (col) => {
       sortState = { column: col, direction: sortState.column === col ? -sortState.direction : 1 };
       const sorted = [...window.fpDataRaw].sort((a,b) => {
-          const valA = num(a[col === 'noa' ? 'noa_flow' : 'baki_debet_flow']);
-          const valB = num(b[col === 'noa' ? 'noa_flow' : 'baki_debet_flow']);
-          return (valA - valB) * sortState.direction;
+          if (col === 'kode') return (kodeNum(a.kode_cabang || a.kode_unit) - kodeNum(b.kode_cabang || b.kode_unit)) * sortState.direction;
+          if (col === 'nama') return String(a.nama_kantor || a.nama_unit || '').localeCompare(String(b.nama_kantor || b.nama_unit || '')) * sortState.direction;
+          const key = col === 'noa' ? 'noa_flow' : 'baki_debet_flow';
+          return (num(a[key]) - num(b[key])) * sortState.direction;
       });
-      document.getElementById('sortBaki').innerText = `FLOW PAR ${sortState.direction>0?'ASC':'DESC'}`;
+      document.getElementById('sortNoa').innerText = `NOA ${col==='noa' ? (sortState.direction>0?'ASC':'DESC') : ''}`;
+      document.getElementById('sortBaki').innerText = `NOM ${col==='baki' ? (sortState.direction>0?'ASC':'DESC') : ''}`;
       renderRows(sorted);
   };
 

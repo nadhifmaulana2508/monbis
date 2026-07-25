@@ -880,8 +880,17 @@ class RbbController
                         ) months_runoff
                         LEFT JOIN summary_kredit_harian_update s
                           ON s.kode_kantor = :breakdown_kode_kantor_runoff
-                         AND s.created >= {$sqlYearStart}
-                         AND s.created < LEAST(DATE_ADD(months_runoff.periode, INTERVAL 1 MONTH), {$sqlHarianNext})
+                         /*
+                          * PENTING: range dimulai dari awal bulan masing-masing.
+                          * Sebelumnya menggunakan {$sqlYearStart}, sehingga Run Off dan
+                          * Growth Februari berisi Januari + Februari, Maret berisi
+                          * Januari + Februari + Maret, dan seterusnya.
+                          */
+                         AND s.created >= months_runoff.periode
+                         AND s.created < LEAST(
+                             DATE_ADD(months_runoff.periode, INTERVAL 1 MONTH),
+                             {$sqlHarianNext}
+                         )
                         GROUP BY months_runoff.periode
                     ) runoff ON runoff.periode = months.periode
                     ORDER BY months.periode DESC
