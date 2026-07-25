@@ -833,19 +833,23 @@ function getRbbMonthlyTotals() {
 function getRbbHistoryMonthlyTotals() {
     const current = rbbSumRows(rbbMonthlyRows, 'realisasi_bulan_ini');
     const previous = rbbSumRows(rbbMonthlyRows, 'realisasi_tahun_lalu');
+
+    // Backend sekarang mengirim Run Off dan Growth murni per bulan.
+    // Karena itu baris TOTAL harus menjumlahkan seluruh bulan yang tampil,
+    // bukan lagi mengambil posisi bulan terbaru.
+    const runOff = rbbSumRows(rbbMonthlyRows, 'run_off');
+    const growth = rbbSumRows(rbbMonthlyRows, 'growth');
+
     const selisih = current - previous;
     const yoyPersen = previous !== 0 ? (selisih / previous) * 100 : 0;
-
-    // Run Off dan Growth pada respons API bersifat posisi/kumulatif per bulan,
-    // sehingga total tabel menggunakan posisi bulan terbaru, bukan dijumlahkan.
-    const latest = rbbLatestMonthlyRow();
+    const growthPersen = runOff !== 0 ? (growth / runOff) * 100 : 0;
 
     return {
         realisasi_bulan_ini: current,
         realisasi_tahun_lalu: previous,
-        run_off: Number(latest.run_off || 0),
-        growth: Number(latest.growth || 0),
-        growth_persen: Number(latest.growth_persen || 0),
+        run_off: runOff,
+        growth: growth,
+        growth_persen: growthPersen,
         selisih,
         yoy_persen: yoyPersen
     };
