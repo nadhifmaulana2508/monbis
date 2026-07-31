@@ -3393,7 +3393,7 @@ class DashboardController{
                     SUM(nt.saldo) AS saldo_curr,
                     0 AS saldo_baru,
                     0 AS saldo_cair
-                FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
+                FROM nominatif_tabungan nt FORCE INDEX (idx_perf_tabungan_main)
                 WHERE nt.created = :harian_date_3
                     {$filter['sql']} {$filterSql_cabang}
                 GROUP BY kode_cabang
@@ -3408,7 +3408,7 @@ class DashboardController{
                     ) AS nama_cabang,
                     COUNT(*) AS noa_prev,
                     SUM(nt.saldo) AS saldo_prev
-                FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
+                FROM nominatif_tabungan nt FORCE INDEX (idx_perf_tabungan_main)
                 WHERE nt.created = :closing_date_3
                     {$filter['sql']} {$filterSql_cabang}
                 GROUP BY kode_cabang
@@ -3427,7 +3427,7 @@ class DashboardController{
                     SUM(nt.saldo) AS saldo_curr,
                     0 AS saldo_baru,
                     0 AS saldo_cair
-                FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
+                FROM nominatif_tabungan nt FORCE INDEX (idx_perf_tabungan_main)
                 WHERE nt.created = :harian_date_3
                     {$filter['sql']} {$filterSql_cabang}
                 GROUP BY nt.kode_kantor
@@ -3438,7 +3438,7 @@ class DashboardController{
                     COALESCE(MAX(nt.nama_kantor), CONCAT('CABANG ', nt.kode_kantor)) AS nama_cabang,
                     COUNT(*) AS noa_prev,
                     SUM(nt.saldo) AS saldo_prev
-                FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
+                FROM nominatif_tabungan nt FORCE INDEX (idx_perf_tabungan_main)
                 WHERE nt.created = :closing_date_3
                     {$filter['sql']} {$filterSql_cabang}
                 GROUP BY nt.kode_kantor
@@ -3453,7 +3453,7 @@ class DashboardController{
                 nama_ao,
                 0 AS saldo_prev,
                 SUM(saldo) AS saldo_curr
-            FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
+            FROM nominatif_tabungan nt FORCE INDEX (idx_tab_created_ao)
             WHERE created = :harian_date_2
             AND nama_ao IS NOT NULL AND TRIM(nama_ao) != ''
             {$filter['sql']} {$filterSql_cabang}
@@ -3463,7 +3463,7 @@ class DashboardController{
             SELECT 
                 nama_ao,
                 SUM(saldo) AS saldo_prev
-            FROM nominatif_tabungan nt FORCE INDEX (idx_created_kantor)
+            FROM nominatif_tabungan nt FORCE INDEX (idx_tab_created_ao)
             WHERE created = :closing_date_2
             AND nama_ao IS NOT NULL AND TRIM(nama_ao) != ''
             {$filter['sql']} {$filterSql_cabang}
@@ -3476,7 +3476,7 @@ class DashboardController{
                     COALESCE(NULLIF(NULLIF(TRIM(nt.nama_kankas), ''), 'NULL'), CONCAT(nt.kode_kantor, '000')) AS kode_cabang,
                     COUNT(*) AS noa_tambah,
                     SUM(nt.saldo) AS saldo_baru
-                FROM nominatif_tabungan nt FORCE INDEX (idx_speed_nom_tab)
+                FROM nominatif_tabungan nt FORCE INDEX (idx_tab_created_register_kantor)
                 WHERE nt.created = :harian_date_baru
                   AND nt.tgl_register > :closing_date_baru
                   AND nt.tgl_register <= :harian_date_register
@@ -3489,7 +3489,7 @@ class DashboardController{
                     nt.kode_kantor AS kode_cabang,
                     COUNT(*) AS noa_tambah,
                     SUM(nt.saldo) AS saldo_baru
-                FROM nominatif_tabungan nt FORCE INDEX (idx_speed_nom_tab)
+                FROM nominatif_tabungan nt FORCE INDEX (idx_tab_created_register_kantor)
                 WHERE nt.created = :harian_date_baru
                   AND nt.tgl_register > :closing_date_baru
                   AND nt.tgl_register <= :harian_date_register

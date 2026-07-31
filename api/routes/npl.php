@@ -39,7 +39,7 @@ switch ($method) {
         } elseif ($input['type'] === 'Backet') {
             $controller->getBucket($input = []);
         
-        } elseif (in_array($input['type'], ['lunas', 'backflow'])) {
+        } elseif (in_array($input['type'], ['lunas', 'backflow', 'angsuran', 'total_recovery'])) {
             $controller->getDetailRecoveryNpl($input);
 
         } else {

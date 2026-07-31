@@ -1,17 +1,17 @@
-<div class="max-w-7xl mx-auto px-1 md:px-4 py-4">
-  <div class="mb-4">
+<div class="update-page max-w-full mx-auto px-2 md:px-4 py-3 md:py-4">
+  <div class="update-header mb-3 rounded-2xl border border-slate-200 bg-white px-3 md:px-5 py-3 shadow-sm">
     <h1 id="judulHalaman" class="text-lg md:text-2xl font-bold text-slate-800 flex items-center gap-2">
       📌 Update Progres Flow PAR
     </h1>
-    <p id="judul_kantor" class="text-[10px] md:text-sm text-gray-600 font-semibold mt-1 ml-1"></p>
+    <p id="judul_kantor" class="text-[10px] md:text-xs text-gray-600 font-semibold mt-1 ml-1"></p>
   </div>
 
-  <div id="upWrap" class="hide-scrollbar overflow-auto rounded-xl border border-gray-200 bg-white shadow-sm"
-       style="--colName: 18rem;">
-    <table id="tblUpdate" class="min-w-full text-[10px] md:text-sm text-left text-gray-800">
+  <div id="upWrap" class="overflow-auto rounded-xl border border-gray-200 bg-white shadow-sm"
+       style="--colName: 17rem;">
+    <table id="tblUpdate" class="min-w-[1180px] w-full text-[11px] md:text-xs text-left text-gray-800">
       <thead class="uppercase">
         <tr id="upHead1">
-          <th class="px-2 py-3 th sticky top-0 freeze-1 col-name">NAMA NASABAH</th>
+          <th class="px-2 py-3 th sticky top-0 freeze-1 col-name">DEBITUR</th>
           <th class="px-2 py-3 th sticky top-0 text-center">KOLEK</th>
           <th class="px-2 py-3 th sticky top-0 text-right">BAKI DEBET</th>
           <th class="px-2 py-3 th sticky top-0 text-right">TUNGG. POKOK</th>
@@ -34,17 +34,17 @@
 </div>
 
 <div id="komitmenModal"
-     class="fixed inset-0 hidden items-center justify-center p-2 md:p-4"
+     class="fixed inset-0 hidden items-end md:items-center justify-center p-2 md:p-4"
      style="z-index:2147483647; background:rgba(15, 23, 42, 0.6); backdrop-filter:blur(4px);">
   <div id="modalCard"
-       class="bg-white rounded-2xl shadow-2xl w-full max-w-[550px] max-h-[90vh] flex flex-col overflow-hidden animate-scale-up">
+       class="bg-white rounded-2xl shadow-2xl w-full max-w-[550px] max-h-[92vh] flex flex-col overflow-hidden animate-scale-up">
     
-    <div class="flex items-center justify-between px-5 py-4 border-b bg-slate-50">
+    <div class="flex items-center justify-between px-4 md:px-5 py-3 md:py-4 border-b bg-slate-50">
       <h2 class="text-lg font-bold text-slate-800">📝 Input Komitmen</h2>
       <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 transition text-2xl">✕</button>
     </div>
 
-    <div class="p-5 overflow-y-auto space-y-4">
+    <div class="p-4 md:p-5 overflow-y-auto space-y-4">
       <input type="hidden" id="modal_rekening">
 
       <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 space-y-2">
@@ -64,7 +64,7 @@
           <select id="modal_komitmen" class="inp w-full font-semibold !h-10"></select>
         </div>
 
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1.5 ml-1">Tgl Bayar</label>
               <input type="date" id="modal_tanggal" class="inp w-full !h-10">
@@ -82,7 +82,7 @@
       </div>
     </div>
 
-    <div class="px-5 py-4 border-t bg-slate-50 flex gap-3">
+    <div class="px-4 md:px-5 py-3 md:py-4 border-t bg-slate-50 flex gap-3">
       <button onclick="closeModal()" class="flex-1 px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl font-bold hover:bg-slate-100 transition text-sm">Batal</button>
       <button id="btnSaveKomitmen" class="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition text-sm">Simpan</button>
     </div>
@@ -116,15 +116,25 @@
 .row-merah td.freeze-1 { background-color: #fef2f2 !important; }
 .cell-merah { background-color: #fee2e2 !important; color: #991b1b !important; font-weight: bold; }
 
-/* MOBILE SPACE OPTIMIZER */
+/* RESPONSIVE SPACE OPTIMIZER */
+html, body{ min-height:100%; }
+.update-page{ height:calc(100vh - 76px); min-height:420px; display:flex; flex-direction:column; overflow:hidden; }
+.update-header{ flex-shrink:0; }
+#upWrap{ flex:1 1 auto; min-height:260px; -webkit-overflow-scrolling:touch; }
+#upWrap::-webkit-scrollbar{ width:10px; height:10px; }
+#upWrap::-webkit-scrollbar-thumb{ background:#cbd5e1; border-radius:999px; }
+#upWrap::-webkit-scrollbar-track{ background:#f8fafc; }
+
 @media (max-width:640px){ 
-  #tblUpdate .col-name { width: 110px !important; min-width: 110px !important; max-width: 110px !important; }
-  #upWrap { --colName: 110px; }
-  #tblUpdate th, #tblUpdate td { padding: 8px 4px; font-size: 10px; }
-  #tblUpdate .col-name .truncate { width: 100px; display: block; overflow: hidden; text-overflow: ellipsis; font-size: 10px; }
+  .update-page{ height:auto; min-height:calc(100vh - 64px); overflow:visible; padding-bottom:12px; }
+  #upWrap { --colName: 132px; height:calc(100vh - 165px) !important; min-height:380px; }
+  #tblUpdate { min-width:980px; }
+  #tblUpdate .col-name { width: 132px !important; min-width: 132px !important; max-width: 132px !important; }
+  #tblUpdate th, #tblUpdate td { padding: 8px 6px; font-size: 10px; }
+  #tblUpdate .col-name .truncate { width: 116px; display: block; overflow: hidden; text-overflow: ellipsis; font-size: 10px; }
 }
 
-body{ overflow:hidden; }
+body{ overflow:auto; }
 </style>
 
 <script>
@@ -152,21 +162,81 @@ document.addEventListener("DOMContentLoaded", async () => {
   const storedData = sessionStorage.getItem("flowpar_update");
   if (!storedData) return;
   const req = JSON.parse(storedData);
-  id("judul_kantor").textContent = `Kode Kantor: ${req.kode_kantor || '-'} ${req.kode_kankas ? '| Kankas: '+req.kode_kankas : ''}`;
+  const isPotensi = req.source === 'potensi_npl';
+  id("judulHalaman").textContent = isPotensi ? "Update Komitmen Potensi NPL" : "Update Komitmen Flow PAR";
+  id("judul_kantor").textContent = [
+    isPotensi ? 'Sumber: Potensi NPL' : 'Sumber: Flow PAR',
+    `Kode Kantor: ${req.kode_kantor || '-'}`,
+    req.kode_kankas ? `Kankas: ${req.kode_kankas}` : '',
+    req.kode_ao ? `AO: ${req.kode_ao}` : '',
+    req.status_filter && req.status_filter !== 'ALL' ? `Status: ${req.status_filter}` : ''
+  ].filter(Boolean).join(' | ');
 
   try{
-    const r = await fetch("./api/flow_par/", {
-      method:"POST",
-      headers:{ "Content-Type":"application/json" },
-      body: JSON.stringify({ type: "KL Baru", kode_kantor: req.kode_kantor, kode_kankas: req.kode_kankas || "", closing_date: req.closing_date, harian_date: req.harian_date })
-    });
-    const j = await r.json();
-    renderRows(Array.isArray(j.data) ? j.data : [], req.harian_date);
+    renderRows(await loadUpdateRows(req), req.harian_date);
     setUpSticky(); sizeUpWrap();
   }catch(e){ console.error(e); }
 });
 
 window.addEventListener('resize', () => { setUpSticky(); sizeUpWrap(); });
+
+async function loadUpdateRows(req){
+  const isPotensi = req.source === 'potensi_npl';
+  const endpoint = isPotensi ? './api/npl/' : './api/flow_par/';
+  const payload = isPotensi
+    ? {
+        type: 'Debitur Potensi NPL',
+        kode_kantor: req.kode_kantor || '',
+        kode_kankas: req.kode_kankas || '',
+        kode_ao: req.kode_ao || '',
+        closing_date: req.closing_date,
+        harian_date: req.harian_date
+      }
+    : {
+        type: 'KL Baru',
+        kode_kantor: req.kode_kantor,
+        kode_kankas: req.kode_kankas || '',
+        korwil: req.korwil || '',
+        klasifikasi_flow: req.klasifikasi_flow || '',
+        closing_date: req.closing_date,
+        harian_date: req.harian_date
+      };
+
+  const r = await fetch(endpoint, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const j = await r.json();
+  let rows = Array.isArray(j.data) ? j.data : [];
+
+  if(isPotensi){
+    const status = req.status_filter || 'ALL';
+    if(status !== 'ALL'){
+      rows = rows.filter(d => status === 'AMAN'
+        ? (d.status_potensi === 'AMAN' || d.status_potensi === 'LUNAS / AMAN')
+        : d.status_potensi === status
+      );
+    }
+    rows = rows.map(d => ({
+      no_rekening: d.no_rekening,
+      nama_nasabah: d.nama_nasabah,
+      kolek_harian: d.kolek_harian || d.status_potensi || '-',
+      baki_debet: Number(d.baki_debet_harian || d.baki_debet_closing || 0),
+      tunggakan_pokok: Number(d.tunggakan_pokok || 0),
+      tunggakan_bunga: Number(d.tunggakan_bunga || 0),
+      hari_menunggak_pokok: Number(d.hmp_harian || 0),
+      hari_menunggak_bunga: Number(d.hmb_harian || 0),
+      tgl_jatuh_tempo: d.jt_harian || d.jt_closing || '',
+      komitmen: d.komitmen || '',
+      tgl_pembayaran: d.tgl_pembayaran || '',
+      nominal: Number(d.nominal || 0),
+      alasan: d.alasan || ''
+    }));
+  }
+
+  return rows;
+}
 
 function renderRows(list, harian_date){
   const body = id("flowparBody");

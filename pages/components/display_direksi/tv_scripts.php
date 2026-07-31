@@ -6,6 +6,7 @@
     let currentSlide = 0;
     let slideIntervalId = null;
     let totalSlides = 0;
+    let isSlideshowPaused = localStorage.getItem('tv_slideshow_paused') === '1';
 
     function checkTvLogin() {
         if (localStorage.getItem('tv_kiosk_authorized') !== 'true') {
@@ -64,7 +65,34 @@
 
     function resetSlideshowTimer() {
         if(slideIntervalId) clearInterval(slideIntervalId);
+        slideIntervalId = null;
+        if(isSlideshowPaused) return;
         slideIntervalId = setInterval(nextTvSlide, 30000); // 30 detik
+    }
+
+    function syncTvSlideshowButton() {
+        const btn = document.getElementById('tvSlidePauseBtn');
+        const pauseIcon = document.getElementById('tvSlidePauseIcon');
+        const playIcon = document.getElementById('tvSlidePlayIcon');
+        const label = isSlideshowPaused ? 'Jalankan auto slide' : 'Stop auto slide';
+        if(btn) {
+            btn.title = label;
+            btn.setAttribute('aria-label', label);
+            btn.classList.toggle('is-paused', isSlideshowPaused);
+        }
+        pauseIcon?.classList.toggle('hidden', isSlideshowPaused);
+        playIcon?.classList.toggle('hidden', !isSlideshowPaused);
+    }
+
+    function setTvSlideshowPaused(paused) {
+        isSlideshowPaused = !!paused;
+        localStorage.setItem('tv_slideshow_paused', isSlideshowPaused ? '1' : '0');
+        syncTvSlideshowButton();
+        resetSlideshowTimer();
+    }
+
+    function toggleTvSlideshow() {
+        setTvSlideshowPaused(!isSlideshowPaused);
     }
 
     // ==========================================
@@ -308,13 +336,15 @@
         filter_mode: 'konsolidasi',
         kantor: 'konsolidasi',
         screen_profile: 'tv_sd',
-        zoom: 100
+        zoom: 100,
+        auto_date: true
     };
     const TV_KORWIL = ['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'];
     const TV_STORAGE_KEYS = {
         kantor: 'tv_filter_kantor',
         header_hidden: 'tv_header_hidden',
-        zoom: 'tv_display_zoom'
+        zoom: 'tv_display_zoom',
+        slideshow_paused: 'tv_slideshow_paused'
     };
     const TV_SCREEN_PROFILES = {
         auto: { layout: 'auto' },
@@ -342,17 +372,43 @@
     let tvActiveSelectModalId = null;
     let tvInitialHarianDate = null;
     let tvFitTimer = null;
+    let tvChromeAutoHideTimer = null;
+    const TV_CHROME_AUTO_HIDE_DELAY = 5000;
 
     const apiCall = (url, opt={}) => fetch(url, opt);
 
+    async function refreshTvLatestDatesIfAuto() {
+        if(!TV_CONFIG.auto_date) return false;
+        try {
+            const r = await apiCall('./api/date/', { cache: 'no-store' });
+            const j = await r.json();
+            if(!j.data) return false;
+
+            const latestClosing = j.data.last_closing || TV_CONFIG.closing_date;
+            const latestHarian = j.data.last_created || TV_CONFIG.harian_date;
+            const changed = latestClosing !== TV_CONFIG.closing_date || latestHarian !== TV_CONFIG.harian_date;
+
+            TV_CONFIG.closing_date = latestClosing;
+            TV_CONFIG.harian_date = latestHarian;
+            tvInitialHarianDate = latestHarian;
+            syncTvFilterControls();
+            return changed;
+        } catch(e) {
+            console.error('Gagal refresh tanggal TV', e);
+            return false;
+        }
+    }
+
     function openTvControls() {
         if(tvControlCloseTimer) clearTimeout(tvControlCloseTimer);
+        showTvChromeTemporarily(true);
         document.getElementById('tvFloatingControls')?.classList.add('is-open');
     }
 
     function closeTvControlsNow() {
         if(tvControlCloseTimer) clearTimeout(tvControlCloseTimer);
         document.getElementById('tvFloatingControls')?.classList.remove('is-open');
+        showTvChromeTemporarily();
     }
 
     function closeTvControlsSoon() {
@@ -366,6 +422,29 @@
         const box = document.getElementById('tvFloatingControls');
         if(!box) return;
         box.classList.toggle('is-open');
+        showTvChromeTemporarily(box.classList.contains('is-open'));
+    }
+
+    function setTvChromeAutoHidden(hidden) {
+        if(document.body.classList.contains('tv-header-hidden')) return;
+        document.body.classList.toggle('tv-chrome-auto-hidden', hidden);
+    }
+
+    function showTvChromeTemporarily(keepVisible = false) {
+        if(tvChromeAutoHideTimer) clearTimeout(tvChromeAutoHideTimer);
+        document.body.classList.remove('tv-chrome-auto-hidden');
+        if(keepVisible || document.body.classList.contains('tv-header-hidden')) return;
+        tvChromeAutoHideTimer = setTimeout(() => {
+            if(document.getElementById('tvFloatingControls')?.classList.contains('is-open')) return;
+            setTvChromeAutoHidden(true);
+        }, TV_CHROME_AUTO_HIDE_DELAY);
+    }
+
+    function initTvChromeAutoHide() {
+        ['mousemove', 'pointermove', 'touchstart', 'keydown'].forEach(evt => {
+            window.addEventListener(evt, () => showTvChromeTemporarily(), { passive: true });
+        });
+        showTvChromeTemporarily();
     }
 
     function syncTvHeaderToggle() {
@@ -379,10 +458,13 @@
     }
 
     function setTvHeaderChromeHidden(hidden) {
+        if(tvChromeAutoHideTimer) clearTimeout(tvChromeAutoHideTimer);
+        document.body.classList.remove('tv-chrome-auto-hidden');
         document.body.classList.toggle('tv-header-hidden', hidden);
         if(hidden) closeTvControlsNow();
         localStorage.setItem(TV_STORAGE_KEYS.header_hidden, hidden ? '1' : '0');
         syncTvHeaderToggle();
+        if(!hidden) showTvChromeTemporarily();
         scheduleTvFit(120);
     }
 
@@ -712,8 +794,13 @@
         if(tvFilterApplyTimer) clearTimeout(tvFilterApplyTimer);
         tvFilterApplyTimer = null;
         document.getElementById('tv_filter_apply_status')?.classList.add('hidden');
-        TV_CONFIG.closing_date = getTvCurrentClosingDate();
-        TV_CONFIG.harian_date = getTvCurrentHarianDate();
+        const selectedClosingDate = getTvCurrentClosingDate();
+        const selectedHarianDate = getTvCurrentHarianDate();
+        if(selectedClosingDate !== TV_CONFIG.closing_date || selectedHarianDate !== TV_CONFIG.harian_date) {
+            TV_CONFIG.auto_date = false;
+        }
+        TV_CONFIG.closing_date = selectedClosingDate;
+        TV_CONFIG.harian_date = selectedHarianDate;
         TV_CONFIG.kantor = getTvCurrentKantor();
         TV_CONFIG.filter_mode = isTvKonsolidasi() ? 'konsolidasi' : 'kantor';
         localStorage.setItem(TV_STORAGE_KEYS.kantor, TV_CONFIG.kantor || 'konsolidasi');
@@ -803,13 +890,16 @@
         document.getElementById('contentDash').classList.remove('hidden');
 
         showSlide(0);
+        syncTvSlideshowButton();
         resetSlideshowTimer();
+        initTvChromeAutoHide();
 
         // Tarik semua data
         fetchAllDataSlide();
 
-        setInterval(() => {
+        setInterval(async () => {
             console.log("Auto-refreshing TV Data...");
+            await refreshTvLatestDatesIfAuto();
             fetchAllDataSlide();
         }, 600000); // 10 menit
     }

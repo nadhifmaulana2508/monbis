@@ -24,6 +24,9 @@ switch ($method) {
             // Menampilkan matrix 000-028 + Konsolidasi
             $controller->apiGetNeraca($input);
         } 
+        elseif ($type === 'default_acc_history_date') {
+            $controller->apiGetDefaultAccHistoryDate();
+        }
         
         // ==========================================
         // ENDPOINT LAPORAN LABA RUGI (4, 5)

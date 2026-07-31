@@ -99,6 +99,49 @@
   .otp-info-root .otp-help-panel { z-index:200001 !important; max-width:calc(100vw - 28px); box-shadow:0 10px 25px -5px rgba(0,0,0,0.1); }
   .otp-info-root:hover .otp-help-panel { display:flex !important; }
 
+  .otp-due-summary { position: relative; z-index: 25; }
+  .otp-due-card {
+    width: 100%;
+    border: 1px solid;
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: left;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .otp-due-label {
+    font-size: 10px;
+    line-height: 1.1;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .otp-due-value {
+    margin-top: 4px;
+    font-size: 20px;
+    line-height: 1;
+    font-weight: 900;
+    color: #0f172a;
+  }
+  .otp-due-pct {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    background: rgba(255,255,255,.72);
+    padding: 4px 8px;
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 900;
+  }
+  .otp-due-meta {
+    margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 11px;
+    line-height: 1.2;
+    font-weight: 700;
+    color: #475569;
+  }
+
   #tabelRekapRR th { background:#f1f5f9 !important; color:#1e293b !important; }
   #tabelRekapRR td, #tableExportRR td { color:#334155; }
   #tabelRekapRR a, #tableExportRR a { color:#2563eb !important; text-decoration:none; }

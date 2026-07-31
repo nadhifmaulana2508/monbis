@@ -118,7 +118,8 @@
 
     // --- 4. SCRIPT RENDER USER & ROLE (SSO SYNC AUTO-FETCH) ---
     (async () => {
-        const TOKEN_KEY = 'dpk_token', USER_KEY = 'dpk_user';
+        const TOKEN_KEY = 'dpk_token', USER_KEY = 'dpk_user', USER_VERIFIED_KEY = 'dpk_user_verified_at';
+        const WHOAMI_REFRESH_MS = 5 * 60 * 1000;
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const API_SSO_BASE = isLocal ? 'http://localhost/rest_api_sso' : 'https://apisso.bkkjateng.co.id';
         const API_WHOAMI = `${API_SSO_BASE}/api/auth/whoami`;
@@ -156,7 +157,13 @@
             return true;
         }
 
-        if (rawUser) paint(JSON.parse(rawUser));
+        if (rawUser) {
+            try { window.__USER = JSON.parse(rawUser); paint(window.__USER); } catch(e) {}
+        }
+
+        const lastVerified = Number(localStorage.getItem(USER_VERIFIED_KEY) || 0);
+        const needVerify = !rawUser || !lastVerified || (Date.now() - lastVerified > WHOAMI_REFRESH_MS) || isCrossingFromSSO;
+        if (!needVerify) return;
 
         try {
             const res = await fetch(API_WHOAMI, {
@@ -180,6 +187,7 @@
                     window.__USER = u;
                     localStorage.setItem(TOKEN_KEY, token);
                     localStorage.setItem(USER_KEY, JSON.stringify(u));
+                    localStorage.setItem(USER_VERIFIED_KEY, String(Date.now()));
                     
                     if (isCrossingFromSSO) {
                         // SOLUSI RACE CONDITION: Muat ulang halaman sekali saja agar semua script bisa pakai LocalStorage yang baru disave
@@ -200,6 +208,7 @@
         
         localStorage.removeItem('dpk_token');
         localStorage.removeItem('dpk_user');
+        localStorage.removeItem('dpk_user_verified_at');
         
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         document.cookie = "sso_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";

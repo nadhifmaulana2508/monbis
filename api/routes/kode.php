@@ -24,7 +24,7 @@ switch ($method) {
             $controller->getKodeAOKredit($input);
         }elseif ($input['type'] == 'kode_kankas') { // Tambahkan kondisi ini
             $controller->getKodeKankas($input);
-        }elseif ($input['type'] == "kecamatan" or "kelurahan") { // Tambahkan kondisi ini
+        }elseif (in_array($input['type'], ['kecamatan', 'kelurahan'], true)) { // Tambahkan kondisi ini
             $controller->getListWilayahDropdown($input);
 
         } else {

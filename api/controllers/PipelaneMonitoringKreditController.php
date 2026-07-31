@@ -121,10 +121,14 @@ class PipelaneMonitoringKreditController
         try {
             $summary = $this->loadDpkSummary($periodeAwal, $periodeAkhir, $kodeKantor);
             $targetProduksi = $this->loadTargetProduksiRbb($periodeAwal, $kodeKantor);
+            $targetRunOff = $this->loadTargetRunOffRbb($periodeAwal, $kodeKantor);
             $summary['target_produksi_rbb'] = $targetProduksi;
-            $summary['target_run_off_rbb'] = null;
+            $summary['target_run_off_rbb'] = $targetRunOff;
             $summary['persen_produksi_rbb'] = $targetProduksi > 0
                 ? round(((float)$summary['realisasi_bulan_ini'] / $targetProduksi) * 100, 2)
+                : 0;
+            $summary['persen_run_off_rbb'] = $targetRunOff > 0
+                ? round(((float)$summary['run_off_bulan_ini'] / $targetRunOff) * 100, 2)
                 : 0;
             $pipeline = $this->loadPipelineList($tahun, $bulan, $kodeKantor, '', 1, 7);
             $monitoring = $this->loadMonitoringRows($tahun, $bulan, $kodeKantor, '', 1, 7);
@@ -355,6 +359,31 @@ class PipelaneMonitoringKreditController
 
     private function loadTargetProduksiRbb($periodeAwal, $kodeKantor)
     {
+        $sql = "
+            SELECT SUM(%s) AS target_produksi
+            FROM rbb r
+            INNER JOIN ref_rbb ref ON ref.kode_monbis = r.kode_monbis
+            WHERE r.periode = :periode
+              AND ref.kode_perkiraan = 'produksi.total'
+        ";
+
+        return $this->loadTargetRbbValue($periodeAwal, $kodeKantor, $sql);
+    }
+
+    private function loadTargetRunOffRbb($periodeAwal, $kodeKantor)
+    {
+        $sql = "
+            SELECT SUM(%s) AS target_run_off
+            FROM rbb r
+            WHERE r.periode = :periode
+              AND r.kode_monbis = '277'
+        ";
+
+        return $this->loadTargetRbbValue($periodeAwal, $kodeKantor, $sql);
+    }
+
+    private function loadTargetRbbValue($periodeAwal, $kodeKantor, $sqlTemplate)
+    {
         $branchColumns = ['001','002','003','004','005','006','007','008','009','010','011','012','013','014','015','016','017','018','019','020','021','022','023','024','025','026','027','028'];
 
         if ($kodeKantor === '000') {
@@ -369,13 +398,7 @@ class PipelaneMonitoringKreditController
             return 0;
         }
 
-        $sql = "
-            SELECT SUM({$targetExpr}) AS target_produksi
-            FROM rbb r
-            INNER JOIN ref_rbb ref ON ref.kode_monbis = r.kode_monbis
-            WHERE r.periode = :periode
-              AND ref.kode_perkiraan = 'produksi.total'
-        ";
+        $sql = sprintf($sqlTemplate, $targetExpr);
 
         $stmt = $this->pdoDpk->prepare($sql);
         $stmt->bindValue(':periode', $periodeAwal, PDO::PARAM_STR);

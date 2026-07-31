@@ -1,10 +1,10 @@
-<div id="recoveryPHPage" class="max-w-[1920px] mx-auto px-2 md:px-4 py-3 md:py-5 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
+<div id="recoveryPHPage" class="max-w-[1920px] mx-auto px-1.5 md:px-3 py-2 md:py-3 h-[calc(100vh-60px)] md:h-[calc(100vh-72px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
 
   <!-- =========================================================
        HEADER / FILTER - KONSISTEN DENGAN PAGE LAIN
   ========================================================== -->
-  <div class="flex-none mb-3 md:mb-4 w-full shrink-0">
-    <div class="relative bg-white border border-slate-200 rounded-xl shadow-sm px-2.5 md:px-5 py-2.5 md:py-4">
+  <div class="flex-none mb-2 w-full shrink-0">
+    <div class="relative bg-white border border-slate-200 rounded-lg shadow-sm px-2.5 md:px-4 py-2 md:py-3">
       <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 w-full">
         <div class="flex items-center justify-between w-full xl:w-auto shrink-0">
           <div class="flex items-center gap-2 md:gap-3 min-w-0">
@@ -30,12 +30,12 @@
         </div>
 
         <div id="filterWrapperPH" class="hidden xl:flex w-full xl:w-auto transition-all duration-300">
-          <form id="filterForm" class="w-full xl:w-auto flex flex-row items-end gap-2 overflow-x-auto no-scrollbar" onsubmit="event.preventDefault(); fetchData(start_date.value, end_date.value);">
-            <div class="field shrink-0 w-[128px] md:w-[145px]">
+          <form id="filterForm" class="w-full xl:w-auto flex flex-row items-end gap-1.5 md:gap-2 overflow-x-auto no-scrollbar" onsubmit="event.preventDefault(); fetchData(start_date.value, end_date.value);">
+            <div class="field shrink-0 w-[118px] md:w-[136px]">
               <label class="lbl">DARI</label>
               <input type="date" id="start_date" class="inp w-full" required onchange="fetchData(start_date.value, end_date.value)" onclick="try{this.showPicker()}catch(e){}">
             </div>
-            <div class="field shrink-0 w-[128px] md:w-[145px]">
+            <div class="field shrink-0 w-[118px] md:w-[136px]">
               <label class="lbl">SAMPAI</label>
               <input type="date" id="end_date" class="inp w-full" required onchange="fetchData(start_date.value, end_date.value)" onclick="try{this.showPicker()}catch(e){}">
             </div>
@@ -64,7 +64,7 @@
   <!-- =========================================================
        TABLE
   ========================================================== -->
-  <div id="phScroller" class="flex-1 min-h-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm relative flex flex-col">
+  <div id="phScroller" class="flex-1 min-h-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm relative flex flex-col">
     <div id="loadingPH" class="hidden absolute inset-0 bg-white/80 z-[100] flex flex-col items-center justify-center text-blue-600 backdrop-blur-sm">
       <div class="animate-spin h-8 w-8 md:h-10 md:w-10 border-4 border-blue-200 border-t-blue-600 rounded-full mb-2"></div>
       <span class="text-[10px] md:text-sm font-bold tracking-widest uppercase">Memuat Data...</span>
@@ -95,17 +95,28 @@
   <div id="modalCardPH" class="relative bg-white w-full h-[92vh] md:h-[88vh] max-w-[1500px] rounded-t-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
     <div class="flex items-center justify-between px-3 md:px-5 py-3 border-b bg-white shrink-0">
       <div class="min-w-0">
-        <h3 id="modalTitle" class="text-[13px] md:text-xl font-black text-slate-900 truncate">Daftar Debitur</h3>
+        <h3 id="modalTitle" class="text-[13px] md:text-lg font-black text-slate-900 truncate">Daftar Debitur</h3>
         <p id="modalSubTitlePH" class="text-[9px] md:text-xs text-slate-500 mt-1 font-mono truncate">-</p>
       </div>
       <div class="flex items-center gap-2 shrink-0">
+        <label class="detail-search-ph relative hidden sm:block">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+          <input type="search" id="detailSearchPH" placeholder="Cari nama / rekening..." autocomplete="off">
+        </label>
         <button type="button" onclick="exportDetailPH()" class="btn-icon h-[34px] md:h-[38px] w-[36px] md:w-[42px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm" title="Download Detail">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="md:w-[18px] md:h-[18px]"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
         </button>
         <button id="btnClosePH" class="w-[34px] h-[34px] md:w-[38px] md:h-[38px] flex items-center justify-center rounded-lg bg-slate-100 hover:bg-red-500 hover:text-white text-slate-500 transition font-bold text-lg" aria-label="Tutup">&times;</button>
       </div>
     </div>
-    <div id="modalBody" class="flex-1 overflow-auto bg-slate-50 p-0 md:p-3 custom-scrollbar"></div>
+    <div class="detail-search-ph-mobile sm:hidden px-2 py-2 border-b border-slate-100 bg-slate-50">
+      <label class="detail-search-ph relative block">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+        <input type="search" id="detailSearchPHMobile" placeholder="Cari nama / rekening..." autocomplete="off">
+      </label>
+    </div>
+    <div id="detailSummaryPH" class="hidden"></div>
+    <div id="modalBody" class="flex-1 overflow-auto bg-white p-0 custom-scrollbar"></div>
   </div>
 </div>
 
@@ -299,6 +310,388 @@
     .modal-freeze-nama, .modal-td-nama { left:86px !important; min-width:116px !important; max-width:116px !important; }
     .modal-td-nama div { max-width:108px; overflow:hidden; text-overflow:ellipsis; }
   }
+
+  /* Recovery PH compact layout: disamakan rasa tabel dan modalnya dengan page recovery lain */
+  #recoveryPHPage {
+    width:100%;
+    max-width:none !important;
+    min-height:0;
+  }
+
+  #phScroller {
+    --ph-code:58px;
+    --ph-name:178px;
+    --ph-money:136px;
+    --ph-noa:70px;
+    --ph-head:38px;
+  }
+
+  #phScroller > .overflow-auto {
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
+    scrollbar-gutter:stable;
+  }
+
+  #tabelRecovery {
+    width:calc(var(--ph-code) + var(--ph-name) + (var(--ph-money) * 3) + var(--ph-noa)) !important;
+    min-width:100% !important;
+    table-layout:fixed !important;
+    font-size:11px;
+  }
+
+  #tabelRecovery th,
+  #tabelRecovery td {
+    height:36px;
+    padding:5px 7px !important;
+    vertical-align:middle;
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+
+  #tabelRecovery thead th {
+    height:var(--ph-head);
+    padding:5px 6px !important;
+    background:#f1f5f9 !important;
+    color:#1e3a8a;
+    box-shadow:inset 0 1px 0 #cbd5e1,inset 0 -1px 0 #cbd5e1;
+    font-size:9px;
+    line-height:1.08;
+    letter-spacing:.025em;
+    white-space:normal;
+  }
+
+  #tabelRecovery .col-kode {
+    width:var(--ph-code) !important;
+    min-width:var(--ph-code) !important;
+    max-width:var(--ph-code) !important;
+  }
+
+  #tabelRecovery .col-nama {
+    left:var(--ph-code) !important;
+    width:var(--ph-name) !important;
+    min-width:var(--ph-name) !important;
+    max-width:var(--ph-name) !important;
+    box-shadow:4px 0 8px -7px rgba(15,23,42,.8) !important;
+  }
+
+  #tabelRecovery th:nth-child(3),
+  #tabelRecovery td:nth-child(3),
+  #tabelRecovery .col-bunga,
+  #tabelRecovery .col-total {
+    width:var(--ph-money) !important;
+    min-width:var(--ph-money) !important;
+    max-width:var(--ph-money) !important;
+  }
+
+  #tabelRecovery .col-noa {
+    width:var(--ph-noa) !important;
+    min-width:var(--ph-noa) !important;
+    max-width:var(--ph-noa) !important;
+  }
+
+  #tabelRecovery .total-row td {
+    top:var(--ph-head) !important;
+    height:36px !important;
+    background:#eff6ff !important;
+    color:#1e40af;
+    font-size:11px;
+    box-shadow:0 4px 7px -5px rgba(15,23,42,.45);
+  }
+
+  .ph-click {
+    color:#1d4ed8;
+    font-weight:900;
+    cursor:pointer;
+  }
+
+  .ph-click:hover { text-decoration:none; background:#eff6ff !important; }
+
+  #modalDebitur {
+    background:rgba(15,23,42,.68);
+    backdrop-filter:blur(7px);
+  }
+
+  #modalCardPH {
+    width:min(1460px,calc(100vw - 20px)) !important;
+    height:min(92dvh,880px) !important;
+    max-height:92dvh !important;
+    border:1px solid rgba(226,232,240,.9);
+    border-radius:14px !important;
+    box-shadow:0 30px 80px rgba(15,23,42,.32);
+  }
+
+  .detail-search-ph svg {
+    position:absolute;
+    left:9px;
+    top:50%;
+    color:#94a3b8;
+    transform:translateY(-50%);
+    pointer-events:none;
+  }
+
+  .detail-search-ph input {
+    width:230px;
+    height:34px;
+    border:1px solid #cbd5e1;
+    border-radius:8px;
+    padding:0 9px 0 30px;
+    background:#fff;
+    color:#334155;
+    font-size:11px;
+    font-weight:700;
+    outline:none;
+  }
+
+  .detail-search-ph input:focus {
+    border-color:#2563eb;
+    box-shadow:0 0 0 3px rgba(37,99,235,.1);
+  }
+
+  #detailSummaryPH {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:7px;
+    padding:8px 10px;
+    border-bottom:1px solid #e2e8f0;
+    background:#f8fafc;
+  }
+
+  #detailSummaryPH.hidden { display:none !important; }
+
+  .ph-stat {
+    min-width:0;
+    padding:7px 9px;
+    border:1px solid #e2e8f0;
+    border-radius:8px;
+    background:#fff;
+  }
+
+  .ph-stat-label {
+    overflow:hidden;
+    color:#64748b;
+    font-size:8px;
+    font-weight:900;
+    letter-spacing:.045em;
+    text-overflow:ellipsis;
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+
+  .ph-stat-value {
+    margin-top:3px;
+    overflow:hidden;
+    color:#0f172a;
+    font-size:13px;
+    font-weight:900;
+    line-height:1.1;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+
+  #modalTablePH {
+    min-width:760px !important;
+    color:#334155;
+    font-size:10.5px;
+  }
+
+  #modalTablePH th {
+    height:36px;
+    padding:6px 8px !important;
+    color:#475569;
+    font-size:9px;
+    letter-spacing:.025em;
+  }
+
+  #modalTablePH td {
+    height:36px;
+    padding:6px 8px !important;
+    font-size:10.5px;
+  }
+
+  .modal-freeze-rek,
+  .modal-td-rek {
+    min-width:126px !important;
+    max-width:126px !important;
+    width:126px !important;
+  }
+
+  .modal-freeze-nama,
+  .modal-td-nama {
+    left:126px !important;
+    min-width:210px !important;
+    max-width:210px !important;
+    width:210px !important;
+    box-shadow:5px 0 9px -8px rgba(15,23,42,.9) !important;
+  }
+
+  .modal-td-nama div {
+    max-width:194px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  @media (min-width:1024px) and (max-width:1439px) {
+    #phScroller {
+      --ph-code:54px;
+      --ph-name:164px;
+      --ph-money:124px;
+      --ph-noa:62px;
+    }
+  }
+
+  @media (min-width:641px) and (max-width:1023px) {
+    #recoveryPHPage { padding:6px !important; height:calc(100dvh - 64px) !important; }
+    #phScroller {
+      --ph-code:50px;
+      --ph-name:154px;
+      --ph-money:112px;
+      --ph-noa:58px;
+    }
+    #tabelRecovery { font-size:10px; }
+    #tabelRecovery th,
+    #tabelRecovery td { padding-left:5px !important; padding-right:5px !important; }
+    #modalCardPH { width:calc(100vw - 18px) !important; height:90dvh !important; }
+    .detail-search-ph input { width:190px; }
+  }
+
+  @media (max-width:640px) {
+    #recoveryPHPage {
+      padding:4px 3px 5px !important;
+      height:calc(100dvh - 52px) !important;
+    }
+
+    #filterWrapperPH:not(.flex) { display:none !important; }
+    #filterWrapperPH form { gap:5px !important; }
+
+    #phScroller {
+      --ph-code:0px;
+      --ph-name:96px;
+      --ph-money:78px;
+      --ph-noa:42px;
+      --ph-head:25px;
+      border-radius:8px;
+    }
+
+    #tabelRecovery {
+      width:calc(var(--ph-name) + (var(--ph-money) * 3) + var(--ph-noa)) !important;
+      min-width:372px !important;
+      font-size:7.5px !important;
+    }
+
+    #tabelRecovery thead th {
+      height:25px !important;
+      padding:3px !important;
+      font-size:6.8px !important;
+      line-height:1.05 !important;
+      letter-spacing:0 !important;
+    }
+
+    #tabelRecovery tbody td {
+      height:25px !important;
+      padding:2px 3px !important;
+      font-size:7.4px !important;
+      line-height:1.05 !important;
+    }
+
+    #tabelRecovery th.col-kode,
+    #tabelRecovery td.col-kode { display:none !important; }
+
+    #tabelRecovery .col-nama,
+    #tabelRecovery th.col-nama,
+    #tabelRecovery td.col-nama {
+      left:0 !important;
+      width:var(--ph-name) !important;
+      min-width:var(--ph-name) !important;
+      max-width:var(--ph-name) !important;
+      padding-left:5px !important;
+      padding-right:3px !important;
+    }
+
+    #tabelRecovery .col-nama div {
+      max-width:88px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    #tabelRecovery th:nth-child(3),
+    #tabelRecovery td:nth-child(3),
+    #tabelRecovery .col-bunga,
+    #tabelRecovery .col-total {
+      width:var(--ph-money) !important;
+      min-width:var(--ph-money) !important;
+      max-width:var(--ph-money) !important;
+    }
+
+    #tabelRecovery .col-noa {
+      width:var(--ph-noa) !important;
+      min-width:var(--ph-noa) !important;
+      max-width:var(--ph-noa) !important;
+    }
+
+    #tabelRecovery .total-row td {
+      top:25px !important;
+      height:25px !important;
+      font-size:7.3px !important;
+    }
+
+    #modalDebitur {
+      align-items:flex-end !important;
+      padding:0 !important;
+    }
+
+    #modalCardPH {
+      width:100% !important;
+      height:94dvh !important;
+      max-height:94dvh !important;
+      border-left:0;
+      border-right:0;
+      border-bottom:0;
+      border-radius:14px 14px 0 0 !important;
+    }
+
+    #modalCardPH > .flex.items-center.justify-between {
+      align-items:flex-start !important;
+      gap:8px;
+      padding:8px 9px !important;
+    }
+
+    #modalTitle { font-size:13px !important; line-height:1.1; }
+    #modalSubTitlePH { font-size:8.5px !important; line-height:1.15; }
+    .detail-search-ph input { width:100%; height:31px; font-size:9px; border-radius:7px; }
+    #detailSummaryPH {
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:5px;
+      padding:6px 8px;
+    }
+    .ph-stat { padding:6px 7px; border-radius:8px; }
+    .ph-stat-label { font-size:6.5px; letter-spacing:.025em; }
+    .ph-stat-value { margin-top:2px; font-size:10px; }
+    #modalTablePH { min-width:586px !important; font-size:8.5px !important; }
+    #modalTablePH th,
+    #modalTablePH td {
+      height:30px !important;
+      padding:4px 5px !important;
+      font-size:8.5px !important;
+      line-height:1.1 !important;
+    }
+    .modal-freeze-rek,
+    .modal-td-rek {
+      min-width:84px !important;
+      max-width:84px !important;
+      width:84px !important;
+    }
+    .modal-freeze-nama,
+    .modal-td-nama {
+      left:84px !important;
+      min-width:116px !important;
+      max-width:116px !important;
+      width:116px !important;
+    }
+    .modal-td-nama div { max-width:106px; }
+  }
 </style>
 
 <script>
@@ -443,11 +836,14 @@
     const title   = document.getElementById('modalTitle');
     const sub     = document.getElementById('modalSubTitlePH');
     const body    = document.getElementById('modalBody');
+    const summary = document.getElementById('detailSummaryPH');
 
     overlay.classList.remove('hidden');
     overlay.classList.add('flex');
     title.textContent = `Daftar Debitur - Kode Kantor ${kodeKantor}`;
     sub.textContent = `${namaKantor || '-'} | Periode: ${start} s/d ${end}`;
+    setDetailSearchPH('');
+    summary?.classList.add('hidden');
     body.innerHTML = `<div class="h-full flex items-center justify-center py-20 text-blue-600 font-bold uppercase tracking-widest text-[10px] md:text-sm">Mengambil data debitur...</div>`;
 
     fetch('./api/hapus_buku/detail', {
@@ -461,6 +857,7 @@
       const list = Array.isArray(res.data) ? res.data : [];
       detailPHCache = list;
       if(!list.length){
+        summary?.classList.add('hidden');
         body.innerHTML = `<div class="py-20 text-center text-red-500 font-bold">Tidak ada data.</div>`;
         return;
       }
@@ -477,6 +874,41 @@
   window.loadDebitur = loadDebitur;
 
   function renderDetailPH(list) {
+    const summary = document.getElementById('detailSummaryPH');
+    const body = document.getElementById('modalBody');
+
+    if(!list.length) {
+      summary?.classList.add('hidden');
+      body.innerHTML = `<div class="py-20 px-4 text-center text-slate-400 font-bold">Data tidak ditemukan.</div>`;
+      return;
+    }
+
+    const sumPokok = list.reduce((a,d)=>a + Number(d.pokok || 0), 0);
+    const sumBunga = list.reduce((a,d)=>a + Number(d.bunga || 0), 0);
+    const sumTotal = list.reduce((a,d)=>a + Number(d.total || 0), 0);
+
+    if(summary) {
+      summary.innerHTML = `
+        <div class="ph-stat">
+          <div class="ph-stat-label">Debitur</div>
+          <div class="ph-stat-value">${fmtInt(list.length)}</div>
+        </div>
+        <div class="ph-stat">
+          <div class="ph-stat-label">Pokok</div>
+          <div class="ph-stat-value">${rupiah(sumPokok)}</div>
+        </div>
+        <div class="ph-stat">
+          <div class="ph-stat-label">Bunga</div>
+          <div class="ph-stat-value">${rupiah(sumBunga)}</div>
+        </div>
+        <div class="ph-stat">
+          <div class="ph-stat-label">Total</div>
+          <div class="ph-stat-value text-blue-700">${rupiah(sumTotal)}</div>
+        </div>
+      `;
+      summary.classList.remove('hidden');
+    }
+
     let html = `
       <table id="modalTablePH" class="text-left text-slate-700 bg-white">
         <thead class="text-[9px] md:text-xs">
@@ -504,8 +936,35 @@
     });
 
     html += `</tbody></table>`;
-    document.getElementById('modalBody').innerHTML = html;
+    body.innerHTML = html;
   }
+
+  function setDetailSearchPH(value) {
+    const desktop = document.getElementById('detailSearchPH');
+    const mobile = document.getElementById('detailSearchPHMobile');
+    if(desktop) desktop.value = value;
+    if(mobile) mobile.value = value;
+  }
+
+  function filterDetailPH(value) {
+    const keyword = String(value || '').trim().toLowerCase();
+    setDetailSearchPH(value);
+    if(!keyword) {
+      renderDetailPH(detailPHCache);
+      return;
+    }
+
+    const filtered = detailPHCache.filter(d => {
+      return String(d.no_rekening || '').toLowerCase().includes(keyword)
+        || String(d.nama_nasabah || '').toLowerCase().includes(keyword)
+        || String(d.tanggal_transaksi || '').toLowerCase().includes(keyword);
+    });
+    renderDetailPH(filtered);
+  }
+
+  ['detailSearchPH', 'detailSearchPHMobile'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', e => filterDetailPH(e.target.value));
+  });
 
   function exportRecoveryPH() {
     if (!recoveryPHCache.length) return alert('Tidak ada data untuk diexport.');

@@ -49,6 +49,12 @@ switch ($method) {
         if ($type === 'rekap_rr') {
             $controller->getRepaymentRate($input);
 
+        } elseif ($type === 'rekap_rr_area') {
+            $controller->getRepaymentRateArea($input);
+
+        } elseif ($type === 'rekap_rr_collection_area') {
+            $controller->getRepaymentRateCollectionArea($input);
+
         // --- B. DETAIL DRILL DOWN ---
         } elseif ($type === 'detail_rr') {
             $controller->getDetailRepaymentRate($input);

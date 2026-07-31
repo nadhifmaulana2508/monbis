@@ -4,6 +4,14 @@
       const gt = rekapGtRaw;
       if (!rows.length && !gt) { alert('Tidak ada data untuk diexport.'); return; }
       let csv = 'TGL\tTARGET M-1\tNOA TARGET\tOTP LANCAR\tNOA LANCAR\tDITAGIH\tNOA DITAGIH\tLUNAS\tNOA LUNAS\tANGSURAN\tTOTAL BAYAR\tPERSEN\n';
+      if (dueSummaryRaw && dueSummaryRaw.total) {
+          csv += `\nRINGKASAN ANGSURAN TGL TAGIH\tANGSURAN\tNOA\tBAKI DEBET\tPERSEN\n`;
+          [['Sesuai Tgl Tagih', dueSummaryRaw.sesuai], ['Lewat Tgl Tagih', dueSummaryRaw.lewat], ['Total Angsuran', dueSummaryRaw.total]].forEach(([label, d]) => {
+              d = d || {};
+              csv += `${label}\t${Math.round(d.angsuran||0)}\t${d.noa||0}\t${Math.round(d.baki_debet||0)}\t${d.persen||0}%\n`;
+          });
+          csv += `\n`;
+      }
       if (gt) {
           csv += `TOTAL\t${Math.round(gt.target_os||0)}\t${gt.target_noa||0}\t${Math.round(gt.lancar_os||0)}\t${gt.lancar_noa||0}\t${Math.round(gt.macet_os||0)}\t${gt.macet_noa||0}\t${Math.round(gt.lunas_os||0)}\t${gt.lunas_noa||0}\t${Math.round(gt.angsuran||0)}\t${Math.round(gt.total_bayar||0)}\t${gt.persen||0}%\n`;
       }
@@ -33,6 +41,7 @@
   
   let rekapDataRaw = [];
   let rekapGtRaw = null;
+  let dueSummaryRaw = null;
   let detailDataCache = [];
 
   const apiCall = async (url, opt = {}) => {
@@ -64,6 +73,29 @@
       if (bucket === 'dpd0') return 'DPD 0';
       if (bucket === 'dpd1-30') return 'DPD 1-30';
       return 'ALL';
+  };
+
+  const getStatusLabelRR = status => {
+      const map = {
+          ALL: 'Semua',
+          LANCAR: 'OTP Lancar',
+          MENUNGGAK: 'Ditagih',
+          ANGSURAN: 'Angsuran',
+          TOTAL_BAYAR: 'Total Bayar',
+          SESUAI_TAGIH: 'Angsuran Sesuai Tgl Tagih',
+          LEWAT_TAGIH: 'Angsuran Lewat Tgl Tagih'
+      };
+      return map[String(status || '').toUpperCase()] || status || '-';
+  };
+
+  const fmtShort = n => {
+      const v = Math.abs(Number(n || 0));
+      const sign = Number(n || 0) < 0 ? '-' : '';
+      if (v >= 1e12) return `${sign}${(v / 1e12).toFixed(2)} T`;
+      if (v >= 1e9) return `${sign}${(v / 1e9).toFixed(2)} M`;
+      if (v >= 1e6) return `${sign}${(v / 1e6).toFixed(2)} Jt`;
+      if (v >= 1e3) return `${sign}${(v / 1e3).toFixed(1)} Rb`;
+      return `${sign}${nfID.format(v)}`;
   };
 
   let mainFilterOpen = window.innerWidth >= 1280;
@@ -222,6 +254,56 @@
   /* ============================
      RENDER MAIN TABLE 
      ============================ */
+  function renderDueSummaryRR(summary) {
+      const el = document.getElementById('dueSummaryRR');
+      if (!el) return;
+      if (!summary || !summary.total || Number(summary.total.angsuran || 0) <= 0) {
+          el.classList.add('hidden');
+          el.innerHTML = '';
+          return;
+      }
+
+      const card = (key, title, tone, clickStatus) => {
+          const d = summary[key] || {};
+          const pct = Number(d.persen || 0);
+          const noa = Number(d.noa || 0);
+          const angsuran = Number(d.angsuran || 0);
+          const baki = Number(d.baki_debet || 0);
+          const cls = {
+              green: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+              red: 'border-rose-200 bg-rose-50 text-rose-700',
+              blue: 'border-blue-200 bg-blue-50 text-blue-700',
+              slate: 'border-slate-200 bg-slate-50 text-slate-700'
+          }[tone] || 'border-slate-200 bg-slate-50 text-slate-700';
+          const clickAttr = clickStatus ? `onclick="initModalDetail('ALL','${clickStatus}')"` : '';
+          const clickCls = clickStatus ? 'cursor-pointer hover:-translate-y-0.5 hover:shadow-sm' : '';
+          return `
+              <button type="button" ${clickAttr} class="otp-due-card ${cls} ${clickCls}">
+                  <div class="flex items-start justify-between gap-2">
+                      <div class="min-w-0">
+                          <div class="otp-due-label">${title}</div>
+                          <div class="otp-due-value">${fmtShort(angsuran)}</div>
+                      </div>
+                      <div class="otp-due-pct">${pct}%</div>
+                  </div>
+                  <div class="otp-due-meta">
+                      <span>${fmt(noa)} NOA</span>
+                      <span>Baki Debet ${fmtShort(baki)}</span>
+                  </div>
+              </button>
+          `;
+      };
+
+      el.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              ${card('sesuai', 'Angsuran Sesuai Tgl Tagih', 'green', 'SESUAI_TAGIH')}
+              ${card('lewat', 'Angsuran Lewat Tgl Tagih', 'red', 'LEWAT_TAGIH')}
+              ${card('total', 'Total Angsuran', 'blue', 'ANGSURAN')}
+          </div>
+      `;
+      el.classList.remove('hidden');
+  }
+
   function renderMainHeaderRR() {
       const head = document.getElementById('headRR');
       head.innerHTML = `
@@ -284,7 +366,8 @@
     l.classList.remove('hidden'); 
     tb.innerHTML = `<tr><td colspan="8" class="py-20 text-center text-slate-400 italic text-sm">Sedang mengambil data...</td></tr>`;
     if(trTotal) trTotal.innerHTML = '';
-    rekapDataRaw = []; rekapGtRaw = null; sortMainCol = ''; sortMainAsc = true;
+    rekapDataRaw = []; rekapGtRaw = null; dueSummaryRaw = null; sortMainCol = ''; sortMainAsc = true;
+    renderDueSummaryRR(null);
 
     try {
         const cabangVal = document.getElementById('opt_kantor').value;
@@ -307,7 +390,10 @@
         const res = await apiCall(API_RR_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload), signal: abortRR.signal });
         if(!res.ok || res.json.status !== 200) throw new Error(res.json.message || "Gagal memuat data");
         
-        rekapDataRaw = res.json.data.data || []; rekapGtRaw = res.json.data.grand_total;
+        rekapDataRaw = res.json.data.data || [];
+        rekapGtRaw = res.json.data.grand_total;
+        dueSummaryRaw = res.json.data.due_summary || null;
+        renderDueSummaryRR(dueSummaryRaw);
         renderMainHeaderRR(); renderTableRR(rekapDataRaw, rekapGtRaw);
     } catch(err) {
         if(err.name !== 'AbortError') tb.innerHTML=`<tr><td colspan="8" class="py-16 text-center text-rose-500 font-bold uppercase tracking-widest text-[10px] md:text-sm">Error: ${err.message}</td></tr>`;
@@ -546,7 +632,7 @@
 
       const bucketLabel = getBucketLabel(dpdBucket);
       document.getElementById('modalTitleRR').textContent = `Detail Matriks OTP ${bucketLabel} - Tgl ${tgl}`;
-      document.getElementById('modalSubTitleRR').textContent = `Status: ${status}`;
+      document.getElementById('modalSubTitleRR').textContent = `Status: ${getStatusLabelRR(status)}`;
       document.getElementById('modalDetailRR').classList.remove('hidden');
       
       if(document.getElementById('search_nasabah')) document.getElementById('search_nasabah').value = ''; if(document.getElementById('search_nasabah_mobile')) document.getElementById('search_nasabah_mobile').value = '';

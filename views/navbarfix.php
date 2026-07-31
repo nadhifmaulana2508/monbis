@@ -693,6 +693,8 @@
   const TOKEN_KEY  = 'dpk_token';
 
   const USER_KEY   = 'dpk_user';
+  const USER_VERIFIED_KEY = 'dpk_user_verified_at';
+  const WHOAMI_REFRESH_MS = 5 * 60 * 1000;
 
 
 
@@ -702,7 +704,7 @@
 
   NA.getUserLS = NA.getUserLS || function(){ try {return JSON.parse(localStorage.getItem(USER_KEY)||'null');}catch{return null;} };
 
-  NA.clearAuth = NA.clearAuth || function(){ localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); };
+  NA.clearAuth = NA.clearAuth || function(){ localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); localStorage.removeItem(USER_VERIFIED_KEY); };
 
   NA.goLogin   = NA.goLogin   || function(){ location.href = `${BASE_APP}/login`; };
 
@@ -765,16 +767,24 @@
 
 
       let user = NA.getUserLS();
+      const lastVerified = Number(localStorage.getItem(USER_VERIFIED_KEY) || 0);
+      const needVerify = !user || !lastVerified || (Date.now() - lastVerified > WHOAMI_REFRESH_MS);
 
       try {
 
-        const r = await fetch(API_WHOAMI, { headers: { 'Authorization': token } });
+        if (needVerify) {
+          const r = await fetch(API_WHOAMI, { headers: { 'Authorization': token } });
 
-        const j = await r.json();
+          const j = await r.json();
 
-        if (!r.ok || j?.status !== 200 || !j?.data) throw 0;
+          if (!r.ok || j?.status !== 200 || !j?.data) throw 0;
 
-        user = j.data; NA.setUser(user); window.__USER = user;
+          user = j.data;
+          NA.setUser(user);
+          localStorage.setItem(USER_VERIFIED_KEY, String(Date.now()));
+        }
+
+        window.__USER = user;
 
       } catch {
 

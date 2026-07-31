@@ -82,6 +82,10 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
     </button>
     <span id="slide_indicator" class="tv-slide-count">1 / 1</span>
+    <button id="tvSlidePauseBtn" onclick="toggleTvSlideshow()" class="tv-slide-btn tv-slide-pause-btn" title="Stop auto slide" aria-label="Stop auto slide">
+        <svg id="tvSlidePauseIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
+        <svg id="tvSlidePlayIcon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
     <button onclick="nextTvSlide()" class="tv-slide-btn" title="Slide Berikutnya">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
     </button>

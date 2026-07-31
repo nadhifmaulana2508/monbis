@@ -44,7 +44,12 @@
     </div>
   </div>
 
-  <div id="pmk_cards" class="grid grid-cols-2 xl:grid-cols-4 gap-2 md:gap-3 mb-3 shrink-0"></div>
+  <div class="pmk-summary-wrap mb-3 shrink-0">
+    <button type="button" id="pmk_summary_toggle" class="pmk-icon-toggle" onclick="pmkToggleSummary()" title="Tampilkan/sembunyikan summary">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><path d="M4 19V5"></path><path d="M4 19h16"></path><path d="M8 16v-5"></path><path d="M13 16V8"></path><path d="M18 16v-9"></path></svg>
+    </button>
+    <div id="pmk_cards" class="grid grid-cols-2 xl:grid-cols-4 gap-2 md:gap-3"></div>
+  </div>
 
   <div class="bg-white border border-slate-200 rounded-xl shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden relative">
     <div id="pmk_loading" class="hidden absolute inset-0 z-40 bg-white/75 backdrop-blur-sm items-center justify-center text-emerald-700 font-black text-xs tracking-widest uppercase">
@@ -54,12 +59,12 @@
 
     <div class="flex items-center justify-between gap-3 px-3 md:px-4 pt-3 border-b border-slate-100 shrink-0">
       <div class="flex items-center gap-2 overflow-x-auto no-scrollbar">
-        <button id="pmk_tab_pipeline" class="pmk-tab active" onclick="pmkSetTab('pipeline')">
-          <span>Daftar Pipeline</span>
+        <button id="pmk_tab_pipeline" class="pmk-tab active" onclick="pmkSetTab('pipeline')" title="Daftar Pipeline">
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><path d="M8 6h13"></path><path d="M8 12h13"></path><path d="M8 18h13"></path><path d="M3 6h.01"></path><path d="M3 12h.01"></path><path d="M3 18h.01"></path></svg>
           <b id="pmk_count_pipeline">0</b>
         </button>
-        <button id="pmk_tab_monitoring" class="pmk-tab" onclick="pmkSetTab('monitoring')">
-          <span>Monitoring Mingguan</span>
+        <button id="pmk_tab_monitoring" class="pmk-tab" onclick="pmkSetTab('monitoring')" title="Monitoring Mingguan">
+          <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" viewBox="0 0 24 24"><path d="M3 3v18h18"></path><path d="m19 9-5 5-4-4-3 3"></path></svg>
           <b id="pmk_count_monitoring">0</b>
         </button>
       </div>
@@ -137,14 +142,19 @@
   .pmk-btn{height:2.35rem;border-radius:.7rem;padding:0 .85rem;display:inline-flex;align-items:center;justify-content:center;gap:.45rem;font-size:.72rem;font-weight:900;white-space:nowrap}
   .pmk-btn-primary{background:#059669;color:#fff}
   .pmk-btn-outline{background:#fff;color:#047857;border:1px solid #a7f3d0}
-  .pmk-card{border:1px solid #e2e8f0;border-radius:.9rem;background:white;padding:.8rem .9rem;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  .pmk-summary-wrap{display:flex;align-items:stretch;gap:.5rem}
+  .pmk-icon-toggle{width:2.35rem;min-width:2.35rem;border:1px solid #dbe3ee;border-radius:.8rem;background:white;color:#059669;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+  .pmk-icon-toggle:hover{background:#ecfdf5;border-color:#a7f3d0}
+  .pmk-summary-wrap.is-collapsed #pmk_cards{display:none}
+  .pmk-card{border:1px solid #e2e8f0;border-radius:.9rem;background:white;padding:.75rem .85rem;box-shadow:0 1px 2px rgba(15,23,42,.04);display:grid;grid-template-columns:auto 1fr;gap:.65rem;align-items:start}
+  .pmk-card-icon{height:2.05rem;width:2.05rem;border-radius:.7rem;display:flex;align-items:center;justify-content:center;background:#f8fafc;color:#64748b}
   .pmk-card .lbl{font-size:.62rem;font-weight:950;letter-spacing:.08em;text-transform:uppercase;color:#64748b}
-  .pmk-card .val{font-size:clamp(1.1rem,2vw,1.7rem);font-weight:950;line-height:1.05;color:#0f172a;margin-top:.3rem}
+  .pmk-card .val{font-size:clamp(1rem,1.65vw,1.55rem);font-weight:950;line-height:1.05;color:#0f172a;margin-top:.25rem;white-space:nowrap}
   .pmk-card .sub{font-size:.72rem;font-weight:800;color:#64748b;margin-top:.35rem}
-  .pmk-card.green{background:#ecfdf5;border-color:#bbf7d0}.pmk-card.green .val{color:#047857}
-  .pmk-card.amber{background:#fffbeb;border-color:#fde68a}.pmk-card.amber .val{color:#a16207}
-  .pmk-card.blue{background:#eff6ff;border-color:#bfdbfe}.pmk-card.blue .val{color:#1d4ed8}
-  .pmk-tab{height:2.6rem;padding:0 .25rem;border-bottom:2px solid transparent;display:inline-flex;align-items:center;gap:.45rem;font-size:.8rem;font-weight:950;color:#64748b;white-space:nowrap}
+  .pmk-card.green{background:#ecfdf5;border-color:#bbf7d0}.pmk-card.green .val,.pmk-card.green .pmk-card-icon{color:#047857}.pmk-card.green .pmk-card-icon{background:#d1fae5}
+  .pmk-card.amber{background:#fffbeb;border-color:#fde68a}.pmk-card.amber .val,.pmk-card.amber .pmk-card-icon{color:#a16207}.pmk-card.amber .pmk-card-icon{background:#fef3c7}
+  .pmk-card.blue{background:#eff6ff;border-color:#bfdbfe}.pmk-card.blue .val,.pmk-card.blue .pmk-card-icon{color:#1d4ed8}.pmk-card.blue .pmk-card-icon{background:#dbeafe}
+  .pmk-tab{height:2.6rem;padding:0 .35rem;border-bottom:2px solid transparent;display:inline-flex;align-items:center;gap:.45rem;font-size:.8rem;font-weight:950;color:#64748b;white-space:nowrap}
   .pmk-tab.active{border-color:#059669;color:#047857}
   .pmk-tab b{background:#ecfdf5;color:#047857;border-radius:999px;padding:.1rem .45rem;font-size:.68rem}
   .pmk-search{height:2.3rem;width:100%;border:1px solid #dbe3ee;border-radius:.7rem;padding:0 .75rem 0 2rem;font-size:.78rem;font-weight:700;outline:none}
@@ -167,6 +177,7 @@
   .pmk-dot{position:absolute;left:0;top:.2rem;width:1.35rem;height:1.35rem;border-radius:999px;background:#d1fae5;color:#047857;display:flex;align-items:center;justify-content:center;font-weight:950}
   @media (max-width: 768px){
     .pmk-page{height:auto;min-height:calc(100vh - 60px);overflow:auto}
+    .pmk-summary-wrap{align-items:flex-start}
     .pmk-sticky-name{width:14rem;min-width:14rem}
     .pmk-table th,.pmk-table td{padding:.65rem .75rem}
   }
@@ -176,7 +187,7 @@
 const PMK_API = './api/pipelane_monitoring_kredit/';
 const PMK_KODE_API = './api/kode/';
 const PMK_MONTHS = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-let pmkState = {tab:'pipeline', page:1, limit:25, totalPages:1, searchTimer:null};
+let pmkState = {tab:'pipeline', page:1, limit:25, totalPages:1, searchTimer:null, showSummary:true};
 let pmkOptions = {status:[], actions:[]};
 let pmkRows = [];
 
@@ -221,6 +232,17 @@ function pmkShowLoading(show) {
   const el = document.getElementById('pmk_loading');
   el.classList.toggle('hidden', !show);
   el.classList.toggle('flex', show);
+}
+
+function pmkToggleSummary() {
+  pmkState.showSummary = !pmkState.showSummary;
+  const wrap = document.querySelector('.pmk-summary-wrap');
+  const btn = document.getElementById('pmk_summary_toggle');
+  if (wrap) wrap.classList.toggle('is-collapsed', !pmkState.showSummary);
+  if (btn) {
+    btn.classList.toggle('bg-emerald-50', pmkState.showSummary);
+    btn.setAttribute('aria-pressed', pmkState.showSummary ? 'true' : 'false');
+  }
 }
 
 function pmkBadge(status) {
@@ -322,21 +344,30 @@ function pmkRenderCards(data) {
   const s = data.summary || {};
   const p = data.pipeline?.pagination || {};
   const targetProduksi = Number(s.target_produksi_rbb || 0);
-  const targetRunOff = s.target_run_off_rbb;
+  const targetRunOff = Number(s.target_run_off_rbb || 0);
   const persenProduksi = Number(s.persen_produksi_rbb || 0);
+  const persenRunOff = Number(s.persen_run_off_rbb || 0);
+  const monthLabel = `${PMK_MONTHS[(Number(document.getElementById('pmk_bulan').value) || 1) - 1]} ${document.getElementById('pmk_tahun').value}`;
   const cards = [
-    ['Target Produksi', `${PMK_MONTHS[(Number(document.getElementById('pmk_bulan').value) || 1) - 1]} ${document.getElementById('pmk_tahun').value}`, pmkMoney(targetProduksi), 'blue'],
-    ['Target Run Off', 'Belum ada sumber target', targetRunOff === null || targetRunOff === undefined ? '-' : pmkMoney(targetRunOff), 'amber'],
-    ['Produksi Bulan Ini', `${pmkFmt.format(p.total_records || 0)} pipeline - ${pmkFmt.format(persenProduksi.toFixed(2))}% target`, pmkMoney(s.realisasi_bulan_ini || 0), 'green'],
-    ['Run Off Bulan Ini', `Growth ${pmkMoney(s.growth_bulan_ini || 0)}`, pmkMoney(s.run_off_bulan_ini || 0), 'amber']
+    ['Target Produksi', monthLabel, pmkMoney(targetProduksi), 'blue', '<path d="M4 19V5"></path><path d="M4 19h16"></path><path d="M8 16v-5"></path><path d="M13 16V8"></path><path d="M18 16v-9"></path>'],
+    ['Target Run Off', targetRunOff > 0 ? 'RBB kode 277' : 'RBB kode 277 kosong', targetRunOff > 0 ? pmkMoney(targetRunOff) : '-', 'amber', '<path d="M3 12h18"></path><path d="m8 7-5 5 5 5"></path><path d="m16 7 5 5-5 5"></path>'],
+    ['Produksi Bulan Ini', `${pmkFmt.format(p.total_records || 0)} pipeline - ${pmkFmt.format(persenProduksi.toFixed(2))}% target`, pmkMoney(s.realisasi_bulan_ini || 0), 'green', '<path d="m7 17 10-10"></path><path d="M7 7h10v10"></path>'],
+    ['Run Off Bulan Ini', `${pmkFmt.format(persenRunOff.toFixed(2))}% target - Growth ${pmkMoney(s.growth_bulan_ini || 0)}`, pmkMoney(s.run_off_bulan_ini || 0), 'amber', '<path d="m17 7-10 10"></path><path d="M7 7h10v10"></path>']
   ];
   document.getElementById('pmk_cards').innerHTML = cards.map(c => `
     <div class="pmk-card ${c[3]}">
-      <div class="lbl">${c[0]}</div>
-      <div class="val">${c[2]}</div>
-      <div class="sub">${c[1]}</div>
+      <div class="pmk-card-icon">
+        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.35" viewBox="0 0 24 24">${c[4]}</svg>
+      </div>
+      <div class="min-w-0">
+        <div class="lbl">${c[0]}</div>
+        <div class="val">${c[2]}</div>
+        <div class="sub truncate">${c[1]}</div>
+      </div>
     </div>
   `).join('');
+  const wrap = document.querySelector('.pmk-summary-wrap');
+  if (wrap) wrap.classList.toggle('is-collapsed', !pmkState.showSummary);
 }
 
 function pmkRenderPipeline(rows) {

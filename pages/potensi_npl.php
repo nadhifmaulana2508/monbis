@@ -206,9 +206,9 @@
           </select>
 
           <!-- Tombol Update Tambahan -->
-          <button onclick="gotoUpdatePotensiNPL()" class="flex items-center justify-center h-9 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition shrink-0 gap-1.5 font-bold text-xs" title="Update Potensi NPL">
+          <button onclick="gotoUpdatePotensiNPL()" class="flex items-center justify-center h-9 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition shrink-0 gap-1.5 font-bold text-xs" title="Update Komitmen Debitur">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-              <span>Update</span>
+              <span>Komitmen</span>
           </button>
 
           <button onclick="exportDetailPotensiExcel()" class="flex items-center justify-center w-9 h-9 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm transition shrink-0" title="Export Excel Detail">
@@ -334,8 +334,8 @@
       window.currentUserKode = String(k).padStart(3, '0');
       document.getElementById('badgeUnit').innerText = (window.currentUserKode === '000') ? 'KONSOLIDASI' : `CABANG ${window.currentUserKode}`;
 
-      // 2. KUNCI DROPDOWN CABANG
-      await populateKantorOptionsPO(window.currentUserKode);
+      // 2. KUNCI DROPDOWN CABANG, jalan paralel dengan ambil tanggal
+      const kantorOptionsPromise = populateKantorOptionsPO(window.currentUserKode);
 
       // 3. SET DEFAULT DATE & FETCH
       try { 
@@ -354,6 +354,7 @@
           currentFilter = { closing: today, harian: today };
           fetchPotensiData();
       }
+      kantorOptionsPromise.catch(() => {});
   });
 
   // --- FUNGSI LOCK DROPDOWN KANTOR ---
@@ -920,6 +921,7 @@
       const selectedStatus = document.getElementById('modalFilterStatus')?.value || 'ALL';
       
       const payload = {
+          source: 'potensi_npl',
           kode_kantor: currentDetailKode === '000' ? '' : currentDetailKode,
           kode_kankas: selectedKankas,
           kode_ao: selectedAo,
@@ -928,8 +930,9 @@
           harian_date: currentFilter.harian
       };
       
-      sessionStorage.setItem("potensinpl_update", JSON.stringify(payload));
-      window.location.href = './update_potensi'; 
+      sessionStorage.setItem("flowpar_update", JSON.stringify(payload));
+      sessionStorage.removeItem("potensinpl_update");
+      window.location.href = './update_flowpar'; 
   };
 
   const closePoModal = () => { document.getElementById('modalDebiturPotensi').classList.add('hidden'); document.getElementById('modalDebiturPotensi').classList.remove('flex'); };

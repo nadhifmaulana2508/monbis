@@ -6,9 +6,41 @@ require_once __DIR__ . '/../middlewares/auth.php';
 
 class AuthController {
     private $pdo;
+    private $cacheNamespace = 'report_dpk_auth_cache';
 
     public function __construct($pdo) {
         $this->pdo = $pdo;
+    }
+
+    private function cacheDir()
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $this->cacheNamespace;
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0775, true);
+        }
+        return $dir;
+    }
+
+    private function cachePath($key)
+    {
+        return $this->cacheDir() . DIRECTORY_SEPARATOR . preg_replace('/[^a-zA-Z0-9_\-]/', '_', $key) . '.json';
+    }
+
+    private function remember($key, $ttlSeconds, $resolver)
+    {
+        $forceRefresh = isset($_GET['refresh']) && $_GET['refresh'] === '1';
+        $path = $this->cachePath($key);
+
+        if (!$forceRefresh && is_file($path) && (time() - filemtime($path) <= $ttlSeconds)) {
+            $cached = json_decode((string) @file_get_contents($path), true);
+            if (is_array($cached)) {
+                return $cached;
+            }
+        }
+
+        $data = $resolver();
+        @file_put_contents($path, json_encode($data));
+        return $data;
     }
 
     public function login($data) {
@@ -49,15 +81,18 @@ class AuthController {
             sendResponse(400, "ID Karyawan tidak ditemukan dalam token");
         }
     
-        // Query data user dari database
-        $stmt = $this->pdo->prepare("SELECT id, kode, employee_id, full_name, job_position, branch_name, level, role FROM users WHERE employee_id = :employee_id");
-        $stmt->execute([':employee_id' => $employee_id]);
-        $user = $stmt->fetch();
+        $user = $this->remember('whoami_' . md5($employee_id), 300, function () use ($employee_id) {
+            $stmt = $this->pdo->prepare("SELECT id, kode, employee_id, full_name, job_position, branch_name, level, role FROM users WHERE employee_id = :employee_id");
+            $stmt->execute([':employee_id' => $employee_id]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $row ?: [];
+        });
     
-        if (!$user) {
+        if (empty($user)) {
             sendResponse(404, "User tidak ditemukan");
         }
-    
+
+        header('Cache-Control: private, max-age=300');
         sendResponse(200, "Data user berhasil diambil", $user);
     }
 }
