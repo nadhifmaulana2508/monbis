@@ -30,7 +30,6 @@ class FlowParController {
 
 
 
-    // ✅ READ Recovery Hapus Buku
     public function getFlowPar($input = []) {
         $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian_date  = $input['harian_date']  ?? date('Y-m-d');
@@ -244,6 +243,7 @@ class FlowParController {
                 c.kolektibilitas AS kolek_closing,
                 h.kolektibilitas AS kolek_harian,
                 h.baki_debet,
+                h.alamat,
                 h.tunggakan_pokok,
                 h.tunggakan_bunga,
                 (COALESCE(h.tunggakan_pokok, 0) + COALESCE(h.tunggakan_bunga, 0)) AS total_tunggakan,

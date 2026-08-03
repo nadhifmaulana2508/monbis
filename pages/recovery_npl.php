@@ -123,9 +123,11 @@
   #recScroller {
       --recCode:56px;
       --recName:176px;
-      --recMetric:148px;
-      --recNet:158px;
-      --rec_headH:40px;
+      --recNoa:58px;
+      --recNom:126px;
+      --recRatio:92px;
+      --recNet:146px;
+      --rec_headH:64px;
 
       position:relative;
       flex:1 1 auto;
@@ -145,7 +147,11 @@
   #recScroller::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:999px; }
 
   #tabelRecovery {
-      width:calc(var(--recCode) + var(--recName) + (var(--recMetric) * 6) + var(--recNet));
+      width:calc(
+          var(--recCode) + var(--recName) +
+          (var(--recNoa) * 5) + (var(--recNom) * 5) +
+          var(--recRatio) + var(--recNet)
+      );
       min-width:100%;
       border-collapse:separate;
       border-spacing:0;
@@ -155,7 +161,9 @@
   }
   #tabelRecovery col.rec-col-code { width:var(--recCode); }
   #tabelRecovery col.rec-col-name { width:var(--recName); }
-  #tabelRecovery col.rec-col-metric { width:var(--recMetric); }
+  #tabelRecovery col.rec-col-noa { width:var(--recNoa); }
+  #tabelRecovery col.rec-col-nom { width:var(--recNom); }
+  #tabelRecovery col.rec-col-ratio { width:var(--recRatio); }
   #tabelRecovery col.rec-col-net { width:var(--recNet); }
 
   #tabelRecovery th,
@@ -171,21 +179,25 @@
   /* === HEADER === */
   #tabelRecovery thead th {
       position:sticky;
-      top:0;
       z-index:60;
-      height:40px;
-      padding:5px 7px;
+      padding:4px 6px;
       background:#f1f5f9;
       color:#1e3a8a;
       border-bottom:1px solid #cbd5e1;
       box-shadow:inset 0 1px 0 #cbd5e1,inset 0 -1px 0 #cbd5e1;
-      font-size:10px;
+      font-size:9px;
       font-weight:850;
-      line-height:1.12;
-      letter-spacing:.025em;
+      line-height:1.08;
+      letter-spacing:.02em;
       text-transform:uppercase;
       white-space:normal;
   }
+  #tabelRecovery .rec-head-1 th { top:0; height:35px; }
+  #tabelRecovery .rec-head-2 th { top:35px; height:29px; font-size:8px; }
+  #tabelRecovery thead th[rowspan="2"] { top:0; height:64px; vertical-align:middle; }
+  #tabelRecovery .rec-head-2 th { background:#f8fafc; color:#475569; }
+  .rec-group-head { text-align:center !important; border-right:1px solid #cbd5e1; }
+  .rec-sub-head { text-align:center !important; border-right:1px solid #e2e8f0; }
   .head-lunas { color:#1e40af !important; background:#eff6ff !important; }
   .head-backflow { color:#b45309 !important; background:#fffbeb !important; }
   .head-angsuran { color:#047857 !important; background:#ecfdf5 !important; }
@@ -193,6 +205,7 @@
   .head-total { color:#0e7490 !important; background:#ecfeff !important; }
   .head-net { color:#4338ca !important; background:#eef2ff !important; }
   .head-ratio { color:#854d0e !important; background:#fefce8 !important; }
+  .head-net { line-height:1.12 !important; overflow-wrap:anywhere; }
   .rec-head-short { display:none; }
 
   /* === STICKY COLUMNS === */
@@ -226,10 +239,24 @@
   #tabelRecovery tbody tr:hover .col-nama { background:#f8fafc; }
   .col-nama > div { overflow:hidden; text-overflow:ellipsis; }
 
-  .rec-metric-cell {
-      width:var(--recMetric);
-      min-width:var(--recMetric);
-      max-width:var(--recMetric);
+  .rec-noa-cell {
+      width:var(--recNoa);
+      min-width:var(--recNoa);
+      max-width:var(--recNoa);
+      text-align:center;
+      font-variant-numeric:tabular-nums;
+  }
+  .rec-nom-cell {
+      width:var(--recNom);
+      min-width:var(--recNom);
+      max-width:var(--recNom);
+      text-align:right;
+      font-variant-numeric:tabular-nums;
+  }
+  .rec-ratio-cell {
+      width:var(--recRatio);
+      min-width:var(--recRatio);
+      max-width:var(--recRatio);
       text-align:right;
       font-variant-numeric:tabular-nums;
   }
@@ -253,9 +280,15 @@
   .rec-pos { color:#dc2626 !important; font-weight:850; }
   .rec-neg { color:#059669 !important; font-weight:850; }
 
-  .rec-desktop-value { display:inline; }
-  .rec-mobile-noa,
-  .rec-mobile-nom { display:none; }
+  .rec-value {
+      display:block;
+      width:100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+  }
+  .rec-noa-value { text-align:center; font-size:10px; font-weight:800; }
+  .rec-nom-value { text-align:right; font-size:10.5px; font-weight:800; }
 
   /* === TOTAL STICKY === */
   .sticky-total td {
@@ -615,8 +648,10 @@
       #recScroller {
           --recCode:60px;
           --recName:180px;
-          --recMetric:150px;
-          --recNet:160px;
+          --recNoa:54px;
+          --recNom:116px;
+          --recRatio:86px;
+          --recNet:136px;
       }
       #tabelRecovery { font-size:11px; }
   }
@@ -627,8 +662,10 @@
       #recScroller {
           --recCode:52px;
           --recName:164px;
-          --recMetric:132px;
-          --recNet:142px;
+          --recNoa:54px;
+          --recNom:112px;
+          --recRatio:82px;
+          --recNet:124px;
       }
       #tabelRecovery thead th { font-size:9px; }
       #tabelRecovery th,#tabelRecovery td { padding-left:6px; padding-right:6px; }
@@ -661,8 +698,10 @@
       #recScroller {
           --recCode:48px;
           --recName:150px;
-          --recMetric:118px;
-          --recNet:128px;
+          --recNoa:50px;
+          --recNom:104px;
+          --recRatio:78px;
+          --recNet:112px;
       }
       #tabelRecovery { font-size:10px; }
       #tabelRecovery thead th { font-size:8.5px; }
@@ -740,16 +779,23 @@
 
       #recScroller {
           --recCode:0px;
-          --recName:102px;
-          --recMetric:86px;
-          --recNet:94px;
+          --recName:100px;
+          --recNoa:40px;
+          --recNom:78px;
+          --recRatio:62px;
+          --recNet:80px;
           border-radius:7px;
           scrollbar-gutter:auto;
       }
       #recScroller::-webkit-scrollbar { width:4px; height:4px; }
+
+      #recScroller { overscroll-behavior-x:contain; }
+      #tabelRecovery th:last-child,
+      #tabelRecovery td:last-child { border-right:0; }
       #tabelRecovery {
-          min-width:calc(var(--recName) + (var(--recMetric) * 6) + var(--recNet));
-          font-size:8.5px;
+          width:calc(var(--recName) + (var(--recNoa) * 5) + (var(--recNom) * 5) + var(--recRatio) + var(--recNet));
+          min-width:calc(var(--recName) + (var(--recNoa) * 5) + (var(--recNom) * 5) + var(--recRatio) + var(--recNet));
+          font-size:8.2px;
       }
       #tabelRecovery col.rec-col-code { display:none; }
       #tabelRecovery .col-kode { display:none !important; }
@@ -758,12 +804,14 @@
           padding:4px 4px;
       }
       #tabelRecovery thead th {
-          height:36px;
-          padding:3px 3px;
-          font-size:7px;
-          line-height:1.08;
+          padding:2px 3px;
+          font-size:6.8px;
+          line-height:1.05;
           letter-spacing:0;
       }
+      #tabelRecovery .rec-head-1 th { height:29px; }
+      #tabelRecovery .rec-head-2 th { top:29px; height:23px; font-size:6.3px; }
+      #tabelRecovery thead th[rowspan="2"] { height:52px; }
       .rec-head-full { display:none; }
       .rec-head-short { display:inline; }
       .col-nama {
@@ -786,28 +834,13 @@
           font-size:8.5px;
           line-height:1.12;
       }
-      .rec-metric-cell,.rec-net-cell {
+      .rec-noa-cell,.rec-nom-cell,.rec-ratio-cell,.rec-net-cell {
           padding:2px 3px !important;
       }
-      .rec-cell-link { padding:2px 1px; overflow:visible; }
-      .rec-desktop-value { display:none; }
-      .rec-mobile-noa,
-      .rec-mobile-nom { display:block; width:100%; text-align:right; white-space:nowrap; }
-      .rec-mobile-noa {
-          color:#64748b;
-          font-family:Inter,system-ui,sans-serif;
-          font-size:6.5px;
-          font-weight:850;
-          line-height:1;
-      }
-      .rec-mobile-nom {
-          margin-top:2px;
-          overflow:hidden;
-          font-size:8.5px;
-          font-weight:850;
-          line-height:1.05;
-          text-overflow:ellipsis;
-      }
+      .rec-cell-link { padding:2px 1px; }
+      .rec-noa-value { font-size:7.2px; line-height:1; }
+      .rec-nom-value { font-size:8.2px; line-height:1.05; }
+      .rec-ratio-cell span { min-width:0 !important; padding:3px 4px !important; font-size:7.5px !important; }
       .rec-cell-empty {
           display:flex;
           min-height:30px;
@@ -901,12 +934,15 @@
   @media (max-width:374px) {
       #recScroller {
           --recName:92px;
-          --recMetric:80px;
-          --recNet:88px;
+          --recNoa:38px;
+          --recNom:72px;
+          --recRatio:58px;
+          --recNet:74px;
       }
       #recoveryHeaderTop h1 { font-size:13px !important; }
       .mobile-filter-toggle { padding:0 7px; }
-      .rec-mobile-nom { font-size:8px; }
+      .rec-nom-value { font-size:7.6px; }
+      .rec-noa-value { font-size:6.8px; }
       .col-nama > div { font-size:8px; }
   }
 
@@ -1154,6 +1190,114 @@
       .modal-table { min-width:1150px; }
   }
 
+
+  /* === DESKTOP / WEB: seluruh kolom muat tanpa scroll horizontal === */
+  @media (min-width:1024px) {
+      #recScroller {
+          --recCode:4.2%;
+          --recName:13.8%;
+          --recNoa:4%;
+          --recNom:8.5%;
+          --recRatio:7.5%;
+          --recNet:11.5%;
+          overflow-x:hidden !important;
+          scrollbar-gutter:auto;
+      }
+
+      #tabelRecovery {
+          width:100% !important;
+          min-width:0 !important;
+          max-width:100% !important;
+          table-layout:fixed !important;
+      }
+
+      #tabelRecovery th,
+      #tabelRecovery td {
+          min-width:0 !important;
+          padding-left:4px !important;
+          padding-right:4px !important;
+          overflow:hidden;
+          text-overflow:ellipsis;
+      }
+
+      #tabelRecovery thead th {
+          padding-left:3px !important;
+          padding-right:3px !important;
+          font-size:8px !important;
+          letter-spacing:0 !important;
+      }
+
+      #tabelRecovery .rec-head-2 th {
+          font-size:7.5px !important;
+      }
+
+      .col-kode {
+          font-size:9px !important;
+      }
+
+      .col-nama {
+          padding-left:6px !important;
+          padding-right:5px !important;
+      }
+
+      .col-nama > div {
+          display:block;
+          width:100%;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+          font-size:10px;
+      }
+
+      .rec-noa-cell,
+      .rec-nom-cell,
+      .rec-ratio-cell,
+      .rec-net-cell {
+          min-width:0 !important;
+          padding-left:3px !important;
+          padding-right:3px !important;
+      }
+
+      .rec-value,
+      .rec-cell-link {
+          display:block;
+          width:100%;
+          min-width:0;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+      }
+
+      .rec-noa-value {
+          font-size:9px !important;
+          letter-spacing:-.02em;
+      }
+
+      .rec-nom-value {
+          font-size:9.2px !important;
+          letter-spacing:-.045em;
+      }
+
+      .rec-ratio-cell > span {
+          width:100%;
+          min-width:0 !important;
+          padding-left:3px !important;
+          padding-right:3px !important;
+          justify-content:center !important;
+          font-size:9px !important;
+          letter-spacing:-.02em;
+      }
+
+      .rec-net-cell {
+          font-size:9.2px !important;
+          letter-spacing:-.045em;
+      }
+
+      .sticky-total td {
+          font-size:9.2px !important;
+      }
+  }
+
 </style>
 
 
@@ -1209,25 +1353,32 @@
         <colgroup>
           <col class="rec-col-code">
           <col class="rec-col-name">
-          <col class="rec-col-metric">
-          <col class="rec-col-metric">
-          <col class="rec-col-metric">
-          <col class="rec-col-metric">
-          <col class="rec-col-metric">
-          <col class="rec-col-metric">
+          <col class="rec-col-noa"><col class="rec-col-nom">
+          <col class="rec-col-noa"><col class="rec-col-nom">
+          <col class="rec-col-noa"><col class="rec-col-nom">
+          <col class="rec-col-noa"><col class="rec-col-nom">
+          <col class="rec-col-noa"><col class="rec-col-nom">
+          <col class="rec-col-ratio">
           <col class="rec-col-net">
         </colgroup>
         <thead id="theadRec">
-          <tr>
-            <th class="col-kode">Kode</th>
-            <th class="col-nama text-left" id="thNamaRec">Area</th>
-            <th class="rec-metric-cell head-flow">Flow NPL</th>
-            <th class="rec-metric-cell head-lunas">Lunas NPL</th>
-            <th class="rec-metric-cell head-backflow">Backflow</th>
-            <th class="rec-metric-cell head-angsuran">Angsuran NPL</th>
-            <th class="rec-metric-cell head-total">Total Recovery</th>
-            <th class="rec-metric-cell head-ratio">% Flow PAR</th>
-            <th class="rec-net-cell head-net">Flow - Recovery</th>
+          <tr class="rec-head-1">
+            <th class="col-kode" rowspan="2">Kode</th>
+            <th class="col-nama text-left" id="thNamaRec" rowspan="2">Area</th>
+            <th class="rec-group-head head-lunas" colspan="2">Lunas NPL</th>
+            <th class="rec-group-head head-backflow" colspan="2">Backflow</th>
+            <th class="rec-group-head head-angsuran" colspan="2">Angsuran NPL</th>
+            <th class="rec-group-head head-total" colspan="2">Total Recovery</th>
+            <th class="rec-group-head head-flow" colspan="2">Flow NPL</th>
+            <th class="rec-ratio-cell head-ratio" rowspan="2">% Flow PAR</th>
+            <th class="rec-net-cell head-net" rowspan="2">OSC NPL</th>
+          </tr>
+          <tr class="rec-head-2">
+            <th class="rec-sub-head head-lunas">NOA</th><th class="rec-sub-head head-lunas">Baki Debet</th>
+            <th class="rec-sub-head head-backflow">NOA</th><th class="rec-sub-head head-backflow">Baki Debet</th>
+            <th class="rec-sub-head head-angsuran">NOA</th><th class="rec-sub-head head-angsuran">Baki Debet</th>
+            <th class="rec-sub-head head-total" id="sortTotalNoa">NOA ↕</th><th class="rec-sub-head head-total" id="sortTotalBaki">Baki Debet ↕</th>
+            <th class="rec-sub-head head-flow">NOA</th><th class="rec-sub-head head-flow">Baki Debet</th>
           </tr>
         </thead>
         <tbody id="recoveryTotalRow"></tbody>
@@ -1305,11 +1456,11 @@
     </div>
     <div id="modalInfoBodyRecovery" class="p-4 text-sm text-slate-600 space-y-3">
       <p><b>Flow NPL:</b> rekening yang tidak NPL di closing, lalu menjadi KL/D/M di harian.</p>
-      <p><b>% Flow PAR:</b> OS Flow NPL dibagi baki debet NPL bulan lalu. Hijau untuk 0/negatif, kuning untuk sampai 7%, merah jika lebih dari 7%.</p>
+      <p><b>% Flow PAR:</b> OS Flow NPL dibagi baki debet NPL bulan lalu. Hijau untuk 0% atau negatif, oranye untuk 0,01% sampai 3%, dan merah jika lebih dari 3%.</p>
       <p><b>Recovery:</b> Lunas NPL + Backflow + Angsuran NPL.</p>
       <p><b>Angsuran NPL:</b> selisih baki debet closing NPL dibanding harian jika baki debet harian lebih kecil.</p>
       <div class="p-3 rounded-lg border border-blue-200 bg-blue-50 text-blue-900 text-xs">
-        <b>Formula:</b> Flow - Recovery. Positif berarti tekanan NPL naik, negatif berarti recovery lebih besar.
+        <b>Perbaikan (-) / Pemburukan (+):</b> Flow NPL dikurangi Total Recovery. Nilai negatif berarti perbaikan, sedangkan nilai positif berarti pemburukan.
       </div>
       <p class="text-xs text-slate-500">Jika total recovery berbeda dengan migrasi kolek, biasanya ada kapitalisasi/restrukturisasi yang membuat baki debet naik.</p>
       <p class="text-xs text-slate-500">Catatan: % NPL bisa naik walaupun OSC NPL turun jika total portofolio/OS turun lebih besar.</p>
@@ -1363,32 +1514,27 @@
 
       thead.innerHTML = `
         <tr class="rec-head-1">
-          <th class="col-kode">Kode</th>
-          <th class="col-nama text-left" id="thNamaRec">Area</th>
-          <th class="rec-metric-cell head-flow border-r border-slate-200">
-              <span class="rec-head-full">Flow NPL</span><span class="rec-head-short">Flow</span>
-          </th>
-          <th class="rec-metric-cell head-lunas border-r border-slate-200">
-              <span class="rec-head-full">Lunas NPL</span><span class="rec-head-short">Lunas</span>
-          </th>
-          <th class="rec-metric-cell head-backflow border-r border-slate-200">
-              <span class="rec-head-full">Backflow</span><span class="rec-head-short">Backflow</span>
-          </th>
-          <th class="rec-metric-cell head-angsuran border-r border-slate-200">
-              <span class="rec-head-full">Angsuran NPL</span><span class="rec-head-short">Angsuran</span>
-          </th>
-          <th class="rec-metric-cell head-total border-r border-slate-200 cursor-pointer hover:bg-cyan-100" id="sortTotalBaki" title="Urutkan total recovery">
-              <span class="rec-head-full">Total Recovery</span><span class="rec-head-short">Recovery</span>
-          </th>
-          <th class="rec-metric-cell head-ratio border-r border-slate-200">
-              <span class="rec-head-full">% Flow PAR</span><span class="rec-head-short">% Flow</span>
-          </th>
-          <th class="rec-net-cell head-net">
-              <span class="rec-head-full">Flow - Recovery</span><span class="rec-head-short">Net Flow</span>
-          </th>
+          <th class="col-kode" rowspan="2">Kode</th>
+          <th class="col-nama text-left" id="thNamaRec" rowspan="2">Area</th>
+          <th class="rec-group-head head-lunas" colspan="2"><span class="rec-head-full">Lunas NPL</span><span class="rec-head-short">Lunas</span></th>
+          <th class="rec-group-head head-backflow" colspan="2">Backflow</th>
+          <th class="rec-group-head head-angsuran" colspan="2"><span class="rec-head-full">Angsuran NPL</span><span class="rec-head-short">Angsuran</span></th>
+          <th class="rec-group-head head-total" colspan="2"><span class="rec-head-full">Total Recovery</span><span class="rec-head-short">Recovery</span></th>
+          <th class="rec-group-head head-flow" colspan="2"><span class="rec-head-full">Flow NPL</span><span class="rec-head-short">Flow</span></th>
+          <th class="rec-ratio-cell head-ratio" rowspan="2"><span class="rec-head-full">% Flow PAR</span><span class="rec-head-short">% Flow</span></th>
+          <th class="rec-net-cell head-net" rowspan="2"><span class="rec-head-full">Perbaikan (-) / Pemburukan (+)</span><span class="rec-head-short">Baik (-) / Buruk (+)</span></th>
+        </tr>
+        <tr class="rec-head-2">
+          <th class="rec-sub-head head-lunas">NOA</th><th class="rec-sub-head head-lunas">Baki Debet</th>
+          <th class="rec-sub-head head-backflow">NOA</th><th class="rec-sub-head head-backflow">Baki Debet</th>
+          <th class="rec-sub-head head-angsuran">NOA</th><th class="rec-sub-head head-angsuran">Baki Debet</th>
+          <th class="rec-sub-head head-total cursor-pointer hover:bg-cyan-100" id="sortTotalNoa" title="Urutkan total NOA">NOA ↕</th>
+          <th class="rec-sub-head head-total cursor-pointer hover:bg-cyan-100" id="sortTotalBaki" title="Urutkan total baki debet">Baki Debet ↕</th>
+          <th class="rec-sub-head head-flow">NOA</th><th class="rec-sub-head head-flow">Baki Debet</th>
         </tr>
       `;
 
+      document.getElementById('sortTotalNoa')?.addEventListener('click', () => doSort('total_noa'));
       document.getElementById('sortTotalBaki')?.addEventListener('click', () => doSort('total_baki'));
       setTimeout(updateRecStickyHeader, 20);
   }
@@ -1564,7 +1710,7 @@
     } catch(err) {
       if(err.name !== 'AbortError') {
           console.error(err);
-          tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-red-500 font-bold">Gagal memuat data.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="14" class="p-4 text-center text-red-500 font-bold">Gagal memuat data.</td></tr>`;
       }
     } finally {
       loading.classList.add('hidden');
@@ -1586,7 +1732,7 @@
   function renderTotal(tot) {
      const el = document.getElementById('recoveryTotalRow');
      if(!tot) { el.innerHTML = ''; return; }
-     
+
      const tNoa = num(tot.total_noa_recovery || (num(tot.noa_lunas) + num(tot.noa_backflow) + num(tot.noa_angsuran_npl)));
      const tBak = num(tot.total_recovery || (num(tot.baki_debet_lunas) + num(tot.baki_debet_backflow) + num(tot.baki_debet_angsuran_npl)));
      const net = num(tot.net_flow_recovery);
@@ -1596,25 +1742,27 @@
         <tr class="sticky-total">
             <td class="col-kode font-bold uppercase"></td>
             <td class="col-nama font-bold uppercase text-left"><div>TOTAL</div></td>
-            <td class="rec-metric-cell text-red-600 font-bold border-r border-blue-300">${metricText(tot.baki_debet_flow_npl, tot.noa_flow_npl)}</td>
-            <td class="rec-metric-cell border-r border-blue-300">${recMetricLink(tot.baki_debet_lunas, tot.noa_lunas, 'lunas', detailKode, 'blue')}</td>
-            <td class="rec-metric-cell border-r border-blue-300">${recMetricLink(tot.baki_debet_backflow, tot.noa_backflow, 'backflow', detailKode, 'orange')}</td>
-            <td class="rec-metric-cell border-r border-blue-300">${recMetricLink(tot.baki_debet_angsuran_npl, tot.noa_angsuran_npl, 'angsuran', detailKode, 'green')}</td>
-            <td class="rec-metric-cell text-blue-800 border-r border-blue-300">${recMetricLink(tBak, tNoa, 'total_recovery', detailKode, 'blue')}</td>
-            <td class="rec-metric-cell border-r border-blue-300">${flowParRatioCell(tot)}</td>
+            <td class="rec-noa-cell border-r border-blue-200">${recMetricValueLink(tot.noa_lunas, 'lunas', detailKode, 'blue', 'noa')}</td>
+            <td class="rec-nom-cell border-r border-blue-300">${recMetricValueLink(tot.baki_debet_lunas, 'lunas', detailKode, 'blue', 'nom')}</td>
+            <td class="rec-noa-cell border-r border-blue-200">${recMetricValueLink(tot.noa_backflow, 'backflow', detailKode, 'orange', 'noa')}</td>
+            <td class="rec-nom-cell border-r border-blue-300">${recMetricValueLink(tot.baki_debet_backflow, 'backflow', detailKode, 'orange', 'nom')}</td>
+            <td class="rec-noa-cell border-r border-blue-200">${recMetricValueLink(tot.noa_angsuran_npl, 'angsuran', detailKode, 'green', 'noa')}</td>
+            <td class="rec-nom-cell border-r border-blue-300">${recMetricValueLink(tot.baki_debet_angsuran_npl, 'angsuran', detailKode, 'green', 'nom')}</td>
+            <td class="rec-noa-cell border-r border-blue-200">${recMetricValueLink(tNoa, 'total_recovery', detailKode, 'blue', 'noa')}</td>
+            <td class="rec-nom-cell text-blue-800 border-r border-blue-300">${recMetricValueLink(tBak, 'total_recovery', detailKode, 'blue', 'nom')}</td>
+            <td class="rec-noa-cell text-red-600 border-r border-blue-200">${metricValue(tot.noa_flow_npl, 'noa')}</td>
+            <td class="rec-nom-cell text-red-600 border-r border-blue-300">${metricValue(tot.baki_debet_flow_npl, 'nom')}</td>
+            <td class="rec-ratio-cell border-r border-blue-300">${flowParRatioCell(tot)}</td>
             <td class="rec-net-cell ${net > 0 ? 'rec-pos' : (net < 0 ? 'rec-neg' : 'text-slate-500')}">${net > 0 ? '+' : ''}${fmt(net)}</td>
         </tr>
      `;
   }
 
-  function metricText(nominal, noa) {
-      const nominalText = num(nominal) !== 0 ? fmt(nominal) : '-';
-      const noaText = fmt(noa);
-      return `
-          <span class="rec-desktop-value">${nominalText} / (${noaText})</span>
-          <span class="rec-mobile-noa">${noaText} NOA</span>
-          <span class="rec-mobile-nom">${nominalText}</span>
-      `;
+  function metricValue(value, kind = 'nom') {
+      const number = num(value);
+      const valueText = number !== 0 ? fmt(number) : '-';
+      const valueClass = kind === 'noa' ? 'rec-noa-value' : 'rec-nom-value';
+      return `<span class="rec-value ${valueClass}">${valueText}</span>`;
   }
 
   function flowParRatioValue(row) {
@@ -1625,8 +1773,8 @@
 
   function flowParRatioClass(value) {
       if (value <= 0) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      if (value > 7) return 'bg-red-50 text-red-700 border-red-200';
-      return 'bg-yellow-50 text-yellow-700 border-yellow-200';
+      if (value > 3) return 'bg-red-50 text-red-700 border-red-200';
+      return 'bg-orange-50 text-orange-700 border-orange-200';
   }
 
   function flowParRatioCell(row) {
@@ -1642,16 +1790,16 @@
       return '000';
   }
 
-  function recMetricLink(nominal, noa, type, kode, color = 'blue') {
-      if (num(noa) <= 0 && num(nominal) <= 0) return `<span class="rec-cell-empty">${metricText(0, 0)}</span>`;
+  function recMetricValueLink(value, type, kode, color = 'blue', kind = 'nom') {
+      if (num(value) <= 0) return `<span class="rec-cell-empty">${metricValue(0, kind)}</span>`;
       const cls = color === 'orange' ? 'text-orange-600' : (color === 'green' ? 'text-emerald-600' : 'text-blue-600');
-      return `<a href="#" class="rec-cell-link ${cls} font-bold hover:bg-slate-100" data-act="view" data-type="${type}" data-kode="${kode}">${metricText(nominal, noa)}</a>`;
+      return `<a href="#" class="rec-cell-link ${cls} font-bold hover:bg-slate-100" data-act="view" data-type="${type}" data-kode="${kode}">${metricValue(value, kind)}</a>`;
   }
 
   function renderRows(rows) {
      const tbody = document.getElementById('recoveryBody');
      if(rows.length === 0) {
-         tbody.innerHTML = `<tr><td colspan="9" class="p-8 text-center text-slate-400">Tidak ada data recovery.</td></tr>`;
+         tbody.innerHTML = `<tr><td colspan="14" class="p-8 text-center text-slate-400">Tidak ada data recovery.</td></tr>`;
          return;
      }
 
@@ -1666,47 +1814,52 @@
         return `
             <tr class="border-b transition hover:bg-blue-50">
                 <td class="col-kode font-mono font-bold text-slate-500 text-xs">${kode}</td>
-                <td class="col-nama font-semibold text-slate-700 text-xs">
-                    <div class="truncate" title="${nama}">${nama}</div>
-                </td>
-                
-                <td class="rec-metric-cell text-red-600 font-bold border-r border-slate-100">${metricText(r.baki_debet_flow_npl, r.noa_flow_npl)}</td>
-                <td class="rec-metric-cell border-r border-slate-100">${recMetricLink(r.baki_debet_lunas, r.noa_lunas, 'lunas', kode, 'blue')}</td>
-                <td class="rec-metric-cell border-r border-slate-100">${recMetricLink(r.baki_debet_backflow, r.noa_backflow, 'backflow', kode, 'orange')}</td>
-                <td class="rec-metric-cell border-r border-slate-100">${recMetricLink(r.baki_debet_angsuran_npl, r.noa_angsuran_npl, 'angsuran', kode, 'green')}</td>
-                <td class="rec-metric-cell font-bold bg-blue-50/30 border-r border-slate-100">${recMetricLink(tBak, tNoa, 'total_recovery', kode, 'blue')}</td>
-                <td class="rec-metric-cell border-r border-slate-100">${flowParRatioCell(r)}</td>
+                <td class="col-nama font-semibold text-slate-700 text-xs"><div class="truncate" title="${nama}">${nama}</div></td>
+
+                <td class="rec-noa-cell border-r border-slate-100">${recMetricValueLink(r.noa_lunas, 'lunas', kode, 'blue', 'noa')}</td>
+                <td class="rec-nom-cell border-r border-slate-200">${recMetricValueLink(r.baki_debet_lunas, 'lunas', kode, 'blue', 'nom')}</td>
+                <td class="rec-noa-cell border-r border-slate-100">${recMetricValueLink(r.noa_backflow, 'backflow', kode, 'orange', 'noa')}</td>
+                <td class="rec-nom-cell border-r border-slate-200">${recMetricValueLink(r.baki_debet_backflow, 'backflow', kode, 'orange', 'nom')}</td>
+                <td class="rec-noa-cell border-r border-slate-100">${recMetricValueLink(r.noa_angsuran_npl, 'angsuran', kode, 'green', 'noa')}</td>
+                <td class="rec-nom-cell border-r border-slate-200">${recMetricValueLink(r.baki_debet_angsuran_npl, 'angsuran', kode, 'green', 'nom')}</td>
+                <td class="rec-noa-cell bg-blue-50/30 border-r border-slate-100">${recMetricValueLink(tNoa, 'total_recovery', kode, 'blue', 'noa')}</td>
+                <td class="rec-nom-cell bg-blue-50/30 border-r border-slate-200">${recMetricValueLink(tBak, 'total_recovery', kode, 'blue', 'nom')}</td>
+                <td class="rec-noa-cell text-red-600 border-r border-slate-100">${metricValue(r.noa_flow_npl, 'noa')}</td>
+                <td class="rec-nom-cell text-red-600 border-r border-slate-200">${metricValue(r.baki_debet_flow_npl, 'nom')}</td>
+                <td class="rec-ratio-cell border-r border-slate-100">${flowParRatioCell(r)}</td>
                 <td class="rec-net-cell ${net > 0 ? 'rec-pos' : (net < 0 ? 'rec-neg' : 'text-slate-500')}">${net > 0 ? '+' : ''}${fmt(net)}</td>
             </tr>
         `;
      }).join('');
 
-     // Spacer buat scroll mobile biar gak ketutup
-     tbody.innerHTML += `<tr style="height: 60px;"><td colspan="9" class="border-none bg-transparent"></td></tr>`;
+     tbody.innerHTML += `<tr style="height:50px;"><td colspan="14" class="border-none bg-transparent"></td></tr>`;
   }
 
   // --- SORTING ---
   const doSort = (colKey) => {
-    sortState = { column: colKey, direction: sortState.column === colKey ? -sortState.direction : 1 };
+    const isSame = sortState.column === colKey;
+    sortState = { column: colKey, direction: isSame ? -sortState.direction : -1 };
+
     const sorted = [...recoveryDataRaw].sort((a,b) => {
-        let valA, valB;
-        if(colKey === 'total_noa') {
-            valA = num(a.noa_lunas) + num(a.noa_backflow) + num(a.noa_angsuran_npl);
-            valB = num(b.noa_lunas) + num(b.noa_backflow) + num(b.noa_angsuran_npl);
-        } else {
-            valA = num(a.baki_debet_lunas) + num(a.baki_debet_backflow) + num(a.baki_debet_angsuran_npl);
-            valB = num(b.baki_debet_lunas) + num(b.baki_debet_backflow) + num(b.baki_debet_angsuran_npl);
+        const valA = colKey === 'total_noa'
+            ? num(a.total_noa_recovery || (num(a.noa_lunas) + num(a.noa_backflow) + num(a.noa_angsuran_npl)))
+            : num(a.total_recovery || (num(a.baki_debet_lunas) + num(a.baki_debet_backflow) + num(a.baki_debet_angsuran_npl)));
+        const valB = colKey === 'total_noa'
+            ? num(b.total_noa_recovery || (num(b.noa_lunas) + num(b.noa_backflow) + num(b.noa_angsuran_npl)))
+            : num(b.total_recovery || (num(b.baki_debet_lunas) + num(b.baki_debet_backflow) + num(b.baki_debet_angsuran_npl)));
+
+        if (valA === valB) {
+            return kodeNum(a.kode_cabang || a.kode_unit) - kodeNum(b.kode_cabang || b.kode_unit);
         }
         return (valA - valB) * sortState.direction;
     });
-    const sortTotalNoa = document.getElementById('sortTotalNoa');
-    const sortTotalBaki = document.getElementById('sortTotalBaki');
-    if (sortTotalNoa) sortTotalNoa.innerText = `NOA ${colKey==='total_noa' ? (sortState.direction>0?'ASC':'DESC') : ''}`;
-    if (sortTotalBaki) sortTotalBaki.innerText = `Total Recovery ${colKey==='total_baki' ? (sortState.direction>0?'ASC':'DESC') : ''}`;
+
+    const noaHead = document.getElementById('sortTotalNoa');
+    const bakiHead = document.getElementById('sortTotalBaki');
+    if (noaHead) noaHead.textContent = `NOA ${colKey === 'total_noa' ? (sortState.direction > 0 ? '↑' : '↓') : '↕'}`;
+    if (bakiHead) bakiHead.textContent = `BAKI DEBET ${colKey === 'total_baki' ? (sortState.direction > 0 ? '↑' : '↓') : '↕'}`;
     renderRows(sorted);
   };
-  document.getElementById('sortTotalNoa')?.addEventListener('click', () => doSort('total_noa'));
-  document.getElementById('sortTotalBaki')?.addEventListener('click', () => doSort('total_baki'));
 
   // --- EXPORT EXCEL (HTML STRING FIX) ---
   function exportRecoveryExcel() {
@@ -1724,18 +1877,18 @@
               <tr>
                   <th style="background-color:#d9ead3;">KODE</th>
                   <th style="background-color:#d9ead3;">NAMA KANTOR</th>
-                  <th style="background-color:#d9ead3;">NOA FLOW NPL</th>
-                  <th style="background-color:#d9ead3;">BAKI DEBET FLOW NPL</th>
                   <th style="background-color:#d9ead3;">NOA LUNAS</th>
                   <th style="background-color:#d9ead3;">BAKI DEBET LUNAS</th>
                   <th style="background-color:#d9ead3;">NOA BACKFLOW</th>
                   <th style="background-color:#d9ead3;">BAKI DEBET BACKFLOW</th>
                   <th style="background-color:#d9ead3;">NOA ANGSURAN NPL</th>
                   <th style="background-color:#d9ead3;">BAKI DEBET ANGSURAN NPL</th>
-                  <th style="background-color:#d9ead3;">TOTAL NOA</th>
-                  <th style="background-color:#d9ead3;">TOTAL BAKI DEBET</th>
+                  <th style="background-color:#d9ead3;">TOTAL NOA RECOVERY</th>
+                  <th style="background-color:#d9ead3;">TOTAL BAKI DEBET RECOVERY</th>
+                  <th style="background-color:#d9ead3;">NOA FLOW NPL</th>
+                  <th style="background-color:#d9ead3;">BAKI DEBET FLOW NPL</th>
                   <th style="background-color:#d9ead3;">% FLOW PAR / NPL M-1</th>
-                  <th style="background-color:#d9ead3;">FLOW - RECOVERY</th>
+                  <th style="background-color:#d9ead3;">PERBAIKAN (-) / PEMBURUKAN (+)</th>
               </tr>
           </thead>
           <tbody>`;
@@ -1746,8 +1899,6 @@
           table += `<tr>
               <td style="font-weight:bold;"></td>
               <td style="font-weight:bold;">GRAND TOTAL</td>
-              <td style="font-weight:bold;">${gt.noa_flow_npl}</td>
-              <td style="font-weight:bold;">${gt.baki_debet_flow_npl}</td>
               <td style="font-weight:bold;">${gt.noa_lunas}</td>
               <td style="font-weight:bold;">${gt.baki_debet_lunas}</td>
               <td style="font-weight:bold;">${gt.noa_backflow}</td>
@@ -1756,6 +1907,8 @@
               <td style="font-weight:bold;">${gt.baki_debet_angsuran_npl}</td>
               <td style="font-weight:bold;">${tNoa}</td>
               <td style="font-weight:bold;">${tBak}</td>
+              <td style="font-weight:bold;">${gt.noa_flow_npl}</td>
+              <td style="font-weight:bold;">${gt.baki_debet_flow_npl}</td>
               <td style="font-weight:bold;">${flowParRatioValue(gt).toFixed(2)}%</td>
               <td style="font-weight:bold;">${gt.net_flow_recovery}</td>
           </tr>`;
@@ -1770,8 +1923,6 @@
           table += `<tr>
               <td style="mso-number-format:'\\@'">${kode}</td>
               <td>${nama}</td>
-              <td>${r.noa_flow_npl}</td>
-              <td>${r.baki_debet_flow_npl}</td>
               <td>${r.noa_lunas}</td>
               <td>${r.baki_debet_lunas}</td>
               <td>${r.noa_backflow}</td>
@@ -1780,6 +1931,8 @@
               <td>${r.baki_debet_angsuran_npl}</td>
               <td>${tNoa}</td>
               <td>${tBak}</td>
+              <td>${r.noa_flow_npl}</td>
+              <td>${r.baki_debet_flow_npl}</td>
               <td>${flowParRatioValue(r).toFixed(2)}%</td>
               <td>${r.net_flow_recovery}</td>
           </tr>`;

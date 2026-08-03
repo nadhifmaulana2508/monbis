@@ -48,7 +48,7 @@
       --colNoa: 58px;        /* Kolom NOA */
       --colNom: 138px;       /* Kolom nominal kategori */
       --colNomTotal: 146px;  /* Kolom nominal total */
-      --fp_headH: 88px;
+      --fp_headH: 65px;
 
       position: relative;
       border: 0; border-radius: 0; background: white;
@@ -184,22 +184,451 @@
       width:var(--colNomTotal); min-width:var(--colNomTotal); max-width:var(--colNomTotal);
   }
 
-  /* === MODAL STYLES === */
-  #modalScroll { --colRek: 130px; --colNama: 200px; }
-  #modalTableFP { width: 100%; min-width: 1700px; } 
-  #modalTableFP th { position: sticky; top: 0; z-index: 30; background: #f8fafc; padding: 10px 12px; height: 40px; border-bottom: 1px solid #e2e8f0; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; }
-  #modalTableFP td { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; font-size: 12px; }
-  
-  .modal-freeze-1 { position: sticky; left: 0; z-index: 35; background: #fff; border-right: 1px solid #e2e8f0; width: var(--colRek); min-width: var(--colRek); max-width: var(--colRek); }
-  .modal-freeze-2 { position: sticky; left: var(--colRek); z-index: 34; background: #fff; border-right: 1px solid #e2e8f0; width: var(--colNama); min-width: var(--colNama); max-width: var(--colNama); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  
-  #modalTableFP th.modal-freeze-1 { z-index: 40; background: #f8fafc; }
-  #modalTableFP th.modal-freeze-2 { z-index: 39; background: #f8fafc; }
-  .modal-total-row td { position: sticky; top: 38px; z-index: 25; background: #f0f9ff; color: #0369a1; font-weight: bold; border-bottom: 1px solid #bae6fd; }
-  .modal-total-row td.modal-freeze-1 { z-index: 38; background: #f0f9ff; }
-  .modal-total-row td.modal-freeze-2 { z-index: 37; background: #f0f9ff; }
-  .overdue td { background-color: #fef2f2 !important; color: #991b1b; }
-  .hot90 { background-color: #fee2e2 !important; font-weight: bold; color: #7f1d1d; }
+  /* === MODAL DETAIL FLOW PAR === */
+  #modalDebiturFlowPar {
+      padding:10px;
+      background:rgba(15,23,42,.68);
+      backdrop-filter:blur(7px);
+  }
+  #modalCardFP {
+      width:min(1580px,calc(100vw - 20px));
+      height:min(94dvh,920px);
+      max-height:94dvh;
+      border:1px solid rgba(226,232,240,.92);
+      border-radius:16px;
+      background:#fff;
+      box-shadow:0 28px 80px rgba(15,23,42,.32);
+  }
+  .fp-modal-header {
+      flex:none;
+      border-bottom:1px solid #e2e8f0;
+      background:linear-gradient(180deg,#fff 0%,#f8fafc 100%);
+  }
+  .fp-modal-head-main {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:10px 12px 8px;
+  }
+  .fp-modal-title-wrap {
+      display:flex;
+      align-items:center;
+      min-width:0;
+      gap:9px;
+  }
+  .fp-modal-title-icon {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:38px;
+      height:38px;
+      flex:0 0 38px;
+      border:1px solid #bfdbfe;
+      border-radius:10px;
+      background:#eff6ff;
+      color:#2563eb;
+  }
+  .fp-modal-title-copy { min-width:0; }
+  #modalTitleFlowPar {
+      display:flex;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:6px;
+      color:#0f172a;
+      font-size:17px;
+      font-weight:900;
+      line-height:1.15;
+  }
+  #modalSubtitleFP {
+      margin-top:3px;
+      color:#64748b;
+      font-size:10px;
+      font-weight:650;
+      line-height:1.25;
+  }
+  .fp-modal-actions {
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:6px;
+      flex:0 0 auto;
+  }
+  .fp-modal-action {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+      height:34px;
+      padding:0 11px;
+      border:1px solid transparent;
+      border-radius:8px;
+      font-size:10px;
+      font-weight:850;
+      white-space:nowrap;
+      transition:transform .15s,background .15s,box-shadow .15s;
+  }
+  .fp-modal-action:hover { transform:translateY(-1px); box-shadow:0 4px 10px rgba(15,23,42,.1); }
+  .fp-modal-action.filter { border-color:#cbd5e1; background:#fff; color:#475569; }
+  .fp-modal-action.update { background:#2563eb; color:#fff; }
+  .fp-modal-action.excel { background:#059669; color:#fff; }
+  .fp-modal-action.close { width:34px; padding:0; border-color:#fecaca; background:#fff1f2; color:#e11d48; }
+  .fp-modal-toolbar {
+      display:flex;
+      align-items:end;
+      gap:7px;
+      padding:0 12px 9px;
+  }
+  .fp-modal-tool-field { min-width:0; }
+  .fp-modal-tool-field.kankas { width:235px; }
+  .fp-modal-tool-field.search { flex:1; max-width:360px; }
+  .fp-modal-tool-field.status { width:175px; }
+  .fp-modal-search-wrap { position:relative; }
+  .fp-modal-search-wrap svg {
+      position:absolute;
+      left:9px;
+      top:50%;
+      width:14px;
+      height:14px;
+      color:#94a3b8;
+      transform:translateY(-50%);
+      pointer-events:none;
+  }
+  #modalSearchFP { padding-left:29px; }
+
+  #modalProjectionSummary {
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:7px;
+      padding:8px 10px;
+      border-bottom:1px solid #e2e8f0;
+      background:#f8fafc;
+      flex:none;
+  }
+  .fp-projection-card {
+      min-width:0;
+      padding:7px 9px;
+      border:1px solid #e2e8f0;
+      border-radius:9px;
+      background:#fff;
+      box-shadow:0 1px 2px rgba(15,23,42,.035);
+  }
+  .fp-projection-label {
+      color:#64748b;
+      font-size:8px;
+      font-weight:900;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+  }
+  .fp-projection-value {
+      margin-top:3px;
+      color:#0f172a;
+      font-size:14px;
+      font-weight:900;
+      line-height:1.05;
+      font-variant-numeric:tabular-nums;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+  }
+  .fp-projection-value.blue { color:#1d4ed8; }
+  .fp-projection-value.green { color:#047857; }
+  .fp-projection-value.orange { color:#c2410c; }
+  .fp-projection-note {
+      grid-column:1 / -1;
+      display:flex;
+      align-items:center;
+      gap:6px;
+      color:#64748b;
+      font-size:8.5px;
+      font-weight:650;
+      line-height:1.25;
+  }
+  .fp-projection-note svg { width:13px; height:13px; flex:0 0 13px; color:#2563eb; }
+
+  #modalScroll {
+      --colRek:128px;
+      --colNama:190px;
+      position:relative;
+      flex:1;
+      min-height:0;
+      overflow:auto;
+      background:#fff;
+      scrollbar-gutter:stable;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+  }
+  #modalScroll::-webkit-scrollbar { width:7px; height:7px; }
+  #modalScroll::-webkit-scrollbar-track { background:#f8fafc; }
+  #modalScroll::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:999px; }
+  #modalTableFP {
+      width:max-content;
+      min-width:2320px;
+      border-collapse:separate;
+      border-spacing:0;
+      table-layout:fixed;
+      font-size:10.5px;
+  }
+  #modalTableFP th {
+      position:sticky;
+      top:0;
+      z-index:30;
+      height:38px;
+      padding:6px 8px;
+      border-right:1px solid #e2e8f0;
+      border-bottom:1px solid #cbd5e1;
+      background:#f1f5f9;
+      color:#475569;
+      font-size:8.5px;
+      font-weight:850;
+      letter-spacing:.025em;
+      text-transform:uppercase;
+      white-space:nowrap;
+  }
+  #modalTableFP td {
+      height:37px;
+      padding:5px 8px;
+      border-right:1px solid #f1f5f9;
+      border-bottom:1px solid #edf2f7;
+      background:#fff;
+      color:#334155;
+      white-space:nowrap;
+      font-variant-numeric:tabular-nums;
+  }
+  #modalTableFP tbody tr:nth-child(even) td { background:#fbfdff; }
+  #modalTableFP tbody tr:hover td { background:#eff6ff; }
+  .modal-freeze-1 {
+      position:sticky;
+      left:0;
+      z-index:35;
+      width:var(--colRek);
+      min-width:var(--colRek);
+      max-width:var(--colRek);
+      background:#fff;
+      border-right:1px solid #cbd5e1 !important;
+  }
+  .modal-freeze-2 {
+      position:sticky;
+      left:var(--colRek);
+      z-index:34;
+      width:var(--colNama);
+      min-width:var(--colNama);
+      max-width:var(--colNama);
+      overflow:hidden;
+      background:#fff;
+      border-right:1px solid #cbd5e1 !important;
+      box-shadow:5px 0 9px -8px rgba(15,23,42,.9);
+      text-overflow:ellipsis;
+      white-space:nowrap;
+  }
+  #modalTableFP th.modal-freeze-1,
+  #modalTableFP th.modal-freeze-2 { z-index:45; background:#eaf1f8; }
+  #modalTableFP tbody tr:nth-child(even) td.modal-freeze-1,
+  #modalTableFP tbody tr:nth-child(even) td.modal-freeze-2 { background:#fbfdff; }
+  #modalTableFP tbody tr:hover td.modal-freeze-1,
+  #modalTableFP tbody tr:hover td.modal-freeze-2 { background:#eff6ff; }
+  .modal-total-row td {
+      position:sticky;
+      top:38px;
+      z-index:25;
+      height:38px;
+      background:#eaf3ff !important;
+      color:#1e40af;
+      font-weight:850;
+      border-bottom:2px solid #bfdbfe;
+      box-shadow:0 4px 7px -5px rgba(15,23,42,.45);
+  }
+  .modal-total-row td.modal-freeze-1 { z-index:43; background:#eaf3ff !important; }
+  .modal-total-row td.modal-freeze-2 { z-index:42; background:#eaf3ff !important; }
+  .overdue td { background-color:#fff7f7 !important; }
+  .hot90 { background-color:#fee2e2 !important; font-weight:900; color:#991b1b !important; }
+  .fp-kolek-badge,
+  .fp-commit-badge {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:20px;
+      padding:2px 7px;
+      border-radius:999px;
+      font-size:8px;
+      font-weight:900;
+      line-height:1.1;
+      white-space:nowrap;
+  }
+  .fp-kolek-badge.good { background:#ecfdf5; color:#047857; }
+  .fp-kolek-badge.watch { background:#fffbeb; color:#b45309; }
+  .fp-kolek-badge.bad { background:#fff1f2; color:#be123c; }
+  .fp-kolek-badge.neutral { background:#f1f5f9; color:#475569; }
+  .fp-commit-badge.yes { background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; }
+  .fp-commit-badge.no { background:#fff7ed; color:#c2410c; border:1px solid #fed7aa; }
+  .fp-address-cell {
+      max-width:210px;
+      overflow:hidden;
+      color:#64748b;
+      text-overflow:ellipsis;
+  }
+  #modalMobileCardsFP { display:none; }
+  .fp-detail-empty,
+  .fp-detail-loading {
+      display:flex;
+      min-height:240px;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      color:#64748b;
+      font-size:11px;
+      font-weight:700;
+      text-align:center;
+  }
+
+  @media (min-width:768px) and (max-width:1100px) {
+      #modalCardFP { width:calc(100vw - 18px); height:92dvh; }
+      .fp-modal-toolbar { display:grid; grid-template-columns:210px minmax(180px,1fr) 165px; }
+      #modalTableFP { min-width:2180px; }
+  }
+
+  @media (max-width:767px) {
+      #modalDebiturFlowPar { align-items:flex-end !important; padding:0 !important; }
+      #modalCardFP {
+          width:100% !important;
+          height:95dvh !important;
+          max-height:95dvh !important;
+          border-radius:16px 16px 0 0 !important;
+          border-left:0;
+          border-right:0;
+          border-bottom:0;
+          box-shadow:0 -18px 46px rgba(15,23,42,.28);
+      }
+      .fp-modal-head-main { align-items:flex-start; gap:7px; padding:8px 8px 7px; }
+      .fp-modal-title-wrap { gap:7px; min-width:0; }
+      .fp-modal-title-icon { width:31px; height:31px; flex-basis:31px; border-radius:8px; }
+      .fp-modal-title-icon svg { width:16px; height:16px; }
+      #modalTitleFlowPar { font-size:13px; gap:4px; }
+      #modalSubtitleFP { margin-top:2px; font-size:8px; }
+      .fp-modal-actions { gap:4px; }
+      .fp-modal-action { width:30px; height:30px; padding:0; border-radius:7px; }
+      .fp-modal-action.close { width:30px; }
+      .fp-modal-action svg { width:14px; height:14px; }
+      .fp-action-label { display:none; }
+      #modalFilterPanel {
+          width:100%;
+          padding:7px 8px 8px !important;
+          border-top:1px solid #e2e8f0;
+      }
+      #modalFilterPanel:not(.hidden) { display:block !important; }
+      .fp-modal-toolbar {
+          display:grid;
+          grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+          gap:5px;
+          padding:0;
+      }
+      .fp-modal-tool-field.kankas { width:auto; grid-column:1 / -1; }
+      .fp-modal-tool-field.search { max-width:none; }
+      .fp-modal-tool-field.status { width:auto; }
+      .fp-modal-tool-field .lbl { font-size:7px; }
+      .fp-modal-tool-field .inp { height:31px; font-size:9px; }
+      #modalProjectionSummary {
+          grid-template-columns:repeat(2,minmax(0,1fr));
+          gap:5px;
+          padding:6px 7px;
+      }
+      .fp-projection-card { padding:6px 7px; border-radius:8px; }
+      .fp-projection-label { font-size:6.5px; }
+      .fp-projection-value { font-size:10px; margin-top:2px; }
+      .fp-projection-note { font-size:7px; grid-column:1 / -1; }
+      #modalScroll { overflow-y:auto; overflow-x:hidden; background:#f8fafc; }
+      #modalTableFP { display:none !important; }
+      #modalMobileCardsFP { display:grid; gap:7px; padding:7px 8px 22px; }
+      .fp-mobile-card {
+          overflow:hidden;
+          border:1px solid #e2e8f0;
+          border-radius:10px;
+          background:#fff;
+          box-shadow:0 1px 2px rgba(15,23,42,.04);
+      }
+      .fp-mobile-card-head {
+          display:flex;
+          align-items:flex-start;
+          justify-content:space-between;
+          gap:7px;
+          padding:7px 8px 6px;
+          border-bottom:1px solid #f1f5f9;
+          background:linear-gradient(180deg,#fff,#fbfdff);
+      }
+      .fp-mobile-identity { min-width:0; }
+      .fp-mobile-rek {
+          color:#475569;
+          font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+          font-size:8px;
+          font-weight:850;
+          line-height:1.1;
+      }
+      .fp-mobile-name {
+          margin-top:2px;
+          overflow:hidden;
+          color:#0f172a;
+          font-size:10px;
+          font-weight:900;
+          line-height:1.15;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+      }
+      .fp-mobile-address {
+          padding:5px 8px;
+          border-bottom:1px solid #f1f5f9;
+          color:#64748b;
+          font-size:7.5px;
+          line-height:1.25;
+      }
+      .fp-mobile-metrics {
+          display:grid;
+          grid-template-columns:repeat(2,minmax(0,1fr));
+          gap:1px;
+          background:#e2e8f0;
+      }
+      .fp-mobile-metric { min-width:0; padding:6px 8px; background:#fff; }
+      .fp-mobile-label {
+          color:#64748b;
+          font-size:6.5px;
+          font-weight:900;
+          letter-spacing:.025em;
+          text-transform:uppercase;
+      }
+      .fp-mobile-value {
+          margin-top:2px;
+          overflow:hidden;
+          color:#0f172a;
+          font-size:9.5px;
+          font-weight:900;
+          line-height:1.05;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+          font-variant-numeric:tabular-nums;
+      }
+      .fp-mobile-value.red { color:#be123c; }
+      .fp-mobile-value.green { color:#047857; }
+      .fp-mobile-commit {
+          padding:6px 8px 7px;
+          background:#fbfdff;
+          color:#475569;
+          font-size:7.5px;
+          line-height:1.3;
+      }
+      .fp-mobile-commit-row {
+          display:flex;
+          align-items:flex-start;
+          justify-content:space-between;
+          gap:8px;
+          margin-top:3px;
+      }
+      .fp-mobile-commit-row:first-child { margin-top:0; }
+      .fp-mobile-commit-row span:first-child { color:#64748b; font-weight:800; }
+      .fp-mobile-commit-row b { color:#334155; text-align:right; }
+  }
 
   /* === RESPONSIVE TABLE WIDTHS === */
   @media (min-width: 1440px) {
@@ -432,22 +861,393 @@
       #tabelFlowPar.mobile-view #fpBody .sticky-left-2 > div,
       #tabelFlowPar.mobile-view #fpTotalRow .sticky-left-2 > div { font-size:8px; }
   }
+
+
+  /* === FLOW PAR REPORT REDESIGN === */
+  #flowParPage {
+      width:100%;
+      max-width:none;
+      height:calc(100vh - 60px);
+      height:calc(100dvh - 60px);
+      padding:6px 8px 8px;
+      gap:7px;
+      background:#f8fafc;
+  }
+  #flowParHeader {
+      margin:0;
+      padding:8px 10px;
+      border-radius:11px;
+      border:1px solid #dbe3ee;
+      box-shadow:0 2px 8px rgba(15,23,42,.045);
+      background:linear-gradient(180deg,#fff 0%,#fbfdff 100%);
+  }
+  .fp-page-title-icon {
+      width:36px;
+      height:36px;
+      flex:0 0 36px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      padding:0 !important;
+      border-radius:10px !important;
+      background:linear-gradient(145deg,#2563eb,#1d4ed8) !important;
+      box-shadow:0 6px 14px rgba(37,99,235,.18) !important;
+  }
+  .fp-page-title-copy { min-width:0; }
+  .fp-page-title-copy h1 { line-height:1.08; }
+  .fp-page-subtitle {
+      margin:3px 0 0 0 !important;
+      color:#64748b;
+      font-size:10px;
+      font-weight:650;
+      line-height:1.2;
+  }
+
+  /* Main report surface */
+  #fpReportCard {
+      border-radius:11px;
+      border-color:#dbe3ee;
+      box-shadow:0 2px 8px rgba(15,23,42,.045);
+  }
+  #fpScroller {
+      border-radius:10px;
+      background:#fff;
+  }
+  #tabelFlowPar {
+      font-variant-numeric:tabular-nums;
+  }
+  #tabelFlowPar thead th {
+      border-right:1px solid #dbe3ee;
+  }
+  #tabelFlowPar .fp-head-1 th {
+      height:36px;
+      border-top:3px solid transparent;
+      font-size:9px;
+      letter-spacing:.025em;
+  }
+  #tabelFlowPar .fp-head-2 th {
+      top:36px;
+      height:29px;
+      font-size:8px;
+      letter-spacing:.025em;
+  }
+  #tabelFlowPar .head-jt { border-top-color:#3b82f6 !important; }
+  #tabelFlowPar .head-pokok { border-top-color:#a855f7 !important; }
+  #tabelFlowPar .head-bunga { border-top-color:#f59e0b !important; }
+  #tabelFlowPar .head-pokok-bunga { border-top-color:#f43f5e !important; }
+  #tabelFlowPar .head-total { border-top-color:#06b6d4 !important; }
+  #fpBody tr:nth-child(even) td { background:#fbfdff; }
+  #fpBody tr:hover td { background:#eff6ff !important; }
+  #fpBody td,
+  #fpTotalRow td {
+      border-right:1px solid #edf2f7;
+  }
+  #fpBody tr { height:35px; }
+  #fpBody td { font-size:10.5px; }
+  #fpTotalRow td {
+      font-size:10px;
+      background:#edf5ff;
+      color:#1e3a8a;
+      border-bottom:2px solid #93c5fd;
+  }
+  .fp-noa-cell { color:#475569; font-weight:850; }
+  .fp-nom-cell { font-weight:800; }
+  .fp-cell-link {
+      padding:3px 3px;
+      border-radius:5px;
+  }
+  .fp-cell-link:hover { background:rgba(219,234,254,.72); }
+
+  /* Desktop: semua kolom muat tanpa horizontal scroll */
+  @media (min-width:1024px) {
+      #fpScroller {
+          --col1:44px;
+          --col2:148px;
+          --colNoa:42px;
+          --colNom:96px;
+          --colNomTotal:104px;
+          overflow-x:hidden;
+      }
+      #tabelFlowPar {
+          width:100%;
+          min-width:100%;
+      }
+      #tabelFlowPar th,
+      #tabelFlowPar td {
+          padding-left:4px;
+          padding-right:4px;
+      }
+      #tabelFlowPar .sticky-left-2 { font-size:10px; }
+      #fpBody td { font-size:9.5px; }
+      #fpTotalRow td { font-size:9px; }
+  }
+
+  @media (min-width:1440px) {
+      #fpScroller {
+          --col1:50px;
+          --col2:175px;
+          --colNoa:46px;
+          --colNom:108px;
+          --colNomTotal:116px;
+      }
+      #tabelFlowPar .fp-head-1 th { font-size:9.5px; }
+      #tabelFlowPar .fp-head-2 th { font-size:8.5px; }
+      #fpBody td { font-size:10.5px; }
+      #fpTotalRow td { font-size:10px; }
+  }
+
+  @media (max-width:767px) {
+      #flowParPage {
+          height:calc(100vh - 54px);
+          height:calc(100dvh - 54px);
+          padding:4px;
+          gap:4px;
+      }
+      #flowParHeader {
+          padding:6px 7px;
+          border-radius:8px;
+      }
+      .fp-page-title-icon {
+          width:30px;
+          height:30px;
+          flex-basis:30px;
+          border-radius:8px !important;
+      }
+      .fp-page-title-icon svg { width:15px !important; height:15px !important; }
+      .fp-page-title-copy h1 { font-size:13px !important; gap:5px !important; }
+      .fp-page-subtitle { margin-top:2px !important; font-size:8px; }
+      #fpReportCard { border-radius:8px; }
+      #tabelFlowPar.mobile-view .fp-head-1 th {
+          height:35px;
+          border-top-width:2px;
+      }
+      #tabelFlowPar.mobile-view #fpBody tr { height:40px; }
+      #tabelFlowPar.mobile-view .fp-mobile-metric-cell .fp-cell-link,
+      #tabelFlowPar.mobile-view .fp-mobile-total-cell .fp-cell-link { min-height:31px; }
+  }
+
+  /* === INFO FLOW PAR === */
+  .fp-info-btn {
+      width:21px;
+      height:21px;
+      flex:0 0 21px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid #bfdbfe;
+      border-radius:999px;
+      background:#eff6ff;
+      color:#2563eb;
+      cursor:pointer;
+      transition:background .16s,border-color .16s,transform .16s;
+  }
+  .fp-info-btn:hover {
+      background:#dbeafe;
+      border-color:#93c5fd;
+      transform:translateY(-1px);
+  }
+  .fp-info-btn svg { width:13px; height:13px; }
+
+  #modalInfoFlowPar {
+      padding:14px;
+      background:rgba(15,23,42,.64);
+      backdrop-filter:blur(6px);
+  }
+  .fp-info-card {
+      width:min(780px,calc(100vw - 28px));
+      max-height:min(88dvh,760px);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      border:1px solid rgba(226,232,240,.95);
+      border-radius:16px;
+      background:#fff;
+      box-shadow:0 28px 70px rgba(15,23,42,.32);
+  }
+  .fp-info-header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:13px 15px;
+      border-bottom:1px solid #e2e8f0;
+      background:linear-gradient(180deg,#fff 0%,#f8fafc 100%);
+  }
+  .fp-info-heading {
+      display:flex;
+      align-items:center;
+      min-width:0;
+      gap:10px;
+  }
+  .fp-info-heading-icon {
+      width:36px;
+      height:36px;
+      flex:0 0 36px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid #bfdbfe;
+      border-radius:10px;
+      background:#eff6ff;
+      color:#2563eb;
+  }
+  .fp-info-heading-icon svg { width:19px; height:19px; }
+  .fp-info-title {
+      color:#0f172a;
+      font-size:16px;
+      font-weight:900;
+      line-height:1.15;
+  }
+  .fp-info-subtitle {
+      margin-top:3px;
+      color:#64748b;
+      font-size:10px;
+      font-weight:650;
+      line-height:1.3;
+  }
+  .fp-info-close {
+      width:34px;
+      height:34px;
+      flex:0 0 34px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid #e2e8f0;
+      border-radius:9px;
+      background:#fff;
+      color:#64748b;
+      cursor:pointer;
+      transition:.16s ease;
+  }
+  .fp-info-close:hover { background:#fff1f2; border-color:#fecdd3; color:#e11d48; }
+  .fp-info-body {
+      overflow:auto;
+      padding:14px 15px 16px;
+      color:#475569;
+  }
+  .fp-info-intro {
+      padding:10px 12px;
+      border:1px solid #bfdbfe;
+      border-radius:10px;
+      background:#eff6ff;
+      color:#1e3a8a;
+      font-size:11px;
+      font-weight:700;
+      line-height:1.45;
+  }
+  .fp-guide-grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:9px;
+      margin-top:10px;
+  }
+  .fp-guide-item {
+      min-width:0;
+      padding:10px 11px;
+      border:1px solid #e2e8f0;
+      border-left-width:4px;
+      border-radius:10px;
+      background:#fff;
+      box-shadow:0 1px 2px rgba(15,23,42,.035);
+  }
+  .fp-guide-item.jt { border-left-color:#3b82f6; background:#f8fbff; }
+  .fp-guide-item.one { border-left-color:#64748b; background:#f8fafc; }
+  .fp-guide-item.pokok { border-left-color:#a855f7; background:#fdfaff; }
+  .fp-guide-item.bunga { border-left-color:#f59e0b; background:#fffdf7; }
+  .fp-guide-item.gabungan { border-left-color:#f43f5e; background:#fff9fa; }
+  .fp-guide-item.full { grid-column:1 / -1; }
+  .fp-guide-label {
+      display:flex;
+      align-items:center;
+      gap:6px;
+      color:#0f172a;
+      font-size:11px;
+      font-weight:900;
+      line-height:1.2;
+  }
+  .fp-guide-badge {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:22px;
+      height:19px;
+      padding:0 6px;
+      border-radius:999px;
+      background:#e2e8f0;
+      color:#475569;
+      font-size:8px;
+      font-weight:900;
+      white-space:nowrap;
+  }
+  .fp-guide-text {
+      margin-top:6px;
+      color:#475569;
+      font-size:10.5px;
+      font-weight:600;
+      line-height:1.48;
+  }
+  .fp-guide-text b { color:#0f172a; font-weight:900; }
+  .fp-info-note {
+      margin-top:10px;
+      padding:9px 11px;
+      border:1px solid #fde68a;
+      border-radius:9px;
+      background:#fffbeb;
+      color:#92400e;
+      font-size:9.5px;
+      font-weight:700;
+      line-height:1.4;
+  }
+
+  @media (max-width:767px) {
+      .fp-info-btn { width:19px; height:19px; flex-basis:19px; }
+      .fp-info-btn svg { width:12px; height:12px; }
+      #modalInfoFlowPar {
+          align-items:flex-end !important;
+          padding:0;
+      }
+      .fp-info-card {
+          width:100%;
+          max-height:90dvh;
+          border-radius:16px 16px 0 0;
+          border-bottom:0;
+      }
+      .fp-info-header { padding:10px 11px; }
+      .fp-info-heading { gap:8px; }
+      .fp-info-heading-icon { width:32px; height:32px; flex-basis:32px; border-radius:9px; }
+      .fp-info-heading-icon svg { width:17px; height:17px; }
+      .fp-info-title { font-size:13px; }
+      .fp-info-subtitle { font-size:8.5px; }
+      .fp-info-close { width:31px; height:31px; flex-basis:31px; }
+      .fp-info-body { padding:10px 11px 14px; }
+      .fp-info-intro { padding:8px 9px; font-size:9.5px; }
+      .fp-guide-grid { grid-template-columns:1fr; gap:7px; margin-top:8px; }
+      .fp-guide-item,
+      .fp-guide-item.full { grid-column:auto; padding:8px 9px; }
+      .fp-guide-label { font-size:10px; }
+      .fp-guide-text { margin-top:4px; font-size:9px; line-height:1.42; }
+      .fp-info-note { margin-top:8px; padding:8px 9px; font-size:8.5px; }
+  }
+
 </style>
 
-<div class="max-w-[1920px] w-full mx-auto px-2 md:px-4 py-4 md:py-6 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
+<div id="flowParPage" class="w-full mx-auto flex flex-col font-sans text-slate-800 overflow-hidden">
 
-  <div class="relative z-20 flex-none mb-3 md:mb-4 w-full bg-white p-2 md:p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 shrink-0">
+  <div id="flowParHeader" class="relative z-20 flex-none w-full flex flex-col xl:flex-row items-start xl:items-center justify-between gap-2 shrink-0">
     
     <div class="flex items-center justify-between w-full xl:w-auto shrink-0 px-1">
-      <div>
+      <div class="fp-page-title-copy">
         <h1 class="text-base md:text-xl font-extrabold flex items-center gap-2 text-slate-800 whitespace-nowrap">
-            <span class="p-1.5 md:p-2 bg-blue-600 rounded-lg text-white shadow-sm shrink-0">
+            <span class="fp-page-title-icon text-white shrink-0">
                 <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 17v-6m4 6V7m4 10v-4M5 19h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
             </span> 
             <span>Rekap Flow PAR</span>
+            <button type="button" id="btnInfoFlowPar" class="fp-info-btn" title="Panduan tindak lanjut Flow PAR" aria-label="Buka panduan tindak lanjut Flow PAR">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path></svg>
+            </button>
             <span id="badgeUnit" class="hidden"></span>
         </h1>
-        <p class="text-[10px] md:text-xs text-slate-500 mt-1 ml-1 font-medium">*Data Posisi Closing vs Harian</p>
+        <p class="fp-page-subtitle">Posisi closing dibanding actual harian berdasarkan penyebab flow.</p>
       </div>
       
       <button id="btnToggleFilter" class="xl:hidden h-[30px] px-3 bg-white border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm transition font-bold text-[10px] whitespace-nowrap ml-2 shrink-0">
@@ -487,7 +1287,8 @@
       </form>
     </div>
   </div>
-  <div class="flex-1 min-h-0 overflow-hidden bg-white rounded-xl shadow-sm border border-slate-200 relative flex flex-col z-10">
+  <!-- Ringkasan KPI dihilangkan: setelah header langsung masuk ke tabel utama. -->
+  <div id="fpReportCard" class="flex-1 min-h-0 overflow-hidden bg-white shadow-sm border border-slate-200 relative flex flex-col z-10">
     <div id="loadingFP" class="hidden absolute inset-0 bg-white/80 z-[100] flex flex-col items-center justify-center text-blue-600 font-bold backdrop-blur-sm rounded-lg">
        <div class="animate-spin h-10 w-10 border-4 border-blue-200 border-t-blue-600 rounded-full mb-3"></div>
        <span class="text-sm tracking-wide">MEMUAT DATA...</span>
@@ -515,75 +1316,204 @@
   </div>
 </div>
 
-<div id="modalDebiturFlowPar" class="fixed inset-0 hidden bg-slate-900/60 backdrop-blur-sm items-center justify-center z-[9999] px-2 md:px-4">
-  <div id="modalCardFP" class="bg-white rounded-xl shadow-2xl flex flex-col w-full max-w-[1400px] h-[90vh] overflow-hidden animate-scale-up">
-    
-    <div class="flex flex-col border-b border-slate-100 bg-slate-50 shrink-0">
-        <div class="flex items-center justify-between p-3 md:p-4">
-            <div>
-                <h3 class="font-bold text-slate-800 text-base md:text-xl flex items-center gap-2">
-                    📄 <span id="modalTitleFlowPar" class="truncate max-w-[250px] md:max-w-none">Detail Debitur</span>
-                </h3>
-                <p class="text-[10px] md:text-xs text-slate-500 mt-1" id="modalSubtitleFP">Posisi: -</p>
-            </div>
-            
-            <div class="flex items-center gap-2">
-                <button id="btnToggleModalFilter" class="md:hidden flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-xs font-semibold text-slate-700 shadow-sm hover:bg-gray-50 focus:outline-none transition">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-                    Filter
-                </button>
-                <button id="btnCloseFP" class="w-8 h-8 md:w-9 md:h-9 flex items-center justify-center rounded-lg bg-slate-200 hover:bg-red-100 hover:text-red-600 transition text-slate-600 font-bold">✕</button>
-            </div>
-        </div>
-        
-        <div id="modalFilterPanel" class="hidden md:flex flex-col md:flex-row items-stretch md:items-center justify-end gap-2 px-3 pb-3 md:px-4 md:pt-0 md:pb-4 transition-all">
-            
-            <div class="flex flex-row items-center gap-2 w-full md:w-auto">
-                <select id="modalFilterKankas" class="inp !h-9 !py-0 text-xs w-full md:w-[250px] font-medium text-slate-700 shadow-sm" onchange="fetchDetailFlowPar()">
-                    <option value="">Semua Kankas</option>
-                </select>
-                
-                <div class="flex gap-2 shrink-0">
-                    <button onclick="gotoUpdateFlowPar()" class="h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5" title="Update Flow PAR">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-                        <span>Update</span>
-                    </button>
 
-                    <button onclick="exportDetailExcel()" class="h-9 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5" title="Export Excel Detail">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        <span>Excel</span>
-                    </button>
-                </div>
-            </div>
+<div id="modalInfoFlowPar" class="fixed inset-0 hidden items-center justify-center z-[10000]" role="dialog" aria-modal="true" aria-labelledby="titleInfoFlowPar">
+  <div class="fp-info-card animate-scale-up">
+    <div class="fp-info-header">
+      <div class="fp-info-heading">
+        <span class="fp-info-heading-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"></path>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          </svg>
+        </span>
+        <div>
+          <div id="titleInfoFlowPar" class="fp-info-title">Panduan Tindak Lanjut Flow PAR</div>
+          <div class="fp-info-subtitle">Acuan sederhana agar rekening tidak ikut flow dan kolektibilitas dapat diperbaiki.</div>
         </div>
+      </div>
+      <button type="button" id="btnCloseInfoFlowPar" class="fp-info-close" title="Tutup" aria-label="Tutup panduan">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </button>
     </div>
-    
-    <div class="flex-1 overflow-auto bg-white relative" id="modalScroll">
-        <table id="modalTableFP">
-            <thead>
-                <tr>
-                    <th class="modal-freeze-1 text-center">No Rekening</th>
-                    <th class="modal-freeze-2 text-left">Nama Nasabah</th>
-                    <th class="text-right w-[140px]">Baki Debet</th>
-                    <th class="text-right w-[120px]">Tungg. Pokok</th>
-                    <th class="text-right w-[120px]">Tungg. Bunga</th>
-                    <th class="text-right w-[140px] text-red-700 bg-red-50">Tot. Tunggakan</th>
-                    <th class="text-right w-[120px]">Saldo Tab</th>
-                    <th class="text-center w-[80px]">JT</th>
-                    <th class="text-center w-[60px]">DPD</th>
-                    <th class="text-center w-[60px]">DPD TP</th>
-                    <th class="text-center w-[60px]">DPD TB</th>
-                    <th class="text-right w-[120px]">Angs. Pokok</th>
-                    <th class="text-right w-[120px]">Angs. Bunga</th>
-                    <th class="text-center w-[100px]">Tgl Trans</th>
-                    <th class="text-left w-[180px]">Komitmen</th>
-                    <th class="text-center w-[110px]">Tgl Janji Bayar</th>
-                    <th class="text-right w-[130px]">Nominal Janji Bayar</th>
-                </tr>
-            </thead>
-            <tbody id="modalTotalRow"></tbody> 
-            <tbody id="modalBodyRows"></tbody> 
-        </table>
+
+    <div class="fp-info-body">
+      <div class="fp-info-intro">
+        Prioritaskan tindak lanjut sebelum posisi harian/closing. Klik angka pada tabel untuk melihat rekening yang perlu ditangani berdasarkan penyebab flow.
+      </div>
+
+      <div class="fp-guide-grid">
+        <section class="fp-guide-item jt">
+          <div class="fp-guide-label"><span class="fp-guide-badge">JT</span> Jatuh Tempo</div>
+          <div class="fp-guide-text">Rekening yang flow karena jatuh tempo perlu <b>diselesaikan sampai lunas</b> sesuai kewajiban pada sistem.</div>
+        </section>
+
+        <section class="fp-guide-item one">
+          <div class="fp-guide-label"><span class="fp-guide-badge">OBL</span> Lainnya / One Obligor</div>
+          <div class="fp-guide-text">Periksa seluruh fasilitas atau rekening yang saling berkaitan. Penuhi cicilan rekening terkait agar <b>kolektibilitas membaik</b> dan rekening lain tidak ikut flow.</div>
+        </section>
+
+        <section class="fp-guide-item pokok">
+          <div class="fp-guide-label"><span class="fp-guide-badge">TP</span> DPD Pokok &gt; 90 Hari</div>
+          <div class="fp-guide-text">Minimal membayar <b>1 kali angsuran pokok</b>. Jika memungkinkan, lakukan <b>1 kali angsuran penuh: pokok + bunga</b>.</div>
+        </section>
+
+        <section class="fp-guide-item bunga">
+          <div class="fp-guide-label"><span class="fp-guide-badge">TB</span> DPD Bunga &gt; 90 Hari</div>
+          <div class="fp-guide-text">Selesaikan <b>seluruh tunggakan pokok</b> dan minimal <b>1 kali angsuran bunga</b>.</div>
+        </section>
+
+        <section class="fp-guide-item gabungan full">
+          <div class="fp-guide-label"><span class="fp-guide-badge">TP+TB</span> DPD Pokok + Bunga &gt; 90 Hari</div>
+          <div class="fp-guide-text">Minimal membayar <b>3 kali angsuran pokok</b> dan <b>1 kali angsuran bunga</b> agar penyebab flow pokok dan bunga dapat ditangani.</div>
+        </section>
+      </div>
+
+      <div class="fp-info-note">
+        Nominal pembayaran akhir tetap mengikuti data tunggakan, jadwal angsuran, kondisi rekening pada sistem, dan ketentuan internal yang berlaku. Pastikan hasil pembayaran sudah tercermin pada posisi harian berikutnya.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modalDebiturFlowPar" class="fixed inset-0 hidden items-center justify-center z-[9999]">
+  <div id="modalCardFP" class="flex flex-col overflow-hidden animate-scale-up">
+    <div class="fp-modal-header">
+      <div class="fp-modal-head-main">
+        <div class="fp-modal-title-wrap">
+          <span class="fp-modal-title-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <path d="M14 2v6h6"></path>
+              <path d="M8 13h8M8 17h6"></path>
+            </svg>
+          </span>
+          <div class="fp-modal-title-copy">
+            <div id="modalTitleFlowPar">Detail Debitur</div>
+            <div id="modalSubtitleFP">Posisi: -</div>
+          </div>
+        </div>
+
+        <div class="fp-modal-actions">
+          <button id="btnToggleModalFilter" type="button" class="fp-modal-action filter md:hidden" title="Buka filter" aria-label="Buka filter">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M3 6h18M7 12h10M10 18h4"></path></svg>
+          </button>
+          <button type="button" onclick="gotoUpdateFlowPar()" class="fp-modal-action update" title="Update komitmen Flow PAR">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            <span class="fp-action-label">Update</span>
+          </button>
+          <button type="button" onclick="exportDetailExcel()" class="fp-modal-action excel" title="Export Excel detail">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1"></path><path d="m8 12 4 4 4-4M12 16V4"></path></svg>
+            <span class="fp-action-label">Excel</span>
+          </button>
+          <button id="btnCloseFP" type="button" class="fp-modal-action close" title="Tutup" aria-label="Tutup modal">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="modalFilterPanel" class="hidden md:block">
+        <div class="fp-modal-toolbar">
+          <div class="fp-modal-tool-field kankas">
+            <label class="lbl">Kankas</label>
+            <select id="modalFilterKankas" class="inp" onchange="fetchDetailFlowPar()">
+              <option value="">Semua Kankas</option>
+            </select>
+          </div>
+          <div class="fp-modal-tool-field search">
+            <label class="lbl">Cari Debitur</label>
+            <div class="fp-modal-search-wrap">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+              <input type="search" id="modalSearchFP" class="inp" placeholder="Nama, rekening, alamat, komitmen..." autocomplete="off" oninput="renderDetailFlowPar()">
+            </div>
+          </div>
+          <div class="fp-modal-tool-field status">
+            <label class="lbl">Status Komitmen</label>
+            <select id="modalCommitmentFilterFP" class="inp" onchange="renderDetailFlowPar()">
+              <option value="all">Semua Status</option>
+              <option value="committed">Sudah Komitmen</option>
+              <option value="none">Belum Komitmen</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="modalProjectionSummary">
+      <div class="fp-projection-card">
+        <div class="fp-projection-label">Kandidat Flow</div>
+        <div class="fp-projection-value blue" id="fpSummaryCandidate">0 Debitur</div>
+      </div>
+      <div class="fp-projection-card">
+        <div class="fp-projection-label">Sudah Komitmen</div>
+        <div class="fp-projection-value green" id="fpSummaryCommitted">0 Debitur</div>
+      </div>
+      <div class="fp-projection-card">
+        <div class="fp-projection-label">Belum Komitmen</div>
+        <div class="fp-projection-value orange" id="fpSummaryUncommitted">0 Debitur</div>
+      </div>
+      <div class="fp-projection-card">
+        <div class="fp-projection-label">Nominal Janji Bayar</div>
+        <div class="fp-projection-value" id="fpSummaryPromise">Rp 0</div>
+      </div>
+      <div class="fp-projection-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg>
+        Gunakan tombol Update untuk mengisi komitmen cabang. Ringkasan ini membantu proyeksi tindak lanjut; hasil akhir tetap mengikuti realisasi pembayaran dan posisi harian.
+      </div>
+    </div>
+
+    <div id="modalScroll">
+      <table id="modalTableFP">
+        <colgroup>
+          <col style="width:var(--colRek)">
+          <col style="width:var(--colNama)">
+          <col style="width:68px">
+          <col style="width:210px">
+          <col style="width:125px">
+          <col style="width:112px">
+          <col style="width:112px">
+          <col style="width:125px">
+          <col style="width:105px">
+          <col style="width:76px">
+          <col style="width:58px">
+          <col style="width:62px">
+          <col style="width:62px">
+          <col style="width:108px">
+          <col style="width:108px">
+          <col style="width:96px">
+          <col style="width:112px">
+          <col style="width:190px">
+          <col style="width:105px">
+          <col style="width:125px">
+        </colgroup>
+        <thead>
+          <tr>
+            <th class="modal-freeze-1 text-left">No Rekening</th>
+            <th class="modal-freeze-2 text-left">Nama Nasabah</th>
+            <th class="text-center">Kolek</th>
+            <th class="text-left">Alamat</th>
+            <th class="text-right">Baki Debet</th>
+            <th class="text-right">Tungg. Pokok</th>
+            <th class="text-right">Tungg. Bunga</th>
+            <th class="text-right">Tot. Tunggakan</th>
+            <th class="text-right">Saldo Tab</th>
+            <th class="text-center">JT</th>
+            <th class="text-center">DPD</th>
+            <th class="text-center">DPD TP</th>
+            <th class="text-center">DPD TB</th>
+            <th class="text-right">Angs. Pokok</th>
+            <th class="text-right">Angs. Bunga</th>
+            <th class="text-center">Tgl Trans</th>
+            <th class="text-center">Status Komitmen</th>
+            <th class="text-left">Komitmen</th>
+            <th class="text-center">Tgl Janji Bayar</th>
+            <th class="text-right">Nominal Janji</th>
+          </tr>
+        </thead>
+        <tbody id="modalTotalRow"></tbody>
+        <tbody id="modalBodyRows"></tbody>
+      </table>
+      <div id="modalMobileCardsFP"></div>
     </div>
   </div>
 </div>
@@ -607,6 +1537,34 @@
 </div>
 
 <script>
+
+
+  // --- INFO PANDUAN FLOW PAR ---
+  function openInfoFlowPar() {
+      const modal = document.getElementById('modalInfoFlowPar');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+  }
+
+  function closeInfoFlowPar() {
+      const modal = document.getElementById('modalInfoFlowPar');
+      if (!modal) return;
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      document.body.style.overflow = '';
+  }
+
+  document.getElementById('btnInfoFlowPar')?.addEventListener('click', openInfoFlowPar);
+  document.getElementById('btnCloseInfoFlowPar')?.addEventListener('click', closeInfoFlowPar);
+  document.getElementById('modalInfoFlowPar')?.addEventListener('click', event => {
+      if (event.target.id === 'modalInfoFlowPar') closeInfoFlowPar();
+  });
+  document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeInfoFlowPar();
+  });
+
   // --- UTILS ---
   const nfID = new Intl.NumberFormat('id-ID');
   const fmtNom = n => nfID.format(Number(n||0));
@@ -623,7 +1581,8 @@
   // --- STATE PENTING ---
   window.fpDataRaw = [];
   window.fpGtRaw = null;
-  let detailDataRaw = []; 
+  let detailDataRaw = [];
+  let detailDataView = []; 
   let sortState = { column: null, direction: 1 };
   let currentFilter = { closing:'', harian:'' };
   let currentDetailKode = ''; 
@@ -804,7 +1763,11 @@
   // TOGGLE FILTER MOBILE LOGIC (Main Page)
   document.getElementById('btnToggleFilter').addEventListener('click', function() {
       const panel = document.getElementById('filterPanel');
+      const isOpening = panel.classList.contains('hidden');
       panel.classList.toggle('hidden');
+      this.setAttribute('aria-expanded', isOpening ? 'true' : 'false');
+      const textNode = Array.from(this.childNodes).find(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
+      if (textNode) textNode.textContent = isOpening ? ' Tutup' : ' Filter';
   });
 
   // TOGGLE FILTER MOBILE LOGIC (Modal)
@@ -1223,180 +2186,329 @@
           if(mPanel) mPanel.classList.add('hidden');
       }
 
+      const searchFP = document.getElementById('modalSearchFP');
+      const statusFP = document.getElementById('modalCommitmentFilterFP');
+      if (searchFP) searchFP.value = '';
+      if (statusFP) statusFP.value = 'all';
       fetchDetailFlowPar();
   }
 
+  function fpEscape(value) {
+      return String(value ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+  }
+
+  function getFlowKolek(item) {
+      return String(item?.kolektibilitas ?? item?.kolek_harian ?? item?.kolek ?? '-').trim() || '-';
+  }
+
+  function hasFlowCommitment(item) {
+      const text = String(item?.komitmen ?? '').trim();
+      const normalized = text.toLowerCase();
+      const validText = text !== '' && text !== '-' && !['belum ada', 'belum komitmen', 'tidak ada'].includes(normalized);
+      return validText || !!item?.tgl_pembayaran || num(item?.nominal) > 0;
+  }
+
+  function flowKolekBadge(value) {
+      const kolek = String(value || '-').toUpperCase();
+      const cls = ['L'].includes(kolek) ? 'good' : (['DP','DPK'].includes(kolek) ? 'watch' : (['KL','D','M'].includes(kolek) ? 'bad' : 'neutral'));
+      return `<span class="fp-kolek-badge ${cls}">${fpEscape(kolek)}</span>`;
+  }
+
+  function flowCommitBadge(item) {
+      const committed = hasFlowCommitment(item);
+      return `<span class="fp-commit-badge ${committed ? 'yes' : 'no'}">${committed ? 'Sudah Komitmen' : 'Belum Komitmen'}</span>`;
+  }
+
+  function getFilteredDetailFlowPar() {
+      const query = String(document.getElementById('modalSearchFP')?.value || '').trim().toLowerCase();
+      const status = document.getElementById('modalCommitmentFilterFP')?.value || 'all';
+
+      return detailDataRaw.filter(item => {
+          const committed = hasFlowCommitment(item);
+          if (status === 'committed' && !committed) return false;
+          if (status === 'none' && committed) return false;
+          if (!query) return true;
+          const haystack = [
+              item.no_rekening,
+              item.nama_nasabah,
+              item.alamat,
+              getFlowKolek(item),
+              item.komitmen,
+              item.tgl_pembayaran
+          ].join(' ').toLowerCase();
+          return haystack.includes(query);
+      });
+  }
+
+  function renderProjectionSummaryFP(rows) {
+      const committed = rows.filter(hasFlowCommitment);
+      const promise = committed.reduce((sum, item) => sum + num(item.nominal), 0);
+      document.getElementById('fpSummaryCandidate').textContent = `${fmtInt(rows.length)} Debitur`;
+      document.getElementById('fpSummaryCommitted').textContent = `${fmtInt(committed.length)} Debitur`;
+      document.getElementById('fpSummaryUncommitted').textContent = `${fmtInt(rows.length - committed.length)} Debitur`;
+      document.getElementById('fpSummaryPromise').textContent = `Rp ${fmtNom(promise)}`;
+  }
+
+  function renderDetailMobileCardsFP(rows) {
+      const target = document.getElementById('modalMobileCardsFP');
+      if (!target) return;
+      if (!rows.length) {
+          target.innerHTML = `<div class="fp-detail-empty"><b>Data tidak ditemukan</b><span class="mt-1 text-[9px]">Coba ubah pencarian atau filter komitmen.</span></div>`;
+          return;
+      }
+
+      target.innerHTML = rows.map(item => {
+          const totalTunggakan = num(item.total_tunggakan) > 0 ? num(item.total_tunggakan) : num(item.tunggakan_pokok) + num(item.tunggakan_bunga);
+          const hari = Number.isFinite(+item.hari_menunggak) ? +item.hari_menunggak : calcHariMenunggak(item.tgl_jatuh_tempo);
+          return `
+            <article class="fp-mobile-card">
+              <div class="fp-mobile-card-head">
+                <div class="fp-mobile-identity">
+                  <div class="fp-mobile-rek">${fpEscape(item.no_rekening || '-')}</div>
+                  <div class="fp-mobile-name" title="${fpEscape(item.nama_nasabah || '-')}">${fpEscape(item.nama_nasabah || '-')}</div>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  ${flowKolekBadge(getFlowKolek(item))}
+                  ${flowCommitBadge(item)}
+                </div>
+              </div>
+              <div class="fp-mobile-address">${fpEscape(item.alamat || 'Alamat belum tersedia')}</div>
+              <div class="fp-mobile-metrics">
+                <div class="fp-mobile-metric"><div class="fp-mobile-label">Baki Debet</div><div class="fp-mobile-value">Rp ${fmtNom(item.baki_debet)}</div></div>
+                <div class="fp-mobile-metric"><div class="fp-mobile-label">Total Tunggakan</div><div class="fp-mobile-value red">Rp ${fmtNom(totalTunggakan)}</div></div>
+                <div class="fp-mobile-metric"><div class="fp-mobile-label">Saldo Tabungan</div><div class="fp-mobile-value green">Rp ${fmtNom(item.saldo_akhir)}</div></div>
+                <div class="fp-mobile-metric"><div class="fp-mobile-label">DPD / TP / TB</div><div class="fp-mobile-value">${fmtInt(hari)} / ${fmtInt(item.hari_menunggak_pokok)} / ${fmtInt(item.hari_menunggak_bunga)}</div></div>
+                <div class="fp-mobile-metric"><div class="fp-mobile-label">Angsuran Pokok</div><div class="fp-mobile-value">Rp ${fmtNom(item.angsuran_pokok)}</div></div>
+                <div class="fp-mobile-metric"><div class="fp-mobile-label">Angsuran Bunga</div><div class="fp-mobile-value">Rp ${fmtNom(item.angsuran_bunga)}</div></div>
+              </div>
+              <div class="fp-mobile-commit">
+                <div class="fp-mobile-commit-row"><span>Komitmen</span><b>${fpEscape(item.komitmen || '-')}</b></div>
+                <div class="fp-mobile-commit-row"><span>Janji bayar</span><b>${item.tgl_pembayaran ? formatDate(item.tgl_pembayaran) : '-'}</b></div>
+                <div class="fp-mobile-commit-row"><span>Nominal janji</span><b>Rp ${fmtNom(item.nominal)}</b></div>
+                <div class="fp-mobile-commit-row"><span>Jatuh tempo</span><b>${item.tgl_jatuh_tempo ? formatDate(item.tgl_jatuh_tempo) : '-'}</b></div>
+              </div>
+            </article>
+          `;
+      }).join('');
+  }
+
+  window.renderDetailFlowPar = function() {
+      const tbody = document.getElementById('modalBodyRows');
+      const ttot = document.getElementById('modalTotalRow');
+      detailDataView = getFilteredDetailFlowPar();
+      renderProjectionSummaryFP(detailDataView);
+      renderDetailMobileCardsFP(detailDataView);
+
+      if (!detailDataView.length) {
+          tbody.innerHTML = `<tr><td colspan="20" class="p-10 text-center text-slate-400">Data tidak ditemukan.</td></tr>`;
+          ttot.innerHTML = '';
+          return;
+      }
+
+      let totals = { bd:0, tp:0, tb:0, tt:0, sa:0, ap:0, ab:0, promise:0, committed:0 };
+      const refDate = currentFilter.harian ? new Date(currentFilter.harian) : new Date();
+      const eom = endOfMonth(refDate) || endOfMonth(new Date());
+
+      tbody.innerHTML = detailDataView.map(item => {
+          const hari = Number.isFinite(+item.hari_menunggak) ? +item.hari_menunggak : calcHariMenunggak(item.tgl_jatuh_tempo);
+          const jt = item.tgl_jatuh_tempo ? startOfDay(new Date(item.tgl_jatuh_tempo)) : null;
+          const overdue = jt && jt.getTime() <= eom.getTime();
+          const dpdTP = Number.isFinite(+item.hari_menunggak_pokok) ? +item.hari_menunggak_pokok : 0;
+          const dpdTB = Number.isFinite(+item.hari_menunggak_bunga) ? +item.hari_menunggak_bunga : 0;
+          const totalTunggakan = num(item.total_tunggakan) > 0 ? num(item.total_tunggakan) : num(item.tunggakan_pokok) + num(item.tunggakan_bunga);
+          const committed = hasFlowCommitment(item);
+
+          totals.bd += num(item.baki_debet);
+          totals.tp += num(item.tunggakan_pokok);
+          totals.tb += num(item.tunggakan_bunga);
+          totals.tt += totalTunggakan;
+          totals.sa += num(item.saldo_akhir);
+          totals.ap += num(item.angsuran_pokok);
+          totals.ab += num(item.angsuran_bunga);
+          totals.promise += num(item.nominal);
+          totals.committed += committed ? 1 : 0;
+
+          return `
+            <tr class="${overdue ? 'overdue' : ''}">
+              <td class="modal-freeze-1 font-mono font-bold text-slate-600">${fpEscape(item.no_rekening || '-')}</td>
+              <td class="modal-freeze-2 font-bold text-slate-800" title="${fpEscape(item.nama_nasabah || '-')}"><div class="truncate">${fpEscape(item.nama_nasabah || '-')}</div></td>
+              <td class="text-center">${flowKolekBadge(getFlowKolek(item))}</td>
+              <td class="fp-address-cell" title="${fpEscape(item.alamat || '-')}">${fpEscape(item.alamat || '-')}</td>
+              <td class="text-right font-bold text-blue-700">${fmtNom(item.baki_debet)}</td>
+              <td class="text-right">${fmtNom(item.tunggakan_pokok)}</td>
+              <td class="text-right">${fmtNom(item.tunggakan_bunga)}</td>
+              <td class="text-right font-bold text-red-700 bg-red-50">${fmtNom(totalTunggakan)}</td>
+              <td class="text-right font-bold text-emerald-700">${fmtNom(item.saldo_akhir)}</td>
+              <td class="text-center">${formatJTByRule(item.tgl_jatuh_tempo)}</td>
+              <td class="text-center font-bold">${fmtInt(hari)}</td>
+              <td class="text-center ${dpdTP >= 90 ? 'hot90' : ''}">${fmtInt(dpdTP)}</td>
+              <td class="text-center ${dpdTB >= 90 ? 'hot90' : ''}">${fmtInt(dpdTB)}</td>
+              <td class="text-right text-slate-600">${fmtNom(item.angsuran_pokok)}</td>
+              <td class="text-right text-slate-600">${fmtNom(item.angsuran_bunga)}</td>
+              <td class="text-center text-slate-500">${item.tgl_trans ? formatDate(item.tgl_trans) : '-'}</td>
+              <td class="text-center">${flowCommitBadge(item)}</td>
+              <td class="text-left max-w-[190px] overflow-hidden text-ellipsis text-slate-600" title="${fpEscape(item.komitmen || '-')}">${fpEscape(item.komitmen || '-')}</td>
+              <td class="text-center font-semibold">${item.tgl_pembayaran ? formatDate(item.tgl_pembayaran) : '-'}</td>
+              <td class="text-right font-bold">${fmtNom(item.nominal)}</td>
+            </tr>
+          `;
+      }).join('');
+
+      ttot.innerHTML = `
+        <tr class="modal-total-row">
+          <td class="modal-freeze-1">TOTAL</td>
+          <td class="modal-freeze-2">${fmtInt(detailDataView.length)} Debitur</td>
+          <td class="text-center">-</td>
+          <td></td>
+          <td class="text-right">${fmtNom(totals.bd)}</td>
+          <td class="text-right">${fmtNom(totals.tp)}</td>
+          <td class="text-right">${fmtNom(totals.tb)}</td>
+          <td class="text-right text-red-700">${fmtNom(totals.tt)}</td>
+          <td class="text-right">${fmtNom(totals.sa)}</td>
+          <td colspan="4"></td>
+          <td class="text-right">${fmtNom(totals.ap)}</td>
+          <td class="text-right">${fmtNom(totals.ab)}</td>
+          <td></td>
+          <td class="text-center">${fmtInt(totals.committed)} Komitmen</td>
+          <td></td>
+          <td></td>
+          <td class="text-right">${fmtNom(totals.promise)}</td>
+        </tr>
+      `;
+  };
+
   async function fetchDetailFlowPar() {
       const tbody = document.getElementById('modalBodyRows');
-      const ttot  = document.getElementById('modalTotalRow');
-      const kankas = document.getElementById('modalFilterKankas').value || ''; 
+      const ttot = document.getElementById('modalTotalRow');
+      const mobileCards = document.getElementById('modalMobileCardsFP');
+      const kankas = document.getElementById('modalFilterKankas').value || '';
 
-      // Auto tutup filter di mobile setelah fetch (change dropdown)
-      if(window.innerWidth < 768) {
+      if (window.innerWidth < 768) {
           document.getElementById('modalFilterPanel').classList.add('hidden');
       }
 
-      tbody.innerHTML = `<tr><td colspan="17" class="p-12 text-center"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mx-auto mb-3"></div><span class="text-slate-500 font-medium">Sedang mengambil data...</span></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="20"><div class="fp-detail-loading"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mb-3"></div><span>Sedang mengambil data...</span></div></td></tr>`;
       ttot.innerHTML = '';
+      if (mobileCards) mobileCards.innerHTML = `<div class="fp-detail-loading"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mb-3"></div><span>Sedang mengambil data...</span></div>`;
+      renderProjectionSummaryFP([]);
 
       try {
-          const payload = { 
-              type: 'KL Baru', 
-              kode_kantor: currentDetailKode === '000' ? '' : currentDetailKode, 
-              korwil: currentDetailKorwil,
-              kode_kankas: kankas,             
-              closing_date: currentFilter.closing, 
-              harian_date: currentFilter.harian,
-              klasifikasi_flow: currentDetailKlasifikasi
+          const payload = {
+              type:'KL Baru',
+              kode_kantor:currentDetailKode === '000' ? '' : currentDetailKode,
+              korwil:currentDetailKorwil,
+              kode_kankas:kankas,
+              closing_date:currentFilter.closing,
+              harian_date:currentFilter.harian,
+              klasifikasi_flow:currentDetailKlasifikasi
           };
-          
+
           const res = await fetch('./api/flow_par/', {
-              method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify(payload)
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body:JSON.stringify(payload)
           });
           const json = await res.json();
-          const list = Array.isArray(json.data) ? json.data : [];
-          detailDataRaw = list; 
+          detailDataRaw = Array.isArray(json.data) ? json.data : [];
+          renderDetailFlowPar();
 
-          if(list.length === 0){ tbody.innerHTML = `<tr><td colspan="17" class="p-10 text-center text-slate-400">Data tidak ditemukan.</td></tr>`; return; }
-
-          const refDate = currentFilter.harian ? new Date(currentFilter.harian) : new Date();
-          const eom = endOfMonth(refDate) || endOfMonth(new Date());
-          
-          let totals = { bd:0, tp:0, tb:0, tt:0, sa:0, ap:0, ab:0 };
-
-          const rowsHtml = list.map(d => {
-              const hasApiHari = (d.hari_menunggak ?? d.hari_menunggak === 0);
-              let hari = hasApiHari ? Number(d.hari_menunggak) : calcHariMenunggak(d.tgl_jatuh_tempo);
-              const jt = d.tgl_jatuh_tempo ? startOfDay(new Date(d.tgl_jatuh_tempo)) : null;
-              const merahBaris = jt && (jt.getTime() <= eom.getTime());
-              
-              const dpdTP = Number.isFinite(+d.hari_menunggak_pokok) ? +d.hari_menunggak_pokok : 0;
-              const dpdTB = Number.isFinite(+d.hari_menunggak_bunga) ? +d.hari_menunggak_bunga : 0;
-              const hotTP = dpdTP >= 90 ? 'hot90' : '';
-              const hotTB = dpdTB >= 90 ? 'hot90' : '';
-
-              const totTunggakan = num(d.total_tunggakan) > 0 ? num(d.total_tunggakan) : (num(d.tunggakan_pokok) + num(d.tunggakan_bunga));
-
-              totals.bd += num(d.baki_debet); totals.tp += num(d.tunggakan_pokok);
-              totals.tb += num(d.tunggakan_bunga); totals.tt += totTunggakan;
-              totals.sa += num(d.saldo_akhir);
-              totals.ap += num(d.angsuran_pokok); totals.ab += num(d.angsuran_bunga);
-
-              return `
-                <tr class="${merahBaris ? 'overdue' : 'hover:bg-slate-50'} border-b">
-                    <td class="modal-freeze-1 font-mono text-slate-600 text-xs">${d.no_rekening}</td>
-                    <td class="modal-freeze-2 font-medium text-xs text-slate-700" title="${d.nama_nasabah}">${d.nama_nasabah}</td>
-                    <td class="text-right text-xs">${fmtNom(d.baki_debet)}</td>
-                    <td class="text-right text-xs">${fmtNom(d.tunggakan_pokok)}</td>
-                    <td class="text-right text-xs">${fmtNom(d.tunggakan_bunga)}</td>
-                    <td class="text-right text-xs font-bold text-red-700 bg-red-50">${fmtNom(totTunggakan)}</td>
-                    <td class="text-right text-xs font-semibold text-green-700">${fmtNom(d.saldo_akhir)}</td>
-                    <td class="text-center text-xs">${formatJTByRule(d.tgl_jatuh_tempo)}</td>
-                    <td class="text-center text-xs font-bold">${fmtInt(hari)}</td>
-                    <td class="text-center text-xs ${hotTP}">${fmtInt(dpdTP)}</td>
-                    <td class="text-center text-xs ${hotTB}">${fmtInt(dpdTB)}</td>
-                    <td class="text-right text-xs text-slate-500">${fmtNom(d.angsuran_pokok)}</td>
-                    <td class="text-right text-xs text-slate-500">${fmtNom(d.angsuran_bunga)}</td>
-                    <td class="text-center text-xs text-slate-500">${d.tgl_trans ? formatDate(d.tgl_trans) : '-'}</td>
-                    <td class="text-left text-xs text-slate-500 truncate max-w-[150px]" title="${d.komitmen}">${d.komitmen||'-'}</td>
-                    <td class="text-center text-xs font-semibold text-slate-600">${d.tgl_pembayaran ? formatDate(d.tgl_pembayaran) : '-'}</td>
-                    <td class="text-right text-xs font-semibold text-slate-600">${fmtNom(d.nominal)}</td>
-                </tr>
-              `;
-          }).join('');
-
-          ttot.innerHTML = `
-            <tr class="modal-total-row">
-                <td class="modal-freeze-1">TOTAL</td>
-                <td class="modal-freeze-2">${list.length} Debitur</td>
-                <td class="text-right">${fmtNom(totals.bd)}</td>
-                <td class="text-right">${fmtNom(totals.tp)}</td>
-                <td class="text-right">${fmtNom(totals.tb)}</td>
-                <td class="text-right text-red-700">${fmtNom(totals.tt)}</td>
-                <td class="text-right">${fmtNom(totals.sa)}</td>
-                <td colspan="4"></td>
-                <td class="text-right">${fmtNom(totals.ap)}</td>
-                <td class="text-right">${fmtNom(totals.ab)}</td>
-                <td colspan="4"></td> 
-            </tr>
-          `;
-          tbody.innerHTML = rowsHtml;
-
-      } catch(e){
-          console.error(e); tbody.innerHTML = `<tr><td colspan="17" class="p-10 text-center text-red-500">Gagal load data.</td></tr>`;
+          const scroll = document.getElementById('modalScroll');
+          if (scroll) { scroll.scrollTop = 0; scroll.scrollLeft = 0; }
+      } catch (error) {
+          console.error(error);
+          detailDataRaw = [];
+          detailDataView = [];
+          tbody.innerHTML = `<tr><td colspan="20"><div class="fp-detail-empty text-red-500"><b>Gagal memuat data</b><span class="mt-1 text-[9px]">${fpEscape(error.message)}</span></div></td></tr>`;
+          ttot.innerHTML = '';
+          if (mobileCards) mobileCards.innerHTML = `<div class="fp-detail-empty text-red-500"><b>Gagal memuat data</b></div>`;
+          renderProjectionSummaryFP([]);
       }
   }
 
   // --- EXPORT EXCEL DETAIL ---
   function exportDetailExcel() {
-      if(detailDataRaw.length === 0) { alert("Tidak ada detail untuk diexport!"); return; }
+      const rows = detailDataView;
+      if (!rows.length) { alert('Tidak ada detail untuk diexport!'); return; }
 
       let table = `<table border="1">
-          <thead>
-              <tr>
-                  <th style="background-color:#f1f5f9;">NO REKENING</th>
-                  <th style="background-color:#f1f5f9;">NAMA NASABAH</th>
-                  <th style="background-color:#f1f5f9;">BAKI DEBET</th>
-                  <th style="background-color:#f1f5f9;">TUNGG. POKOK</th>
-                  <th style="background-color:#f1f5f9;">TUNGG. BUNGA</th>
-                  <th style="background-color:#fee2e2;">TOT. TUNGGAKAN</th>
-                  <th style="background-color:#f1f5f9;">SALDO TAB</th>
-                  <th style="background-color:#f1f5f9;">JT</th>
-                  <th style="background-color:#f1f5f9;">DPD</th>
-                  <th style="background-color:#f1f5f9;">DPD TP</th>
-                  <th style="background-color:#f1f5f9;">DPD TB</th>
-                  <th style="background-color:#f1f5f9;">ANGS. POKOK</th>
-                  <th style="background-color:#f1f5f9;">ANGS. BUNGA</th>
-                  <th style="background-color:#f1f5f9;">TGL TRANS</th>
-                  <th style="background-color:#f1f5f9;">KOMITMEN</th>
-                  <th style="background-color:#f1f5f9;">TGL JANJI BAYAR</th>
-                  <th style="background-color:#f1f5f9;">NOMINAL JANJI BAYAR</th>
-              </tr>
-          </thead>
-          <tbody>`;
+        <thead><tr>
+          <th style="background-color:#dbeafe;">NO REKENING</th>
+          <th style="background-color:#dbeafe;">NAMA NASABAH</th>
+          <th style="background-color:#dbeafe;">KOLEKTIBILITAS</th>
+          <th style="background-color:#dbeafe;">ALAMAT</th>
+          <th style="background-color:#dbeafe;">BAKI DEBET</th>
+          <th style="background-color:#dbeafe;">TUNGG. POKOK</th>
+          <th style="background-color:#dbeafe;">TUNGG. BUNGA</th>
+          <th style="background-color:#fee2e2;">TOTAL TUNGGAKAN</th>
+          <th style="background-color:#dcfce7;">SALDO TABUNGAN</th>
+          <th style="background-color:#dbeafe;">TGL JATUH TEMPO</th>
+          <th style="background-color:#dbeafe;">DPD</th>
+          <th style="background-color:#dbeafe;">DPD TP</th>
+          <th style="background-color:#dbeafe;">DPD TB</th>
+          <th style="background-color:#dbeafe;">ANGS. POKOK</th>
+          <th style="background-color:#dbeafe;">ANGS. BUNGA</th>
+          <th style="background-color:#dbeafe;">TGL TRANS</th>
+          <th style="background-color:#fef3c7;">STATUS KOMITMEN</th>
+          <th style="background-color:#fef3c7;">KOMITMEN</th>
+          <th style="background-color:#fef3c7;">TGL JANJI BAYAR</th>
+          <th style="background-color:#fef3c7;">NOMINAL JANJI BAYAR</th>
+        </tr></thead><tbody>`;
 
-      detailDataRaw.forEach(d => {
-          const totTunggakan = num(d.total_tunggakan) > 0 ? num(d.total_tunggakan) : (num(d.tunggakan_pokok) + num(d.tunggakan_bunga));
+      rows.forEach(item => {
+          const totalTunggakan = num(item.total_tunggakan) > 0 ? num(item.total_tunggakan) : num(item.tunggakan_pokok) + num(item.tunggakan_bunga);
+          const hari = Number.isFinite(+item.hari_menunggak) ? +item.hari_menunggak : calcHariMenunggak(item.tgl_jatuh_tempo);
           table += `<tr>
-              <td style="mso-number-format:'\\@'">${d.no_rekening}</td>
-              <td>${d.nama_nasabah}</td>
-              <td>${d.baki_debet}</td>
-              <td>${d.tunggakan_pokok}</td>
-              <td>${d.tunggakan_bunga}</td>
-              <td style="background-color:#fef2f2;">${totTunggakan}</td>
-              <td>${d.saldo_akhir}</td>
-              <td>${d.tgl_jatuh_tempo || ''}</td>
-              <td>${d.hari_menunggak || 0}</td>
-              <td>${d.hari_menunggak_pokok || 0}</td>
-              <td>${d.hari_menunggak_bunga || 0}</td>
-              <td>${d.angsuran_pokok}</td>
-              <td>${d.angsuran_bunga}</td>
-              <td>${d.tgl_trans || ''}</td>
-              <td>${d.komitmen || ''}</td>
-              <td>${d.tgl_pembayaran || ''}</td>
-              <td>${d.nominal || ''}</td>
+            <td style="mso-number-format:'\@'">${fpEscape(item.no_rekening || '')}</td>
+            <td>${fpEscape(item.nama_nasabah || '')}</td>
+            <td>${fpEscape(getFlowKolek(item))}</td>
+            <td>${fpEscape(item.alamat || '')}</td>
+            <td>${num(item.baki_debet)}</td>
+            <td>${num(item.tunggakan_pokok)}</td>
+            <td>${num(item.tunggakan_bunga)}</td>
+            <td>${totalTunggakan}</td>
+            <td>${num(item.saldo_akhir)}</td>
+            <td>${fpEscape(item.tgl_jatuh_tempo || '')}</td>
+            <td>${hari}</td>
+            <td>${num(item.hari_menunggak_pokok)}</td>
+            <td>${num(item.hari_menunggak_bunga)}</td>
+            <td>${num(item.angsuran_pokok)}</td>
+            <td>${num(item.angsuran_bunga)}</td>
+            <td>${fpEscape(item.tgl_trans || '')}</td>
+            <td>${hasFlowCommitment(item) ? 'Sudah Komitmen' : 'Belum Komitmen'}</td>
+            <td>${fpEscape(item.komitmen || '')}</td>
+            <td>${fpEscape(item.tgl_pembayaran || '')}</td>
+            <td>${num(item.nominal)}</td>
           </tr>`;
       });
-      table += `</tbody></table>`;
+      table += '</tbody></table>';
 
-      const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
+      const blob = new Blob([table], {type:'application/vnd.ms-excel'});
       const a = document.createElement('a');
-      a.href = window.URL.createObjectURL(blob);
-      
+      const url = URL.createObjectURL(blob);
       const valKankas = document.getElementById('modalFilterKankas').value;
-      const downloadName = valKankas ? valKankas : currentDetailKode;
-      
-      a.download = `Detail_FlowPAR_${downloadName}.xls`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      const downloadName = valKankas || currentDetailKode || 'Konsolidasi';
+      a.href = url;
+      a.download = `Detail_FlowPAR_${downloadName}_${currentFilter.harian}.xls`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
+
 
   // --- TRIGGER UPDATE BULK (TOMBOL UPDATE DI ATAS) ---
   window.gotoUpdateFlowPar = function() {
       const selectedKankas = document.getElementById('modalFilterKankas').value || '';
       const payload = {
           kode_kantor: currentDetailKode === '000' ? '' : currentDetailKode,
-          kode_kankas: selectedKankas, 
+          kode_kankas: selectedKankas,
+          korwil: currentDetailKorwil,
+          klasifikasi_flow: currentDetailKlasifikasi,
           closing_date: currentFilter.closing,
           harian_date: currentFilter.harian
       };
@@ -1404,8 +2516,15 @@
       window.location.href = './update_flowpar'; 
   };
 
-  document.getElementById('btnCloseFP').onclick = () => {
-    document.getElementById('modalDebiturFlowPar').classList.add('hidden'); 
-    document.getElementById('modalDebiturFlowPar').classList.remove('flex');
+  const closeFlowParDetailModal = () => {
+    const modal = document.getElementById('modalDebiturFlowPar');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    detailDataRaw = [];
+    detailDataView = [];
   };
+  document.getElementById('btnCloseFP').onclick = closeFlowParDetailModal;
+  document.getElementById('modalDebiturFlowPar').addEventListener('click', e => {
+    if (e.target.id === 'modalDebiturFlowPar') closeFlowParDetailModal();
+  });
 </script>

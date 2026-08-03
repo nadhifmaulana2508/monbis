@@ -100,47 +100,349 @@
       .modal-freeze-1 { display: none; }
       .modal-freeze-2 { left: 0; }
   }
+
+
+  /* === POTENSI NPL MODERN RESPONSIVE V2 === */
+  * { box-sizing:border-box; }
+  .hidden { display:none !important; }
+  .po-page { display:flex; flex-direction:column; width:100%; height:calc(100vh - 64px); height:calc(100dvh - 64px); min-height:430px; padding:8px; gap:7px; overflow:hidden; background:#f8fafc; }
+  .po-header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex:none; padding:9px 11px; border:1px solid #dbe3ee; border-radius:12px; background:#fff; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+  .po-titlebar { display:flex; align-items:center; justify-content:space-between; min-width:0; }
+  .po-title-wrap { display:flex; align-items:center; min-width:0; gap:9px; }
+  .po-title-icon { display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; flex:0 0 38px; border-radius:10px; background:#2563eb; color:#fff; box-shadow:0 5px 12px rgba(37,99,235,.2); }
+  .po-title-icon svg { width:19px; height:19px; }
+  .po-title-copy { min-width:0; }
+  .po-title-line { display:flex; align-items:center; min-width:0; gap:7px; }
+  .po-title-line h1 { margin:0; color:#0f172a; font-size:18px; font-weight:900; line-height:1.1; white-space:nowrap; }
+  .po-title-copy p { margin:3px 0 0; overflow:hidden; color:#64748b; font-size:9px; font-weight:650; line-height:1.2; text-overflow:ellipsis; white-space:nowrap; }
+  .po-unit-badge { display:inline-flex; align-items:center; height:20px; padding:0 7px; border:1px solid #bfdbfe; border-radius:999px; background:#eff6ff; color:#1d4ed8; font-size:8px; font-weight:900; text-transform:uppercase; white-space:nowrap; }
+  .po-mobile-actions,.po-filter-toggle { display:none; }
+  .po-filter-form { display:grid; grid-template-columns:220px 122px 122px auto; align-items:end; gap:7px; min-width:0; }
+  .po-field { display:flex; min-width:0; flex-direction:column; }
+  .po-field > span { margin:0 0 3px 1px; color:#64748b; font-size:7px; font-weight:900; letter-spacing:.04em; line-height:1; text-transform:uppercase; white-space:nowrap; }
+  .po-header .inp { height:34px; border-radius:8px; padding:0 9px; font-size:10px; font-weight:700; }
+  .po-filter-actions { display:flex; align-items:center; gap:6px; }
+  .po-action-btn { display:inline-flex; align-items:center; justify-content:center; width:36px; height:34px; border:0; border-radius:8px; color:#fff; cursor:pointer; transition:.16s ease; }
+  .po-action-btn:hover { transform:translateY(-1px); }
+  .po-action-search { background:#2563eb; }
+  .po-action-excel { background:#059669; }
+
+  #poScroller { flex:1; min-height:0; border-radius:9px; }
+  #tabelPotensi { width:100%; min-width:0; table-layout:fixed; }
+  #tabelPotensi col.po-col-code { width:4%; }
+  #tabelPotensi col.po-col-name { width:15%; }
+  #tabelPotensi col.po-col-noa { width:4%; }
+  #tabelPotensi col.po-col-money { width:12.2%; }
+  #tabelPotensi th,#tabelPotensi td { height:36px; padding:5px 5px; overflow:hidden; font-size:9px; text-overflow:ellipsis; }
+  #tabelPotensi thead th { font-size:8px; letter-spacing:.015em; }
+  #tabelPotensi .sticky-left-1 { width:auto; min-width:0; max-width:none; }
+  #tabelPotensi .sticky-left-2 { width:auto; min-width:0; max-width:none; }
+
+  .po-modal { position:fixed; inset:0; z-index:9999; display:flex; align-items:center; justify-content:center; padding:12px; background:rgba(15,23,42,.68); backdrop-filter:blur(7px); }
+  .po-modal-card { display:flex; flex-direction:column; width:min(1760px,calc(100vw - 24px)); height:min(94dvh,920px); overflow:hidden; border:1px solid rgba(226,232,240,.9); border-radius:16px; background:#fff; box-shadow:0 30px 80px rgba(15,23,42,.32); }
+  .po-modal-header { display:flex; align-items:center; justify-content:space-between; gap:10px; flex:none; padding:10px 12px; border-bottom:1px solid #e2e8f0; background:linear-gradient(180deg,#fff,#f8fafc); }
+  .po-modal-title-wrap { display:flex; align-items:center; min-width:0; gap:9px; }
+  .po-modal-icon { display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; flex:0 0 36px; border:1px solid #bfdbfe; border-radius:9px; background:#eff6ff; color:#2563eb; }
+  .po-modal-title-copy { min-width:0; }
+  .po-modal-title-copy h3 { margin:0; overflow:hidden; color:#0f172a; font-size:17px; font-weight:900; line-height:1.15; text-overflow:ellipsis; white-space:nowrap; }
+  .po-modal-title-copy p { margin:3px 0 0; color:#64748b; font-size:9px; font-weight:650; }
+  .po-modal-actions { display:flex; align-items:center; gap:6px; flex:none; }
+  .po-modal-btn,.po-modal-close { display:inline-flex; align-items:center; justify-content:center; height:34px; border:0; border-radius:8px; cursor:pointer; transition:.15s ease; }
+  .po-modal-btn { gap:5px; padding:0 11px; color:#fff; font-size:9px; font-weight:850; }
+  .po-modal-btn.primary { background:#2563eb; }
+  .po-modal-btn.excel { background:#059669; }
+  .po-modal-close { width:34px; border:1px solid #fecaca; background:#fff1f2; color:#e11d48; }
+  .po-modal-btn:hover,.po-modal-close:hover { transform:translateY(-1px); }
+  .po-modal-toolbar { display:grid; grid-template-columns:minmax(220px,1fr) 155px 145px 155px 155px; align-items:center; gap:6px; flex:none; padding:7px 10px; border-bottom:1px solid #e2e8f0; background:#fff; }
+  .po-modal-search { position:relative; min-width:0; }
+  .po-modal-search svg { position:absolute; left:9px; top:50%; width:14px; height:14px; color:#94a3b8; transform:translateY(-50%); pointer-events:none; }
+  .po-modal-search input,.po-modal-select { width:100%; height:32px; min-width:0; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#334155; font-size:9px; font-weight:650; outline:none; }
+  .po-modal-search input { padding:0 9px 0 29px; }
+  .po-modal-select { padding:0 8px; }
+  .po-modal-search input:focus,.po-modal-select:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.09); }
+  .po-detail-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; flex:none; padding:7px 10px; border-bottom:1px solid #e2e8f0; background:#f8fafc; }
+  .po-summary-item { min-width:0; padding:6px 8px; border:1px solid #e2e8f0; border-radius:8px; background:#fff; }
+  .po-summary-item span { display:block; overflow:hidden; color:#64748b; font-size:6.5px; font-weight:900; letter-spacing:.035em; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
+  .po-summary-item strong { display:block; margin-top:2px; overflow:hidden; color:#0f172a; font-size:12px; font-weight:900; text-overflow:ellipsis; white-space:nowrap; }
+  .po-summary-item.blue strong { color:#1d4ed8; } .po-summary-item.orange strong { color:#c2410c; } .po-summary-item.green strong { color:#047857; }
+  .po-modal-content { position:relative; flex:1; min-height:0; overflow:auto; background:#fff; -webkit-overflow-scrolling:touch; }
+  #modalTablePO { width:max-content; min-width:2540px; table-layout:fixed; }
+  #modalTablePO th { height:36px; padding:5px 7px; font-size:8px; }
+  #modalTablePO td { height:36px; padding:5px 7px; font-size:9px; }
+  #modalTablePO th:nth-child(1),#modalTablePO td:nth-child(1){width:128px;min-width:128px;max-width:128px}
+  #modalTablePO th:nth-child(2),#modalTablePO td:nth-child(2){width:190px;min-width:190px;max-width:190px}
+  #modalTablePO th:nth-child(3),#modalTablePO td:nth-child(3){width:190px}
+  #modalTablePO th:nth-child(4),#modalTablePO td:nth-child(4){width:130px}
+  #modalTablePO th:nth-child(5),#modalTablePO td:nth-child(5){width:120px}
+  #modalTablePO th:nth-child(20),#modalTablePO td:nth-child(20){width:112px}
+  #modalTablePO th:nth-child(21),#modalTablePO td:nth-child(21){width:130px}
+  #modalTablePO th:nth-child(22),#modalTablePO td:nth-child(22){width:94px}
+  #modalTablePO th:nth-child(23),#modalTablePO td:nth-child(23){width:115px}
+  #modalTablePO th:nth-child(24),#modalTablePO td:nth-child(24){width:180px}
+  .po-commit-badge { display:inline-flex; align-items:center; justify-content:center; min-height:20px; padding:2px 7px; border-radius:999px; font-size:7.5px; font-weight:850; white-space:nowrap; }
+  .po-commit-badge.done { background:#dcfce7; color:#15803d; } .po-commit-badge.empty { background:#fff7ed; color:#c2410c; }
+  .po-mobile-detail-list { display:none; }
+
+  @media (max-width:1279px) {
+    .po-header { align-items:stretch; flex-direction:column; }
+    .po-filter-form { grid-template-columns:minmax(220px,1fr) 130px 130px auto; width:100%; padding-top:7px; border-top:1px solid #e2e8f0; }
+  }
+  @media (max-width:1023px) {
+    #poScroller { overflow:auto; }
+    #tabelPotensi { width:1180px; min-width:1180px; }
+    #tabelPotensi col.po-col-code { width:52px; } #tabelPotensi col.po-col-name { width:170px; } #tabelPotensi col.po-col-noa { width:56px; } #tabelPotensi col.po-col-money { width:136px; }
+    .po-modal-toolbar { grid-template-columns:minmax(180px,1fr) repeat(4,135px); overflow-x:auto; }
+  }
+  @media (max-width:767px) {
+    body { overflow:hidden; }
+    .po-page { height:calc(100dvh - 54px); min-height:0; padding:4px; gap:4px; }
+    .po-header { gap:7px; padding:7px 8px; border-radius:9px; }
+    .po-title-icon { width:31px; height:31px; flex-basis:31px; border-radius:8px; }
+    .po-title-icon svg { width:16px; height:16px; }
+    .po-title-line h1 { font-size:13px; }
+    .po-title-copy p { max-width:185px; margin-top:2px; font-size:7px; }
+    .po-unit-badge { height:17px; padding:0 5px; font-size:6.5px; }
+    .po-mobile-actions { display:flex; align-items:center; gap:7px; margin-left:auto; }
+    .po-filter-toggle { display:inline-flex; align-items:center; justify-content:center; gap:5px; height:29px; padding:0 9px; border:1px solid #cbd5e1; border-radius:7px; background:#fff; color:#334155; font-size:8px; font-weight:850; }
+    .po-filter-form { display:none; grid-template-columns:minmax(0,1fr) minmax(0,1fr) 34px; gap:5px; padding-top:7px; }
+    .po-filter-form.is-open { display:grid; }
+    .po-field-office { grid-column:1/3; }
+    .po-filter-actions { grid-column:3; grid-row:1/3; align-self:end; flex-direction:column; }
+    .po-action-btn { width:34px; height:32px; }
+    .po-header .inp { height:32px; padding:0 6px; font-size:9px; }
+    .po-field > span { font-size:6.5px; }
+    #tabelPotensi { width:920px; min-width:920px; }
+    #tabelPotensi col.po-col-code { display:none; }
+    #tabelPotensi .sticky-left-1 { display:none !important; }
+    #tabelPotensi col.po-col-name { width:116px; }
+    #tabelPotensi col.po-col-noa { width:42px; }
+    #tabelPotensi col.po-col-money { width:116px; }
+    #tabelPotensi .sticky-left-2 { left:0; width:116px; min-width:116px; max-width:116px; white-space:normal; line-height:1.1; }
+    #tabelPotensi th,#tabelPotensi td { height:34px; padding:4px; font-size:8px; }
+    #tabelPotensi thead th { font-size:6.8px; }
+
+    .po-modal { align-items:flex-end; padding:0; }
+    .po-modal-card { width:100%; height:96dvh; max-height:96dvh; border-right:0; border-bottom:0; border-left:0; border-radius:16px 16px 0 0; }
+    .po-modal-header { padding:8px 9px; }
+    .po-modal-icon { width:30px; height:30px; flex-basis:30px; border-radius:8px; }
+    .po-modal-title-copy h3 { font-size:13px; }
+    .po-modal-title-copy p { font-size:7.5px; }
+    .po-modal-actions { gap:4px; }
+    .po-modal-btn { width:30px; height:30px; padding:0; }
+    .po-modal-btn span { display:none; }
+    .po-modal-close { width:30px; height:30px; }
+    .po-modal-toolbar { grid-template-columns:minmax(0,1fr) minmax(115px,38%); gap:5px; padding:6px 8px; overflow:visible; }
+    .po-modal-search { grid-column:1/-1; }
+    .po-modal-search input,.po-modal-select { height:30px; font-size:8px; }
+    #modalFilterKankas,#modalFilterAo { display:none; }
+    .po-detail-summary { grid-template-columns:repeat(4,minmax(104px,1fr)); gap:5px; padding:6px 8px; overflow-x:auto; scrollbar-width:none; }
+    .po-detail-summary::-webkit-scrollbar { display:none; }
+    .po-summary-item { padding:5px 7px; }
+    .po-summary-item span { font-size:5.5px; } .po-summary-item strong { font-size:9px; }
+    .po-modal-content { overflow-y:auto; overflow-x:hidden; background:#f8fafc; }
+    #modalTablePO { display:none; }
+    .po-mobile-detail-list { display:grid; gap:7px; padding:7px 8px 22px; }
+    .po-detail-card { overflow:hidden; border:1px solid #e2e8f0; border-radius:10px; background:#fff; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+    .po-detail-card-head { display:flex; align-items:flex-start; justify-content:space-between; gap:7px; padding:7px 8px 6px; border-bottom:1px solid #f1f5f9; }
+    .po-detail-card-name { overflow:hidden; color:#0f172a; font-size:10px; font-weight:900; text-overflow:ellipsis; white-space:nowrap; }
+    .po-detail-card-rek { margin-top:2px; color:#64748b; font-family:ui-monospace,monospace; font-size:7px; font-weight:800; }
+    .po-detail-card-address { margin-top:2px; overflow:hidden; color:#64748b; font-size:7px; text-overflow:ellipsis; white-space:nowrap; }
+    .po-detail-card-metrics { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1px; background:#e2e8f0; }
+    .po-detail-card-metric { min-width:0; padding:6px 7px; background:#fff; }
+    .po-detail-card-metric span { display:block; color:#64748b; font-size:5.5px; font-weight:900; text-transform:uppercase; }
+    .po-detail-card-metric strong { display:block; margin-top:2px; overflow:hidden; color:#0f172a; font-size:8.5px; font-weight:900; text-overflow:ellipsis; white-space:nowrap; }
+    .po-detail-card-commit { padding:6px 8px 7px; }
+    .po-detail-card-commit-top { display:flex; align-items:center; justify-content:space-between; gap:7px; }
+    .po-detail-card-commit-money { color:#1d4ed8; font-size:8.5px; font-weight:900; }
+    .po-detail-card-meta { display:grid; grid-template-columns:auto minmax(0,1fr); gap:3px 7px; margin-top:5px; color:#64748b; font-size:6.8px; }
+    .po-detail-card-meta b { color:#334155; font-weight:900; }
+    .po-detail-card-meta span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  }
+
+
+  /* === POTENSI NPL REPORT POLISH V3 === */
+  #poScroller {
+      --col1:52px;
+      --col2:184px;
+      overflow-x:hidden;
+      border:1px solid #dbe3ee;
+      border-radius:12px;
+      box-shadow:0 1px 3px rgba(15,23,42,.05);
+      scrollbar-gutter:stable;
+      overscroll-behavior:contain;
+  }
+  #poScroller::-webkit-scrollbar,
+  .po-modal-content::-webkit-scrollbar { width:7px; height:7px; }
+  #poScroller::-webkit-scrollbar-track,
+  .po-modal-content::-webkit-scrollbar-track { background:#f8fafc; }
+  #poScroller::-webkit-scrollbar-thumb,
+  .po-modal-content::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:999px; }
+
+  #tabelPotensi { width:100%; min-width:0; table-layout:fixed; }
+  #tabelPotensi col.po-col-code { width:var(--col1); }
+  #tabelPotensi col.po-col-name { width:var(--col2); }
+  #tabelPotensi col.po-col-noa { width:48px; }
+  #tabelPotensi col.po-col-money { width:auto; }
+  #tabelPotensi .sticky-left-1 {
+      width:var(--col1); min-width:var(--col1); max-width:var(--col1); left:0;
+  }
+  #tabelPotensi .sticky-left-2 {
+      width:var(--col2); min-width:var(--col2); max-width:var(--col2); left:var(--col1);
+      box-shadow:4px 0 8px -7px rgba(15,23,42,.85);
+  }
+  #tabelPotensi th,#tabelPotensi td { height:38px; padding:5px 6px; }
+  #tabelPotensi thead tr:first-child th { height:40px; }
+  #tabelPotensi thead tr:last-child th { top:40px; height:32px; }
+  #tabelPotensi thead th { border-right:1px solid #dbe3ee; }
+  #tabelPotensi tbody tr:nth-child(even) td { background:#fbfdff; }
+  #tabelPotensi tbody tr:hover td { background:#eff6ff; }
+  #tabelPotensi tbody tr:nth-child(even) td.sticky-left-1,
+  #tabelPotensi tbody tr:nth-child(even) td.sticky-left-2 { background:#fbfdff; }
+  #tabelPotensi tbody tr:hover td.sticky-left-1,
+  #tabelPotensi tbody tr:hover td.sticky-left-2 { background:#eff6ff; }
+
+  .po-group-head { position:relative; padding:5px 4px !important; border-top:3px solid transparent; }
+  .po-group-head > span { display:block; font-size:8px; font-weight:900; line-height:1.05; }
+  .po-group-head > small { display:block; margin-top:3px; font-size:5.7px; font-weight:750; letter-spacing:0; text-transform:none; opacity:.72; }
+  .po-group-total { border-top-color:#2563eb !important; background:#eff6ff !important; color:#1d4ed8 !important; }
+  .po-group-safe { border-top-color:#10b981 !important; background:#ecfdf5 !important; color:#047857 !important; }
+  .po-group-due { border-top-color:#f59e0b !important; background:#fffbeb !important; color:#b45309 !important; }
+  .po-group-flow { border-top-color:#ef4444 !important; background:#fff1f2 !important; color:#be123c !important; }
+  .po-group-risk { border-top-color:#f97316 !important; background:#fff7ed !important; color:#c2410c !important; }
+
+  .po-noa-link {
+      display:inline-flex; align-items:center; justify-content:center; min-width:27px; min-height:22px;
+      padding:2px 6px; border-radius:999px; text-decoration:none !important; transition:.15s ease;
+  }
+  .po-noa-link:hover { background:rgba(37,99,235,.09); transform:translateY(-1px); }
+  #poTotalRow td { top:72px; height:40px; background:#eaf2ff; }
+
+  .po-info-btn {
+      display:inline-flex; align-items:center; justify-content:center; width:21px; height:21px; flex:0 0 21px;
+      border:1px solid #bfdbfe; border-radius:999px; background:#eff6ff; color:#2563eb;
+      font-size:11px; font-weight:950; cursor:pointer; transition:.15s ease;
+  }
+  .po-info-btn:hover { background:#dbeafe; transform:translateY(-1px); }
+
+  .po-help-modal { position:fixed; inset:0; z-index:10050; display:flex; align-items:center; justify-content:center; padding:12px; background:rgba(15,23,42,.62); backdrop-filter:blur(6px); }
+  .po-help-card { display:flex; flex-direction:column; width:min(680px,calc(100vw - 24px)); max-height:min(88dvh,760px); overflow:hidden; border:1px solid #e2e8f0; border-radius:16px; background:#fff; box-shadow:0 28px 75px rgba(15,23,42,.3); }
+  .po-help-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border-bottom:1px solid #e2e8f0; background:linear-gradient(180deg,#fff,#f8fafc); }
+  .po-help-title { display:flex; align-items:center; min-width:0; gap:9px; }
+  .po-help-title-icon { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; flex:0 0 34px; border-radius:9px; background:#eff6ff; color:#2563eb; }
+  .po-help-title h3 { margin:0; color:#0f172a; font-size:16px; font-weight:900; }
+  .po-help-title p { margin:2px 0 0; color:#64748b; font-size:9px; }
+  .po-help-close { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border:1px solid #fecaca; border-radius:8px; background:#fff1f2; color:#e11d48; cursor:pointer; }
+  .po-help-body { overflow:auto; padding:12px 14px 15px; }
+  .po-help-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .po-help-item { min-width:0; padding:10px 11px; border:1px solid #e2e8f0; border-radius:10px; background:#fff; }
+  .po-help-item-head { display:flex; align-items:center; gap:7px; color:#0f172a; font-size:11px; font-weight:900; }
+  .po-help-dot { width:8px; height:8px; flex:0 0 8px; border-radius:999px; }
+  .po-help-item p { margin:5px 0 0; color:#475569; font-size:10px; line-height:1.45; }
+  .po-help-note { margin-top:9px; padding:9px 10px; border:1px solid #bfdbfe; border-radius:10px; background:#eff6ff; color:#1e3a8a; font-size:9.5px; line-height:1.45; }
+
+  .po-detail-summary { grid-template-columns:repeat(5,minmax(0,1fr)); }
+  .po-modal-toolbar { grid-template-columns:minmax(240px,1fr) 158px 150px 155px 155px; }
+  .po-modal-card { width:min(1680px,calc(100vw - 24px)); }
+  #modalTablePO { min-width:1760px; }
+  #modalTablePO th,#modalTablePO td { border-right:1px solid #edf2f7; }
+  #modalTablePO tbody tr:nth-child(even) td { background:#fbfdff; }
+  #modalTablePO tbody tr:hover td { background:#eff6ff; }
+  #modalTablePO .modal-freeze-2 { box-shadow:5px 0 9px -8px rgba(15,23,42,.9); }
+  .po-stacked { display:flex; flex-direction:column; align-items:flex-end; gap:2px; line-height:1.05; }
+  .po-stacked small { color:#64748b; font-size:7px; font-weight:750; }
+  .po-stacked strong { color:#0f172a; font-size:9px; font-weight:850; }
+  .po-kolek-shift { display:inline-flex; align-items:center; gap:4px; white-space:nowrap; }
+  .po-kolek-chip { display:inline-flex; align-items:center; justify-content:center; min-width:25px; height:20px; padding:0 5px; border-radius:6px; font-size:7.5px; font-weight:900; }
+  .po-kolek-chip.old { background:#f1f5f9; color:#475569; }
+  .po-kolek-chip.new { background:#fff1f2; color:#be123c; }
+
+  @media (min-width:1024px) {
+      #poScroller { overflow-x:hidden; }
+  }
+  @media (max-width:1023px) {
+      #poScroller { overflow:auto; }
+      #tabelPotensi { width:1120px; min-width:1120px; }
+      #tabelPotensi col.po-col-code { width:50px; }
+      #tabelPotensi col.po-col-name { width:160px; }
+      #tabelPotensi col.po-col-noa { width:50px; }
+      #tabelPotensi col.po-col-money { width:132px; }
+      #tabelPotensi .sticky-left-1 { width:50px; min-width:50px; max-width:50px; }
+      #tabelPotensi .sticky-left-2 { left:50px; width:160px; min-width:160px; max-width:160px; }
+  }
+  @media (max-width:767px) {
+      #poScroller { --col1:0px; --col2:112px; }
+      #tabelPotensi { width:860px; min-width:860px; }
+      #tabelPotensi col.po-col-code { display:none; }
+      #tabelPotensi col.po-col-name { width:112px; }
+      #tabelPotensi col.po-col-noa { width:38px; }
+      #tabelPotensi col.po-col-money { width:112px; }
+      #tabelPotensi .sticky-left-2 { left:0; width:112px; min-width:112px; max-width:112px; }
+      #tabelPotensi th,#tabelPotensi td { height:33px; padding:3px 4px; }
+      #tabelPotensi thead tr:first-child th { height:36px; }
+      #tabelPotensi thead tr:last-child th { top:36px; height:29px; }
+      #poTotalRow td { top:65px; }
+      .po-group-head > span { font-size:6.5px; }
+      .po-group-head > small { display:none; }
+      .po-title-copy p { max-width:205px; }
+      .po-help-modal { align-items:flex-end; padding:0; }
+      .po-help-card { width:100%; max-height:88dvh; border-right:0; border-bottom:0; border-left:0; border-radius:16px 16px 0 0; }
+      .po-help-grid { grid-template-columns:1fr; }
+      .po-help-head { padding:10px 11px; }
+      .po-help-body { padding:10px 11px 16px; }
+      .po-detail-summary { grid-template-columns:repeat(5,minmax(104px,1fr)); }
+  }
+
 </style>
 
-<div class="max-w-full mx-auto px-3 md:px-4 py-4 h-[calc(100vh-80px)] md:h-[calc(100vh-120px)] flex flex-col font-sans bg-slate-50">
+<div id="poPage" class="po-page">
 
-  <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-4 shrink-0">
-    <div class="flex items-center justify-between">
-      <div>
-        <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
-            <span class="bg-blue-600 text-white p-1.5 rounded-lg text-sm md:text-base shadow-sm">⚠️</span> 
-            <span>Potensi NPL</span>
-            <span id="badgeUnit" class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] uppercase font-bold rounded tracking-wider">MEMUAT...</span>
-        </h1>
-        <p class="text-[10px] md:text-xs text-slate-500 mt-1 ml-1 font-medium">*Rekap Potensi NPL Terperinci (Aman, JT, Flow)</p>
+  <header id="poHeader" class="po-header">
+    <div class="po-titlebar">
+      <div class="po-title-wrap">
+        <span class="po-title-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.7 2.8 17a2 2 0 0 0 1.74 3h14.92a2 2 0 0 0 1.74-3L13.7 3.7a2 2 0 0 0-3.4 0Z"></path></svg>
+        </span>
+        <div class="po-title-copy">
+          <div class="po-title-line">
+            <h1>Potensi NPL</h1>
+            <button type="button" id="btnInfoPotensi" class="po-info-btn" title="Panduan Potensi NPL" aria-label="Buka panduan Potensi NPL">i</button>
+            <span id="badgeUnit" class="po-unit-badge">MEMUAT...</span>
+          </div>
+          <p>Monitoring kandidat NPL, status penyelamatan, dan komitmen pembayaran cabang.</p>
+        </div>
       </div>
-      <div id="loadingMini" class="hidden md:hidden animate-spin h-5 w-5 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+      <div class="po-mobile-actions">
+        <div id="loadingMini" class="hidden animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+        <button type="button" id="btnTogglePOFilter" class="po-filter-toggle" aria-expanded="false">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <span>Filter</span>
+        </button>
+      </div>
     </div>
 
-    <form id="filterForm" class="flex flex-row flex-wrap md:flex-nowrap items-end gap-2 md:gap-3 w-full md:w-auto">
-      <div class="filter-box flex flex-col md:w-[170px]">
-          <label class="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase ml-1 mb-1 tracking-wider">Kantor</label>
-          <select id="opt_kantor_rec" class="inp font-medium text-slate-700 shadow-sm"><option value="">Memuat...</option></select>
-      </div>
-      <div class="filter-box flex flex-col md:w-[130px]">
-          <label class="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase ml-1 mb-1 tracking-wider">Closing Date</label>
-          <input type="date" id="closing_date" class="inp shadow-sm" required>
-      </div>
-      <div class="filter-box flex flex-col md:w-[130px]">
-          <label class="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase ml-1 mb-1 tracking-wider">Actual Date</label>
-          <input type="date" id="harian_date" class="inp shadow-sm" required>
-      </div>
-      
-      <div class="filter-actions flex items-center gap-2 shrink-0">
-        <button type="submit" class="btn-icon" title="Cari Data">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+    <form id="filterForm" class="po-filter-form">
+      <label class="po-field po-field-office">
+        <span>Kantor</span>
+        <select id="opt_kantor_rec" class="inp"><option value="">Memuat...</option></select>
+      </label>
+      <label class="po-field">
+        <span>Closing (M-1)</span>
+        <input type="date" id="closing_date" class="inp" required>
+      </label>
+      <label class="po-field">
+        <span>Actual (Harian)</span>
+        <input type="date" id="harian_date" class="inp" required>
+      </label>
+      <div class="po-filter-actions">
+        <button type="submit" class="po-action-btn po-action-search" title="Terapkan filter" aria-label="Terapkan filter">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
         </button>
-        <button type="button" onclick="exportPotensiExcel()" class="btn-icon bg-green-600 hover:bg-green-700" title="Download Excel">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+        <button type="button" onclick="exportPotensiExcel()" class="po-action-btn po-action-excel" title="Export Excel" aria-label="Export Excel">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14a2 2 0 0 0 2-2v-3"></path><path d="M3 16v3a2 2 0 0 0 2 2"></path></svg>
         </button>
       </div>
     </form>
-  </div>
+  </header>
 
   <div class="flex-1 min-h-0 relative flex flex-col">
     <div id="loadingPO" class="hidden absolute inset-0 bg-white/80 z-[100] flex flex-col items-center justify-center text-blue-600 font-bold backdrop-blur-sm rounded-lg">
@@ -150,15 +452,23 @@
 
     <div id="poScroller" class="table-wrapper shadow-sm">
       <table id="tabelPotensi">
+        <colgroup>
+          <col class="po-col-code"><col class="po-col-name">
+          <col class="po-col-noa"><col class="po-col-money">
+          <col class="po-col-noa"><col class="po-col-money">
+          <col class="po-col-noa"><col class="po-col-money">
+          <col class="po-col-noa"><col class="po-col-money">
+          <col class="po-col-noa"><col class="po-col-money">
+        </colgroup>
         <thead id="poHead1">
           <tr>
             <th class="sticky-left-1" rowspan="2">KODE</th>
             <th class="sticky-left-2" id="thNamaPO" rowspan="2">NAMA KANTOR</th>
-            <th class="text-center bg-blue-50 border-b border-blue-200" colspan="2">TOTAL POTENSI NPL</th>
-            <th class="text-center bg-green-50 border-b border-green-200" colspan="2">AMAN</th>
-            <th class="text-center bg-yellow-50 border-b border-yellow-200" colspan="2">JATUH TEMPO</th>
-            <th class="text-center bg-red-50 border-b border-red-200" colspan="2">FLOW (KL/D/M)</th>
-            <th class="text-center bg-orange-50 border-b border-orange-200" colspan="2">POTENSI FLow NPL</th>
+            <th class="po-group-head po-group-total text-center" colspan="2"><span>TOTAL POTENSI NPL</span><small>Seluruh kandidat yang dipantau</small></th>
+            <th class="po-group-head po-group-safe text-center" colspan="2"><span>AMAN / LUNAS</span><small>Selamat, membaik, backflow, atau lunas</small></th>
+            <th class="po-group-head po-group-due text-center" colspan="2"><span>JATUH TEMPO</span><small>Perlu penyelesaian saat jatuh tempo</small></th>
+            <th class="po-group-head po-group-flow text-center" colspan="2"><span>FLOW (KL/D/M)</span><small>Sudah masuk kolektibilitas NPL</small></th>
+            <th class="po-group-head po-group-risk text-center" colspan="2"><span>MASIH POTENSI</span><small>Belum flow tetapi masih berisiko</small></th>
           </tr>
           <tr>
             <th class="text-center w-[60px] bg-blue-50 cursor-pointer hover:bg-blue-100 transition" onclick="doSort('total_noa')">NOA ⬍</th>
@@ -177,76 +487,111 @@
   </div>
 </div>
 
-<div id="modalDebiturPotensi" class="fixed inset-0 hidden bg-slate-900/60 backdrop-blur-sm items-center justify-center z-[9999] px-2 md:px-4">
-  <div id="modalCardPO" class="bg-white rounded-xl shadow-2xl flex flex-col w-full max-w-[1700px] h-[95vh] overflow-hidden animate-scale-up">
-    
-    <div class="flex flex-col md:flex-row md:items-center justify-between p-3 md:p-4 border-b border-slate-100 bg-slate-50 shrink-0 gap-3 overflow-x-auto no-scrollbar">
-      <div class="shrink-0">
-        <h3 class="font-bold text-slate-800 text-base md:text-xl flex items-center gap-2">
-            📄 <span id="modalTitlePotensi" class="truncate max-w-[250px] md:max-w-none">Detail Potensi NPL</span>
-        </h3>
-        <p class="text-[10px] md:text-xs text-slate-500 mt-1" id="modalSubtitlePO">Posisi: -</p>
+<div id="modalDebiturPotensi" class="po-modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitlePotensi">
+  <div id="modalCardPO" class="po-modal-card">
+    <header class="po-modal-header">
+      <div class="po-modal-title-wrap">
+        <span class="po-modal-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path><path d="M14 2v6h6"></path><path d="M8 13h8M8 17h6"></path></svg>
+        </span>
+        <div class="po-modal-title-copy">
+          <h3 id="modalTitlePotensi">Detail Potensi NPL</h3>
+          <p id="modalSubtitlePO">Posisi: -</p>
+        </div>
       </div>
-      
-      <div class="flex items-center gap-2 shrink-0 w-full md:w-auto">
-          <select id="modalFilterStatus" class="inp !h-9 !py-0 text-xs w-[130px] md:w-[150px] font-medium text-slate-700 shadow-sm" onchange="renderDetailRows()">
-              <option value="ALL">Semua Status</option>
-              <option value="AMAN">Aman / Lunas</option>
-              <option value="JATUH TEMPO">Jatuh Tempo</option>
-              <option value="FLOW KOLEK">Flow Kolek</option>
-              <option value="MASIH POTENSI">Masih Potensi</option>
-          </select>
-          
-          <select id="modalFilterKankas" class="inp !h-9 !py-0 text-xs w-[120px] md:w-[140px] font-medium text-slate-700 shadow-sm" onchange="fetchDetailPotensiNpl()">
-              <option value="">Semua Kankas</option>
-          </select>
-
-          <select id="modalFilterAo" class="inp !h-9 !py-0 text-xs w-[120px] md:w-[140px] font-medium text-slate-700 shadow-sm" onchange="fetchDetailPotensiNpl()">
-              <option value="">Semua AO</option>
-          </select>
-
-          <!-- Tombol Update Tambahan -->
-          <button onclick="gotoUpdatePotensiNPL()" class="flex items-center justify-center h-9 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition shrink-0 gap-1.5 font-bold text-xs" title="Update Komitmen Debitur">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-              <span>Komitmen</span>
-          </button>
-
-          <button onclick="exportDetailPotensiExcel()" class="flex items-center justify-center w-9 h-9 bg-green-600 hover:bg-green-700 text-white rounded-lg shadow-sm transition shrink-0" title="Export Excel Detail">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-          </button>
-
-          <button id="btnClosePO" class="flex items-center justify-center w-9 h-9 bg-slate-200 hover:bg-red-100 text-slate-600 hover:text-red-600 rounded-lg shadow-sm transition font-bold shrink-0">✕</button>
+      <div class="po-modal-actions">
+        <button type="button" onclick="gotoUpdatePotensiNPL()" class="po-modal-btn primary" title="Update komitmen" aria-label="Update komitmen">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg><span>Update</span>
+        </button>
+        <button type="button" onclick="exportDetailPotensiExcel()" class="po-modal-btn excel" title="Export Excel" aria-label="Export Excel">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14a2 2 0 0 0 2-2v-3"></path><path d="M3 16v3a2 2 0 0 0 2 2"></path></svg><span>Excel</span>
+        </button>
+        <button id="btnClosePO" type="button" class="po-modal-close" title="Tutup" aria-label="Tutup">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+        </button>
       </div>
+    </header>
+
+    <section class="po-modal-toolbar">
+      <label class="po-modal-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
+        <input type="search" id="modalSearchPO" placeholder="Cari nama, rekening, AO, alamat..." autocomplete="off" oninput="renderDetailRows()">
+      </label>
+      <select id="modalFilterStatus" class="po-modal-select" onchange="handlePOStatusChange()">
+        <option value="ALL">Semua Status Potensi</option>
+        <option value="AMAN">Aman / Lunas / Backflow</option>
+        <option value="JATUH TEMPO">Jatuh Tempo</option>
+        <option value="FLOW KOLEK">Flow Kolek</option>
+        <option value="MASIH POTENSI">Masih Potensi</option>
+      </select>
+      <select id="modalFilterCommitment" class="po-modal-select" onchange="renderDetailRows()">
+        <option value="ALL">Semua Komitmen</option>
+        <option value="SUDAH">Sudah Komitmen</option>
+        <option value="BELUM">Belum Komitmen</option>
+      </select>
+      <select id="modalFilterKankas" class="po-modal-select" onchange="fetchDetailPotensiNpl()"><option value="">Semua Kankas</option></select>
+      <select id="modalFilterAo" class="po-modal-select" onchange="fetchDetailPotensiNpl()"><option value="">Semua AO</option></select>
+    </section>
+
+    <section id="poDetailSummary" class="po-detail-summary">
+      <div class="po-summary-item"><span>Data Terfilter</span><strong id="poSumCandidates">0</strong></div>
+      <div class="po-summary-item green"><span>Aman / Lunas</span><strong id="poSumSafe">0</strong></div>
+      <div class="po-summary-item blue"><span>Sudah Komitmen</span><strong id="poSumCommitted">0</strong></div>
+      <div class="po-summary-item orange"><span>Belum Komitmen</span><strong id="poSumUncommitted">0</strong></div>
+      <div class="po-summary-item green"><span>Nominal Janji</span><strong id="poSumPromise">Rp 0</strong></div>
+    </section>
+
+    <div class="po-modal-content" id="modalScroll">
+      <table id="modalTablePO">
+        <thead><tr>
+          <th class="modal-freeze-1 text-center">No Rekening</th>
+          <th class="modal-freeze-2 text-left">Debitur / Alamat / AO</th>
+          <th class="text-center">Status Potensi</th>
+          <th class="text-center">Kolek C → H</th>
+          <th class="text-right">BD Closing</th>
+          <th class="text-right">BD Harian</th>
+          <th class="text-right">Tunggakan P / B</th>
+          <th class="text-right">Saldo Tab</th>
+          <th class="text-center">JT</th>
+          <th class="text-center">DPD / P / B</th>
+          <th class="text-right">Angsuran P / B</th>
+          <th class="text-center">Status Komitmen</th>
+          <th class="text-left">Komitmen</th>
+          <th class="text-center">Tgl Janji</th>
+          <th class="text-right">Nominal Janji</th>
+          <th class="text-left">Alasan</th>
+        </tr></thead>
+        <tbody id="modalTotalRowPO"></tbody>
+        <tbody id="modalBodyRowsPO"></tbody>
+      </table>
+      <div id="modalMobileCardsPO" class="po-mobile-detail-list"></div>
     </div>
-    
-    <div class="flex-1 overflow-auto bg-white relative" id="modalScroll">
-        <table id="modalTablePO">
-            <thead>
-                <tr>
-                    <th class="modal-freeze-1 text-center">No Rekening</th>
-                    <th class="modal-freeze-2 text-left">Nama Nasabah</th>
-                    <th class="text-left w-[200px]">Alamat</th>
-                    <th class="text-left w-[150px]">AO</th>
-                    <th class="text-center w-[120px]">Status Saat Ini</th>
-                    <th class="text-center w-[60px]">Kol C</th>
-                    <th class="text-right w-[110px]">BD Closing</th>
-                    <th class="text-center w-[60px]">Kol H</th>
-                    <th class="text-right w-[110px]">BD Harian</th>
-                    <th class="text-right w-[100px]">Tungg. Pokok</th>
-                    <th class="text-right w-[100px]">Tungg. Bunga</th>
-                    <th class="text-right w-[110px]">Saldo Tab</th>
-                    <th class="text-center w-[80px]">JT</th>
-                    <th class="text-center w-[50px]">DPD</th>
-                    <th class="text-center w-[50px]">DPD P</th>
-                    <th class="text-center w-[50px]">DPD B</th>
-                    <th class="text-right w-[100px]">Angs. Pokok</th>
-                    <th class="text-right w-[100px]">Angs. Bunga</th>
-                    <th class="text-center w-[90px]">Tgl Trans</th>
-                </tr>
-            </thead>
-            <tbody id="modalTotalRowPO"></tbody> 
-            <tbody id="modalBodyRowsPO"></tbody> 
-        </table>
+  </div>
+</div>
+
+<div id="modalInfoPotensi" class="po-help-modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalInfoPotensiTitle">
+  <div class="po-help-card">
+    <header class="po-help-head">
+      <div class="po-help-title">
+        <span class="po-help-title-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path></svg>
+        </span>
+        <div><h3 id="modalInfoPotensiTitle">Panduan Potensi NPL</h3><p>Kamus status dan cara menggunakan report untuk proyeksi NPL.</p></div>
+      </div>
+      <button type="button" id="btnCloseInfoPotensi" class="po-help-close" aria-label="Tutup panduan">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </button>
+    </header>
+    <div class="po-help-body">
+      <div class="po-help-grid">
+        <article class="po-help-item"><div class="po-help-item-head"><span class="po-help-dot" style="background:#2563eb"></span>Total Potensi NPL</div><p>Seluruh rekening kandidat yang dipantau dari posisi closing sampai posisi actual.</p></article>
+        <article class="po-help-item"><div class="po-help-item-head"><span class="po-help-dot" style="background:#10b981"></span>Aman / Lunas</div><p>Rekening yang tidak menjadi NPL, termasuk tetap aman, membaik/backflow, atau sudah lunas.</p></article>
+        <article class="po-help-item"><div class="po-help-item-head"><span class="po-help-dot" style="background:#f59e0b"></span>Jatuh Tempo</div><p>Rekening yang jatuh tempo dan perlu diselesaikan agar tidak masuk flow.</p></article>
+        <article class="po-help-item"><div class="po-help-item-head"><span class="po-help-dot" style="background:#ef4444"></span>Flow (KL/D/M)</div><p>Rekening yang pada posisi actual sudah masuk kolektibilitas Kurang Lancar, Diragukan, atau Macet.</p></article>
+        <article class="po-help-item"><div class="po-help-item-head"><span class="po-help-dot" style="background:#f97316"></span>Masih Potensi</div><p>Belum tercatat sebagai flow, tetapi masih memiliki risiko berdasarkan DPD, tunggakan, atau jatuh tempo.</p></article>
+        <article class="po-help-item"><div class="po-help-item-head"><span class="po-help-dot" style="background:#6366f1"></span>Komitmen Cabang</div><p>Isikan rencana penyelesaian, tanggal janji bayar, nominal, dan alasan untuk memproyeksikan rekening yang terselamatkan serta yang berpotensi flow.</p></article>
+      </div>
+      <div class="po-help-note"><b>Cara menggunakan:</b> klik angka NOA pada report untuk membuka detail. Gunakan filter status dan komitmen, lalu klik <b>Update</b> untuk memperbarui komitmen debitur. Data lunas akan masuk kelompok Aman/Lunas apabila backend mengirim rekening closing yang sudah tidak ada pada posisi harian.</div>
     </div>
   </div>
 </div>
@@ -280,6 +625,46 @@
   const kodeNum = v => Number(String(v??'').replace(/\D/g,'')||0);
   const formatDate = (s) => { if(!s) return '-'; const d=new Date(s); return isNaN(d)?'-': `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; };
 
+  const poEscape = value => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  const poCommitment = d => ({
+      komitmen: d.komitmen || d.komitmen_dpd || '',
+      tanggal: d.tgl_pembayaran || d.tgl_janji_bayar || '',
+      nominal: num(d.nominal ?? d.nominal_janji_bayar ?? 0),
+      alasan: d.alasan || d.alasan_keterlambatan || ''
+  });
+  const poHasCommitment = d => {
+      const c = poCommitment(d);
+      return String(c.komitmen).trim() !== '' || String(c.tanggal).trim() !== '' || c.nominal > 0;
+  };
+
+  function poNormalizeStatus(value) {
+      return String(value ?? '').trim().toUpperCase().replace(/[_-]+/g,' ').replace(/\s+/g,' ');
+  }
+
+  function poStatusRaw(d) {
+      return d?.status_potensi ?? d?.status_saat_ini ?? d?.status_update ?? d?.status ?? '';
+  }
+
+  function poStatusKind(d) {
+      const status = poNormalizeStatus(poStatusRaw(d));
+      const bdClosing = num(d?.baki_debet_closing ?? d?.baki_debet_awal ?? 0);
+      const bdHarian = num(d?.baki_debet_harian ?? d?.baki_debet_actual ?? d?.baki_debet ?? 0);
+      const explicitLunas = Number(d?.is_lunas ?? d?.lunas ?? 0) === 1;
+
+      if (explicitLunas || status.includes('LUNAS') || status.includes('AMAN') || status.includes('BACKFLOW') || status.includes('SELAMAT') || status.includes('PERBAIKAN')) return 'AMAN';
+      if (status.includes('FLOW') || status.includes('KL/D/M') || status.includes('NPL')) return 'FLOW KOLEK';
+      if (status.includes('JATUH TEMPO') || status === 'JT') return 'JATUH TEMPO';
+      if (bdClosing > 0 && bdHarian <= 0) return 'AMAN';
+      return 'MASIH POTENSI';
+  }
+
+  function poStatusDisplay(d) {
+      const raw = String(poStatusRaw(d) || '').trim();
+      if (raw) return raw;
+      if (poStatusKind(d) === 'AMAN' && num(d?.baki_debet_closing) > 0 && num(d?.baki_debet_harian) <= 0) return 'LUNAS / AMAN';
+      return poStatusKind(d);
+  }
+
   function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
   function formatJTByRule(jt){ 
       if(!jt) return '-'; 
@@ -299,10 +684,12 @@
   // --- STATE GLOBAL ---
   window.poDataRaw = [];
   window.poGtRaw = null;
-  let detailPoRaw = []; 
+  let detailPoRaw = [];
+  let detailPoFiltered = []; 
   let sortState = { col: null, dir: 1 };
   let currentFilter = { closing:'', harian:'' };
-  let currentDetailKode = ''; 
+  let currentDetailKode = '';
+  let currentDetailStatus = 'ALL'; 
   let poAbort;
   window.currentUserKode = '000';
 
@@ -318,6 +705,33 @@
   // =========================================================
   // INIT PAGE & USER LOGIN (ANTI BOCOR)
   // =========================================================
+
+  function syncPOFilterButton() {
+      const form = document.getElementById('filterForm');
+      const btn = document.getElementById('btnTogglePOFilter');
+      if(!form || !btn) return;
+      const open = form.classList.contains('is-open');
+      btn.setAttribute('aria-expanded', String(open));
+      const label = btn.querySelector('span');
+      if(label) label.textContent = open ? 'Tutup' : 'Filter';
+  }
+  document.getElementById('btnTogglePOFilter')?.addEventListener('click', () => {
+      document.getElementById('filterForm')?.classList.toggle('is-open');
+      syncPOFilterButton();
+  });
+
+  function openInfoPotensi() {
+      document.getElementById('modalInfoPotensi')?.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+  }
+  function closeInfoPotensi() {
+      document.getElementById('modalInfoPotensi')?.classList.add('hidden');
+      if (document.getElementById('modalDebiturPotensi')?.classList.contains('hidden')) document.body.style.overflow = '';
+  }
+  document.getElementById('btnInfoPotensi')?.addEventListener('click', openInfoPotensi);
+  document.getElementById('btnCloseInfoPotensi')?.addEventListener('click', closeInfoPotensi);
+  document.getElementById('modalInfoPotensi')?.addEventListener('click', e => { if (e.target.id === 'modalInfoPotensi') closeInfoPotensi(); });
+
   window.addEventListener('DOMContentLoaded', async () => {
       // 1. TANGKAP USER LOGIN DENGAN BENAR
       let k = '000';
@@ -398,6 +812,16 @@
     fetchPotensiData();
   });
 
+  ['opt_kantor_rec','closing_date','harian_date'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', () => {
+          currentFilter.closing = document.getElementById('closing_date').value;
+          currentFilter.harian = document.getElementById('harian_date').value;
+          sortState = {col:null,dir:1};
+          fetchPotensiData();
+          if(window.innerWidth < 768) { document.getElementById('filterForm')?.classList.remove('is-open'); syncPOFilterButton(); }
+      });
+  });
+
   // =========================================================
   // FETCH REKAP POTENSI NPL
   // =========================================================
@@ -474,7 +898,7 @@
 
       const getLink = (angka, status, colorClass) => {
           if (num(angka) > 0) {
-              return `<a href="#" class="${colorClass} font-bold hover:underline" onclick="event.preventDefault(); checkAccessAndOpenModal('${targetKode}', '${status}')">${fmtInt(angka)}</a>`;
+              return `<a href="#" class="po-noa-link ${colorClass} font-bold" onclick="event.preventDefault(); checkAccessAndOpenModal('${targetKode}', '${status}')">${fmtInt(angka)}</a>`;
           }
           return `<span class="text-slate-400">${fmtInt(angka)}</span>`;
       };
@@ -513,7 +937,7 @@
           
           const getLink = (angka, status, colorClass) => {
               if (num(angka) > 0) {
-                  return `<a href="#" class="${colorClass} font-bold hover:underline" onclick="event.preventDefault(); checkAccessAndOpenModal('${kode}', '${status}')">${fmtInt(angka)}</a>`;
+                  return `<a href="#" class="po-noa-link ${colorClass} font-bold" onclick="event.preventDefault(); checkAccessAndOpenModal('${kode}', '${status}')">${fmtInt(angka)}</a>`;
               }
               return `<span class="text-slate-300">${fmtInt(angka)}</span>`;
           };
@@ -656,20 +1080,27 @@
       const targetCabang = kode.length >= 3 ? kode.substring(0,3) : kode;
       const targetKankas = kode.length > 3 ? kode : '';
       
-      currentDetailKode = targetCabang; 
+      currentDetailKode = targetCabang;
+      currentDetailStatus = statusFilter || 'ALL'; 
       
       const modal = document.getElementById('modalDebiturPotensi');
       const title = document.getElementById('modalTitlePotensi');
       const sub   = document.getElementById('modalSubtitlePO');
       
-      modal.classList.remove('hidden'); modal.classList.add('flex');
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
       let titleLabel = kode === '000' ? 'KONSOLIDASI' : kode;
-      title.innerHTML = `Detail Potensi <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded font-mono border border-blue-200">${titleLabel}</span>`;
+      const activeLabel = statusFilter === 'AMAN' ? 'Aman / Lunas' : (statusFilter === 'ALL' ? 'Potensi' : statusFilter);
+      title.innerHTML = `Detail ${poEscape(activeLabel)} <span class="ml-2 px-2 py-0.5 bg-blue-100 text-blue-800 text-xs rounded font-mono border border-blue-200">${titleLabel}</span>`;
       sub.innerText = `Posisi: ${formatDate(currentFilter.closing)} vs ${formatDate(currentFilter.harian)}`;
       
       // AUTO SELECT STATUS DROPDOWN BERDASARKAN ANGKA YG DIKLIK
       const statDropdown = document.getElementById('modalFilterStatus');
       if (statDropdown) statDropdown.value = statusFilter;
+      const commitmentDropdown = document.getElementById('modalFilterCommitment');
+      if (commitmentDropdown) commitmentDropdown.value = 'ALL';
+      const searchInput = document.getElementById('modalSearchPO');
+      if (searchInput) searchInput.value = '';
 
       // POPULATE DROPDOWN KANKAS DI DALAM MODAL
       const selKankas = document.getElementById('modalFilterKankas');
@@ -715,7 +1146,7 @@
       const kankas = document.getElementById('modalFilterKankas')?.value || ''; 
       const aoFilter = document.getElementById('modalFilterAo')?.value || ''; 
 
-      tbody.innerHTML = `<tr><td colspan="19" class="p-12 text-center"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mx-auto mb-3"></div><span class="text-slate-500 font-medium">Sedang mengambil data detail...</span></td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="24" class="p-12 text-center"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mx-auto mb-3"></div><span class="text-slate-500 font-medium">Sedang mengambil data detail...</span></td></tr>`;
       ttot.innerHTML = '';
 
       try {
@@ -727,7 +1158,10 @@
               kode_kankas: kankas,             
               kode_ao: aoFilter,             
               closing_date: currentFilter.closing, 
-              harian_date: currentFilter.harian 
+              harian_date: currentFilter.harian,
+              status_filter: 'ALL',
+              include_lunas: 1,
+              include_aman_backflow: 1
           };
           
           const res = await fetch('./api/npl/', {
@@ -743,175 +1177,170 @@
 
       } catch(e){
           console.error("Error saat fetch Detail Potensi:", e); 
-          tbody.innerHTML = `<tr><td colspan="19" class="p-10 text-center text-red-500">Gagal memuat data detail. ${e.message}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="24" class="p-10 text-center text-red-500">Gagal memuat data detail. ${e.message}</td></tr>`;
       }
   }
 
-  // --- RENDER ROWS DETAIL DI DALAM MODAL (DENGAN FILTER STATUS) ---
+  // --- RENDER DETAIL + KOMITMEN ---
+  function handlePOStatusChange() {
+      currentDetailStatus = document.getElementById('modalFilterStatus')?.value || 'ALL';
+      renderDetailRows();
+  }
+  window.handlePOStatusChange = handlePOStatusChange;
+
+  function getFilteredDetailRows() {
+      const statusFilter = document.getElementById('modalFilterStatus')?.value || 'ALL';
+      const commitmentFilter = document.getElementById('modalFilterCommitment')?.value || 'ALL';
+      const query = String(document.getElementById('modalSearchPO')?.value || '').trim().toLowerCase();
+      return detailPoRaw.filter(d => {
+          const kind = poStatusKind(d);
+          const statusMatch = statusFilter === 'ALL' || kind === statusFilter;
+          const hasCommitment = poHasCommitment(d);
+          const commitmentMatch = commitmentFilter === 'ALL'
+              || (commitmentFilter === 'SUDAH' ? hasCommitment : !hasCommitment);
+          const c = poCommitment(d);
+          const haystack = `${d.no_rekening || ''} ${d.nama_nasabah || ''} ${d.alamat || ''} ${d.nama_ao || ''} ${poStatusDisplay(d)} ${kind} ${c.komitmen} ${c.alasan}`.toLowerCase();
+          return statusMatch && commitmentMatch && (!query || haystack.includes(query));
+      });
+  }
+
+  function renderDetailSummary(rows) {
+      const committed = rows.filter(poHasCommitment).length;
+      const safe = rows.filter(d => poStatusKind(d) === 'AMAN').length;
+      const promise = rows.reduce((sum,d) => sum + poCommitment(d).nominal, 0);
+      document.getElementById('poSumCandidates').textContent = fmtInt(rows.length);
+      document.getElementById('poSumSafe').textContent = fmtInt(safe);
+      document.getElementById('poSumCommitted').textContent = fmtInt(committed);
+      document.getElementById('poSumUncommitted').textContent = fmtInt(rows.length - committed);
+      document.getElementById('poSumPromise').textContent = `Rp ${fmtNom(promise)}`;
+  }
+
+  function statusPotensiBadge(d) {
+      const kind = poStatusKind(d);
+      const label = poStatusDisplay(d);
+      if(kind === 'AMAN') return `<span class="status-aman">${poEscape(label)}</span>`;
+      if(kind === 'FLOW KOLEK') return `<span class="status-flow">${poEscape(label)}</span>`;
+      if(kind === 'JATUH TEMPO') return `<span class="status-jt">${poEscape(label)}</span>`;
+      return `<span class="text-orange-600 font-bold bg-orange-100 px-2 py-0.5 rounded">${poEscape(label)}</span>`;
+  }
+
+  function renderDetailMobileCards(rows) {
+      const el = document.getElementById('modalMobileCardsPO');
+      if (!el) return;
+      el.innerHTML = rows.map(d => {
+          const c = poCommitment(d);
+          const has = poHasCommitment(d);
+          return `<article class="po-detail-card">
+            <div class="po-detail-card-head">
+              <div class="min-w-0">
+                <div class="po-detail-card-name">${poEscape(d.nama_nasabah || '-')}</div>
+                <div class="po-detail-card-rek">${poEscape(d.no_rekening || '-')} · ${poEscape(d.nama_ao || '-')}</div>
+                <div class="po-detail-card-address">${poEscape(d.alamat || '-')}</div>
+              </div>
+              ${statusPotensiBadge(d)}
+            </div>
+            <div class="po-detail-card-metrics">
+              <div class="po-detail-card-metric"><span>BD Harian</span><strong>${fmtNom(d.baki_debet_harian)}</strong></div>
+              <div class="po-detail-card-metric"><span>Tungg. Pokok</span><strong>${fmtNom(d.tunggakan_pokok)}</strong></div>
+              <div class="po-detail-card-metric"><span>Tungg. Bunga</span><strong>${fmtNom(d.tunggakan_bunga)}</strong></div>
+              <div class="po-detail-card-metric"><span>Kolek C → H</span><strong>${poEscape(d.kolek_closing || '-')} → ${poEscape(d.kolek_harian || '-')}</strong></div>
+              <div class="po-detail-card-metric"><span>DPD P / B</span><strong>${fmtInt(d.hmp_harian)} / ${fmtInt(d.hmb_harian)}</strong></div>
+              <div class="po-detail-card-metric"><span>Jatuh Tempo</span><strong>${formatJTByRule(d.jt_harian)}</strong></div>
+            </div>
+            <div class="po-detail-card-commit">
+              <div class="po-detail-card-commit-top">
+                <span class="po-commit-badge ${has ? 'done' : 'empty'}">${has ? poEscape(c.komitmen || 'Sudah Komitmen') : 'Belum Komitmen'}</span>
+                <span class="po-detail-card-commit-money">Rp ${fmtNom(c.nominal)}</span>
+              </div>
+              <div class="po-detail-card-meta">
+                <b>Tgl Janji</b><span>${formatDate(c.tanggal)}</span>
+                <b>Alasan</b><span title="${poEscape(c.alasan)}">${poEscape(c.alasan || '-')}</span>
+              </div>
+            </div>
+          </article>`;
+      }).join('');
+  }
+
   window.renderDetailRows = function() {
       const tbody = document.getElementById('modalBodyRowsPO');
-      const ttot  = document.getElementById('modalTotalRowPO');
-      
-      const statusEl = document.getElementById('modalFilterStatus');
-      const statusFilter = statusEl ? statusEl.value : 'ALL';
+      const ttot = document.getElementById('modalTotalRowPO');
+      detailPoFiltered = getFilteredDetailRows();
+      renderDetailSummary(detailPoFiltered);
+      renderDetailMobileCards(detailPoFiltered);
 
-      let filteredData = detailPoRaw;
-      if(statusFilter !== 'ALL') {
-          filteredData = detailPoRaw.filter(d => {
-              if (statusFilter === 'AMAN') return d.status_potensi === 'AMAN' || d.status_potensi === 'LUNAS / AMAN';
-              return d.status_potensi === statusFilter;
-          });
-      }
-
-      if(filteredData.length === 0){ 
-          tbody.innerHTML = `<tr><td colspan="19" class="p-10 text-center text-slate-400">Data tidak ditemukan pada filter ini.</td></tr>`; 
+      if(detailPoFiltered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="16" class="p-10 text-center text-slate-400">Data tidak ditemukan pada filter ini.</td></tr>`;
           ttot.innerHTML = '';
-          return; 
+          return;
       }
 
-      let totals = { bd_c:0, bd_h:0, tp:0, tb:0, sa:0, ap:0, ab:0 };
-
-      const rowsHtml = filteredData.map(d => {
-          totals.bd_c += num(d.baki_debet_closing);
-          totals.bd_h += num(d.baki_debet_harian);
-          totals.tp   += num(d.tunggakan_pokok);
-          totals.tb   += num(d.tunggakan_bunga);
-          totals.sa   += num(d.saldo_akhir); 
-          totals.ap   += num(d.angsuran_pokok);
-          totals.ab   += num(d.angsuran_bunga);
-          
-          let spanStatus = '';
-          if(d.status_potensi === 'AMAN' || d.status_potensi === 'LUNAS / AMAN') {
-              spanStatus = `<span class="status-aman">${d.status_potensi}</span>`;
-          } else if(d.status_potensi === 'FLOW KOLEK') {
-              spanStatus = `<span class="status-flow">${d.status_potensi}</span>`;
-          } else if(d.status_potensi === 'JATUH TEMPO') {
-              spanStatus = `<span class="status-jt">${d.status_potensi}</span>`;
-          } else {
-              spanStatus = `<span class="text-orange-600 font-bold bg-orange-100 px-2 py-0.5 rounded">${d.status_potensi}</span>`;
-          }
-
-          return `
-            <tr class="hover:bg-slate-50 border-b">
-                <td class="modal-freeze-1 font-mono text-slate-600 text-xs">${d.no_rekening}</td>
-                <td class="modal-freeze-2 font-medium text-xs text-slate-700" title="${d.nama_nasabah}">${d.nama_nasabah}</td>
-                
-                <td class="text-left text-xs text-slate-600 truncate max-w-[200px]" title="${d.alamat || '-'}">${d.alamat || '-'}</td>
-                <td class="text-left text-xs text-slate-600 truncate max-w-[150px]" title="${d.nama_ao || '-'}">${d.nama_ao || '-'}</td>
-                <td class="text-center text-[10px]">${spanStatus}</td>
-                <td class="text-center text-[10px] text-slate-500">${d.kolek_closing || '-'}</td>
-                <td class="text-right text-xs text-slate-600">${fmtNom(d.baki_debet_closing)}</td>
-                
-                <td class="text-center text-[10px] text-red-600 font-bold bg-red-50/50">${d.kolek_harian || '-'}</td>
-                <td class="text-right text-xs font-bold text-red-700 bg-red-50/50">${fmtNom(d.baki_debet_harian)}</td>
-                
-                <td class="text-right text-xs">${fmtNom(d.tunggakan_pokok)}</td>
-                <td class="text-right text-xs">${fmtNom(d.tunggakan_bunga)}</td>
-                <td class="text-right text-xs font-semibold text-green-700">${fmtNom(d.saldo_akhir)}</td>
-                
-                <td class="text-center text-xs">${formatJTByRule(d.jt_harian)}</td>
-                <td class="text-center text-xs font-bold text-red-600 bg-red-50/50">${fmtInt(d.hm_harian)}</td>
-                <td class="text-center text-xs">${fmtInt(d.hmp_harian)}</td>
-                <td class="text-center text-xs">${fmtInt(d.hmb_harian)}</td>
-                <td class="text-right text-xs text-slate-500">${fmtNom(d.angsuran_pokok)}</td>
-                <td class="text-right text-xs text-slate-500">${fmtNom(d.angsuran_bunga)}</td>
-                <td class="text-center text-xs text-slate-500">${d.tgl_trans_terakhir ? formatDate(d.tgl_trans_terakhir) : '-'}</td>
-            </tr>
-          `;
+      let totals = { bd_c:0, bd_h:0, tp:0, tb:0, sa:0, ap:0, ab:0, promise:0 };
+      const rowsHtml = detailPoFiltered.map(d => {
+          const c = poCommitment(d);
+          const has = poHasCommitment(d);
+          totals.bd_c += num(d.baki_debet_closing); totals.bd_h += num(d.baki_debet_harian);
+          totals.tp += num(d.tunggakan_pokok); totals.tb += num(d.tunggakan_bunga); totals.sa += num(d.saldo_akhir);
+          totals.ap += num(d.angsuran_pokok); totals.ab += num(d.angsuran_bunga); totals.promise += c.nominal;
+          return `<tr>
+            <td class="modal-freeze-1 font-mono text-slate-600">${poEscape(d.no_rekening || '-')}</td>
+            <td class="modal-freeze-2 text-left" title="${poEscape(d.nama_nasabah || '-')}">
+              <div class="font-bold text-slate-800 truncate">${poEscape(d.nama_nasabah || '-')}</div>
+              <div class="mt-0.5 text-[7px] text-slate-500 truncate" title="${poEscape(d.alamat || '-')}">${poEscape(d.alamat || '-')}</div>
+              <div class="mt-0.5 text-[7px] font-semibold text-blue-600 truncate">${poEscape(d.nama_ao || '-')}</div>
+            </td>
+            <td class="text-center">${statusPotensiBadge(d)}</td>
+            <td class="text-center"><span class="po-kolek-shift"><span class="po-kolek-chip old">${poEscape(d.kolek_closing || '-')}</span>→<span class="po-kolek-chip new">${poEscape(d.kolek_harian || '-')}</span></span></td>
+            <td class="text-right">${fmtNom(d.baki_debet_closing)}</td>
+            <td class="text-right font-bold text-red-700 bg-red-50/40">${fmtNom(d.baki_debet_harian)}</td>
+            <td class="text-right"><div class="po-stacked"><strong>${fmtNom(d.tunggakan_pokok)}</strong><small>B: ${fmtNom(d.tunggakan_bunga)}</small></div></td>
+            <td class="text-right text-green-700 font-bold">${fmtNom(d.saldo_akhir)}</td>
+            <td class="text-center">${formatJTByRule(d.jt_harian)}</td>
+            <td class="text-center"><div class="po-stacked"><strong>${fmtInt(d.hm_harian)}</strong><small>P ${fmtInt(d.hmp_harian)} · B ${fmtInt(d.hmb_harian)}</small></div></td>
+            <td class="text-right"><div class="po-stacked"><strong>${fmtNom(d.angsuran_pokok)}</strong><small>B: ${fmtNom(d.angsuran_bunga)}</small></div></td>
+            <td class="text-center"><span class="po-commit-badge ${has ? 'done' : 'empty'}">${has ? 'Sudah' : 'Belum'}</span></td>
+            <td class="text-left truncate" title="${poEscape(c.komitmen)}">${poEscape(c.komitmen || '-')}</td>
+            <td class="text-center">${formatDate(c.tanggal)}</td>
+            <td class="text-right font-bold text-blue-700">${fmtNom(c.nominal)}</td>
+            <td class="text-left truncate" title="${poEscape(c.alasan)}">${poEscape(c.alasan || '-')}</td>
+          </tr>`;
       }).join('');
 
-      ttot.innerHTML = `
-        <tr class="modal-total-row">
-            <td class="modal-freeze-1">TOTAL</td>
-            <td class="modal-freeze-2">${filteredData.length} Debitur</td>
-            <td class="text-center">-</td> <td class="text-center">-</td> <td class="text-center">-</td> <td class="text-center">-</td> <td class="text-right">${fmtNom(totals.bd_c)}</td>
-            <td class="text-center">-</td> <td class="text-right text-red-700 bg-red-50/50">${fmtNom(totals.bd_h)}</td>
-            <td class="text-right">${fmtNom(totals.tp)}</td>
-            <td class="text-right">${fmtNom(totals.tb)}</td>
-            <td class="text-right text-green-700">${fmtNom(totals.sa)}</td>
-            <td colspan="4"></td> <td class="text-right">${fmtNom(totals.ap)}</td>
-            <td class="text-right">${fmtNom(totals.ab)}</td>
-            <td></td> </tr>
-      `;
+      ttot.innerHTML = `<tr class="modal-total-row">
+        <td class="modal-freeze-1">TOTAL</td><td class="modal-freeze-2">${fmtInt(detailPoFiltered.length)} Debitur</td>
+        <td colspan="2"></td><td class="text-right">${fmtNom(totals.bd_c)}</td><td class="text-right text-red-700">${fmtNom(totals.bd_h)}</td>
+        <td class="text-right"><div class="po-stacked"><strong>${fmtNom(totals.tp)}</strong><small>B: ${fmtNom(totals.tb)}</small></div></td>
+        <td class="text-right text-green-700">${fmtNom(totals.sa)}</td><td colspan="2"></td>
+        <td class="text-right"><div class="po-stacked"><strong>${fmtNom(totals.ap)}</strong><small>B: ${fmtNom(totals.ab)}</small></div></td>
+        <td colspan="3"></td><td class="text-right text-blue-700">${fmtNom(totals.promise)}</td><td></td>
+      </tr>`;
       tbody.innerHTML = rowsHtml;
   }
 
   // --- EXPORT EXCEL DETAIL DARI MODAL ---
   function exportDetailPotensiExcel() {
-      const statusEl = document.getElementById('modalFilterStatus');
-      const statusFilter = statusEl ? statusEl.value : 'ALL';
-      
-      let filteredData = detailPoRaw;
-      if(statusFilter !== 'ALL') {
-          filteredData = detailPoRaw.filter(d => {
-              if (statusFilter === 'AMAN') return d.status_potensi === 'AMAN' || d.status_potensi === 'LUNAS / AMAN';
-              return d.status_potensi === statusFilter;
-          });
-      }
-
-      if(filteredData.length === 0) { alert("Tidak ada detail untuk diexport!"); return; }
-
-      let table = `<table border="1">
-          <thead>
-              <tr>
-                  <th style="background-color:#f1f5f9;">NO REKENING</th>
-                  <th style="background-color:#f1f5f9;">NAMA NASABAH</th>
-                  <th style="background-color:#f1f5f9;">ALAMAT</th>
-                  <th style="background-color:#f1f5f9;">NAMA AO</th>
-                  <th style="background-color:#f1f5f9;">STATUS SAAT INI</th>
-                  <th style="background-color:#f1f5f9;">KOL CLOSING</th>
-                  <th style="background-color:#f1f5f9;">BD CLOSING</th>
-                  <th style="background-color:#fee2e2;">KOL HARIAN</th>
-                  <th style="background-color:#fee2e2;">BD HARIAN</th>
-                  <th style="background-color:#f1f5f9;">TUNGG POKOK</th>
-                  <th style="background-color:#f1f5f9;">TUNGG BUNGA</th>
-                  <th style="background-color:#dcfce7;">SALDO TABUNGAN</th>
-                  <th style="background-color:#f1f5f9;">JT</th>
-                  <th style="background-color:#fee2e2;">DPD</th>
-                  <th style="background-color:#f1f5f9;">DPD TP</th>
-                  <th style="background-color:#f1f5f9;">DPD TB</th>
-                  <th style="background-color:#f1f5f9;">ANGS. POKOK</th>
-                  <th style="background-color:#f1f5f9;">ANGS. BUNGA</th>
-                  <th style="background-color:#f1f5f9;">TGL TRANS</th>
-              </tr>
-          </thead>
-          <tbody>`;
-
+      const filteredData = getFilteredDetailRows();
+      if(filteredData.length === 0) return alert('Tidak ada detail untuk diexport!');
+      let table = `<table border="1"><thead><tr>
+        <th>NO REKENING</th><th>NAMA NASABAH</th><th>ALAMAT</th><th>NAMA AO</th><th>STATUS POTENSI</th>
+        <th>KOL CLOSING</th><th>BD CLOSING</th><th>KOL HARIAN</th><th>BD HARIAN</th>
+        <th>TUNGG POKOK</th><th>TUNGG BUNGA</th><th>SALDO TABUNGAN</th><th>JT</th><th>DPD</th><th>DPD TP</th><th>DPD TB</th>
+        <th>ANGS. POKOK</th><th>ANGS. BUNGA</th><th>TGL TRANS</th><th>STATUS KOMITMEN</th><th>KOMITMEN</th><th>TGL JANJI</th><th>NOMINAL JANJI</th><th>ALASAN</th>
+      </tr></thead><tbody>`;
       filteredData.forEach(d => {
+          const c = poCommitment(d); const has = poHasCommitment(d);
           table += `<tr>
-              <td style="mso-number-format:'\\@'">${d.no_rekening}</td>
-              <td>${d.nama_nasabah}</td>
-              <td>${d.alamat || ''}</td>
-              <td>${d.nama_ao || ''}</td>
-              <td>${d.status_potensi || ''}</td>
-              <td>${d.kolek_closing || ''}</td>
-              <td>${d.baki_debet_closing}</td>
-              <td style="background-color:#fef2f2;">${d.kolek_harian || ''}</td>
-              <td style="background-color:#fef2f2;">${d.baki_debet_harian}</td>
-              <td>${d.tunggakan_pokok}</td>
-              <td>${d.tunggakan_bunga}</td>
-              <td style="background-color:#dcfce7;">${d.saldo_akhir || 0}</td>
-              <td>${d.jt_harian || ''}</td>
-              <td style="background-color:#fef2f2;">${d.hm_harian || 0}</td>
-              <td>${d.hmp_harian || 0}</td>
-              <td>${d.hmb_harian || 0}</td>
-              <td>${d.angsuran_pokok}</td>
-              <td>${d.angsuran_bunga}</td>
-              <td>${d.tgl_trans_terakhir || ''}</td>
+            <td style="mso-number-format:'\\@'">${poEscape(d.no_rekening || '')}</td><td>${poEscape(d.nama_nasabah || '')}</td><td>${poEscape(d.alamat || '')}</td><td>${poEscape(d.nama_ao || '')}</td><td>${poEscape(poStatusDisplay(d))}</td>
+            <td>${poEscape(d.kolek_closing || '')}</td><td>${num(d.baki_debet_closing)}</td><td>${poEscape(d.kolek_harian || '')}</td><td>${num(d.baki_debet_harian)}</td>
+            <td>${num(d.tunggakan_pokok)}</td><td>${num(d.tunggakan_bunga)}</td><td>${num(d.saldo_akhir)}</td><td>${poEscape(d.jt_harian || '')}</td><td>${num(d.hm_harian)}</td><td>${num(d.hmp_harian)}</td><td>${num(d.hmb_harian)}</td>
+            <td>${num(d.angsuran_pokok)}</td><td>${num(d.angsuran_bunga)}</td><td>${poEscape(d.tgl_trans_terakhir || '')}</td><td>${has ? 'SUDAH' : 'BELUM'}</td><td>${poEscape(c.komitmen)}</td><td>${poEscape(c.tanggal)}</td><td>${c.nominal}</td><td>${poEscape(c.alasan)}</td>
           </tr>`;
       });
       table += `</tbody></table>`;
-
-      const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
-      const a = document.createElement('a');
-      a.href = window.URL.createObjectURL(blob);
-      
-      const kankasEl = document.getElementById('modalFilterKankas');
-      const valKankas = kankasEl ? kankasEl.value : '';
-      const downloadName = valKankas ? valKankas : currentDetailKode;
-      
-      a.download = `Detail_Potensi_NPL_${downloadName}_${statusFilter}.xls`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      const blob = new Blob(['\ufeff',table], {type:'application/vnd.ms-excel;charset=utf-8'});
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      const status = document.getElementById('modalFilterStatus')?.value || 'ALL';
+      a.download = `Detail_Potensi_NPL_${currentDetailKode}_${status}.xls`;
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
   }
 
   // --- TRIGGER UPDATE BULK (TOMBOL UPDATE DI MODAL POTENSI NPL) ---
@@ -926,6 +1355,7 @@
           kode_kankas: selectedKankas,
           kode_ao: selectedAo,
           status_filter: selectedStatus,
+          commitment_filter: document.getElementById('modalFilterCommitment')?.value || 'ALL',
           closing_date: currentFilter.closing,
           harian_date: currentFilter.harian
       };
@@ -935,7 +1365,8 @@
       window.location.href = './update_flowpar'; 
   };
 
-  const closePoModal = () => { document.getElementById('modalDebiturPotensi').classList.add('hidden'); document.getElementById('modalDebiturPotensi').classList.remove('flex'); };
+  const closePoModal = () => { document.getElementById('modalDebiturPotensi').classList.add('hidden'); document.body.style.overflow = ''; };
   document.getElementById('btnClosePO').onclick = closePoModal;
-  document.addEventListener('keydown', e => { if(e.key === 'Escape') closePoModal(); });
+  document.getElementById('modalDebiturPotensi')?.addEventListener('click', e => { if(e.target.id === 'modalDebiturPotensi') closePoModal(); });
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') { closePoModal(); closeInfoPotensi(); } });
 </script>
