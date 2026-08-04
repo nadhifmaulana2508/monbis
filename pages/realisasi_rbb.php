@@ -32,6 +32,13 @@
                     <label class="lbl">HARIAN</label>
                     <input type="date" id="rbb_harian_date" class="inp font-bold text-slate-700 cursor-pointer" onclick="this.showPicker && this.showPicker()" onchange="fetchRbb()">
                 </div>
+                <div class="field rbb-filter-report">
+                    <label class="lbl">JENIS LAPORAN</label>
+                    <select id="rbb_report_type" class="inp font-bold text-slate-700 truncate" onchange="fetchRbb()">
+                        <option value="neraca">Neraca</option>
+                        <option value="laba_rugi">Laba Rugi</option>
+                    </select>
+                </div>
                 <div class="field rbb-filter-office">
                     <label class="lbl">KANTOR</label>
                     <select id="rbb_kantor" class="inp font-bold text-slate-700 truncate" onchange="fetchRbb()">
@@ -232,7 +239,7 @@
 
     @media (min-width:640px) {
         .rbb-filter-grid {
-            grid-template-columns:130px minmax(190px,1fr) 150px auto;
+            grid-template-columns:130px 130px minmax(190px,1fr) 150px auto;
             gap:.6rem;
         }
         .rbb-filter-date,
@@ -250,7 +257,7 @@
     }
 
     @media (min-width:1280px) {
-        .rbb-filter-grid { grid-template-columns:140px 210px 155px auto; width:auto; }
+        .rbb-filter-grid { grid-template-columns:140px 150px 210px 155px auto; width:auto; }
     }
 
     @media (min-width:1440px) {
@@ -448,7 +455,10 @@ function rbbNameCell(row, sticky = true) {
     if (isRbbBranchFilter()) return '';
     const stickyClass = sticky ? ' rbb-sticky-name' : '';
     const name = rbbEscape(row?.nama_kantor || '-');
-    return `<td class="rbb-col-name${stickyClass} text-left font-bold text-slate-800" title="${name}"><div class="rbb-name-text">${name}</div></td>`;
+    const detail = rbbMeta.report_type === 'laba_rugi' && row?.keterangan
+        ? `<div class="text-[9px] font-semibold text-slate-400 truncate">${rbbEscape(row.keterangan)}</div>`
+        : '';
+    return `<td class="rbb-col-name${stickyClass} text-left font-bold text-slate-800" title="${name}"><div class="rbb-name-text">${name}</div>${detail}</td>`;
 }
 
 function toggleRbbFilter() {
@@ -637,6 +647,7 @@ async function fetchRbb() {
 
     const payload = {
         type: 'realisasi_rbb_bulan_berjalan',
+        report_type: document.getElementById('rbb_report_type')?.value || 'neraca',
         harian_date: harian,
         compare_mode: compareMode
     };

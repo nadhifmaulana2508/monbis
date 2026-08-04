@@ -243,6 +243,19 @@
     color:#334155; font-size:22px; line-height:1; font-weight:700; cursor:pointer;
   }
   .lapkeu-insight-body { padding:16px 18px 18px; }
+  .lapkeu-insight-condition {
+    margin-bottom:10px;
+    padding:11px 13px;
+    border:1px solid #bfdbfe;
+    border-left:4px solid #2563eb;
+    border-radius:11px;
+    background:#eff6ff;
+    color:#1e3a8a;
+    font-size:11px;
+    line-height:1.5;
+    font-weight:750;
+  }
+  .lapkeu-insight-condition b { color:#0f172a; }
   .lapkeu-insight-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
   .lapkeu-insight-block {
     border:1px solid #e2e8f0; border-radius:12px; background:#f8fafc; padding:12px;
@@ -4004,7 +4017,10 @@
   }
 
   function normalizeFinancialRows(rows) {
-    return (Array.isArray(rows) ? rows : []).map(row => {
+    const source = Array.isArray(rows)
+      ? rows
+      : (Array.isArray(rows?.data) ? rows.data : (Array.isArray(rows?.rows) ? rows.rows : []));
+    return source.map(row => {
       const current = Number(row?.total_saldo || 0);
       const closing = Number(row?.closing_saldo || 0);
       const delta = Number(row?.selisih_saldo ?? (current - closing));
@@ -4033,6 +4049,10 @@
   function buildFinancialInsight(data, type) {
     const rows = normalizeFinancialRows(data);
     const isIncome = String(type).includes('laba rugi');
+    const categoryOrder = isIncome ? ['4', '5'] : ['1', '2', '3'];
+    const categoryRows = categoryOrder
+      .map(code => rows.find(row => row.code === code))
+      .filter(Boolean);
     const summaryRows = rows.filter(row => row.code.length <= 3 && Math.abs(row.delta) > 0);
     const analysisRows = summaryRows.length >= 4 ? summaryRows : rows.filter(row => Math.abs(row.delta) > 0);
     const topMoves = [...analysisRows].sort((a,b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0,8);
@@ -4068,6 +4088,19 @@
         ${insightStat('Perubahan Terbesar', largest ? `Rp ${fmtSingkat(Math.abs(largest.delta))}` : 'Rp 0', largest ? largest.name : 'Belum ada perubahan', largest ? (financialGoodWhenUp(largest.name, isIncome) === (largest.delta > 0) ? 'good' : 'warn') : 'info')}
       </div>
     `;
+
+    const categorySummary = categoryRows.map(row => {
+      const goodUp = financialGoodWhenUp(row.name, isIncome);
+      const tone = row.delta === 0 ? 'info' : (((row.delta > 0) === goodUp) ? 'good' : 'warn');
+      const direction = row.delta > 0 ? 'Naik' : (row.delta < 0 ? 'Turun' : 'Tetap');
+      return [
+        `${row.code} · ${row.name}`,
+        { value:`Rp ${fmtSingkat(row.current)}` },
+        { value:`Rp ${fmtSingkat(row.closing)}` },
+        { value:signedMoney(row.delta) },
+        { html:insightSignal(`${direction} ${row.growth === null ? '' : pctText(Math.abs(row.growth))}`, tone) }
+      ];
+    });
 
     const moveRows = topMoves.map(row => {
       const goodUp = financialGoodWhenUp(row.name, isIncome);
@@ -4138,7 +4171,14 @@
       ? 'Untuk keputusan laba rugi, pastikan setiap perbaikan menghubungkan perubahan pendapatan atau beban dengan dampaknya pada laba akhir bulan.'
       : 'Untuk keputusan neraca, baca perubahan kredit, DPK, kas, aset, dan modal secara terpadu agar pertumbuhan tidak mengganggu likuiditas maupun kualitas aset.';
 
-    return summary + decisionPanel(decisionItems, decisionContext) + `<div class="lapkeu-insight-grid">
+    const conditionText = categoryRows.length
+      ? `Ringkasan kategori utama: ${categoryRows.map(row => `${row.name} ${row.delta > 0 ? 'naik' : (row.delta < 0 ? 'turun' : 'tetap')} ${row.growth === null ? '' : pctText(Math.abs(row.growth))}`).join('; ')}.`
+      : 'Belum ada kategori utama yang dapat diringkas dari data yang diterima.';
+
+    return summary + `<div class="lapkeu-insight-condition"><b>Kondisi singkat:</b> ${safeText(conditionText)} ${largest ? `Perubahan nominal terbesar ada pada ${safeText(largest.name)} sebesar ${safeText(signedMoney(largest.delta))}.` : ''}</div>` + decisionPanel(decisionItems, decisionContext) + `<div class="lapkeu-insight-grid">
+      ${insightBlock('Ringkasan Kategori Utama', insightTable(
+        [{label:'Kategori'}, {label:'Actual',num:true}, {label:'Closing',num:true}, {label:'Selisih',num:true}, {label:'Perubahan'}], categorySummary
+      ), 'full')}
       ${insightBlock('Perubahan Nominal Terbesar', insightTable(
         [{label:'Pos'}, {label:'Actual',num:true}, {label:'Closing',num:true}, {label:'Selisih',num:true}, {label:'Growth',num:true}, {label:'Sinyal'}], moveRows
       ), 'full')}

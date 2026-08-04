@@ -437,7 +437,17 @@ class RbbController
         $sqlMonthStart = $this->pdo->quote($monthStart);
         $sqlYearStart = $this->pdo->quote($yearStart);
         $sqlHarianNext = $this->pdo->quote($harianNext);
-        $kodePerkiraan = !empty($b['kode_perkiraan']) ? $b['kode_perkiraan'] : 'produksi.total';
+        $sqlActualDate = $this->pdo->quote($harianDate);
+        $reportType = strtolower(trim((string)($b['report_type'] ?? '')));
+        if ($reportType === 'laba_rugi') {
+            $kodePerkiraanList = ['4', '5'];
+        } elseif ($reportType === 'neraca') {
+            $kodePerkiraanList = ['1'];
+        } else {
+            $kodePerkiraanList = [!empty($b['kode_perkiraan']) ? (string)$b['kode_perkiraan'] : 'produksi.total'];
+            $reportType = 'produksi';
+        }
+        $kodePerkiraan = implode(',', $kodePerkiraanList);
         $compareMode = strtolower((string)($b['compare_mode'] ?? 'auto'));
         if (!in_array($compareMode, ['auto', 'rbb', 'history'], true)) {
             $compareMode = 'auto';
@@ -449,10 +459,14 @@ class RbbController
         }
 
         $korwil = strtoupper((string)($b['korwil'] ?? ''));
-        $whereFinal = "WHERE ref.kode_perkiraan = :kode_perkiraan";
-        $params = [
-            ':kode_perkiraan' => $kodePerkiraan
-        ];
+        $kodePlaceholders = [];
+        $params = [];
+        foreach ($kodePerkiraanList as $index => $kode) {
+            $placeholder = ':kode_perkiraan_' . $index;
+            $kodePlaceholders[] = $placeholder;
+            $params[$placeholder] = $kode;
+        }
+        $whereFinal = "WHERE ref.kode_perkiraan IN (" . implode(',', $kodePlaceholders) . ")";
 
         if ($kodeKantor !== '') {
             $whereFinal .= " AND data_gabungan.kode_kantor = :kode_kantor";
@@ -488,28 +502,40 @@ class RbbController
         array_unshift($monthUnion, "SELECT kode_monbis, periode, '000' AS kode_kantor, ({$sumExpression}) AS rbb_target FROM rbb WHERE periode = {$sqlMonthStart}");
         array_unshift($laluUnion, "SELECT kode_monbis, '000' AS kode_kantor, SUM({$sumExpression}) AS target_s_d_lalu FROM rbb WHERE periode >= {$sqlYearStart} AND periode < {$sqlMonthStart} GROUP BY kode_monbis");
 
-        $sql = "
-            WITH data_gabungan AS (
-                " . implode("\nUNION ALL\n", $monthUnion) . "
-            ),
-            rbb_lalu AS (
-                " . implode("\nUNION ALL\n", $laluUnion) . "
-            ),
-            real_bln_ini AS (
-                SELECT kode_kantor, SUM(realisasi_pokok) AS total_realisasi
+        $isFinancialReport = in_array($reportType, ['neraca', 'laba_rugi'], true);
+        if ($isFinancialReport) {
+            $actualCategory = $reportType === 'neraca'
+                ? "'1' AS kode_perkiraan, SUM(CASE WHEN h.kode_perk IN ('101','102','103','116','104','105','10602','10604','10605','107','117','118','108','119','109','110','11102','112','120','121','113') THEN h.saldo_akhir ELSE 0 END) AS total_realisasi"
+                : "CASE WHEN h.kode_perk LIKE '4%' THEN '4' ELSE '5' END AS kode_perkiraan, SUM(h.saldo_akhir) AS total_realisasi";
+            $actualWhere = $reportType === 'neraca'
+                ? "h.kode_perk IN ('101','102','103','116','104','105','10602','10604','10605','107','117','118','108','119','109','110','11102','112','120','121','113')"
+                : "h.kode_perk LIKE '4%' OR h.kode_perk LIKE '5%'";
+            $realBlnIniSql = "
+                SELECT h.kode_kantor, {$actualCategory}
+                FROM acc_history h
+                WHERE h.tanggal = {$sqlActualDate} AND ({$actualWhere})
+                GROUP BY h.kode_kantor";
+            $realBlnIniSql .= " UNION ALL SELECT '000' AS kode_kantor, {$actualCategory}
+                FROM acc_history h
+                WHERE h.tanggal = {$sqlActualDate} AND ({$actualWhere})";
+            $realLaluSql = "SELECT NULL AS kode_kantor, '1' AS kode_perkiraan, 0 AS realisasi_s_d_lalu WHERE 1=0";
+            $realJoin = "data_gabungan.kode_kantor = real_bln_ini.kode_kantor AND ref.kode_perkiraan = real_bln_ini.kode_perkiraan";
+            $realLaluJoin = "1=0";
+        } else {
+            $realBlnIniSql = "
+                SELECT kode_kantor, NULL AS kode_perkiraan, SUM(realisasi_pokok) AS total_realisasi
                 FROM update_realisasi_kredit
                 WHERE kode_trans = '110'
                   AND tanggal_realisasi >= {$sqlMonthStart}
                   AND tanggal_realisasi < {$sqlHarianNext}
                 GROUP BY kode_kantor
                 UNION ALL
-                SELECT '000' AS kode_kantor, SUM(realisasi_pokok) AS total_realisasi
+                SELECT '000' AS kode_kantor, NULL AS kode_perkiraan, SUM(realisasi_pokok) AS total_realisasi
                 FROM update_realisasi_kredit
                 WHERE kode_trans = '110'
                   AND tanggal_realisasi >= {$sqlMonthStart}
-                  AND tanggal_realisasi < {$sqlHarianNext}
-            ),
-            real_lalu AS (
+                  AND tanggal_realisasi < {$sqlHarianNext}";
+            $realLaluSql = "
                 SELECT kode_kantor, SUM(realisasi_pokok) AS realisasi_s_d_lalu
                 FROM update_realisasi_kredit
                 WHERE kode_trans = '110'
@@ -521,7 +547,23 @@ class RbbController
                 FROM update_realisasi_kredit
                 WHERE kode_trans = '110'
                   AND tanggal_realisasi >= {$sqlYearStart}
-                  AND tanggal_realisasi < {$sqlMonthStart}
+                  AND tanggal_realisasi < {$sqlMonthStart}";
+            $realJoin = "data_gabungan.kode_kantor = real_bln_ini.kode_kantor";
+            $realLaluJoin = "data_gabungan.kode_kantor = real_lalu.kode_kantor";
+        }
+
+        $sql = "
+            WITH data_gabungan AS (
+                " . implode("\nUNION ALL\n", $monthUnion) . "
+            ),
+            rbb_lalu AS (
+                " . implode("\nUNION ALL\n", $laluUnion) . "
+            ),
+            real_bln_ini AS (
+                {$realBlnIniSql}
+            ),
+            real_lalu AS (
+                {$realLaluSql}
             )
             SELECT
                 data_gabungan.kode_monbis,
@@ -548,9 +590,9 @@ class RbbController
                 ) AS persentase_rbb_plus_kekurangan
             FROM data_gabungan
             LEFT JOIN rbb_lalu ON data_gabungan.kode_kantor = rbb_lalu.kode_kantor AND data_gabungan.kode_monbis = rbb_lalu.kode_monbis
-            LEFT JOIN real_bln_ini ON data_gabungan.kode_kantor = real_bln_ini.kode_kantor
-            LEFT JOIN real_lalu ON data_gabungan.kode_kantor = real_lalu.kode_kantor
             INNER JOIN ref_rbb ref ON data_gabungan.kode_monbis = ref.kode_monbis
+            LEFT JOIN real_bln_ini ON {$realJoin}
+            LEFT JOIN real_lalu ON {$realLaluJoin}
             LEFT JOIN kode_kantor k ON data_gabungan.kode_kantor = k.kode_kantor
             {$whereFinal}
             ORDER BY data_gabungan.kode_kantor ASC
@@ -559,7 +601,7 @@ class RbbController
         try {
             $stmt = $this->pdo->prepare($sql);
             foreach ($params as $key => $value) {
-                $stmt->bindValue($key, $value, PDO::PARAM_STR);
+            $stmt->bindValue($key, $value, PDO::PARAM_STR);
             }
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -592,7 +634,7 @@ class RbbController
             }
 
             $monthlyBreakdown = [];
-            if ($kodeKantor !== '') {
+            if ($kodeKantor !== '' && !$isFinancialReport) {
                 $branchCol = "`{$kodeKantor}`";
                 $sqlBreakdown = "
                     SELECT
@@ -620,7 +662,9 @@ class RbbController
                           AND tanggal_realisasi < {$sqlHarianNext}
                         GROUP BY DATE_FORMAT(tanggal_realisasi, '%Y-%m-01')
                     ) real_month ON real_month.periode = r.periode
-                    WHERE ref.kode_perkiraan = :breakdown_kode_perkiraan
+                    WHERE ref.kode_perkiraan IN (" . implode(',', array_map(static function ($index) {
+                        return ':breakdown_kode_perkiraan_' . $index;
+                    }, array_keys($kodePerkiraanList))) . ")
                       AND r.periode >= {$sqlYearStart}
                       AND r.periode <= {$sqlMonthStart}
                     ORDER BY r.periode DESC
@@ -631,7 +675,9 @@ class RbbController
                 $stmtBreakdown->bindValue(':breakdown_kode_kantor_name', $kodeKantor, PDO::PARAM_STR);
                 $stmtBreakdown->bindValue(':breakdown_kode_kantor_join', $kodeKantor, PDO::PARAM_STR);
                 $stmtBreakdown->bindValue(':breakdown_kode_kantor_real', $kodeKantor, PDO::PARAM_STR);
-                $stmtBreakdown->bindValue(':breakdown_kode_perkiraan', $kodePerkiraan, PDO::PARAM_STR);
+                foreach ($kodePerkiraanList as $index => $kode) {
+                    $stmtBreakdown->bindValue(':breakdown_kode_perkiraan_' . $index, $kode, PDO::PARAM_STR);
+                }
                 $stmtBreakdown->execute();
                 $monthlyBreakdown = $stmtBreakdown->fetchAll(PDO::FETCH_ASSOC);
 
@@ -648,7 +694,8 @@ class RbbController
                     'harian_date' => $harianDate,
                     'periode_bulan' => $monthStart,
                     'tahun_start' => $yearStart,
-                    'kode_perkiraan' => $kodePerkiraan,
+                    'kode_perkiraan' => $kodePerkiraanList,
+                    'report_type' => $reportType,
                     'kode_kantor' => $kodeKantor !== '' ? $kodeKantor : '000',
                     'korwil' => $korwil,
                     'compare_mode' => 'rbb',
@@ -943,5 +990,485 @@ class RbbController
             error_log("PDO Error History Realisasi RBB: " . $e->getMessage());
             return sendResponse(500, "Database Query Error: " . $e->getMessage(), null);
         }
+    }
+
+    public function getLapkeuRbbVsRealisasi($input = null)
+    {
+        set_time_limit(120);
+        ini_set('memory_limit', '512M');
+
+        $b = is_array($input) ? $input : [];
+        $jenis = strtolower((string)($b['jenis_laporan'] ?? 'neraca'));
+        if (!in_array($jenis, ['neraca', 'laba_rugi'], true)) {
+            return sendResponse(400, "Jenis laporan tidak valid.");
+        }
+
+        $harianDate = !empty($b['harian_date']) ? (string)$b['harian_date'] : date('Y-m-d');
+        $time = strtotime($harianDate);
+        if (!$time) {
+            return sendResponse(400, "Format harian_date tidak valid.");
+        }
+
+        $useYearEnd = filter_var($b['use_year_end'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $periodeRbb = $useYearEnd ? date('Y-12-01', $time) : date('Y-m-01', $time);
+        $periodeRbbYearEnd = date('Y-12-01', $time);
+        if (!empty($b['periode_rbb'])) {
+            $periodeTime = strtotime((string)$b['periode_rbb']);
+            if ($periodeTime) {
+                $periodeRbb = date('Y-m-01', $periodeTime);
+            }
+        }
+
+        $scope = $this->buildLapkeuRbbScope($b);
+        $targetExpression = $scope['target_expression'];
+        $actualWhere = $scope['actual_where'];
+        $scopeLabel = $scope['label'];
+
+        $sql = $jenis === 'laba_rugi'
+            ? $this->buildLapkeuRbbLabaRugiSql($targetExpression, $actualWhere)
+            : $this->buildLapkeuRbbNeracaSql($targetExpression, $actualWhere);
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':periode_rbb', $periodeRbb, PDO::PARAM_STR);
+            $stmt->bindValue(':periode_rbb_year_end', $periodeRbbYearEnd, PDO::PARAM_STR);
+            $stmt->bindValue(':periode_rbb_meta', $periodeRbb, PDO::PARAM_STR);
+            $stmt->bindValue(':actual_date', $harianDate, PDO::PARAM_STR);
+            $stmt->bindValue(':actual_date_meta', $harianDate, PDO::PARAM_STR);
+            if ($jenis === 'neraca') {
+                $stmt->bindValue(':actual_date_210', $harianDate, PDO::PARAM_STR);
+                $stmt->bindValue(':actual_date_formula', $harianDate, PDO::PARAM_STR);
+            }
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $summary = [
+                'target_rbb' => 0.0,
+                'realisasi_actual' => 0.0,
+                'selisih' => 0.0,
+                'jumlah_pos' => 0,
+                'pencapaian_persen' => 0.0
+            ];
+
+            foreach ($rows as &$row) {
+                foreach (['target_rbb', 'realisasi_actual', 'selisih', 'pencapaian_persen'] as $key) {
+                    $row[$key] = (float)($row[$key] ?? 0);
+                }
+                $summary['target_rbb'] += $row['target_rbb'];
+                $summary['realisasi_actual'] += $row['realisasi_actual'];
+                $summary['selisih'] += $row['selisih'];
+                $summary['jumlah_pos']++;
+            }
+            unset($row);
+
+            $summary['pencapaian_persen'] = $summary['target_rbb'] == 0.0
+                ? 0.0
+                : round(($summary['realisasi_actual'] / $summary['target_rbb']) * 100, 2);
+            $categorySummary = $this->buildLapkeuRbbCategorySummary($rows, $jenis);
+
+            return sendResponse(200, "Berhasil memuat RBB vs Realisasi", [
+                'meta' => [
+                    'jenis_laporan' => $jenis,
+                    'harian_date' => $harianDate,
+                    'periode_rbb' => $periodeRbb,
+                    'periode_rbb_year_end' => $periodeRbbYearEnd,
+                    'use_year_end' => $useYearEnd,
+                    'scope' => $scopeLabel,
+                    'kode_kantor' => $scope['kode_kantor'],
+                    'korwil' => $scope['korwil']
+                ],
+                'summary' => $summary,
+                'category_summary' => $categorySummary,
+                'data' => $rows
+            ]);
+        } catch (PDOException $e) {
+            error_log("PDO Error Lapkeu RBB vs Realisasi: " . $e->getMessage());
+            return sendResponse(500, "Database Query Error: " . $e->getMessage(), null);
+        }
+    }
+
+    private function buildLapkeuRbbCategorySummary(array $rows, string $jenis): array
+    {
+        $byCode = [];
+        $byPerk = [];
+        foreach ($rows as $row) {
+            $code = (string)($row['kode_monbis'] ?? '');
+            $perk = (string)($row['kode_perkiraan'] ?? '');
+            if ($code !== '') {
+                $byCode[$code] = $row;
+            }
+            if ($perk !== '') {
+                $byPerk[$perk] = $row;
+            }
+        }
+
+        $make = function (string $key, string $label, ?array $row, int $count, string $tone, string $note): array {
+            $target = (float)($row['target_rbb'] ?? 0);
+            $actual = (float)($row['realisasi_actual'] ?? 0);
+            $selisih = $actual - $target;
+            return [
+                'key' => $key,
+                'label' => $label,
+                'target_rbb' => $target,
+                'realisasi_actual' => $actual,
+                'selisih' => $selisih,
+                'pencapaian_persen' => $target == 0.0 ? 0.0 : round(($actual / $target) * 100, 2),
+                'jumlah_pos' => $count,
+                'tone' => $tone,
+                'note' => $note
+            ];
+        };
+
+        if ($jenis === 'laba_rugi') {
+            $pendapatan = $this->sumLapkeuRbbRows($rows, function ($row) {
+                return in_array((string)($row['kode_perkiraan'] ?? ''), ['401', '402'], true);
+            });
+            $beban = $this->sumLapkeuRbbRows($rows, function ($row) {
+                return in_array((string)($row['kode_perkiraan'] ?? ''), ['501', '502'], true);
+            });
+            return [
+                $make('pendapatan', 'Pendapatan', $pendapatan, $this->countLapkeuRbbRows($rows, 'PENDAPATAN'), 'green', 'Total pendapatan operasional dan non operasional'),
+                $make('biaya', 'Biaya', $beban, $this->countLapkeuRbbRows($rows, 'BEBAN'), 'orange', 'Total beban operasional dan non operasional'),
+                $make('laba', 'Laba Rugi Berjalan', $byCode['261'] ?? $byPerk['kode monbis 259 + 260'] ?? null, 1, 'blue', 'Surplus berjalan sebelum pajak')
+            ];
+        }
+
+        return [
+            $make('aset', 'Aset Gabungan', $byPerk['1'] ?? $byCode['95'] ?? null, $this->countLapkeuRbbRows($rows, 'ASET'), 'blue', 'Total aset bersih'),
+            $make('kewajiban', 'Kewajiban', $byPerk['2'] ?? null, $this->countLapkeuRbbRows($rows, 'LIABILITAS'), 'purple', 'Total liabilitas/kewajiban'),
+            $make('ekuitas', 'Ekuitas', $byPerk['3'] ?? null, $this->countLapkeuRbbRows($rows, 'EKUITAS'), 'orange', 'Modal dan saldo laba')
+        ];
+    }
+
+    private function sumLapkeuRbbRows(array $rows, callable $matcher): array
+    {
+        $sum = ['target_rbb' => 0.0, 'realisasi_actual' => 0.0];
+        foreach ($rows as $row) {
+            if (!$matcher($row)) {
+                continue;
+            }
+            $sum['target_rbb'] += (float)($row['target_rbb'] ?? 0);
+            $sum['realisasi_actual'] += (float)($row['realisasi_actual'] ?? 0);
+        }
+        return $sum;
+    }
+
+    private function countLapkeuRbbRows(array $rows, string $kategori): int
+    {
+        $count = 0;
+        foreach ($rows as $row) {
+            if (strtoupper((string)($row['kategori'] ?? '')) === $kategori) {
+                $count++;
+            }
+        }
+        return $count;
+    }
+
+    private function buildLapkeuRbbScope(array $input): array
+    {
+        $branchColumns = ['001','002','003','004','005','006','007','008','009','010','011','012','013','014','015','016','017','018','019','020','021','022','023','024','025','026','027','028'];
+        $sumAll = [];
+        foreach ($branchColumns as $code) {
+            $sumAll[] = "COALESCE(r.`{$code}`,0)";
+        }
+
+        $kodeKantor = '';
+        if (!empty($input['kode_kantor']) && (string)$input['kode_kantor'] !== '000' && strtolower((string)$input['kode_kantor']) !== 'konsolidasi') {
+            $kodeKantor = str_pad((string)$input['kode_kantor'], 3, '0', STR_PAD_LEFT);
+            if (!in_array($kodeKantor, $branchColumns, true)) {
+                $kodeKantor = '';
+            }
+        }
+
+        $korwil = strtoupper((string)($input['korwil'] ?? ''));
+        $rangeStart = '';
+        $rangeEnd = '';
+        if ($korwil === 'SEMARANG') {
+            $rangeStart = '001'; $rangeEnd = '007';
+        } elseif ($korwil === 'SOLO') {
+            $rangeStart = '008'; $rangeEnd = '014';
+        } elseif ($korwil === 'BANYUMAS') {
+            $rangeStart = '015'; $rangeEnd = '021';
+        } elseif ($korwil === 'PEKALONGAN') {
+            $rangeStart = '022'; $rangeEnd = '028';
+        }
+
+        if ($kodeKantor !== '') {
+            return [
+                'kode_kantor' => $kodeKantor,
+                'korwil' => '',
+                'label' => 'CABANG ' . $kodeKantor,
+                'target_expression' => "COALESCE(r.`{$kodeKantor}`,0)",
+                'actual_where' => "ah.kode_kantor = '{$kodeKantor}'"
+            ];
+        }
+
+        if ($rangeStart !== '' && $rangeEnd !== '') {
+            $parts = [];
+            foreach ($branchColumns as $code) {
+                if ($code >= $rangeStart && $code <= $rangeEnd) {
+                    $parts[] = "COALESCE(r.`{$code}`,0)";
+                }
+            }
+            return [
+                'kode_kantor' => '000',
+                'korwil' => $korwil,
+                'label' => 'KORWIL ' . $korwil,
+                'target_expression' => implode(' + ', $parts),
+                'actual_where' => "ah.kode_kantor BETWEEN '{$rangeStart}' AND '{$rangeEnd}'"
+            ];
+        }
+
+        return [
+            'kode_kantor' => '000',
+            'korwil' => '',
+            'label' => 'KONSOLIDASI',
+            'target_expression' => "COALESCE(r.`000`, (" . implode(' + ', $sumAll) . "))",
+            'actual_where' => "ah.kode_kantor BETWEEN '000' AND '028'"
+        ];
+    }
+
+    private function buildLapkeuRbbNeracaSql(string $targetExpression, string $actualWhere): string
+    {
+        return "
+            WITH ref_data AS (
+                SELECT
+                    ref.id_ref,
+                    ref.kode_monbis,
+                    ref.kode_perkiraan,
+                    ref.sandi_lbbpr,
+                    ref.kategori,
+                    ref.keterangan,
+                    CASE
+                        WHEN UPPER(TRIM(ref.kategori)) IN ('PASIFA','PASIVA')
+                          OR ref.kode_perkiraan = '2+3'
+                        THEN 1 ELSE 0
+                    END AS is_pasifa,
+                    CASE
+                        WHEN UPPER(TRIM(ref.kategori)) = 'ASET'
+                         AND ref.kode_perkiraan = '1'
+                        THEN 1 ELSE 0
+                    END AS is_total_aset,
+                    CASE
+                        WHEN UPPER(TRIM(ref.kategori)) = 'ASET' THEN 1
+                        WHEN UPPER(TRIM(ref.kategori)) = 'LIABILITAS' THEN 2
+                        WHEN UPPER(TRIM(ref.kategori)) = 'EKUITAS' THEN 3
+                        WHEN UPPER(TRIM(ref.kategori)) IN ('PASIFA','PASIVA') THEN 4
+                        ELSE 5
+                    END AS urutan_kelompok
+                FROM ref_rbb ref
+                WHERE ref.is_active = 1
+                  AND (
+                    UPPER(TRIM(ref.kategori)) IN ('ASET','LIABILITAS','EKUITAS','PASIFA','PASIVA')
+                    OR ref.kode_perkiraan = '2+3'
+                  )
+            ),
+            target_rbb AS (
+                SELECT r.kode_monbis, MAX({$targetExpression}) AS target_rbb
+                FROM rbb r
+                WHERE r.periode = :periode_rbb
+                GROUP BY r.kode_monbis
+            ),
+            target_rbb_year_end AS (
+                SELECT r.kode_monbis, MAX({$targetExpression}) AS target_rbb_year_end
+                FROM rbb r
+                WHERE r.periode = :periode_rbb_year_end
+                GROUP BY r.kode_monbis
+            ),
+            realisasi_per_akun AS (
+                SELECT ah.kode_perk AS kode_perkiraan,
+                       SUM(COALESCE(ah.saldo_akhir,0)) AS realisasi_raw,
+                       COUNT(*) AS jumlah_data
+                FROM acc_history ah
+                WHERE ah.tanggal = :actual_date
+                  AND {$actualWhere}
+                GROUP BY ah.kode_perk
+            ),
+            saldo_akun_210 AS (
+                SELECT SUM(COALESCE(ah.saldo_akhir,0)) AS saldo_210
+                FROM acc_history ah
+                WHERE ah.tanggal = :actual_date_210
+                  AND ah.kode_kantor BETWEEN '000' AND '028'
+                  AND ah.kode_perk = '210'
+            ),
+            realisasi_pasifa AS (
+                SELECT
+                    SUM(CASE WHEN ah.kode_perk = '2' THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END) AS total_liabilitas,
+                    SUM(CASE WHEN ah.kode_perk = '3' THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END) AS total_ekuitas,
+                    SUM(CASE WHEN ah.kode_perk IN ('2','3') THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END) AS realisasi_pasifa,
+                    MAX(CASE WHEN ah.kode_perk = '2' THEN 1 ELSE 0 END) AS akun_2_ada,
+                    MAX(CASE WHEN ah.kode_perk = '3' THEN 1 ELSE 0 END) AS akun_3_ada
+                FROM acc_history ah
+                WHERE ah.tanggal = :actual_date_formula
+                  AND {$actualWhere}
+            ),
+            hasil AS (
+                SELECT
+                    ref.id_ref, ref.kode_monbis, ref.kode_perkiraan, ref.sandi_lbbpr, ref.kategori, ref.keterangan,
+                    ref.urutan_kelompok,
+                    COALESCE(trg.target_rbb,0) AS target_rbb,
+                    COALESCE(trg_ye.target_rbb_year_end,0) AS target_rbb_year_end,
+                    CASE
+                        WHEN ref.is_pasifa = 1 THEN COALESCE(pas.realisasi_pasifa,0)
+                        WHEN ref.is_total_aset = 1 THEN COALESCE(act.realisasi_raw,0) - COALESCE(elm.saldo_210,0)
+                        ELSE COALESCE(act.realisasi_raw,0)
+                    END AS realisasi_actual,
+                    CASE
+                        WHEN ref.is_pasifa = 1 THEN
+                            CASE
+                                WHEN COALESCE(pas.akun_2_ada,0) = 0 AND COALESCE(pas.akun_3_ada,0) = 0 THEN 'AKUN 2 DAN 3 BELUM DITEMUKAN'
+                                WHEN COALESCE(pas.akun_2_ada,0) = 0 THEN 'AKUN 2 / LIABILITAS BELUM DITEMUKAN'
+                                WHEN COALESCE(pas.akun_3_ada,0) = 0 THEN 'AKUN 3 / EKUITAS BELUM DITEMUKAN'
+                                ELSE 'OK'
+                            END
+                        WHEN ref.kode_perkiraan IS NULL OR ref.kode_perkiraan = '' THEN 'KODE PERKIRAAN BELUM DIISI'
+                        WHEN LOWER(ref.kode_perkiraan) = 'xxx' THEN 'KODE PERKIRAAN MASIH XXX'
+                        WHEN act.kode_perkiraan IS NULL AND COALESCE(trg.target_rbb,0) <> 0 THEN 'RBB ADA - REALISASI BELUM DITEMUKAN'
+                        WHEN act.kode_perkiraan IS NULL AND COALESCE(trg.target_rbb,0) = 0 THEN 'OK'
+                        ELSE 'OK'
+                    END AS status_crosscheck
+                FROM ref_data ref
+                LEFT JOIN target_rbb trg ON trg.kode_monbis = ref.kode_monbis
+                LEFT JOIN target_rbb_year_end trg_ye ON trg_ye.kode_monbis = ref.kode_monbis
+                LEFT JOIN realisasi_per_akun act ON act.kode_perkiraan = ref.kode_perkiraan
+                CROSS JOIN saldo_akun_210 elm
+                CROSS JOIN realisasi_pasifa pas
+            )
+            SELECT
+                id_ref, kode_monbis, kode_perkiraan, sandi_lbbpr, kategori, keterangan,
+                :periode_rbb_meta AS periode_rbb,
+                :actual_date_meta AS tanggal_actual,
+                target_rbb,
+                realisasi_actual,
+                realisasi_actual - target_rbb AS selisih,
+                ROUND(CASE WHEN COALESCE(target_rbb,0) = 0 THEN 0 ELSE realisasi_actual / target_rbb * 100 END, 2) AS pencapaian_persen,
+                COALESCE(target_rbb_year_end, 0) AS target_rbb_year_end,
+                realisasi_actual - COALESCE(target_rbb_year_end, 0) AS selisih_year_end,
+                ROUND(CASE WHEN COALESCE(target_rbb_year_end,0) = 0 THEN 0 ELSE realisasi_actual / target_rbb_year_end * 100 END, 2) AS pencapaian_year_end_persen,
+                status_crosscheck
+            FROM hasil
+            WHERE status_crosscheck = 'OK'
+            ORDER BY urutan_kelompok ASC, id_ref ASC
+        ";
+    }
+
+    private function buildLapkeuRbbLabaRugiSql(string $targetExpression, string $actualWhere): string
+    {
+        return "
+            WITH ref_data AS (
+                SELECT
+                    ref.id_ref,
+                    ref.kode_monbis,
+                    ref.kode_perkiraan,
+                    ref.sandi_lbbpr,
+                    ref.kategori,
+                    ref.keterangan,
+                    CASE
+                        WHEN UPPER(TRIM(ref.kategori)) = 'LAINNYA'
+                         AND ref.kode_monbis IN ('259','260','261')
+                        THEN 1 ELSE 0
+                    END AS is_formula
+                FROM ref_rbb ref
+                WHERE ref.is_active = 1
+                  AND (
+                    UPPER(TRIM(ref.kategori)) IN ('PENDAPATAN','BEBAN')
+                    OR (
+                        UPPER(TRIM(ref.kategori)) = 'LAINNYA'
+                        AND ref.kode_monbis IN ('259','260','261')
+                    )
+                  )
+            ),
+            target_rbb AS (
+                SELECT r.kode_monbis, MAX({$targetExpression}) AS target_rbb
+                FROM rbb r
+                WHERE r.periode = :periode_rbb
+                GROUP BY r.kode_monbis
+            ),
+            target_rbb_year_end AS (
+                SELECT r.kode_monbis, MAX({$targetExpression}) AS target_rbb_year_end
+                FROM rbb r
+                WHERE r.periode = :periode_rbb_year_end
+                GROUP BY r.kode_monbis
+            ),
+            realisasi_per_akun AS (
+                SELECT ah.kode_perk AS kode_perkiraan,
+                       SUM(COALESCE(ah.saldo_akhir,0)) AS realisasi_actual,
+                       COUNT(*) AS jumlah_data
+                FROM acc_history ah
+                WHERE ah.tanggal = :actual_date
+                  AND {$actualWhere}
+                GROUP BY ah.kode_perk
+            ),
+            sumber_formula AS (
+                SELECT
+                    COALESCE(SUM(CASE WHEN kode_perkiraan = '401' THEN realisasi_actual ELSE 0 END),0) AS pendapatan_operasional,
+                    COALESCE(SUM(CASE WHEN kode_perkiraan = '501' THEN realisasi_actual ELSE 0 END),0) AS beban_operasional,
+                    COALESCE(SUM(CASE WHEN kode_perkiraan = '402' THEN realisasi_actual ELSE 0 END),0) AS pendapatan_non_operasional,
+                    COALESCE(SUM(CASE WHEN kode_perkiraan = '502' THEN realisasi_actual ELSE 0 END),0) AS beban_non_operasional,
+                    MAX(CASE WHEN kode_perkiraan = '401' AND jumlah_data > 0 THEN 1 ELSE 0 END) AS akun_401_ada,
+                    MAX(CASE WHEN kode_perkiraan = '501' AND jumlah_data > 0 THEN 1 ELSE 0 END) AS akun_501_ada,
+                    MAX(CASE WHEN kode_perkiraan = '402' AND jumlah_data > 0 THEN 1 ELSE 0 END) AS akun_402_ada,
+                    MAX(CASE WHEN kode_perkiraan = '502' AND jumlah_data > 0 THEN 1 ELSE 0 END) AS akun_502_ada
+                FROM realisasi_per_akun
+            ),
+            formula_laba_rugi AS (
+                SELECT '259' AS kode_monbis, (sf.pendapatan_operasional - sf.beban_operasional) AS realisasi_actual,
+                    CASE WHEN sf.akun_401_ada = 1 AND sf.akun_501_ada = 1 THEN 'OK' ELSE 'SUMBER FORMULA BELUM LENGKAP' END AS status_formula
+                FROM sumber_formula sf
+                UNION ALL
+                SELECT '260' AS kode_monbis, (sf.pendapatan_non_operasional - sf.beban_non_operasional) AS realisasi_actual,
+                    CASE WHEN sf.akun_402_ada = 1 AND sf.akun_502_ada = 1 THEN 'OK' ELSE 'SUMBER FORMULA BELUM LENGKAP' END AS status_formula
+                FROM sumber_formula sf
+                UNION ALL
+                SELECT '261' AS kode_monbis,
+                    (sf.pendapatan_operasional - sf.beban_operasional) + (sf.pendapatan_non_operasional - sf.beban_non_operasional) AS realisasi_actual,
+                    CASE WHEN sf.akun_401_ada = 1 AND sf.akun_501_ada = 1 AND sf.akun_402_ada = 1 AND sf.akun_502_ada = 1 THEN 'OK' ELSE 'SUMBER FORMULA BELUM LENGKAP' END AS status_formula
+                FROM sumber_formula sf
+            ),
+            hasil AS (
+                SELECT
+                    ref.id_ref, ref.kode_monbis, ref.kode_perkiraan, ref.sandi_lbbpr, ref.kategori, ref.keterangan,
+                    COALESCE(trg.target_rbb,0) AS target_rbb,
+                    COALESCE(trg_ye.target_rbb_year_end,0) AS target_rbb_year_end,
+                    CASE WHEN ref.is_formula = 1 THEN COALESCE(frm.realisasi_actual,0) ELSE COALESCE(act.realisasi_actual,0) END AS realisasi_actual,
+                    CASE
+                        WHEN ref.is_formula = 1 THEN COALESCE(frm.status_formula, 'SUMBER FORMULA BELUM LENGKAP')
+                        WHEN ref.kode_perkiraan IS NULL OR ref.kode_perkiraan = '' THEN 'KODE PERKIRAAN BELUM DIISI'
+                        WHEN LOWER(ref.kode_perkiraan) = 'xxx' THEN 'KODE PERKIRAAN MASIH XXX'
+                        WHEN act.kode_perkiraan IS NULL AND COALESCE(trg.target_rbb,0) <> 0 THEN 'RBB ADA - REALISASI BELUM DITEMUKAN'
+                        WHEN act.kode_perkiraan IS NULL AND COALESCE(trg.target_rbb,0) = 0 THEN 'OK'
+                        ELSE 'OK'
+                    END AS status_crosscheck
+                FROM ref_data ref
+                LEFT JOIN target_rbb trg ON trg.kode_monbis = ref.kode_monbis
+                LEFT JOIN target_rbb_year_end trg_ye ON trg_ye.kode_monbis = ref.kode_monbis
+                LEFT JOIN realisasi_per_akun act ON act.kode_perkiraan = ref.kode_perkiraan
+                LEFT JOIN formula_laba_rugi frm ON frm.kode_monbis = ref.kode_monbis
+            )
+            SELECT
+                id_ref, kode_monbis, kode_perkiraan, sandi_lbbpr, kategori, keterangan,
+                :periode_rbb_meta AS periode_rbb,
+                :actual_date_meta AS tanggal_actual,
+                target_rbb,
+                realisasi_actual,
+                realisasi_actual - target_rbb AS selisih,
+                ROUND(CASE WHEN COALESCE(target_rbb,0) = 0 THEN 0 ELSE realisasi_actual / target_rbb * 100 END, 2) AS pencapaian_persen,
+                COALESCE(target_rbb_year_end, 0) AS target_rbb_year_end,
+                realisasi_actual - COALESCE(target_rbb_year_end, 0) AS selisih_year_end,
+                ROUND(CASE WHEN COALESCE(target_rbb_year_end,0) = 0 THEN 0 ELSE realisasi_actual / target_rbb_year_end * 100 END, 2) AS pencapaian_year_end_persen,
+                status_crosscheck
+            FROM hasil
+            WHERE status_crosscheck = 'OK'
+            ORDER BY
+                CASE
+                    WHEN UPPER(TRIM(kategori)) = 'PENDAPATAN' THEN 1
+                    WHEN UPPER(TRIM(kategori)) = 'BEBAN' THEN 2
+                    WHEN kode_monbis = '259' THEN 3
+                    WHEN kode_monbis = '260' THEN 4
+                    WHEN kode_monbis = '261' THEN 5
+                    ELSE 6
+                END,
+                id_ref ASC
+        ";
     }
 }

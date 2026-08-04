@@ -210,11 +210,16 @@ class LaporanKeuanganController
                 $sqlFilter = " AND kode_kantor = :kode_kantor ";
             }
 
-            // Note: HAVING SUM <> 0 kita hapus agar data 0 ketarik dulu ke PHP
+            // Catatan performa: query ini sengaja hanya membaca dua tanggal dan satu
+            // rentang kode akun. Agar agregasi tidak kembali ke tabel utama untuk
+            // setiap baris, siapkan covering index di database (jalankan terpisah):
+            // CREATE INDEX idx_acc_history_lapkeu_detail
+            // ON acc_history (tanggal, kode_kantor, kode_perk, saldo_akhir, nama_perk);
+            // Jangan dieksekusi otomatis dari aplikasi.
             $sql = "
                 SELECT 
                     kode_perk,
-                    MAX(NULLIF(TRIM(nama_perk), '')) AS nama_perk,
+                    MAX(nama_perk) AS nama_perk,
                     SUM(CASE WHEN tanggal = :tanggal_actual THEN saldo_akhir ELSE 0 END) AS total_saldo,
                     SUM(CASE WHEN tanggal = :closing_actual THEN saldo_akhir ELSE 0 END) AS closing_saldo
                 FROM acc_history
@@ -222,7 +227,10 @@ class LaporanKeuanganController
                 {$sqlFilter}
                 AND ({$sqlKodePerk})
                 GROUP BY kode_perk
-                ORDER BY kode_perk ASC
+                ORDER BY
+                    CASE WHEN CHAR_LENGTH(kode_perk) = 1 THEN 0 ELSE 1 END,
+                    CAST(kode_perk AS UNSIGNED),
+                    kode_perk ASC
             ";
 
             $stmt = $this->pdo->prepare($sql);

@@ -110,6 +110,8 @@
         </button>
         <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
           <a href="lapkeu_kantor" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Laporan Keuangan</a>
+          <a href="rbb_vs_realisasi" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">RBB vs Realisasi</a>
+          <a href="realisasi_rbb" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Produksi vs RBB</a>
 
           <a href="pipelane_monitoring_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Monitoring Pipeline Kredit</a>
           <a href="aging_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Rekap Aging Kredit</a>

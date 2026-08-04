@@ -56,6 +56,9 @@ switch ($method) {
         } elseif ($type === 'realisasi_rbb_bulan_berjalan') {
             $controller->getRealisasiRbbBulanBerjalan($input);
 
+        } elseif ($type === 'lapkeu_rbb_vs_realisasi') {
+            $controller->getLapkeuRbbVsRealisasi($input);
+
         // --- ERROR: TYPE TIDAK DIKENAL ---
         } else {
             sendResponse(400, "Type request tidak dikenali: " . $type);
