@@ -115,10 +115,10 @@
       <label class="ufp-page-size">
         <span>Baris</span>
         <select id="ufpPageSize" aria-label="Jumlah data per halaman">
+          <option value="5">5</option>
           <option value="10">10</option>
           <option value="20">20</option>
           <option value="50">50</option>
-          <option value="100">100</option>
         </select>
       </label>
 
@@ -1032,6 +1032,456 @@
     .ufp-page-btn { min-width:25px; width:25px; padding:0; }
     .ufp-page-size select { width:43px; }
   }
+
+
+  /* ==========================================================
+     MOBILE CLEAN V6
+     - Header lebih terbaca
+     - Ringkasan 2 x 2, tidak terpotong
+     - Kartu debitur ringkas tetapi informatif
+     - Pagination aman dari floating help/chat button
+     ========================================================== */
+  .ufp-page-current {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:58px;
+    height:29px;
+    padding:0 7px;
+    border:1px solid #dbeafe;
+    border-radius:7px;
+    background:#eff6ff;
+    color:#1d4ed8;
+    font-size:9px;
+    font-weight:900;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+  }
+
+  @media (max-width:767px) {
+    .ufp-page {
+      padding:5px !important;
+      gap:5px !important;
+    }
+
+    .ufp-header {
+      gap:6px !important;
+      padding:7px !important;
+    }
+
+    .ufp-title-wrap {
+      width:100%;
+      gap:7px;
+    }
+
+    .ufp-title-copy {
+      flex:1 1 auto;
+      width:0;
+    }
+
+    .ufp-title-line {
+      display:grid;
+      grid-template-columns:minmax(0,1fr) auto;
+      align-items:center;
+      gap:5px;
+    }
+
+    .ufp-title-line h1 {
+      min-width:0;
+      font-size:12px !important;
+      line-height:1.1;
+    }
+
+    .ufp-title-copy p {
+      display:block !important;
+      max-width:100%;
+      margin-top:3px !important;
+      overflow:hidden;
+      font-size:7px !important;
+      line-height:1.15 !important;
+      text-overflow:ellipsis;
+      white-space:nowrap !important;
+    }
+
+    .ufp-count-badge {
+      height:19px;
+      padding:0 6px;
+      font-size:6.8px;
+    }
+
+    .ufp-toolbar {
+      grid-template-columns:minmax(0,1fr) 108px !important;
+      gap:5px !important;
+    }
+
+    .ufp-search input,
+    .ufp-select {
+      height:30px !important;
+      font-size:8.5px !important;
+    }
+
+    .ufp-summary {
+      display:grid !important;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:4px !important;
+      overflow:visible !important;
+      padding:0 !important;
+    }
+
+    .ufp-summary-item {
+      min-width:0 !important;
+      height:35px !important;
+      padding:0 7px !important;
+      border-radius:8px !important;
+    }
+
+    .ufp-summary-item span {
+      max-width:68%;
+      font-size:6px !important;
+      line-height:1.05;
+      white-space:normal;
+    }
+
+    .ufp-summary-item strong {
+      margin-left:5px;
+      font-size:9px !important;
+    }
+
+    .ufp-content {
+      min-height:0;
+      border-color:#dbe3ee;
+      background:#f1f5f9 !important;
+    }
+
+    .ufp-mobile-list {
+      gap:7px !important;
+      padding:7px 7px calc(10px + env(safe-area-inset-bottom)) !important;
+      scroll-padding-top:7px;
+    }
+
+    .ufp-mobile-card {
+      border-radius:11px !important;
+      box-shadow:0 2px 5px rgba(15,23,42,.055) !important;
+    }
+
+    .ufp-mobile-card.risk {
+      border-color:#fda4af !important;
+      box-shadow:inset 3px 0 0 #fb7185,0 2px 5px rgba(15,23,42,.055) !important;
+    }
+
+    .ufp-mobile-card-head {
+      align-items:center !important;
+      min-height:42px;
+      padding:7px 8px !important;
+    }
+
+    .ufp-mobile-card-identity {
+      flex:1 1 auto;
+      width:0;
+    }
+
+    .ufp-mobile-card-name {
+      font-size:10px !important;
+      line-height:1.1;
+    }
+
+    .ufp-mobile-card-rek {
+      display:flex;
+      align-items:center;
+      min-width:0;
+      margin-top:3px !important;
+      font-size:6.6px !important;
+      line-height:1.1;
+    }
+
+    .ufp-mobile-card-rek > span:first-child {
+      flex:0 0 auto;
+    }
+
+    .ufp-mobile-dot {
+      flex:0 0 auto;
+      margin:0 4px;
+      color:#cbd5e1;
+    }
+
+    .ufp-mobile-address {
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .ufp-mobile-head-actions {
+      gap:4px !important;
+    }
+
+    .ufp-mobile-card .ufp-kolek-badge {
+      min-width:30px;
+      min-height:21px;
+      padding:2px 5px;
+      font-size:7px;
+    }
+
+    .ufp-mobile-card .ufp-edit-btn {
+      width:29px !important;
+      height:27px !important;
+      border-radius:7px !important;
+    }
+
+    .ufp-mobile-quick-grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:1px;
+      border-top:1px solid #e2e8f0;
+      border-bottom:1px solid #e2e8f0;
+      background:#e2e8f0;
+    }
+
+    .ufp-mobile-quick {
+      min-width:0;
+      padding:6px 8px;
+      background:#fff;
+    }
+
+    .ufp-mobile-quick span {
+      display:block;
+      overflow:hidden;
+      color:#64748b;
+      font-size:5.8px;
+      font-weight:900;
+      letter-spacing:.025em;
+      line-height:1;
+      text-overflow:ellipsis;
+      text-transform:uppercase;
+      white-space:nowrap;
+    }
+
+    .ufp-mobile-quick strong {
+      display:block;
+      margin-top:3px;
+      overflow:hidden;
+      color:#0f172a;
+      font-size:8.7px;
+      font-weight:900;
+      line-height:1.1;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-variant-numeric:tabular-nums;
+    }
+
+    .ufp-mobile-quick-primary strong { color:#1d4ed8; }
+    .ufp-mobile-quick-danger { background:#fff7f7; }
+    .ufp-mobile-quick-danger strong { color:#be123c; }
+
+    .ufp-mobile-commitment {
+      padding:7px 8px 8px !important;
+      background:#fbfdff;
+    }
+
+    .ufp-mobile-commitment-top {
+      align-items:center;
+    }
+
+    .ufp-mobile-commitment-money {
+      max-width:46%;
+      overflow:hidden;
+      font-size:8.5px !important;
+      text-overflow:ellipsis;
+    }
+
+    .ufp-mobile-commitment-meta {
+      grid-template-columns:48px minmax(0,1fr) !important;
+      gap:3px 6px !important;
+      margin-top:6px !important;
+      font-size:6.8px !important;
+    }
+
+    .ufp-pagination {
+      display:grid !important;
+      grid-template-columns:minmax(0,1fr) auto;
+      grid-template-rows:auto auto;
+      gap:4px 6px !important;
+      min-height:0 !important;
+      padding:5px 46px 5px 7px !important;
+      border-radius:9px !important;
+    }
+
+    .ufp-page-info {
+      grid-column:1;
+      grid-row:1;
+      font-size:7px !important;
+    }
+
+    .ufp-page-controls {
+      display:contents !important;
+    }
+
+    .ufp-page-size {
+      grid-column:2;
+      grid-row:1;
+      justify-self:end;
+    }
+
+    .ufp-page-buttons {
+      grid-column:1 / -1;
+      grid-row:2;
+      justify-content:center;
+      gap:5px !important;
+    }
+
+    .ufp-page-size select {
+      width:45px !important;
+      height:26px !important;
+    }
+
+    .ufp-page-btn,
+    .ufp-page-current {
+      height:27px !important;
+      border-radius:7px !important;
+      font-size:7.5px !important;
+    }
+
+    .ufp-page-arrow {
+      min-width:31px !important;
+      width:31px !important;
+      padding:0 !important;
+      font-size:14px !important;
+    }
+
+    .ufp-page-current {
+      min-width:64px;
+    }
+  }
+
+  @media (max-width:374px) {
+    .ufp-toolbar {
+      grid-template-columns:minmax(0,1fr) 96px !important;
+    }
+
+    .ufp-title-line h1 {
+      font-size:11px !important;
+    }
+
+    .ufp-summary-item {
+      padding:0 6px !important;
+    }
+
+    .ufp-summary-item span {
+      font-size:5.6px !important;
+    }
+
+    .ufp-summary-item strong {
+      font-size:8.5px !important;
+    }
+
+    .ufp-mobile-list {
+      padding-left:5px !important;
+      padding-right:5px !important;
+    }
+
+    .ufp-mobile-quick {
+      padding:5px 6px;
+    }
+
+    .ufp-pagination {
+      padding-right:42px !important;
+    }
+  }
+
+
+  /* ==========================================================
+     MOBILE VIEWPORT FIX V8
+     - Tinggi halaman mengikuti visual viewport Safari/Chrome
+     - Pagination tidak terpotong toolbar browser
+     - Area kanan aman dari tombol bantuan mengambang
+     - Kartu tidak menyusut atau terpotong
+     ========================================================== */
+  @media (max-width:767px) {
+    .ufp-page {
+      height:var(--ufp-mobile-height, calc(100dvh - var(--ufp-page-top,54px))) !important;
+      max-height:var(--ufp-mobile-height, calc(100dvh - var(--ufp-page-top,54px))) !important;
+      min-height:300px !important;
+      padding-bottom:max(5px, env(safe-area-inset-bottom)) !important;
+      overflow:hidden !important;
+    }
+
+    .ufp-header,
+    .ufp-summary,
+    .ufp-pagination {
+      flex-shrink:0 !important;
+    }
+
+    .ufp-content {
+      flex:1 1 0 !important;
+      min-height:0 !important;
+      overflow:hidden !important;
+    }
+
+    .ufp-mobile-list {
+      display:flex !important;
+      flex-direction:column !important;
+      align-content:initial !important;
+      min-height:0 !important;
+      height:100% !important;
+      overflow-x:hidden !important;
+      overflow-y:auto !important;
+      padding:7px 7px calc(18px + env(safe-area-inset-bottom)) !important;
+      scroll-padding-top:7px;
+      scroll-padding-bottom:24px;
+    }
+
+    .ufp-mobile-card {
+      display:block !important;
+      flex:0 0 auto !important;
+      width:100% !important;
+      height:auto !important;
+      min-height:max-content !important;
+    }
+
+    .ufp-mobile-card-head,
+    .ufp-mobile-quick-grid,
+    .ufp-mobile-commitment {
+      flex:0 0 auto !important;
+    }
+
+    .ufp-mobile-quick-grid {
+      display:grid !important;
+    }
+
+    .ufp-mobile-commitment {
+      display:block !important;
+    }
+
+    .ufp-pagination {
+      position:relative;
+      z-index:20;
+      width:100%;
+      margin:0 0 max(1px, env(safe-area-inset-bottom));
+      padding:6px 74px 7px 7px !important;
+      background:#fff;
+      box-shadow:0 -2px 8px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04);
+    }
+
+    .ufp-page-buttons {
+      min-width:0;
+      overflow:visible;
+    }
+
+    .ufp-page-current {
+      min-width:58px !important;
+    }
+  }
+
+  @media (max-width:374px) {
+    .ufp-pagination {
+      padding-right:68px !important;
+    }
+
+    .ufp-mobile-list {
+      padding-bottom:calc(16px + env(safe-area-inset-bottom)) !important;
+    }
+  }
+
 </style>
 
 <script>
@@ -1046,7 +1496,7 @@
   let ufpCurrentTB = 0;
   let ufpSaving = false;
   let ufpCurrentPage = 1;
-  let ufpPageSize = window.innerWidth <= 767 ? 10 : 20;
+  let ufpPageSize = window.innerWidth <= 767 ? 5 : 20;
   let ufpFilterTimer = null;
 
   function ufpId(id) { return document.getElementById(id); }
@@ -1143,7 +1593,9 @@
       throw new Error(json.message || 'Gagal mengambil data kandidat.');
     }
 
-    let rows = Array.isArray(json.data) ? json.data : [];
+    let rows = Array.isArray(json.data)
+      ? json.data
+      : (Array.isArray(json.data?.data) ? json.data.data : []);
     if (isPotensi) {
       const status = request.status_filter || 'ALL';
       if (status !== 'ALL') {
@@ -1234,28 +1686,49 @@
     list.innerHTML = rows.map(row => {
       const risk = ufpIsRiskRow(row, ufpCurrentRequest?.harian_date);
       const hasCommitment = ufpHasCommitment(row);
+      const totalTunggakan = ufpNum(row.tunggakan_pokok) + ufpNum(row.tunggakan_bunga);
+      const dpdP = ufpNum(row.hari_menunggak_pokok);
+      const dpdB = ufpNum(row.hari_menunggak_bunga);
+      const commitmentLabel = hasCommitment ? (row.komitmen || 'Sudah Komitmen') : 'Belum Komitmen';
+
       return `<article class="ufp-mobile-card ${risk ? 'risk' : ''}">
         <div class="ufp-mobile-card-head">
           <div class="ufp-mobile-card-identity">
-            <div class="ufp-mobile-card-name">${ufpEscape(row.nama_nasabah)}</div>
-            <div class="ufp-mobile-card-rek">${ufpEscape(row.no_rekening)} · ${ufpEscape(row.alamat)}</div>
+            <div class="ufp-mobile-card-name" title="${ufpEscape(row.nama_nasabah)}">${ufpEscape(row.nama_nasabah)}</div>
+            <div class="ufp-mobile-card-rek" title="${ufpEscape(row.no_rekening)} · ${ufpEscape(row.alamat)}">
+              <span>${ufpEscape(row.no_rekening)}</span>
+              <span class="ufp-mobile-dot">•</span>
+              <span class="ufp-mobile-address">${ufpEscape(row.alamat)}</span>
+            </div>
           </div>
           <div class="ufp-mobile-head-actions">
             <span class="ufp-kolek-badge ${ufpKolekClass(row.kolek_harian)}">${ufpEscape(row.kolek_harian)}</span>
             ${ufpActionButton(row,true)}
           </div>
         </div>
-        <div class="ufp-mobile-metrics">
-          <div class="ufp-mobile-metric"><div class="ufp-mobile-label">Baki Debet</div><div class="ufp-mobile-value blue">${ufpFmt(row.baki_debet)}</div></div>
-          <div class="ufp-mobile-metric"><div class="ufp-mobile-label">Tungg. Pokok</div><div class="ufp-mobile-value">${ufpFmt(row.tunggakan_pokok)}</div></div>
-          <div class="ufp-mobile-metric"><div class="ufp-mobile-label">Tungg. Bunga</div><div class="ufp-mobile-value">${ufpFmt(row.tunggakan_bunga)}</div></div>
-          <div class="ufp-mobile-metric"><div class="ufp-mobile-label">DPD Pokok</div><div class="ufp-mobile-value ${ufpNum(row.hari_menunggak_pokok)>=90?'red':''}">${ufpFmt(row.hari_menunggak_pokok)}</div></div>
-          <div class="ufp-mobile-metric"><div class="ufp-mobile-label">DPD Bunga</div><div class="ufp-mobile-value ${ufpNum(row.hari_menunggak_bunga)>=90?'red':''}">${ufpFmt(row.hari_menunggak_bunga)}</div></div>
-          <div class="ufp-mobile-metric"><div class="ufp-mobile-label">Jatuh Tempo</div><div class="ufp-mobile-value">${ufpFormatDate(row.tgl_jatuh_tempo)}</div></div>
+
+        <div class="ufp-mobile-quick-grid">
+          <div class="ufp-mobile-quick ufp-mobile-quick-primary">
+            <span>Baki Debet</span>
+            <strong>Rp ${ufpFmt(row.baki_debet)}</strong>
+          </div>
+          <div class="ufp-mobile-quick ${totalTunggakan > 0 ? 'ufp-mobile-quick-danger' : ''}">
+            <span>Total Tunggakan</span>
+            <strong>Rp ${ufpFmt(totalTunggakan)}</strong>
+          </div>
+          <div class="ufp-mobile-quick ${(dpdP >= 90 || dpdB >= 90) ? 'ufp-mobile-quick-danger' : ''}">
+            <span>DPD Pokok / Bunga</span>
+            <strong>${ufpFmt(dpdP)} / ${ufpFmt(dpdB)}</strong>
+          </div>
+          <div class="ufp-mobile-quick">
+            <span>Jatuh Tempo</span>
+            <strong>${ufpFormatDate(row.tgl_jatuh_tempo)}</strong>
+          </div>
         </div>
+
         <div class="ufp-mobile-commitment">
           <div class="ufp-mobile-commitment-top">
-            <span class="ufp-status-badge ${hasCommitment ? 'done' : 'empty'}">${hasCommitment ? ufpEscape(row.komitmen || 'Sudah Komitmen') : 'Belum Komitmen'}</span>
+            <span class="ufp-status-badge ${hasCommitment ? 'done' : 'empty'}">${ufpEscape(commitmentLabel)}</span>
             <span class="ufp-mobile-commitment-money">Rp ${ufpFmt(row.nominal)}</span>
           </div>
           <div class="ufp-mobile-commitment-meta">
@@ -1267,15 +1740,24 @@
     }).join('');
   }
 
-  function ufpScrollResultTop() {
-    const tableWrap = ufpId('upWrap');
-    const mobileList = ufpId('flowparMobileList');
-    if (tableWrap) tableWrap.scrollTop = 0;
-    if (mobileList) mobileList.scrollTop = 0;
+  function ufpPageCount() {
+    const size = Math.max(1, Number(ufpPageSize) || 1);
+    return Math.max(1, Math.ceil(ufpRowsFiltered.length / size));
   }
 
-  function ufpPageCount() {
-    return Math.max(1, Math.ceil(ufpRowsFiltered.length / ufpPageSize));
+  function ufpScrollResultTop() {
+    const target = window.innerWidth <= 767
+      ? ufpId('flowparMobileList')
+      : ufpId('upWrap');
+
+    if (!target) return;
+
+    if (typeof target.scrollTo === 'function') {
+      target.scrollTo({ top:0, left:0, behavior:'auto' });
+    } else {
+      target.scrollTop = 0;
+      target.scrollLeft = 0;
+    }
   }
 
   function ufpVisiblePageItems(totalPages) {
@@ -1324,10 +1806,20 @@
     ufpCurrentPage = Math.min(Math.max(1, ufpCurrentPage), totalPages);
     const start = (ufpCurrentPage - 1) * ufpPageSize + 1;
     const finish = Math.min(ufpCurrentPage * ufpPageSize, totalRows);
-    info.textContent = `Menampilkan ${ufpFmt(start)}–${ufpFmt(finish)} dari ${ufpFmt(totalRows)} data`;
+    info.textContent = `${ufpFmt(start)}–${ufpFmt(finish)} dari ${ufpFmt(totalRows)} data`;
 
     const previousDisabled = ufpCurrentPage <= 1 ? 'disabled' : '';
     const nextDisabled = ufpCurrentPage >= totalPages ? 'disabled' : '';
+
+    if (window.innerWidth <= 480) {
+      buttons.innerHTML = `
+        <button type="button" class="ufp-page-btn ufp-page-arrow" data-page-action="prev" ${previousDisabled} aria-label="Halaman sebelumnya">‹</button>
+        <span class="ufp-page-current" aria-live="polite">${ufpFmt(ufpCurrentPage)} / ${ufpFmt(totalPages)}</span>
+        <button type="button" class="ufp-page-btn ufp-page-arrow" data-page-action="next" ${nextDisabled} aria-label="Halaman berikutnya">›</button>
+      `;
+      return;
+    }
+
     const pageItems = ufpVisiblePageItems(totalPages).map(item => {
       if (item === '...') return '<span class="ufp-page-ellipsis" aria-hidden="true">…</span>';
       const active = item === ufpCurrentPage;
@@ -1562,30 +2054,63 @@
     if (window.innerWidth >= 768) {
       page.style.removeProperty('--ufp-nav-overlap');
       page.style.removeProperty('--ufp-page-top');
+      page.style.removeProperty('--ufp-mobile-height');
       return;
     }
 
+    /*
+     * Safari/Chrome mobile mengubah tinggi area tampilan ketika address bar
+     * atau bottom toolbar muncul. Gunakan visualViewport agar bagian bawah
+     * pagination selalu tetap berada di atas toolbar browser.
+     */
     page.style.setProperty('--ufp-nav-overlap', '0px');
+
     requestAnimationFrame(() => {
-      const baseTop = Math.max(0, page.getBoundingClientRect().top);
-      let navbarBottom = 0;
+      const viewport = window.visualViewport;
+      const viewportTop = viewport ? Number(viewport.offsetTop || 0) : 0;
+      const viewportHeight = viewport ? Number(viewport.height || window.innerHeight) : window.innerHeight;
+      const viewportBottom = viewportTop + viewportHeight;
+
+      const baseRect = page.getBoundingClientRect();
+      const baseTop = Math.max(viewportTop, baseRect.top);
+      let navbarBottom = viewportTop;
       const selectors = 'nav,header,[role="banner"],.navbar,.topbar,.app-navbar,.main-header,#navbar,#topbar,#appHeader';
 
       document.querySelectorAll(selectors).forEach(node => {
         if (!(node instanceof HTMLElement) || node === page || page.contains(node)) return;
         const style = getComputedStyle(node);
         if (!['fixed','sticky'].includes(style.position) || style.display === 'none' || style.visibility === 'hidden') return;
+
         const rect = node.getBoundingClientRect();
-        if (rect.top <= 12 && rect.bottom > 0 && rect.height >= 32 && rect.height <= 120 && rect.width >= innerWidth * .6) {
-          navbarBottom = Math.max(navbarBottom, rect.bottom);
-        }
+        const isTopBar = rect.top <= viewportTop + 12 &&
+          rect.bottom > viewportTop &&
+          rect.height >= 32 &&
+          rect.height <= 130 &&
+          rect.width >= window.innerWidth * .6;
+
+        if (isTopBar) navbarBottom = Math.max(navbarBottom, rect.bottom);
       });
 
-      if (navbarBottom <= 0 && baseTop < 35) navbarBottom = 54;
+      if (navbarBottom <= viewportTop && baseRect.top < viewportTop + 35) {
+        navbarBottom = viewportTop + 54;
+      }
+
       const targetTop = Math.max(baseTop, navbarBottom);
-      page.style.setProperty('--ufp-nav-overlap', `${Math.max(0, Math.ceil(targetTop - baseTop))}px`);
-      page.style.setProperty('--ufp-page-top', `${Math.max(0, Math.ceil(targetTop))}px`);
+      const overlap = Math.max(0, Math.ceil(targetTop - baseRect.top));
+      const availableHeight = Math.max(300, Math.floor(viewportBottom - targetTop - 5));
+
+      page.style.setProperty('--ufp-nav-overlap', `${overlap}px`);
+      page.style.setProperty('--ufp-page-top', `${Math.max(0, Math.ceil(targetTop - viewportTop))}px`);
+      page.style.setProperty('--ufp-mobile-height', `${availableHeight}px`);
     });
+  }
+
+  function ufpQueueViewportSync(delay = 40) {
+    clearTimeout(window.__ufpViewportTimer);
+    window.__ufpViewportTimer = setTimeout(() => {
+      ufpSyncNavbarClearance();
+      ufpSetStickyHeader();
+    }, delay);
   }
 
   window.addEventListener('resize', () => {
@@ -1597,7 +2122,14 @@
     },100);
   });
 
-  window.addEventListener('orientationchange', () => setTimeout(ufpSyncNavbarClearance,120));
+  window.addEventListener('orientationchange', () => ufpQueueViewportSync(140));
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => ufpQueueViewportSync(30));
+    window.visualViewport.addEventListener('scroll', () => ufpQueueViewportSync(30));
+  }
+
   ufpSyncNavbarClearance();
-  setTimeout(ufpSyncNavbarClearance,150);
+  setTimeout(() => ufpQueueViewportSync(0),150);
+  setTimeout(() => ufpQueueViewportSync(0),450);
 </script>
