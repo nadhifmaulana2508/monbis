@@ -6,7 +6,7 @@
 <!-- TUTUP WRAPPER UTAMA -->
 
 <!-- FLOATING HELPDESK BUTTON -->
-<div class="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-1">
+<!-- <div class="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-1">
     <div id="helpdeskContainer" 
          class="flex items-center bg-[#0056b3] text-white shadow-lg rounded-full overflow-hidden transition-all duration-300 ease-in-out cursor-pointer"
          style="max-width: 48px; padding: 12px;"
@@ -21,7 +21,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> -->
 
 <script>
     // --- GLOBAL USER EXPORT (PERBAIKAN BUG KODE) ---

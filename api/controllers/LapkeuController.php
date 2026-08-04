@@ -30,6 +30,15 @@ class LaporanKeuanganController
         }
     }
 
+    /**
+     * Kode 210 hanya dieliminasi pada konsolidasi.
+     * Scope kantor dan korwil memakai saldo aset utuh.
+     */
+    private function isConsolidatedScope(string $kodeKantor, ?array $korwilRange = null): bool
+    {
+        return !$korwilRange && in_array(strtolower(trim($kodeKantor)), ['konsolidasi', '000'], true);
+    }
+
     private function getKodePerkRangeWhere(array $kodePrefixes, string $field = 'kode_perk'): string
     {
         $prefixes = array_values(array_unique(array_map('strval', $kodePrefixes)));
@@ -433,6 +442,7 @@ class LaporanKeuanganController
             $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
             $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
             $korwilRange = $this->getKorwilRange($korwilReq);
+            $isConsolidated = $this->isConsolidatedScope((string) $kodeKantorReq, $korwilRange);
 
             $baseDateObj = new DateTime($baseDate);
             $monthStart = $baseDateObj->format('Y-m-01');
@@ -467,7 +477,7 @@ class LaporanKeuanganController
                 $sqlKantor = "AND kode_kantor BETWEEN :kw_start AND :kw_end";
                 $params[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
                 $params[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
-            } elseif (strtolower($kodeKantorReq) === 'konsolidasi') {
+            } elseif ($isConsolidated) {
                 $sqlKantor = "AND kode_kantor BETWEEN '000' AND '028'";
             } else {
                 $sqlKantor = "AND kode_kantor = :kode_kantor";
@@ -475,7 +485,7 @@ class LaporanKeuanganController
             }
             if ($korwilRange) {
                 $sqlKantorNom = "AND kode_cabang BETWEEN :kw_start AND :kw_end";
-            } elseif (strtolower($kodeKantorReq) === 'konsolidasi') {
+            } elseif ($isConsolidated) {
                 $sqlKantorNom = "AND kode_cabang BETWEEN '000' AND '028'";
             } else {
                 $sqlKantorNom = "AND kode_cabang = :kode_kantor";
@@ -491,12 +501,15 @@ class LaporanKeuanganController
             $asetQuoted = implode(',', array_map($quoteCode, $asetCodes));
             $trackedCodes = array_merge($asetCodes, ['210', '20401', '20402', '4', '5']);
             $trackedQuoted = implode(',', array_map($quoteCode, array_unique($trackedCodes)));
+            $assetAdjustmentSql = $isConsolidated
+                ? " - SUM(CASE WHEN kode_perk = '210' THEN saldo_akhir ELSE 0 END)"
+                : '';
 
             $sql = "
                 SELECT
                     tanggal,
                     SUM(CASE WHEN kode_perk IN ($asetQuoted) THEN saldo_akhir ELSE 0 END)
-                    - SUM(CASE WHEN kode_perk = 210 THEN saldo_akhir ELSE 0 END) AS aset_gabungan,
+                    $assetAdjustmentSql AS aset_gabungan,
                     SUM(CASE WHEN kode_perk = 10601 THEN saldo_akhir ELSE 0 END) AS kredit_baki_debet,
                     SUM(CASE WHEN kode_perk = 20401 THEN saldo_akhir ELSE 0 END) AS tabungan,
                     SUM(CASE WHEN kode_perk = 20402 THEN saldo_akhir ELSE 0 END) AS deposito,
@@ -710,7 +723,7 @@ class LaporanKeuanganController
                     'end' => $effectiveEnd,
                 ],
                 'formula' => [
-                    'aset_gabungan' => "101 + 102 + 103 + 104 + 105 + 10601 + 10602 + 10604 + 10605 + 10606 + 107 + 108 + 109 + 110 + 11102 + 112 + 113 + 116 + 117 + 118 + 119 + 120 + 121 - 210",
+                    'aset_gabungan' => "101 + 102 + 103 + 104 + 105 + 10601 + 10602 + 10604 + 10605 + 10606 + 107 + 108 + 109 + 110 + 11102 + 112 + 113 + 116 + 117 + 118 + 119 + 120 + 121" . ($isConsolidated ? " - 210" : ""),
                     'kredit_baki_debet' => "10601",
                     'tabungan' => "20401",
                     'deposito' => "20402",
@@ -736,6 +749,7 @@ class LaporanKeuanganController
             $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
             $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
             $korwilRange = $this->getKorwilRange($korwilReq);
+            $isConsolidated = $this->isConsolidatedScope((string) $kodeKantorReq, $korwilRange);
             $baseDateObj = new DateTime($baseDate);
             $previousDateObj = clone $baseDateObj;
             $previousDateObj->modify('last day of previous month');
@@ -766,6 +780,9 @@ class LaporanKeuanganController
             $asetIn = implode(',', array_map($quoteCode, $asetCodes));
             $trackedCodes = array_merge($asetCodes, ['210', '4', '5']);
             $trackedIn = implode(',', array_map($quoteCode, array_unique($trackedCodes)));
+            $assetAdjustmentSql = $isConsolidated
+                ? " - SUM(CASE WHEN ah.kode_perk = '210' THEN ah.saldo_akhir ELSE 0 END)"
+                : '';
 
             $sql = "
                 SELECT
@@ -773,7 +790,7 @@ class LaporanKeuanganController
                     ah.kode_kantor,
                     COALESCE(kk.nama_kantor, CONCAT('Kc. ', ah.kode_kantor)) AS nama_kantor,
                     SUM(CASE WHEN ah.kode_perk IN ($asetIn) THEN ah.saldo_akhir ELSE 0 END)
-                    - SUM(CASE WHEN ah.kode_perk = '210' THEN ah.saldo_akhir ELSE 0 END) AS aset,
+                    $assetAdjustmentSql AS aset,
                     SUM(CASE WHEN ah.kode_perk = '4' THEN ah.saldo_akhir ELSE 0 END) AS pendapatan,
                     SUM(CASE WHEN ah.kode_perk = '5' THEN ah.saldo_akhir ELSE 0 END) AS beban,
                     SUM(CASE WHEN ah.kode_perk = '4' THEN ah.saldo_akhir ELSE 0 END)
@@ -868,7 +885,9 @@ class LaporanKeuanganController
                 'tanggal' => $baseDate,
                 'tanggal_bulan_lalu' => $previousDate,
                 'mode' => 'distribusi_makro',
-                'keterangan' => 'Aset memakai posisi aktual; metrik lainnya tetap memakai aktual dikurangi posisi akhir bulan sebelumnya',
+                'keterangan' => $isConsolidated
+                    ? 'Aset konsolidasi memakai komponen aset dikurangi kode 210.'
+                    : 'Aset kantor/korwil memakai seluruh komponen aset tanpa eliminasi kode 210.',
                 'metrics' => $response,
             ]);
         } catch (Exception $e) {
@@ -889,6 +908,7 @@ class LaporanKeuanganController
             $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
             $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
             $korwilRange = $this->getKorwilRange($korwilReq);
+            $isConsolidated = $this->isConsolidatedScope((string) $kodeKantorReq, $korwilRange);
 
             // 1. 🔥 FILTER KANTOR (Bisa dipakai u/ acc_history & nominatif) 🔥
             $sqlKantorAcc = "";
@@ -900,7 +920,7 @@ class LaporanKeuanganController
                 $sqlKantorNom = "AND LPAD(CAST(kode_cabang AS CHAR), 3, '0') BETWEEN :kw_start AND :kw_end";
                 $params[':kw_start'] = $korwilRange[0];
                 $params[':kw_end'] = $korwilRange[1];
-            } elseif (strtolower($kodeKantorReq) === 'konsolidasi') {
+            } elseif ($isConsolidated) {
                 $sqlKantorAcc = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN '000' AND '028'";
                 // Nominatif konsolidasi tidak perlu filter cabang
             } else {
@@ -913,9 +933,18 @@ class LaporanKeuanganController
             // QUERY 1: Hitung Semua Variabel dari ACC_HISTORY (Buku Besar)
             // =========================================================
             // Tambahan: '107' (CKPN Kredit) untuk hitung Coverage Ratio
+            $asetCodes = [
+                '101','102','103','104','105','10601','10602','10604','10605','10606',
+                '107','108','109','110','11102','112','113','116','117','118','119','120','121'
+            ];
+            $asetIn = "'" . implode("','", $asetCodes) . "'";
+            $assetAdjustmentSql = $isConsolidated
+                ? " - SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '210' THEN saldo_akhir ELSE 0 END)"
+                : '';
             $sqlRasio = "
                 SELECT 
-                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '1' THEN saldo_akhir ELSE 0 END) AS total_aset,
+                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) IN ($asetIn) THEN saldo_akhir ELSE 0 END)
+                    $assetAdjustmentSql AS total_aset,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '3' THEN saldo_akhir ELSE 0 END) AS total_ekuitas,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '101' THEN saldo_akhir ELSE 0 END) AS kas,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '104' THEN saldo_akhir ELSE 0 END) AS penempatan_bank,
@@ -1105,6 +1134,7 @@ class LaporanKeuanganController
             $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
             $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
             $korwilRange = $this->getKorwilRange($korwilReq);
+            $isConsolidated = $this->isConsolidatedScope((string) $kodeKantorReq, $korwilRange);
 
             // 1. Tentukan 3 Titik Waktu
             $baseDateObj = new DateTime($baseDate);
@@ -1126,7 +1156,7 @@ class LaporanKeuanganController
                 $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN ? AND ?";
                 $params[] = $korwilRange[0];
                 $params[] = $korwilRange[1];
-            } elseif (strtolower($kodeKantorReq) === 'konsolidasi') {
+            } elseif ($isConsolidated) {
                 $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN '000' AND '028'";
             } else {
                 $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') = ?";
@@ -1139,11 +1169,14 @@ class LaporanKeuanganController
                 '107','108','109','110','11102','112','113','116','117','118','119','120','121'
             ];
             $asetIn = "'" . implode("','", $asetCodes) . "'";
+            $assetAdjustmentSql = $isConsolidated
+                ? " - SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '210' THEN saldo_akhir ELSE 0 END)"
+                : '';
             $sql = "
                 SELECT 
                     tanggal,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) IN ($asetIn) THEN saldo_akhir ELSE 0 END)
-                    - SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '210' THEN saldo_akhir ELSE 0 END) AS aset,
+                    $assetAdjustmentSql AS aset,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '2' THEN saldo_akhir ELSE 0 END) AS kewajiban,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '3' THEN saldo_akhir ELSE 0 END) AS ekuitas,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '101' THEN saldo_akhir ELSE 0 END) AS kas,
@@ -1297,6 +1330,7 @@ class LaporanKeuanganController
             $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
             $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
             $korwilRange = $this->getKorwilRange($korwilReq);
+            $isConsolidated = $this->isConsolidatedScope((string) $kodeKantorReq, $korwilRange);
 
             $baseDateObj = new DateTime($baseDate);
             $dateCurrent = $baseDateObj->format('Y-m-d');
@@ -1320,7 +1354,7 @@ class LaporanKeuanganController
                 $sqlKantorNom = "AND kode_cabang BETWEEN :kw_start AND :kw_end";
                 $params[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
                 $params[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
-            } elseif (strtolower($kodeKantorReq) === 'konsolidasi') {
+            } elseif ($isConsolidated) {
                 $sqlKantorAcc = "AND kode_kantor BETWEEN '000' AND '028'";
             } else {
                 $sqlKantorAcc = "AND kode_kantor = :kode_kantor";
@@ -1341,12 +1375,15 @@ class LaporanKeuanganController
                 '10606', '107', '204', '20401', '20402', '20603', '30106', '401', '40101', '501', '50101'
             ]));
             $trackedIn = implode(',', array_map($quoteCode, $trackedCodes));
+            $assetAdjustmentSql = $isConsolidated
+                ? " - SUM(CASE WHEN kode_perk = '210' THEN saldo_akhir ELSE 0 END)"
+                : '';
 
             $sql = "
                 SELECT
                     tanggal,
                     SUM(CASE WHEN kode_perk IN ($asetIn) THEN saldo_akhir ELSE 0 END)
-                    - SUM(CASE WHEN kode_perk = '210' THEN saldo_akhir ELSE 0 END) AS aset,
+                    $assetAdjustmentSql AS aset,
                     SUM(CASE WHEN kode_perk = '2' THEN saldo_akhir ELSE 0 END) AS kewajiban,
                     SUM(CASE WHEN kode_perk = '3' THEN saldo_akhir ELSE 0 END) AS ekuitas,
                     SUM(CASE WHEN kode_perk = '101' THEN saldo_akhir ELSE 0 END) AS kas,
@@ -1433,7 +1470,7 @@ class LaporanKeuanganController
             if ($korwilRange) {
                 $nplParams[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
                 $nplParams[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
-            } elseif (strtolower($kodeKantorReq) !== 'konsolidasi') {
+            } elseif (!$isConsolidated) {
                 $nplParams[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
             }
             $sqlNpl = "
@@ -1474,7 +1511,7 @@ class LaporanKeuanganController
                     'growth_yoy' => $calculateGrowth($curr, $prevY),
                 ];
             };
-            $getAverageAsetProduktif = function ($targetDate) use ($sqlKantorAcc, $korwilRange, $kodeKantorReq) {
+            $getAverageAsetProduktif = function ($targetDate) use ($sqlKantorAcc, $korwilRange, $kodeKantorReq, $isConsolidated) {
                 $targetObj = new DateTime($targetDate);
                 $year = $targetObj->format('Y');
                 $month = (int) $targetObj->format('n');
@@ -1499,7 +1536,7 @@ class LaporanKeuanganController
                 if ($korwilRange) {
                     $paramsAvg[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
                     $paramsAvg[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
-                } elseif (strtolower($kodeKantorReq) !== 'konsolidasi') {
+                } elseif (!$isConsolidated) {
                     $paramsAvg[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
                 }
 
@@ -1605,7 +1642,7 @@ class LaporanKeuanganController
             if ($korwilRange) {
                 $topParams[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
                 $topParams[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
-            } elseif (strtolower($kodeKantorReq) !== 'konsolidasi') {
+            } elseif (!$isConsolidated) {
                 $topParams[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
             }
             $sqlTop = "
@@ -1708,6 +1745,7 @@ class LaporanKeuanganController
                 'kesehatan_rasio' => $rasioData,
                 'perkiraan' => $perkiraanMap,
                 'rumus_rasio' => [
+                    'aset' => "101 + 102 + 103 + 104 + 105 + 10601 + 10602 + 10604 + 10605 + 10606 + 107 + 108 + 109 + 110 + 11102 + 112 + 113 + 116 + 117 + 118 + 119 + 120 + 121" . ($isConsolidated ? " - 210" : ""),
                     'bopo' => '501 / 401 x 100%',
                     'ldr' => '10601 / (204 + 20603 + 30106) x 100%',
                     'casa' => '20401 / (20401 + 20402) x 100%',

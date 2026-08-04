@@ -2365,6 +2365,231 @@
     font-weight:750;
   }
 
+
+  /* ========================================================
+     DECISION CENTER V12
+     Rekomendasi dibuat operasional untuk Kepala Cabang.
+     ======================================================== */
+  .lapkeu-decision-center {
+    margin-bottom:10px;
+    overflow:hidden;
+    border:1px solid #bfdbfe;
+    border-radius:14px;
+    background:linear-gradient(145deg,#eff6ff 0%,#fff 58%,#f8fafc 100%);
+    box-shadow:0 5px 18px -16px rgba(37,99,235,.8);
+  }
+
+  .lapkeu-decision-head {
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    padding:12px 13px;
+    border-bottom:1px solid #dbeafe;
+  }
+
+  .lapkeu-decision-head-main { min-width:0; }
+  .lapkeu-decision-eyebrow {
+    font-size:7px;
+    line-height:1;
+    font-weight:950;
+    letter-spacing:.105em;
+    text-transform:uppercase;
+    color:#2563eb;
+  }
+
+  .lapkeu-decision-title {
+    margin-top:5px;
+    color:#0f172a;
+    font-size:14px;
+    line-height:1.15;
+    font-weight:950;
+    letter-spacing:-.015em;
+  }
+
+  .lapkeu-decision-caption {
+    max-width:720px;
+    margin-top:4px;
+    color:#64748b;
+    font-size:8px;
+    line-height:1.45;
+    font-weight:700;
+  }
+
+  .lapkeu-decision-counts {
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    flex-wrap:wrap;
+    gap:5px;
+    flex:0 0 auto;
+  }
+
+  .decision-count {
+    display:inline-flex;
+    align-items:center;
+    min-height:23px;
+    padding:0 7px;
+    border:1px solid;
+    border-radius:999px;
+    font-size:7px;
+    line-height:1;
+    font-weight:950;
+    white-space:nowrap;
+  }
+
+  .decision-count.bad { color:#be123c; border-color:#fecdd3; background:#fff1f2; }
+  .decision-count.warn { color:#b45309; border-color:#fde68a; background:#fffbeb; }
+  .decision-count.good { color:#047857; border-color:#a7f3d0; background:#ecfdf5; }
+
+  .lapkeu-decision-grid {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+    padding:10px;
+  }
+
+  .decision-card {
+    position:relative;
+    min-width:0;
+    overflow:hidden;
+    border:1px solid #e2e8f0;
+    border-left:4px solid var(--decision-accent,#3b82f6);
+    border-radius:11px;
+    background:#fff;
+    box-shadow:0 1px 2px rgba(15,23,42,.035);
+  }
+
+  .decision-card.bad { --decision-accent:#ef4444; }
+  .decision-card.warn { --decision-accent:#f59e0b; }
+  .decision-card.good { --decision-accent:#10b981; }
+  .decision-card.info { --decision-accent:#3b82f6; }
+
+  .decision-card-head {
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:8px;
+    padding:9px 10px 8px;
+    border-bottom:1px solid #eef2f7;
+    background:linear-gradient(180deg,#fff,#fbfdff);
+  }
+
+  .decision-card-title {
+    min-width:0;
+    color:#0f172a;
+    font-size:10px;
+    line-height:1.25;
+    font-weight:950;
+  }
+
+  .decision-priority {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:31px;
+    height:21px;
+    padding:0 6px;
+    border-radius:7px;
+    background:var(--decision-accent,#3b82f6);
+    color:#fff;
+    font-size:7px;
+    line-height:1;
+    font-weight:950;
+    white-space:nowrap;
+  }
+
+  .decision-card-body { padding:9px 10px 10px; }
+  .decision-finding {
+    margin-bottom:8px;
+    padding:7px 8px;
+    border:1px solid #eef2f7;
+    border-radius:8px;
+    background:#f8fafc;
+    color:#475569;
+    font-size:8px;
+    line-height:1.45;
+    font-weight:750;
+  }
+
+  .decision-fields {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+  }
+
+  .decision-field { min-width:0; }
+  .decision-field.full { grid-column:1 / -1; }
+  .decision-field-label {
+    color:#94a3b8;
+    font-size:6.5px;
+    line-height:1;
+    font-weight:950;
+    letter-spacing:.07em;
+    text-transform:uppercase;
+  }
+
+  .decision-field-value {
+    margin-top:3px;
+    color:#334155;
+    font-size:8px;
+    line-height:1.4;
+    font-weight:800;
+  }
+
+  .decision-field-value.strong { color:#0f172a; font-weight:950; }
+  .decision-footer-note {
+    margin:0 10px 10px;
+    padding:8px 9px;
+    border:1px dashed #bfdbfe;
+    border-radius:9px;
+    background:rgba(255,255,255,.72);
+    color:#475569;
+    font-size:7.5px;
+    line-height:1.45;
+    font-weight:750;
+  }
+
+  .decision-question-grid {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:6px;
+  }
+
+  .decision-question {
+    display:flex;
+    align-items:flex-start;
+    gap:7px;
+    min-width:0;
+    padding:8px;
+    border:1px solid #e2e8f0;
+    border-radius:9px;
+    background:#f8fafc;
+    color:#334155;
+    font-size:8px;
+    line-height:1.4;
+    font-weight:800;
+  }
+
+  .decision-question-num {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:19px;
+    height:19px;
+    flex:0 0 19px;
+    border-radius:6px;
+    background:#dbeafe;
+    color:#1d4ed8;
+    font-size:7px;
+    font-weight:950;
+  }
+
+  @media (max-width:900px) {
+    .lapkeu-decision-grid { grid-template-columns:1fr; }
+    .decision-question-grid { grid-template-columns:1fr; }
+  }
+
   @media (max-width:900px) {
     .lapkeu-insight-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
     .lapkeu-insight-block.span-2 { grid-column:1 / -1; }
@@ -2402,6 +2627,229 @@
     .insight-table { min-width:470px; }
   }
 
+
+
+  /* ========================================================
+     MODAL INSIGHT BUGFIX V13
+     Header tetap utuh, hanya isi modal yang scroll, tabel tidak
+     lagi menimpa judul, dan ukuran tabel mengikuti jumlah kolom.
+     ======================================================== */
+  .lapkeu-insight-modal {
+    overflow:hidden !important;
+    overscroll-behavior:contain;
+  }
+
+  .lapkeu-insight-card {
+    display:flex !important;
+    flex-direction:column !important;
+    width:min(1160px,calc(100vw - 32px)) !important;
+    height:min(92dvh,860px) !important;
+    max-height:calc(100dvh - 32px) !important;
+    min-height:0 !important;
+    overflow:hidden !important;
+    isolation:isolate;
+  }
+
+  .lapkeu-insight-head {
+    position:relative !important;
+    top:auto !important;
+    z-index:100 !important;
+    flex:0 0 auto !important;
+    min-height:78px;
+    overflow:hidden;
+    border-bottom:1px solid #dbe3ee !important;
+    background:#fff !important;
+    box-shadow:0 5px 16px -16px rgba(15,23,42,.75);
+  }
+
+  .lapkeu-insight-head > div:first-child {
+    min-width:0;
+    max-width:calc(100% - 48px);
+    padding-right:6px;
+  }
+
+  .lapkeu-insight-kicker,
+  .lapkeu-insight-title,
+  .lapkeu-insight-sub {
+    position:relative;
+    z-index:1;
+  }
+
+  .lapkeu-insight-title {
+    max-width:100%;
+    overflow-wrap:anywhere;
+    white-space:normal !important;
+  }
+
+  .lapkeu-insight-sub {
+    max-width:940px;
+    line-height:1.4 !important;
+    white-space:normal !important;
+  }
+
+  .lapkeu-insight-close {
+    position:relative;
+    z-index:102 !important;
+    flex:0 0 auto;
+  }
+
+  .lapkeu-insight-body {
+    position:relative;
+    z-index:1;
+    flex:1 1 auto !important;
+    min-width:0;
+    min-height:0 !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    overscroll-behavior:contain;
+    scrollbar-gutter:stable;
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:max(14px,env(safe-area-inset-bottom)) !important;
+  }
+
+  .lapkeu-insight-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+    align-items:start;
+  }
+
+  .lapkeu-insight-block,
+  .lapkeu-decision-center,
+  .decision-card {
+    max-width:100%;
+  }
+
+  .lapkeu-insight-block.span-2,
+  .lapkeu-insight-block.full {
+    grid-column:1 / -1 !important;
+  }
+
+  .insight-table-wrap {
+    position:relative;
+    display:block;
+    max-width:100%;
+    min-width:0;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    overscroll-behavior-inline:contain;
+    scrollbar-gutter:stable;
+    -webkit-overflow-scrolling:touch;
+    background:#fff;
+  }
+
+  .insight-table th {
+    position:static !important;
+    top:auto !important;
+    z-index:auto !important;
+  }
+
+  .insight-table-wrap.insight-table-compact .insight-table {
+    width:100% !important;
+    min-width:100% !important;
+  }
+
+  .insight-table-wrap.insight-table-medium .insight-table {
+    width:100% !important;
+    min-width:460px !important;
+  }
+
+  .insight-table-wrap.insight-table-wide .insight-table {
+    width:100% !important;
+    min-width:760px !important;
+  }
+
+  .insight-table th,
+  .insight-table td {
+    overflow-wrap:anywhere;
+  }
+
+  .insight-table th.num,
+  .insight-table td.num {
+    overflow-wrap:normal;
+  }
+
+  .lapkeu-decision-head,
+  .decision-card-head {
+    min-width:0;
+  }
+
+  .decision-field-value,
+  .decision-finding,
+  .decision-question > span:last-child {
+    overflow-wrap:anywhere;
+  }
+
+  @media (max-width:900px) {
+    .lapkeu-insight-grid {
+      grid-template-columns:1fr !important;
+    }
+    .lapkeu-insight-block.span-2,
+    .lapkeu-insight-block.full {
+      grid-column:auto !important;
+    }
+  }
+
+  @media (max-width:767px) {
+    .lapkeu-insight-card {
+      width:100% !important;
+      height:min(94dvh,820px) !important;
+      max-height:94dvh !important;
+      border-radius:17px 17px 0 0 !important;
+    }
+
+    .lapkeu-insight-head {
+      min-height:72px;
+      padding:11px 12px !important;
+    }
+
+    .lapkeu-insight-head > div:first-child {
+      max-width:calc(100% - 42px);
+    }
+
+    .lapkeu-insight-title {
+      font-size:14px !important;
+      line-height:1.2 !important;
+    }
+
+    .lapkeu-insight-sub {
+      display:-webkit-box;
+      overflow:hidden;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      font-size:7.5px !important;
+    }
+
+    .lapkeu-insight-body {
+      padding:7px 7px max(12px,env(safe-area-inset-bottom)) !important;
+      scrollbar-gutter:auto;
+    }
+
+    .lapkeu-decision-head {
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .lapkeu-decision-counts {
+      width:100%;
+      justify-content:flex-start;
+    }
+
+    .decision-fields {
+      grid-template-columns:1fr;
+    }
+
+    .decision-field.full {
+      grid-column:auto;
+    }
+
+    .insight-table-wrap.insight-table-medium .insight-table {
+      min-width:430px !important;
+    }
+
+    .insight-table-wrap.insight-table-wide .insight-table {
+      min-width:680px !important;
+    }
+  }
+
 </style>
 
 <div id="lapkeuPage" class="max-w-[1920px] mx-auto px-2 md:px-4 py-2 md:py-4 h-[calc(100vh-10px)] flex flex-col space-y-2 md:space-y-4 bg-[#f8fafc]">
@@ -2415,7 +2863,7 @@
       <div class="lapkeu-brand-copy">
         <div class="lapkeu-title-row">
           <span id="reportPageTitle">Laporan Keuangan</span>
-          <button type="button" class="lapkeu-insight-btn lapkeu-title-insight" onclick="openLapkeuInsight()" title="Buka analisis lengkap untuk direksi" aria-label="Buka analisis lengkap untuk direksi">i</button>
+          <button type="button" class="lapkeu-insight-btn lapkeu-title-insight" onclick="openLapkeuInsight()" title="Buka rekomendasi keputusan kepala cabang" aria-label="Buka rekomendasi keputusan kepala cabang">i</button>
         </div>
         <span id="reportPageSubtitle">*Neraca, Laba Rugi, Ringkasan Makro &amp; Tren Mingguan</span>
         <div class="lapkeu-meta-row">
@@ -2467,11 +2915,11 @@
     </form>
   </div>
 
-  <div id="lapkeuInsightModal" class="lapkeu-insight-modal" onclick="if(event.target===this) closeLapkeuInsight()">
+  <div id="lapkeuInsightModal" class="lapkeu-insight-modal" aria-hidden="true" onclick="if(event.target===this) closeLapkeuInsight()">
     <div class="lapkeu-insight-card custom-scrollbar">
       <div class="lapkeu-insight-head">
         <div>
-          <div class="lapkeu-insight-kicker">Insight Direksi</div>
+          <div class="lapkeu-insight-kicker">Pusat Keputusan Kepala Cabang &amp; Direksi</div>
           <div id="lapkeuInsightTitle" class="lapkeu-insight-title">Ringkasan Kondisi</div>
           <div id="lapkeuInsightSub" class="lapkeu-insight-sub">Memuat insight...</div>
         </div>
@@ -2658,7 +3106,7 @@
       const labels = {
           'neraca detail kantor':'Neraca',
           'laba rugi detail kantor':'Laba Rugi',
-          'tv_makro_summary':'Ringkasan Makro',
+          'tv_makro_summary':'Pusat Keputusan Ringkasan Makro',
           'tren_makro_mingguan':'Tren Mingguan'
       };
       const chip = document.getElementById('activeViewChip');
@@ -3102,10 +3550,224 @@
     `;
   }
 
+
+  function decisionField(label, value, full = false, strong = false) {
+    return `
+      <div class="decision-field ${full ? 'full' : ''}">
+        <div class="decision-field-label">${safeText(label)}</div>
+        <div class="decision-field-value ${strong ? 'strong' : ''}">${safeText(value || '-')}</div>
+      </div>
+    `;
+  }
+
+  function decisionCard(item, index) {
+    const tone = ['bad','warn','good','info'].includes(item?.tone) ? item.tone : 'info';
+    const priority = item?.priority || (tone === 'bad' ? 'P1' : (tone === 'warn' ? 'P2' : 'P3'));
+    return `
+      <article class="decision-card ${tone}">
+        <div class="decision-card-head">
+          <div class="decision-card-title">${safeText(item?.title || `Keputusan ${index + 1}`)}</div>
+          <span class="decision-priority">${safeText(priority)}</span>
+        </div>
+        <div class="decision-card-body">
+          <div class="decision-finding"><b>Temuan:</b> ${safeText(item?.finding || 'Perlu validasi lebih lanjut dari unit terkait.')}</div>
+          <div class="decision-fields">
+            ${decisionField('Keputusan Kepala Cabang', item?.decision, true, true)}
+            ${decisionField('PIC Utama', item?.owner)}
+            ${decisionField('Batas Waktu', item?.due)}
+            ${decisionField('Indikator Berhasil', item?.kpi, true)}
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function decisionPanel(items, contextNote = '') {
+    const clean = (Array.isArray(items) ? items : []).filter(Boolean).slice(0, 6);
+    if (!clean.length) {
+      clean.push({
+        priority:'P3', tone:'good', title:'Pertahankan Kondisi dan Cegah Pemburukan',
+        finding:'Belum ditemukan sinyal material negatif dari data yang tersedia.',
+        decision:'Pertahankan ritme monitoring harian dan fokus pada pencapaian target RBB/RKAP tanpa menurunkan kualitas.',
+        owner:'Kepala Cabang dan seluruh pemilik indikator',
+        due:'Evaluasi mingguan',
+        kpi:'Tidak ada pemburukan material dan target berjalan sesuai rencana.'
+      });
+    }
+    const p1 = clean.filter(item => item.priority === 'P1' || item.tone === 'bad').length;
+    const p2 = clean.filter(item => item.priority === 'P2' || item.tone === 'warn').length;
+    const stable = clean.length - p1 - p2;
+    return `
+      <section class="lapkeu-decision-center">
+        <div class="lapkeu-decision-head">
+          <div class="lapkeu-decision-head-main">
+            <div class="lapkeu-decision-eyebrow">Rekomendasi Operasional</div>
+            <div class="lapkeu-decision-title">Keputusan yang Perlu Ditetapkan Kepala Cabang</div>
+            <div class="lapkeu-decision-caption">Urutan P1–P3 menunjukkan prioritas. Setiap rekomendasi sudah dilengkapi keputusan, PIC, batas waktu, dan indikator hasil agar dapat langsung dibawa ke rapat cabang.</div>
+          </div>
+          <div class="lapkeu-decision-counts">
+            ${p1 ? `<span class="decision-count bad">${p1} Prioritas Utama</span>` : ''}
+            ${p2 ? `<span class="decision-count warn">${p2} Perlu Perhatian</span>` : ''}
+            ${stable ? `<span class="decision-count good">${stable} Penguatan</span>` : ''}
+          </div>
+        </div>
+        <div class="lapkeu-decision-grid">${clean.map(decisionCard).join('')}</div>
+        <div class="decision-footer-note"><b>Catatan keputusan:</b> ${safeText(contextNote || 'Sesuaikan target nominal dengan RBB/RKAP, kewenangan cabang, kondisi nasabah, dan ketentuan internal. Rekomendasi otomatis berfungsi sebagai bahan prioritas, bukan pengganti keputusan pejabat berwenang.')}</div>
+      </section>
+    `;
+  }
+
+  function decisionQuestions(items) {
+    const clean = (items || []).filter(Boolean);
+    return `<div class="decision-question-grid">${clean.map((item,index) => `
+      <div class="decision-question"><span class="decision-question-num">${index + 1}</span><span>${safeText(item)}</span></div>
+    `).join('')}</div>`;
+  }
+
+  function buildMakroDecisionItems({ nplPct, nplAssess, bopo, bopoAssess, ldr, ldrAssess, casa, labaGrowth }) {
+    const actions = [];
+    if (nplAssess?.tone !== 'good') actions.push({
+      priority:'P1', tone:'bad', title:'Kendalikan NPL dan Cegah Flow Baru',
+      finding:`NPL Gross berada pada ${pctText(nplPct)} dengan status ${nplAssess?.label || 'perlu perhatian'}.`,
+      decision:'Tetapkan daftar debitur prioritas per AO, validasi komitmen pembayaran, dan lakukan review harian flow, migrasi, serta recovery.',
+      owner:'Kepala Cabang, Kabid Pemasaran, AO/Remedial',
+      due:'Mulai hari ini; evaluasi harian',
+      kpi:'Seluruh kandidat berisiko memiliki PIC dan komitmen; realisasi pembayaran termonitor; flow baru tertahan.'
+    });
+    if (bopoAssess?.tone !== 'good') actions.push({
+      priority:bopoAssess?.tone === 'bad' ? 'P1' : 'P2', tone:bopoAssess?.tone === 'bad' ? 'bad' : 'warn', title:'Kendalikan BOPO dan Top Beban',
+      finding:`BOPO berada pada ${pctText(bopo)} dengan status ${bopoAssess?.label || 'perlu kontrol'}.`,
+      decision:'Tetapkan Top 5 beban yang harus dikendalikan, bedakan biaya wajib dan biaya yang dapat ditunda, lalu hubungkan setiap biaya dengan kontribusi pendapatan.',
+      owner:'Kepala Cabang, Operasional, dan pemilik pos biaya',
+      due:'Rencana aksi maksimal 3 hari kerja',
+      kpi:'Setiap Top 5 beban memiliki alasan, PIC, target pengendalian, dan hasil evaluasi berikutnya.'
+    });
+    if (ldrAssess?.tone !== 'good') {
+      const low = Number(ldr) < 75;
+      actions.push({
+        priority:'P2', tone:'warn', title:low ? 'Produktifkan Dana melalui Kredit Berkualitas' : 'Jaga Likuiditas dan Perkuat DPK',
+        finding:`LDR berada pada ${pctText(ldr)} dan dinilai ${ldrAssess?.label || 'perlu dijaga'}.`,
+        decision:low
+          ? 'Review pipeline kredit yang layak, percepat proses yang sudah lengkap, dan hindari pencairan yang mengorbankan kualitas.'
+          : 'Amankan deposan utama, perkuat pipeline DPK, dan siapkan proyeksi kebutuhan likuiditas harian.',
+        owner:'Kepala Cabang, Kabid Pemasaran, AO Kredit/AO Dana',
+        due:'Review pipeline mingguan',
+        kpi:low ? 'Pipeline layak memiliki jadwal pencairan dan kualitas kolektibilitas terjaga.' : 'Kebutuhan likuiditas tercukupi dan risiko penarikan deposan besar termonitor.'
+      });
+    }
+    if (ratioAssessment('casa', casa).tone !== 'good') actions.push({
+      priority:'P2', tone:'warn', title:'Naikkan CASA dan Kurangi Ketergantungan Dana Mahal',
+      finding:`CASA berada pada ${pctText(casa)} dan belum pada kategori kuat.`,
+      decision:'Tetapkan target tabungan aktif per petugas, aktivasi rekening pasif, dan fokus pada transaksi payroll, komunitas, serta ekosistem debitur.',
+      owner:'Kepala Cabang, AO Dana, dan seluruh pegawai pemilik prospek',
+      due:'Target dan daftar prospek ditetapkan minggu ini',
+      kpi:'Tabungan aktif bertambah, komposisi dana murah membaik, dan ketergantungan deposito mahal menurun.'
+    });
+    if (Number(labaGrowth) < 0) actions.push({
+      priority:'P1', tone:'bad', title:'Pulihkan Laba Berjalan',
+      finding:`Laba turun ${pctText(Math.abs(Number(labaGrowth)))} dibanding bulan lalu.`,
+      decision:'Bedah penurunan laba menjadi pendapatan bunga, biaya dana, pendapatan nonbunga, CKPN, dan beban operasional; tetapkan dua pengungkit pendapatan serta dua pengendalian biaya.',
+      owner:'Kepala Cabang bersama Pemasaran dan Operasional',
+      due:'Analisis penyebab maksimal 2 hari kerja',
+      kpi:'Penyebab penurunan terukur, pemilik aksi ditetapkan, dan proyeksi laba akhir bulan diperbarui.'
+    });
+    return actions;
+  }
+
+  function financialActionForRow(row, isIncome) {
+    if (!row) return null;
+    const name = String(row.name || '').toLowerCase();
+    const down = Number(row.delta) < 0;
+    const amount = signedMoney(Math.abs(Number(row.delta || 0)));
+    if (isIncome) {
+      if (name.includes('laba') && down) return {title:'Pulihkan Laba', decision:'Bedah pendapatan, biaya dana, CKPN, beban operasional, dan transaksi nonrutin; tetapkan pengungkit pemulihan laba.', owner:'Kepala Cabang, Pemasaran, Operasional', kpi:'Proyeksi laba diperbarui dan gap terhadap target memiliki rencana penutupan.'};
+      if (name.includes('pendapatan') && down) return {title:'Pulihkan Pendapatan', decision:'Review volume kredit produktif, yield, penerimaan bunga, tunggakan bunga, dan pendapatan nonbunga.', owner:'Kepala Cabang dan tim pemasaran', kpi:'Sumber penurunan pendapatan teridentifikasi dan pipeline pemulihan tersedia.'};
+      if ((name.includes('beban') || name.includes('biaya')) && !down) return {title:'Kendalikan Kenaikan Beban', decision:'Tentukan pos biaya utama, validasi kebutuhan, dan tetapkan batas pengeluaran serta PIC pengendalian.', owner:'Kepala Cabang dan Operasional', kpi:'Top beban memiliki target pengendalian dan tidak tumbuh tanpa dasar produktivitas.'};
+    } else {
+      if (name.includes('kredit') && down) return {title:'Tutup Gap Kredit', decision:'Pisahkan run off, pelunasan, hapus buku, dan realisasi; prioritaskan pipeline layak dengan jadwal pencairan yang realistis.', owner:'Kepala Cabang dan AO Kredit', kpi:'Gap kredit memiliki sumber jelas dan pipeline pencairan terukur.'};
+      if ((name.includes('tabungan') || name.includes('deposito')) && down) return {title:'Pulihkan Dana Masyarakat', decision:'Identifikasi penurunan deposan utama, lakukan retensi, dan tetapkan pipeline dana baru dengan fokus dana murah.', owner:'Kepala Cabang dan AO Dana', kpi:'Nasabah retensi memiliki status tindak lanjut dan pipeline DPK baru tersedia.'};
+      if (name.includes('kas') && down) return {title:'Jaga Kecukupan Likuiditas', decision:'Validasi kebutuhan kas, penarikan besar, dan posisi penempatan likuid agar operasional harian tetap aman.', owner:'Kepala Cabang dan Operasional/Treasury', kpi:'Proyeksi kas harian tersedia dan kebutuhan penarikan utama tercukupi.'};
+    }
+    return {
+      title:`Tindak Lanjut ${row.name}`,
+      decision:'Validasi penyebab perubahan, tetapkan pemilik aksi, dan tentukan langkah koreksi atau penguatan berdasarkan akun turunannya.',
+      owner:'Kepala Cabang dan unit pemilik akun',
+      kpi:'Penyebab, PIC, dan target perbaikan tercatat dan dievaluasi.'
+    };
+  }
+
+  function buildFinancialDecisionItems(rows, isIncome, topMoves) {
+    const unfavorable = (topMoves || []).filter(row => {
+      const goodUp = financialGoodWhenUp(row.name, isIncome);
+      return row.delta !== 0 && ((row.delta > 0) !== goodUp);
+    }).slice(0,4);
+    return unfavorable.map((row,index) => {
+      const action = financialActionForRow(row, isIncome);
+      return {
+        priority:index === 0 ? 'P1' : 'P2',
+        tone:index === 0 ? 'bad' : 'warn',
+        title:action.title,
+        finding:`${row.name} ${row.delta > 0 ? 'naik' : 'turun'} ${signedMoney(Math.abs(row.delta))} (${pctText(Math.abs(row.growth))}) dibanding closing.`,
+        decision:action.decision,
+        owner:action.owner,
+        due:index === 0 ? 'Analisis maksimal 2 hari kerja' : 'Tindak lanjut minggu berjalan',
+        kpi:action.kpi
+      };
+    });
+  }
+
+  function buildTrendDecisionItems(metrics) {
+    const actions = [];
+    const byKey = key => metrics.find(item => item.key === key);
+    const npl = byKey('npl');
+    const laba = byKey('laba_net');
+    const kredit = byKey('kredit_baki_debet');
+    const dpk = byKey('dpk');
+    if (npl?.deltaClosing > 0 || npl?.deltaWeekly > 0) actions.push({
+      priority:'P1', tone:'bad', title:'Hentikan Kenaikan NPL Mingguan',
+      finding:`NPL berubah ${signedMoney(npl.deltaClosing)} dari closing dan ${signedMoney(npl.deltaWeekly)} dari pekan sebelumnya.`,
+      decision:'Buka daftar debitur penyumbang kenaikan, tetapkan komitmen, PIC, tanggal bayar, dan skenario recovery sebelum pekan berikutnya.',
+      owner:'Kepala Cabang, AO/Remedial',
+      due:'Review harian sampai pekan berikutnya',
+      kpi:'Seluruh penyumbang kenaikan memiliki tindak lanjut dan realisasi pembayaran termonitor.'
+    });
+    if (laba?.deltaWeekly < 0) actions.push({
+      priority:'P1', tone:'bad', title:'Pulihkan Penurunan Laba Pekanan',
+      finding:`Laba turun ${signedMoney(Math.abs(laba.deltaWeekly))} dari pekan sebelumnya.`,
+      decision:'Validasi perubahan pendapatan, biaya dana, beban, CKPN, dan transaksi satu kali; perbarui proyeksi akhir bulan.',
+      owner:'Kepala Cabang, Pemasaran, Operasional',
+      due:'Maksimal 2 hari kerja',
+      kpi:'Penyebab penurunan dan rencana penutupan gap telah ditetapkan.'
+    });
+    if (kredit?.deltaClosing < 0) actions.push({
+      priority:'P2', tone:'warn', title:'Percepat Pipeline Kredit Berkualitas',
+      finding:`Kredit masih ${signedMoney(kredit.deltaClosing)} terhadap closing.`,
+      decision:'Pisahkan run off dan realisasi baru; prioritaskan berkas layak serta tetapkan jadwal pencairan yang realistis.',
+      owner:'Kepala Cabang dan AO Kredit',
+      due:'Review pipeline dua kali seminggu',
+      kpi:'Setiap pipeline memiliki status, kekurangan dokumen, dan jadwal keputusan/pencairan.'
+    });
+    if (dpk?.deltaClosing < 0) actions.push({
+      priority:'P2', tone:'warn', title:'Pulihkan DPK dan Amankan Deposan Utama',
+      finding:`DPK masih ${signedMoney(dpk.deltaClosing)} terhadap closing.`,
+      decision:'Tetapkan daftar nasabah retensi, deposan besar berisiko keluar, dan pipeline dana baru per petugas.',
+      owner:'Kepala Cabang dan AO Dana',
+      due:'Kontak prioritas maksimal 3 hari kerja',
+      kpi:'Seluruh deposan prioritas memiliki status retensi dan pipeline dana baru termonitor.'
+    });
+    return actions;
+  }
+
   function insightTable(headers, rows) {
     if (!Array.isArray(rows) || !rows.length) return '<div class="insight-callout">Data belum tersedia untuk ditampilkan.</div>';
+
+    const columnCount = Array.isArray(headers) ? headers.length : 0;
+    const widthClass = columnCount >= 6
+      ? 'insight-table-wide'
+      : (columnCount >= 4 ? 'insight-table-medium' : 'insight-table-compact');
+
     return `
-      <div class="insight-table-wrap custom-scrollbar">
+      <div class="insight-table-wrap custom-scrollbar ${widthClass}" tabindex="0" aria-label="Tabel analisis, dapat digeser horizontal bila diperlukan">
         <table class="insight-table">
           <thead><tr>${headers.map(h => `<th class="${h.num ? 'num' : ''}">${safeText(h.label)}</th>`).join('')}</tr></thead>
           <tbody>${rows.map(row => `<tr>${row.map((cell, index) => `<td class="${headers[index]?.num ? 'num' : ''}">${cell?.html ? cell.html : safeText(cell?.value ?? cell ?? '')}</td>`).join('')}</tr>`).join('')}</tbody>
@@ -3303,7 +3965,10 @@
       'Gunakan Top 5 beban untuk menetapkan pemilik aksi, target penghematan, tenggat, dan hasil evaluasi berikutnya.'
     ];
 
-    return summary + `<div class="lapkeu-insight-grid">
+    const decisionItems = buildMakroDecisionItems({ nplPct, nplAssess, bopo, bopoAssess, ldr, ldrAssess, casa, labaGrowth });
+    const decisionContext = 'Tetapkan keputusan berdasarkan target RBB/RKAP cabang. Untuk setiap keputusan, catat angka awal, target, PIC, tenggat, serta bukti tindak lanjut pada rapat monitoring berikutnya.';
+
+    return summary + decisionPanel(decisionItems, decisionContext) + `<div class="lapkeu-insight-grid">
       ${insightBlock('Ringkasan Perubahan Utama', [
         changeSentence('Aset gabungan', makro?.aset?.growth_mom, true),
         changeSentence('DPK', makro?.dpk?.growth_mom, true),
@@ -3326,7 +3991,14 @@
       ${insightBlock('Top Beban yang Perlu Dikendalikan', insightTable(
         [{label:'Pos Beban'}, {label:'Nominal',num:true}, {label:'Kode'}], expenseRows
       ), 'span-2')}
-      ${insightBlock('Prioritas Keputusan Direksi', priorities, 'full')}
+      ${insightBlock('Prioritas Manajemen Tambahan', priorities, 'full')}
+      ${insightBlock('Pertanyaan yang Harus Dijawab dalam Rapat Cabang', decisionQuestions([
+        'Indikator mana yang paling jauh dari target RBB/RKAP dan berapa gap nominalnya?',
+        'Nasabah, akun, atau transaksi apa yang paling besar menyebabkan gap tersebut?',
+        'Siapa PIC utama, tindakan apa yang dilakukan, dan kapan hasil pertama harus terlihat?',
+        'Risiko apa yang dapat muncul apabila keputusan ditunda sampai akhir bulan?',
+        'Data apa yang harus dilaporkan kembali pada rapat monitoring berikutnya?'
+      ]), 'full')}
       ${insightBlock('Cara Membaca dan Agenda Monitoring', monitoring, 'full')}
     </div>`;
   }
@@ -3461,7 +4133,12 @@
       'Perubahan akun induk dapat mengandung akun turunan; gunakan fitur buka kelompok untuk menemukan sumber perubahan.'
     ];
 
-    return summary + `<div class="lapkeu-insight-grid">
+    const decisionItems = buildFinancialDecisionItems(rows, isIncome, topMoves);
+    const decisionContext = isIncome
+      ? 'Untuk keputusan laba rugi, pastikan setiap perbaikan menghubungkan perubahan pendapatan atau beban dengan dampaknya pada laba akhir bulan.'
+      : 'Untuk keputusan neraca, baca perubahan kredit, DPK, kas, aset, dan modal secara terpadu agar pertumbuhan tidak mengganggu likuiditas maupun kualitas aset.';
+
+    return summary + decisionPanel(decisionItems, decisionContext) + `<div class="lapkeu-insight-grid">
       ${insightBlock('Perubahan Nominal Terbesar', insightTable(
         [{label:'Pos'}, {label:'Actual',num:true}, {label:'Closing',num:true}, {label:'Selisih',num:true}, {label:'Growth',num:true}, {label:'Sinyal'}], moveRows
       ), 'full')}
@@ -3474,6 +4151,17 @@
         'Prioritaskan analisis pada perubahan nominal terbesar, bukan hanya persentase terbesar, agar dampak finansial lebih relevan.'
       ])}
       ${insightBlock('Pos yang Perlu Ditingkatkan / Dikendalikan', priorities, 'full')}
+      ${insightBlock('Pertanyaan Keputusan Kepala Cabang', decisionQuestions(isIncome ? [
+        'Pos apa yang paling besar menekan laba dan apakah sifatnya berulang atau hanya satu kali?',
+        'Pendapatan mana yang dapat dipulihkan paling cepat tanpa menurunkan kualitas kredit?',
+        'Beban mana yang wajib, dapat dikendalikan, atau dapat ditunda?',
+        'Berapa proyeksi laba akhir bulan setelah rencana perbaikan dijalankan?'
+      ] : [
+        'Apakah penurunan kredit disebabkan run off, pelunasan, hapus buku, atau kurangnya realisasi baru?',
+        'Nasabah dana mana yang berisiko menarik dana dan siapa PIC retensinya?',
+        'Apakah posisi kas dan aset likuid memadai untuk kebutuhan penarikan?',
+        'Apakah pertumbuhan aset/kredit masih sejalan dengan DPK, kualitas kredit, dan modal?'
+      ]), 'full')}
       ${insightBlock('Panduan Membaca Laporan', reading, 'full')}
     </div>`;
   }
@@ -3537,13 +4225,22 @@
     if (dpk?.deltaClosing < 0) priorities.push('DPK masih di bawah closing; tetapkan nasabah retensi, pipeline dana baru, dan pemantauan deposan besar.');
     if (!priorities.length) priorities.push('Arah mingguan relatif mendukung; pertahankan momentum dan pantau indikator yang mulai melemah sebelum akhir bulan.');
 
-    return summaryHtml + `<div class="lapkeu-insight-grid">
+    const decisionItems = buildTrendDecisionItems(metrics);
+    const decisionContext = 'Gunakan tren mingguan sebagai sistem peringatan dini. Keputusan tidak cukup hanya mencatat naik/turun; harus ada pemilik aksi dan hasil yang diperiksa pada pekan berikutnya.';
+
+    return summaryHtml + decisionPanel(decisionItems, decisionContext) + `<div class="lapkeu-insight-grid">
       ${insightBlock('Matriks Pergerakan Mingguan', insightTable(
         [{label:'Indikator'}, {label:'Terbaru',num:true}, {label:'Closing',num:true}, {label:'Δ Closing',num:true}, {label:'Growth',num:true}, {label:'Δ Pekan',num:true}, {label:'Sinyal'}], metricRows
       ), 'full')}
       ${insightBlock('Penguatan Terbesar', rising.map(item => `${item.label} berubah ${signedMoney(item.deltaClosing)} (${item.growthClosing === null ? '-' : pctText(item.growthClosing)}) dibanding closing.`))}
       ${insightBlock('Pelemahan Terbesar', falling.map(item => `${item.label} berubah ${signedMoney(item.deltaClosing)} (${item.growthClosing === null ? '-' : pctText(item.growthClosing)}) dibanding closing.`))}
       ${insightBlock('Prioritas Minggu Berikutnya', priorities)}
+      ${insightBlock('Pertanyaan Review Mingguan', decisionQuestions([
+        'Indikator mana yang memburuk dua pekan berturut-turut dan apa penyebab utamanya?',
+        'Apakah perubahan kredit dan DPK berasal dari satu nasabah besar atau pergerakan yang menyebar?',
+        'Debitur atau akun mana yang harus diselesaikan sebelum posisi pekan berikutnya?',
+        'Apakah tindakan pekan lalu menghasilkan perbaikan yang dapat diukur?'
+      ]), 'full')}
       ${insightBlock('Cara Membaca Tren', [
         'Pekan 1 dibandingkan dengan closing bulan sebelumnya; pekan berikutnya dibandingkan dengan pekan sebelumnya.',
         'Mode Aktual menunjukkan posisi nominal, sedangkan mode selisih menunjukkan penambahan atau penurunan antarpekan.',
@@ -3553,8 +4250,11 @@
     </div>`;
   }
 
+  let lapkeuInsightPreviousBodyOverflow = null;
+
   window.openLapkeuInsight = function() {
     const modal = document.getElementById('lapkeuInsightModal');
+    const card = modal?.querySelector('.lapkeu-insight-card');
     const title = document.getElementById('lapkeuInsightTitle');
     const sub = document.getElementById('lapkeuInsightSub');
     const body = document.getElementById('lapkeuInsightBody');
@@ -3562,15 +4262,16 @@
     const labels = {
       'neraca detail kantor':'Analisis Neraca',
       'laba rugi detail kantor':'Analisis Laba Rugi',
-      'tv_makro_summary':'Ringkasan Makro',
-      'tren_makro_mingguan':'Tren Makro Mingguan'
+      'tv_makro_summary':'Pusat Keputusan Ringkasan Makro',
+      'tren_makro_mingguan':'Pusat Keputusan Tren Mingguan'
     };
     const reportName = labels[type] || 'Laporan Keuangan';
+
     if (title) title.textContent = `${reportName} - ${selectedOfficeLabel()}`;
     if (sub) {
       const closing = formatViewDate(document.getElementById('closing_date')?.value || '');
       const actual = formatViewDate(document.getElementById('harian_date')?.value || '');
-      sub.textContent = `Closing ${closing} dibanding posisi ${actual} · Analisis otomatis untuk membantu penentuan prioritas manajemen`;
+      sub.textContent = `Closing ${closing} dibanding posisi ${actual} · Rekomendasi otomatis untuk membantu kepala cabang menetapkan keputusan, PIC, tenggat, dan indikator hasil`;
     }
     if (body) {
       body.innerHTML = type === 'tren_makro_mingguan'
@@ -3578,14 +4279,39 @@
         : (type === 'tv_makro_summary'
           ? buildMakroInsight(rawDataResult || {})
           : buildFinancialInsight(rawDataResult || [], type));
+      body.scrollTop = 0;
+      body.scrollLeft = 0;
     }
-    modal?.classList.add('is-open');
+
+    if (!modal) return;
+
+    if (!modal.classList.contains('is-open')) {
+      lapkeuInsightPreviousBodyOverflow = document.body.style.overflow;
+    }
+
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
+
+    if (card) {
+      card.scrollTop = 0;
+      card.scrollLeft = 0;
+    }
+
+    window.requestAnimationFrame(() => {
+      if (body) body.scrollTop = 0;
+      modal.querySelector('.lapkeu-insight-close')?.focus({ preventScroll:true });
+    });
   };
 
   window.closeLapkeuInsight = function() {
-    document.getElementById('lapkeuInsightModal')?.classList.remove('is-open');
-    document.body.style.overflow = '';
+    const modal = document.getElementById('lapkeuInsightModal');
+    if (!modal) return;
+
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = lapkeuInsightPreviousBodyOverflow ?? '';
+    lapkeuInsightPreviousBodyOverflow = null;
   };
 
   document.addEventListener('keydown', event => {
@@ -4007,7 +4733,12 @@
 
     const rows = Array.isArray(data) ? data : [];
     const getVal = code => Math.round(Number(rows.find(item => String(item?.kode_perk || '') === code)?.total_saldo || 0));
-    const getAsetGabungan = () => asetGabunganCodes.reduce((sum, code) => sum + getVal(code), 0) - getVal('210');
+    const getAsetGabungan = () => {
+      const totalAset = asetGabunganCodes.reduce((sum, code) => sum + getVal(code), 0);
+      const kantor = String(document.getElementById('opt_kantor_rec')?.value || '').trim().toLowerCase();
+      const isConsolidated = kantor === 'konsolidasi' || kantor === '000';
+      return totalAset - (isConsolidated ? getVal('210') : 0);
+    };
 
     if (type.includes('neraca')) {
       const aset = getAsetGabungan();
