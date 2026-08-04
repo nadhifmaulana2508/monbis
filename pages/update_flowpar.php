@@ -107,6 +107,24 @@
       <span>Coba ubah pencarian atau filter komitmen.</span>
     </div>
   </main>
+
+  <nav id="ufpPagination" class="ufp-pagination hidden" aria-label="Navigasi halaman data">
+    <div class="ufp-page-info" id="ufpPageInfo" aria-live="polite">Menampilkan 0 data</div>
+
+    <div class="ufp-page-controls">
+      <label class="ufp-page-size">
+        <span>Baris</span>
+        <select id="ufpPageSize" aria-label="Jumlah data per halaman">
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </label>
+
+      <div class="ufp-page-buttons" id="ufpPageButtons"></div>
+    </div>
+  </nav>
 </div>
 
 <div id="komitmenModal" class="ufp-modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitleCommitment">
@@ -686,6 +704,135 @@
   .ufp-btn-primary:hover { background:#1d4ed8; }
   .ufp-btn:disabled { opacity:.6; cursor:not-allowed; }
 
+
+
+  /* =========================
+     PAGINATION
+     ========================= */
+  .ufp-pagination {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex:0 0 auto;
+    min-width:0;
+    min-height:42px;
+    padding:6px 8px;
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    background:#fff;
+    box-shadow:0 1px 3px rgba(15,23,42,.04);
+  }
+
+  .ufp-page-info {
+    min-width:0;
+    overflow:hidden;
+    color:#64748b;
+    font-size:9px;
+    font-weight:750;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .ufp-page-controls,
+  .ufp-page-buttons,
+  .ufp-page-size {
+    display:flex;
+    align-items:center;
+  }
+
+  .ufp-page-controls { gap:9px; flex:0 0 auto; }
+  .ufp-page-buttons { gap:4px; }
+  .ufp-page-size { gap:5px; color:#64748b; font-size:8px; font-weight:850; text-transform:uppercase; letter-spacing:.035em; }
+
+  .ufp-page-size select {
+    width:58px;
+    height:29px;
+    padding:0 22px 0 7px;
+    border:1px solid #cbd5e1;
+    border-radius:7px;
+    background:#fff url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E") no-repeat right 5px center/12px;
+    color:#334155;
+    font-size:9px;
+    font-weight:850;
+    outline:none;
+    appearance:none;
+  }
+
+  .ufp-page-size select:focus {
+    border-color:#3b82f6;
+    box-shadow:0 0 0 3px rgba(59,130,246,.1);
+  }
+
+  .ufp-page-btn {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:29px;
+    height:29px;
+    padding:0 7px;
+    border:1px solid #dbe3ee;
+    border-radius:7px;
+    background:#fff;
+    color:#475569;
+    font-family:inherit;
+    font-size:9px;
+    font-weight:850;
+    cursor:pointer;
+    transition:background .15s,border-color .15s,color .15s,transform .15s;
+  }
+
+  .ufp-page-btn:hover:not(:disabled) {
+    border-color:#93c5fd;
+    background:#eff6ff;
+    color:#1d4ed8;
+    transform:translateY(-1px);
+  }
+
+  .ufp-page-btn.active {
+    border-color:#2563eb;
+    background:#2563eb;
+    color:#fff;
+    box-shadow:0 3px 8px rgba(37,99,235,.2);
+  }
+
+  .ufp-page-btn:disabled {
+    opacity:.42;
+    cursor:not-allowed;
+  }
+
+  .ufp-page-ellipsis {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:20px;
+    height:29px;
+    color:#94a3b8;
+    font-size:10px;
+    font-weight:900;
+  }
+
+  /* Tablet: toolbar tidak menekan judul dan summary tetap terbaca. */
+  @media (min-width:768px) and (max-width:1199px) {
+    .ufp-header {
+      display:grid;
+      grid-template-columns:minmax(0,1fr);
+      gap:8px;
+    }
+
+    .ufp-toolbar {
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 180px;
+      width:100%;
+    }
+
+    .ufp-search,
+    .ufp-select { width:100%; }
+
+    .ufp-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
+    .ufp-summary-item { height:37px; }
+  }
+
   @media (min-width:1440px) {
     .ufp-page { padding:6px; }
     .ufp-table { min-width:100%; font-size:10.5px; }
@@ -709,8 +856,9 @@
   @media (max-width:767px) {
     body { overflow:hidden; }
     .ufp-page {
-      height:calc(100vh - 54px);
-      height:calc(100dvh - 54px);
+      margin-top:var(--ufp-nav-overlap,0px);
+      height:calc(100vh - var(--ufp-page-top,54px));
+      height:calc(100dvh - var(--ufp-page-top,54px));
       min-height:0;
       padding:4px;
       gap:4px;
@@ -804,6 +952,44 @@
     .ufp-mobile-commitment-meta b { color:#334155; font-weight:850; }
     .ufp-mobile-commitment-meta span:nth-child(even) { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
+
+
+    .ufp-pagination {
+      min-height:38px;
+      padding:4px 5px;
+      gap:5px;
+      border-radius:8px;
+    }
+
+    .ufp-page-info {
+      flex:1 1 auto;
+      font-size:7px;
+    }
+
+    .ufp-page-controls { gap:5px; }
+    .ufp-page-size { gap:3px; }
+    .ufp-page-size > span { display:none; }
+    .ufp-page-size select {
+      width:47px;
+      height:27px;
+      padding:0 17px 0 5px;
+      background-position:right 3px center;
+      background-size:10px;
+      border-radius:6px;
+      font-size:7.5px;
+    }
+
+    .ufp-page-buttons { gap:3px; }
+    .ufp-page-btn {
+      min-width:27px;
+      height:27px;
+      padding:0 5px;
+      border-radius:6px;
+      font-size:7.5px;
+    }
+
+    .ufp-page-ellipsis { min-width:12px; height:27px; font-size:8px; }
+
     .ufp-modal { align-items:flex-end; padding:0; }
     .ufp-modal-card {
       width:100%;
@@ -842,6 +1028,9 @@
     .ufp-summary-item { min-width:108px; }
     .ufp-mobile-metrics { grid-template-columns:repeat(2,minmax(0,1fr)); }
     .ufp-title-line h1 { font-size:12px; }
+    .ufp-page-info { max-width:92px; }
+    .ufp-page-btn { min-width:25px; width:25px; padding:0; }
+    .ufp-page-size select { width:43px; }
   }
 </style>
 
@@ -856,6 +1045,9 @@
   let ufpCurrentTP = 0;
   let ufpCurrentTB = 0;
   let ufpSaving = false;
+  let ufpCurrentPage = 1;
+  let ufpPageSize = window.innerWidth <= 767 ? 10 : 20;
+  let ufpFilterTimer = null;
 
   function ufpId(id) { return document.getElementById(id); }
   function ufpSafe(value, fallback = '-') { return value === null || value === undefined || value === '' ? fallback : String(value); }
@@ -989,17 +1181,17 @@
     </button>`;
   }
 
-  function ufpRenderTable(rows) {
+  function ufpRenderTable(rows, aggregateRows = rows) {
     const body = ufpId('flowparBody');
     const total = ufpId('upTotalRow');
     body.innerHTML = '';
     total.innerHTML = '';
     if (!rows.length) return;
 
-    const sum = key => rows.reduce((acc,row) => acc + ufpNum(row[key]),0);
+    const sum = key => aggregateRows.reduce((acc,row) => acc + ufpNum(row[key]),0);
     const nominal = sum('nominal');
     total.innerHTML = `<tr class="ufp-total-row">
-      <td class="freeze-1 col-name">TOTAL (${ufpFmt(rows.length)})</td>
+      <td class="freeze-1 col-name">TOTAL (${ufpFmt(aggregateRows.length)})</td>
       <td class="text-center">-</td>
       <td class="ufp-money">${ufpFmt(sum('baki_debet'))}</td>
       <td class="ufp-money">${ufpFmt(sum('tunggakan_pokok'))}</td>
@@ -1075,9 +1267,102 @@
     }).join('');
   }
 
-  function ufpApplyFilters() {
+  function ufpScrollResultTop() {
+    const tableWrap = ufpId('upWrap');
+    const mobileList = ufpId('flowparMobileList');
+    if (tableWrap) tableWrap.scrollTop = 0;
+    if (mobileList) mobileList.scrollTop = 0;
+  }
+
+  function ufpPageCount() {
+    return Math.max(1, Math.ceil(ufpRowsFiltered.length / ufpPageSize));
+  }
+
+  function ufpVisiblePageItems(totalPages) {
+    if (totalPages <= 1) return [1];
+
+    const compact = window.innerWidth <= 480;
+    const radius = compact ? 0 : 1;
+    const pages = new Set([1, totalPages, ufpCurrentPage]);
+
+    for (let page = ufpCurrentPage - radius; page <= ufpCurrentPage + radius; page++) {
+      if (page >= 1 && page <= totalPages) pages.add(page);
+    }
+
+    if (!compact) {
+      if (ufpCurrentPage <= 3) [2,3,4].forEach(page => page <= totalPages && pages.add(page));
+      if (ufpCurrentPage >= totalPages - 2) {
+        [totalPages - 3,totalPages - 2,totalPages - 1].forEach(page => page >= 1 && pages.add(page));
+      }
+    }
+
+    const sorted = [...pages].sort((a,b) => a - b);
+    const items = [];
+    sorted.forEach((page,index) => {
+      if (index > 0 && page - sorted[index - 1] > 1) items.push('...');
+      items.push(page);
+    });
+    return items;
+  }
+
+  function ufpRenderPagination() {
+    const pagination = ufpId('ufpPagination');
+    const info = ufpId('ufpPageInfo');
+    const buttons = ufpId('ufpPageButtons');
+    const totalRows = ufpRowsFiltered.length;
+    const totalPages = ufpPageCount();
+
+    if (!pagination || !info || !buttons) return;
+
+    pagination.classList.toggle('hidden', totalRows === 0);
+    if (totalRows === 0) {
+      info.textContent = 'Menampilkan 0 data';
+      buttons.innerHTML = '';
+      return;
+    }
+
+    ufpCurrentPage = Math.min(Math.max(1, ufpCurrentPage), totalPages);
+    const start = (ufpCurrentPage - 1) * ufpPageSize + 1;
+    const finish = Math.min(ufpCurrentPage * ufpPageSize, totalRows);
+    info.textContent = `Menampilkan ${ufpFmt(start)}–${ufpFmt(finish)} dari ${ufpFmt(totalRows)} data`;
+
+    const previousDisabled = ufpCurrentPage <= 1 ? 'disabled' : '';
+    const nextDisabled = ufpCurrentPage >= totalPages ? 'disabled' : '';
+    const pageItems = ufpVisiblePageItems(totalPages).map(item => {
+      if (item === '...') return '<span class="ufp-page-ellipsis" aria-hidden="true">…</span>';
+      const active = item === ufpCurrentPage;
+      return `<button type="button" class="ufp-page-btn ${active ? 'active' : ''}" data-page="${item}" ${active ? 'aria-current="page"' : ''} aria-label="Halaman ${item}">${item}</button>`;
+    }).join('');
+
+    buttons.innerHTML = `
+      <button type="button" class="ufp-page-btn" data-page-action="prev" ${previousDisabled} aria-label="Halaman sebelumnya">‹</button>
+      ${pageItems}
+      <button type="button" class="ufp-page-btn" data-page-action="next" ${nextDisabled} aria-label="Halaman berikutnya">›</button>
+    `;
+  }
+
+  function ufpRenderCurrentPage({ scrollTop = false } = {}) {
+    const totalPages = ufpPageCount();
+    ufpCurrentPage = Math.min(Math.max(1, ufpCurrentPage), totalPages);
+
+    const startIndex = (ufpCurrentPage - 1) * ufpPageSize;
+    const pageRows = ufpRowsFiltered.slice(startIndex, startIndex + ufpPageSize);
+    const hasRows = ufpRowsFiltered.length > 0;
+
+    ufpId('updateEmpty').classList.toggle('hidden', hasRows);
+    ufpRenderTable(pageRows, ufpRowsFiltered);
+    ufpRenderMobile(pageRows);
+    ufpUpdateSummary(ufpRowsFiltered);
+    ufpRenderPagination();
+
+    if (scrollTop) ufpScrollResultTop();
+    requestAnimationFrame(ufpSetStickyHeader);
+  }
+
+  function ufpApplyFilters(resetPage = true) {
     const query = String(ufpId('updateSearch')?.value || '').trim().toLowerCase();
     const commitmentFilter = ufpId('updateCommitmentFilter')?.value || 'ALL';
+
     ufpRowsFiltered = ufpRowsRaw.filter(row => {
       const haystack = `${row.no_rekening} ${row.nama_nasabah} ${row.alamat} ${row.komitmen} ${row.alasan}`.toLowerCase();
       const queryMatch = !query || haystack.includes(query);
@@ -1086,12 +1371,16 @@
       return queryMatch && commitmentMatch;
     });
 
-    const hasRows = ufpRowsFiltered.length > 0;
-    ufpId('updateEmpty').classList.toggle('hidden', hasRows);
-    ufpRenderTable(ufpRowsFiltered);
-    ufpRenderMobile(ufpRowsFiltered);
-    ufpUpdateSummary(ufpRowsFiltered);
-    requestAnimationFrame(ufpSetStickyHeader);
+    if (resetPage) ufpCurrentPage = 1;
+    ufpRenderCurrentPage({ scrollTop:resetPage });
+  }
+
+  function ufpGoToPage(page) {
+    const totalPages = ufpPageCount();
+    const target = Math.min(Math.max(1, Number(page) || 1), totalPages);
+    if (target === ufpCurrentPage) return;
+    ufpCurrentPage = target;
+    ufpRenderCurrentPage({ scrollTop:true });
   }
 
   function ufpOpenModal(button) {
@@ -1188,6 +1477,9 @@
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
+    const pageSizeSelect = ufpId('ufpPageSize');
+    if (pageSizeSelect) pageSizeSelect.value = String(ufpPageSize);
+
     const stored = sessionStorage.getItem('flowpar_update');
     const loading = ufpId('updateLoading');
     if (!stored) {
@@ -1229,8 +1521,30 @@
     if (button) ufpOpenModal(button);
   });
 
-  ufpId('updateSearch')?.addEventListener('input', ufpApplyFilters);
-  ufpId('updateCommitmentFilter')?.addEventListener('change', ufpApplyFilters);
+  ufpId('updateSearch')?.addEventListener('input', () => {
+    clearTimeout(ufpFilterTimer);
+    ufpFilterTimer = setTimeout(() => ufpApplyFilters(true), 160);
+  });
+  ufpId('updateCommitmentFilter')?.addEventListener('change', () => ufpApplyFilters(true));
+
+  ufpId('ufpPageSize')?.addEventListener('change', event => {
+    ufpPageSize = Math.max(1, Number(event.target.value) || 20);
+    ufpCurrentPage = 1;
+    ufpRenderCurrentPage({ scrollTop:true });
+  });
+
+  ufpId('ufpPageButtons')?.addEventListener('click', event => {
+    const button = event.target.closest('button');
+    if (!button || button.disabled) return;
+
+    if (button.dataset.page) {
+      ufpGoToPage(button.dataset.page);
+      return;
+    }
+
+    if (button.dataset.pageAction === 'prev') ufpGoToPage(ufpCurrentPage - 1);
+    if (button.dataset.pageAction === 'next') ufpGoToPage(ufpCurrentPage + 1);
+  });
   ufpId('modal_komitmen')?.addEventListener('change', event => {
     if (event.target.value === 'O_Lunas') ufpId('modal_nominal').value = ufpCurrentTP + ufpCurrentTB;
   });
@@ -1241,8 +1555,49 @@
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && !ufpId('komitmenModal').classList.contains('hidden')) closeModal();
   });
+  function ufpSyncNavbarClearance() {
+    const page = ufpId('flowUpdatePage');
+    if (!page) return;
+
+    if (window.innerWidth >= 768) {
+      page.style.removeProperty('--ufp-nav-overlap');
+      page.style.removeProperty('--ufp-page-top');
+      return;
+    }
+
+    page.style.setProperty('--ufp-nav-overlap', '0px');
+    requestAnimationFrame(() => {
+      const baseTop = Math.max(0, page.getBoundingClientRect().top);
+      let navbarBottom = 0;
+      const selectors = 'nav,header,[role="banner"],.navbar,.topbar,.app-navbar,.main-header,#navbar,#topbar,#appHeader';
+
+      document.querySelectorAll(selectors).forEach(node => {
+        if (!(node instanceof HTMLElement) || node === page || page.contains(node)) return;
+        const style = getComputedStyle(node);
+        if (!['fixed','sticky'].includes(style.position) || style.display === 'none' || style.visibility === 'hidden') return;
+        const rect = node.getBoundingClientRect();
+        if (rect.top <= 12 && rect.bottom > 0 && rect.height >= 32 && rect.height <= 120 && rect.width >= innerWidth * .6) {
+          navbarBottom = Math.max(navbarBottom, rect.bottom);
+        }
+      });
+
+      if (navbarBottom <= 0 && baseTop < 35) navbarBottom = 54;
+      const targetTop = Math.max(baseTop, navbarBottom);
+      page.style.setProperty('--ufp-nav-overlap', `${Math.max(0, Math.ceil(targetTop - baseTop))}px`);
+      page.style.setProperty('--ufp-page-top', `${Math.max(0, Math.ceil(targetTop))}px`);
+    });
+  }
+
   window.addEventListener('resize', () => {
     clearTimeout(window.__ufpResizeTimer);
-    window.__ufpResizeTimer = setTimeout(ufpSetStickyHeader,100);
+    window.__ufpResizeTimer = setTimeout(() => {
+      ufpSetStickyHeader();
+      ufpSyncNavbarClearance();
+      ufpRenderPagination();
+    },100);
   });
+
+  window.addEventListener('orientationchange', () => setTimeout(ufpSyncNavbarClearance,120));
+  ufpSyncNavbarClearance();
+  setTimeout(ufpSyncNavbarClearance,150);
 </script>
