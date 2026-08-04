@@ -698,7 +698,8 @@
     font-variant-numeric:tabular-nums;
   }
   #tabelLapKeu .lap-code-col { width:92px; }
-  #tabelLapKeu .lap-value-col { width:190px; }
+  #tabelLapKeu .lap-value-col { width:150px; }
+  #tabelLapKeu .lap-pct-col { width:76px; }
   #tabelLapKeu thead th {
     height:37px;
     padding:7px 10px !important;
@@ -744,6 +745,15 @@
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
   #tabelLapKeu .financial-amount.is-negative { color:#be123c; }
+  #tabelLapKeu .financial-amount.is-positive { color:#047857; }
+  #tabelLapKeu .financial-pct {
+    display:inline-flex; justify-content:flex-end; width:100%;
+    font-family:'JetBrains Mono',ui-monospace,monospace;
+    font-size:10px; font-weight:900; white-space:nowrap;
+  }
+  #tabelLapKeu .financial-pct.is-negative { color:#be123c; }
+  #tabelLapKeu .financial-pct.is-positive { color:#047857; }
+  #tabelLapKeu .financial-pct.is-flat { color:#64748b; }
   #tabelLapKeu .financial-amount-short { display:none; }
   #tabelLapKeu .financial-parent-badge {
     flex:0 0 auto; margin-left:7px;
@@ -909,7 +919,8 @@
     .financial-tool-btn { width:29px; min-width:29px; height:29px; padding:0; }
     .financial-tool-btn span { display:none; }
     #tabelLapKeu .lap-code-col { display:none; }
-    #tabelLapKeu .lap-value-col { width:119px; }
+    #tabelLapKeu .lap-value-col { width:96px; }
+    #tabelLapKeu .lap-pct-col { width:56px; }
     #tabelLapKeu thead th { height:32px; padding:6px !important; font-size:8px !important; }
     #tabelLapKeu tbody tr { height:36px; }
     #tabelLapKeu tbody td { padding:6px !important; font-size:9px; }
@@ -917,6 +928,7 @@
     #tabelLapKeu .financial-name { font-size:9px; }
     #tabelLapKeu .financial-amount-full { display:none; }
     #tabelLapKeu .financial-amount-short { display:block; font-size:9px; }
+    #tabelLapKeu .financial-pct { font-size:8px; }
     #tabelLapKeu .financial-parent-badge { display:none; }
     #tabelLapKeu .caret { width:15px; height:15px; margin-right:3px; }
     .weekly-chart-toolbar { align-items:flex-start; flex-direction:column; padding:8px; }
@@ -940,7 +952,8 @@
   }
   @media (max-width:420px) {
     .financial-search-wrap { width:125px; }
-    #tabelLapKeu .lap-value-col { width:103px; }
+    #tabelLapKeu .lap-value-col { width:82px; }
+    #tabelLapKeu .lap-pct-col { width:50px; }
     .weekly-chart-stat-grid, .weekly-chart-footer { grid-template-columns:1fr 1fr; }
     .weekly-check-lines { grid-template-columns:1fr; }
   }
@@ -1794,7 +1807,8 @@
     #filterForm.lapkeu-filter-open { display:grid !important; }
     .lapkeu-filter-type { grid-column:span 6 !important; }
     .lapkeu-filter-office { grid-column:span 6 !important; }
-    .lapkeu-filter-date { grid-column:span 10 !important; }
+    .lapkeu-filter-closing { grid-column:span 5 !important; }
+    .lapkeu-filter-date { grid-column:span 5 !important; }
     .lapkeu-filter-actions { grid-column:span 2 !important; height:31px !important; }
     #filterForm label {
       margin-bottom:2px !important;
@@ -1819,6 +1833,575 @@
     }
   }
 
+  /* ========================================================
+     FINAL RESPONSIVE OVERRIDE V10
+     - Desktop: header + filter satu baris dan seluruh kontrol muat.
+     - Tablet: filter satu baris penuh di bawah judul.
+     - Mobile: filter buka/tutup, tepat dua baris.
+     - Workspace tidak saling menimpa dan tabel memiliki scroll aman.
+     ======================================================== */
+  *, *::before, *::after { box-sizing:border-box; }
+  html, body { width:100%; min-width:0; margin:0; }
+  body { overflow:hidden !important; }
+
+  #lapkeuPage {
+    width:100% !important;
+    max-width:none !important;
+    height:calc(100dvh - 60px) !important;
+    min-height:0 !important;
+    padding:6px !important;
+    gap:6px !important;
+    overflow:hidden !important;
+  }
+
+  #lapkeuHeader {
+    width:100% !important;
+    min-width:0 !important;
+    flex:0 0 auto !important;
+    display:grid !important;
+    grid-template-columns:minmax(255px,1fr) auto !important;
+    align-items:center !important;
+    gap:12px !important;
+    margin:0 !important;
+    padding:9px 10px !important;
+    border-radius:11px !important;
+    overflow:visible !important;
+  }
+
+  .lapkeu-brand { width:auto !important; min-width:0 !important; }
+  .lapkeu-brand-copy { min-width:0 !important; }
+  #reportPageTitle,
+  #reportPageSubtitle { max-width:100% !important; }
+
+  #filterForm {
+    display:grid !important;
+    grid-template-columns:145px minmax(190px,230px) 122px 122px 36px !important;
+    align-items:end !important;
+    justify-content:end !important;
+    width:max-content !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    margin:0 0 0 auto !important;
+    padding:0 !important;
+    gap:6px !important;
+    border:0 !important;
+    background:transparent !important;
+  }
+
+  #filterForm > div,
+  .lapkeu-filter-type,
+  .lapkeu-filter-office,
+  .lapkeu-filter-closing,
+  .lapkeu-filter-date,
+  .lapkeu-filter-actions {
+    width:auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+  }
+
+  #filterForm label {
+    display:block;
+    margin:0 0 3px 1px !important;
+    font-size:7.5px !important;
+    line-height:1 !important;
+    white-space:nowrap;
+  }
+
+  .lapkeu-date-label-row {
+    min-width:0;
+    height:auto;
+    margin:0 0 3px 1px !important;
+    gap:4px !important;
+  }
+  .lapkeu-date-label-row label { margin:0 !important; }
+  .lapkeu-insight-btn { width:16px !important; height:16px !important; font-size:9px !important; }
+
+  #filterForm .inp-modern {
+    width:100% !important;
+    min-width:0 !important;
+    height:34px !important;
+    padding:0 8px !important;
+    border-radius:8px !important;
+    font-size:10px !important;
+    text-overflow:ellipsis;
+  }
+  #filterForm select.inp-modern {
+    padding-right:26px !important;
+    background-position:right 7px center !important;
+    background-size:12px 12px !important;
+  }
+  .lapkeu-filter-actions { height:34px !important; align-items:flex-end !important; }
+  #btnExportLapkeu { width:34px !important; min-width:34px !important; height:34px !important; }
+
+  #reportStage {
+    flex:1 1 auto !important;
+    min-height:0 !important;
+    width:100% !important;
+    overflow:hidden !important;
+  }
+  .report-view { min-height:0 !important; min-width:0 !important; }
+  #viewFinancial { height:100% !important; min-height:0 !important; overflow:hidden !important; }
+  #financialPanel { flex:1 1 auto !important; min-height:0 !important; overflow:hidden !important; }
+  #financialTableScroll {
+    flex:1 1 auto !important;
+    min-height:0 !important;
+    overflow:auto !important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+  .custom-view-shell {
+    min-height:0 !important;
+    overflow:auto !important;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  #rekapContainer { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+  #tabelLapKeu { width:100% !important; min-width:0 !important; }
+
+  @media (min-width:1440px) {
+    #lapkeuPage { height:calc(100dvh - 76px) !important; padding:7px !important; }
+    #lapkeuHeader { padding:10px 12px !important; gap:16px !important; }
+    #filterForm { grid-template-columns:155px 230px 128px 128px 36px !important; gap:7px !important; }
+    #filterForm .inp-modern { height:36px !important; font-size:11px !important; }
+    .lapkeu-filter-actions { height:36px !important; }
+    #btnExportLapkeu { width:36px !important; min-width:36px !important; height:36px !important; }
+  }
+
+  @media (min-width:768px) and (max-width:1279px) {
+    #lapkeuPage { height:calc(100dvh - 68px) !important; padding:7px !important; gap:7px !important; }
+    #lapkeuHeader {
+      grid-template-columns:1fr !important;
+      align-items:stretch !important;
+      gap:8px !important;
+    }
+    #filterForm {
+      width:100% !important;
+      margin-left:0 !important;
+      grid-template-columns:minmax(125px,.85fr) minmax(175px,1.3fr) minmax(112px,.75fr) minmax(112px,.75fr) 34px !important;
+    }
+    #rekapContainer { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+    .weekly-card-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+  }
+
+  @media (max-width:767px) {
+    body { overflow:hidden !important; }
+    #lapkeuPage {
+      height:calc(100dvh - 56px) !important;
+      min-height:0 !important;
+      padding:4px !important;
+      gap:5px !important;
+    }
+    #lapkeuHeader {
+      display:block !important;
+      padding:7px !important;
+      border-radius:9px !important;
+    }
+    .lapkeu-brand { width:100% !important; gap:7px !important; }
+    .lapkeu-brand-icon {
+      width:30px !important;
+      height:30px !important;
+      flex:0 0 30px !important;
+      border-radius:8px !important;
+    }
+    .lapkeu-brand-icon svg { width:15px !important; height:15px !important; }
+    #reportPageTitle { font-size:12px !important; line-height:1.1 !important; }
+    #reportPageSubtitle {
+      display:block !important;
+      max-width:205px !important;
+      margin-top:2px !important;
+      font-size:7px !important;
+      line-height:1.2 !important;
+    }
+    .lapkeu-mobile-filter-toggle {
+      display:inline-flex !important;
+      height:29px !important;
+      padding:0 9px !important;
+      font-size:8px !important;
+    }
+
+    #filterForm {
+      display:none !important;
+      grid-template-columns:repeat(12,minmax(0,1fr)) !important;
+      width:100% !important;
+      max-width:none !important;
+      margin:7px 0 0 !important;
+      padding:7px 0 0 !important;
+      gap:5px !important;
+      border-top:1px solid #e2e8f0 !important;
+    }
+    #filterForm.lapkeu-filter-open { display:grid !important; }
+    .lapkeu-filter-type { grid-column:span 6 !important; }
+    .lapkeu-filter-office { grid-column:span 6 !important; }
+    .lapkeu-filter-closing { grid-column:span 5 !important; }
+    .lapkeu-filter-date { grid-column:span 5 !important; }
+    .lapkeu-filter-actions { grid-column:span 2 !important; height:31px !important; }
+    #filterForm label { margin-bottom:2px !important; font-size:6.5px !important; }
+    .lapkeu-date-label-row { margin-bottom:2px !important; }
+    .lapkeu-insight-btn { width:14px !important; height:14px !important; font-size:8px !important; }
+    #filterForm .inp-modern {
+      height:31px !important;
+      padding:0 6px !important;
+      border-radius:7px !important;
+      font-size:8.5px !important;
+    }
+    #filterForm select.inp-modern {
+      padding-right:21px !important;
+      background-position:right 5px center !important;
+      background-size:10px 10px !important;
+    }
+    #btnExportLapkeu { width:31px !important; min-width:31px !important; height:31px !important; }
+
+    #rekapContainer {
+      display:flex !important;
+      grid-template-columns:none !important;
+      overflow-x:auto !important;
+      overflow-y:hidden !important;
+      gap:5px !important;
+      padding-bottom:2px;
+      scroll-snap-type:x proximity;
+      scrollbar-width:none;
+    }
+    #rekapContainer::-webkit-scrollbar { display:none; }
+    #rekapContainer > * { width:150px !important; min-width:150px !important; scroll-snap-align:start; }
+
+    .financial-toolbar {
+      display:grid !important;
+      grid-template-columns:minmax(0,1fr) auto !important;
+      align-items:center !important;
+      gap:5px !important;
+      padding:6px !important;
+    }
+    .financial-toolbar-main { min-width:0 !important; }
+    .financial-toolbar-icon { width:27px !important; height:27px !important; flex:0 0 27px !important; }
+    .financial-toolbar-title { font-size:10px !important; }
+    .financial-toolbar-meta { display:none !important; }
+    .financial-toolbar-actions { min-width:0 !important; gap:3px !important; }
+    .financial-search-wrap { width:min(132px,39vw) !important; }
+    .financial-search { height:29px !important; padding-left:27px !important; font-size:8.5px !important; }
+    .financial-tool-btn { width:29px !important; min-width:29px !important; height:29px !important; padding:0 !important; }
+
+    #financialTableScroll { overflow:auto !important; }
+    #tabelLapKeu {
+      width:100% !important;
+      min-width:570px !important;
+      table-layout:fixed !important;
+    }
+    #tabelLapKeu .lap-code-col { display:none !important; }
+    #tabelLapKeu col:nth-child(2) { width:205px !important; }
+    #tabelLapKeu .lap-value-col { width:96px !important; }
+    #tabelLapKeu .lap-pct-col { width:58px !important; }
+    #tabelLapKeu thead th { height:32px !important; padding:5px 6px !important; font-size:7.5px !important; }
+    #tabelLapKeu tbody tr { height:35px !important; }
+    #tabelLapKeu tbody td { padding:5px 6px !important; font-size:8.5px !important; }
+    #tabelLapKeu th:nth-child(2),
+    #tabelLapKeu td:nth-child(2) {
+      position:sticky;
+      left:0;
+      z-index:18;
+      border-right:1px solid #e2e8f0;
+      box-shadow:4px 0 8px -8px rgba(15,23,42,.8);
+    }
+    #tabelLapKeu thead th:nth-child(2) { z-index:48; background:#f8fafc !important; }
+    #tabelLapKeu tbody td:nth-child(2) { background:#fff; }
+    #tabelLapKeu .financial-level-1 td:nth-child(2) { background:#eaf2ff !important; }
+    #tabelLapKeu .financial-level-2 td:nth-child(2) { background:#f4f7fb !important; }
+    #tabelLapKeu .financial-level-3 td:nth-child(2) { background:#fafcff !important; }
+    #tabelLapKeu .financial-name { font-size:8.5px !important; }
+    #tabelLapKeu .financial-amount-short { font-size:8.5px !important; }
+    #tabelLapKeu .financial-pct { font-size:8px !important; }
+
+    .custom-top-summary {
+      display:flex !important;
+      overflow-x:auto !important;
+      gap:5px !important;
+      scrollbar-width:none;
+    }
+    .custom-top-summary::-webkit-scrollbar { display:none; }
+    .custom-top-summary > * { width:150px !important; min-width:150px !important; }
+    .macro-dashboard-grid { grid-template-columns:1fr !important; }
+    .weekly-card-grid { grid-template-columns:1fr !important; }
+    .weekly-chart-toolbar { align-items:stretch !important; }
+    .weekly-chart-controls { width:100% !important; }
+    .weekly-metric-tabs { width:100% !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+    .weekly-chart-stat-grid,
+    .weekly-chart-footer { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+    .lapkeu-insight-modal { padding:8px !important; align-items:flex-end !important; }
+    .lapkeu-insight-card { width:100% !important; max-height:90dvh !important; border-radius:16px 16px 0 0 !important; }
+  }
+
+  @media (max-width:380px) {
+    #reportPageSubtitle { max-width:170px !important; }
+    #filterForm { gap:4px !important; }
+    #filterForm .inp-modern { font-size:8px !important; padding:0 5px !important; }
+    #rekapContainer > *, .custom-top-summary > * { width:142px !important; min-width:142px !important; }
+    .financial-search-wrap { width:112px !important; }
+  }
+
+
+
+  /* ========================================================
+     INSIGHT DIREKSI V11
+     Tombol informasi di judul dan modal analisis komprehensif.
+     ======================================================== */
+  .lapkeu-title-row {
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-width:0;
+  }
+
+  .lapkeu-title-row #reportPageTitle { min-width:0; }
+
+  .lapkeu-title-insight {
+    flex:0 0 21px !important;
+    width:21px !important;
+    height:21px !important;
+    border-color:#bfdbfe !important;
+    background:#eff6ff !important;
+    color:#2563eb !important;
+    font-size:11px !important;
+    box-shadow:none !important;
+  }
+
+  .lapkeu-title-insight:hover {
+    border-color:#93c5fd !important;
+    background:#dbeafe !important;
+    color:#1d4ed8 !important;
+    transform:translateY(-1px);
+  }
+
+  .lapkeu-insight-modal {
+    z-index:9999 !important;
+    padding:16px !important;
+    background:rgba(15,23,42,.56) !important;
+    backdrop-filter:blur(5px) !important;
+  }
+
+  .lapkeu-insight-card {
+    width:min(1120px,97vw) !important;
+    max-height:92dvh !important;
+    overflow:auto !important;
+    border:1px solid #dbeafe !important;
+    border-radius:18px !important;
+    background:#f8fafc !important;
+    box-shadow:0 30px 90px rgba(15,23,42,.34) !important;
+  }
+
+  .lapkeu-insight-head {
+    padding:15px 17px !important;
+    background:rgba(255,255,255,.97) !important;
+    backdrop-filter:blur(8px);
+  }
+
+  .lapkeu-insight-kicker { font-size:9px !important; }
+  .lapkeu-insight-title { font-size:20px !important; }
+  .lapkeu-insight-sub { font-size:10px !important; }
+  .lapkeu-insight-body { padding:12px !important; background:#f8fafc; }
+
+  .lapkeu-insight-summary {
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(155px,1fr));
+    gap:8px;
+    margin-bottom:9px;
+  }
+
+  .lapkeu-insight-stat {
+    min-width:0;
+    border:1px solid #e2e8f0;
+    border-left:4px solid var(--insight-accent,#3b82f6);
+    border-radius:11px;
+    background:#fff;
+    padding:10px;
+    box-shadow:0 1px 2px rgba(15,23,42,.035);
+  }
+
+  .lapkeu-insight-stat.good { --insight-accent:#10b981; }
+  .lapkeu-insight-stat.warn { --insight-accent:#f59e0b; }
+  .lapkeu-insight-stat.bad { --insight-accent:#ef4444; }
+  .lapkeu-insight-stat.info { --insight-accent:#3b82f6; }
+  .lapkeu-insight-stat.purple { --insight-accent:#8b5cf6; }
+
+  .lapkeu-insight-stat-label {
+    font-size:8px;
+    line-height:1.1;
+    font-weight:900;
+    letter-spacing:.075em;
+    text-transform:uppercase;
+    color:#64748b;
+  }
+
+  .lapkeu-insight-stat-value {
+    margin-top:7px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:16px;
+    line-height:1;
+    font-weight:950;
+    color:#0f172a;
+  }
+
+  .lapkeu-insight-stat-note {
+    margin-top:6px;
+    font-size:8px;
+    line-height:1.35;
+    font-weight:750;
+    color:#64748b;
+  }
+
+  .lapkeu-insight-grid {
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:9px !important;
+  }
+
+  .lapkeu-insight-block {
+    min-width:0;
+    border:1px solid #e2e8f0 !important;
+    border-radius:12px !important;
+    background:#fff !important;
+    padding:11px !important;
+    box-shadow:0 1px 2px rgba(15,23,42,.025);
+  }
+
+  .lapkeu-insight-block.full { grid-column:1 / -1 !important; }
+  .lapkeu-insight-block.span-2 { grid-column:span 2; }
+  .lapkeu-insight-block h4 {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin:0 0 8px !important;
+    padding-bottom:7px;
+    border-bottom:1px solid #eef2f7;
+    font-size:11px !important;
+    line-height:1.2;
+    font-weight:950 !important;
+    color:#0f172a !important;
+  }
+
+  .lapkeu-insight-block ul {
+    margin:0 !important;
+    padding-left:16px !important;
+    font-size:9px !important;
+    line-height:1.5 !important;
+    font-weight:700 !important;
+    color:#334155 !important;
+  }
+
+  .lapkeu-insight-block li + li { margin-top:5px !important; }
+
+  .insight-table-wrap {
+    width:100%;
+    overflow:auto;
+    border:1px solid #e2e8f0;
+    border-radius:9px;
+  }
+
+  .insight-table {
+    width:100%;
+    min-width:520px;
+    border-collapse:collapse;
+    font-size:8px;
+    font-variant-numeric:tabular-nums;
+  }
+
+  .insight-table th {
+    position:sticky;
+    top:0;
+    z-index:1;
+    padding:7px 8px;
+    border-bottom:1px solid #cbd5e1;
+    background:#f8fafc;
+    color:#64748b;
+    font-size:7px;
+    font-weight:900;
+    letter-spacing:.055em;
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+
+  .insight-table td {
+    padding:7px 8px;
+    border-bottom:1px solid #eef2f7;
+    color:#334155;
+    font-weight:750;
+    vertical-align:top;
+  }
+
+  .insight-table tr:last-child td { border-bottom:0; }
+  .insight-table .num { text-align:right; white-space:nowrap; font-family:'JetBrains Mono',ui-monospace,monospace; }
+
+  .insight-signal {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:48px;
+    padding:3px 6px;
+    border:1px solid;
+    border-radius:999px;
+    font-size:7px;
+    line-height:1;
+    font-weight:900;
+    white-space:nowrap;
+  }
+
+  .insight-signal.good { color:#047857; background:#ecfdf5; border-color:#a7f3d0; }
+  .insight-signal.warn { color:#b45309; background:#fffbeb; border-color:#fde68a; }
+  .insight-signal.bad { color:#be123c; background:#fff1f2; border-color:#fecdd3; }
+  .insight-signal.info { color:#1d4ed8; background:#eff6ff; border-color:#bfdbfe; }
+
+  .insight-callout {
+    margin-top:9px;
+    padding:8px 9px;
+    border:1px solid #bfdbfe;
+    border-radius:9px;
+    background:#eff6ff;
+    color:#1e3a8a;
+    font-size:8px;
+    line-height:1.45;
+    font-weight:750;
+  }
+
+  @media (max-width:900px) {
+    .lapkeu-insight-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
+    .lapkeu-insight-block.span-2 { grid-column:1 / -1; }
+  }
+
+  @media (max-width:767px) {
+    .lapkeu-title-insight {
+      flex-basis:18px !important;
+      width:18px !important;
+      height:18px !important;
+      font-size:9px !important;
+    }
+    .lapkeu-insight-modal {
+      padding:0 !important;
+      align-items:flex-end !important;
+    }
+    .lapkeu-insight-card {
+      width:100% !important;
+      max-height:92dvh !important;
+      border-radius:17px 17px 0 0 !important;
+    }
+    .lapkeu-insight-head { padding:12px !important; }
+    .lapkeu-insight-title { font-size:15px !important; }
+    .lapkeu-insight-sub { font-size:8px !important; }
+    .lapkeu-insight-body { padding:8px !important; }
+    .lapkeu-insight-summary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+    .lapkeu-insight-stat { padding:8px; }
+    .lapkeu-insight-stat-value { font-size:13px; }
+    .lapkeu-insight-grid { grid-template-columns:1fr !important; gap:7px !important; }
+    .lapkeu-insight-block.full,
+    .lapkeu-insight-block.span-2 { grid-column:auto !important; }
+    .lapkeu-insight-block { padding:9px !important; }
+    .lapkeu-insight-block h4 { font-size:10px !important; }
+    .lapkeu-insight-block ul { font-size:8px !important; }
+    .insight-table { min-width:470px; }
+  }
+
 </style>
 
 <div id="lapkeuPage" class="max-w-[1920px] mx-auto px-2 md:px-4 py-2 md:py-4 h-[calc(100vh-10px)] flex flex-col space-y-2 md:space-y-4 bg-[#f8fafc]">
@@ -1830,7 +2413,10 @@
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"></path><path d="M10 19V5"></path><path d="M16 19v-7"></path><path d="M22 19H2"></path></svg>
       </span>
       <div class="lapkeu-brand-copy">
-        <span id="reportPageTitle">Laporan Keuangan</span>
+        <div class="lapkeu-title-row">
+          <span id="reportPageTitle">Laporan Keuangan</span>
+          <button type="button" class="lapkeu-insight-btn lapkeu-title-insight" onclick="openLapkeuInsight()" title="Buka analisis lengkap untuk direksi" aria-label="Buka analisis lengkap untuk direksi">i</button>
+        </div>
         <span id="reportPageSubtitle">*Neraca, Laba Rugi, Ringkasan Makro &amp; Tren Mingguan</span>
         <div class="lapkeu-meta-row">
           <span id="activeViewChip" class="view-mode-chip">Neraca</span>
@@ -1860,9 +2446,13 @@
         <select id="opt_kantor_rec" class="inp-modern text-[10px] md:text-sm truncate"><option value="">Memuat...</option></select>
       </div>
 
+      <div class="lapkeu-filter-closing flex flex-col">
+        <label class="text-[9px] md:text-[10px] font-bold text-blue-900 uppercase ml-1 mb-0.5 tracking-wider">Closing</label>
+        <input type="date" id="closing_date" class="inp-modern text-center text-[10px] md:text-sm" onclick="try{this.showPicker()}catch(e){}">
+      </div>
+
       <div class="lapkeu-filter-date flex flex-col">
         <div class="lapkeu-date-label-row">
-          <button type="button" class="lapkeu-insight-btn" onclick="openLapkeuInsight()" title="Insight kondisi dan tindak lanjut">i</button>
           <label class="text-[9px] md:text-[10px] font-bold text-blue-900 uppercase tracking-wider">Actual (Harian)</label>
         </div>
         <input type="date" id="harian_date" class="inp-modern text-center text-[10px] md:text-sm" onclick="try{this.showPicker()}catch(e){}">
@@ -1932,12 +2522,18 @@
               <col class="lap-code-col">
               <col>
               <col class="lap-value-col">
+              <col class="lap-value-col">
+              <col class="lap-value-col">
+              <col class="lap-pct-col">
             </colgroup>
             <thead class="sticky top-0 z-40">
               <tr>
                 <th class="lap-code-col">Kode</th>
                 <th>Uraian Perkiraan</th>
-                <th class="text-right">Saldo (IDR)</th>
+                <th class="text-right">Actual</th>
+                <th class="text-right">Closing</th>
+                <th class="text-right">Selisih</th>
+                <th class="text-right">%</th>
               </tr>
             </thead>
             <tbody id="lapBody"></tbody>
@@ -1962,6 +2558,7 @@
 <script>
   const API_LAP = './api/lapkeu';
   const API_KODE = './api/kode/';
+  const API_DATE = './api/date/';
   
   let rawDataResult = [];
   window.currentUser = { kode: '000' };
@@ -1991,17 +2588,33 @@
       return `${yyyy}-${mm}-${dd}`;
   }
 
-  async function loadDefaultAccHistoryDate() {
+  function getPreviousMonthEndDate(dateValue) {
+      const base = dateValue ? new Date(`${dateValue}T00:00:00`) : new Date();
+      if (Number.isNaN(base.getTime())) return '';
+      return new Date(base.getFullYear(), base.getMonth(), 0).toISOString().slice(0, 10);
+  }
+
+  async function loadDefaultReportDates() {
+      const fallbackHarian = getYesterdayDate();
+      const fallbackClosing = getPreviousMonthEndDate(fallbackHarian);
+
       try {
-          const res = await fetch(API_LAP, {
-              method: 'POST',
-              headers: {'Content-Type':'application/json'},
-              body: JSON.stringify({ type: 'default_acc_history_date' })
+          const res = await fetch(API_DATE, {
+              method: 'GET',
+              cache: 'no-store',
+              headers: { 'Accept': 'application/json' }
           });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
           const json = await res.json();
-          return json?.data?.last_created || getYesterdayDate();
-      } catch(e) {
-          return getYesterdayDate();
+          const data = json?.data || json || {};
+          const harian = data.last_created || data.harian_date || data.actual_date || fallbackHarian;
+          const closing = data.last_closing || data.closing_date || getPreviousMonthEndDate(harian) || fallbackClosing;
+
+          return { closing, harian };
+      } catch (error) {
+          console.warn('Gagal mengambil tanggal default dari ./api/date/:', error);
+          return { closing: fallbackClosing, harian: fallbackHarian };
       }
   }
 
@@ -2074,10 +2687,31 @@
 
       document.getElementById('badgeUnit').innerText = (uKode === '000') ? 'KONSOLIDASI PUSAT' : `CABANG ${uKode}`;
 
-      await populateKantorOptionsFP(uKode);
-      document.getElementById('harian_date').value = await loadDefaultAccHistoryDate();
+      const kantorPromise = populateKantorOptionsFP(uKode);
+      const datesPromise = loadDefaultReportDates();
+      const [, defaultDates] = await Promise.all([kantorPromise, datesPromise]);
+
+      const harianEl = document.getElementById('harian_date');
+      const closingEl = document.getElementById('closing_date');
+      if (harianEl) harianEl.value = defaultDates.harian;
+      if (closingEl) {
+          closingEl.value = defaultDates.closing;
+          delete closingEl.dataset.userChanged;
+      }
+
       document.getElementById('type_report')?.addEventListener('change', handleReportTypeChange);
-      ['opt_kantor_rec', 'harian_date'].forEach(id => {
+      document.getElementById('harian_date')?.addEventListener('change', () => {
+          const closingEl = document.getElementById('closing_date');
+          if (closingEl && !closingEl.dataset.userChanged) {
+              closingEl.value = getPreviousMonthEndDate(document.getElementById('harian_date').value);
+          }
+          scheduleFetchRekap(350);
+      });
+      document.getElementById('closing_date')?.addEventListener('change', () => {
+          document.getElementById('closing_date').dataset.userChanged = '1';
+          scheduleFetchRekap(350);
+      });
+      ['opt_kantor_rec'].forEach(id => {
           document.getElementById(id)?.addEventListener('change', () => scheduleFetchRekap(350));
       });
       setActiveReportView(document.getElementById('type_report')?.value || 'neraca detail kantor', false);
@@ -2143,7 +2777,8 @@
       const payload = {
           type: document.getElementById('type_report').value,
           kode_kantor: document.getElementById('opt_kantor_rec').value,
-          harian_date: document.getElementById('harian_date').value
+          harian_date: document.getElementById('harian_date').value,
+          closing_date: document.getElementById('closing_date')?.value || getPreviousMonthEndDate(document.getElementById('harian_date').value)
       };
 
       setActiveReportView(payload.type, false);
@@ -2173,7 +2808,7 @@
           }
       } catch (e) {
           console.error(e);
-          tbody.innerHTML = `<tr><td colspan="3" class="text-center p-10 text-red-500 font-bold text-xs">Gagal memuat data laporan!</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center p-10 text-red-500 font-bold text-xs">Gagal memuat data laporan!</td></tr>`;
       } finally {
           loader.classList.add('hidden');
       }
@@ -2208,7 +2843,13 @@
       const hiddenClass = len > 3 ? 'hidden-row' : '';
       const indent = Math.min(46, Math.max(0, len - 1) * 7);
       const total = Number(d?.total_saldo || 0);
+      const closing = Number(d?.closing_saldo || 0);
+      const selisih = Number(d?.selisih_saldo ?? (total - closing));
+      const growth = Number(d?.growth_persen ?? growthValue(total, closing) ?? 0);
       const amountClass = total < 0 ? 'is-negative' : '';
+      const closingClass = closing < 0 ? 'is-negative' : '';
+      const diffClass = selisih > 0 ? 'is-positive' : (selisih < 0 ? 'is-negative' : '');
+      const pctClass = growth > 0 ? 'is-positive' : (growth < 0 ? 'is-negative' : 'is-flat');
       const parentIcon = parent ? '<span class="caret">▶</span>' : '<span class="caret" style="visibility:hidden">▶</span>';
       const parentBadge = parent ? '<span class="financial-parent-badge">Kelompok</span>' : '';
 
@@ -2226,6 +2867,17 @@
           <td title="Rp ${fmtNom(total)}">
             <span class="financial-amount financial-amount-full ${amountClass}">${fmtNom(total)}</span>
             <span class="financial-amount financial-amount-short ${amountClass}">Rp ${fmtSingkat(total)}</span>
+          </td>
+          <td title="Rp ${fmtNom(closing)}">
+            <span class="financial-amount financial-amount-full ${closingClass}">${fmtNom(closing)}</span>
+            <span class="financial-amount financial-amount-short ${closingClass}">Rp ${fmtSingkat(closing)}</span>
+          </td>
+          <td title="${selisih >= 0 ? '+' : '-'} Rp ${fmtNom(Math.abs(selisih))}">
+            <span class="financial-amount financial-amount-full ${diffClass}">${selisih >= 0 ? '+' : '-'} ${fmtNom(Math.abs(selisih))}</span>
+            <span class="financial-amount financial-amount-short ${diffClass}">${signedMoney(selisih)}</span>
+          </td>
+          <td title="${pctText(growth)}">
+            <span class="financial-pct ${pctClass}">${growth > 0 ? '+' : ''}${pctText(growth)}</span>
           </td>
         </tr>
       `;
@@ -2425,20 +3077,49 @@
   }
 
   function insightList(items) {
-    const clean = items.filter(Boolean);
-    return clean.length ? `<ul>${clean.map(item => `<li>${safeText(item)}</li>`).join('')}</ul>` : '<ul><li>Data belum cukup untuk membentuk insight otomatis.</li></ul>';
+    const clean = (items || []).filter(Boolean);
+    return clean.length
+      ? `<ul>${clean.map(item => `<li>${safeText(item)}</li>`).join('')}</ul>`
+      : '<ul><li>Data belum cukup untuk membentuk analisis otomatis.</li></ul>';
   }
 
-  function insightBlock(title, items, full = false) {
-    return `<section class="lapkeu-insight-block ${full ? 'full' : ''}"><h4>${safeText(title)}</h4>${insightList(items)}</section>`;
+  function insightBlock(title, itemsOrHtml, className = '') {
+    const content = Array.isArray(itemsOrHtml) ? insightList(itemsOrHtml) : String(itemsOrHtml || '');
+    return `<section class="lapkeu-insight-block ${className}"><h4>${safeText(title)}</h4>${content}</section>`;
+  }
+
+  function insightSignal(label, tone = 'info') {
+    return `<span class="insight-signal ${tone}">${safeText(label)}</span>`;
+  }
+
+  function insightStat(label, value, note, tone = 'info') {
+    return `
+      <article class="lapkeu-insight-stat ${tone}">
+        <div class="lapkeu-insight-stat-label">${safeText(label)}</div>
+        <div class="lapkeu-insight-stat-value" title="${safeText(value)}">${safeText(value)}</div>
+        <div class="lapkeu-insight-stat-note">${safeText(note || '')}</div>
+      </article>
+    `;
+  }
+
+  function insightTable(headers, rows) {
+    if (!Array.isArray(rows) || !rows.length) return '<div class="insight-callout">Data belum tersedia untuk ditampilkan.</div>';
+    return `
+      <div class="insight-table-wrap custom-scrollbar">
+        <table class="insight-table">
+          <thead><tr>${headers.map(h => `<th class="${h.num ? 'num' : ''}">${safeText(h.label)}</th>`).join('')}</tr></thead>
+          <tbody>${rows.map(row => `<tr>${row.map((cell, index) => `<td class="${headers[index]?.num ? 'num' : ''}">${cell?.html ? cell.html : safeText(cell?.value ?? cell ?? '')}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>
+      </div>
+    `;
   }
 
   function changeSentence(label, growth, goodWhenUp = true) {
     if (growth === null || growth === undefined || !Number.isFinite(Number(growth))) return '';
     const n = Number(growth);
-    const direction = n >= 0 ? 'naik' : 'turun';
+    const direction = n > 0 ? 'naik' : (n < 0 ? 'turun' : 'stabil');
     const tone = n === 0 ? 'stabil' : ((n > 0) === goodWhenUp ? 'positif' : 'perlu perhatian');
-    return `${label} ${direction} ${pctText(Math.abs(n))} dibanding bulan lalu; status ${tone}.`;
+    return `${label} ${direction}${n === 0 ? '' : ` ${pctText(Math.abs(n))}`} dibanding bulan lalu; status ${tone}.`;
   }
 
   function selectedOfficeLabel() {
@@ -2446,84 +3127,430 @@
     return el?.selectedOptions?.[0]?.textContent?.trim() || '-';
   }
 
+  function ratioAssessment(key, value) {
+    const n = Number(value || 0);
+    const defs = {
+      npl: {
+        good: v => v <= 3,
+        warn: v => v <= 5,
+        goodText:'Terkendali', warnText:'Waspada', badText:'Prioritas',
+        note:'Semakin rendah semakin baik. Fokus pada migrasi, flow, recovery, dan konsentrasi debitur bermasalah.'
+      },
+      bopo: {
+        good: v => v <= 85,
+        warn: v => v <= 95,
+        goodText:'Efisien', warnText:'Perlu kontrol', badText:'Tidak efisien',
+        note:'Semakin rendah semakin efisien. Telusuri pos beban terbesar dan produktivitas pendapatan.'
+      },
+      ldr: {
+        good: v => v >= 75 && v <= 95,
+        warn: v => (v >= 65 && v < 75) || (v > 95 && v <= 100),
+        goodText:'Seimbang', warnText:'Perlu dijaga', badText:'Tidak seimbang',
+        note:'Nilai rendah menunjukkan dana belum produktif; nilai terlalu tinggi meningkatkan tekanan likuiditas.'
+      },
+      casa: {
+        good: v => v >= 50,
+        warn: v => v >= 35,
+        goodText:'Kuat', warnText:'Cukup', badText:'Perlu ditingkatkan',
+        note:'CASA lebih tinggi membantu menurunkan biaya dana melalui komposisi tabungan yang lebih besar.'
+      },
+      roa: {
+        good: v => v >= 1.5,
+        warn: v => v >= .5,
+        goodText:'Baik', warnText:'Terbatas', badText:'Rendah',
+        note:'Menggambarkan kemampuan aset menghasilkan laba. Hubungkan dengan margin, biaya, dan kualitas kredit.'
+      },
+      roe: {
+        good: v => v >= 10,
+        warn: v => v >= 5,
+        goodText:'Baik', warnText:'Terbatas', badText:'Rendah',
+        note:'Menggambarkan tingkat pengembalian modal. Bandingkan dengan target RBB/RKAP.'
+      },
+      nim: {
+        good: v => v >= 5,
+        warn: v => v >= 3,
+        goodText:'Kuat', warnText:'Cukup', badText:'Tipis',
+        note:'Margin bunga bersih dipengaruhi yield kredit, biaya dana, dan kualitas aset produktif.'
+      },
+      cash: {
+        good: v => v >= 10,
+        warn: v => v >= 5,
+        goodText:'Memadai', warnText:'Perlu dijaga', badText:'Rendah',
+        note:'Pantau kecukupan kas dan penempatan likuid terhadap kebutuhan penarikan dana.'
+      },
+      liquid: {
+        good: v => v >= 15,
+        warn: v => v >= 10,
+        goodText:'Memadai', warnText:'Cukup', badText:'Terbatas',
+        note:'Aset likuid menjadi bantalan kebutuhan kas, tetapi nilai berlebih juga dapat menekan produktivitas.'
+      }
+    };
+    const def = defs[key];
+    if (!def) return { tone:'info', label:'Monitoring', note:'Bandingkan dengan target internal, RBB/RKAP, dan posisi historis.' };
+    if (def.good(n)) return { tone:'good', label:def.goodText, note:def.note };
+    if (def.warn(n)) return { tone:'warn', label:def.warnText, note:def.note };
+    return { tone:'bad', label:def.badText, note:def.note };
+  }
+
+  function growthTone(value, goodWhenUp = true) {
+    const n = Number(value || 0);
+    if (!Number.isFinite(n) || n === 0) return 'info';
+    return ((n > 0) === goodWhenUp) ? 'good' : 'bad';
+  }
+
+  function ratioRow(label, value, key) {
+    const assessment = ratioAssessment(key, value);
+    return [
+      label,
+      { value:pctText(value) },
+      { html:insightSignal(assessment.label, assessment.tone) },
+      assessment.note
+    ];
+  }
+
   function buildMakroInsight(data) {
-    const makro = data?.makro || {};
+    const makro = data?.makro || data?.keuangan || {};
     const rasio = data?.rasio || {};
     const detail = data?.ringkasan_detail || {};
+    const biaya = Array.isArray(data?.top_5_biaya) ? data.top_5_biaya : [];
+
+    const aset = Number(makro?.aset?.nominal_aktual || 0);
+    const kredit = Number(detail?.kredit_diberikan?.baki_debet || 0);
+    const dpk = Number(makro?.dpk?.nominal_aktual || detail?.dana_masyarakat?.total || 0);
+    const nplNom = Number(makro?.npl?.nominal_aktual || detail?.ckpn?.npl || 0);
     const nplPct = Number(makro?.npl?.persen_aktual || 0);
+    const laba = Number(makro?.laba_rugi?.nominal_aktual ?? makro?.laba?.nominal_aktual ?? detail?.laba_setelah_pajak ?? 0);
+    const labaGrowth = makro?.laba_rugi?.growth_mom ?? makro?.laba?.growth_mom;
     const bopo = Number(rasio?.bopo_persen || 0);
     const ldr = Number(rasio?.ldr_persen || 0);
-    const labaGrowth = makro?.laba_rugi?.growth_mom ?? makro?.laba?.growth_mom;
-    const bebanGrowth = makro?.biaya?.growth_mom;
-    const dpkGrowth = makro?.dpk?.growth_mom;
+    const casa = Number(rasio?.casa_persen || 0);
+    const roa = Number(rasio?.roa_persen || 0);
+    const roe = Number(rasio?.roe_persen || 0);
+    const nim = Number(rasio?.nim_persen || 0);
+    const cashRatio = Number(rasio?.cash_ratio_persen || 0);
+    const liquid = Number(rasio?.aset_likuid_persen || 0);
 
-    const kondisi = [
-      changeSentence('Aset gabungan', makro?.aset?.growth_mom, true),
-      changeSentence('DPK', dpkGrowth, true),
-      changeSentence('Laba berjalan', labaGrowth, true),
-      changeSentence('NPL nominal', makro?.npl?.growth_mom, false),
-      nplPct ? `Rasio NPL gross berada di ${pctText(nplPct)} dari baki debet kredit.` : '',
-      bopo ? `BOPO tercatat ${pctText(bopo)}; semakin rendah semakin efisien.` : '',
+    const nplAssess = ratioAssessment('npl', nplPct);
+    const bopoAssess = ratioAssessment('bopo', bopo);
+    const ldrAssess = ratioAssessment('ldr', ldr);
+
+    const summary = `
+      <div class="lapkeu-insight-summary">
+        ${insightStat('Aset Gabungan', `Rp ${fmtSingkat(aset)}`, changeSentence('Aset', makro?.aset?.growth_mom, true) || 'Posisi aset aktual', growthTone(makro?.aset?.growth_mom, true))}
+        ${insightStat('Kredit', `Rp ${fmtSingkat(kredit)}`, `LDR ${pctText(ldr)} · ${ldrAssess.label}`, ldrAssess.tone)}
+        ${insightStat('Dana Pihak Ketiga', `Rp ${fmtSingkat(dpk)}`, changeSentence('DPK', makro?.dpk?.growth_mom, true) || `CASA ${pctText(casa)}`, growthTone(makro?.dpk?.growth_mom, true))}
+        ${insightStat('NPL Gross', `${pctText(nplPct)}`, `Nominal Rp ${fmtSingkat(nplNom)} · ${nplAssess.label}`, nplAssess.tone)}
+        ${insightStat('Laba Berjalan', `Rp ${fmtSingkat(laba)}`, changeSentence('Laba', labaGrowth, true) || 'Posisi laba aktual', growthTone(labaGrowth, true))}
+        ${insightStat('BOPO', pctText(bopo), bopoAssess.note, bopoAssess.tone)}
+      </div>
+    `;
+
+    const ratioRows = [
+      ratioRow('NPL Gross', nplPct, 'npl'),
+      ratioRow('BOPO', bopo, 'bopo'),
+      ratioRow('LDR', ldr, 'ldr'),
+      ratioRow('CASA', casa, 'casa'),
+      ratioRow('ROA', roa, 'roa'),
+      ratioRow('ROE', roe, 'roe'),
+      ratioRow('NIM', nim, 'nim'),
+      ratioRow('Cash Ratio', cashRatio, 'cash'),
+      ratioRow('Aset Likuid', liquid, 'liquid')
     ];
 
-    const perhatian = [
-      nplPct > 5 ? 'NPL melewati batas nyaman 5%, perlu prioritas penagihan dan recovery pada debitur bermasalah.' : 'NPL masih perlu dijaga agar tidak naik pada akhir bulan.',
-      bopo > 90 ? 'BOPO tinggi, kontrol pos beban terbesar dan evaluasi efisiensi operasional.' : '',
-      ldr < 75 ? 'LDR relatif rendah, dorong penyaluran kredit berkualitas agar dana lebih produktif.' : '',
-      ldr > 95 ? 'LDR tinggi, jaga likuiditas dan kualitas pencairan baru.' : '',
-      Number(labaGrowth) < 0 ? 'Laba turun, cek kombinasi pendapatan, biaya, dan kualitas portofolio kredit.' : '',
-      Number(bebanGrowth) > 0 ? 'Beban naik dibanding bulan lalu, fokus review Top 5 Beban Biaya.' : '',
+    const fundingRows = [
+      ['Dana masyarakat', { value:`Rp ${fmtSingkat(detail?.dana_masyarakat?.total)}` }, 'Basis pendanaan utama'],
+      ['Tabungan', { value:`Rp ${fmtSingkat(detail?.dana_masyarakat?.tabungan)}` }, `Kontributor CASA · ${pctText(casa)}`],
+      ['Deposito', { value:`Rp ${fmtSingkat(detail?.dana_masyarakat?.deposito)}` }, 'Pantau biaya dana dan konsentrasi deposan'],
+      ['Kredit baki debet', { value:`Rp ${fmtSingkat(detail?.kredit_diberikan?.baki_debet)}` }, `Produktivitas dana · LDR ${pctText(ldr)}`],
+      ['Saldo bank/EAD', { value:`Rp ${fmtSingkat(detail?.kredit_diberikan?.saldo_bank_ead)}` }, 'Eksposur kredit untuk monitoring risiko']
     ];
 
-    const tindak = [
-      'Tetapkan daftar cabang/debitur prioritas dari NPL dan beban terbesar untuk follow up harian.',
-      'Dorong realisasi kredit yang sehat jika kredit/DPK belum produktif, tanpa mengorbankan kualitas kolektibilitas.',
-      'Pantau laba sebelum dan setelah pajak agar target akhir bulan tidak tertinggal.',
-      detail?.ckpn?.npl ? `OSC NPL saat ini Rp ${fmtSingkat(detail.ckpn.npl)}; gunakan sebagai dasar fokus recovery.` : '',
+    const riskRows = [
+      ['OSC NPL', { value:`Rp ${fmtSingkat(detail?.ckpn?.npl ?? nplNom)}` }, { html:insightSignal(nplAssess.label, nplAssess.tone) }],
+      ['CKPN Kredit', { value:`Rp ${fmtSingkat(detail?.ckpn?.ckpn_kredit)}` }, 'Cadangan kerugian kredit'],
+      ['CKPN PPBL', { value:`Rp ${fmtSingkat(detail?.ckpn?.ckpn_ppbl)}` }, 'Cadangan aset produktif lainnya'],
+      ['PPBL', { value:`Rp ${fmtSingkat(detail?.ppbl)}` }, 'Perlu dikaitkan dengan kualitas aset dan recovery']
     ];
 
-    return [
-      insightBlock('Kondisi Utama', kondisi),
-      insightBlock('Perlu Perhatian', perhatian),
-      insightBlock('Tindak Lanjut', tindak, true),
-    ].join('');
+    const profitRows = [
+      ['Laba sebelum pajak', { value:`Rp ${fmtSingkat(detail?.laba_sebelum_pajak)}` }, 'Pantau capaian terhadap target bulanan'],
+      ['Laba setelah pajak', { value:`Rp ${fmtSingkat(detail?.laba_setelah_pajak)}` }, 'Hasil bersih berjalan'],
+      ['NIM', { value:pctText(nim) }, ratioAssessment('nim', nim).label],
+      ['ROA', { value:pctText(roa) }, ratioAssessment('roa', roa).label],
+      ['ROE', { value:pctText(roe) }, ratioAssessment('roe', roe).label],
+      ['BOPO', { value:pctText(bopo) }, bopoAssess.label]
+    ];
+
+    const expenseRows = biaya.map((item, index) => [
+      `${index + 1}. ${item?.nama || '-'}`,
+      { value:`Rp ${fmtSingkat(item?.nominal)}` },
+      item?.kode || '-'
+    ]);
+
+    const priorities = [];
+    if (nplAssess.tone !== 'good') priorities.push(`Kualitas kredit: turunkan NPL ${pctText(nplPct)} melalui daftar debitur prioritas, pencegahan flow, recovery, dan evaluasi migrasi kolektibilitas.`);
+    if (bopoAssess.tone !== 'good') priorities.push(`Efisiensi: BOPO ${pctText(bopo)} memerlukan kontrol Top 5 beban serta evaluasi produktivitas setiap pos biaya.`);
+    if (ldrAssess.tone === 'bad' || ldrAssess.tone === 'warn') priorities.push(`Intermediasi dan likuiditas: LDR ${pctText(ldr)} perlu diseimbangkan melalui kredit berkualitas, retensi DPK, dan pengelolaan aset likuid.`);
+    if (ratioAssessment('casa', casa).tone !== 'good') priorities.push(`Pendanaan: tingkatkan CASA dari ${pctText(casa)} melalui pertumbuhan tabungan aktif dan pengendalian ketergantungan deposito mahal.`);
+    if (Number(labaGrowth) < 0) priorities.push(`Profitabilitas: laba turun ${pctText(Math.abs(Number(labaGrowth)))}; bedah pendapatan bunga, biaya dana, CKPN, dan beban operasional.`);
+    if (!priorities.length) priorities.push('Kondisi utama relatif terkendali; fokus pada konsistensi pencapaian target, kualitas pertumbuhan, dan pencegahan pemburukan sampai akhir bulan.');
+
+    const monitoring = [
+      'Bandingkan seluruh angka dengan RBB/RKAP, posisi bulan lalu, dan tren mingguan; indikator warna pada dashboard adalah alat monitoring, bukan pengganti ketentuan internal maupun regulator.',
+      'Pertumbuhan kredit harus dibaca bersama pertumbuhan DPK, LDR, NPL, CKPN, serta realisasi laba agar tidak terjadi pertumbuhan yang mengorbankan kualitas.',
+      'DPK yang tumbuh tetapi CASA turun dapat menaikkan biaya dana; evaluasi komposisi tabungan versus deposito.',
+      'Laba yang naik dengan BOPO atau NPL memburuk perlu ditelaah kualitas dan keberlanjutannya.',
+      'Gunakan Top 5 beban untuk menetapkan pemilik aksi, target penghematan, tenggat, dan hasil evaluasi berikutnya.'
+    ];
+
+    return summary + `<div class="lapkeu-insight-grid">
+      ${insightBlock('Ringkasan Perubahan Utama', [
+        changeSentence('Aset gabungan', makro?.aset?.growth_mom, true),
+        changeSentence('DPK', makro?.dpk?.growth_mom, true),
+        changeSentence('NPL nominal', makro?.npl?.growth_mom, false),
+        changeSentence('Laba berjalan', labaGrowth, true),
+        changeSentence('Beban', makro?.biaya?.growth_mom, false)
+      ])}
+      ${insightBlock('Rasio Kesehatan & Interpretasi', insightTable(
+        [{label:'Rasio'}, {label:'Posisi',num:true}, {label:'Sinyal'}, {label:'Makna'}], ratioRows
+      ), 'span-2')}
+      ${insightBlock('Pendanaan, Kredit & Likuiditas', insightTable(
+        [{label:'Pos'}, {label:'Nominal',num:true}, {label:'Catatan'}], fundingRows
+      ), 'span-2')}
+      ${insightBlock('Kualitas Aset & Cadangan', insightTable(
+        [{label:'Pos'}, {label:'Nominal',num:true}, {label:'Sinyal'}], riskRows
+      ))}
+      ${insightBlock('Profitabilitas & Efisiensi', insightTable(
+        [{label:'Indikator'}, {label:'Posisi',num:true}, {label:'Interpretasi'}], profitRows
+      ))}
+      ${insightBlock('Top Beban yang Perlu Dikendalikan', insightTable(
+        [{label:'Pos Beban'}, {label:'Nominal',num:true}, {label:'Kode'}], expenseRows
+      ), 'span-2')}
+      ${insightBlock('Prioritas Keputusan Direksi', priorities, 'full')}
+      ${insightBlock('Cara Membaca dan Agenda Monitoring', monitoring, 'full')}
+    </div>`;
+  }
+
+  function normalizeFinancialRows(rows) {
+    return (Array.isArray(rows) ? rows : []).map(row => {
+      const current = Number(row?.total_saldo || 0);
+      const closing = Number(row?.closing_saldo || 0);
+      const delta = Number(row?.selisih_saldo ?? (current - closing));
+      const growth = Number(row?.growth_persen ?? growthValue(current, closing) ?? 0);
+      return {
+        code:String(row?.kode_perk || ''),
+        name:String(row?.nama_perkiraan || '-'),
+        current, closing, delta, growth
+      };
+    });
+  }
+
+  function findFinancialRow(rows, keywords) {
+    const terms = keywords.map(k => String(k).toLowerCase());
+    return rows.find(row => terms.some(term => row.name.toLowerCase().includes(term))) || null;
+  }
+
+  function financialGoodWhenUp(name, isIncome) {
+    const n = String(name || '').toLowerCase();
+    const negativeTerms = ['beban','biaya','kerugian','cadangan','ckpn','npl','tunggakan','pajak'];
+    if (negativeTerms.some(term => n.includes(term))) return false;
+    if (isIncome) return ['pendapatan','laba','surplus','keuntungan'].some(term => n.includes(term));
+    return !['kewajiban','hutang','pinjaman diterima'].some(term => n.includes(term));
+  }
+
+  function buildFinancialInsight(data, type) {
+    const rows = normalizeFinancialRows(data);
+    const isIncome = String(type).includes('laba rugi');
+    const summaryRows = rows.filter(row => row.code.length <= 3 && Math.abs(row.delta) > 0);
+    const analysisRows = summaryRows.length >= 4 ? summaryRows : rows.filter(row => Math.abs(row.delta) > 0);
+    const topMoves = [...analysisRows].sort((a,b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0,8);
+    const increases = rows.filter(r => r.delta > 0).length;
+    const decreases = rows.filter(r => r.delta < 0).length;
+    const largest = topMoves[0];
+
+    const keyRows = isIncome ? [
+      findFinancialRow(rows, ['pendapatan bunga']),
+      findFinancialRow(rows, ['pendapatan operasional']),
+      findFinancialRow(rows, ['beban bunga']),
+      findFinancialRow(rows, ['beban tenaga kerja','beban pegawai']),
+      findFinancialRow(rows, ['beban umum','beban administrasi']),
+      findFinancialRow(rows, ['laba sebelum pajak']),
+      findFinancialRow(rows, ['laba setelah pajak','laba bersih'])
+    ] : [
+      findFinancialRow(rows, ['jumlah aset','total aset','aset']),
+      findFinancialRow(rows, ['kas']),
+      findFinancialRow(rows, ['penempatan pada bank','bank lain']),
+      findFinancialRow(rows, ['kredit yang diberikan','kredit diberikan']),
+      findFinancialRow(rows, ['tabungan']),
+      findFinancialRow(rows, ['deposito']),
+      findFinancialRow(rows, ['modal','ekuitas']),
+      findFinancialRow(rows, ['ckpn','cadangan kerugian'])
+    ];
+    const uniqueKeyRows = [...new Map(keyRows.filter(Boolean).map(row => [row.code || row.name, row])).values()];
+
+    const summary = `
+      <div class="lapkeu-insight-summary">
+        ${insightStat('Jumlah Pos', fmtNom(rows.length), isIncome ? 'Akun laporan laba rugi yang dianalisis' : 'Akun neraca yang dianalisis', 'info')}
+        ${insightStat('Pos Naik', fmtNom(increases), 'Dibanding posisi closing', increases >= decreases ? 'good' : 'info')}
+        ${insightStat('Pos Turun', fmtNom(decreases), 'Dibanding posisi closing', decreases > increases ? 'warn' : 'info')}
+        ${insightStat('Perubahan Terbesar', largest ? `Rp ${fmtSingkat(Math.abs(largest.delta))}` : 'Rp 0', largest ? largest.name : 'Belum ada perubahan', largest ? (financialGoodWhenUp(largest.name, isIncome) === (largest.delta > 0) ? 'good' : 'warn') : 'info')}
+      </div>
+    `;
+
+    const moveRows = topMoves.map(row => {
+      const goodUp = financialGoodWhenUp(row.name, isIncome);
+      const tone = row.delta === 0 ? 'info' : (((row.delta > 0) === goodUp) ? 'good' : 'warn');
+      const signal = row.delta > 0 ? 'Naik' : 'Turun';
+      return [
+        `${row.code} · ${row.name}`,
+        { value:`Rp ${fmtSingkat(row.current)}` },
+        { value:`Rp ${fmtSingkat(row.closing)}` },
+        { value:signedMoney(row.delta) },
+        { value:pctText(row.growth) },
+        { html:insightSignal(signal, tone) }
+      ];
+    });
+
+    const keyTableRows = uniqueKeyRows.map(row => {
+      const goodUp = financialGoodWhenUp(row.name, isIncome);
+      const tone = row.delta === 0 ? 'info' : (((row.delta > 0) === goodUp) ? 'good' : 'warn');
+      return [
+        `${row.code} · ${row.name}`,
+        { value:`Rp ${fmtSingkat(row.current)}` },
+        { value:signedMoney(row.delta) },
+        { html:insightSignal(row.delta > 0 ? 'Naik' : (row.delta < 0 ? 'Turun' : 'Tetap'), tone) }
+      ];
+    });
+
+    const priorities = [];
+    topMoves.forEach(row => {
+      const goodUp = financialGoodWhenUp(row.name, isIncome);
+      const favorable = row.delta === 0 || ((row.delta > 0) === goodUp);
+      if (!favorable && priorities.length < 5) {
+        priorities.push(`${row.name}: ${row.delta > 0 ? 'naik' : 'turun'} ${signedMoney(Math.abs(row.delta))} (${pctText(Math.abs(row.growth))}). Telusuri penyebab, unit pemilik, dan rencana koreksi.`);
+      }
+    });
+
+    if (isIncome) {
+      const profit = findFinancialRow(rows, ['laba setelah pajak','laba bersih','laba sebelum pajak']);
+      const income = findFinancialRow(rows, ['pendapatan bunga','pendapatan operasional']);
+      const expense = findFinancialRow(rows, ['beban operasional','jumlah beban','total beban']);
+      if (profit && profit.delta < 0) priorities.unshift(`Laba turun ${signedMoney(Math.abs(profit.delta))}; bedah pendapatan, biaya dana, CKPN, dan beban operasional terbesar.`);
+      if (income && income.delta < 0) priorities.push('Pendapatan turun; evaluasi yield kredit, volume aset produktif, penerimaan bunga, dan pendapatan nonbunga.');
+      if (expense && expense.delta > 0) priorities.push('Beban meningkat; tetapkan Top 5 biaya, pemilik aksi, target efisiensi, dan tenggat evaluasi.');
+    } else {
+      const credit = findFinancialRow(rows, ['kredit yang diberikan','kredit diberikan']);
+      const savings = findFinancialRow(rows, ['tabungan']);
+      const deposits = findFinancialRow(rows, ['deposito']);
+      const cash = findFinancialRow(rows, ['kas']);
+      if (credit && credit.delta < 0) priorities.unshift('Kredit menurun; pisahkan dampak run off, pelunasan, hapus buku, dan realisasi baru untuk memastikan pertumbuhan berkualitas.');
+      if ((savings && savings.delta < 0) || (deposits && deposits.delta < 0)) priorities.push('Dana masyarakat menurun; prioritaskan retensi nasabah, pipeline penghimpunan, dan komposisi dana murah.');
+      if (cash && cash.delta < 0) priorities.push('Kas turun; pastikan penurunan masih sejalan dengan kebutuhan likuiditas harian dan proyeksi penarikan dana.');
+    }
+    if (!priorities.length) priorities.push('Tidak ada sinyal material negatif pada pos ringkasan; pertahankan kualitas pertumbuhan dan pantau perubahan terbesar sampai akhir bulan.');
+
+    const reading = isIncome ? [
+      'Actual adalah posisi berjalan sampai tanggal harian; Closing adalah posisi akhir bulan sebelumnya.',
+      'Pendapatan dan laba yang naik umumnya positif, sedangkan beban, biaya, CKPN, dan kerugian yang naik perlu dianalisis lebih lanjut.',
+      'Perubahan laba harus dibaca bersama pendapatan bunga, biaya dana, pendapatan nonbunga, beban operasional, CKPN, dan pajak.',
+      'Gunakan fitur buka kelompok untuk menelusuri akun turunan yang membentuk perubahan pada akun induk.'
+    ] : [
+      'Actual adalah posisi neraca berjalan; Closing adalah posisi akhir bulan sebelumnya.',
+      'Pertumbuhan aset atau kredit tidak otomatis baik apabila DPK, likuiditas, NPL, atau modal memburuk.',
+      'Penurunan tabungan/deposito perlu dipisahkan antara transaksi normal, deposan besar, dan perpindahan antarproduk.',
+      'Perubahan akun induk dapat mengandung akun turunan; gunakan fitur buka kelompok untuk menemukan sumber perubahan.'
+    ];
+
+    return summary + `<div class="lapkeu-insight-grid">
+      ${insightBlock('Perubahan Nominal Terbesar', insightTable(
+        [{label:'Pos'}, {label:'Actual',num:true}, {label:'Closing',num:true}, {label:'Selisih',num:true}, {label:'Growth',num:true}, {label:'Sinyal'}], moveRows
+      ), 'full')}
+      ${insightBlock(isIncome ? 'Pos Pendapatan, Beban & Laba' : 'Pos Neraca Strategis', insightTable(
+        [{label:'Pos'}, {label:'Actual',num:true}, {label:'Selisih',num:true}, {label:'Sinyal'}], keyTableRows
+      ), 'span-2')}
+      ${insightBlock('Kesimpulan Cepat', [
+        `${increases} pos meningkat, ${decreases} pos menurun, dan ${rows.length - increases - decreases} pos relatif tetap dibanding closing.`,
+        largest ? `Perubahan terbesar terdapat pada ${largest.name} sebesar ${signedMoney(largest.delta)}.` : 'Belum terdapat perubahan material.',
+        'Prioritaskan analisis pada perubahan nominal terbesar, bukan hanya persentase terbesar, agar dampak finansial lebih relevan.'
+      ])}
+      ${insightBlock('Pos yang Perlu Ditingkatkan / Dikendalikan', priorities, 'full')}
+      ${insightBlock('Panduan Membaca Laporan', reading, 'full')}
+    </div>`;
   }
 
   function buildTrendInsight(data) {
     const summary = data?.summary || {};
-    const weeks = Array.isArray(data?.weeks) ? data.weeks : [];
+    const weeks = Array.isArray(data?.weeks) ? [...data.weeks] : [];
+    weeks.sort((a,b) => new Date(a?.tanggal || 0) - new Date(b?.tanggal || 0));
     const configs = weeklyMetricConfig();
+    const latestWeek = weeks.at(-1) || {};
+    const previousWeek = weeks.length > 1 ? weeks.at(-2) : (summary?.previous_closing || {});
     const metrics = Object.entries(configs).map(([key, config]) => {
-      const current = Number(summary?.[key] || 0);
+      const current = Number(latestWeek?.[key] ?? summary?.[key] ?? 0);
       const closing = Number(summary?.previous_closing?.[key] || 0);
-      const delta = current - closing;
-      const growth = growthValue(current, closing);
-      return { key, label:config.label, current, closing, delta, growth };
+      const previous = Number(previousWeek?.[key] || 0);
+      const deltaClosing = current - closing;
+      const deltaWeekly = current - previous;
+      return {
+        key, label:config.label, current, closing, previous,
+        deltaClosing, deltaWeekly,
+        growthClosing:growthValue(current, closing),
+        growthWeekly:growthValue(current, previous)
+      };
     });
-    const rising = [...metrics].sort((a,b) => b.delta - a.delta).slice(0, 3);
-    const falling = [...metrics].sort((a,b) => a.delta - b.delta).slice(0, 3);
+
+    const rising = [...metrics].sort((a,b) => b.deltaClosing - a.deltaClosing).slice(0,3);
+    const falling = [...metrics].sort((a,b) => a.deltaClosing - b.deltaClosing).slice(0,3);
     const npl = metrics.find(item => item.key === 'npl');
+    const profit = metrics.find(item => item.key === 'laba_net');
 
-    const kondisi = [
-      weeks.length ? `Tren memakai ${weeks.length} pekan pada bulan berjalan; pembanding utama adalah closing bulan sebelumnya.` : '',
-      ...rising.map(item => `${item.label} naik ${signedMoney(item.delta)} (${item.growth === null ? '-' : pctText(item.growth)}) dari bulan lalu.`),
-      npl && npl.delta > 0 ? `NPL naik ${signedMoney(npl.delta)} dari bulan lalu, perlu akselerasi recovery.` : '',
-    ];
-    const perhatian = [
-      ...falling.map(item => `${item.label} turun ${signedMoney(item.delta)} (${item.growth === null ? '-' : pctText(item.growth)}) dari bulan lalu.`),
-      'Gunakan checkbox Aktual: aktif untuk posisi nominal, nonaktif untuk melihat selisih pekan-ke-pekan.',
-    ];
-    const tindak = [
-      'Fokuskan evaluasi pada pekan dengan penurunan terbesar dibanding pekan sebelumnya.',
-      'Jika NPL naik sementara kredit tumbuh, cek kualitas pencairan dan migrasi kolektibilitas.',
-      'Jika laba turun, bedah kontribusi pendapatan dan beban per pekan untuk menentukan aksi cepat.',
-    ];
+    const summaryHtml = `
+      <div class="lapkeu-insight-summary">
+        ${insightStat('Periode Mingguan', `${weeks.length} pekan`, weeks.length ? `Terbaru ${formatViewDate(latestWeek?.tanggal || '')}` : 'Belum ada data', 'info')}
+        ${insightStat('Aset Terbaru', `Rp ${fmtSingkat(metrics.find(m => m.key === 'aset_gabungan')?.current)}`, 'Dibanding closing bulan lalu', growthTone(metrics.find(m => m.key === 'aset_gabungan')?.growthClosing, true))}
+        ${insightStat('Kredit Terbaru', `Rp ${fmtSingkat(metrics.find(m => m.key === 'kredit_baki_debet')?.current)}`, 'Pergerakan kualitas dan realisasi perlu dibaca bersama', growthTone(metrics.find(m => m.key === 'kredit_baki_debet')?.growthClosing, true))}
+        ${insightStat('NPL Terbaru', `Rp ${fmtSingkat(npl?.current)}`, npl?.deltaClosing > 0 ? 'Naik dari closing · prioritas recovery' : 'Tidak naik dari closing', npl?.deltaClosing > 0 ? 'bad' : 'good')}
+        ${insightStat('Laba Terbaru', `Rp ${fmtSingkat(profit?.current)}`, profit?.deltaWeekly < 0 ? 'Turun dari pekan sebelumnya' : 'Tidak turun dari pekan sebelumnya', profit?.deltaWeekly < 0 ? 'warn' : 'good')}
+      </div>
+    `;
 
-    return [
-      insightBlock('Arah Tren', kondisi),
-      insightBlock('Peringatan', perhatian),
-      insightBlock('Tindak Lanjut', tindak, true),
-    ].join('');
+    const metricRows = metrics.map(item => {
+      const goodWhenUp = !['beban','npl'].includes(item.key);
+      const tone = item.deltaClosing === 0 ? 'info' : (((item.deltaClosing > 0) === goodWhenUp) ? 'good' : 'warn');
+      return [
+        item.label,
+        { value:`Rp ${fmtSingkat(item.current)}` },
+        { value:`Rp ${fmtSingkat(item.closing)}` },
+        { value:signedMoney(item.deltaClosing) },
+        { value:item.growthClosing === null ? '-' : pctText(item.growthClosing) },
+        { value:signedMoney(item.deltaWeekly) },
+        { html:insightSignal(item.deltaClosing > 0 ? 'Naik' : (item.deltaClosing < 0 ? 'Turun' : 'Tetap'), tone) }
+      ];
+    });
+
+    const priorities = [];
+    if (npl?.deltaClosing > 0) priorities.push(`NPL naik ${signedMoney(npl.deltaClosing)} dari closing; lakukan breakdown debitur, migrasi kolektibilitas, flow, dan recovery per cabang/AO.`);
+    if (profit?.deltaWeekly < 0) priorities.push(`Laba turun ${signedMoney(Math.abs(profit.deltaWeekly))} dari pekan sebelumnya; cek pendapatan, beban, CKPN, dan transaksi satu kali.`);
+    const credit = metrics.find(m => m.key === 'kredit_baki_debet');
+    const dpk = metrics.find(m => m.key === 'dpk');
+    if (credit?.deltaClosing < 0) priorities.push('Kredit masih di bawah closing; bedakan run off/pelunasan dengan realisasi baru dan pastikan pipeline pencairan berkualitas.');
+    if (dpk?.deltaClosing < 0) priorities.push('DPK masih di bawah closing; tetapkan nasabah retensi, pipeline dana baru, dan pemantauan deposan besar.');
+    if (!priorities.length) priorities.push('Arah mingguan relatif mendukung; pertahankan momentum dan pantau indikator yang mulai melemah sebelum akhir bulan.');
+
+    return summaryHtml + `<div class="lapkeu-insight-grid">
+      ${insightBlock('Matriks Pergerakan Mingguan', insightTable(
+        [{label:'Indikator'}, {label:'Terbaru',num:true}, {label:'Closing',num:true}, {label:'Δ Closing',num:true}, {label:'Growth',num:true}, {label:'Δ Pekan',num:true}, {label:'Sinyal'}], metricRows
+      ), 'full')}
+      ${insightBlock('Penguatan Terbesar', rising.map(item => `${item.label} berubah ${signedMoney(item.deltaClosing)} (${item.growthClosing === null ? '-' : pctText(item.growthClosing)}) dibanding closing.`))}
+      ${insightBlock('Pelemahan Terbesar', falling.map(item => `${item.label} berubah ${signedMoney(item.deltaClosing)} (${item.growthClosing === null ? '-' : pctText(item.growthClosing)}) dibanding closing.`))}
+      ${insightBlock('Prioritas Minggu Berikutnya', priorities)}
+      ${insightBlock('Cara Membaca Tren', [
+        'Pekan 1 dibandingkan dengan closing bulan sebelumnya; pekan berikutnya dibandingkan dengan pekan sebelumnya.',
+        'Mode Aktual menunjukkan posisi nominal, sedangkan mode selisih menunjukkan penambahan atau penurunan antarpekan.',
+        'Kredit, DPK, aset, dan laba umumnya diharapkan tumbuh berkualitas; NPL dan beban perlu dikendalikan.',
+        'Gunakan perubahan mingguan untuk mendeteksi masalah lebih awal sebelum posisi akhir bulan.'
+      ], 'full')}
+    </div>`;
   }
 
   window.openLapkeuInsight = function() {
@@ -2532,22 +3559,38 @@
     const sub = document.getElementById('lapkeuInsightSub');
     const body = document.getElementById('lapkeuInsightBody');
     const type = document.getElementById('type_report')?.value || '';
-    const reportName = type === 'tren_makro_mingguan' ? 'Tren Mingguan' : (type === 'tv_makro_summary' ? 'Ringkasan Makro' : 'Laporan Keuangan');
+    const labels = {
+      'neraca detail kantor':'Analisis Neraca',
+      'laba rugi detail kantor':'Analisis Laba Rugi',
+      'tv_makro_summary':'Ringkasan Makro',
+      'tren_makro_mingguan':'Tren Makro Mingguan'
+    };
+    const reportName = labels[type] || 'Laporan Keuangan';
     if (title) title.textContent = `${reportName} - ${selectedOfficeLabel()}`;
-    if (sub) sub.textContent = `Posisi ${formatViewDate(document.getElementById('harian_date')?.value || '')}`;
+    if (sub) {
+      const closing = formatViewDate(document.getElementById('closing_date')?.value || '');
+      const actual = formatViewDate(document.getElementById('harian_date')?.value || '');
+      sub.textContent = `Closing ${closing} dibanding posisi ${actual} · Analisis otomatis untuk membantu penentuan prioritas manajemen`;
+    }
     if (body) {
-      body.innerHTML = `<div class="lapkeu-insight-grid">${
-        type === 'tren_makro_mingguan'
-          ? buildTrendInsight(rawDataResult || {})
-          : buildMakroInsight(rawDataResult || {})
-      }</div>`;
+      body.innerHTML = type === 'tren_makro_mingguan'
+        ? buildTrendInsight(rawDataResult || {})
+        : (type === 'tv_makro_summary'
+          ? buildMakroInsight(rawDataResult || {})
+          : buildFinancialInsight(rawDataResult || [], type));
     }
     modal?.classList.add('is-open');
+    document.body.style.overflow = 'hidden';
   };
 
   window.closeLapkeuInsight = function() {
     document.getElementById('lapkeuInsightModal')?.classList.remove('is-open');
+    document.body.style.overflow = '';
   };
+
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeLapkeuInsight();
+  });
 
   function renderMakroSummary(data) {
     const panel = document.getElementById('macroReport');
@@ -3037,10 +4080,13 @@
 
   function exportToExcel() {
     if(!Array.isArray(rawDataResult) || rawDataResult.length === 0) return alert("Export Excel untuk mode ini belum tersedia, pilih NERACA atau LABA RUGI dulu ya.");
-    let table = `<table border="1"><thead><tr style="background:#f1f5f9"><th>Kode</th><th>Uraian</th><th>Saldo</th></tr></thead><tbody>`;
+    let table = `<table border="1"><thead><tr style="background:#f1f5f9"><th>Kode</th><th>Uraian</th><th>Actual</th><th>Closing</th><th>Selisih</th><th>%</th></tr></thead><tbody>`;
     rawDataResult.forEach(d => {
       let roundedSaldo = Math.round(Number(d.total_saldo || 0));
-      table += `<tr><td style="mso-number-format:'\\@'">${d.kode_perk}</td><td>${d.nama_perkiraan}</td><td>${roundedSaldo}</td></tr>`;
+      let closingSaldo = Math.round(Number(d.closing_saldo || 0));
+      let selisihSaldo = Math.round(Number(d.selisih_saldo || (roundedSaldo - closingSaldo)));
+      let growth = Number(d.growth_persen || 0).toFixed(2);
+      table += `<tr><td style="mso-number-format:'\\@'">${d.kode_perk}</td><td>${d.nama_perkiraan}</td><td>${roundedSaldo}</td><td>${closingSaldo}</td><td>${selisihSaldo}</td><td>${growth}%</td></tr>`;
     });
     table += `</tbody></table>`;
     const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
@@ -3056,7 +4102,7 @@
 
   document.getElementById('filterForm').onsubmit = e => { e.preventDefault(); fetchRekap(); if (window.innerWidth < 768) toggleLapkeuMobileFilter(false); };
 
-  ['type_report','opt_kantor_rec','harian_date'].forEach(id => {
+  ['type_report','opt_kantor_rec','harian_date','closing_date'].forEach(id => {
     document.getElementById(id)?.addEventListener('change', () => {
       if (window.innerWidth < 768) setTimeout(() => toggleLapkeuMobileFilter(false), 50);
     });

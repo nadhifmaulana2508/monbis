@@ -174,6 +174,12 @@ class LaporanKeuanganController
     {
         try {
             $tanggal = $input['harian_date'] ?? date('Y-m-d', strtotime('-1 day'));
+            $closingDate = $input['closing_date'] ?? null;
+            if (!$closingDate) {
+                $closingDateObj = new DateTime($tanggal);
+                $closingDateObj->modify('last day of previous month');
+                $closingDate = $closingDateObj->format('Y-m-d');
+            }
             $typeReport = $input['type'] ?? ''; 
             $kodeKantor = $input['kode_kantor'] ?? 'konsolidasi';
 
@@ -181,7 +187,12 @@ class LaporanKeuanganController
             $sqlKodePerk = $this->getKodePerkRangeWhere($prefixes);
 
             $sqlFilter = "";
-            $params = [':tanggal' => $tanggal];
+            $params = [
+                ':tanggal_actual' => $tanggal,
+                ':tanggal_filter' => $tanggal,
+                ':closing_actual' => $closingDate,
+                ':closing_filter' => $closingDate,
+            ];
 
             if ($kodeKantor === 'konsolidasi') {
                 $sqlFilter = " AND kode_kantor BETWEEN '000' AND '028' ";
@@ -195,9 +206,10 @@ class LaporanKeuanganController
                 SELECT 
                     kode_perk,
                     MAX(NULLIF(TRIM(nama_perk), '')) AS nama_perk,
-                    SUM(saldo_akhir) AS total_saldo
+                    SUM(CASE WHEN tanggal = :tanggal_actual THEN saldo_akhir ELSE 0 END) AS total_saldo,
+                    SUM(CASE WHEN tanggal = :closing_actual THEN saldo_akhir ELSE 0 END) AS closing_saldo
                 FROM acc_history
-                WHERE tanggal = :tanggal
+                WHERE tanggal IN (:tanggal_filter, :closing_filter)
                 {$sqlFilter}
                 AND ({$sqlKodePerk})
                 GROUP BY kode_perk
@@ -213,18 +225,26 @@ class LaporanKeuanganController
             foreach ($results as $row) {
                 $kode = $row['kode_perk'];
                 $saldo = (float)$row['total_saldo'];
+                $closingSaldo = (float)($row['closing_saldo'] ?? 0);
                 $namaPerk = trim((string) ($row['nama_perk'] ?? ''));
                 $panjangKode = strlen($kode);
+                $selisih = $saldo - $closingSaldo;
+                $growth = $closingSaldo != 0.0 ? ($selisih / abs($closingSaldo)) * 100 : ($saldo == 0.0 ? 0.0 : 100.0);
 
                 // 🔥 LOGIKA FILTER SAKTI:
                 // 1. Jika panjang kode <= 3 digit, MASUKKAN (meskipun saldo 0)
                 // 2. Jika panjang kode > 3 digit DAN saldo != 0, MASUKKAN
                 // 3. Selain itu (kode > 3 digit dan saldo 0), ABAIKAN
-                if ($panjangKode <= 3 || ($panjangKode > 3 && $saldo != 0)) {
+                if ($panjangKode <= 3 || ($panjangKode > 3 && ($saldo != 0 || $closingSaldo != 0))) {
                     $mappedData[] = [
                         'kode_perk'      => $kode,
                         'nama_perkiraan' => $namaPerk !== '' ? $namaPerk : $kode,
                         'total_saldo'    => $saldo,
+                        'closing_saldo'  => $closingSaldo,
+                        'selisih_saldo'  => $selisih,
+                        'growth_persen'  => round($growth, 2),
+                        'closing_date'   => $closingDate,
+                        'harian_date'    => $tanggal,
                         'kantor_cek'     => strtoupper($kodeKantor)
                     ];
                 }

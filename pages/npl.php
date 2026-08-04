@@ -229,38 +229,22 @@
   .mk-export:focus-visible { outline:0; box-shadow:0 0 0 3px rgba(5,150,105,.18); }
   .mk-export svg { width:17px; height:17px; flex:0 0 auto; }
 
-  .mk-view {
-    display:none;
-    min-width:0;
-    max-width:100%;
-    min-height:0;
-    height:100%;
-    overflow:hidden;
-  }
+  .mk-view { display:none; min-height:0; height:100%; }
   .mk-view.active { display:flex; flex-direction:column; }
 
   .mk-table-shell {
     --mk-head-h:38px;
     position:relative;
-    width:100%;
-    max-width:100%;
-    min-width:0;
     height:100%;
-    overflow-x:auto;
-    overflow-y:auto;
+    overflow:auto;
     background:#fff;
     border:1px solid var(--mk-border);
     border-radius:10px;
     -webkit-overflow-scrolling:touch;
-    overscroll-behavior-x:none;
-    overscroll-behavior-y:contain;
-    touch-action:pan-x pan-y;
-    scrollbar-gutter:auto;
   }
   .mk-table {
     width:max-content;
     min-width:100%;
-    max-width:none;
     border-collapse:separate;
     border-spacing:0;
     table-layout:fixed;
@@ -280,10 +264,7 @@
     font-variant-numeric:tabular-nums;
   }
   .mk-table th:last-child,
-  .mk-table td:last-child {
-    border-right:0;
-    box-shadow:inset -1px 0 0 #e2e8f0;
-  }
+  .mk-table td:last-child { border-right:0; }
 
   .mk-table thead th {
     position:sticky;
@@ -428,15 +409,6 @@
     color:#94a3b8;
     text-align:center;
     font-weight:750;
-  }
-
-  #mkHeaderSubtitle {
-    display:block;
-    max-width:none;
-    overflow:visible;
-    text-overflow:clip;
-    white-space:normal;
-    line-height:1.25;
   }
 
   @media (min-width:768px) {
@@ -588,10 +560,9 @@
     #mkHeaderTitle { font-size:17px !important; }
     #mkHeaderSubtitle {
       font-size:9px !important;
-      overflow:visible;
-      text-overflow:clip;
-      white-space:normal;
-      line-height:1.25 !important;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
     }
     #mkTabs {
       flex:0 0 auto;
@@ -742,23 +713,12 @@
   }
 
   @media (max-width:767px) {
-    html,
-    body {
-      max-width:100%;
-      overflow-x:hidden !important;
-      overscroll-behavior-x:none;
-    }
-
     :root {
       --mk-name:94px;
       --mk-code:0px;
     }
 
     #monitoringKreditPage {
-      width:100% !important;
-      max-width:100vw !important;
-      min-width:0 !important;
-      overflow:hidden !important;
       /*
        * Navbar Monbis berada fixed/sticky di atas pada mobile.
        * Nilai overlap dihitung otomatis lewat JS agar halaman selalu mulai
@@ -804,15 +764,9 @@
     }
     #mkHeaderSubtitle {
       margin-top:2px !important;
-      max-width:none !important;
-      font-size:7.4px !important;
-      line-height:1.25 !important;
-      white-space:normal !important;
-      overflow:visible !important;
-      text-overflow:clip !important;
-      display:-webkit-box;
-      -webkit-box-orient:vertical;
-      -webkit-line-clamp:2;
+      max-width:172px;
+      font-size:6.8px !important;
+      line-height:1.15 !important;
     }
 
     .mk-mobile-head-actions {
@@ -898,16 +852,11 @@
       font-size:8px !important;
       line-height:1.08 !important;
     }
-    /* Exact width = total seluruh kolom. Tidak ada area kosong setelah kolom terakhir. */
     #tableKolek {
-      width:674px !important;
-      min-width:674px !important;
-      max-width:674px !important;
+      min-width:690px !important;
     }
     #tableNpl {
-      width:550px !important;
-      min-width:550px !important;
-      max-width:550px !important;
+      min-width:570px !important;
     }
 
     #tableKolek col:nth-child(1),
@@ -993,7 +942,7 @@
     :root { --mk-name:86px; }
     #monitoringKreditPage { padding:4px !important; }
     #mkHeaderCard { padding:5px 6px !important; }
-    #mkHeaderSubtitle { max-width:none !important; font-size:6.9px !important; line-height:1.2 !important; }
+    #mkHeaderSubtitle { max-width:142px; font-size:6.2px !important; }
     #mkFilterForm,
     #mkFilterForm.kolek-mode {
       grid-template-columns:minmax(68px,.68fr) minmax(0,1.32fr) 31px !important;
@@ -1011,16 +960,8 @@
       min-width:27px !important;
       flex-basis:27px !important;
     }
-    #tableKolek {
-      width:666px !important;
-      min-width:666px !important;
-      max-width:666px !important;
-    }
-    #tableNpl {
-      width:542px !important;
-      min-width:542px !important;
-      max-width:542px !important;
-    }
+    #tableKolek { min-width:650px !important; }
+    #tableNpl { min-width:540px !important; }
     #tableKolek col:nth-child(2),
     #tableNpl col:nth-child(2) { width:86px !important; }
     .mk-table th,
@@ -1045,7 +986,7 @@
         </span>
         <div class="min-w-0">
           <h1 id="mkHeaderTitle" class="text-base md:text-xl font-extrabold text-slate-800 leading-tight truncate">Monitoring Kredit</h1>
-          <p id="mkHeaderSubtitle" class="text-[9px] md:text-[11px] text-slate-500 mt-0.5">Rekap kolektibilitas dan perbandingan NPL</p>
+          <p id="mkHeaderSubtitle" class="text-[9px] md:text-[11px] text-slate-500 mt-0.5 truncate">Rekap kolektibilitas dan perbandingan NPL</p>
         </div>
       </div>
 
@@ -1197,9 +1138,44 @@
   const API_DATE  = './api/date/';
 
   const nfID = new Intl.NumberFormat('id-ID');
-  const fmt = value => nfID.format(Number(value || 0));
-  const fmt2 = value => Number(value || 0).toLocaleString('id-ID', { minimumFractionDigits:2, maximumFractionDigits:2 });
-  const num = value => Number(value || 0);
+
+  function parseNumeric(value) {
+    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+    if (value === null || value === undefined || value === '') return 0;
+
+    let raw = String(value)
+      .trim()
+      .replace(/\s+/g, '')
+      .replace(/%/g, '')
+      .replace(/^\((.*)\)$/, '-$1');
+
+    if (!raw || raw === '-') return 0;
+
+    // Nilai API normal seperti 1234.56 tetap dibaca langsung.
+    const direct = Number(raw);
+    if (Number.isFinite(direct)) return direct;
+
+    // Mendukung format Indonesia: 1.234.567,89 atau 29,20.
+    if (raw.includes('.') && raw.includes(',')) {
+      const lastDot = raw.lastIndexOf('.');
+      const lastComma = raw.lastIndexOf(',');
+      raw = lastComma > lastDot
+        ? raw.replace(/\./g, '').replace(',', '.')
+        : raw.replace(/,/g, '');
+    } else if (raw.includes(',')) {
+      raw = raw.replace(/\./g, '').replace(',', '.');
+    } else if ((raw.match(/\./g) || []).length > 1) {
+      raw = raw.replace(/\./g, '');
+    }
+
+    raw = raw.replace(/[^0-9+\-.]/g, '');
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  const num = parseNumeric;
+  const fmt = value => nfID.format(num(value));
+  const fmt2 = value => num(value).toLocaleString('id-ID', { minimumFractionDigits:2, maximumFractionDigits:2 });
   const safeText = value => String(value ?? '')
     .replace(/&/g,'&amp;')
     .replace(/</g,'&lt;')
@@ -1215,8 +1191,8 @@
     kolekTotal:null,
     nplRows:[],
     nplTotal:null,
-    kolekSort:{ col:null, dir:null },
-    nplSort:{ col:null, dir:null },
+    kolekSort:{ col:null, dir:'asc' },
+    nplSort:{ col:null, dir:'asc' },
     abortKolek:null,
     abortNpl:null,
     fetchTimer:null
@@ -1249,19 +1225,6 @@
     if (window.innerWidth >= 1180) return;
     el('mkFilterPanel')?.classList.toggle('open');
     syncFilterToggle();
-  }
-
-  function enableKeyboardSorting() {
-    document.querySelectorAll('th.mk-sort').forEach(th => {
-      th.setAttribute('tabindex', '0');
-      th.setAttribute('role', 'button');
-      th.setAttribute('aria-sort', 'none');
-      th.addEventListener('keydown', event => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        th.click();
-      });
-    });
   }
 
   function updateStickyOffsets() {
@@ -1425,78 +1388,6 @@
     requestAnimationFrame(updateStickyOffsets);
   }
 
-
-  function getHorizontalScrollMax(scroller) {
-    if (!scroller) return 0;
-    return Math.max(0, Math.ceil(scroller.scrollWidth - scroller.clientWidth));
-  }
-
-  function clampHorizontalScroll(scroller) {
-    if (!scroller) return;
-    const max = getHorizontalScrollMax(scroller);
-    const current = Number(scroller.scrollLeft || 0);
-    if (current < 0) {
-      scroller.scrollLeft = 0;
-    } else if (current > max) {
-      scroller.scrollLeft = max;
-    }
-  }
-
-  function bindHorizontalScrollBounds(scroller) {
-    if (!scroller || scroller.dataset.mkScrollBound === '1') return;
-    scroller.dataset.mkScrollBound = '1';
-
-    let startX = 0;
-    let startY = 0;
-    let scrollFrame = 0;
-
-    scroller.addEventListener('scroll', () => {
-      cancelAnimationFrame(scrollFrame);
-      scrollFrame = requestAnimationFrame(() => clampHorizontalScroll(scroller));
-    }, { passive:true });
-
-    scroller.addEventListener('touchstart', event => {
-      const touch = event.touches && event.touches[0];
-      if (!touch) return;
-      startX = touch.clientX;
-      startY = touch.clientY;
-      clampHorizontalScroll(scroller);
-    }, { passive:true });
-
-    scroller.addEventListener('touchmove', event => {
-      const touch = event.touches && event.touches[0];
-      if (!touch) return;
-
-      const dx = touch.clientX - startX;
-      const dy = touch.clientY - startY;
-      if (Math.abs(dx) <= Math.abs(dy)) return;
-
-      const max = getHorizontalScrollMax(scroller);
-      const atStart = scroller.scrollLeft <= 0.5;
-      const atEnd = scroller.scrollLeft >= max - 0.5;
-
-      // Hentikan rubber-band iOS ketika sudah mencapai batas kiri/kanan.
-      if ((atStart && dx > 0) || (atEnd && dx < 0)) {
-        event.preventDefault();
-        scroller.scrollLeft = atStart ? 0 : max;
-      }
-    }, { passive:false });
-
-    ['touchend','touchcancel','pointerup'].forEach(type => {
-      scroller.addEventListener(type, () => {
-        requestAnimationFrame(() => clampHorizontalScroll(scroller));
-      }, { passive:true });
-    });
-
-    clampHorizontalScroll(scroller);
-  }
-
-  function initHorizontalScrollBounds() {
-    ['kolekScroller','nplScrollerCombined'].forEach(id => {
-      bindHorizontalScrollBounds(el(id));
-    });
-  }
-
   async function switchTab(tab) {
     if (!['kolek','npl'].includes(tab) || state.activeTab === tab) return;
     state.activeTab = tab;
@@ -1504,11 +1395,7 @@
     closeFilterSmall();
 
     const scroll = tab === 'kolek' ? el('kolekScroller') : el('nplScrollerCombined');
-    if (scroll) {
-      scroll.scrollLeft = 0;
-      scroll.scrollTop = 0;
-      requestAnimationFrame(() => clampHorizontalScroll(scroll));
-    }
+    if (scroll) { scroll.scrollLeft = 0; scroll.scrollTop = 0; }
 
     if (tab === 'kolek') await fetchKolektibilitasCombined();
     else await fetchNplCombined();
@@ -1558,7 +1445,7 @@
         ? json.data.data
         : (Array.isArray(json.data) ? json.data : []);
       state.kolekTotal = json.data?.grand_total || null;
-      state.kolekSort = { col:null, dir:null };
+      state.kolekSort = { col:null, dir:'asc' };
       resetSortIcons('kolek');
       renderKolekTotal();
       renderKolekRows(state.kolekRows);
@@ -1570,10 +1457,7 @@
       }
     } finally {
       setLoading(false);
-      requestAnimationFrame(() => {
-        updateStickyOffsets();
-        clampHorizontalScroll(el('kolekScroller'));
-      });
+      requestAnimationFrame(updateStickyOffsets);
     }
   }
 
@@ -1613,7 +1497,7 @@
         ? json.data.data
         : (Array.isArray(json.data) ? json.data : []);
       state.nplTotal = json.data?.grand_total || null;
-      state.nplSort = { col:null, dir:null };
+      state.nplSort = { col:null, dir:'asc' };
       resetSortIcons('npl');
       renderNplTotal();
       renderNplRows(state.nplRows);
@@ -1625,10 +1509,7 @@
       }
     } finally {
       setLoading(false);
-      requestAnimationFrame(() => {
-        updateStickyOffsets();
-        clampHorizontalScroll(el('nplScrollerCombined'));
-      });
+      requestAnimationFrame(updateStickyOffsets);
     }
   }
 
@@ -1758,142 +1639,106 @@
     }).join('');
   }
 
-  // === SORTING YANG KONSISTEN UNTUK STRING ANGKA DARI API ===
-  // Nilai PDO/MySQL biasanya diterima JavaScript sebagai string. Jika langsung
-  // localeCompare, angka seperti 9.000 akan dianggap lebih besar dari 80.000.
-  // Semua kolom nominal/persen dipaksa menjadi number sebelum dibandingkan.
-  const creditSortTypes = {
-    kolek: {
-      kode_unit:'code', nama_unit:'text',
-      bd_L:'number', bd_DP:'number', bd_KL:'number', bd_D:'number', bd_M:'number',
-      bd_npl:'number', total_bd:'number', persentase_npl:'number'
-    },
-    npl: {
-      kode_unit:'code', nama_unit:'text',
-      npl_closing:'number', npl_harian:'number', selisih_npl:'number',
-      npl_closing_persen:'number', npl_harian_persen:'number', selisih_npl_persen:'number'
-    }
-  };
+  const sortCollator = new Intl.Collator('id-ID', {
+    numeric:true,
+    sensitivity:'base',
+    ignorePunctuation:true
+  });
 
-  function sortableNumber(value) {
-    if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
-    if (value === null || value === undefined || value === '') return 0;
+  const textSortColumns = new Set(['nama_unit']);
+  const codeSortColumns = new Set(['kode_unit']);
 
-    let raw = String(value).trim().replace(/\s+/g, '').replace(/[^0-9,\.\-+eE]/g, '');
-    if (!raw) return 0;
-
-    const commaCount = (raw.match(/,/g) || []).length;
-    const dotCount = (raw.match(/\./g) || []).length;
-
-    if (commaCount && dotCount) {
-      // Separator paling kanan dianggap desimal.
-      if (raw.lastIndexOf(',') > raw.lastIndexOf('.')) {
-        raw = raw.replace(/\./g, '').replace(',', '.');
-      } else {
-        raw = raw.replace(/,/g, '');
-      }
-    } else if (commaCount) {
-      // Format Indonesia: 29,20 atau 1.234.567,89.
-      if (commaCount > 1) raw = raw.replace(/,/g, '');
-      else raw = raw.replace(',', '.');
-    } else if (dotCount > 1 && /^[-+]?\d{1,3}(\.\d{3})+$/.test(raw)) {
-      // Format ribuan Indonesia tanpa desimal: 243.016.279.823.
-      raw = raw.replace(/\./g, '');
-    }
-
-    const parsed = Number(raw);
-    return Number.isFinite(parsed) ? parsed : 0;
+  function sortColumnType(column) {
+    if (textSortColumns.has(column)) return 'text';
+    if (codeSortColumns.has(column)) return 'code';
+    return 'number';
   }
 
-  function creditSortValue(row, column, type) {
-    if (type === 'code') {
-      return String(row?.[column] ?? row?.kode_cabang ?? row?.kode_unit ?? '').trim();
-    }
+  function sortValue(row,column) {
+    if (column === 'kode_unit') return row?.kode_unit ?? row?.kode_cabang ?? '';
+    if (column === 'nama_unit') return row?.nama_unit ?? row?.nama_kantor ?? '';
+    return row?.[column];
+  }
+
+  function isBlankSortValue(value) {
+    return value === null || value === undefined || String(value).trim() === '';
+  }
+
+  function compareRows(a,b,column,direction) {
+    const av = sortValue(a,column);
+    const bv = sortValue(b,column);
+    const aBlank = isBlankSortValue(av);
+    const bBlank = isBlankSortValue(bv);
+
+    // Nilai kosong selalu ditempatkan paling bawah, baik ASC maupun DESC.
+    if (aBlank && !bBlank) return 1;
+    if (!aBlank && bBlank) return -1;
+    if (aBlank && bBlank) return 0;
+
+    const type = sortColumnType(column);
     if (type === 'text') {
-      return String(row?.[column] ?? row?.nama_kantor ?? row?.nama_unit ?? '').trim();
+      return sortCollator.compare(String(av), String(bv)) * direction;
     }
-    return sortableNumber(row?.[column]);
+
+    if (type === 'code') {
+      const aCode = String(av).trim();
+      const bCode = String(bv).trim();
+      return sortCollator.compare(aCode, bCode) * direction;
+    }
+
+    return (num(av) - num(bv)) * direction;
   }
 
-  function sortCreditRows(rows, reportType, column, direction) {
-    const type = creditSortTypes[reportType]?.[column] || 'text';
-    const multiplier = direction === 'asc' ? 1 : -1;
-
+  function stableSortRows(rows,column,direction) {
     return rows
-      .map((row, originalIndex) => ({ row, originalIndex }))
-      .sort((left, right) => {
-        const av = creditSortValue(left.row, column, type);
-        const bv = creditSortValue(right.row, column, type);
-        let result = 0;
+      .map((row,index) => ({ row,index }))
+      .sort((left,right) => {
+        const primary = compareRows(left.row,right.row,column,direction);
+        if (primary !== 0) return primary;
 
-        if (type === 'number') {
-          result = av - bv;
-        } else if (type === 'code') {
-          result = String(av).localeCompare(String(bv), 'id', {
-            numeric:true,
-            sensitivity:'base'
-          });
-        } else {
-          result = String(av).localeCompare(String(bv), 'id', {
-            numeric:true,
-            sensitivity:'base',
-            ignorePunctuation:true
-          });
-        }
-
-        // Urutan stabil saat dua nilai sama: kembali ke urutan asli API.
-        if (result === 0) result = left.originalIndex - right.originalIndex;
-        return result * multiplier;
+        // Jika nilainya sama, urutkan berdasarkan kode agar hasil tidak meloncat.
+        const codeTie = compareRows(left.row,right.row,'kode_unit',1);
+        return codeTie !== 0 ? codeTie : left.index - right.index;
       })
       .map(item => item.row);
   }
 
-  function defaultSortDirection(reportType, column) {
-    const type = creditSortTypes[reportType]?.[column] || 'text';
-    return type === 'number' ? 'desc' : 'asc';
+  function nextSortDirection(sort,column) {
+    if (sort.col === column) return sort.dir === 'asc' ? 'desc' : 'asc';
+    return sortColumnType(column) === 'number' ? 'desc' : 'asc';
   }
 
   function resetSortIcons(type) {
     document.querySelectorAll(`[data-${type}-sort]`).forEach(icon => {
       icon.textContent = '↕';
-      const th = icon.closest('th');
-      if (th) th.setAttribute('aria-sort', 'none');
+      icon.closest('th')?.removeAttribute('aria-sort');
     });
   }
 
-  function updateSortIndicator(type, column, direction) {
+  function updateSortIndicator(type,column,direction) {
     resetSortIcons(type);
     const icon = document.querySelector(`[data-${type}-sort="${column}"]`);
     if (!icon) return;
     icon.textContent = direction === 'asc' ? '↑' : '↓';
-    const th = icon.closest('th');
-    if (th) th.setAttribute('aria-sort', direction === 'asc' ? 'ascending' : 'descending');
+    icon.closest('th')?.setAttribute('aria-sort', direction === 'asc' ? 'ascending' : 'descending');
   }
 
   window.sortKolekCombined = function(column) {
-    if (!Array.isArray(state.kolekRows) || !state.kolekRows.length) return;
-
-    const sort = state.kolekSort;
-    const nextDirection = sort.col === column
-      ? (sort.dir === 'asc' ? 'desc' : 'asc')
-      : defaultSortDirection('kolek', column);
-
-    state.kolekSort = { col:column, dir:nextDirection };
-    updateSortIndicator('kolek', column, nextDirection);
-    renderKolekRows(sortCreditRows(state.kolekRows, 'kolek', column, nextDirection));
+    if (!state.kolekRows.length) return;
+    const directionName = nextSortDirection(state.kolekSort,column);
+    state.kolekSort = { col:column, dir:directionName };
+    updateSortIndicator('kolek',column,directionName);
+    const direction = directionName === 'asc' ? 1 : -1;
+    renderKolekRows(stableSortRows(state.kolekRows,column,direction));
   };
 
   window.sortNplCombined = function(column) {
-    if (!Array.isArray(state.nplRows) || !state.nplRows.length) return;
-
-    const sort = state.nplSort;
-    const nextDirection = sort.col === column
-      ? (sort.dir === 'asc' ? 'desc' : 'asc')
-      : defaultSortDirection('npl', column);
-
-    state.nplSort = { col:column, dir:nextDirection };
-    updateSortIndicator('npl', column, nextDirection);
-    renderNplRows(sortCreditRows(state.nplRows, 'npl', column, nextDirection));
+    if (!state.nplRows.length) return;
+    const directionName = nextSortDirection(state.nplSort,column);
+    state.nplSort = { col:column, dir:directionName };
+    updateSortIndicator('npl',column,directionName);
+    const direction = directionName === 'asc' ? 1 : -1;
+    renderNplRows(stableSortRows(state.nplRows,column,direction));
   };
 
   function xlsxEscape(value) {
@@ -2010,6 +1855,10 @@
     return `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${text}</t></is></c>`;
   }
 
+  // Deklarasi XML disusun terpisah agar tidak dibaca sebagai pembuka PHP
+  // oleh extension atau linter ketika file ini disimpan sebagai .php.
+  const XLSX_XML_DECL = '<' + '?xml version="1.0" encoding="UTF-8" standalone="yes"?' + '>';
+
   function downloadRealXlsx({ filename, sheetName, columns, rows }) {
     const safeSheet = String(sheetName || 'Data').replace(/[\\/*?:\[\]]/g,' ').slice(0,31) || 'Data';
     const rowXml = [];
@@ -2023,7 +1872,7 @@
     const columnXml = columns.map((column,index) => `<col min="${index + 1}" max="${index + 1}" width="${Number(column.width || 14)}" customWidth="1"/>`).join('');
     const finalRow = rows.length + 1;
     const finalColumn = xlsxColumnName(columns.length);
-    const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    const sheetXml = `${XLSX_XML_DECL}
 <worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews>
   <sheetFormatPr defaultRowHeight="18"/>
@@ -2032,7 +1881,7 @@
   <autoFilter ref="A1:${finalColumn}${finalRow}"/>
 </worksheet>`;
 
-    const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    const stylesXml = `${XLSX_XML_DECL}
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
   <fonts count="3">
     <font><sz val="10"/><name val="Calibri"/><family val="2"/></font>
@@ -2067,12 +1916,12 @@
 
     const now = new Date().toISOString();
     const entries = [
-      { name:'[Content_Types].xml', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>` },
-      { name:'_rels/.rels', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>` },
-      { name:'docProps/core.xml', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:creator>Monbis</dc:creator><cp:lastModifiedBy>Monbis</cp:lastModifiedBy><dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${now}</dcterms:modified></cp:coreProperties>` },
-      { name:'docProps/app.xml', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>Monbis</Application><TitlesOfParts><vt:vector size="1" baseType="lpstr"><vt:lpstr>${xlsxEscape(safeSheet)}</vt:lpstr></vt:vector></TitlesOfParts></Properties>` },
-      { name:'xl/workbook.xml', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xlsxEscape(safeSheet)}" sheetId="1" r:id="rId1"/></sheets></workbook>` },
-      { name:'xl/_rels/workbook.xml.rels', data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+      { name:'[Content_Types].xml', data:`${XLSX_XML_DECL}<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/><Override PartName="/docProps/app.xml" ContentType="application/vnd.openxmlformats-officedocument.extended-properties+xml"/></Types>` },
+      { name:'_rels/.rels', data:`${XLSX_XML_DECL}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/><Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/extended-properties" Target="docProps/app.xml"/></Relationships>` },
+      { name:'docProps/core.xml', data:`${XLSX_XML_DECL}<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:creator>Monbis</dc:creator><cp:lastModifiedBy>Monbis</cp:lastModifiedBy><dcterms:created xsi:type="dcterms:W3CDTF">${now}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${now}</dcterms:modified></cp:coreProperties>` },
+      { name:'docProps/app.xml', data:`${XLSX_XML_DECL}<Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes"><Application>Monbis</Application><TitlesOfParts><vt:vector size="1" baseType="lpstr"><vt:lpstr>${xlsxEscape(safeSheet)}</vt:lpstr></vt:vector></TitlesOfParts></Properties>` },
+      { name:'xl/workbook.xml', data:`${XLSX_XML_DECL}<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${xlsxEscape(safeSheet)}" sheetId="1" r:id="rId1"/></sheets></workbook>` },
+      { name:'xl/_rels/workbook.xml.rels', data:`${XLSX_XML_DECL}<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
       { name:'xl/styles.xml', data:stylesXml },
       { name:'xl/worksheets/sheet1.xml', data:sheetXml }
     ];
@@ -2211,6 +2060,16 @@
 
   window.fetchActiveCreditTab = fetchActiveCreditTab;
 
+  document.querySelectorAll('.mk-sort').forEach(header => {
+    header.setAttribute('tabindex','0');
+    header.setAttribute('role','button');
+    header.addEventListener('keydown', event => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      header.click();
+    });
+  });
+
   window.addEventListener('resize', () => {
     clearTimeout(window.__mkResizeTimer);
     window.__mkResizeTimer = setTimeout(() => {
@@ -2221,8 +2080,6 @@
       syncViewTogglePlacement();
       syncMonitoringCreditNavbarClearance();
       updateStickyOffsets();
-      clampHorizontalScroll(el('kolekScroller'));
-      clampHorizontalScroll(el('nplScrollerCombined'));
     },100);
   });
 
@@ -2239,8 +2096,6 @@
 
   window.addEventListener('DOMContentLoaded', () => {
     syncMonitoringCreditNavbarClearance();
-    initHorizontalScrollBounds();
-    enableKeyboardSorting();
     initMonitoringKredit();
     // Navbar kadang dirender sesudah konten halaman.
     setTimeout(syncMonitoringCreditNavbarClearance, 120);
