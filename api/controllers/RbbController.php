@@ -437,17 +437,7 @@ class RbbController
         $sqlMonthStart = $this->pdo->quote($monthStart);
         $sqlYearStart = $this->pdo->quote($yearStart);
         $sqlHarianNext = $this->pdo->quote($harianNext);
-        $sqlActualDate = $this->pdo->quote($harianDate);
-        $reportType = strtolower(trim((string)($b['report_type'] ?? '')));
-        if ($reportType === 'laba_rugi') {
-            $kodePerkiraanList = ['4', '5'];
-        } elseif ($reportType === 'neraca') {
-            $kodePerkiraanList = ['1'];
-        } else {
-            $kodePerkiraanList = [!empty($b['kode_perkiraan']) ? (string)$b['kode_perkiraan'] : 'produksi.total'];
-            $reportType = 'produksi';
-        }
-        $kodePerkiraan = implode(',', $kodePerkiraanList);
+        $kodePerkiraan = !empty($b['kode_perkiraan']) ? $b['kode_perkiraan'] : 'produksi.total';
         $compareMode = strtolower((string)($b['compare_mode'] ?? 'auto'));
         if (!in_array($compareMode, ['auto', 'rbb', 'history'], true)) {
             $compareMode = 'auto';
@@ -459,14 +449,10 @@ class RbbController
         }
 
         $korwil = strtoupper((string)($b['korwil'] ?? ''));
-        $kodePlaceholders = [];
-        $params = [];
-        foreach ($kodePerkiraanList as $index => $kode) {
-            $placeholder = ':kode_perkiraan_' . $index;
-            $kodePlaceholders[] = $placeholder;
-            $params[$placeholder] = $kode;
-        }
-        $whereFinal = "WHERE ref.kode_perkiraan IN (" . implode(',', $kodePlaceholders) . ")";
+        $whereFinal = "WHERE ref.kode_perkiraan = :kode_perkiraan";
+        $params = [
+            ':kode_perkiraan' => $kodePerkiraan
+        ];
 
         if ($kodeKantor !== '') {
             $whereFinal .= " AND data_gabungan.kode_kantor = :kode_kantor";
@@ -502,40 +488,28 @@ class RbbController
         array_unshift($monthUnion, "SELECT kode_monbis, periode, '000' AS kode_kantor, ({$sumExpression}) AS rbb_target FROM rbb WHERE periode = {$sqlMonthStart}");
         array_unshift($laluUnion, "SELECT kode_monbis, '000' AS kode_kantor, SUM({$sumExpression}) AS target_s_d_lalu FROM rbb WHERE periode >= {$sqlYearStart} AND periode < {$sqlMonthStart} GROUP BY kode_monbis");
 
-        $isFinancialReport = in_array($reportType, ['neraca', 'laba_rugi'], true);
-        if ($isFinancialReport) {
-            $actualCategory = $reportType === 'neraca'
-                ? "'1' AS kode_perkiraan, SUM(CASE WHEN h.kode_perk IN ('101','102','103','116','104','105','10602','10604','10605','107','117','118','108','119','109','110','11102','112','120','121','113') THEN h.saldo_akhir ELSE 0 END) AS total_realisasi"
-                : "CASE WHEN h.kode_perk LIKE '4%' THEN '4' ELSE '5' END AS kode_perkiraan, SUM(h.saldo_akhir) AS total_realisasi";
-            $actualWhere = $reportType === 'neraca'
-                ? "h.kode_perk IN ('101','102','103','116','104','105','10602','10604','10605','107','117','118','108','119','109','110','11102','112','120','121','113')"
-                : "h.kode_perk LIKE '4%' OR h.kode_perk LIKE '5%'";
-            $realBlnIniSql = "
-                SELECT h.kode_kantor, {$actualCategory}
-                FROM acc_history h
-                WHERE h.tanggal = {$sqlActualDate} AND ({$actualWhere})
-                GROUP BY h.kode_kantor";
-            $realBlnIniSql .= " UNION ALL SELECT '000' AS kode_kantor, {$actualCategory}
-                FROM acc_history h
-                WHERE h.tanggal = {$sqlActualDate} AND ({$actualWhere})";
-            $realLaluSql = "SELECT NULL AS kode_kantor, '1' AS kode_perkiraan, 0 AS realisasi_s_d_lalu WHERE 1=0";
-            $realJoin = "data_gabungan.kode_kantor = real_bln_ini.kode_kantor AND ref.kode_perkiraan = real_bln_ini.kode_perkiraan";
-            $realLaluJoin = "1=0";
-        } else {
-            $realBlnIniSql = "
-                SELECT kode_kantor, NULL AS kode_perkiraan, SUM(realisasi_pokok) AS total_realisasi
+        $sql = "
+            WITH data_gabungan AS (
+                " . implode("\nUNION ALL\n", $monthUnion) . "
+            ),
+            rbb_lalu AS (
+                " . implode("\nUNION ALL\n", $laluUnion) . "
+            ),
+            real_bln_ini AS (
+                SELECT kode_kantor, SUM(realisasi_pokok) AS total_realisasi
                 FROM update_realisasi_kredit
                 WHERE kode_trans = '110'
                   AND tanggal_realisasi >= {$sqlMonthStart}
                   AND tanggal_realisasi < {$sqlHarianNext}
                 GROUP BY kode_kantor
                 UNION ALL
-                SELECT '000' AS kode_kantor, NULL AS kode_perkiraan, SUM(realisasi_pokok) AS total_realisasi
+                SELECT '000' AS kode_kantor, SUM(realisasi_pokok) AS total_realisasi
                 FROM update_realisasi_kredit
                 WHERE kode_trans = '110'
                   AND tanggal_realisasi >= {$sqlMonthStart}
-                  AND tanggal_realisasi < {$sqlHarianNext}";
-            $realLaluSql = "
+                  AND tanggal_realisasi < {$sqlHarianNext}
+            ),
+            real_lalu AS (
                 SELECT kode_kantor, SUM(realisasi_pokok) AS realisasi_s_d_lalu
                 FROM update_realisasi_kredit
                 WHERE kode_trans = '110'
@@ -547,23 +521,7 @@ class RbbController
                 FROM update_realisasi_kredit
                 WHERE kode_trans = '110'
                   AND tanggal_realisasi >= {$sqlYearStart}
-                  AND tanggal_realisasi < {$sqlMonthStart}";
-            $realJoin = "data_gabungan.kode_kantor = real_bln_ini.kode_kantor";
-            $realLaluJoin = "data_gabungan.kode_kantor = real_lalu.kode_kantor";
-        }
-
-        $sql = "
-            WITH data_gabungan AS (
-                " . implode("\nUNION ALL\n", $monthUnion) . "
-            ),
-            rbb_lalu AS (
-                " . implode("\nUNION ALL\n", $laluUnion) . "
-            ),
-            real_bln_ini AS (
-                {$realBlnIniSql}
-            ),
-            real_lalu AS (
-                {$realLaluSql}
+                  AND tanggal_realisasi < {$sqlMonthStart}
             )
             SELECT
                 data_gabungan.kode_monbis,
@@ -590,9 +548,9 @@ class RbbController
                 ) AS persentase_rbb_plus_kekurangan
             FROM data_gabungan
             LEFT JOIN rbb_lalu ON data_gabungan.kode_kantor = rbb_lalu.kode_kantor AND data_gabungan.kode_monbis = rbb_lalu.kode_monbis
+            LEFT JOIN real_bln_ini ON data_gabungan.kode_kantor = real_bln_ini.kode_kantor
+            LEFT JOIN real_lalu ON data_gabungan.kode_kantor = real_lalu.kode_kantor
             INNER JOIN ref_rbb ref ON data_gabungan.kode_monbis = ref.kode_monbis
-            LEFT JOIN real_bln_ini ON {$realJoin}
-            LEFT JOIN real_lalu ON {$realLaluJoin}
             LEFT JOIN kode_kantor k ON data_gabungan.kode_kantor = k.kode_kantor
             {$whereFinal}
             ORDER BY data_gabungan.kode_kantor ASC
@@ -634,7 +592,7 @@ class RbbController
             }
 
             $monthlyBreakdown = [];
-            if ($kodeKantor !== '' && !$isFinancialReport) {
+            if ($kodeKantor !== '') {
                 $branchCol = "`{$kodeKantor}`";
                 $sqlBreakdown = "
                     SELECT
@@ -662,9 +620,7 @@ class RbbController
                           AND tanggal_realisasi < {$sqlHarianNext}
                         GROUP BY DATE_FORMAT(tanggal_realisasi, '%Y-%m-01')
                     ) real_month ON real_month.periode = r.periode
-                    WHERE ref.kode_perkiraan IN (" . implode(',', array_map(static function ($index) {
-                        return ':breakdown_kode_perkiraan_' . $index;
-                    }, array_keys($kodePerkiraanList))) . ")
+                    WHERE ref.kode_perkiraan = :breakdown_kode_perkiraan
                       AND r.periode >= {$sqlYearStart}
                       AND r.periode <= {$sqlMonthStart}
                     ORDER BY r.periode DESC
@@ -675,9 +631,7 @@ class RbbController
                 $stmtBreakdown->bindValue(':breakdown_kode_kantor_name', $kodeKantor, PDO::PARAM_STR);
                 $stmtBreakdown->bindValue(':breakdown_kode_kantor_join', $kodeKantor, PDO::PARAM_STR);
                 $stmtBreakdown->bindValue(':breakdown_kode_kantor_real', $kodeKantor, PDO::PARAM_STR);
-                foreach ($kodePerkiraanList as $index => $kode) {
-                    $stmtBreakdown->bindValue(':breakdown_kode_perkiraan_' . $index, $kode, PDO::PARAM_STR);
-                }
+                $stmtBreakdown->bindValue(':breakdown_kode_perkiraan', $kodePerkiraan, PDO::PARAM_STR);
                 $stmtBreakdown->execute();
                 $monthlyBreakdown = $stmtBreakdown->fetchAll(PDO::FETCH_ASSOC);
 
@@ -694,8 +648,7 @@ class RbbController
                     'harian_date' => $harianDate,
                     'periode_bulan' => $monthStart,
                     'tahun_start' => $yearStart,
-                    'kode_perkiraan' => $kodePerkiraanList,
-                    'report_type' => $reportType,
+                    'kode_perkiraan' => $kodePerkiraan,
                     'kode_kantor' => $kodeKantor !== '' ? $kodeKantor : '000',
                     'korwil' => $korwil,
                     'compare_mode' => 'rbb',
@@ -1026,7 +979,7 @@ class RbbController
 
         $sql = $jenis === 'laba_rugi'
             ? $this->buildLapkeuRbbLabaRugiSql($targetExpression, $actualWhere)
-            : $this->buildLapkeuRbbNeracaSql($targetExpression, $actualWhere);
+            : $this->buildLapkeuRbbNeracaSql($targetExpression, $actualWhere, (bool)($scope['is_konsolidasi'] ?? false));
 
         try {
             $stmt = $this->pdo->prepare($sql);
@@ -1035,8 +988,10 @@ class RbbController
             $stmt->bindValue(':periode_rbb_meta', $periodeRbb, PDO::PARAM_STR);
             $stmt->bindValue(':actual_date', $harianDate, PDO::PARAM_STR);
             $stmt->bindValue(':actual_date_meta', $harianDate, PDO::PARAM_STR);
-            if ($jenis === 'neraca') {
+            if ($jenis === 'neraca' && (bool)($scope['is_konsolidasi'] ?? false)) {
                 $stmt->bindValue(':actual_date_210', $harianDate, PDO::PARAM_STR);
+            }
+            if ($jenis === 'neraca') {
                 $stmt->bindValue(':actual_date_formula', $harianDate, PDO::PARAM_STR);
             }
             $stmt->execute();
@@ -1199,7 +1154,8 @@ class RbbController
                 'korwil' => '',
                 'label' => 'CABANG ' . $kodeKantor,
                 'target_expression' => "COALESCE(r.`{$kodeKantor}`,0)",
-                'actual_where' => "ah.kode_kantor = '{$kodeKantor}'"
+                'actual_where' => "ah.kode_kantor = '{$kodeKantor}'",
+                'is_konsolidasi' => false
             ];
         }
 
@@ -1215,7 +1171,8 @@ class RbbController
                 'korwil' => $korwil,
                 'label' => 'KORWIL ' . $korwil,
                 'target_expression' => implode(' + ', $parts),
-                'actual_where' => "ah.kode_kantor BETWEEN '{$rangeStart}' AND '{$rangeEnd}'"
+                'actual_where' => "ah.kode_kantor BETWEEN '{$rangeStart}' AND '{$rangeEnd}'",
+                'is_konsolidasi' => false
             ];
         }
 
@@ -1224,12 +1181,21 @@ class RbbController
             'korwil' => '',
             'label' => 'KONSOLIDASI',
             'target_expression' => "COALESCE(r.`000`, (" . implode(' + ', $sumAll) . "))",
-            'actual_where' => "ah.kode_kantor BETWEEN '000' AND '028'"
+            'actual_where' => "ah.kode_kantor BETWEEN '000' AND '028'",
+            'is_konsolidasi' => true
         ];
     }
 
-    private function buildLapkeuRbbNeracaSql(string $targetExpression, string $actualWhere): string
+    private function buildLapkeuRbbNeracaSql(string $targetExpression, string $actualWhere, bool $isKonsolidasi): string
     {
+        $saldoAkun210Sql = $isKonsolidasi
+            ? "SELECT SUM(COALESCE(ah.saldo_akhir,0)) AS saldo_210
+                FROM acc_history ah
+                WHERE ah.tanggal = :actual_date_210
+                  AND ah.kode_kantor BETWEEN '000' AND '028'
+                  AND ah.kode_perk = '210'"
+            : "SELECT 0 AS saldo_210";
+
         return "
             WITH ref_data AS (
                 SELECT
@@ -1285,11 +1251,7 @@ class RbbController
                 GROUP BY ah.kode_perk
             ),
             saldo_akun_210 AS (
-                SELECT SUM(COALESCE(ah.saldo_akhir,0)) AS saldo_210
-                FROM acc_history ah
-                WHERE ah.tanggal = :actual_date_210
-                  AND ah.kode_kantor BETWEEN '000' AND '028'
-                  AND ah.kode_perk = '210'
+                {$saldoAkun210Sql}
             ),
             realisasi_pasifa AS (
                 SELECT
@@ -1309,7 +1271,7 @@ class RbbController
                     COALESCE(trg.target_rbb,0) AS target_rbb,
                     COALESCE(trg_ye.target_rbb_year_end,0) AS target_rbb_year_end,
                     CASE
-                        WHEN ref.is_pasifa = 1 THEN COALESCE(pas.realisasi_pasifa,0)
+                        WHEN ref.is_pasifa = 1 THEN COALESCE(pas.realisasi_pasifa,0) - COALESCE(elm.saldo_210,0)
                         WHEN ref.is_total_aset = 1 THEN COALESCE(act.realisasi_raw,0) - COALESCE(elm.saldo_210,0)
                         ELSE COALESCE(act.realisasi_raw,0)
                     END AS realisasi_actual,

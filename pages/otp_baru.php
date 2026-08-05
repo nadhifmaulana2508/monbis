@@ -1339,6 +1339,739 @@
       max-width:108px !important;
     }
   }
+
+
+  /* ========================================================
+     UNIFIED MONBIS TEMPLATE V12
+     Final override: desktop, tablet, mobile, and help modal.
+     ======================================================== */
+  :root {
+    --otp-vh: 100dvh;
+    --otp-page-offset: 74px;
+    --otp-border: #dbe3ee;
+    --otp-line: #e2e8f0;
+    --otp-muted: #64748b;
+    --otp-ink: #0f172a;
+    --otp-blue: #2563eb;
+  }
+
+  #otpPage {
+    width: 100% !important;
+    max-width: none !important;
+    height: calc(var(--otp-vh) - var(--otp-page-offset)) !important;
+    min-height: 430px !important;
+    padding: 8px !important;
+    gap: 8px !important;
+    overflow: hidden !important;
+    background: #f8fafc !important;
+  }
+
+  .otp-card {
+    min-height: 62px;
+    padding: 10px 12px !important;
+    border: 1px solid var(--otp-border) !important;
+    border-radius: 14px !important;
+    background: #fff !important;
+    box-shadow: 0 1px 3px rgba(15,23,42,.05) !important;
+  }
+
+  .otp-title-wrap { min-width: 0; }
+  .otp-title-wrap h1 { gap: 9px !important; color: var(--otp-ink) !important; font-size: 20px !important; line-height: 1.05 !important; font-weight: 950 !important; letter-spacing: -.025em; }
+  .otp-title-wrap h1 > span:first-child {
+    width: 38px; height: 38px; padding: 0 !important; border-radius: 10px !important;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: linear-gradient(145deg,#2563eb,#1d4ed8) !important;
+    box-shadow: 0 7px 18px rgba(37,99,235,.22);
+  }
+  .otp-title-wrap h1 > span:first-child svg { width: 19px !important; height: 19px !important; }
+  .otp-page-subtitle { margin: 3px 0 0 47px; max-width: 410px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--otp-muted); font-size: 10px; line-height: 1.2; font-weight: 700; }
+
+  .otp-info-button { width: 21px !important; height: 21px !important; border-color: #bfdbfe !important; background: #eff6ff !important; color: #2563eb !important; }
+  .otp-info-button:hover { transform: translateY(-1px); background: #dbeafe !important; }
+
+  #filterWrapperMain { min-width: 0; }
+  .otp-filter-grid { display: grid !important; grid-template-columns: 42px 116px 116px minmax(150px,190px) minmax(115px,145px) 104px minmax(130px,165px) 46px 42px; gap: 7px !important; justify-content: end; align-items: end; }
+  .otp-filter-grid > * { width: auto !important; max-width: none !important; min-width: 0 !important; margin: 0 !important; }
+  .otp-filter-grid > .w-px { display: none !important; }
+  .inp { height: 36px !important; border: 1px solid #cbd5e1 !important; border-radius: 9px !important; padding: 0 9px !important; color: #0f172a !important; font-size: 11px !important; font-weight: 800 !important; }
+  .lbl { margin: 0 0 3px 2px !important; color: #475569 !important; font-size: 8px !important; line-height: 1 !important; font-weight: 950 !important; letter-spacing: .08em !important; }
+  .otp-filter-kpp > div, .otp-filter-export button { height: 36px !important; border-radius: 9px !important; }
+  .otp-view-switch { height: 36px !important; border-radius: 9px !important; }
+
+  .otp-template-summary {
+    flex: 0 0 auto; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 7px;
+    overflow-x: auto; overflow-y: hidden; scrollbar-width: none;
+  }
+  .otp-template-summary::-webkit-scrollbar { display: none; }
+  .otp-template-summary-card {
+    position: relative; min-width: 0; min-height: 65px; padding: 9px 10px 8px 13px;
+    border: 1px solid var(--otp-border); border-radius: 12px; background: #fff;
+    text-align: left; overflow: hidden; cursor: pointer; transition: .16s ease;
+    box-shadow: 0 1px 2px rgba(15,23,42,.035);
+  }
+  .otp-template-summary-card::before { content: ''; position: absolute; inset: 0 auto 0 0; width: 3px; background: #94a3b8; }
+  .otp-template-summary-card:hover { transform: translateY(-1px); border-color: #bfdbfe; box-shadow: 0 6px 18px -12px rgba(15,23,42,.35); }
+  .otp-template-summary-card span { display: block; color: #64748b; font-size: 8px; line-height: 1; font-weight: 950; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+  .otp-template-summary-card b { display: block; margin-top: 7px; overflow: hidden; text-overflow: ellipsis; color: #0f172a; font-size: 15px; line-height: 1; font-weight: 950; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .otp-template-summary-card small { display: block; margin-top: 5px; overflow: hidden; text-overflow: ellipsis; color: #94a3b8; font-size: 8px; line-height: 1; font-weight: 750; white-space: nowrap; }
+  .otp-template-summary-card.tone-blue::before { background:#2563eb; }
+  .otp-template-summary-card.tone-cyan::before { background:#06b6d4; }
+  .otp-template-summary-card.tone-red::before { background:#f43f5e; }
+  .otp-template-summary-card.tone-green::before { background:#10b981; }
+  .otp-template-summary-card.tone-purple::before { background:#8b5cf6; }
+  .otp-template-summary-card.is-critical { background:#fff7f7; border-color:#fecdd3; }
+  .otp-template-summary-card.is-warning { background:#fffdf5; border-color:#fde68a; }
+  .otp-template-summary-card.is-good { background:#f5fffb; border-color:#a7f3d0; }
+
+  #dueSummaryRR { flex: 0 0 auto; padding: 0 !important; }
+  #dueSummaryRR > div { gap: 7px !important; }
+  .otp-due-card { min-height: 72px !important; padding: 8px 10px !important; border-radius: 12px !important; }
+  .otp-due-value { font-size: 16px !important; }
+
+  #otpMainPanel { border: 1px solid var(--otp-border) !important; border-radius: 14px !important; box-shadow: 0 1px 3px rgba(15,23,42,.04) !important; }
+  #otpMainScroll { background: #fff; overscroll-behavior: contain; }
+  #tabelRekapRR .otp-excel-head, #tabelRekapRR .otp-excel-sub { font-weight: 900 !important; }
+  #tabelRekapRR .otp-report-cell, #tabelRekapRR .otp-report-total { font-variant-numeric: tabular-nums; }
+
+  .otp-mobile-main { flex: 1 1 auto; min-height: 0; overflow: auto; padding: 7px; background: #f8fafc; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  .otp-mobile-total, .otp-mobile-day-card, .otp-mobile-collection-card { border: 1px solid #dbe3ee; border-radius: 12px; background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.035); }
+  .otp-mobile-total { padding: 10px; margin-bottom: 7px; background: linear-gradient(145deg,#eff6ff,#fff); border-color: #bfdbfe; }
+  .otp-mobile-day-card, .otp-mobile-collection-card { padding: 9px; margin-bottom: 7px; }
+  .otp-mobile-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid #eef2f7; }
+  .otp-mobile-card-title { min-width: 0; color:#0f172a; font-size: 12px; line-height:1.1; font-weight: 950; }
+  .otp-mobile-card-sub { margin-top:3px; color:#94a3b8; font-size:8px; font-weight:750; }
+  .otp-mobile-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; margin-top:8px; }
+  .otp-mobile-item { min-width:0; padding:7px; border:1px solid #e2e8f0; border-radius:9px; background:#f8fafc; text-align:left; }
+  button.otp-mobile-item { cursor:pointer; transition:.15s ease; }
+  button.otp-mobile-item:active { transform:scale(.985); }
+  .otp-mobile-item span { display:block; color:#64748b; font-size:7px; line-height:1; font-weight:900; letter-spacing:.045em; text-transform:uppercase; }
+  .otp-mobile-item b { display:block; margin-top:5px; overflow:hidden; text-overflow:ellipsis; color:#1e293b; font-size:10px; line-height:1.1; font-weight:900; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .otp-mobile-item small { display:block; margin-top:3px; color:#94a3b8; font-size:7px; font-weight:750; }
+  .otp-mobile-item.item-red { background:#fff7f7; border-color:#fecdd3; }
+  .otp-mobile-item.item-red b { color:#be123c; }
+  .otp-mobile-item.item-green { background:#f3fff9; border-color:#a7f3d0; }
+  .otp-mobile-item.item-green b { color:#047857; }
+  .otp-mobile-item.item-amber { background:#fffdf5; border-color:#fde68a; }
+  .otp-mobile-item.item-amber b { color:#b45309; }
+  .otp-mobile-card-empty { display:flex; min-height:180px; align-items:center; justify-content:center; padding:20px; color:#94a3b8; font-size:11px; font-weight:800; text-align:center; }
+
+  .otp-help-backdrop { position:fixed; inset:0; z-index:200000; display:none; background:rgba(15,23,42,.5); backdrop-filter:blur(4px); }
+  .otp-help-backdrop.is-open { display:block; }
+  body.otp-help-open { overflow:hidden !important; }
+  .otp-help-panel {
+    position:fixed !important; z-index:200001 !important; left:50% !important; top:50% !important; right:auto !important; bottom:auto !important;
+    width:min(920px,calc(100vw - 32px)) !important; max-width:none !important; max-height:calc(100dvh - 40px) !important;
+    transform:translate(-50%,-50%) !important; overflow:hidden !important; border:1px solid #dbe3ee !important; border-radius:18px !important;
+    background:#fff !important; box-shadow:0 30px 80px -25px rgba(15,23,42,.5) !important;
+  }
+  .otp-help-panel.is-open { display:flex !important; }
+  .otp-help-head { padding:14px 16px !important; background:linear-gradient(135deg,#f8fafc,#eff6ff) !important; }
+  .otp-help-title { font-size:16px !important; }
+  .otp-help-subtitle { font-size:9px !important; }
+  .otp-help-body { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) !important; gap:9px !important; padding:12px !important; overflow:auto !important; overscroll-behavior:contain; }
+  .otp-help-body > section { margin:0 !important; min-width:0; }
+  .otp-help-body > .otp-help-intro, .otp-help-body > .otp-help-current, .otp-help-body > .otp-help-priority, .otp-help-body > section:last-child { grid-column:1 / -1; }
+  .otp-help-intro, .otp-help-card, .otp-help-formula { border-radius:12px !important; }
+  .otp-help-card-title { font-size:9px !important; }
+  .otp-help-card p { font-size:9px !important; }
+  .otp-help-kpi-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:7px; }
+  .otp-help-kpi-grid > div { min-width:0; padding:9px; border:1px solid #e2e8f0; border-radius:10px; background:#f8fafc; }
+  .otp-help-kpi-grid span { display:block; color:#64748b; font-size:7px; font-weight:900; letter-spacing:.05em; text-transform:uppercase; }
+  .otp-help-kpi-grid b { display:block; margin-top:6px; overflow:hidden; text-overflow:ellipsis; color:#0f172a; font-size:13px; font-weight:950; white-space:nowrap; }
+  .otp-help-condition { margin-top:9px !important; padding:9px 10px; border-radius:9px; background:#eff6ff; color:#1e3a8a; font-weight:800; }
+  .otp-help-action-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; }
+  .otp-help-action-list > div { position:relative; padding:8px 8px 8px 27px; border:1px solid #e2e8f0; border-radius:9px; background:#fff; color:#475569; font-size:9px; line-height:1.4; font-weight:750; }
+  .otp-help-action-list > div::before { content:'✓'; position:absolute; left:8px; top:8px; width:13px; height:13px; border-radius:999px; display:flex; align-items:center; justify-content:center; background:#dbeafe; color:#2563eb; font-size:8px; font-weight:950; }
+
+  #modalDetailRR > .relative, #modalAreaRekapRR > .relative { border:1px solid var(--otp-border); border-radius:16px !important; }
+  .otp-modal-head { background:#fbfdff !important; }
+
+  @media (min-width:1280px) {
+    #otpPage { --otp-page-offset: 80px; }
+    .otp-card { display:flex !important; flex-direction:row !important; align-items:center !important; gap:14px !important; }
+    .otp-title-wrap { flex:0 0 auto; width:auto !important; }
+    #filterWrapperMain { flex:1 1 auto; width:auto !important; border:0 !important; margin:0 !important; padding:0 !important; }
+    #otpMainScroll { overflow-x:hidden !important; }
+    #tabelRekapRR { width:100% !important; min-width:0 !important; table-layout:fixed !important; }
+  }
+
+  @media (min-width:768px) and (max-width:1279px) {
+    #otpPage { --otp-page-offset: 72px; }
+    .otp-card { align-items:stretch !important; }
+    .otp-filter-grid { grid-template-columns:repeat(12,minmax(0,1fr)) !important; }
+    .otp-filter-rekap { grid-column:span 1; }
+    .otp-filter-closing,.otp-filter-harian { grid-column:span 2; }
+    .otp-filter-cabang { grid-column:span 3; }
+    .otp-filter-sub,.otp-filter-dpd { grid-column:span 2; }
+    .otp-filter-ao { grid-column:span 3; }
+    .otp-filter-kpp,.otp-filter-export { grid-column:span 1; }
+    .otp-template-summary { grid-template-columns:repeat(5,minmax(150px,1fr)); }
+    #tabelRekapRR { min-width:1180px !important; }
+  }
+
+  @media (max-width:767px) {
+    :root { --otp-page-offset: 54px; }
+    #otpPage { padding:5px !important; gap:5px !important; min-height:360px !important; }
+    .otp-card { min-height:0; padding:8px !important; border-radius:12px !important; gap:6px !important; }
+    .otp-title-wrap { padding:0 !important; }
+    .otp-title-wrap h1 { font-size:13px !important; gap:7px !important; }
+    .otp-title-wrap h1 > span:first-child { width:30px; height:30px; border-radius:8px !important; }
+    .otp-title-wrap h1 > span:first-child svg { width:15px !important; height:15px !important; }
+    .otp-title { max-width:150px !important; }
+    .otp-page-subtitle { margin:2px 0 0 37px; max-width:180px; font-size:7px; }
+    .otp-filter-toggle-main { height:30px !important; padding:0 8px !important; border-radius:8px !important; }
+
+    #filterWrapperMain { margin-top:5px !important; padding-top:7px !important; }
+    .otp-filter-grid { grid-template-columns:repeat(12,minmax(0,1fr)) !important; gap:5px !important; }
+    .otp-filter-rekap { grid-column:span 2; }
+    .otp-filter-closing,.otp-filter-harian { grid-column:span 5 !important; }
+    .otp-filter-cabang { grid-column:1 / -1; }
+    .otp-filter-sub,.otp-filter-dpd { grid-column:span 6; }
+    .otp-filter-ao { grid-column:span 8; }
+    .otp-filter-kpp,.otp-filter-export { grid-column:span 2; }
+    .inp { height:31px !important; padding:0 7px !important; border-radius:8px !important; font-size:9px !important; }
+    .lbl { font-size:7px !important; margin-bottom:2px !important; }
+    .otp-filter-kpp > div,.otp-filter-export button,.otp-view-switch { height:31px !important; border-radius:8px !important; }
+
+    .otp-template-summary { display:flex; gap:5px; padding:0; }
+    .otp-template-summary-card { flex:0 0 138px; min-height:57px; padding:8px 8px 7px 11px; border-radius:10px; }
+    .otp-template-summary-card span { font-size:7px; }
+    .otp-template-summary-card b { margin-top:6px; font-size:12px; }
+    .otp-template-summary-card small { margin-top:4px; font-size:7px; }
+
+    #dueSummaryRR { overflow-x:auto; overflow-y:hidden; }
+    #dueSummaryRR > div { display:flex !important; width:max-content; }
+    .otp-due-card { width:178px !important; min-height:66px !important; }
+
+    #otpMainPanel { border-radius:12px !important; }
+    #otpMainScroll { display:none !important; }
+    #otpMobileMain { display:block !important; }
+
+    .otp-help-panel { left:0 !important; right:0 !important; top:auto !important; bottom:0 !important; width:100% !important; max-height:92dvh !important; transform:none !important; border-radius:18px 18px 0 0 !important; border-bottom:0 !important; }
+    .otp-help-head { padding:10px 11px !important; }
+    .otp-help-title-icon { width:30px !important; height:30px !important; flex-basis:30px !important; border-radius:8px !important; }
+    .otp-help-title { font-size:12px !important; }
+    .otp-help-subtitle { font-size:7px !important; }
+    .otp-help-body { grid-template-columns:1fr !important; gap:6px !important; padding:7px !important; }
+    .otp-help-body > * { grid-column:1 !important; }
+    .otp-help-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
+    .otp-help-kpi-grid > div { padding:7px; }
+    .otp-help-kpi-grid b { font-size:11px; }
+    .otp-help-action-list { grid-template-columns:1fr; gap:5px; }
+    .otp-help-status-grid { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+    .otp-help-definition-grid > div,.otp-help-formula > div { grid-template-columns:82px minmax(0,1fr) !important; }
+
+    #modalDetailRR,#modalAreaRekapRR { padding:0 !important; align-items:flex-end !important; }
+    #modalDetailRR > .relative,#modalAreaRekapRR > .relative { width:100% !important; height:94dvh !important; max-height:94dvh !important; border-radius:16px 16px 0 0 !important; border-bottom:0 !important; }
+    .otp-modal-head > div:first-child { padding:8px 9px !important; }
+    .otp-modal-head .btn-icon span { display:none !important; }
+  }
+
+  @media (max-width:374px) {
+    .otp-title { max-width:118px !important; }
+    .otp-page-subtitle { max-width:145px; }
+    .otp-template-summary-card { flex-basis:128px; }
+    .otp-mobile-grid { gap:5px; }
+    .otp-mobile-item { padding:6px; }
+  }
+
+
+
+  /* ========================================================
+     V12 — TABLE-FIRST LAYOUT + HELP MODAL STACKING FIX
+     ======================================================== */
+  #otpSummaryStrip,
+  #dueSummaryRR {
+    display: none !important;
+  }
+
+  #otpMainPanel {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+  }
+
+  body > #otpHelpBackdrop {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483000 !important;
+    background: rgba(15, 23, 42, .48) !important;
+    -webkit-backdrop-filter: blur(2px) !important;
+    backdrop-filter: blur(2px) !important;
+  }
+
+  body > #otpHelpPanel {
+    position: fixed !important;
+    z-index: 2147483001 !important;
+    isolation: isolate;
+    filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    opacity: 1 !important;
+  }
+
+  body > #otpHelpPanel,
+  body > #otpHelpPanel * {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @media (min-width: 768px) {
+    body > #otpHelpPanel {
+      width: min(900px, calc(100vw - 32px)) !important;
+      max-height: calc(100dvh - 32px) !important;
+    }
+  }
+
+  @media (max-width: 767px) {
+    body > #otpHelpPanel {
+      left: 0 !important;
+      right: 0 !important;
+      top: auto !important;
+      bottom: 0 !important;
+      width: 100% !important;
+      max-height: 92dvh !important;
+      transform: none !important;
+      border-radius: 18px 18px 0 0 !important;
+    }
+  }
+
+
+  /* ========================================================
+     V13 — MOBILE TABLE + COMPACT HEADER ACTIONS
+     ======================================================== */
+  .otp-page-subtitle { display:none !important; }
+
+  .otp-mobile-head-actions {
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:6px;
+  }
+
+  #btnMainViewRRMobile { display:none !important; }
+
+  @media (max-width:767px) {
+    .otp-title-wrap > div:first-child { min-width:0; }
+    .otp-title-wrap h1 { margin:0 !important; }
+    .otp-title { max-width:145px !important; }
+
+    .otp-mobile-head-actions {
+      display:flex !important;
+      margin-left:auto !important;
+      gap:5px !important;
+    }
+
+    #btnMainViewRRMobile {
+      display:inline-flex !important;
+      width:31px !important;
+      min-width:31px !important;
+      height:30px !important;
+      padding:0 !important;
+      border-radius:8px !important;
+    }
+
+    .otp-filter-toggle-main {
+      width:31px !important;
+      min-width:31px !important;
+      height:30px !important;
+      padding:0 !important;
+      justify-content:center !important;
+      border-radius:8px !important;
+    }
+
+    /* Tombol pergantian laporan dipindah ke kiri tombol Filter. */
+    .otp-filter-rekap { display:none !important; }
+
+    /* Tabel utama tetap dipakai pada mobile; kartu mobile dinonaktifkan. */
+    #otpMobileMain { display:none !important; }
+    #otpMainScroll {
+      display:block !important;
+      flex:1 1 auto !important;
+      min-height:0 !important;
+      overflow:auto !important;
+      -webkit-overflow-scrolling:touch;
+      overscroll-behavior:contain;
+    }
+
+    #tabelRekapRR {
+      min-width:870px !important;
+      width:870px !important;
+      max-width:none !important;
+      table-layout:fixed !important;
+    }
+
+    #tabelRekapRR.otp-collection-view {
+      min-width:820px !important;
+      width:820px !important;
+      max-width:none !important;
+    }
+
+    /* Kolom tanggal/kode tetap terlihat saat tabel digeser. */
+    #tabelRekapRR .otp-report-tgl,
+    #tabelRekapRR .otp-head-tgl,
+    #tabelRekapRR .collection-code-col {
+      position:sticky !important;
+      left:0 !important;
+      z-index:55 !important;
+    }
+  }
+
+  /* ========================================================
+     V14 — STICKY HEADER PRESISI + NOA ANGSURAN
+     Tinggi baris header dihitung melalui JavaScript sehingga
+     TGL, subheader, dan TOTAL tidak saling menimpa di mobile.
+     ======================================================== */
+  #tabelRekapRR {
+    --otp-head-row-1-h: 34px;
+    --otp-head-row-2-h: 26px;
+    --otp-head-total-top: 60px;
+  }
+
+  /* Hindari nested sticky pada THEAD. Semua sticky ditangani TH. */
+  #tabelRekapRR > thead {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+  }
+
+  #tabelRekapRR > thead > tr:nth-child(1) > th {
+    top: 0 !important;
+  }
+
+  #tabelRekapRR > thead > tr:nth-child(2) > th {
+    top: var(--otp-head-row-1-h) !important;
+  }
+
+  #tabelRekapRR > thead > tr.sticky-total > th {
+    top: var(--otp-head-total-top) !important;
+    z-index: 64 !important;
+  }
+
+  #tabelRekapRR > thead > tr.sticky-total > th.otp-report-tgl {
+    left: 0 !important;
+    z-index: 72 !important;
+    background: #eef5ff !important;
+  }
+
+  #tabelRekapRR > thead > tr:nth-child(1) > th.otp-head-tgl {
+    left: 0 !important;
+    z-index: 75 !important;
+  }
+
+  .otp-due-metric {
+    display: flex !important;
+    width: 100%;
+    min-height: 34px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 4px;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .otp-due-metric-main {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 850;
+  }
+
+  .otp-due-metric-meta {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    font-size: 7.5px;
+    line-height: 1;
+    font-weight: 850;
+    white-space: nowrap;
+  }
+
+  .otp-due-metric-noa {
+    color: #64748b;
+    text-align: left;
+  }
+
+  .otp-due-metric-pct {
+    color: inherit;
+    text-align: right;
+  }
+
+  @media (min-width: 768px) {
+    .otp-due-metric-main { font-size: 10.5px; }
+    .otp-due-metric-meta { font-size: 8px; }
+  }
+
+  @media (max-width: 767px) {
+    #tabelRekapRR > thead > tr.sticky-total > th {
+      box-shadow: inset 0 -1px 0 #bfdbfe, 0 4px 9px -8px rgba(15,23,42,.75) !important;
+    }
+
+    .otp-due-metric { min-height: 36px; gap: 5px; }
+    .otp-due-metric-main { font-size: 9px; }
+    .otp-due-metric-meta { font-size: 7px; }
+  }
+
+
+
+  /* ========================================================
+     V15 - MOBILE REKAP COLLECTION COMPACT
+     Kode cabang disembunyikan pada HP. Nama kantor menjadi
+     kolom sticky pertama dengan lebar lebih hemat.
+     ======================================================== */
+  @media (max-width:767px) {
+    #tabelRekapRR.otp-collection-view {
+      width:760px !important;
+      min-width:760px !important;
+      max-width:none !important;
+    }
+
+    #tabelRekapRR.otp-collection-view col.collection-code-track,
+    #tabelRekapRR.otp-collection-view .collection-code-col {
+      display:none !important;
+      width:0 !important;
+      min-width:0 !important;
+      max-width:0 !important;
+      padding:0 !important;
+      border:0 !important;
+    }
+
+    #tabelRekapRR.otp-collection-view .collection-area-col {
+      position:sticky !important;
+      left:0 !important;
+      width:96px !important;
+      min-width:96px !important;
+      max-width:96px !important;
+      padding-left:6px !important;
+      padding-right:5px !important;
+      overflow:hidden !important;
+      text-overflow:ellipsis !important;
+      white-space:nowrap !important;
+      z-index:56 !important;
+      box-shadow:3px 0 7px -6px rgba(15,23,42,.72) !important;
+    }
+
+    #tabelRekapRR.otp-collection-view thead .collection-area-col {
+      z-index:66 !important;
+      background:#f8fafc !important;
+    }
+
+    #tabelRekapRR.otp-collection-view .collection-total-row .collection-area-col {
+      z-index:59 !important;
+      background:#eaf2ff !important;
+    }
+
+    #tabelRekapRR.otp-collection-view tbody .collection-area-col {
+      font-size:8.5px !important;
+      font-weight:700 !important;
+    }
+  }
+
+  @media (max-width:374px) {
+    #tabelRekapRR.otp-collection-view {
+      width:720px !important;
+      min-width:720px !important;
+    }
+
+    #tabelRekapRR.otp-collection-view .collection-area-col {
+      width:88px !important;
+      min-width:88px !important;
+      max-width:88px !important;
+      padding-left:5px !important;
+      padding-right:4px !important;
+      font-size:8px !important;
+    }
+  }
+
+
+
+  /* ========================================================
+     V16 - ACCESS GATE REKAP CCL
+     Gate sementara sisi frontend. Akses berlaku selama tab aktif.
+     ======================================================== */
+  body.otp-ccl-access-open { overflow:hidden !important; }
+
+  .otp-ccl-access-modal {
+    position:fixed;
+    inset:0;
+    z-index:300000;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+  }
+  .otp-ccl-access-modal.is-open { display:flex; }
+  .otp-ccl-access-backdrop {
+    position:absolute;
+    inset:0;
+    border:0;
+    background:rgba(15,23,42,.56);
+    backdrop-filter:blur(5px);
+    -webkit-backdrop-filter:blur(5px);
+  }
+  .otp-ccl-access-card {
+    position:relative;
+    z-index:1;
+    width:min(420px, calc(100vw - 32px));
+    overflow:hidden;
+    border:1px solid rgba(226,232,240,.95);
+    border-radius:18px;
+    background:#fff;
+    box-shadow:0 28px 70px -22px rgba(15,23,42,.62);
+    animation:otpCclAccessIn .18s ease-out both;
+  }
+  @keyframes otpCclAccessIn {
+    from { opacity:0; transform:translateY(8px) scale(.985); }
+    to { opacity:1; transform:translateY(0) scale(1); }
+  }
+  @keyframes otpCclAccessShake {
+    0%,100% { transform:translateX(0); }
+    25% { transform:translateX(-7px); }
+    50% { transform:translateX(7px); }
+    75% { transform:translateX(-4px); }
+  }
+  .otp-ccl-access-card.is-error { animation:otpCclAccessShake .28s ease; }
+  .otp-ccl-access-head {
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    padding:16px;
+    border-bottom:1px solid #e2e8f0;
+    background:linear-gradient(135deg,#f8fafc 0%,#eff6ff 100%);
+  }
+  .otp-ccl-access-title-wrap { display:flex; align-items:center; gap:11px; min-width:0; }
+  .otp-ccl-access-icon {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:38px;
+    height:38px;
+    flex:0 0 38px;
+    border-radius:11px;
+    background:#2563eb;
+    color:#fff;
+    box-shadow:0 9px 18px -12px rgba(37,99,235,.95);
+  }
+  .otp-ccl-access-icon svg { width:19px; height:19px; }
+  .otp-ccl-access-title { font-size:15px; line-height:1.2; font-weight:900; color:#0f172a; }
+  .otp-ccl-access-subtitle { margin-top:4px; font-size:10px; line-height:1.4; font-weight:650; color:#64748b; }
+  .otp-ccl-access-close {
+    width:30px;
+    height:30px;
+    flex:0 0 30px;
+    border:0;
+    border-radius:9px;
+    background:#e2e8f0;
+    color:#64748b;
+    font-size:20px;
+    line-height:1;
+    cursor:pointer;
+  }
+  .otp-ccl-access-close:hover { background:#fee2e2; color:#dc2626; }
+  .otp-ccl-access-body { padding:16px; }
+  .otp-ccl-access-label {
+    display:block;
+    margin-bottom:6px;
+    color:#475569;
+    font-size:10px;
+    line-height:1;
+    font-weight:850;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+  }
+  .otp-ccl-access-input-wrap { position:relative; }
+  .otp-ccl-access-input {
+    width:100%;
+    height:42px;
+    padding:0 44px 0 12px;
+    border:1px solid #cbd5e1;
+    border-radius:10px;
+    background:#fff;
+    color:#0f172a;
+    outline:none;
+    font-size:14px;
+    font-weight:750;
+    letter-spacing:.02em;
+  }
+  .otp-ccl-access-input:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.11); }
+  .otp-ccl-access-toggle {
+    position:absolute;
+    top:50%;
+    right:6px;
+    transform:translateY(-50%);
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:32px;
+    height:32px;
+    border:0;
+    border-radius:8px;
+    background:#f1f5f9;
+    color:#64748b;
+    cursor:pointer;
+  }
+  .otp-ccl-access-toggle:hover { background:#e2e8f0; color:#334155; }
+  .otp-ccl-access-toggle svg { width:16px; height:16px; }
+  .otp-ccl-access-error {
+    min-height:18px;
+    margin-top:7px;
+    color:#dc2626;
+    font-size:10px;
+    line-height:1.35;
+    font-weight:750;
+  }
+  .otp-ccl-access-note {
+    margin-top:11px;
+    padding:9px 10px;
+    border:1px solid #dbeafe;
+    border-radius:9px;
+    background:#f8fbff;
+    color:#475569;
+    font-size:10px;
+    line-height:1.45;
+  }
+  .otp-ccl-access-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:14px; }
+  .otp-ccl-access-btn {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:90px;
+    height:36px;
+    padding:0 13px;
+    border-radius:9px;
+    font-size:11px;
+    font-weight:850;
+    cursor:pointer;
+  }
+  .otp-ccl-access-cancel { border:1px solid #cbd5e1; background:#fff; color:#475569; }
+  .otp-ccl-access-cancel:hover { background:#f8fafc; }
+  .otp-ccl-access-submit { border:1px solid #2563eb; background:#2563eb; color:#fff; box-shadow:0 5px 12px -8px rgba(37,99,235,.9); }
+  .otp-ccl-access-submit:hover { background:#1d4ed8; }
+
+  @media (max-width:767px) {
+    .otp-ccl-access-modal { align-items:flex-end; padding:0; }
+    .otp-ccl-access-card {
+      width:100%;
+      max-width:none;
+      border-radius:18px 18px 0 0;
+      border-bottom:0;
+      padding-bottom:max(0px, env(safe-area-inset-bottom));
+    }
+    .otp-ccl-access-head { padding:13px 14px; }
+    .otp-ccl-access-body { padding:14px; }
+    .otp-ccl-access-actions { display:grid; grid-template-columns:1fr 1fr; }
+    .otp-ccl-access-btn { width:100%; }
+  }
+
 </style>
 
 <div id="otpPage" class="otp-shell max-w-[1920px] w-full mx-auto flex flex-col overflow-hidden">
@@ -1375,6 +2108,24 @@
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M4.93 19h14.14a2 2 0 001.73-3L13.73 4a2 2 0 00-3.46 0L3.2 16A2 2 0 004.93 19z"></path></svg>
                     </span>
                     <div><b>OTP</b> memonitor ketepatan pembayaran debitur sesuai tanggal jatuh tempo sampai posisi harian atau aktual.</div>
+                  </section>
+
+                  <section class="otp-help-card otp-help-current">
+                    <div class="otp-help-card-title">Kondisi Data Saat Ini</div>
+                    <div class="otp-help-kpi-grid">
+                      <div><span>Capaian OTP</span><b id="otpInsightPct">-</b></div>
+                      <div><span>Target M-1</span><b id="otpInsightTarget">-</b></div>
+                      <div><span>Total Run Off</span><b id="otpInsightRunoff">-</b></div>
+                      <div><span>Sisa Dikejar</span><b id="otpInsightGap">-</b></div>
+                    </div>
+                    <p id="otpInsightCondition" class="otp-help-condition">Data belum dimuat.</p>
+                  </section>
+
+                  <section class="otp-help-card otp-help-priority">
+                    <div class="otp-help-card-title">Prioritas Kepala Cabang / Direksi</div>
+                    <div id="otpInsightAction" class="otp-help-action-list">
+                      <div>Memuat rekomendasi berdasarkan posisi OTP...</div>
+                    </div>
                   </section>
 
                   <section class="otp-help-card otp-help-card-blue">
@@ -1419,10 +2170,16 @@
           </h1>
         </div>
 
-        <button type="button" onclick="toggleMainFilter()" class="xl:hidden h-[32px] px-3 bg-white border border-slate-200 text-slate-700 rounded flex items-center gap-1.5 shadow-sm transition font-bold text-xs whitespace-nowrap ml-auto shrink-0 hover:bg-slate-50">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-            <span class="hidden sm:inline">Filter</span>
-        </button>
+        <div class="otp-mobile-head-actions ml-auto shrink-0">
+            <button id="btnMainViewRRMobile" type="button" onclick="toggleMainOtpViewRR()" aria-pressed="false" class="otp-view-switch otp-mobile-view-switch" title="Buka Rekap CCL" aria-label="Buka Rekap CCL">
+                <span id="mainViewIconRRMobile" class="otp-view-switch-icon" aria-hidden="true"></span>
+                <span class="sr-only">Ganti tampilan OTP dan Collection</span>
+            </button>
+            <button type="button" onclick="toggleMainFilter()" class="otp-filter-toggle-main xl:hidden h-[32px] px-3 bg-white border border-slate-200 text-slate-700 rounded flex items-center gap-1.5 shadow-sm transition font-bold text-xs whitespace-nowrap shrink-0 hover:bg-slate-50">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                <span class="hidden sm:inline">Filter</span>
+            </button>
+        </div>
     </div>
 
     <div id="filterWrapperMain" class="filter-transition w-full xl:w-auto xl:flex-1 border-t xl:border-none pt-3 xl:pt-0 mt-2 xl:mt-0">
@@ -1492,21 +2249,67 @@
     </div>
 </div>
 
+
 <div id="otpMainPanel" class="flex-1 min-h-0 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm relative flex flex-col">
     <div id="loadingRR" class="hidden absolute inset-0 bg-white/80 z-[100] flex flex-col items-center justify-center text-blue-600 font-bold uppercase tracking-widest text-xs backdrop-blur-[1px]">
         <div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mb-3"></div>
         <span>Menyiapkan Matriks...</span>
     </div>
+    <div id="otpMobileMain" class="otp-mobile-main hidden custom-scrollbar"></div>
     <div id="otpMainScroll" class="flex-1 w-full h-full overflow-auto custom-scrollbar relative">
       <table class="min-w-full text-center border-separate border-spacing-0 text-slate-700 table-fixed" id="tabelRekapRR">
         <colgroup id="otpColgroup"></colgroup>
-        <thead class="uppercase sticky top-0 z-50 select-none" id="headRR"></thead>
+        <thead class="uppercase select-none" id="headRR"></thead>
         <tbody id="bodyRR" class="divide-y divide-slate-100 bg-white group-tbody text-xs"></tbody>
       </table>
     </div>
 </div>
 
 </div>
+
+<div id="otpHelpBackdrop" class="otp-help-backdrop" onclick="closeOtpHelp(event)" aria-hidden="true"></div>
+
+
+
+<!-- Gate sementara akses Rekap CCL -->
+<div id="otpCclAccessModal" class="otp-ccl-access-modal" role="dialog" aria-modal="true" aria-labelledby="otpCclAccessTitle" aria-hidden="true">
+  <button type="button" class="otp-ccl-access-backdrop" onclick="closeCclAccessModalRR()" aria-label="Tutup akses Rekap CCL"></button>
+  <form id="otpCclAccessForm" class="otp-ccl-access-card" onsubmit="submitCclAccessRR(event)" autocomplete="off">
+    <div class="otp-ccl-access-head">
+      <div class="otp-ccl-access-title-wrap">
+        <span class="otp-ccl-access-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </span>
+        <div class="min-w-0">
+          <div id="otpCclAccessTitle" class="otp-ccl-access-title">Akses Rekap CCL</div>
+          <div class="otp-ccl-access-subtitle">Masukkan kode akses untuk membuka laporan collection.</div>
+        </div>
+      </div>
+      <button type="button" class="otp-ccl-access-close" onclick="closeCclAccessModalRR()" aria-label="Tutup">&times;</button>
+    </div>
+
+    <div class="otp-ccl-access-body">
+      <label for="otpCclAccessInput" class="otp-ccl-access-label">Kode Akses</label>
+      <div class="otp-ccl-access-input-wrap">
+        <input id="otpCclAccessInput" class="otp-ccl-access-input" type="password" inputmode="text" autocapitalize="none" spellcheck="false" placeholder="Masukkan kode akses" aria-describedby="otpCclAccessError">
+        <button id="otpCclAccessToggle" type="button" class="otp-ccl-access-toggle" onclick="toggleCclAccessVisibilityRR()" aria-label="Tampilkan kode">
+          <svg id="otpCclAccessEye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+        </button>
+      </div>
+      <div id="otpCclAccessError" class="otp-ccl-access-error" aria-live="polite"></div>
+      <div class="otp-ccl-access-note">Akses berlaku selama tab ini masih dibuka. Tutup tab atau browser untuk mengunci kembali Rekap CCL.</div>
+
+      <div class="otp-ccl-access-actions">
+        <button type="button" class="otp-ccl-access-btn otp-ccl-access-cancel" onclick="closeCclAccessModalRR()">Batal</button>
+        <button type="submit" class="otp-ccl-access-btn otp-ccl-access-submit">Buka Rekap CCL</button>
+      </div>
+    </div>
+  </form>
+</div>
+
 
 <div id="modalAreaRekapRR" class="fixed inset-0 hidden z-[9998] flex items-end md:items-center justify-center p-0 sm:p-4">
   <div class="absolute inset-0 bg-slate-900/35 backdrop-blur-sm" onclick="closeAreaRekapRR()"></div>
@@ -1517,7 +2320,7 @@
           <span class="p-1.5 rounded bg-blue-600 text-white">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 19V9m8 10V5m8 14v-7M3 19h18"></path></svg>
           </span>
-          <span id="areaRekapTitleRR" class="truncate">Rekap Area OTP</span>
+          <span id="areaRekapTitleRR" class="truncate">Rekap Area CCL</span>
         </h3>
         <p id="areaRekapSubRR" class="mt-1 text-[10px] font-bold uppercase tracking-wide text-slate-500 truncate">...</p>
       </div>
@@ -1714,6 +2517,188 @@
   let mainCollectionRows = [];
   let mainCollectionSummary = null;
 
+  function syncOtpViewportRR() {
+      const viewportHeight = window.visualViewport?.height || window.innerHeight;
+      document.documentElement.style.setProperty('--otp-vh', `${Math.round(viewportHeight)}px`);
+  }
+
+  function setOtpMainSurfaceRR(useMobile) {
+      const scroll = document.getElementById('otpMainScroll');
+      const mobile = document.getElementById('otpMobileMain');
+      if (scroll) scroll.classList.toggle('hidden', !!useMobile);
+      if (mobile) mobile.classList.toggle('hidden', !useMobile);
+  }
+
+  function setSummaryCardRR(index, label, value, meta, action = null) {
+      const card = document.getElementById(`otpSumCard${index}`);
+      const labelEl = document.getElementById(`otpSumLabel${index}`);
+      const valueEl = document.getElementById(`otpSumValue${index}`);
+      const metaEl = document.getElementById(`otpSumMeta${index}`);
+      if (labelEl) labelEl.textContent = label;
+      if (valueEl) valueEl.textContent = value;
+      if (metaEl) metaEl.textContent = meta;
+      if (card) {
+          card.onclick = typeof action === 'function' ? action : null;
+          card.style.cursor = typeof action === 'function' ? 'pointer' : 'default';
+      }
+  }
+
+  function renderOtpTemplateSummaryRR(data, mode = 'otp') {
+      const strip = document.getElementById('otpSummaryStrip');
+      if (!strip) {
+          updateOtpHelpInsightRR();
+          return;
+      }
+      const d = data || {};
+      const card5 = document.getElementById('otpSumCard5');
+      card5?.classList.remove('is-good','is-warning','is-critical');
+
+      if (mode === 'collection') {
+          setSummaryCardRR(1, 'Target Collection', `${fmt(d.target_noa || 0)} NOA`, 'Wajib dihubungi', () => openCollectionAreaDetailRR('TOTAL','ALL'));
+          setSummaryCardRR(2, 'Sudah Call', `${fmt(d.call_noa || 0)} NOA`, fmtPct(d.call_percent || 0), () => openCollectionAreaDetailRR('TOTAL','CALL'));
+          setSummaryCardRR(3, 'NC', `${fmt(d.nc_noa || 0)} NOA`, fmtShort(d.nc_os || 0), () => openCollectionAreaDetailRR('TOTAL','NC'));
+          setSummaryCardRR(4, 'PTP', `${fmt(d.ptp_noa || 0)} NOA`, fmtShort(d.ptp_os || 0), () => openCollectionAreaDetailRR('TOTAL','PTP'));
+          setSummaryCardRR(5, 'PO', `${fmt(d.po_noa || 0)} NOA`, fmtShort(d.po_bayar || 0), () => openCollectionAreaDetailRR('TOTAL','PO'));
+          const callPct = Number(d.call_percent || 0);
+          card5?.classList.add(callPct >= 80 ? 'is-good' : (callPct >= 50 ? 'is-warning' : 'is-critical'));
+      } else {
+          const pct = Number(d.persen || 0);
+          const target = Number(d.target_os || 0);
+          const runoff = Number(d.total_bayar || 0);
+          const gap = Math.max(0, target - runoff);
+          setSummaryCardRR(1, 'Target M-1', fmtShort(target), `${fmt(d.target_noa || 0)} NOA`, () => initModalDetail('ALL','ALL'));
+          setSummaryCardRR(2, 'OTP Lancar', fmtShort(d.lancar_os || 0), `${fmt(d.lancar_noa || 0)} NOA`, () => initModalDetail('ALL','LANCAR'));
+          setSummaryCardRR(3, 'Ditagih', fmtShort(d.macet_os || 0), `${fmt(d.macet_noa || 0)} NOA`, () => initModalDetail('ALL','MENUNGGAK'));
+          setSummaryCardRR(4, 'Total Run Off', fmtShort(runoff), `Sisa ${fmtShort(gap)}`, () => initModalDetail('ALL','TOTAL_BAYAR'));
+          setSummaryCardRR(5, 'Capaian', fmtPct(pct), pct >= 85 ? 'Baik' : (pct >= 60 ? 'Perlu perhatian' : 'Kritis'));
+          card5?.classList.add(pct >= 85 ? 'is-good' : (pct >= 60 ? 'is-warning' : 'is-critical'));
+      }
+      updateOtpHelpInsightRR();
+  }
+
+  function updateOtpHelpInsightRR() {
+      const gt = rekapGtRaw || {};
+      const pct = Number(gt.persen || 0);
+      const target = Number(gt.target_os || 0);
+      const runoff = Number(gt.total_bayar || 0);
+      const gap = Math.max(0, target - runoff);
+      const ditagihNoa = Number(gt.macet_noa || 0);
+      const ditagihOs = Number(gt.macet_os || 0);
+      const lewatPct = Number(dueSummaryRaw?.lewat?.persen || gt.angsuran_lewat_persen || 0);
+      const nc = Number(mainCollectionSummary?.nc_noa || 0);
+      const ptp = Number(mainCollectionSummary?.ptp_noa || 0);
+
+      const put = (id, value) => { const el = document.getElementById(id); if (el) el.textContent = value; };
+      put('otpInsightPct', Number.isFinite(pct) ? fmtPct(pct) : '-');
+      put('otpInsightTarget', fmtShort(target));
+      put('otpInsightRunoff', fmtShort(runoff));
+      put('otpInsightGap', fmtShort(gap));
+
+      let condition = 'Data belum tersedia untuk dianalisis.';
+      if (target > 0) {
+          if (pct >= 85) condition = `Kondisi OTP tergolong baik pada ${fmtPct(pct)}. Fokus berikutnya adalah menutup sisa ${fmtShort(gap)} dan menjaga rekening yang sudah lancar agar tidak kembali menunggak.`;
+          else if (pct >= 60) condition = `Capaian OTP ${fmtPct(pct)} masih perlu perhatian. Terdapat ${fmt(ditagihNoa)} NOA senilai ${fmtShort(ditagihOs)} yang perlu dipastikan komitmen dan realisasi pembayarannya.`;
+          else condition = `Capaian OTP masih kritis pada ${fmtPct(pct)}. Sisa target ${fmtShort(gap)} harus dipecah per AO, debitur, dan tanggal janji bayar untuk monitoring harian.`;
+      }
+      put('otpInsightCondition', condition);
+
+      const actions = [];
+      if (ditagihNoa > 0) actions.push(`Prioritaskan ${fmt(ditagihNoa)} rekening ditagih dengan outstanding ${fmtShort(ditagihOs)}; urutkan dari nominal terbesar dan DPD paling berisiko.`);
+      if (lewatPct > 0) actions.push(`${fmtPct(lewatPct)} angsuran tercatat lewat tanggal tagih; pastikan penyebab, tanggal janji baru, dan PIC tindak lanjut tercatat di CCL.`);
+      if (nc > 0) actions.push(`${fmt(nc)} rekening berstatus NC belum mempunyai komitmen; Kepala Cabang perlu menetapkan target call dan batas waktu pembaruan.`);
+      if (ptp > 0) actions.push(`${fmt(ptp)} rekening berstatus PTP harus dipantau sampai realisasi minimal memenuhi ketentuan pembayaran.`);
+      actions.push(`Bandingkan sisa target ${fmtShort(gap)} dengan kapasitas janji bayar harian agar proyeksi pencapaian akhir periode realistis.`);
+      actions.push('Lakukan review singkat setiap hari: rekening terbesar, janji jatuh tempo hari ini, pembayaran masuk, kendala, dan eskalasi yang dibutuhkan.');
+      const actionEl = document.getElementById('otpInsightAction');
+      if (actionEl) actionEl.innerHTML = actions.slice(0,6).map(item => `<div>${escRR(item)}</div>`).join('');
+  }
+
+  function otpMobileItemRR(label, value, meta, onclick, tone = '') {
+      const tag = onclick ? 'button' : 'div';
+      const click = onclick ? ` type="button" onclick="${onclick}"` : '';
+      return `<${tag}${click} class="otp-mobile-item ${tone}"><span>${label}</span><b>${value}</b>${meta ? `<small>${meta}</small>` : ''}</${tag}>`;
+  }
+
+  function renderOtpMobileCardsRR(rows, gt) {
+      const el = document.getElementById('otpMobileMain');
+      if (!el) return;
+      setOtpMainSurfaceRR(true);
+      renderOtpTemplateSummaryRR(gt, 'otp');
+      if (!Array.isArray(rows) || !rows.length) {
+          el.innerHTML = '<div class="otp-mobile-card-empty">Tidak ada data penagihan.</div>';
+          return;
+      }
+
+      const total = gt ? `
+        <article class="otp-mobile-total">
+          <div class="otp-mobile-card-head">
+            <div><div class="otp-mobile-card-title">Grand Total OTP</div><div class="otp-mobile-card-sub">Ringkasan seluruh tanggal tagih</div></div>
+            ${renderOtpPctBadge(gt.persen)}
+          </div>
+          <div class="otp-mobile-grid">
+            ${otpMobileItemRR('Target M-1', fmtShort(gt.target_os), `${fmt(gt.target_noa)} NOA`, "initModalDetail('ALL','ALL')")}
+            ${otpMobileItemRR('OTP Lancar', fmtShort(gt.lancar_os), `${fmt(gt.lancar_noa)} NOA`, "initModalDetail('ALL','LANCAR')", 'item-green')}
+            ${otpMobileItemRR('Ditagih', fmtShort(gt.macet_os), `${fmt(gt.macet_noa)} NOA`, "initModalDetail('ALL','MENUNGGAK')", 'item-red')}
+            ${otpMobileItemRR('Lunas', fmtShort(gt.lunas_os), `${fmt(gt.lunas_noa)} NOA`, "initModalLunas('ALL')", 'item-green')}
+            ${otpMobileItemRR('Angsuran', fmtShort(gt.angsuran), `${fmtPct(gt.angsuran_sesuai_persen)} sesuai JT`, "initModalDetail('ALL','ANGSURAN')", 'item-amber')}
+            ${otpMobileItemRR('Total Run Off', fmtShort(gt.total_bayar), 'Realisasi kumulatif', null)}
+          </div>
+        </article>` : '';
+
+      el.innerHTML = total + rows.map(r => {
+          const tgl = escRR(r.tgl);
+          return `
+            <article class="otp-mobile-day-card">
+              <div class="otp-mobile-card-head">
+                <div><div class="otp-mobile-card-title">Tanggal ${tgl}</div><div class="otp-mobile-card-sub">Klik nominal untuk membuka detail rekening</div></div>
+                ${renderOtpPctBadge(r.persen)}
+              </div>
+              <div class="otp-mobile-grid">
+                ${otpMobileItemRR('Target M-1', fmtShort(r.target_os), `${fmt(r.target_noa)} NOA`, `initModalDetail('${tgl}','ALL')`)}
+                ${otpMobileItemRR('OTP Lancar', fmtShort(r.lancar_os), `${fmt(r.lancar_noa)} NOA`, `initModalDetail('${tgl}','LANCAR')`, 'item-green')}
+                ${otpMobileItemRR('Ditagih', fmtShort(r.macet_os), `${fmt(r.macet_noa)} NOA`, `initModalDetail('${tgl}','MENUNGGAK')`, 'item-red')}
+                ${otpMobileItemRR('Lunas', fmtShort(r.lunas_os), `${fmt(r.lunas_noa)} NOA`, `initModalLunas('${tgl}')`, 'item-green')}
+                ${otpMobileItemRR('Angsuran', fmtShort(r.angsuran), `${fmtPct(r.angsuran_sesuai_persen)} sesuai JT`, `initModalDetail('${tgl}','ANGSURAN')`, 'item-amber')}
+                ${otpMobileItemRR('Total Run Off', fmtShort(r.total_bayar), `${fmtPct(r.angsuran_lewat_persen)} lewat JT`, null)}
+              </div>
+            </article>`;
+      }).join('');
+  }
+
+  function renderCollectionMobileCardsRR() {
+      const el = document.getElementById('otpMobileMain');
+      if (!el) return;
+      setOtpMainSurfaceRR(true);
+      renderOtpTemplateSummaryRR(mainCollectionSummary, 'collection');
+      const rows = [];
+      if (mainCollectionSummary) rows.push({ ...mainCollectionSummary, kode_area:'TOTAL', nama_area:'TOTAL KONSOLIDASI', __total:true });
+      rows.push(...(mainCollectionRows || []));
+      if (!rows.length) {
+          el.innerHTML = '<div class="otp-mobile-card-empty">Tidak ada data collection.</div>';
+          return;
+      }
+      el.innerHTML = rows.map(r => {
+          const codeRaw = String(r.kode_area || '-');
+          const codeJs = JSON.stringify(codeRaw);
+          const callPct = Number(r.call_percent || 0);
+          return `
+            <article class="otp-mobile-collection-card ${r.__total ? 'otp-mobile-total' : ''}">
+              <div class="otp-mobile-card-head">
+                <div class="min-w-0"><div class="otp-mobile-card-title">${escRR(r.nama_area || '-')}</div><div class="otp-mobile-card-sub">Kode ${escRR(codeRaw)}</div></div>
+                <span class="otp-pct-badge ${callPct >= 80 ? 'otp-pct-green' : (callPct >= 50 ? 'otp-pct-yellow' : 'otp-pct-red')}">${fmtPct(callPct)}</span>
+              </div>
+              <div class="otp-mobile-grid">
+                ${otpMobileItemRR('Target', `${fmt(r.target_noa)} NOA`, 'Wajib dihubungi', `openCollectionAreaDetailRR(${codeJs},'ALL')`)}
+                ${otpMobileItemRR('Sudah Call', `${fmt(r.call_noa)} NOA`, fmtPct(callPct), `openCollectionAreaDetailRR(${codeJs},'CALL')`)}
+                ${otpMobileItemRR('NC', `${fmt(r.nc_noa)} NOA`, fmtShort(r.nc_os), `openCollectionAreaDetailRR(${codeJs},'NC')`, 'item-red')}
+                ${otpMobileItemRR('PTP', `${fmt(r.ptp_noa)} NOA`, fmtShort(r.ptp_os), `openCollectionAreaDetailRR(${codeJs},'PTP')`, 'item-amber')}
+                ${otpMobileItemRR('PO', `${fmt(r.po_noa)} NOA`, fmtShort(r.po_os), `openCollectionAreaDetailRR(${codeJs},'PO')`, 'item-green')}
+                ${otpMobileItemRR('Pembayaran PO', fmtShort(r.po_bayar), 'Realisasi bayar', null, 'item-green')}
+              </div>
+            </article>`;
+      }).join('');
+  }
+
   const apiCall = async (url, opt = {}) => {
       const res = await fetch(url, opt);
       try {
@@ -1744,21 +2729,41 @@
       const cg = document.getElementById('otpColgroup');
       if (!cg) return;
       if (mainOtpView === 'collection') {
-          /* 12 kolom compact: NC dan PTP tidak lagi memiliki kolom Bayar. */
-          cg.innerHTML = `
-              <col style="width:48px">
-              <col style="width:150px">
-              <col style="width:58px">
-              <col style="width:58px">
-              <col style="width:64px">
-              <col style="width:58px">
-              <col style="width:104px">
-              <col style="width:58px">
-              <col style="width:104px">
-              <col style="width:58px">
-              <col style="width:104px">
-              <col style="width:104px">
-          `;
+          /*
+           * Desktop/tablet tetap menampilkan kode cabang.
+           * Mobile menyembunyikan kode dan memakai nama kantor yang lebih compact.
+           */
+          if (isOtpMobile()) {
+              cg.innerHTML = `
+                  <col class="collection-code-track" style="width:0">
+                  <col style="width:96px">
+                  <col style="width:58px">
+                  <col style="width:58px">
+                  <col style="width:64px">
+                  <col style="width:58px">
+                  <col style="width:104px">
+                  <col style="width:58px">
+                  <col style="width:104px">
+                  <col style="width:58px">
+                  <col style="width:104px">
+                  <col style="width:104px">
+              `;
+          } else {
+              cg.innerHTML = `
+                  <col class="collection-code-track" style="width:48px">
+                  <col style="width:150px">
+                  <col style="width:58px">
+                  <col style="width:58px">
+                  <col style="width:64px">
+                  <col style="width:58px">
+                  <col style="width:104px">
+                  <col style="width:58px">
+                  <col style="width:104px">
+                  <col style="width:58px">
+                  <col style="width:104px">
+                  <col style="width:104px">
+              `;
+          }
           return;
       }
 
@@ -1810,34 +2815,158 @@
       return asc ? '<span class="text-blue-600 ml-1 text-[11px]">&#9650;</span>' : '<span class="text-blue-600 ml-1 text-[11px]">&#9660;</span>';
   };
 
+  const CCL_ACCESS_CODE_RR = 'ccl2026';
+  const CCL_ACCESS_SESSION_KEY_RR = 'otp_ccl_access_granted_v1';
+  let pendingCclCollectionStatusRR = 'ALL';
+  let cclAccessLastFocusedRR = null;
+
+  function isCclAccessGrantedRR() {
+      try {
+          return sessionStorage.getItem(CCL_ACCESS_SESSION_KEY_RR) === '1';
+      } catch (error) {
+          return false;
+      }
+  }
+
+  function grantCclAccessRR() {
+      try {
+          sessionStorage.setItem(CCL_ACCESS_SESSION_KEY_RR, '1');
+      } catch (error) {
+          /* Fallback hanya untuk halaman aktif jika sessionStorage diblokir. */
+          window.__otpCclAccessGrantedRR = true;
+      }
+  }
+
+  function hasCclAccessRR() {
+      return isCclAccessGrantedRR() || window.__otpCclAccessGrantedRR === true;
+  }
+
+  function openCclAccessModalRR(status = 'ALL') {
+      pendingCclCollectionStatusRR = ['CALL', 'NC', 'PTP', 'PO', 'ALL'].includes(String(status || '').toUpperCase())
+          ? String(status || 'ALL').toUpperCase()
+          : 'ALL';
+
+      const modal = document.getElementById('otpCclAccessModal');
+      const input = document.getElementById('otpCclAccessInput');
+      const error = document.getElementById('otpCclAccessError');
+      const card = document.querySelector('#otpCclAccessModal .otp-ccl-access-card');
+      if (!modal || !input) return;
+
+      cclAccessLastFocusedRR = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      modal.classList.add('is-open');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('otp-ccl-access-open');
+      card?.classList.remove('is-error');
+      input.value = '';
+      input.type = 'password';
+      if (error) error.textContent = '';
+      syncCclAccessEyeRR(false);
+
+      requestAnimationFrame(() => input.focus({ preventScroll:true }));
+  }
+
+  window.closeCclAccessModalRR = function() {
+      const modal = document.getElementById('otpCclAccessModal');
+      const error = document.getElementById('otpCclAccessError');
+      const input = document.getElementById('otpCclAccessInput');
+      if (!modal) return;
+
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('otp-ccl-access-open');
+      if (error) error.textContent = '';
+      if (input) input.value = '';
+      pendingCclCollectionStatusRR = 'ALL';
+
+      if (cclAccessLastFocusedRR && document.contains(cclAccessLastFocusedRR)) {
+          cclAccessLastFocusedRR.focus({ preventScroll:true });
+      }
+      cclAccessLastFocusedRR = null;
+  };
+
+  function syncCclAccessEyeRR(visible) {
+      const btn = document.getElementById('otpCclAccessToggle');
+      const eye = document.getElementById('otpCclAccessEye');
+      if (btn) btn.setAttribute('aria-label', visible ? 'Sembunyikan kode' : 'Tampilkan kode');
+      if (eye) {
+          eye.innerHTML = visible
+              ? '<path d="M3 3l18 18"></path><path d="M10.6 10.7a2 2 0 0 0 2.7 2.7"></path><path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a17.6 17.6 0 0 1-2.1 3.2"></path><path d="M6.6 6.6C3.7 8.5 2 12 2 12s3.5 8 10 8a10.7 10.7 0 0 0 5.4-1.5"></path>'
+              : '<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle>';
+      }
+  }
+
+  window.toggleCclAccessVisibilityRR = function() {
+      const input = document.getElementById('otpCclAccessInput');
+      if (!input) return;
+      const visible = input.type === 'password';
+      input.type = visible ? 'text' : 'password';
+      syncCclAccessEyeRR(visible);
+      input.focus({ preventScroll:true });
+  };
+
+  window.submitCclAccessRR = function(event) {
+      event?.preventDefault();
+      const input = document.getElementById('otpCclAccessInput');
+      const error = document.getElementById('otpCclAccessError');
+      const card = document.querySelector('#otpCclAccessModal .otp-ccl-access-card');
+      const code = String(input?.value || '').trim();
+
+      if (code !== CCL_ACCESS_CODE_RR) {
+          if (error) error.textContent = 'Kode akses tidak sesuai. Silakan periksa kembali.';
+          card?.classList.remove('is-error');
+          void card?.offsetWidth;
+          card?.classList.add('is-error');
+          if (input) {
+              input.select();
+              input.focus({ preventScroll:true });
+          }
+          return;
+      }
+
+      const requestedStatus = pendingCclCollectionStatusRR;
+      grantCclAccessRR();
+      closeCclAccessModalRR();
+      setMainOtpViewRR('collection', requestedStatus);
+  };
+
   function syncMainViewButtonRR() {
       const isCollection = mainOtpView === 'collection';
-      const btn = document.getElementById('btnMainViewRR');
       const label = document.getElementById('mainViewLabelRR');
-      const icon = document.getElementById('mainViewIconRR');
       const table = document.getElementById('tabelRekapRR');
       const title = document.getElementById('otpTitle');
       const bucket = getBucketLabel(document.getElementById('opt_dpd_bucket')?.value || 'all');
+      const buttonLabel = isCollection ? 'Kembali ke tampilan OTP' : 'Buka Rekap CCL';
+      const iconHtml = isCollection
+          ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"></path><path d="m9 18-6-6 6-6"></path></svg>`
+          : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"></path><path d="M12 19V5"></path><path d="M20 19v-7"></path><path d="M3 19h18"></path></svg>`;
 
-      if (btn) {
+      ['btnMainViewRR', 'btnMainViewRRMobile'].forEach(id => {
+          const btn = document.getElementById(id);
+          if (!btn) return;
           btn.classList.toggle('is-collection', isCollection);
           btn.setAttribute('aria-pressed', isCollection ? 'true' : 'false');
-          const buttonLabel = isCollection ? 'Kembali ke tampilan OTP' : 'Buka Rekap Collection';
           btn.title = buttonLabel;
           btn.setAttribute('aria-label', buttonLabel);
-      }
+      });
+
+      ['mainViewIconRR', 'mainViewIconRRMobile'].forEach(id => {
+          const icon = document.getElementById(id);
+          if (icon) icon.innerHTML = iconHtml;
+      });
+
       if (label) label.textContent = isCollection ? 'OTP' : 'Rekap';
-      if (icon) {
-          icon.innerHTML = isCollection
-              ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"></path><path d="m9 18-6-6 6-6"></path></svg>`
-              : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"></path><path d="M12 19V5"></path><path d="M20 19v-7"></path><path d="M3 19h18"></path></svg>`;
-      }
       if (table) table.classList.toggle('otp-collection-view', isCollection);
-      if (title) title.textContent = isCollection ? 'REKAP COLLECTION' : `OTP - ${bucket}`;
+      if (title) title.textContent = isCollection ? 'REKAP CCL' : `OTP - ${bucket}`;
   }
 
   function setMainOtpViewRR(view = 'otp', collectionStatus = 'ALL') {
-      mainOtpView = view === 'collection' ? 'collection' : 'otp';
+      const requestedView = view === 'collection' ? 'collection' : 'otp';
+      if (requestedView === 'collection' && !hasCclAccessRR()) {
+          openCclAccessModalRR(collectionStatus);
+          return;
+      }
+
+      mainOtpView = requestedView;
       mainCollectionStatus = ['CALL', 'NC', 'PTP', 'PO', 'ALL'].includes(String(collectionStatus || '').toUpperCase())
           ? String(collectionStatus || 'ALL').toUpperCase()
           : 'ALL';
@@ -1939,34 +3068,52 @@
       }
   }
 
-  function positionOtpHelpPanel() {
+  function mountOtpHelpPortalRR() {
       const panel = document.getElementById('otpHelpPanel');
+      const backdrop = document.getElementById('otpHelpBackdrop');
       if (!panel) return;
 
-      /* Modal informasi dibuat besar dan berada di tengah agar seluruh isi terlihat tanpa scroll. */
-      const gutter = window.innerWidth < 768 ? 6 : 16;
-      const panelWidth = Math.min(window.innerWidth < 768 ? window.innerWidth - (gutter * 2) : 780, window.innerWidth - (gutter * 2));
-      panel.style.width = `${panelWidth}px`;
-      panel.style.left = `${Math.max(gutter, (window.innerWidth - panelWidth) / 2)}px`;
-      panel.style.right = 'auto';
-      panel.style.bottom = 'auto';
-      panel.style.maxHeight = 'none';
+      /*
+       * The help panel originally lived inside the page header. The header forms
+       * its own stacking context, so the full-screen backdrop could cover and
+       * blur the panel. Move both elements directly under <body> so their
+       * z-index is evaluated at the document level.
+       */
+      if (backdrop && backdrop.parentElement !== document.body) {
+          document.body.appendChild(backdrop);
+      }
+      if (panel.parentElement !== document.body) {
+          document.body.appendChild(panel);
+      }
+      if (!panel.dataset.portalReady) {
+          panel.addEventListener('click', event => event.stopPropagation());
+          panel.dataset.portalReady = '1';
+      }
+  }
 
-      requestAnimationFrame(() => {
-          const panelHeight = panel.offsetHeight;
-          panel.style.top = `${Math.max(gutter, (window.innerHeight - panelHeight) / 2)}px`;
-      });
+  function positionOtpHelpPanel() {
+      mountOtpHelpPortalRR();
+      const panel = document.getElementById('otpHelpPanel');
+      if (!panel) return;
+      panel.removeAttribute('style');
   }
 
   function setOtpHelpOpen(open) {
+      mountOtpHelpPortalRR();
       const panel = document.getElementById('otpHelpPanel');
       const button = document.getElementById('otpHelpButton');
+      const backdrop = document.getElementById('otpHelpBackdrop');
       if (!panel) return;
       panel.classList.toggle('is-open', open);
       panel.setAttribute('aria-hidden', open ? 'false' : 'true');
       button?.classList.toggle('is-open', open);
       button?.setAttribute('aria-expanded', open ? 'true' : 'false');
-      if (open) requestAnimationFrame(positionOtpHelpPanel);
+      backdrop?.classList.toggle('is-open', open);
+      document.body.classList.toggle('otp-help-open', open);
+      if (open) {
+          updateOtpHelpInsightRR();
+          requestAnimationFrame(positionOtpHelpPanel);
+      }
   }
 
   function toggleOtpHelp(event) {
@@ -1981,12 +3128,22 @@
   }
 
   document.addEventListener('click', (event) => {
-      const root = document.querySelector('.otp-info-root');
       const panel = document.getElementById('otpHelpPanel');
-      if (panel?.classList.contains('is-open') && root && !root.contains(event.target)) setOtpHelpOpen(false);
+      const button = document.getElementById('otpHelpButton');
+      if (!panel?.classList.contains('is-open')) return;
+      if (panel.contains(event.target) || button?.contains(event.target)) return;
+      setOtpHelpOpen(false);
+  });
+
+  document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && document.getElementById('otpHelpPanel')?.classList.contains('is-open')) {
+          setOtpHelpOpen(false);
+      }
   });
 
   window.addEventListener('DOMContentLoaded', async () => {
+    mountOtpHelpPortalRR();
+    syncOtpViewportRR();
     mainFilterOpen = window.innerWidth >= 1280;
     mainOtpView = 'otp';
     applyFilterState();
@@ -2013,6 +3170,7 @@
   });
 
   window.addEventListener('resize', () => {
+      syncOtpViewportRR();
       clearTimeout(window.__otpResizeTimer);
       window.__otpResizeTimer = setTimeout(() => {
           if(window.innerWidth >= 1280 && !mainFilterOpen) {
@@ -2033,9 +3191,15 @@
           }
 
           updateCollectionStickyOffsetRR();
+          updateOtpStickyOffsetsRR();
           if (document.getElementById('otpHelpPanel')?.classList.contains('is-open')) positionOtpHelpPanel();
           if (detailDataCache.length) renderDetailViewRR(detailDataCache);
       }, 120);
+  });
+
+  window.visualViewport?.addEventListener('resize', () => {
+      syncOtpViewportRR();
+      updateOtpStickyOffsetsRR();
   });
 
   async function getLastHarianData(){ 
@@ -2179,6 +3343,79 @@
   }
 
 
+  function updateOtpStickyOffsetsRR() {
+      const table = document.getElementById('tabelRekapRR');
+      const head = document.getElementById('headRR');
+      if (!table || !head || !head.rows?.length) return;
+
+      requestAnimationFrame(() => {
+          const rows = Array.from(head.rows);
+          const row1 = rows[0];
+          const row2 = rows[1] && !rows[1].classList.contains('sticky-total') ? rows[1] : null;
+
+          const row1Height = Math.max(1, Math.ceil(row1?.getBoundingClientRect().height || 34));
+          const row2Height = Math.max(0, Math.ceil(row2?.getBoundingClientRect().height || 0));
+          const totalTop = row1Height + row2Height;
+
+          table.style.setProperty('--otp-head-row-1-h', `${row1Height}px`);
+          table.style.setProperty('--otp-head-row-2-h', `${row2Height}px`);
+          table.style.setProperty('--otp-head-total-top', `${totalTop}px`);
+
+          if (mainOtpView === 'collection') {
+              table.style.setProperty('--collection-head-h', `${totalTop}px`);
+          }
+      });
+  }
+
+  function getDueNoaRR(source, type, isGrandTotal = false) {
+      const row = source || {};
+      const isLewat = String(type || '').toLowerCase() === 'lewat';
+      const perDateCollection = dueSummaryRaw?.by_date || dueSummaryRaw?.per_tanggal || dueSummaryRaw?.dates || null;
+      let perDate = null;
+      if (!isGrandTotal && perDateCollection) {
+          if (Array.isArray(perDateCollection)) {
+              perDate = perDateCollection.find(item => String(item?.tgl || item?.tanggal || '') === String(row?.tgl || '')) || null;
+          } else if (typeof perDateCollection === 'object') {
+              perDate = perDateCollection[row?.tgl] || null;
+          }
+      }
+
+      const nested = isGrandTotal
+          ? (isLewat ? dueSummaryRaw?.lewat : dueSummaryRaw?.sesuai)
+          : (isLewat
+              ? (row?.due_summary?.lewat || perDate?.lewat)
+              : (row?.due_summary?.sesuai || perDate?.sesuai));
+
+      const keys = isLewat
+          ? ['angsuran_lewat_noa', 'angsuran_lewat_nasabah', 'lewat_noa', 'noa_lewat', 'jumlah_nasabah_lewat', 'jumlah_debitur_lewat']
+          : ['angsuran_sesuai_noa', 'angsuran_sesuai_nasabah', 'sesuai_noa', 'noa_sesuai', 'jumlah_nasabah_sesuai', 'jumlah_debitur_sesuai'];
+
+      const candidates = [nested?.noa, nested?.jumlah_nasabah, nested?.jumlah_debitur];
+      keys.forEach(key => candidates.push(row[key]));
+
+      for (const value of candidates) {
+          if (value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))) {
+              return Number(value);
+          }
+      }
+      return null;
+  }
+
+  function renderDueMetricRR(amount, percent, noa, action, tone = '') {
+      const noaLabel = noa === null || noa === undefined
+          ? '- NOA'
+          : `${fmt(noa)} NOA`;
+      return `
+          <button type="button" onclick="${action}" class="otp-due-metric ${tone}">
+              <span class="otp-due-metric-main">${fmt(amount)}</span>
+              <span class="otp-due-metric-meta">
+                  <span class="otp-due-metric-noa">${noaLabel}</span>
+                  <span class="otp-due-metric-pct">${fmtPct(percent)}</span>
+              </span>
+          </button>
+      `;
+  }
+
   function updateCollectionStickyOffsetRR() {
       const table = document.getElementById('tabelRekapRR');
       if (!table || mainOtpView !== 'collection') return;
@@ -2227,6 +3464,7 @@
               </tr>
           `;
           updateCollectionStickyOffsetRR();
+          updateOtpStickyOffsetsRR();
           return;
       }
 
@@ -2251,6 +3489,7 @@
               </tr>
               <tr class="rr-row-tot sticky-total otp-total-main-row" id="rowTotalRRAtas"></tr>
           `;
+          updateOtpStickyOffsetsRR();
           return;
       }
 
@@ -2286,6 +3525,7 @@
           </tr>
           <tr class="rr-row-tot sticky-total otp-total-main-row" id="rowTotalRRAtas"></tr>
       `;
+      updateOtpStickyOffsetsRR();
   }
 
   window.sortMainRR = function(col, type) {
@@ -2320,6 +3560,8 @@
     if(trTotal) trTotal.innerHTML = '';
     rekapDataRaw = [];
     rekapGtRaw = null;
+    const mobileMain = document.getElementById('otpMobileMain');
+    if (isOtpMobile() && mobileMain) { setOtpMainSurfaceRR(true); mobileMain.innerHTML = '<div class="otp-mobile-card-empty">Memuat data OTP...</div>'; }
     dueSummaryRaw = null;
     mainOtpView = 'otp';
     syncMainViewButtonRR();
@@ -2376,6 +3618,7 @@
     } catch(err) {
         if(err.name !== 'AbortError') {
             tb.innerHTML = `<tr><td colspan="${getMainColspanRR()}" class="py-16 text-center text-rose-500 font-bold uppercase tracking-widest text-[10px] md:text-sm">Error: ${escRR(err.message)}</td></tr>`;
+            if (isOtpMobile() && mobileMain) mobileMain.innerHTML = `<div class="otp-mobile-card-empty text-rose-600">Error: ${escRR(err.message)}</div>`;
         }
     } finally {
         l.classList.add('hidden');
@@ -2446,7 +3689,7 @@
 
       syncCollectionFilterInputsRR(normalizedStatus);
       const title = collectionDetailStatusLabelRR(normalizedStatus);
-      document.getElementById('modalTitleRR').textContent = `Detail Collection ${title}`;
+      document.getElementById('modalTitleRR').textContent = `Detail CCL ${title}`;
       document.getElementById('modalSubTitleRR').textContent = isTotal ? 'TOTAL' : cleanArea;
       showModalRR();
 
@@ -2461,6 +3704,9 @@
   function renderMainCollectionRR() {
       const tb = document.getElementById('bodyRR');
       if (!tb) return;
+      renderOtpTemplateSummaryRR(mainCollectionSummary, 'collection');
+      /* Rekap CCL pada mobile juga tetap menggunakan tabel. */
+      setOtpMainSurfaceRR(false);
       const renderRow = (r, isTotal = false) => {
           const rowClass = isTotal ? 'bg-blue-50 font-black text-blue-900' : 'hover:bg-slate-50';
           const areaCodeRaw = String(r.kode_area || '-');
@@ -2469,7 +3715,7 @@
           return `
             <tr class="${rowClass} ${isTotal ? 'collection-total-row' : ''}">
               <td class="collection-code-col px-3 py-2 border-r border-slate-100 font-mono sticky left-0 z-20 ${isTotal ? 'bg-blue-50' : 'bg-white'}">${areaCode}</td>
-              <td class="collection-area-col px-3 py-2 border-r border-slate-100 text-left ${isTotal ? 'bg-blue-50' : 'bg-white'}">${escRR(r.nama_area || '-')}</td>
+              <td title="${escRR(r.nama_area || '-')}" class="collection-area-col px-3 py-2 border-r border-slate-100 text-left ${isTotal ? 'bg-blue-50' : 'bg-white'}">${escRR(r.nama_area || '-')}</td>
               <td class="px-3 py-2 border-r border-slate-100 text-center font-mono text-blue-700"><button class="font-black hover:underline" onclick='openCollectionAreaDetailRR(${areaCodeJs}, "ALL")'>${fmt(r.target_noa)}</button></td>
               <td class="px-3 py-2 border-r border-slate-100 text-center font-mono text-cyan-700"><button class="font-black hover:underline" onclick='openCollectionAreaDetailRR(${areaCodeJs}, "CALL")'>${fmt(r.call_noa)}</button></td>
               <td class="px-3 py-2 border-r border-slate-100 text-center font-mono ${Number(r.call_percent || 0) >= 80 ? 'text-emerald-700' : (Number(r.call_percent || 0) >= 50 ? 'text-amber-700' : 'text-rose-700')}">${fmtPct(r.call_percent)}</td>
@@ -2501,6 +3747,10 @@
       const trTotal = document.getElementById('rowTotalRRAtas');
       const colspan = getMainColspanRR();
       tb.innerHTML = '';
+      renderOtpTemplateSummaryRR(gt, 'otp');
+
+      /* Mobile tetap memakai tabel agar struktur laporan konsisten di semua device. */
+      setOtpMainSurfaceRR(false);
 
       if(rows.length === 0){
           tb.innerHTML = `<tr><td colspan="${colspan}" class="py-20 text-center text-slate-400 text-sm">Tidak ada data penagihan.</td></tr>`;
@@ -2516,8 +3766,8 @@
                   <th class="otp-report-total">${mobileMetricRR(gt.lancar_os, gt.lancar_noa, "initModalDetail('ALL','LANCAR')")}</th>
                   <th class="otp-report-total">${mobileMetricRR(gt.macet_os, gt.macet_noa, "initModalDetail('ALL','MENUNGGAK')", 'text-rose-700')}</th>
                   <th class="otp-report-total">${mobileMetricRR(gt.lunas_os, gt.lunas_noa, "initModalLunas('ALL')", 'text-emerald-700')}</th>
-                  <th class="otp-report-total"><button type="button" onclick="initModalDetail('ALL','LEWAT_TAGIH')" class="otp-mini-detail text-rose-700"><span>${fmt(gt.angsuran_lewat)}</span><small>${fmtPct(gt.angsuran_lewat_persen)}</small></button></th>
-                  <th class="otp-report-total"><button type="button" onclick="initModalDetail('ALL','SESUAI_TAGIH')" class="otp-mini-detail text-emerald-700"><span>${fmt(gt.angsuran_sesuai)}</span><small>${fmtPct(gt.angsuran_sesuai_persen)}</small></button></th>
+                  <th class="otp-report-total">${renderDueMetricRR(gt.angsuran_lewat, gt.angsuran_lewat_persen, getDueNoaRR(gt, 'lewat', true), "initModalDetail('ALL','LEWAT_TAGIH')", 'text-rose-700')}</th>
+                  <th class="otp-report-total">${renderDueMetricRR(gt.angsuran_sesuai, gt.angsuran_sesuai_persen, getDueNoaRR(gt, 'sesuai', true), "initModalDetail('ALL','SESUAI_TAGIH')", 'text-emerald-700')}</th>
                   <th class="otp-report-total text-right"><a href="javascript:void(0)" onclick="initModalDetail('ALL','ANGSURAN')">${fmt(gt.angsuran)}</a></th>
                   <th class="otp-report-total text-right">${fmt(gt.total_bayar)}</th>
                   <th class="otp-report-total">${renderOtpPctBadge(gt.persen)}</th>
@@ -2533,14 +3783,15 @@
                       <td class="otp-report-cell">${mobileMetricRR(r.lancar_os, r.lancar_noa, `initModalDetail('${escRR(r.tgl)}','LANCAR')`)}</td>
                       <td class="otp-report-cell">${mobileMetricRR(r.macet_os, r.macet_noa, `initModalDetail('${escRR(r.tgl)}','MENUNGGAK')`, 'text-rose-700')}</td>
                       <td class="otp-report-cell">${mobileMetricRR(r.lunas_os, r.lunas_noa, `initModalLunas('${escRR(r.tgl)}')`, 'text-emerald-700')}</td>
-                      <td class="otp-report-cell"><button type="button" onclick="initModalDetail('${escRR(r.tgl)}','LEWAT_TAGIH')" class="otp-mini-detail text-rose-700"><span>${fmt(r.angsuran_lewat)}</span><small>${fmtPct(r.angsuran_lewat_persen)}</small></button></td>
-                      <td class="otp-report-cell"><button type="button" onclick="initModalDetail('${escRR(r.tgl)}','SESUAI_TAGIH')" class="otp-mini-detail text-emerald-700"><span>${fmt(r.angsuran_sesuai)}</span><small>${fmtPct(r.angsuran_sesuai_persen)}</small></button></td>
+                      <td class="otp-report-cell">${renderDueMetricRR(r.angsuran_lewat, r.angsuran_lewat_persen, getDueNoaRR(r, 'lewat'), `initModalDetail('${escRR(r.tgl)}','LEWAT_TAGIH')`, 'text-rose-700')}</td>
+                      <td class="otp-report-cell">${renderDueMetricRR(r.angsuran_sesuai, r.angsuran_sesuai_persen, getDueNoaRR(r, 'sesuai'), `initModalDetail('${escRR(r.tgl)}','SESUAI_TAGIH')`, 'text-emerald-700')}</td>
                       <td class="otp-report-cell text-right"><a href="javascript:void(0)" onclick="initModalDetail('${escRR(r.tgl)}','ANGSURAN')">${fmt(r.angsuran)}</a></td>
                       <td class="otp-report-cell text-right">${fmt(r.total_bayar)}</td>
                       <td class="otp-report-cell">${pctHtml}</td>
                   </tr>
               `;
           }).join('');
+          updateOtpStickyOffsetsRR();
           return;
       }
 
@@ -2555,8 +3806,8 @@
             <th class="otp-report-total"><a href="javascript:void(0)" onclick="initModalDetail('ALL','MENUNGGAK')">${fmt(gt.macet_noa)}</a></th>
             <th class="otp-report-total text-right"><a href="javascript:void(0)" onclick="initModalLunas('ALL')">${fmt(gt.lunas_os)}</a></th>
             <th class="otp-report-total"><a href="javascript:void(0)" onclick="initModalLunas('ALL')">${fmt(gt.lunas_noa)}</a></th>
-            <th class="otp-report-total"><button type="button" onclick="initModalDetail('ALL','LEWAT_TAGIH')" class="otp-mini-detail text-rose-700"><span>${fmt(gt.angsuran_lewat)}</span><small>${fmtPct(gt.angsuran_lewat_persen)}</small></button></th>
-            <th class="otp-report-total"><button type="button" onclick="initModalDetail('ALL','SESUAI_TAGIH')" class="otp-mini-detail text-emerald-700"><span>${fmt(gt.angsuran_sesuai)}</span><small>${fmtPct(gt.angsuran_sesuai_persen)}</small></button></th>
+            <th class="otp-report-total">${renderDueMetricRR(gt.angsuran_lewat, gt.angsuran_lewat_persen, getDueNoaRR(gt, 'lewat', true), "initModalDetail('ALL','LEWAT_TAGIH')", 'text-rose-700')}</th>
+            <th class="otp-report-total">${renderDueMetricRR(gt.angsuran_sesuai, gt.angsuran_sesuai_persen, getDueNoaRR(gt, 'sesuai', true), "initModalDetail('ALL','SESUAI_TAGIH')", 'text-emerald-700')}</th>
             <th class="otp-report-total text-right"><a href="javascript:void(0)" onclick="initModalDetail('ALL','ANGSURAN')">${fmt(gt.angsuran)}</a></th>
             <th class="otp-report-total text-right">${fmt(gt.total_bayar)}</th>
             <th class="otp-report-total">${renderOtpPctBadge(gt.persen)}</th>
@@ -2576,14 +3827,15 @@
                 <td class="otp-report-cell"><a href="javascript:void(0)" onclick="initModalDetail('${escRR(r.tgl)}','MENUNGGAK')">${fmt(r.macet_noa)}</a></td>
                 <td class="otp-report-cell text-right"><a href="javascript:void(0)" onclick="initModalLunas('${escRR(r.tgl)}')">${fmt(r.lunas_os)}</a></td>
                 <td class="otp-report-cell"><a href="javascript:void(0)" onclick="initModalLunas('${escRR(r.tgl)}')">${fmt(r.lunas_noa)}</a></td>
-                <td class="otp-report-cell"><button type="button" onclick="initModalDetail('${escRR(r.tgl)}','LEWAT_TAGIH')" class="otp-mini-detail text-rose-700"><span>${fmt(r.angsuran_lewat)}</span><small>${fmtPct(r.angsuran_lewat_persen)}</small></button></td>
-                <td class="otp-report-cell"><button type="button" onclick="initModalDetail('${escRR(r.tgl)}','SESUAI_TAGIH')" class="otp-mini-detail text-emerald-700"><span>${fmt(r.angsuran_sesuai)}</span><small>${fmtPct(r.angsuran_sesuai_persen)}</small></button></td>
+                <td class="otp-report-cell">${renderDueMetricRR(r.angsuran_lewat, r.angsuran_lewat_persen, getDueNoaRR(r, 'lewat'), `initModalDetail('${escRR(r.tgl)}','LEWAT_TAGIH')`, 'text-rose-700')}</td>
+                <td class="otp-report-cell">${renderDueMetricRR(r.angsuran_sesuai, r.angsuran_sesuai_persen, getDueNoaRR(r, 'sesuai'), `initModalDetail('${escRR(r.tgl)}','SESUAI_TAGIH')`, 'text-emerald-700')}</td>
                 <td class="otp-report-cell text-right"><a href="javascript:void(0)" onclick="initModalDetail('${escRR(r.tgl)}','ANGSURAN')">${fmt(r.angsuran)}</a></td>
                 <td class="otp-report-cell text-right">${fmt(r.total_bayar)}</td>
                 <td class="otp-report-cell">${pctHtml}</td>
             </tr>
           `;
       }).join('');
+      updateOtpStickyOffsetsRR();
   }
 
   function createWABtn(phone) {
@@ -3212,6 +4464,15 @@
       document.body.classList.remove('otp-modal-open');
   };
   document.addEventListener('keydown', e => { if(e.key === 'Escape') { setOtpHelpOpen(false); closeModalRR(); } });
+
+
+  document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && document.getElementById('otpCclAccessModal')?.classList.contains('is-open')) {
+          event.preventDefault();
+          closeCclAccessModalRR();
+      }
+  });
+
 </script>
 
 
