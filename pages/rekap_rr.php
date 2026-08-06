@@ -152,6 +152,13 @@
                 <label class="lbl text-slate-700">ACTUAL (HARIAN)</label>
                 <input type="date" id="harian_date" onchange="fetchRekap()" class="inp w-full text-[10px] md:text-sm font-semibold h-[32px] md:h-[38px] px-2 md:px-3 text-slate-700 cursor-pointer bg-slate-50" required onclick="try{this.showPicker()}catch(e){}">
               </div>
+              <div class="field flex-1 min-w-[120px] md:min-w-[140px]">
+                <label class="lbl text-slate-700">TIPE SALDO</label>
+                <select id="tipe_saldo_rr" class="inp bg-slate-50 text-[10px] md:text-sm font-bold h-[32px] md:h-[38px] px-2 md:px-3 text-slate-700 cursor-pointer w-full" onchange="fetchRekap()">
+                  <option value="baki_debet">BAKI DEBET</option>
+                  <option value="saldo_bank">SALDO BANK</option>
+                </select>
+              </div>
               <div class="field flex-1 min-w-[180px] md:min-w-[220px]">
                 <label class="lbl text-slate-700">AREA / CABANG</label>
                 <select id="opt_kantor" class="inp bg-slate-50 text-[10px] md:text-sm font-bold h-[32px] md:h-[38px] px-2 md:px-3 text-slate-700 cursor-pointer w-full truncate" onchange="fetchRekap()">
@@ -171,11 +178,14 @@
           <h3 class="text-sm font-black text-slate-900">Informasi RR</h3>
         </div>
         <div class="px-4 py-3 text-[11px] md:text-xs text-slate-700 leading-relaxed space-y-2">
-          <p><b>Repayment Rate (RR)</b> adalah rasio kualitas pembayaran yang membandingkan <b>baki debet lancar</b> terhadap <b>seluruh baki debet</b>.</p>
+          <p><b>Repayment Rate (RR)</b> adalah rasio kualitas pembayaran yang membandingkan <b>saldo lancar</b> terhadap <b>seluruh saldo outstanding</b>.</p>
           <div class="rr-info-box"><b>M-1</b>: posisi data pada closing bulan sebelumnya.</div>
           <div class="rr-info-box"><b>Actual</b>: posisi data harian / aktual pada tanggal yang dipilih.</div>
-          <div class="rr-info-box"><b>Delta</b>: selisih antara posisi Actual dengan posisi M-1, baik nominal baki debet maupun persentasenya.</div>
-          <div class="rr-info-box"><b>Rumus RR</b>: Total Baki Debet Lancar / Seluruh Baki Debet.</div>
+          <div class="rr-info-box"><b>Tipe Saldo</b>: Baki Debet atau Saldo Bank. Rekening lancar dihitung dari kolektibilitas L dan hari menunggak 0.</div>
+          <div class="rr-info-box"><b>Delta</b>: detail migrasi RR, yaitu rekening yang pada closing masih L dan hari menunggak 0, lalu pada actual menjadi L dengan hari menunggak lebih dari 0.</div>
+          <div class="rr-info-box"><b>Rumus RR</b>: Total Saldo Lancar / Seluruh Saldo Outstanding sesuai tipe saldo yang dipilih.</div>
+          <div class="rr-info-box"><b>Status Pembayaran</b>: OTP bayar tepat waktu, Telat bayar setelah jatuh tempo, Belum Jatuh Tempo belum wajib bayar, Belum Bayar sudah lewat jatuh tempo.</div>
+          <div class="rr-info-box"><b>Hari Menunggak</b>: selisih tanggal actual dengan tgl jatuh tempo. <b>Tunggakan</b>: tunggakan pokok + tunggakan bunga.</div>
           <div class="pt-1 border-t border-slate-200 font-bold text-slate-900">Semakin tinggi persentase RR, semakin baik kualitas repayment pada area tersebut.</div>
         </div>
       </div>
@@ -209,7 +219,7 @@
             <div class="flex-1 min-w-[180px] shrink-0" id="modal-title-container">
               <h3 class="font-bold text-slate-800 flex items-center gap-1.5 text-[12px] md:text-xl leading-none truncate">
                   <span class="w-1.5 md:w-2 h-4 md:h-6 bg-blue-600 rounded-full hidden md:block shrink-0"></span> 
-                  <span id="modalTitleRR" class="truncate">Detail Penagihan</span>
+                  <span id="modalTitleRR" class="truncate">Detail Rekap RR</span>
               </h3>
               <p class="text-[9px] md:text-sm text-slate-500 mt-1 md:ml-4 font-mono font-medium leading-none truncate" id="modalSubTitleRR">...</p>
             </div>
@@ -238,6 +248,26 @@
 
                 <select id="opt_ao_modal" class="inp px-1 md:px-2 h-[32px] w-[100px] md:w-[130px] text-[10px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)">
                     <option value="">Semua AO</option>
+                </select>
+
+                <select id="status_bayar_modal" class="inp px-1 md:px-2 h-[32px] w-[115px] md:w-[140px] text-[10px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)" title="Status Bayar">
+                    <option value="all">Semua Bayar</option>
+                    <option value="sudah_bayar">Sudah Bayar</option>
+                    <option value="belum_bayar">Belum Bayar</option>
+                </select>
+
+                <select id="status_tunggakan_modal" class="inp px-1 md:px-2 h-[32px] w-[115px] md:w-[145px] text-[10px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)" title="Status Tunggakan">
+                    <option value="all">Tunggakan All</option>
+                    <option value="nol">Tunggakan = 0</option>
+                    <option value="lebih">Tunggakan > 0</option>
+                </select>
+
+                <select id="status_pembayaran_modal" class="inp px-1 md:px-2 h-[32px] w-[140px] md:w-[175px] text-[10px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)" title="Status Pembayaran">
+                    <option value="ALL">Semua Status</option>
+                    <option value="OTP">OTP</option>
+                    <option value="TELAT">Telat</option>
+                    <option value="BELUM_JATUH_TEMPO">Belum Jatuh Tempo</option>
+                    <option value="BELUM_BAYAR">Belum Bayar</option>
                 </select>
                 
                 <button onclick="downloadExcelFull()" class="btn-icon bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 md:px-3 h-[32px] rounded-lg shadow-sm shrink-0" title="Export Excel">
@@ -295,6 +325,8 @@
   let currentDetailTotalPages = 1;
   let currentMode = 'NORMAL'; 
   const detailLimit = 20;
+  const getTipeSaldoRR = () => document.getElementById('tipe_saldo_rr')?.value || 'baki_debet';
+  const getTipeSaldoLabelRR = () => getTipeSaldoRR() === 'saldo_bank' ? 'SALDO BANK' : 'BAKI DEBET';
 
   const getSortIcon = (col, currentCol, asc) => {
       if (col !== currentCol) return '<span class="opacity-30 text-[8px] md:text-[10px] ml-1.5 font-sans">↕</span>';
@@ -349,6 +381,7 @@
       }
 
       await populateKantor(userKodeGlobal);
+      setupRekapDetailClickRR();
       fetchRekap();
   });
 
@@ -357,6 +390,72 @@
       if (signal) opt.signal = signal;
       const res = await fetch(url, opt);
       return await res.json();
+  }
+
+  const attrRR = (v) => String(v ?? '').replace(/[&<>"']/g, ch => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+  }[ch])).replace(/\r?\n/g, ' ');
+
+  function setupRekapDetailClickRR() {
+      const table = document.getElementById('tabelRR');
+      if (!table || table.dataset.detailClickBound === '1') return;
+      table.dataset.detailClickBound = '1';
+      table.addEventListener('click', (e) => {
+          const target = e.target.closest('[data-detail-rr="1"]');
+          if (!target) return;
+          initModalDetail(
+              target.dataset.tgl || 'ALL',
+              target.dataset.status || 'ALL',
+              target.dataset.kode || null,
+              target.dataset.nama || '',
+              target.dataset.label || 'Detail',
+              target.dataset.kankas || null
+          );
+      });
+  }
+
+  async function loadKankasModalDropdown(kodeKantor = null) {
+      const el = document.getElementById('opt_kankas_modal');
+      if (!el) return;
+      el.innerHTML = '<option value="">Semua Kankas</option>';
+      if (!kodeKantor) return;
+
+      try {
+          const res = await apiCall(API_KODE_URL, { type: 'kode_kankas', kode_kantor: kodeKantor });
+          let h = '<option value="">Semua Kankas</option>';
+          (res.data || []).forEach(x => {
+              const kode = x.kode_group1 || '';
+              const nama = x.deskripsi_group1 || kode;
+              h += `<option value="${kode}">${nama}</option>`;
+          });
+          el.innerHTML = h;
+      } catch (err) {
+          console.error('Gagal load kankas RR', err);
+      }
+  }
+
+  async function loadAOModalDropdown(kodeKantor = null) {
+      const el = document.getElementById('opt_ao_modal');
+      if (!el) return;
+      el.innerHTML = '<option value="">Semua AO</option>';
+      if (!kodeKantor) return;
+
+      try {
+          const res = await apiCall(API_KODE_URL, { type: 'kode_ao_kredit', kode_kantor: kodeKantor });
+          let h = '<option value="">Semua AO</option>';
+          (res.data || []).forEach(x => {
+              const kode = x.kode_group2 || '';
+              const nama = x.nama_ao || kode;
+              h += `<option value="${kode}">${nama}</option>`;
+          });
+          el.innerHTML = h;
+      } catch (err) {
+          console.error('Gagal load AO RR', err);
+      }
   }
 
   async function populateKantor(uKode) {
@@ -385,6 +484,7 @@
   // 🔥 SETUP HEADER UTAMA (KUNCI NAMA KANTOR) 🔥
   function setupHeaderRR(userKode) {
       const th = document.getElementById('headRR');
+      const saldoLabel = getTipeSaldoLabelRR();
       let thHtml = `<tr class="rr-row-1 text-[10px] md:text-sm">`;
 
       if (userKode === '000') {
@@ -411,21 +511,21 @@
           </tr>
           <tr class="rr-row-2 text-[8.5px] md:text-[10px] tracking-wider">
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('m1_lancar_os', 'number')">
-                <div class="flex items-center justify-end">BAKI DEBET ${getSortIcon('m1_lancar_os', sortCol, sortAsc)}</div>
+                <div class="flex items-center justify-end">${saldoLabel} ${getSortIcon('m1_lancar_os', sortCol, sortAsc)}</div>
             </th>
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('m1_pct', 'number')">
                 <div class="flex items-center justify-center">% ${getSortIcon('m1_pct', sortCol, sortAsc)}</div>
             </th>
             
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('cur_lancar_os', 'number')">
-                <div class="flex items-center justify-end">BAKI DEBET ${getSortIcon('cur_lancar_os', sortCol, sortAsc)}</div>
+                <div class="flex items-center justify-end">${saldoLabel} ${getSortIcon('cur_lancar_os', sortCol, sortAsc)}</div>
             </th>
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('cur_pct', 'number')">
                 <div class="flex items-center justify-center">% ${getSortIcon('cur_pct', sortCol, sortAsc)}</div>
             </th>
 
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('delta_os_lancar', 'number')">
-                <div class="flex items-center justify-end">BAKI DEBET ${getSortIcon('delta_os_lancar', sortCol, sortAsc)}</div>
+                <div class="flex items-center justify-end">SELISIH ${saldoLabel} ${getSortIcon('delta_os_lancar', sortCol, sortAsc)}</div>
             </th>
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('delta_pct', 'number')">
                 <div class="flex items-center justify-center">% ${getSortIcon('delta_pct', sortCol, sortAsc)}</div>
@@ -497,7 +597,8 @@
               type: 'rr',
               closing_date: document.getElementById('closing_date').value,
               harian_date: document.getElementById('harian_date').value,
-              kode_kantor: document.getElementById('opt_kantor').value || null 
+              kode_kantor: document.getElementById('opt_kantor').value || null,
+              hitung_berdasarkan: getTipeSaldoRR()
           };
 
           const json = await apiCall(API_URL, payload, abortRekap.signal);
@@ -535,6 +636,12 @@
           const pM1Class  = getTrafficLightColor(r.m1_pct);
           const pCurClass = getTrafficLightColor(r.cur_pct);
 
+          const rowKode = attrRR(r.kode || '');
+          const rowNama = attrRR(r.nama || '');
+          const detailKode = userKodeGlobal === '000' ? rowKode : userKodeGlobal;
+          const detailKankas = userKodeGlobal === '000' ? '' : rowKode;
+          const actualDetailAttr = `data-detail-rr="1" data-status="ALL" data-kode="${detailKode}" data-kankas="${detailKankas}" data-nama="${rowNama}" data-label="Actual" title="Klik detail Actual"`;
+          const deltaDetailAttr = `data-detail-rr="1" data-status="TOTAL_BAYAR" data-kode="${detailKode}" data-kankas="${detailKankas}" data-nama="${rowNama}" data-label="Delta" title="Klik detail Delta"`;
           let rowHtml = `<tr class="transition h-[42px] md:h-[52px] border-b border-slate-100 hover:bg-slate-50">`;
           
           if (userKodeGlobal === '000') {
@@ -556,17 +663,17 @@
                 </td>
                 <td class="px-2 md:px-4 py-2 border-r border-slate-100 text-center text-[10px] md:text-sm ${pM1Class}">${r.m1_pct}%</td>
                 
-                <td class="px-2 md:px-4 py-2 border-r border-slate-100 text-right bg-blue-50/20">
+                <td ${actualDetailAttr} class="px-2 md:px-4 py-2 border-r border-slate-100 text-right bg-blue-50/20 cursor-pointer hover:bg-blue-100/70 transition">
                     <div class="font-medium text-blue-800 text-[10px] md:text-sm">${fmt(r.cur_lancar_os)}</div>
                     <div class="text-[8px] md:text-[10px] text-blue-400 mt-0.5">NOA: <span class="font-bold text-blue-500">${fmt(r.cur_all_noa)}</span></div>
                 </td>
-                <td class="px-2 md:px-4 py-2 border-r border-slate-100 text-center text-[10px] md:text-sm ${pCurClass} bg-blue-50/20">${r.cur_pct}%</td>
+                <td ${actualDetailAttr} class="px-2 md:px-4 py-2 border-r border-slate-100 text-center text-[10px] md:text-sm ${pCurClass} bg-blue-50/20 cursor-pointer hover:bg-blue-100/70 transition">${r.cur_pct}%</td>
                 
-                <td class="px-2 md:px-4 py-2 border-r border-slate-100 text-right">
+                <td ${deltaDetailAttr} class="px-2 md:px-4 py-2 border-r border-slate-100 text-right cursor-pointer hover:bg-amber-50 transition">
                     <div class="font-medium ${dOsClass} text-[10px] md:text-sm">${fmt(r.delta_os_lancar)}</div>
                     <div class="text-[8px] md:text-[10px] text-slate-400 mt-0.5">NOA: <span class="font-bold ${dNoaClass}">${fmt(r.delta_noa)}</span></div>
                 </td>
-                <td class="px-2 md:px-4 py-2 text-center font-bold text-[10px] md:text-sm ${dPctClass}">${r.delta_pct}%</td>
+                <td ${deltaDetailAttr} class="px-2 md:px-4 py-2 text-center font-bold text-[10px] md:text-sm ${dPctClass} cursor-pointer hover:bg-amber-50 transition">${r.delta_pct}%</td>
             </tr>`;
           html += rowHtml;
       });
@@ -580,6 +687,9 @@
           const gtM1Color  = getTrafficLightColor(gt.m1_pct);
           const gtCurColor = getTrafficLightColor(gt.cur_pct);
 
+          const totalKode = attrRR(document.getElementById('opt_kantor')?.value || '');
+          const actualTotalAttr = `data-detail-rr="1" data-status="ALL" data-kode="${totalKode}" data-nama="TOTAL" data-label="Actual Total" title="Klik detail Actual Total"`;
+          const deltaTotalAttr = `data-detail-rr="1" data-status="TOTAL_BAYAR" data-kode="${totalKode}" data-nama="TOTAL" data-label="Delta Total" title="Klik detail Delta Total"`;
           let gtHtml = '';
           if (userKodeGlobal === '000') {
               gtHtml += `
@@ -599,19 +709,22 @@
               </th>
               <th class="px-2 md:px-4 border-r border-blue-200 text-center align-middle font-bold text-[10px] md:text-sm ${gtM1Color} bg-[#eff6ff]">${gt.m1_pct}%</th>
               
-              <th class="px-2 md:px-4 border-r border-blue-200 text-right align-middle bg-[#eff6ff]">
+              <th ${actualTotalAttr} class="px-2 md:px-4 border-r border-blue-200 text-right align-middle bg-[#eff6ff] cursor-pointer hover:bg-blue-100 transition">
                   <div class="font-bold text-[10px] md:text-sm text-blue-900">${fmt(gt.cur_lancar_os)}</div>
                   <div class="text-[8px] md:text-[10px] text-blue-500 mt-0.5 font-normal">NOA: <span class="font-bold text-blue-700">${fmt(gt.cur_all_noa)}</span></div>
               </th>
-              <th class="px-2 md:px-4 border-r border-blue-200 text-center align-middle font-bold text-[10px] md:text-sm ${gtCurColor} bg-[#eff6ff]">${gt.cur_pct}%</th>
-              
-              <th class="px-2 md:px-4 border-r border-blue-200 text-right align-middle bg-[#eff6ff]">
+              <th ${actualTotalAttr} class="px-2 md:px-4 border-r border-blue-200 text-center align-middle font-bold text-[10px] md:text-sm ${gtCurColor} bg-[#eff6ff] cursor-pointer hover:bg-blue-100 transition">${gt.cur_pct}%</th>
+               
+              <th ${deltaTotalAttr} class="px-2 md:px-4 border-r border-blue-200 text-right align-middle bg-[#eff6ff] cursor-pointer hover:bg-amber-50 transition">
                   <div class="font-bold text-[10px] md:text-sm ${gtDOsClass}">${fmt(gt.delta_os_lancar)}</div>
                   <div class="text-[8px] md:text-[10px] text-slate-500 mt-0.5 font-normal">NOA: <span class="font-bold ${gtDNoaClass}">${fmt(gt.delta_noa)}</span></div>
               </th>
-              <th class="px-2 md:px-4 text-center align-middle font-bold text-[10px] md:text-sm ${gtDPctClass} bg-[#eff6ff]">${gt.delta_pct}%</th>
+              <th ${deltaTotalAttr} class="px-2 md:px-4 text-center align-middle font-bold text-[10px] md:text-sm ${gtDPctClass} bg-[#eff6ff] cursor-pointer hover:bg-amber-50 transition">${gt.delta_pct}%</th>
           `;
           trTot.innerHTML = gtHtml;
+          trTot.classList.remove('cursor-pointer');
+          trTot.title = '';
+          trTot.onclick = null;
       }
   }
 
@@ -619,10 +732,11 @@
       if(!rekapDataCache || rekapDataCache.length === 0) return alert("Tidak ada data rekap untuk didownload.");
 
       let csv = "";
+      const saldoLabel = getTipeSaldoLabelRR();
       if (userKodeGlobal === '000') {
-          csv = `Kode\tNama Kantor\tM-1 Baki Debet\tM-1 NOA\tM-1 %\tActual Baki Debet\tActual NOA\tActual %\tDelta Baki Debet\tDelta NOA\tDelta %\n`;
+          csv = `Kode\tNama Kantor\tM-1 ${saldoLabel}\tM-1 NOA\tM-1 %\tActual ${saldoLabel}\tActual NOA\tActual %\tDelta ${saldoLabel}\tDelta NOA\tDelta %\n`;
       } else {
-          csv = `Nama Kantor\tM-1 Baki Debet\tM-1 NOA\tM-1 %\tActual Baki Debet\tActual NOA\tActual %\tDelta Baki Debet\tDelta NOA\tDelta %\n`;
+          csv = `Nama Kantor\tM-1 ${saldoLabel}\tM-1 NOA\tM-1 %\tActual ${saldoLabel}\tActual NOA\tActual %\tDelta ${saldoLabel}\tDelta NOA\tDelta %\n`;
       }
       
       rekapDataCache.forEach(r => {
@@ -696,6 +810,15 @@
                   </th>
                   <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[70px] md:w-[100px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('tgl_jatuh_tempo', 'string')">
                       <div class="flex items-center justify-center">TGL JT ${getSortIcon('tgl_jatuh_tempo', sortDetailCol, sortDetailAsc)}</div>
+                  </th>
+                  <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[110px] md:w-[150px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('status_pembayaran_code', 'string')">
+                      <div class="flex items-center justify-center">STATUS BAYAR ${getSortIcon('status_pembayaran_code', sortDetailCol, sortDetailAsc)}</div>
+                  </th>
+                  <th class="px-2 md:px-4 border-b border-r border-slate-300 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('trx_bulan_ini', 'number')">
+                      <div class="flex items-center justify-end">BAYAR ${getSortIcon('trx_bulan_ini', sortDetailCol, sortDetailAsc)}</div>
+                  </th>
+                  <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[70px] md:w-[95px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('hari_menunggak_jt', 'number')">
+                      <div class="flex items-center justify-center">HARI ${getSortIcon('hari_menunggak_jt', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-4 border-b border-r border-slate-300 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('jml_pinjaman', 'number')">
                       <div class="flex items-center justify-end">PLAFOND ${getSortIcon('jml_pinjaman', sortDetailCol, sortDetailAsc)}</div>
@@ -794,18 +917,21 @@
       renderTableDetailBodyRR(detailDataCache);
   }
 
-  async function initModalDetail(tgl, status) {
+  async function initModalDetail(tgl, status, kodeKantor = null, namaArea = '', label = 'Detail', kodeKankasAwal = null) {
       currentMode = 'NORMAL';
-      const branch = document.getElementById('opt_kantor').value || null;
+      const branch = kodeKantor || document.getElementById('opt_kantor').value || null;
       
-      await loadKankasModalDropdown();
-      const kankas = document.getElementById('opt_kankas_modal').value || null; 
+      await loadKankasModalDropdown(branch);
+      if (kodeKankasAwal && document.getElementById('opt_kankas_modal')) {
+          document.getElementById('opt_kankas_modal').value = kodeKankasAwal;
+      }
+      const kankas = kodeKankasAwal || document.getElementById('opt_kankas_modal').value || null; 
       
       await loadAOModalDropdown(branch);
       const ao = document.getElementById('opt_ao_modal').value || null;
       
       currentDetailParams = { 
-          type: 'detail_rr', 
+          type: 'detail_rekap_rr', 
           closing_date: document.getElementById('closing_date').value, 
           harian_date: document.getElementById('harian_date').value, 
           kode_kantor: branch, 
@@ -813,25 +939,35 @@
           kode_ao: ao,
           tgl_tagih: tgl, 
           status: status, 
+          hitung_berdasarkan: getTipeSaldoRR(),
+          status_bayar: 'all',
+          status_tunggakan: 'all',
+          status_pembayaran: 'ALL',
+          search: '',
           limit: detailLimit 
       };
 
-      document.getElementById('modalTitleRR').textContent = `Detail Penagihan (Tgl ${tgl})`;
-      document.getElementById('modalSubTitleRR').textContent = `Status: ${status}`;
+      const titleArea = namaArea ? ` - ${namaArea}` : '';
+      document.getElementById('modalTitleRR').textContent = `${label} Rekap RR${titleArea}`;
+      document.getElementById('modalSubTitleRR').textContent = `${getTipeSaldoLabelRR()} | Lancar = kolektibilitas L dan hari menunggak 0`;
       document.getElementById('modalDetailRR').classList.remove('hidden');
       
       document.getElementById('search_nasabah').value = '';
+      if (document.getElementById('status_bayar_modal')) document.getElementById('status_bayar_modal').value = 'all';
+      if (document.getElementById('status_tunggakan_modal')) document.getElementById('status_tunggakan_modal').value = 'all';
+      if (document.getElementById('status_pembayaran_modal')) document.getElementById('status_pembayaran_modal').value = 'ALL';
       sortDetailCol = ''; sortDetailAsc = true;
       renderModalHeaderRR();
 
       loadDetailPage(1);
   }
+  window.initModalDetail = initModalDetail;
 
   async function initModalLunas(tgl) {
       currentMode = 'LUNAS';
       const branch = document.getElementById('opt_kantor').value || null;
 
-      await loadKankasModalDropdown();
+      await loadKankasModalDropdown(branch);
       const kankas = document.getElementById('opt_kankas_modal').value || null;
       
       await loadAOModalDropdown(branch);
@@ -859,23 +995,12 @@
       loadDetailPage(1);
   }
 
+  let searchDetailTimerRR = null;
   window.filterTableDetail = function() {
       const input = document.getElementById("search_nasabah");
-      const filter = input.value.toLowerCase();
-      const tbody = document.getElementById("bodyModalRR");
-      const trs = tbody.getElementsByTagName("tr");
-
-      for (let i = 0; i < trs.length; i++) {
-          const tdName = currentMode === 'NORMAL' ? trs[i].getElementsByTagName("td")[1] : trs[i].getElementsByTagName("td")[0];
-          if (tdName) {
-              const txtValue = tdName.textContent || tdName.innerText;
-              if (txtValue.toLowerCase().indexOf(filter) > -1) {
-                  trs[i].style.display = "";
-              } else {
-                  trs[i].style.display = "none";
-              }
-          }
-      }
+      currentDetailParams.search = input ? input.value.trim() : '';
+      clearTimeout(searchDetailTimerRR);
+      searchDetailTimerRR = setTimeout(() => loadDetailPage(1), 350);
   }
 
   async function loadDetailPage(page) {
@@ -892,6 +1017,10 @@
           if(aoModal) {
               currentDetailParams.kode_ao = aoModal.value;
           }
+          currentDetailParams.hitung_berdasarkan = getTipeSaldoRR();
+          currentDetailParams.status_bayar = document.getElementById('status_bayar_modal')?.value || 'all';
+          currentDetailParams.status_tunggakan = document.getElementById('status_tunggakan_modal')?.value || 'all';
+          currentDetailParams.status_pembayaran = document.getElementById('status_pembayaran_modal')?.value || 'ALL';
 
           const payload = { ...currentDetailParams, page: page };
           const res = await apiCall(API_URL, payload);
@@ -902,7 +1031,7 @@
           currentDetailPage = page; currentDetailTotalPages = meta.total_pages;
 
           if(detailDataCache.length === 0) {
-              tb.innerHTML = `<tr><td colspan="15" class="py-20 text-center text-slate-500 italic text-xs md:text-base">Tidak ada data detail.</td></tr>`;
+              tb.innerHTML = `<tr><td colspan="17" class="py-20 text-center text-slate-500 italic text-xs md:text-base">Tidak ada data detail.</td></tr>`;
               info.innerText = `0 Data`;
           } else {
               sortDetailCol = ''; sortDetailAsc = true;
@@ -917,8 +1046,18 @@
           document.getElementById('btnNextRR').disabled = page >= meta.total_pages;
       } catch(err){ 
           console.error(err); 
-          tb.innerHTML = `<tr><td colspan="15" class="py-16 text-center text-red-500 font-bold tracking-widest uppercase text-[10px] md:text-sm">Gagal memuat detail</td></tr>`;
+          tb.innerHTML = `<tr><td colspan="17" class="py-16 text-center text-red-500 font-bold tracking-widest uppercase text-[10px] md:text-sm">Gagal memuat detail</td></tr>`;
       } finally { l.classList.add('hidden'); }
+  }
+
+  function getPaymentBadgeRR(r) {
+      const code = r.status_pembayaran_code || '';
+      const extra = code === 'TELAT' ? ` ${fmt(r.hari_telat)} hr` : (code === 'BELUM_BAYAR' ? ` ${fmt(r.hari_menunggak_jt)} hr` : '');
+      if (code === 'OTP') return `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 font-black">OTP</span>`;
+      if (code === 'TELAT') return `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200 font-black">Telat${extra}</span>`;
+      if (code === 'BELUM_JATUH_TEMPO') return `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200 font-black">Belum JT</span>`;
+      if (code === 'BELUM_BAYAR') return `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200 font-black">Belum Bayar${extra}</span>`;
+      return `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-black">-</span>`;
   }
 
   function renderTableDetailBodyRR(list) {
@@ -937,6 +1076,8 @@
               if(r.status_tabungan === 'Aman') statTabungan = `<span class="text-green-600 font-bold text-[10px] md:text-xs">Aman</span>`;
 
               const btnWa = createWABtn(r.no_hp, r.nama_nasabah, r.no_rekening, r.totung);
+              const paymentBadge = getPaymentBadgeRR(r);
+              const hariFollowUp = r.status_pembayaran_code === 'TELAT' ? (r.hari_telat || 0) : (r.hari_menunggak_jt || 0);
 
               // 🔥 ALAMAT FULL TANPA HARDCODE 25 CHAR 🔥
               const alamatLengkap = r.alamat || '-';
@@ -949,6 +1090,9 @@
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-mono text-slate-500 text-[9px] md:text-sm">${r.kankas||'-'}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-center font-bold text-[9.5px] md:text-sm text-blue-700 truncate">${aoName}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-mono text-[9.5px] md:text-sm text-slate-500">${r.tgl_jatuh_tempo||'-'}</td>
+                    <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center text-[9px] md:text-xs">${paymentBadge}</td>
+                    <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-right font-bold text-blue-700 bg-blue-50/20 text-[9.5px] md:text-sm">${fmt(r.trx_bulan_ini)}</td>
+                    <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-black text-[9.5px] md:text-sm ${hariFollowUp > 0 ? 'text-rose-600' : 'text-slate-500'}">${fmt(hariFollowUp)}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-right font-medium text-slate-600 text-[9.5px] md:text-sm">${fmt(r.jml_pinjaman)}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-blue-100 text-right font-bold text-blue-700 bg-blue-50/30 text-[9.5px] md:text-sm">${fmt(r.os_m1)}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-green-100 text-right font-bold text-green-700 bg-green-50/30 text-[9.5px] md:text-sm">${fmt(r.os_curr)}</td>
@@ -995,7 +1139,17 @@
           let kodeAoVal = currentDetailParams.kode_ao;
           if (aoModal) { kodeAoVal = aoModal.value; }
 
-          const payload = { ...currentDetailParams, kode_kankas: kankasModal, kode_ao: kodeAoVal, page: 1, limit: 10000 };
+          const payload = {
+              ...currentDetailParams,
+              kode_kankas: kankasModal,
+              kode_ao: kodeAoVal,
+              hitung_berdasarkan: getTipeSaldoRR(),
+              status_bayar: document.getElementById('status_bayar_modal')?.value || 'all',
+              status_tunggakan: document.getElementById('status_tunggakan_modal')?.value || 'all',
+              status_pembayaran: document.getElementById('status_pembayaran_modal')?.value || 'ALL',
+              page: 1,
+              limit: 10000
+          };
           const res = await apiCall(API_URL, payload);
           if(res.status !== 200) throw new Error(res.message || 'Export gagal');
           const rows = res.data?.data || [];
@@ -1003,9 +1157,9 @@
 
           let csv = "";
           if(currentMode === 'NORMAL') {
-              csv = `No Rekening\tNama Nasabah\tAlamat\tNo HP\tKankas\tNama AO\tTgl JT\tPlafond\tTarget (M-1)\tActual (Curr)\tTot Tunggakan\tDPD\tSaldo Tabungan\tStatus Tabungan\tStatus Tagih\n`;
+              csv = `No Rekening\tNama Nasabah\tAlamat\tNo HP\tKankas\tNama AO\tTgl JT\tStatus Pembayaran\tBayar Bulan Ini\tHari Telat\tHari Menunggak\tPlafond\tTarget (M-1)\tActual (Curr)\tTot Tunggakan\tDPD\tSaldo Tabungan\tStatus Tabungan\tStatus Tagih\n`;
               rows.forEach(r => {
-                  csv += `'${r.no_rekening}\t${r.nama_nasabah}\t${r.alamat||''}\t'${r.no_hp||''}\t${r.kankas||''}\t${r.nama_ao}\t${r.tgl_jatuh_tempo}\t${Math.round(r.jml_pinjaman)}\t${Math.round(r.os_m1)}\t${Math.round(r.os_curr)}\t${Math.round(r.totung)}\t${r.dpd_curr}\t${Math.round(r.tabungan)}\t${r.status_tabungan}\t${r.status_ket}\n`;
+                  csv += `'${r.no_rekening}\t${r.nama_nasabah}\t${r.alamat||''}\t'${r.no_hp||''}\t${r.kankas||''}\t${r.nama_ao}\t${r.tgl_jatuh_tempo}\t${r.status_pembayaran||''}\t${Math.round(r.trx_bulan_ini||0)}\t${r.hari_telat||0}\t${r.hari_menunggak_jt||0}\t${Math.round(r.jml_pinjaman)}\t${Math.round(r.os_m1)}\t${Math.round(r.os_curr)}\t${Math.round(r.totung)}\t${r.dpd_curr}\t${Math.round(r.tabungan)}\t${r.status_tabungan}\t${r.status_ket}\n`;
               });
           } else {
               csv = `Nama Nasabah\tID Nasabah\tAlamat\tNama AO\tRek Lama\tPlafond Lama\tOS Lunas (M-1)\tStatus\tRek Baru\tPlafond Baru\tTgl Realisasi Baru\n`;

@@ -11,6 +11,8 @@ let abortMainMob;
 let detailParamsMob = {}; 
 let detailPageMob = 1;
 let rekapDataCacheMob = null; 
+const getTipeSaldoMob = () => document.getElementById('tipe_saldo_mob')?.value || 'baki_debet';
+const getTipeSaldoLabelMob = () => getTipeSaldoMob() === 'saldo_bank' ? 'Saldo Bank' : 'Baki Debet';
 
 function getActiveMobFilterPayload() {
     const areaVal = document.getElementById('opt_area').value;
@@ -160,7 +162,7 @@ async function fetchRekapMob(){
     rekapDataCacheMob = null;
 
     try {
-        let payload = { type: "mob_vintage", harian_date: harian, rekap_by: "bulan" };
+        let payload = { type: "mob_vintage", harian_date: harian, rekap_by: "bulan", hitung_berdasarkan: getTipeSaldoMob() };
         
         Object.assign(payload, getActiveMobFilterPayload());
         
@@ -272,8 +274,9 @@ window.exportExcelRekapMob = function() {
     if(!rekapDataCacheMob || !rekapDataCacheMob.data) return alert("Tidak ada data rekap untuk didownload.");
     const rows = rekapDataCacheMob.data;
     const bk = rekapDataCacheMob.buckets;
+    const saldoLabel = getTipeSaldoLabelMob();
     let csv = "Bulan Realisasi\tMOB\tTotal Plafond\t";
-    bk.forEach(b => csv += `% ${b}\tOS ${b}\tNOA ${b}\t`);
+    bk.forEach(b => csv += `% ${b}\t${saldoLabel} ${b}\tNOA ${b}\t`);
     csv += "\n";
 
     rows.forEach(r => {
@@ -305,7 +308,8 @@ async function openModalMob(bulanReal, bucket){
         type: "detail_mob_debitur",
         harian_date: document.getElementById('harian_date_mob').value,
         bulan_realisasi: bulanReal,
-        bucket_label: bucket
+        bucket_label: bucket,
+        hitung_berdasarkan: getTipeSaldoMob()
     };
 
     Object.assign(detailParamsMob, getActiveMobFilterPayload());
@@ -362,7 +366,7 @@ async function fetchDetailMob(){
     tbody.innerHTML = '';
 
     try {
-        const payload = { ...detailParamsMob, page: detailPageMob };
+        const payload = { ...detailParamsMob, hitung_berdasarkan: getTipeSaldoMob(), page: detailPageMob };
         const res = await apiCall(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         const json = await res.json();
         
@@ -422,14 +426,15 @@ window.exportExcelDetailMob = async function() {
     btn.innerHTML = `...`; btn.disabled = true;
 
     try {
-        const payload = { ...detailParamsMob, page: 1, limit: 10000 };
+        const payload = { ...detailParamsMob, hitung_berdasarkan: getTipeSaldoMob(), page: 1, limit: 10000 };
         const res = await apiCall(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
         const json = await res.json();
         const rows = json.data?.data || [];
         
         if(rows.length === 0) return alert("Tidak ada data");
 
-        let csv = `No Rekening\tNama Nasabah\tAO\tKankas\tTgl Realisasi\tPlafond\tBaki Debet\tKol\tTot Tunggakan\tTabungan\n`;
+        const saldoLabel = getTipeSaldoLabelMob();
+        let csv = `No Rekening\tNama Nasabah\tAO\tKankas\tTgl Realisasi\tPlafond\t${saldoLabel}\tKol\tTot Tunggakan\tTabungan\n`;
         rows.forEach(x => {
             csv += `'${x.no_rekening}\t${x.nama_nasabah}\t${x.nama_ao||''}\t${x.nama_kankas||''}\t${x.tgl_realisasi}\t${Math.round(x.plafond)}\t${Math.round(x.os)}\t${x.kolektibilitas||''}\t${Math.round(x.totung)}\t${Math.round(x.tabungan)}\n`;
         });
@@ -455,6 +460,7 @@ window.exportExcelNominatifMob = async function() {
             page: 1,
             limit: 50000,
             export_all: true,
+            hitung_berdasarkan: getTipeSaldoMob(),
             ...getActiveMobFilterPayload()
         };
 
@@ -469,7 +475,8 @@ window.exportExcelNominatifMob = async function() {
         const rows = json.data?.data || [];
         if(rows.length === 0) return alert("Tidak ada data nominatif untuk didownload.");
 
-        let csv = `No Rekening\tNama Nasabah\tAO\tKankas\tBulan Realisasi\tBucket\tTgl Realisasi\tPlafond\tBaki Debet\tKol\tDPD\tTot Tunggakan\tTotal Bayar\tTabungan\tStatus Tabungan\n`;
+        const saldoLabel = getTipeSaldoLabelMob();
+        let csv = `No Rekening\tNama Nasabah\tAO\tKankas\tBulan Realisasi\tBucket\tTgl Realisasi\tPlafond\t${saldoLabel}\tKol\tDPD\tTot Tunggakan\tTotal Bayar\tTabungan\tStatus Tabungan\n`;
         rows.forEach(x => {
             const bulan = x.bulan_realisasi || (x.tgl_realisasi ? String(x.tgl_realisasi).substring(0, 7) : '');
             const bucket = x.bucket_label || '';

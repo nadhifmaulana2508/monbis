@@ -59,6 +59,9 @@ switch ($method) {
         } elseif ($type === 'detail_rr') {
             $controller->getDetailRepaymentRate($input);
 
+        } elseif ($type === 'detail_rekap_rr') {
+            $controller->getDetailRekapRr($input);
+
         // --- C. MONITORING (EARLY WARNING) ---
         } elseif ($type === 'monitoring_rr') {
             $controller->getMonitoringLatePayers($input);

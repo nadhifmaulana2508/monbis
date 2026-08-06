@@ -2714,7 +2714,7 @@
   let currentDetailPage = 1;
   let currentDetailTotalPages = 1;
   let currentMode = 'NORMAL'; 
-  const detailLimit = 20;
+  const detailLimit = 50;
   let detailSearchTimer = null;
 
   let sortMainCol = '', sortMainAsc = true;
@@ -4259,7 +4259,11 @@
           
           detailDataCache = res.json.data?.data || [];
           detailCollectionSummary = res.json.data?.collection_summary || null;
-          const meta = res.json.data?.pagination || { total_records:0, total_pages:1 };
+          const metaRaw = res.json.data?.pagination || res.json.data?.meta || {};
+          const meta = {
+              total_records: Number(metaRaw.total_records ?? metaRaw.total ?? detailDataCache.length) || 0,
+              total_pages: Math.max(1, Number(metaRaw.total_pages ?? metaRaw.pages ?? Math.ceil((Number(metaRaw.total_records ?? detailDataCache.length) || 0) / detailLimit)) || 1)
+          };
 
           currentDetailPage = page; currentDetailTotalPages = meta.total_pages;
 

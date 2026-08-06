@@ -56,6 +56,14 @@
                 </select>
             </div>
 
+            <div class="field shrink-0 w-[calc(50%-4px)] xl:w-[130px]">
+                <label class="lbl">TIPE SALDO</label>
+                <select id="tipe_saldo_mob" class="inp text-[10px] md:text-xs font-bold text-slate-700 h-[34px] md:h-[36px] cursor-pointer truncate" onchange="fetchRekapMob()" title="Tipe saldo outstanding">
+                    <option value="baki_debet">BAKI DEBET</option>
+                    <option value="saldo_bank">SALDO BANK</option>
+                </select>
+            </div>
+
             <div class="field flex-1 min-w-[100px] xl:w-[130px] xl:max-w-[160px]">
                 <label id="lbl_sub" class="lbl text-slate-600">KORWIL</label>
                 <select id="opt_sub_main" class="inp text-[10px] md:text-xs font-bold text-slate-700 h-[34px] md:h-[36px] cursor-pointer truncate" onchange="fetchRekapMob()">

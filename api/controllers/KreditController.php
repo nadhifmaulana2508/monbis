@@ -1181,7 +1181,7 @@ class KreditController {
 
         $b = is_array($input) ? $input : (json_decode(file_get_contents('php://input'), true) ?: []);
 
-        $harian_date = $b['harian_date'] ?? date('Y-m-d');
+        $harian_date = $b['harian_date'] ?? date('Y-m-d'); 
 
         // Default closing_date = last day of previous month dari harian_date
         $closing_date = $b['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month', strtotime($harian_date)));
@@ -1600,6 +1600,8 @@ class KreditController {
         // --- 1. SETUP & REQUEST BODY ---
         $b = is_array($input) ? $input : (json_decode(file_get_contents('php://input'), true) ?: []);
         $harian_date = $b['harian_date'] ?? date('Y-m-d'); 
+        $modeHitung = strtolower(trim((string)($b['hitung_berdasarkan'] ?? $b['tipe_saldo'] ?? 'baki_debet')));
+        $colValue = ($modeHitung === 'saldo_bank') ? 'saldo_bank' : 'baki_debet';
         
         // Fitur dinamis grouping: 'bulan', 'ao', atau 'kankas'
         $rekap_by = $b['rekap_by'] ?? 'bulan'; 
@@ -1630,7 +1632,7 @@ class KreditController {
                     kk.deskripsi_group1 as nama_kankas,
                     n.tgl_realisasi,
                     n.jml_pinjaman as plafond, 
-                    n.baki_debet as os,            
+                    n.{$colValue} as os,            
                     n.hari_menunggak
                 FROM nominatif n
                 LEFT JOIN ao_kredit ak ON n.kode_group2 = ak.kode_group2 AND n.kode_cabang = ak.kode_kantor
@@ -1730,7 +1732,8 @@ class KreditController {
                     'korwil'      => $b['korwil'] ?? null,
                     'kode_kantor' => $b['kode_kantor'] ?? 'ALL',
                     'kode_kankas' => $b['kode_kankas'] ?? 'ALL',
-                    'kode_ao'     => $b['kode_ao'] ?? 'ALL'
+                    'kode_ao'     => $b['kode_ao'] ?? 'ALL',
+                    'hitung_berdasarkan' => $colValue
                 ],
                 'dropdown_lists'  => $dropdownData, 
                 'buckets_order'   => ['0', '1 - 7', '8 - 14', '15 - 21', '22 - 30', '31 - 60', '61 - 90', '> 90'],
@@ -1750,6 +1753,8 @@ class KreditController {
         // korwil, kode_kantor, kode_kankas, kode_ao
 
         $harian_date   = $b['harian_date'] ?? date('Y-m-d');
+        $modeHitung = strtolower(trim((string)($b['hitung_berdasarkan'] ?? $b['tipe_saldo'] ?? 'baki_debet')));
+        $colValue = ($modeHitung === 'saldo_bank') ? 'saldo_bank' : 'baki_debet';
         $bln_realisasi = $b['bulan_realisasi'] ?? null; 
         $bucket_label  = isset($b['bucket_label']) ? (string)$b['bucket_label'] : null;
         $isAllExport   = !empty($b['export_all']) || strtoupper((string)$bln_realisasi) === 'ALL' || strtoupper((string)$bucket_label) === 'ALL';
@@ -1842,7 +1847,7 @@ class KreditController {
                     COALESCE(tb.saldo_akhir, 0) as tabungan,
                     n.tgl_realisasi, 
                     n.jml_pinjaman as plafond, 
-                    n.baki_debet as os, 
+                    n.{$colValue} as os, 
                     n.hari_menunggak,
                     COALESCE(n.hari_menunggak_pokok, 0) as hari_menunggak_pokok,
                     COALESCE(n.hari_menunggak_bunga, 0) as hari_menunggak_bunga,
@@ -1875,7 +1880,7 @@ class KreditController {
                 AND n.tgl_realisasi BETWEEN :start AND :end
                 {$dpdSql}
                 {$filterSql}
-                ORDER BY n.baki_debet DESC LIMIT :limit OFFSET :offset
+                ORDER BY n.{$colValue} DESC LIMIT :limit OFFSET :offset
             ";
 
             $stmt = $this->pdo->prepare($sql);
