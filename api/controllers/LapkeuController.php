@@ -176,6 +176,437 @@ class LaporanKeuanganController
         }
     }
 
+    public function apiGetLapNeracaActual(array $input)
+    {
+        try {
+            $tanggal = trim((string)($input['harian_date'] ?? $input['tanggal'] ?? ''));
+            if ($tanggal === '') {
+                $stmtDate = $this->pdo->query("SELECT MAX(tanggal) FROM acc_history");
+                $tanggal = (string)$stmtDate->fetchColumn();
+            }
+
+            $kodeKantorReq = trim((string)($input['kode_kantor'] ?? '000'));
+            $korwilReq = strtoupper(trim((string)($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
+
+            $params = [':tanggal' => $tanggal];
+            $scopeLabel = 'Konsolidasi';
+            $sqlKantor = "AND kode_kantor BETWEEN '000' AND '028'";
+            $isConsolidated = true;
+
+            if ($korwilRange) {
+                $sqlKantor = "AND kode_kantor BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = str_pad((string)$korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $params[':kw_end'] = str_pad((string)$korwilRange[1], 3, '0', STR_PAD_LEFT);
+                $scopeLabel = 'Korwil ' . ucfirst(strtolower($korwilReq));
+                $isConsolidated = false;
+            } elseif (strtolower($kodeKantorReq) === 'pusat') {
+                $sqlKantor = "AND kode_kantor = '000'";
+                $scopeLabel = 'Pusat';
+                $isConsolidated = false;
+            } elseif (!in_array(strtolower($kodeKantorReq), ['000', 'konsolidasi', 'all'], true)) {
+                $kodeKantor = str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT);
+                $sqlKantor = "AND kode_kantor = :kode_kantor";
+                $params[':kode_kantor'] = $kodeKantor;
+                $scopeLabel = $kodeKantor;
+                $isConsolidated = false;
+            }
+
+            $sql = "
+                SELECT
+                    TRIM(CAST(kode_perk AS CHAR)) AS kode_perk,
+                    MAX(NULLIF(TRIM(nama_perk), '')) AS nama_perk,
+                    MAX(TRIM(CAST(kode_induk AS CHAR))) AS kode_induk,
+                    MIN(COALESCE(level_perk, 0)) AS level_perk,
+                    SUM(saldo_akhir) AS saldo
+                FROM acc_history
+                WHERE tanggal = :tanggal
+                  $sqlKantor
+                  AND kode_perk >= '1'
+                  AND kode_perk < '4'
+                GROUP BY TRIM(CAST(kode_perk AS CHAR))
+                HAVING SUM(saldo_akhir) <> 0 OR CHAR_LENGTH(TRIM(CAST(kode_perk AS CHAR))) <= 3
+                ORDER BY TRIM(CAST(kode_perk AS CHAR)) ASC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $assetRows = [];
+            $pasivaRows = [];
+            $totalAsset = 0.0;
+            $totalPasiva = 0.0;
+            $saldoAkun210 = 0.0;
+
+            foreach ($rows as $row) {
+                $kode = trim((string)($row['kode_perk'] ?? ''));
+                if ($kode === '') {
+                    continue;
+                }
+
+                $saldo = (float)($row['saldo'] ?? 0);
+                $item = [
+                    'kode_perk' => $kode,
+                    'nama_perkiraan' => trim((string)($row['nama_perk'] ?? '')) !== '' ? trim((string)$row['nama_perk']) : $kode,
+                    'kode_induk' => trim((string)($row['kode_induk'] ?? '')),
+                    'level_perk' => (int)($row['level_perk'] ?? 0),
+                    'saldo' => $saldo,
+                    'depth' => max(0, min(5, strlen($kode) === 1 ? 0 : (int)floor((strlen($kode) - 1) / 2))),
+                ];
+
+                if (strpos($kode, '1') === 0) {
+                    $assetRows[] = $item;
+                    if ($kode === '1') {
+                        $totalAsset = $saldo;
+                    }
+                } elseif (strpos($kode, '2') === 0 || strpos($kode, '3') === 0) {
+                    $pasivaRows[] = $item;
+                    if ($kode === '210') {
+                        $saldoAkun210 = $saldo;
+                    }
+                    if ($kode === '2' || $kode === '3') {
+                        $totalPasiva += $saldo;
+                    }
+                }
+            }
+
+            if ($isConsolidated && $saldoAkun210 != 0.0) {
+                foreach ($assetRows as &$assetRow) {
+                    if ($assetRow['kode_perk'] === '1') {
+                        $assetRow['saldo'] = (float)$assetRow['saldo'] - $saldoAkun210;
+                        break;
+                    }
+                }
+                unset($assetRow);
+                $totalAsset -= $saldoAkun210;
+
+                foreach ($pasivaRows as &$pasivaRow) {
+                    if ($pasivaRow['kode_perk'] === '2') {
+                        $pasivaRow['saldo'] = (float)$pasivaRow['saldo'] - $saldoAkun210;
+                    } elseif ($pasivaRow['kode_perk'] === '210') {
+                        $pasivaRow['saldo'] = 0.0;
+                    }
+                }
+                unset($pasivaRow);
+                $totalPasiva -= $saldoAkun210;
+            }
+
+            if ($totalAsset == 0.0) {
+                foreach ($assetRows as $row) {
+                    if ((int)$row['depth'] === 1) {
+                        $totalAsset += (float)$row['saldo'];
+                    }
+                }
+            }
+
+            if ($totalPasiva == 0.0) {
+                foreach ($pasivaRows as $row) {
+                    if ((int)$row['depth'] === 0) {
+                        $totalPasiva += (float)$row['saldo'];
+                    }
+                }
+            }
+
+            sendResponse(200, "Berhasil memuat Lap Neraca Actual", [
+                'tanggal' => $tanggal,
+                'kode_kantor' => $kodeKantorReq,
+                'korwil' => $korwilReq,
+                'scope_label' => $scopeLabel,
+                'aktiva' => $assetRows,
+                'pasiva' => $pasivaRows,
+                'totals' => [
+                    'aktiva' => $totalAsset,
+                    'pasiva' => $totalPasiva,
+                    'selisih' => $totalAsset - $totalPasiva,
+                    'eliminasi_210' => $isConsolidated ? $saldoAkun210 : 0,
+                ],
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, "Gagal memuat Lap Neraca Actual: " . $e->getMessage(), null);
+        }
+    }
+
+    public function apiGetLapLabaRugiActual(array $input)
+    {
+        try {
+            $tanggal = trim((string)($input['harian_date'] ?? $input['tanggal'] ?? ''));
+            if ($tanggal === '') {
+                $stmtDate = $this->pdo->query("SELECT MAX(tanggal) FROM acc_history");
+                $tanggal = (string)$stmtDate->fetchColumn();
+            }
+
+            $kodeKantorReq = trim((string)($input['kode_kantor'] ?? '000'));
+            $korwilReq = strtoupper(trim((string)($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
+
+            $params = [':tanggal' => $tanggal];
+            $scopeLabel = 'Konsolidasi';
+            $sqlKantor = "AND kode_kantor BETWEEN '000' AND '028'";
+            $isBranchScope = false;
+
+            if ($korwilRange) {
+                $sqlKantor = "AND kode_kantor BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = str_pad((string)$korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $params[':kw_end'] = str_pad((string)$korwilRange[1], 3, '0', STR_PAD_LEFT);
+                $scopeLabel = 'Korwil ' . ucfirst(strtolower($korwilReq));
+            } elseif (strtolower($kodeKantorReq) === 'pusat') {
+                $sqlKantor = "AND kode_kantor = '000'";
+                $scopeLabel = 'Pusat';
+            } elseif (!in_array(strtolower($kodeKantorReq), ['000', 'konsolidasi', 'all'], true)) {
+                $kodeKantor = str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT);
+                $sqlKantor = "AND kode_kantor = :kode_kantor";
+                $params[':kode_kantor'] = $kodeKantor;
+                $scopeLabel = $kodeKantor;
+                $isBranchScope = true;
+            }
+
+            $sql = "
+                SELECT
+                    TRIM(CAST(kode_perk AS CHAR)) AS kode_perk,
+                    MAX(NULLIF(TRIM(nama_perk), '')) AS nama_perk,
+                    MAX(TRIM(CAST(kode_induk AS CHAR))) AS kode_induk,
+                    MIN(COALESCE(level_perk, 0)) AS level_perk,
+                    SUM(saldo_akhir) AS saldo
+                FROM acc_history
+                WHERE tanggal = :tanggal
+                  $sqlKantor
+                  AND kode_perk >= '4'
+                  AND kode_perk < '6'
+                GROUP BY TRIM(CAST(kode_perk AS CHAR))
+                HAVING SUM(saldo_akhir) <> 0 OR CHAR_LENGTH(TRIM(CAST(kode_perk AS CHAR))) <= 3
+                ORDER BY TRIM(CAST(kode_perk AS CHAR)) ASC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $pendapatanRows = [];
+            $biayaRows = [];
+            $totalPendapatan = 0.0;
+            $totalBiaya = 0.0;
+
+            foreach ($rows as $row) {
+                $kode = trim((string)($row['kode_perk'] ?? ''));
+                if ($kode === '') {
+                    continue;
+                }
+
+                $saldo = (float)($row['saldo'] ?? 0);
+                $item = [
+                    'kode_perk' => $kode,
+                    'nama_perkiraan' => trim((string)($row['nama_perk'] ?? '')) !== '' ? trim((string)$row['nama_perk']) : $kode,
+                    'kode_induk' => trim((string)($row['kode_induk'] ?? '')),
+                    'level_perk' => (int)($row['level_perk'] ?? 0),
+                    'saldo' => $saldo,
+                    'depth' => max(0, min(5, strlen($kode) === 1 ? 0 : (int)floor((strlen($kode) - 1) / 2))),
+                ];
+
+                if (strpos($kode, '4') === 0) {
+                    $pendapatanRows[] = $item;
+                    if ($kode === '4') {
+                        $totalPendapatan = $saldo;
+                    }
+                } elseif (strpos($kode, '5') === 0) {
+                    $biayaRows[] = $item;
+                    if ($kode === '5') {
+                        $totalBiaya = $saldo;
+                    }
+                }
+            }
+
+            if ($totalPendapatan == 0.0) {
+                foreach ($pendapatanRows as $row) {
+                    if ((int)$row['depth'] === 1) {
+                        $totalPendapatan += (float)$row['saldo'];
+                    }
+                }
+            }
+            if ($totalBiaya == 0.0) {
+                foreach ($biayaRows as $row) {
+                    if ((int)$row['depth'] === 1) {
+                        $totalBiaya += (float)$row['saldo'];
+                    }
+                }
+            }
+
+            $labaKotor = $totalPendapatan - $totalBiaya;
+            $pajak = (!$isBranchScope && $labaKotor > 0) ? ($labaKotor * 0.22) : 0.0;
+            $labaBersih = $labaKotor - $pajak;
+
+            sendResponse(200, "Berhasil memuat Lap Laba Rugi Actual", [
+                'tanggal' => $tanggal,
+                'kode_kantor' => $kodeKantorReq,
+                'korwil' => $korwilReq,
+                'scope_label' => $scopeLabel,
+                'pajak_dihitung' => !$isBranchScope,
+                'pendapatan' => $pendapatanRows,
+                'biaya' => $biayaRows,
+                'totals' => [
+                    'pendapatan' => $totalPendapatan,
+                    'biaya' => $totalBiaya,
+                    'laba_kotor' => $labaKotor,
+                    'pajak' => $pajak,
+                    'laba_bersih' => $labaBersih,
+                ],
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, "Gagal memuat Lap Laba Rugi Actual: " . $e->getMessage(), null);
+        }
+    }
+
+    public function apiGetRekapLapkeuActual(array $input)
+    {
+        try {
+            $tanggal = trim((string)($input['harian_date'] ?? $input['tanggal'] ?? ''));
+            if ($tanggal === '') {
+                $stmtDate = $this->pdo->query("SELECT MAX(tanggal) FROM acc_history");
+                $tanggal = (string)$stmtDate->fetchColumn();
+            }
+
+            $kodeKantorReq = trim((string)($input['kode_kantor'] ?? '000'));
+            $korwilReq = strtoupper(trim((string)($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
+
+            $params = [':tanggal' => $tanggal];
+            $scopeLabel = 'Konsolidasi';
+            $sqlKantor = "AND ah.kode_kantor BETWEEN '000' AND '028'";
+            $isConsolidated = true;
+
+            if ($korwilRange) {
+                $sqlKantor = "AND ah.kode_kantor BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = str_pad((string)$korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $params[':kw_end'] = str_pad((string)$korwilRange[1], 3, '0', STR_PAD_LEFT);
+                $scopeLabel = 'Korwil ' . ucfirst(strtolower($korwilReq));
+                $isConsolidated = false;
+            } elseif (strtolower($kodeKantorReq) === 'pusat') {
+                $sqlKantor = "AND ah.kode_kantor = '000'";
+                $scopeLabel = 'Pusat';
+                $isConsolidated = false;
+            } elseif (!in_array(strtolower($kodeKantorReq), ['000', 'konsolidasi', 'all'], true)) {
+                $kodeKantor = str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT);
+                $sqlKantor = "AND ah.kode_kantor = :kode_kantor";
+                $params[':kode_kantor'] = $kodeKantor;
+                $scopeLabel = $kodeKantor;
+                $isConsolidated = false;
+            }
+
+            $assetCodes = [
+                '101', '102', '103', '104', '105',
+                '10601', '10602', '10604', '10605', '10606',
+                '107', '108', '109', '110', '11102', '112', '113',
+                '116', '117', '118', '119', '120', '121',
+            ];
+            $assetIn = implode(',', array_map([$this->pdo, 'quote'], $assetCodes));
+
+            $sql = "
+                SELECT
+                    ah.kode_kantor,
+                    COALESCE(kk.nama_kantor, CONCAT('Kc. ', ah.kode_kantor)) AS nama_kantor,
+                    SUM(CASE WHEN ah.kode_perk IN ($assetIn) THEN ah.saldo_akhir ELSE 0 END) AS aset,
+                    SUM(CASE WHEN ah.kode_perk = '210' THEN ah.saldo_akhir ELSE 0 END) AS eliminasi_210,
+                    SUM(CASE WHEN ah.kode_perk = '2' THEN ah.saldo_akhir ELSE 0 END) AS liabilitas,
+                    SUM(CASE WHEN ah.kode_perk = '3' THEN ah.saldo_akhir ELSE 0 END) AS ekuitas,
+                    SUM(CASE WHEN ah.kode_perk = '4' THEN ah.saldo_akhir ELSE 0 END) AS pendapatan,
+                    SUM(CASE WHEN ah.kode_perk = '5' THEN ah.saldo_akhir ELSE 0 END) AS beban
+                FROM acc_history ah
+                LEFT JOIN kode_kantor kk ON kk.kode_kantor = ah.kode_kantor
+                WHERE ah.tanggal = :tanggal
+                  $sqlKantor
+                  AND (
+                    ah.kode_perk IN ($assetIn)
+                    OR ah.kode_perk IN ('2','3','4','5','210')
+                  )
+                GROUP BY ah.kode_kantor, kk.nama_kantor
+                ORDER BY ah.kode_kantor ASC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $rows = [];
+            $total = [
+                'aset' => 0.0,
+                'liabilitas' => 0.0,
+                'ekuitas' => 0.0,
+                'pendapatan' => 0.0,
+                'beban' => 0.0,
+                'laba_kotor' => 0.0,
+                'eliminasi_210' => 0.0,
+            ];
+
+            foreach ($results as $row) {
+                $aset = (float)($row['aset'] ?? 0);
+                $liabilitas = (float)($row['liabilitas'] ?? 0);
+                $ekuitas = (float)($row['ekuitas'] ?? 0);
+                $pendapatan = (float)($row['pendapatan'] ?? 0);
+                $beban = (float)($row['beban'] ?? 0);
+                $labaKotor = $pendapatan - $beban;
+                $eliminasi210 = (float)($row['eliminasi_210'] ?? 0);
+
+                $rows[] = [
+                    'kode_kantor' => str_pad((string)($row['kode_kantor'] ?? ''), 3, '0', STR_PAD_LEFT),
+                    'nama_kantor' => (string)($row['nama_kantor'] ?? ''),
+                    'aset' => $aset,
+                    'liabilitas' => $liabilitas,
+                    'ekuitas' => $ekuitas,
+                    'pendapatan' => $pendapatan,
+                    'beban' => $beban,
+                    'laba_kotor' => $labaKotor,
+                    'eliminasi_210' => $eliminasi210,
+                ];
+
+                $total['aset'] += $aset;
+                $total['liabilitas'] += $liabilitas;
+                $total['ekuitas'] += $ekuitas;
+                $total['pendapatan'] += $pendapatan;
+                $total['beban'] += $beban;
+                $total['laba_kotor'] += $labaKotor;
+                $total['eliminasi_210'] += $eliminasi210;
+            }
+
+            if ($isConsolidated && $total['eliminasi_210'] != 0.0) {
+                $total['aset'] -= $total['eliminasi_210'];
+                $total['liabilitas'] -= $total['eliminasi_210'];
+            }
+
+            $labaNegativeCount = 0;
+            $lowestProfit = null;
+            $highestExpense = null;
+            foreach ($rows as $row) {
+                if ((float)$row['laba_kotor'] < 0) {
+                    $labaNegativeCount++;
+                }
+                if ($lowestProfit === null || (float)$row['laba_kotor'] < (float)$lowestProfit['laba_kotor']) {
+                    $lowestProfit = $row;
+                }
+                if ($highestExpense === null || (float)$row['beban'] > (float)$highestExpense['beban']) {
+                    $highestExpense = $row;
+                }
+            }
+
+            sendResponse(200, "Berhasil memuat Rekap Lapkeu Actual", [
+                'tanggal' => $tanggal,
+                'kode_kantor' => $kodeKantorReq,
+                'korwil' => $korwilReq,
+                'scope_label' => $scopeLabel,
+                'is_consolidated' => $isConsolidated,
+                'rows' => $rows,
+                'total' => $total,
+                'summary' => [
+                    'jumlah_kantor' => count($rows),
+                    'laba_minus' => $labaNegativeCount,
+                    'laba_terendah' => $lowestProfit,
+                    'beban_terbesar' => $highestExpense,
+                ],
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, "Gagal memuat Rekap Lapkeu Actual: " . $e->getMessage(), null);
+        }
+    }
+
     /**
      * FUNGSI DETAIL: Untuk cek per Kantor, per Kanwil, atau Total Konsolidasi saja
      */

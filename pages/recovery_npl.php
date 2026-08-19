@@ -1,20 +1,23 @@
 <style>
-  :root {
+  /*
+   * Style Recovery NPL tidak boleh mengubah shell/navbar aplikasi.
+   * Jangan override `.hidden` atau `body` secara global dari page fragment.
+   */
+  #recoveryPage,
+  #modalDebiturRecovery,
+  #modalPeringatan,
+  #modalInfoRecovery {
       --primary:#2563eb;
       --bg:#f8fafc;
       --text:#334155;
-  }
-
-  * { box-sizing:border-box; }
-  body {
-      margin:0;
       font-family:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-      background:var(--bg);
       color:var(--text);
-      overflow:hidden;
   }
 
-  .hidden { display:none !important; }
+  #recoveryPage *,
+  #modalDebiturRecovery *,
+  #modalPeringatan *,
+  #modalInfoRecovery * { box-sizing:border-box; }
 
   /* === PAGE: dibuat rapat agar area kerja maksimal === */
   #recoveryPage {
@@ -274,6 +277,17 @@
       overflow:hidden;
       border-radius:5px;
       text-decoration:none !important;
+      text-overflow:ellipsis;
+  }
+  .rec-cell-readonly {
+      display:block;
+      width:100%;
+      padding:3px 4px;
+      overflow:hidden;
+      border-radius:5px;
+      color:#64748b !important;
+      cursor:not-allowed;
+      opacity:.78;
       text-overflow:ellipsis;
   }
   .rec-cell-empty { color:#94a3b8; font-weight:750; }
@@ -631,15 +645,303 @@
       font-size:12px;
       font-weight:750;
   }
-  /* === INFO MODAL === */
-  #modalInfoRecovery { padding:10px; }
+  /* === INFO MODAL: KONSISTEN DENGAN MENU LAIN === */
+  #modalInfoRecovery {
+      padding:14px;
+      background:rgba(15,23,42,.66);
+      backdrop-filter:blur(7px);
+  }
   #modalInfoCardRecovery {
       display:flex;
       flex-direction:column;
-      width:min(520px,calc(100vw - 20px));
-      max-height:min(82dvh,680px);
+      width:min(840px,calc(100vw - 28px));
+      max-height:min(90dvh,790px);
+      overflow:hidden;
+      border:1px solid rgba(226,232,240,.96);
+      border-radius:16px;
+      background:#fff;
+      box-shadow:0 28px 80px rgba(15,23,42,.34);
   }
-  #modalInfoBodyRecovery { overflow:auto; }
+  .rec-info-header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:13px 15px;
+      border-bottom:1px solid #e2e8f0;
+      background:linear-gradient(180deg,#fff 0%,#f8fafc 100%);
+      flex:none;
+  }
+  .rec-info-heading {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+  }
+  .rec-info-heading-icon {
+      width:38px;
+      height:38px;
+      flex:0 0 38px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid #bfdbfe;
+      border-radius:10px;
+      background:#eff6ff;
+      color:#2563eb;
+  }
+  .rec-info-heading-icon svg { width:19px; height:19px; }
+  .rec-info-title {
+      color:#0f172a;
+      font-size:16px;
+      font-weight:900;
+      line-height:1.15;
+  }
+  .rec-info-subtitle {
+      margin-top:3px;
+      color:#64748b;
+      font-size:10px;
+      font-weight:650;
+      line-height:1.3;
+  }
+  .rec-info-close {
+      width:34px;
+      height:34px;
+      flex:0 0 34px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border:1px solid #e2e8f0;
+      border-radius:9px;
+      background:#fff;
+      color:#64748b;
+      cursor:pointer;
+      transition:.16s ease;
+  }
+  .rec-info-close:hover { background:#fff1f2; border-color:#fecdd3; color:#e11d48; }
+  #modalInfoBodyRecovery {
+      overflow:auto;
+      padding:14px 15px 16px;
+      color:#475569;
+      overscroll-behavior:contain;
+  }
+  #modalInfoBodyRecovery::-webkit-scrollbar { width:6px; }
+  #modalInfoBodyRecovery::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:999px; }
+  .rec-info-current {
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:7px;
+      margin-bottom:10px;
+  }
+  .rec-info-stat {
+      min-width:0;
+      padding:9px 10px;
+      border:1px solid #e2e8f0;
+      border-radius:9px;
+      background:#fff;
+      box-shadow:0 1px 2px rgba(15,23,42,.035);
+  }
+  .rec-info-stat-label {
+      color:#64748b;
+      font-size:7.5px;
+      font-weight:900;
+      letter-spacing:.04em;
+      text-transform:uppercase;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+  }
+  .rec-info-stat-value {
+      margin-top:3px;
+      color:#0f172a;
+      font-size:13px;
+      font-weight:900;
+      line-height:1.05;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      font-variant-numeric:tabular-nums;
+  }
+  .rec-info-stat-value.blue { color:#1d4ed8; }
+  .rec-info-stat-value.green { color:#047857; }
+  .rec-info-stat-value.orange { color:#c2410c; }
+  .rec-info-stat-value.red { color:#be123c; }
+  .rec-info-intro {
+      padding:10px 12px;
+      border:1px solid #bfdbfe;
+      border-radius:10px;
+      background:#eff6ff;
+      color:#1e3a8a;
+      font-size:10.5px;
+      font-weight:750;
+      line-height:1.45;
+  }
+  .rec-info-warning {
+      display:flex;
+      align-items:flex-start;
+      gap:9px;
+      margin-top:9px;
+      padding:10px 11px;
+      border:1px solid #fcd34d;
+      border-radius:10px;
+      background:#fffbeb;
+      color:#92400e;
+  }
+  .rec-info-warning svg { width:17px; height:17px; flex:0 0 17px; margin-top:1px; }
+  .rec-info-warning-title { font-size:10.5px; font-weight:900; line-height:1.25; }
+  .rec-info-warning-text { margin-top:3px; font-size:9.5px; font-weight:650; line-height:1.42; }
+  .rec-info-grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:9px;
+      margin-top:10px;
+  }
+  .rec-info-card {
+      min-width:0;
+      padding:10px 11px;
+      border:1px solid #e2e8f0;
+      border-left-width:4px;
+      border-radius:10px;
+      background:#fff;
+      box-shadow:0 1px 2px rgba(15,23,42,.035);
+  }
+  .rec-info-card.blue { border-left-color:#3b82f6; background:#f8fbff; }
+  .rec-info-card.orange { border-left-color:#f59e0b; background:#fffdf7; }
+  .rec-info-card.green { border-left-color:#10b981; background:#f7fffb; }
+  .rec-info-card.red { border-left-color:#f43f5e; background:#fff9fa; }
+  .rec-info-card.cyan { border-left-color:#06b6d4; background:#f7feff; }
+  .rec-info-card.violet { border-left-color:#6366f1; background:#fafaff; }
+  .rec-info-card.full { grid-column:1 / -1; }
+  .rec-info-card-title {
+      display:flex;
+      align-items:center;
+      gap:7px;
+      color:#0f172a;
+      font-size:10.5px;
+      font-weight:900;
+      line-height:1.2;
+  }
+  .rec-info-chip {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:24px;
+      height:19px;
+      padding:0 6px;
+      border-radius:999px;
+      background:#e2e8f0;
+      color:#475569;
+      font-size:7.5px;
+      font-weight:900;
+      white-space:nowrap;
+  }
+  .rec-info-card-text {
+      margin-top:6px;
+      color:#475569;
+      font-size:9.5px;
+      font-weight:650;
+      line-height:1.45;
+  }
+  .rec-info-card-text b { color:#0f172a; font-weight:900; }
+  .rec-info-action-title {
+      margin-top:11px;
+      color:#0f172a;
+      font-size:10.5px;
+      font-weight:900;
+  }
+  .rec-action-grid {
+      display:grid;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+      gap:7px;
+      margin-top:7px;
+  }
+  .rec-action-card {
+      min-width:0;
+      padding:9px 10px;
+      border:1px solid #dbe3ee;
+      border-radius:9px;
+      background:#f8fafc;
+  }
+  .rec-action-number {
+      width:21px;
+      height:21px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      background:#2563eb;
+      color:#fff;
+      font-size:8px;
+      font-weight:900;
+  }
+  .rec-action-name { margin-top:5px; color:#0f172a; font-size:10px; font-weight:900; }
+  .rec-action-text { margin-top:3px; color:#64748b; font-size:8.8px; font-weight:650; line-height:1.38; }
+  .rec-info-toplist {
+      margin-top:9px;
+      padding:9px 10px;
+      border:1px solid #e2e8f0;
+      border-radius:9px;
+      background:#f8fafc;
+  }
+  .rec-info-toplist-title { color:#334155; font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:.04em; }
+  .rec-info-toplist-items { display:grid; gap:5px; margin-top:6px; }
+  .rec-info-toprow { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:8px; align-items:center; font-size:9px; }
+  .rec-info-toprow span:first-child { overflow:hidden; color:#475569; font-weight:750; text-overflow:ellipsis; white-space:nowrap; }
+  .rec-info-toprow b { color:#be123c; font-weight:900; white-space:nowrap; }
+
+  .backflow-monitor-warning {
+      grid-column:1 / -1;
+      display:flex;
+      align-items:flex-start;
+      gap:8px;
+      padding:8px 9px;
+      border:1px solid #fcd34d;
+      border-radius:9px;
+      background:#fffbeb;
+      color:#92400e;
+  }
+  .backflow-monitor-warning svg { width:15px; height:15px; flex:0 0 15px; margin-top:1px; }
+  .backflow-monitor-warning strong { display:block; color:#92400e; font-size:8.5px; font-weight:900; }
+  .backflow-monitor-warning span { display:block; margin-top:2px; font-size:7.5px; font-weight:700; line-height:1.35; }
+
+  @media (max-width:767px) {
+      #modalInfoRecovery { align-items:flex-end !important; padding:0 !important; }
+      #modalInfoCardRecovery {
+          width:100% !important;
+          max-height:92dvh !important;
+          border-radius:16px 16px 0 0 !important;
+          border-left:0;
+          border-right:0;
+          border-bottom:0;
+          box-shadow:0 -18px 48px rgba(15,23,42,.30);
+      }
+      .rec-info-header { padding:10px 11px; }
+      .rec-info-heading { gap:8px; }
+      .rec-info-heading-icon { width:32px; height:32px; flex-basis:32px; border-radius:9px; }
+      .rec-info-heading-icon svg { width:16px; height:16px; }
+      .rec-info-title { font-size:13px; }
+      .rec-info-subtitle { font-size:8.5px; }
+      .rec-info-close { width:31px; height:31px; flex-basis:31px; }
+      #modalInfoBodyRecovery { padding:10px 11px 14px; }
+      .rec-info-current { grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
+      .rec-info-stat { padding:7px 8px; }
+      .rec-info-stat-label { font-size:6.5px; }
+      .rec-info-stat-value { font-size:10.5px; }
+      .rec-info-intro { padding:8px 9px; font-size:9px; }
+      .rec-info-warning { padding:8px 9px; }
+      .rec-info-warning-title { font-size:9.5px; }
+      .rec-info-warning-text { font-size:8.5px; }
+      .rec-info-grid { grid-template-columns:1fr; gap:7px; margin-top:8px; }
+      .rec-info-card,.rec-info-card.full { grid-column:auto; padding:8px 9px; }
+      .rec-info-card-title { font-size:9.5px; }
+      .rec-info-card-text { margin-top:4px; font-size:8.5px; line-height:1.4; }
+      .rec-action-grid { grid-template-columns:1fr; gap:5px; }
+      .rec-action-card { padding:8px 9px; }
+      .rec-action-name { font-size:9.5px; }
+      .rec-action-text { font-size:8px; }
+      .rec-info-toplist { padding:8px 9px; }
+      .rec-info-toprow { font-size:8.5px; }
+  }
 
   /* === LARGE DESKTOP === */
   @media (min-width:1440px) {
@@ -710,7 +1012,6 @@
 
   /* === MOBILE === */
   @media (max-width:767px) {
-      body { overflow:hidden; }
       #recoveryPage {
           height:calc(100vh - 54px) !important;
           height:calc(100dvh - 54px) !important;
@@ -921,13 +1222,11 @@
       }
       #modalInfoCardRecovery {
           width:100%;
-          max-height:82dvh;
-          border-radius:14px 14px 0 0 !important;
+          max-height:92dvh;
+          border-radius:16px 16px 0 0 !important;
       }
       #modalInfoBodyRecovery {
-          padding:12px !important;
-          font-size:12px !important;
-          line-height:1.4;
+          padding:10px 11px 14px !important;
       }
   }
 
@@ -1440,7 +1739,7 @@
     </div>
     <div class="p-6 text-center text-slate-600 text-sm">
       <p>Anda login sebagai <span class="font-bold text-blue-600 px-1 bg-blue-50 rounded" id="warnUserLvl">Cabang</span>.</p>
-      <p class="mt-2">Anda tidak memiliki izin untuk melihat detail data nasabah milik <span class="font-bold text-red-600 px-1 bg-red-50 rounded" id="warnTargetLvl">Unit</span>.</p>
+      <p class="mt-2">Rekap Korwil boleh dipantau, tetapi detail debitur hanya dapat dibuka untuk <b>cabang login sendiri</b>. Detail <span class="font-bold text-red-600 px-1 bg-red-50 rounded" id="warnTargetLvl">Cabang</span> tidak dapat dibuka.</p>
     </div>
     <div class="p-4 bg-slate-50 border-t border-slate-100 flex justify-end">
       <button onclick="closeModalPeringatan()" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded text-xs font-bold transition">Mengerti</button>
@@ -1448,22 +1747,90 @@
   </div>
 </div>
 
-<div id="modalInfoRecovery" class="fixed inset-0 hidden bg-slate-900/40 backdrop-blur-sm items-center justify-center z-[9999] px-4">
-  <div id="modalInfoCardRecovery" class="bg-white rounded-xl shadow-2xl overflow-hidden animate-scale-up">
-    <div class="p-3 md:p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50 shrink-0">
-      <h3 class="font-bold text-slate-800">Panduan Kamus Kolom</h3>
-      <button type="button" id="btnCloseInfoRecovery" class="w-8 h-8 rounded-full bg-slate-200 hover:bg-slate-300 font-bold">x</button>
-    </div>
-    <div id="modalInfoBodyRecovery" class="p-4 text-sm text-slate-600 space-y-3">
-      <p><b>Flow NPL:</b> rekening yang tidak NPL di closing, lalu menjadi KL/D/M di harian.</p>
-      <p><b>% Flow PAR:</b> OS Flow NPL dibagi baki debet NPL bulan lalu. Hijau untuk 0% atau negatif, oranye untuk 0,01% sampai 3%, dan merah jika lebih dari 3%.</p>
-      <p><b>Recovery:</b> Lunas NPL + Backflow + Angsuran NPL.</p>
-      <p><b>Angsuran NPL:</b> selisih baki debet closing NPL dibanding harian jika baki debet harian lebih kecil.</p>
-      <div class="p-3 rounded-lg border border-blue-200 bg-blue-50 text-blue-900 text-xs">
-        <b>Perbaikan (-) / Pemburukan (+):</b> Flow NPL dikurangi Total Recovery. Nilai negatif berarti perbaikan, sedangkan nilai positif berarti pemburukan.
+<div id="modalInfoRecovery" class="fixed inset-0 hidden items-center justify-center z-[10000]" role="dialog" aria-modal="true" aria-labelledby="titleInfoRecovery">
+  <div id="modalInfoCardRecovery" class="animate-scale-up">
+    <div class="rec-info-header">
+      <div class="rec-info-heading">
+        <span class="rec-info-heading-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          </svg>
+        </span>
+        <div>
+          <div id="titleInfoRecovery" class="rec-info-title">Panduan & Fokus Recovery NPL</div>
+          <div class="rec-info-subtitle">Ringkasan posisi dan prioritas tindak lanjut agar recovery tetap terjaga dan NPL tidak kembali memburuk.</div>
+        </div>
       </div>
-      <p class="text-xs text-slate-500">Jika total recovery berbeda dengan migrasi kolek, biasanya ada kapitalisasi/restrukturisasi yang membuat baki debet naik.</p>
-      <p class="text-xs text-slate-500">Catatan: % NPL bisa naik walaupun OSC NPL turun jika total portofolio/OS turun lebih besar.</p>
+      <button type="button" id="btnCloseInfoRecovery" class="rec-info-close" title="Tutup" aria-label="Tutup panduan">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </button>
+    </div>
+
+    <div id="modalInfoBodyRecovery">
+      <div id="recInfoCurrentSummary" class="rec-info-current"></div>
+
+      <div id="recInfoHeadline" class="rec-info-intro">
+        Recovery perlu dijaga sampai posisi akhir bulan. Perhatikan Flow NPL, percepat recovery, dan jangan berhenti memantau rekening yang baru kembali lancar.
+      </div>
+
+      <div class="rec-info-warning">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.7 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"></path></svg>
+        <div>
+          <div class="rec-info-warning-title">Backflow belum berarti selesai.</div>
+          <div class="rec-info-warning-text">Rekening backflow yang <b>belum melewati tanggal jatuh tempo angsuran berikutnya</b> tetap wajib dipantau. Pastikan kewajiban berikutnya dibayar tepat waktu agar rekening tidak kembali masuk NPL.</div>
+        </div>
+      </div>
+
+      <div class="rec-info-grid">
+        <section class="rec-info-card blue">
+          <div class="rec-info-card-title"><span class="rec-info-chip">LUNAS</span> Lunas NPL</div>
+          <div class="rec-info-card-text">Rekening NPL yang sudah selesai/lunas. Pastikan penyelesaian sudah tercermin pada posisi harian dan tidak ada kewajiban tersisa.</div>
+        </section>
+        <section class="rec-info-card orange">
+          <div class="rec-info-card-title"><span class="rec-info-chip">BF</span> Backflow</div>
+          <div class="rec-info-card-text">Rekening yang membaik dari NPL ke kolektibilitas lebih baik. <b>Tetap monitor sampai angsuran berikutnya terealisasi</b>, terutama yang jatuh temponya masih di depan.</div>
+        </section>
+        <section class="rec-info-card green">
+          <div class="rec-info-card-title"><span class="rec-info-chip">ANG</span> Angsuran NPL</div>
+          <div class="rec-info-card-text">Penurunan baki debet NPL karena pembayaran angsuran. Dorong pembayaran lanjutan agar outstanding NPL terus turun.</div>
+        </section>
+        <section class="rec-info-card red">
+          <div class="rec-info-card-title"><span class="rec-info-chip">FLOW</span> Flow NPL</div>
+          <div class="rec-info-card-text">Rekening yang saat closing belum NPL lalu menjadi KL/D/M pada posisi harian. Nilai ini perlu ditekan karena langsung menambah pemburukan.</div>
+        </section>
+        <section class="rec-info-card cyan">
+          <div class="rec-info-card-title"><span class="rec-info-chip">REC</span> Total Recovery</div>
+          <div class="rec-info-card-text"><b>Lunas NPL + Backflow + Angsuran NPL.</b> Gunakan untuk melihat seberapa besar perbaikan yang sudah dicapai pada periode berjalan.</div>
+        </section>
+        <section class="rec-info-card violet">
+          <div class="rec-info-card-title"><span class="rec-info-chip">NET</span> Perbaikan / Pemburukan</div>
+          <div class="rec-info-card-text"><b>Flow NPL - Total Recovery.</b> Nilai negatif = perbaikan. Nilai positif = pemburukan dan perlu tindak lanjut lebih cepat.</div>
+        </section>
+      </div>
+
+      <div class="rec-info-action-title">Urutan tindak lanjut yang disarankan</div>
+      <div class="rec-action-grid">
+        <div class="rec-action-card">
+          <span class="rec-action-number">1</span>
+          <div class="rec-action-name">Potensi NPL</div>
+          <div class="rec-action-text">Cegah rekening berisiko sebelum benar-benar masuk NPL. Prioritaskan debitur yang mendekati batas kolektibilitas.</div>
+        </div>
+        <div class="rec-action-card">
+          <span class="rec-action-number">2</span>
+          <div class="rec-action-name">Flow PAR</div>
+          <div class="rec-action-text">Buka Flow PAR untuk melihat rekening penyebab flow dan segera lakukan pembayaran/tindak lanjut sebelum posisi memburuk.</div>
+        </div>
+        <div class="rec-action-card">
+          <span class="rec-action-number">3</span>
+          <div class="rec-action-name">25 NPL Terbesar</div>
+          <div class="rec-action-text">Fokus penyelesaian NPL terbesar melalui strategi yang sesuai, termasuk litigasi, lelang, SKK Kejaksaan, atau cessie sesuai ketentuan dan kesiapan dokumen.</div>
+        </div>
+      </div>
+
+      <div id="recInfoTopList" class="rec-info-toplist hidden">
+        <div class="rec-info-toplist-title">Cabang yang perlu perhatian lebih dulu</div>
+        <div id="recInfoTopListItems" class="rec-info-toplist-items"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1478,6 +1845,68 @@
   const num  = v => Number(v||0);
   const kodeNum = v => Number(String(v??'').replace(/\D/g,'')||0);
   const formatDate = (s) => { if(!s) return '-'; const d=new Date(s); return isNaN(d)?'-': `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; };
+
+  function recoveryDateOnly(value) {
+      if (!value) return null;
+      const raw = String(value).trim();
+      const d = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? new Date(`${raw}T00:00:00`) : new Date(raw);
+      if (Number.isNaN(d.getTime())) return null;
+      d.setHours(0,0,0,0);
+      return d;
+  }
+
+  function isBackflowStillBeforeDue(item) {
+      const due = recoveryDateOnly(item?.tgl_jatuh_tempo);
+      const position = recoveryDateOnly(document.getElementById('harian_date_recovery')?.value) || recoveryDateOnly(new Date());
+      return !!(due && position && due.getTime() > position.getTime());
+  }
+
+  function renderRecoveryInfoInsight() {
+      const target = document.getElementById('recInfoCurrentSummary');
+      const headline = document.getElementById('recInfoHeadline');
+      const topWrap = document.getElementById('recInfoTopList');
+      const topItems = document.getElementById('recInfoTopListItems');
+      if (!target || !headline) return;
+
+      const gt = recoveryGtRaw || {};
+      const totalRecovery = num(gt.total_recovery || (num(gt.baki_debet_lunas) + num(gt.baki_debet_backflow) + num(gt.baki_debet_angsuran_npl)));
+      const flowNpl = num(gt.baki_debet_flow_npl);
+      const net = num(gt.net_flow_recovery);
+      const backflowNoa = num(gt.noa_backflow);
+
+      target.innerHTML = `
+        <div class="rec-info-stat"><div class="rec-info-stat-label">Total Recovery</div><div class="rec-info-stat-value green">Rp ${fmt(totalRecovery)}</div></div>
+        <div class="rec-info-stat"><div class="rec-info-stat-label">Flow NPL</div><div class="rec-info-stat-value red">Rp ${fmt(flowNpl)}</div></div>
+        <div class="rec-info-stat"><div class="rec-info-stat-label">Backflow</div><div class="rec-info-stat-value orange">${fmt(backflowNoa)} NOA</div></div>
+        <div class="rec-info-stat"><div class="rec-info-stat-label">Kondisi Bersih</div><div class="rec-info-stat-value ${net > 0 ? 'red' : 'green'}">${net > 0 ? '+' : ''}Rp ${fmt(net)}</div></div>
+      `;
+
+      if (net > 0) {
+          headline.innerHTML = `<b>Posisi masih memburuk Rp ${fmt(net)}.</b> Flow NPL masih lebih besar daripada recovery. Cabang dengan pemburukan terbesar perlu segera ditindaklanjuti agar NPL akhir bulan tidak semakin naik.`;
+      } else if (net < 0) {
+          headline.innerHTML = `<b>Posisi membaik Rp ${fmt(Math.abs(net))}.</b> Recovery saat ini lebih besar daripada Flow NPL. Tetap jaga rekening backflow dan cegah flow baru agar perbaikan bertahan sampai akhir bulan.`;
+      } else {
+          headline.innerHTML = `<b>Recovery dan Flow NPL saat ini seimbang.</b> Fokus mencegah flow baru dan menjaga rekening backflow supaya posisi akhir bulan bergerak ke arah perbaikan.`;
+      }
+
+      const attention = [...(recoveryDataRaw || [])]
+          .filter(row => num(row.net_flow_recovery) > 0)
+          .sort((a,b) => num(b.net_flow_recovery) - num(a.net_flow_recovery))
+          .slice(0,3);
+
+      if (topWrap && topItems) {
+          if (attention.length) {
+              topItems.innerHTML = attention.map(row => {
+                  const nama = recoveryEscape(row.nama_kantor || row.nama_unit || row.kode_cabang || row.kode_unit || '-');
+                  return `<div class="rec-info-toprow"><span>${nama}</span><b>+Rp ${fmt(row.net_flow_recovery)}</b></div>`;
+              }).join('');
+              topWrap.classList.remove('hidden');
+          } else {
+              topItems.innerHTML = '';
+              topWrap.classList.add('hidden');
+          }
+      }
+  }
 
   // --- STATE PENTING UNTUK EXPORT & SORTING ---
   let recoveryDataRaw = [];
@@ -1539,18 +1968,45 @@
       setTimeout(updateRecStickyHeader, 20);
   }
 
+  // --- HAK AKSES AREA / KORWIL ---
+  // Mapping mengikuti pembagian korwil yang dipakai backend:
+  // 001-007 Semarang, 008-014 Solo, 015-021 Banyumas, 022-028 Pekalongan.
+  const RECOVERY_KORWIL_RANGES = [
+      { key:'SEMARANG',   label:'Korwil Semarang',   min:1,  max:7  },
+      { key:'SOLO',       label:'Korwil Solo',       min:8,  max:14 },
+      { key:'BANYUMAS',   label:'Korwil Banyumas',   min:15, max:21 },
+      { key:'PEKALONGAN', label:'Korwil Pekalongan', min:22, max:28 }
+  ];
+
+  function getRecoveryKorwilByCabang(kodeCabang) {
+      const n = Number(String(kodeCabang || '').replace(/\D/g,''));
+      if (!Number.isFinite(n) || n <= 0) return null;
+      return RECOVERY_KORWIL_RANGES.find(item => n >= item.min && n <= item.max) || null;
+  }
+
+  function isRecoveryKorwilAllowedForUser(korwilKey, userKode = getAppUser()) {
+      if (userKode === '000') return true;
+      const own = getRecoveryKorwilByCabang(userKode);
+      return !!(own && own.key === String(korwilKey || '').toUpperCase());
+  }
+
+  function recoveryDetailTargetCabang(kode) {
+      const clean = String(kode || '').replace(/\D/g,'');
+      if (!clean) return '';
+      return clean.length > 3 ? clean.substring(0,3) : clean.padStart(3,'0');
+  }
+
+  function canOpenRecoveryDetail(kode) {
+      const myKode = getAppUser();
+      if (myKode === '000') return true;
+      return recoveryDetailTargetCabang(kode) === myKode;
+  }
+
   async function populateKantorOptionsRecovery(userKode) {
       const opt = document.getElementById('opt_kantor_recovery');
       if (!opt) return;
 
-      if (userKode && userKode !== '000') {
-          opt.innerHTML = `<option value="CAB-${userKode}">${userKode} - Cabang Login</option>`;
-          opt.value = `CAB-${userKode}`;
-          opt.disabled = true;
-          recoveryScopeMode = 'cabang';
-          return;
-      }
-
+      let list = [];
       try {
           const res = await fetch('./api/kode/', {
               method:'POST',
@@ -1558,25 +2014,52 @@
               body:JSON.stringify({type:'kode_kantor'})
           });
           const json = await res.json();
-          const list = Array.isArray(json.data) ? json.data : [];
-          let html = `
-            <option value="ALL">Konsolidasi</option>
-            <option value="KOR-SEMARANG">Korwil Semarang</option>
-            <option value="KOR-SOLO">Korwil Solo</option>
-            <option value="KOR-BANYUMAS">Korwil Banyumas</option>
-            <option value="KOR-PEKALONGAN">Korwil Pekalongan</option>
-          `;
-          list.filter(x => x.kode_kantor !== '000')
-              .sort((a,b) => String(a.kode_kantor).localeCompare(b.kode_kantor))
-              .forEach(it => {
-                  const kode = String(it.kode_kantor).padStart(3,'0');
-                  html += `<option value="CAB-${kode}">${kode} - ${it.nama_kantor}</option>`;
-              });
-          opt.innerHTML = html;
-          opt.disabled = false;
+          list = Array.isArray(json.data) ? json.data : [];
       } catch(e) {
-          opt.innerHTML = `<option value="ALL">Konsolidasi</option>`;
+          console.warn('Gagal memuat master kantor Recovery NPL', e);
       }
+
+      // Login cabang: hanya diberikan 2 scope yang relevan:
+      // 1) Cabang sendiri, 2) Korwil tempat cabang tersebut berada.
+      if (userKode && userKode !== '000') {
+          const ownKode = String(userKode).padStart(3,'0');
+          const ownOffice = list.find(x => String(x.kode_kantor || '').padStart(3,'0') === ownKode);
+          const ownName = ownOffice?.nama_kantor || ownOffice?.nama || 'Cabang Login';
+          const ownKorwil = getRecoveryKorwilByCabang(ownKode);
+
+          let html = `<option value="CAB-${ownKode}">${ownKode} - ${recoveryEscape(ownName)}</option>`;
+          if (ownKorwil) {
+              html += `<option value="KOR-${ownKorwil.key}">${ownKorwil.label}</option>`;
+              opt.dataset.userKorwil = ownKorwil.key;
+          } else {
+              opt.dataset.userKorwil = '';
+          }
+
+          opt.innerHTML = html;
+          opt.value = `CAB-${ownKode}`;
+          // Jangan disable: user cabang boleh berpindah antara Cabang sendiri dan Korwilnya.
+          opt.disabled = !ownKorwil;
+          recoveryScopeMode = 'cabang';
+          return;
+      }
+
+      let html = `
+        <option value="ALL">Konsolidasi</option>
+        <option value="KOR-SEMARANG">Korwil Semarang</option>
+        <option value="KOR-SOLO">Korwil Solo</option>
+        <option value="KOR-BANYUMAS">Korwil Banyumas</option>
+        <option value="KOR-PEKALONGAN">Korwil Pekalongan</option>
+      `;
+      list.filter(x => String(x.kode_kantor || '') !== '000')
+          .sort((a,b) => String(a.kode_kantor).localeCompare(String(b.kode_kantor)))
+          .forEach(it => {
+              const kode = String(it.kode_kantor).padStart(3,'0');
+              html += `<option value="CAB-${kode}">${kode} - ${recoveryEscape(it.nama_kantor || it.nama || `Cabang ${kode}`)}</option>`;
+          });
+
+      opt.innerHTML = html;
+      opt.disabled = false;
+      opt.dataset.userKorwil = '';
   }
 
   // --- INIT ---
@@ -1584,18 +2067,22 @@
     renderRecoveryHeader();
     document.getElementById('btnInfoRecovery')?.addEventListener('click', () => {
         const modal = document.getElementById('modalInfoRecovery');
+        renderRecoveryInfoInsight();
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
     });
     document.getElementById('btnCloseInfoRecovery')?.addEventListener('click', () => {
         const modal = document.getElementById('modalInfoRecovery');
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        if (!document.getElementById('modalDebiturRecovery')?.classList.contains('flex')) document.body.style.overflow = '';
     });
     document.getElementById('modalInfoRecovery')?.addEventListener('click', e => {
         if (e.target.id === 'modalInfoRecovery') {
             e.currentTarget.classList.add('hidden');
             e.currentTarget.classList.remove('flex');
+            if (!document.getElementById('modalDebiturRecovery')?.classList.contains('flex')) document.body.style.overflow = '';
         }
     });
     document.getElementById('btnToggleRecoveryFilter')?.addEventListener('click', () => {
@@ -1661,9 +2148,23 @@
     recoveryScopeMode = 'konsolidasi';
 
     if (myKode !== '000') {
-        kantor = myKode;
-        payload.kode_kantor = myKode;
-        recoveryScopeMode = 'cabang';
+        const ownKorwil = getRecoveryKorwilByCabang(myKode);
+        const requestedKorwil = optVal.startsWith('KOR-') ? optVal.replace('KOR-', '').toUpperCase() : '';
+
+        if (requestedKorwil && ownKorwil && requestedKorwil === ownKorwil.key) {
+            korwil = ownKorwil.key;
+            payload.korwil = korwil;
+            recoveryScopeMode = 'korwil';
+        } else {
+            // Scope default dan fallback keamanan selalu cabang login sendiri.
+            kantor = myKode;
+            payload.kode_kantor = myKode;
+            recoveryScopeMode = 'cabang';
+
+            if (optVal !== `CAB-${myKode}` && document.getElementById('opt_kantor_recovery')) {
+                document.getElementById('opt_kantor_recovery').value = `CAB-${myKode}`;
+            }
+        }
     } else if (optVal.startsWith('CAB-')) {
         kantor = optVal.replace('CAB-', '');
         payload.kode_kantor = kantor;
@@ -1706,6 +2207,7 @@
 
       renderTotal(totalRow);
       renderRows(recoveryDataRaw);
+      renderRecoveryInfoInsight();
 
     } catch(err) {
       if(err.name !== 'AbortError') {
@@ -1785,7 +2287,14 @@
   function getTotalDetailKode() {
       const myKode = getAppUser();
       const optVal = document.getElementById('opt_kantor_recovery')?.value || 'ALL';
-      if (myKode !== '000') return myKode;
+
+      // Saat login cabang sedang melihat Korwil, TOTAL adalah total seluruh korwil.
+      // Jangan jadikan total tersebut pintu masuk ke detail lintas cabang.
+      if (myKode !== '000') {
+          if (optVal.startsWith('KOR-')) return 'LOCKED';
+          return myKode;
+      }
+
       if (optVal.startsWith('CAB-')) return optVal.replace('CAB-', '');
       return '000';
   }
@@ -1793,6 +2302,12 @@
   function recMetricValueLink(value, type, kode, color = 'blue', kind = 'nom') {
       if (num(value) <= 0) return `<span class="rec-cell-empty">${metricValue(0, kind)}</span>`;
       const cls = color === 'orange' ? 'text-orange-600' : (color === 'green' ? 'text-emerald-600' : 'text-blue-600');
+
+      // Login cabang boleh melihat rekap Korwil, tetapi detail debitur hanya milik cabangnya.
+      if (kode === 'LOCKED' || !canOpenRecoveryDetail(kode)) {
+          return `<span class="rec-cell-readonly ${cls} font-bold" title="Detail hanya dapat dibuka untuk cabang login">${metricValue(value, kind)}</span>`;
+      }
+
       return `<a href="#" class="rec-cell-link ${cls} font-bold hover:bg-slate-100" data-act="view" data-type="${type}" data-kode="${kode}">${metricValue(value, kind)}</a>`;
   }
 
@@ -1963,13 +2478,13 @@
       e.preventDefault();
 
       const targetKode = String(link.dataset.kode);
-      const targetCabang = targetKode.length > 3 ? targetKode.substring(0, 3) : targetKode.padStart(3,'0');
+      const targetCabang = recoveryDetailTargetCabang(targetKode);
       const myKode = getAppUser();
 
-      // PENGAMANAN AKSES (HANYA BISA BUKA MILIKNYA SENDIRI ATAU PUSAT)
+      // PENGAMANAN AKSES: rekap Korwil boleh dilihat, detail debitur tetap cabang sendiri.
       if (myKode !== '000' && myKode !== targetCabang) {
-          document.getElementById('warnUserLvl').innerText = `Unit ${myKode}`;
-          document.getElementById('warnTargetLvl').innerText = `Unit ${targetCabang}`;
+          document.getElementById('warnUserLvl').innerText = `Cabang ${myKode}`;
+          document.getElementById('warnTargetLvl').innerText = `Cabang ${targetCabang}`;
           const modalWarn = document.getElementById('modalPeringatan');
           modalWarn.classList.remove('hidden');
           modalWarn.classList.add('flex');
@@ -1985,20 +2500,30 @@
       const myKode = getAppUser();
       const optVal = document.getElementById('opt_kantor_recovery')?.value || 'ALL';
 
+      // Defense-in-depth di FE: user cabang tidak pernah membentuk payload detail
+      // untuk cabang lain, meskipun value DOM dimanipulasi lewat DevTools.
+      if (myKode !== '000') {
+          if (cleanKode.length > 3 && recoveryDetailTargetCabang(cleanKode) === myKode) {
+              payload.kode_kantor = myKode;
+              payload.kode_kankas = cleanKode;
+          } else {
+              payload.kode_kantor = myKode;
+          }
+          return payload;
+      }
+
       if (cleanKode.length > 3) {
           payload.kode_kantor = cleanKode.substring(0, 3);
           payload.kode_kankas = cleanKode;
           return payload;
       }
 
-      if (cleanKode && cleanKode !== '000' && cleanKode !== 'TOTAL') {
+      if (cleanKode && cleanKode !== '000' && cleanKode !== 'TOTAL' && cleanKode !== 'LOCKED') {
           payload.kode_kantor = cleanKode.padStart(3, '0');
           return payload;
       }
 
-      if (myKode !== '000') {
-          payload.kode_kantor = myKode;
-      } else if (optVal.startsWith('CAB-')) {
+      if (optVal.startsWith('CAB-')) {
           payload.kode_kantor = optVal.replace('CAB-', '');
       } else if (optVal.startsWith('KOR-')) {
           payload.korwil = optVal.replace('KOR-', '');
@@ -2031,7 +2556,7 @@
       return `<span class="detail-status-badge ${cls}">${recoveryEscape(raw)}</span>`;
   }
 
-  function renderRecoveryDetailSummary(rows, totalRows) {
+  function renderRecoveryDetailSummary(rows, totalRows, type = '') {
       const summary = document.getElementById('recoveryDetailSummary');
       if (!summary) return;
 
@@ -2039,6 +2564,8 @@
       const totalRecovery = rows.reduce((sum, item) => sum + num(item.recovery_nominal), 0);
       const totalPokok = rows.reduce((sum, item) => sum + num(item.angsuran_pokok), 0);
       const totalBunga = rows.reduce((sum, item) => sum + num(item.angsuran_bunga), 0);
+      const monitoredBackflow = type === 'backflow' ? rows.filter(isBackflowStillBeforeDue) : [];
+      const monitoredBaki = monitoredBackflow.reduce((sum, item) => sum + num(item.baki_debet), 0);
 
       summary.classList.remove('hidden');
       summary.innerHTML = `
@@ -2058,6 +2585,14 @@
               <div class="detail-stat-label">Pokok + Bunga</div>
               <div class="detail-stat-value orange">Rp ${fmt(totalPokok + totalBunga)}</div>
           </div>
+          ${type === 'backflow' && monitoredBackflow.length ? `
+            <div class="backflow-monitor-warning">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.7 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"></path></svg>
+              <div>
+                <strong>${fmt(monitoredBackflow.length)} debitur backflow masih dalam masa pantau • Rp ${fmt(monitoredBaki)}</strong>
+                <span>Tanggal jatuh tempo angsuran berikutnya masih setelah posisi harian. Pastikan pembayaran berikutnya terealisasi tepat waktu agar rekening tidak kembali masuk NPL.</span>
+              </div>
+            </div>` : ''}
       `;
   }
 
@@ -2128,7 +2663,7 @@
           : [...recoveryDetailRows];
 
       if (countBadge) countBadge.textContent = `${fmt(rows.length)} data`;
-      renderRecoveryDetailSummary(rows, recoveryDetailRows.length);
+      renderRecoveryDetailSummary(rows, recoveryDetailRows.length, type);
 
       if (!rows.length) {
           body.innerHTML = `
@@ -2328,5 +2863,6 @@
       const infoModal = document.getElementById('modalInfoRecovery');
       infoModal?.classList.add('hidden');
       infoModal?.classList.remove('flex');
+      if (!document.getElementById('modalDebiturRecovery')?.classList.contains('flex')) document.body.style.overflow = '';
   });
 </script>

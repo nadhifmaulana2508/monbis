@@ -1,0 +1,45 @@
+<?php
+/**
+ * Monbis UI helpers.
+ * Semua class memakai prefix mb- agar tidak bocor ke navbar/layout utama.
+ */
+
+if (!function_exists('mb_e')) {
+    function mb_e($value): string
+    {
+        return htmlspecialchars((string)($value ?? ''), ENT_QUOTES, 'UTF-8');
+    }
+}
+
+if (!function_exists('mb_attrs')) {
+    function mb_attrs(array $attrs = []): string
+    {
+        $html = '';
+        foreach ($attrs as $key => $value) {
+            if ($value === null || $value === false) continue;
+            if ($value === true) {
+                $html .= ' ' . mb_e($key);
+                continue;
+            }
+            $html .= ' ' . mb_e($key) . '="' . mb_e($value) . '"';
+        }
+        return $html;
+    }
+}
+
+if (!function_exists('mb_svg')) {
+    function mb_svg(string $name): string
+    {
+        $icons = [
+            'chart' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V10M12 20V4M19 20v-7"/><path d="M3 20h18"/></svg>',
+            'info' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>',
+            'download' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14a2 2 0 0 0 2-2v-2M3 17v2a2 2 0 0 0 2 2"/></svg>',
+            'filter' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M7 12h10M10 18h4"/></svg>',
+            'close' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',
+            'search' => '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>',
+            'file' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/></svg>',
+            'warning' => '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.7 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z"/></svg>',
+        ];
+        return $icons[$name] ?? $icons['chart'];
+    }
+}

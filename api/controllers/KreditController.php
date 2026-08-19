@@ -1619,8 +1619,8 @@ class KreditController {
         $end_date_realisasi = $end_obj->format('Y-m-d');
 
         $start_obj = clone $end_obj;
-        $start_obj->modify('-5 months'); 
         $start_obj->modify('first day of this month');
+        $start_obj->modify('-5 months');
         $start_date_realisasi = $start_obj->format('Y-m-d');
 
         // --- 3. QUERY UTAMA NOMINATIF (Dengan JOIN) ---
@@ -1794,8 +1794,8 @@ class KreditController {
             $tgl_akhir_bulan = $end_obj->format('Y-m-d');
 
             $start_obj = clone $end_obj;
-            $start_obj->modify('-5 months');
             $start_obj->modify('first day of this month');
+            $start_obj->modify('-5 months');
             $tgl_awal_bulan = $start_obj->format('Y-m-d');
         } else {
             $tgl_awal_bulan  = $bln_realisasi . '-01';

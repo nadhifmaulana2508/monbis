@@ -969,6 +969,494 @@
     .mk-money { font-size:7.1px !important; }
   }
 
+
+
+  /* === INFO RINGKASAN KONDISI MONITORING KREDIT === */
+  .mk-title-line {
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-width:0;
+    max-width:100%;
+  }
+  .mk-title-line #mkHeaderTitle {
+    min-width:0;
+    overflow:visible !important;
+    text-overflow:clip !important;
+    white-space:nowrap !important;
+    flex:0 1 auto;
+  }
+
+  .mk-info-button {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:20px;
+    min-width:20px;
+    height:20px;
+    padding:0;
+    border:1px solid #bfdbfe;
+    border-radius:999px;
+    background:#eff6ff;
+    color:#2563eb;
+    cursor:pointer;
+    box-shadow:0 1px 2px rgba(15,23,42,.05);
+    transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease,box-shadow .16s ease;
+    flex:0 0 auto;
+  }
+  .mk-info-button:hover,
+  .mk-info-button[aria-expanded="true"] {
+    background:#2563eb;
+    border-color:#2563eb;
+    color:#fff;
+    box-shadow:0 4px 10px rgba(37,99,235,.2);
+  }
+  .mk-info-button:active { transform:scale(.94); }
+  .mk-info-button:focus-visible {
+    outline:0;
+    box-shadow:0 0 0 3px rgba(37,99,235,.18);
+  }
+  .mk-info-button svg { width:12px; height:12px; }
+
+  .mk-info-backdrop {
+    position:fixed;
+    inset:0;
+    z-index:99990;
+    display:none;
+    background:rgba(15,23,42,.56);
+    backdrop-filter:blur(4px);
+  }
+  .mk-info-backdrop.open { display:block; }
+
+  .mk-info-panel {
+    position:fixed;
+    z-index:100000;
+    display:none;
+    width:min(820px,calc(100vw - 48px));
+    max-height:min(88dvh,760px);
+    overflow:auto;
+    padding:0;
+    border:1px solid #dbe3ee;
+    border-radius:14px;
+    background:#fff;
+    color:#334155;
+    box-shadow:0 22px 52px rgba(15,23,42,.22),0 4px 12px rgba(15,23,42,.08);
+    overscroll-behavior:contain;
+  }
+  .mk-info-panel.open { display:block; }
+
+  .mk-info-panel-head {
+    position:sticky;
+    top:0;
+    z-index:3;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    padding:13px 14px 11px;
+    border-bottom:1px solid #e2e8f0;
+    background:rgba(255,255,255,.97);
+    backdrop-filter:blur(8px);
+  }
+  .mk-info-panel-title {
+    margin:0;
+    color:#1e293b;
+    font-size:14px;
+    line-height:1.2;
+    font-weight:900;
+  }
+  .mk-info-panel-subtitle {
+    margin:3px 0 0;
+    color:#64748b;
+    font-size:9.5px;
+    line-height:1.4;
+    font-weight:650;
+  }
+  .mk-info-close {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:28px;
+    min-width:28px;
+    height:28px;
+    border:1px solid #e2e8f0;
+    border-radius:8px;
+    background:#f8fafc;
+    color:#64748b;
+    font-size:18px;
+    line-height:1;
+    font-weight:700;
+    cursor:pointer;
+    transition:all .16s ease;
+  }
+  .mk-info-close:hover { background:#fee2e2; border-color:#fecaca; color:#dc2626; }
+
+  .mk-info-body { padding:14px 15px 16px; }
+
+  .mk-insight-context {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:8px;
+  }
+  .mk-info-mode {
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    min-width:0;
+    padding:5px 8px;
+    border:1px solid #bfdbfe;
+    border-radius:999px;
+    background:#eff6ff;
+    color:#1d4ed8;
+    font-size:8px;
+    line-height:1;
+    font-weight:900;
+    letter-spacing:.025em;
+    text-transform:uppercase;
+    white-space:nowrap;
+  }
+  .mk-info-mode::before {
+    content:'';
+    width:6px;
+    height:6px;
+    border-radius:999px;
+    background:#2563eb;
+    flex:0 0 auto;
+  }
+  .mk-insight-date {
+    min-width:0;
+    overflow:hidden;
+    color:#64748b;
+    font-size:8.5px;
+    font-weight:750;
+    text-align:right;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .mk-insight-hero {
+    padding:11px 12px;
+    border:1px solid #dbeafe;
+    border-radius:11px;
+    background:#f8fbff;
+  }
+  .mk-insight-hero.alert {
+    border-color:#fecaca;
+    background:#fff7f7;
+  }
+  .mk-insight-hero.good {
+    border-color:#bbf7d0;
+    background:#f4fdf7;
+  }
+  .mk-insight-eyebrow {
+    color:#64748b;
+    font-size:7.5px;
+    font-weight:900;
+    letter-spacing:.055em;
+    text-transform:uppercase;
+  }
+  .mk-insight-headline {
+    margin-top:3px;
+    color:#0f172a;
+    font-size:12px;
+    font-weight:900;
+    line-height:1.35;
+  }
+  .mk-insight-copy {
+    margin-top:5px;
+    color:#475569;
+    font-size:9.5px;
+    font-weight:650;
+    line-height:1.5;
+  }
+
+  .mk-insight-stats {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:6px;
+    margin-top:8px;
+  }
+  .mk-insight-stat {
+    min-width:0;
+    padding:8px;
+    border:1px solid #e2e8f0;
+    border-radius:9px;
+    background:#fff;
+  }
+  .mk-insight-stat-label {
+    color:#64748b;
+    font-size:7px;
+    font-weight:900;
+    letter-spacing:.035em;
+    text-transform:uppercase;
+  }
+  .mk-insight-stat-value {
+    margin-top:3px;
+    overflow:hidden;
+    color:#0f172a;
+    font-size:11px;
+    font-weight:900;
+    line-height:1.1;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+  .mk-insight-stat-value.bad { color:#dc2626; }
+  .mk-insight-stat-value.good { color:#059669; }
+
+  .mk-insight-section {
+    margin-top:9px;
+    padding:10px;
+    border:1px solid #e2e8f0;
+    border-radius:10px;
+    background:#fff;
+  }
+  .mk-insight-section-title {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin:0 0 7px;
+    color:#1e293b;
+    font-size:10px;
+    font-weight:900;
+  }
+  .mk-insight-section-note {
+    color:#94a3b8;
+    font-size:7.5px;
+    font-weight:750;
+    white-space:nowrap;
+  }
+  .mk-driver-list {
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:7px;
+  }
+  .mk-driver-item {
+    display:grid;
+    grid-template-columns:23px minmax(0,1fr) auto;
+    align-items:center;
+    gap:7px;
+    min-width:0;
+    padding:7px 8px;
+    border:1px solid #eef2f7;
+    border-radius:8px;
+    background:#f8fafc;
+  }
+  .mk-driver-rank {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:23px;
+    height:23px;
+    border-radius:7px;
+    background:#fee2e2;
+    color:#b91c1c;
+    font-size:8px;
+    font-weight:900;
+  }
+  .mk-driver-name {
+    overflow:hidden;
+    color:#334155;
+    font-size:9.5px;
+    font-weight:850;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .mk-driver-meta {
+    margin-top:2px;
+    overflow:hidden;
+    color:#94a3b8;
+    font-size:7.5px;
+    font-weight:700;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .mk-driver-change {
+    color:#dc2626;
+    font-size:9px;
+    font-weight:900;
+    text-align:right;
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+  .mk-driver-empty {
+    padding:10px;
+    border:1px dashed #cbd5e1;
+    border-radius:8px;
+    background:#f8fafc;
+    color:#64748b;
+    font-size:9px;
+    font-weight:700;
+    line-height:1.45;
+    text-align:center;
+  }
+
+  .mk-action-list {
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:9px;
+  }
+  .mk-action-item {
+    display:grid;
+    grid-template-columns:30px minmax(0,1fr);
+    gap:9px;
+    align-items:start;
+    min-width:0;
+    padding:10px 11px;
+    border:1px solid #e2e8f0;
+    border-left-width:4px;
+    border-radius:10px;
+    background:#f8fafc;
+    box-shadow:0 1px 2px rgba(15,23,42,.035);
+  }
+  .mk-action-item.priority-potential { border-left-color:#2563eb; background:#f8fbff; }
+  .mk-action-item.priority-flow { border-left-color:#7c3aed; background:#fcfaff; }
+  .mk-action-item.priority-top25 { grid-column:1 / -1; border-left-color:#e11d48; background:#fff9fa; }
+  .mk-action-icon {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:30px;
+    height:30px;
+    border-radius:8px;
+    background:#e2e8f0;
+    color:#334155;
+    font-size:10px;
+    font-weight:900;
+  }
+  .priority-potential .mk-action-icon { background:#dbeafe; color:#1d4ed8; }
+  .priority-flow .mk-action-icon { background:#ede9fe; color:#6d28d9; }
+  .priority-top25 .mk-action-icon { background:#ffe4e6; color:#be123c; }
+  .mk-action-title {
+    color:#334155;
+    font-size:9.5px;
+    font-weight:900;
+    line-height:1.2;
+  }
+  .mk-action-copy {
+    margin-top:3px;
+    color:#64748b;
+    font-size:9px;
+    font-weight:650;
+    line-height:1.45;
+  }
+  .mk-action-tags {
+    display:flex;
+    flex-wrap:wrap;
+    gap:5px;
+    margin-top:7px;
+  }
+  .mk-action-tags span {
+    display:inline-flex;
+    align-items:center;
+    min-height:21px;
+    padding:3px 7px;
+    border:1px solid #fecdd3;
+    border-radius:999px;
+    background:#fff1f2;
+    color:#9f1239;
+    font-size:7.5px;
+    font-weight:900;
+    line-height:1;
+    white-space:nowrap;
+  }
+  .mk-insight-footnote {
+    margin-top:8px;
+    padding:8px 9px;
+    border:1px solid #fde68a;
+    border-radius:9px;
+    background:#fffbeb;
+    color:#92400e;
+    font-size:8.5px;
+    font-weight:700;
+    line-height:1.45;
+  }
+
+  @media (min-width:1180px) {
+    #mkHeaderLead {
+      flex:0 0 260px !important;
+      min-width:245px !important;
+      max-width:280px !important;
+    }
+  }
+
+  @media (max-width:767px) {
+    #mkHeaderLead > div:first-child {
+      flex:1 1 auto;
+      min-width:0;
+    }
+    .mk-title-line {
+      gap:5px;
+      overflow:visible;
+    }
+    .mk-title-line #mkHeaderTitle {
+      font-size:11px !important;
+      letter-spacing:-.01em;
+      white-space:nowrap !important;
+    }
+    .mk-info-button {
+      width:18px;
+      min-width:18px;
+      height:18px;
+    }
+    .mk-info-button svg { width:10px; height:10px; }
+
+    .mk-info-backdrop.open {
+      background:rgba(15,23,42,.42);
+      backdrop-filter:blur(2px);
+    }
+    .mk-info-panel {
+      left:0 !important;
+      right:0 !important;
+      bottom:0 !important;
+      top:auto !important;
+      width:100% !important;
+      max-height:88dvh !important;
+      transform:none !important;
+      border-left:0;
+      border-right:0;
+      border-bottom:0;
+      border-radius:16px 16px 0 0;
+      box-shadow:0 -18px 46px rgba(15,23,42,.25);
+    }
+    .mk-info-panel-head { padding:11px 12px 9px; }
+    .mk-info-body { padding:9px 10px 13px; }
+    .mk-info-panel-title { font-size:12px; }
+    .mk-info-panel-subtitle { font-size:8px; }
+    .mk-insight-context { margin-bottom:7px; }
+    .mk-info-mode { font-size:7px; padding:4px 7px; }
+    .mk-insight-date { font-size:7px; }
+    .mk-insight-hero { padding:9px 10px; }
+    .mk-insight-headline { font-size:10.5px; }
+    .mk-insight-copy { font-size:8.5px; line-height:1.42; }
+    .mk-insight-stats { gap:4px; }
+    .mk-insight-stat { padding:6px; border-radius:7px; }
+    .mk-insight-stat-label { font-size:6px; }
+    .mk-insight-stat-value { font-size:9px; }
+    .mk-insight-section { margin-top:7px; padding:8px; }
+    .mk-insight-section-title { font-size:9px; }
+    .mk-insight-section-note { font-size:6.5px; }
+    .mk-driver-list { grid-template-columns:1fr; }
+    .mk-driver-item { grid-template-columns:20px minmax(0,1fr) auto; gap:6px; padding:6px; }
+    .mk-driver-rank { width:20px; height:20px; font-size:7px; }
+    .mk-driver-name { font-size:8.5px; }
+    .mk-driver-meta { font-size:6.5px; }
+    .mk-driver-change { font-size:8px; }
+    .mk-action-list { grid-template-columns:1fr; gap:6px; }
+    .mk-action-item,
+    .mk-action-item.priority-top25 { grid-column:auto; grid-template-columns:23px minmax(0,1fr); padding:7px; }
+    .mk-action-icon { width:23px; height:23px; }
+    .mk-action-tags { gap:4px; margin-top:5px; }
+    .mk-action-tags span { min-height:19px; padding:2px 6px; font-size:6.8px; }
+    .mk-action-icon { width:23px; height:23px; }
+    .mk-action-title { font-size:8.5px; }
+    .mk-action-copy { font-size:7.5px; }
+    .mk-insight-footnote { font-size:7.5px; }
+  }
+
 </style>
 
 <div id="monitoringKreditPage" class="max-w-[1920px] w-full mx-auto px-2 md:px-4 py-2 md:py-4 h-[calc(100vh-72px)] flex flex-col gap-2 md:gap-3 overflow-hidden bg-slate-50">
@@ -985,7 +1473,12 @@
           </svg>
         </span>
         <div class="min-w-0">
-          <h1 id="mkHeaderTitle" class="text-base md:text-xl font-extrabold text-slate-800 leading-tight truncate">Monitoring Kredit</h1>
+          <div class="mk-title-line">
+            <h1 id="mkHeaderTitle" class="text-base md:text-xl font-extrabold text-slate-800 leading-tight">Monitoring Kredit</h1>
+            <button type="button" id="mkInfoButton" class="mk-info-button" aria-label="Buka ringkasan kondisi Monitoring Kredit" aria-controls="mkInfoPanel" aria-expanded="false" title="Ringkasan kondisi Monitoring Kredit">
+              <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0ZM9 7a1 1 0 102 0 1 1 0 00-2 0Zm1 2a1 1 0 00-1 1v3a1 1 0 102 0v-3a1 1 0 00-1-1Z" clip-rule="evenodd"></path></svg>
+            </button>
+          </div>
           <p id="mkHeaderSubtitle" class="text-[9px] md:text-[11px] text-slate-500 mt-0.5 truncate">Rekap kolektibilitas dan perbandingan NPL</p>
         </div>
       </div>
@@ -1051,6 +1544,95 @@
       </form>
     </div>
   </section>
+
+  <div id="mkInfoBackdrop" class="mk-info-backdrop" aria-hidden="true"></div>
+  <aside id="mkInfoPanel" class="mk-info-panel mk-scrollbar" role="dialog" aria-modal="false" aria-labelledby="mkInfoTitle" aria-hidden="true">
+    <div class="mk-info-panel-head">
+      <div>
+        <h2 id="mkInfoTitle" class="mk-info-panel-title">Ringkasan Kondisi NPL</h2>
+        <p class="mk-info-panel-subtitle">Sorotan posisi saat ini dan prioritas tindak lanjut untuk membantu menjaga NPL sampai akhir bulan.</p>
+      </div>
+      <button type="button" id="mkInfoClose" class="mk-info-close" aria-label="Tutup ringkasan">&times;</button>
+    </div>
+
+    <div class="mk-info-body">
+      <div class="mk-insight-context">
+        <div id="mkInfoModeBadge" class="mk-info-mode">Kondisi Saat Ini</div>
+        <div id="mkInsightDate" class="mk-insight-date">-</div>
+      </div>
+
+      <section id="mkInsightHero" class="mk-insight-hero">
+        <div class="mk-insight-eyebrow">Ringkasan</div>
+        <div id="mkInsightHeadline" class="mk-insight-headline">Memuat ringkasan kondisi kredit...</div>
+        <div id="mkInsightCopy" class="mk-insight-copy">Ringkasan mengikuti data dan filter yang sedang aktif pada halaman Monitoring Kredit.</div>
+      </section>
+
+      <div class="mk-insight-stats">
+        <div class="mk-insight-stat">
+          <div id="mkInsightStat1Label" class="mk-insight-stat-label">NPL Actual</div>
+          <div id="mkInsightStat1" class="mk-insight-stat-value">-</div>
+        </div>
+        <div class="mk-insight-stat">
+          <div id="mkInsightStat2Label" class="mk-insight-stat-label">Perubahan</div>
+          <div id="mkInsightStat2" class="mk-insight-stat-value">-</div>
+        </div>
+        <div class="mk-insight-stat">
+          <div id="mkInsightStat3Label" class="mk-insight-stat-label">Cabang Naik</div>
+          <div id="mkInsightStat3" class="mk-insight-stat-value">-</div>
+        </div>
+      </div>
+
+      <section class="mk-insight-section">
+        <div class="mk-insight-section-title">
+          <span>Urutan Prioritas Tindak Lanjut</span>
+          <span class="mk-insight-section-note">mulai dari pencegahan sampai penyelesaian NPL</span>
+        </div>
+        <div class="mk-action-list">
+          <div class="mk-action-item priority-potential">
+            <div class="mk-action-icon">1</div>
+            <div>
+              <div class="mk-action-title">Potensi NPL</div>
+              <div class="mk-action-copy">Cek debitur yang berisiko masuk NPL dan lakukan follow-up lebih awal. Prioritaskan rekening yang masih bisa dicegah agar tidak turun kualitas pada posisi akhir bulan.</div>
+            </div>
+          </div>
+          <div class="mk-action-item priority-flow">
+            <div class="mk-action-icon">2</div>
+            <div>
+              <div class="mk-action-title">Flow PAR</div>
+              <div class="mk-action-copy">Telusuri rekening yang berpotensi flow atau memperburuk kolektibilitas. Pastikan tindak lanjut pembayaran dan komitmen cabang dipantau pada posisi harian berikutnya.</div>
+            </div>
+          </div>
+          <div class="mk-action-item priority-top25">
+            <div class="mk-action-icon">3</div>
+            <div>
+              <div class="mk-action-title">Selesaikan 25 NPL Terbesar</div>
+              <div class="mk-action-copy">Fokus pada debitur NPL dengan eksposur terbesar karena penyelesaian pada kelompok ini paling cepat membantu menekan nominal dan rasio NPL. Tentukan jalur penyelesaian sesuai kondisi debitur, dokumen, agunan, dasar hukum, dan ketentuan internal.</div>
+              <div class="mk-action-tags" aria-label="Alternatif tindak lanjut 25 NPL terbesar">
+                <span>Litigasi</span>
+                <span>Lelang</span>
+                <span>SKK Kejaksaan</span>
+                <span>Cessie</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="mk-insight-section">
+        <div class="mk-insight-section-title">
+          <span id="mkDriverTitle">Prioritas Cabang</span>
+          <span id="mkDriverNote" class="mk-insight-section-note">berdasarkan perubahan terbesar</span>
+        </div>
+        <div id="mkDriverList" class="mk-driver-list">
+          <div class="mk-driver-empty">Data prioritas akan muncul setelah data tersedia.</div>
+        </div>
+      </section>
+
+      <div class="mk-insight-footnote">
+        Ringkasan ini merupakan alat bantu monitoring berdasarkan data yang tampil di halaman. Keputusan tindak lanjut tetap mengikuti detail rekening, kondisi debitur, dan ketentuan internal yang berlaku.
+      </div>
+    </div>
+  </aside>
 
   <main class="relative flex-1 min-h-0 overflow-hidden">
     <div id="mkLoading" class="mk-loading hidden rounded-xl">
@@ -1199,6 +1781,296 @@
   };
 
   const el = id => document.getElementById(id);
+
+
+  let mkInfoOpen = false;
+
+  function selectedAreaLabel() {
+    const select = el('optAreaCredit');
+    if (!select) return 'Konsolidasi';
+    const option = select.options?.[select.selectedIndex];
+    return option?.textContent?.trim() || 'Konsolidasi';
+  }
+
+  function compactRupiah(value) {
+    const n = Math.abs(num(value));
+    if (n >= 1e12) return `${(n / 1e12).toLocaleString('id-ID',{maximumFractionDigits:2})} T`;
+    if (n >= 1e9) return `${(n / 1e9).toLocaleString('id-ID',{maximumFractionDigits:2})} M`;
+    if (n >= 1e6) return `${(n / 1e6).toLocaleString('id-ID',{maximumFractionDigits:2})} Jt`;
+    if (n >= 1e3) return `${(n / 1e3).toLocaleString('id-ID',{maximumFractionDigits:1})} Rb`;
+    return nfID.format(n);
+  }
+
+  function signedPct(value) {
+    const n = num(value);
+    if (n > 0) return `+${fmt2(n)}%`;
+    if (n < 0) return `-${fmt2(Math.abs(n))}%`;
+    return '0,00%';
+  }
+
+  function signedNominal(value) {
+    const n = num(value);
+    if (n > 0) return `+Rp ${compactRupiah(n)}`;
+    if (n < 0) return `-Rp ${compactRupiah(n)}`;
+    return 'Rp 0';
+  }
+
+  function formatInsightDate() {
+    const closing = el('closingDateCredit')?.value || '';
+    const actual = el('actualDateCredit')?.value || '';
+    const shortDate = value => {
+      if (!value) return '-';
+      const parts = value.split('-');
+      return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : value;
+    };
+    return state.activeTab === 'npl'
+      ? `${shortDate(closing)} → ${shortDate(actual)}`
+      : `Posisi ${shortDate(actual)}`;
+  }
+
+  function setInsightStat(id, value, tone = '') {
+    const node = el(id);
+    if (!node) return;
+    node.textContent = value;
+    node.classList.remove('bad','good');
+    if (tone) node.classList.add(tone);
+  }
+
+  function buildNplDriverRows() {
+    return [...(state.nplRows || [])]
+      .filter(row => num(row.selisih_npl) > 0 || num(row.selisih_npl_persen) > 0)
+      .sort((a,b) => {
+        const pctDiff = num(b.selisih_npl_persen) - num(a.selisih_npl_persen);
+        if (pctDiff !== 0) return pctDiff;
+        return num(b.selisih_npl) - num(a.selisih_npl);
+      });
+  }
+
+  function buildKolekPriorityRows() {
+    return [...(state.kolekRows || [])]
+      .filter(row => num(row.persentase_npl) > 0)
+      .sort((a,b) => {
+        const pctDiff = num(b.persentase_npl) - num(a.persentase_npl);
+        if (pctDiff !== 0) return pctDiff;
+        return num(b.bd_npl) - num(a.bd_npl);
+      });
+  }
+
+  function renderDriverList(rows, mode = 'npl') {
+    const target = el('mkDriverList');
+    if (!target) return;
+
+    const top = rows.slice(0,3);
+    if (!top.length) {
+      target.innerHTML = `
+        <div class="mk-driver-empty">
+          ${mode === 'npl'
+            ? 'Belum ada cabang dengan kenaikan NPL pada data yang sedang ditampilkan.'
+            : 'Belum ada data cabang yang dapat dijadikan prioritas pada posisi ini.'}
+        </div>`;
+      return;
+    }
+
+    target.innerHTML = top.map((row,index) => {
+      const nama = safeText(row.nama_unit || row.nama_kantor || row.kode_unit || row.kode_cabang || '-');
+      const kode = safeText(row.kode_unit || row.kode_cabang || '');
+      if (mode === 'npl') {
+        return `
+          <div class="mk-driver-item">
+            <div class="mk-driver-rank">${index + 1}</div>
+            <div class="min-w-0">
+              <div class="mk-driver-name" title="${nama}">${nama}</div>
+              <div class="mk-driver-meta">${kode ? `Kode ${kode} • ` : ''}${signedNominal(row.selisih_npl)} vs closing</div>
+            </div>
+            <div class="mk-driver-change">${signedPct(row.selisih_npl_persen)}</div>
+          </div>`;
+      }
+      return `
+        <div class="mk-driver-item">
+          <div class="mk-driver-rank">${index + 1}</div>
+          <div class="min-w-0">
+            <div class="mk-driver-name" title="${nama}">${nama}</div>
+            <div class="mk-driver-meta">${kode ? `Kode ${kode} • ` : ''}NPL Rp ${compactRupiah(row.bd_npl)}</div>
+          </div>
+          <div class="mk-driver-change">${fmt2(row.persentase_npl)}%</div>
+        </div>`;
+    }).join('');
+  }
+
+  function updateMonitoringInsight() {
+    const hero = el('mkInsightHero');
+    const headline = el('mkInsightHeadline');
+    const copy = el('mkInsightCopy');
+    const badge = el('mkInfoModeBadge');
+    const date = el('mkInsightDate');
+    const driverTitle = el('mkDriverTitle');
+    const driverNote = el('mkDriverNote');
+    if (!hero || !headline || !copy) return;
+
+    hero.classList.remove('alert','good');
+    if (date) date.textContent = `${selectedAreaLabel()} • ${formatInsightDate()}`;
+
+    if (state.activeTab === 'npl') {
+      const gt = state.nplTotal;
+      const rows = state.nplRows || [];
+      const drivers = buildNplDriverRows();
+      const risingCount = drivers.length;
+
+      if (badge) badge.textContent = 'Perbandingan NPL';
+      if (driverTitle) driverTitle.textContent = 'Kontributor Kenaikan NPL';
+      if (driverNote) driverNote.textContent = 'urut % kenaikan terbesar';
+
+      if (!gt && !rows.length) {
+        headline.textContent = 'Data perbandingan NPL belum tersedia.';
+        copy.textContent = 'Pilih tanggal dan area/cabang, lalu tunggu data selesai dimuat. Ringkasan akan mengikuti posisi yang tampil.';
+        setInsightStat('mkInsightStat1','-');
+        setInsightStat('mkInsightStat2','-');
+        setInsightStat('mkInsightStat3','-');
+        renderDriverList([], 'npl');
+        return;
+      }
+
+      const totalChange = num(gt?.selisih_npl);
+      const totalChangePct = num(gt?.selisih_npl_persen);
+      const actualPct = num(gt?.npl_harian_persen);
+
+      if (totalChange > 0 || totalChangePct > 0) {
+        hero.classList.add('alert');
+        headline.textContent = `NPL meningkat dibanding closing. ${risingCount} cabang perlu menjadi perhatian.`;
+        copy.textContent = drivers.length
+          ? `Kenaikan terbesar saat ini berasal dari ${drivers.slice(0,3).map(row => row.nama_unit || row.nama_kantor || row.kode_unit || row.kode_cabang || '-').join(', ')}. Prioritaskan tindak lanjut agar kenaikan tidak berlanjut sampai akhir bulan: mulai dari Potensi NPL, lanjut Flow PAR, lalu percepat penyelesaian 25 NPL Terbesar.`
+          : 'Posisi total NPL meningkat dibanding closing. Lakukan penelusuran rekening penyebab kenaikan sebelum posisi akhir bulan melalui Potensi NPL dan Flow PAR, lalu fokuskan recovery pada 25 NPL Terbesar.';
+      } else if (totalChange < 0 || totalChangePct < 0) {
+        hero.classList.add('good');
+        headline.textContent = 'Posisi NPL membaik dibanding closing.';
+        copy.textContent = risingCount
+          ? `Secara total NPL turun, tetapi masih ada ${risingCount} cabang yang mengalami kenaikan. Cabang tersebut tetap perlu dipantau agar perbaikan konsolidasi bertahan sampai akhir bulan.`
+          : 'Tidak terlihat cabang dengan kenaikan pada data yang tampil. Pertahankan tindak lanjut dan pantau rekening berisiko agar perbaikan tetap terjaga.';
+      } else {
+        headline.textContent = 'Posisi NPL relatif tetap dibanding closing.';
+        copy.textContent = risingCount
+          ? `Walaupun total relatif tetap, terdapat ${risingCount} cabang yang meningkat. Gunakan daftar prioritas untuk menentukan follow-up lebih awal.`
+          : 'Belum terlihat kenaikan pada data yang tampil. Tetap pantau potensi flow dan rekening berisiko menjelang akhir bulan.';
+      }
+
+      el('mkInsightStat1Label').textContent = '% NPL Actual';
+      el('mkInsightStat2Label').textContent = '% Perubahan';
+      el('mkInsightStat3Label').textContent = 'Cabang Naik';
+      setInsightStat('mkInsightStat1', `${fmt2(actualPct)}%`, actualPct > 5 ? 'bad' : '');
+      setInsightStat('mkInsightStat2', signedPct(totalChangePct), totalChangePct > 0 ? 'bad' : (totalChangePct < 0 ? 'good' : ''));
+      setInsightStat('mkInsightStat3', `${fmt(risingCount)} Cabang`, risingCount > 0 ? 'bad' : 'good');
+      renderDriverList(drivers, 'npl');
+      return;
+    }
+
+    const gt = state.kolekTotal;
+    const rows = state.kolekRows || [];
+    const priorities = buildKolekPriorityRows();
+
+    if (badge) badge.textContent = 'Kolektibilitas';
+    if (driverTitle) driverTitle.textContent = 'Cabang % NPL Tertinggi';
+    if (driverNote) driverNote.textContent = 'posisi actual saat ini';
+
+    if (!gt && !rows.length) {
+      headline.textContent = 'Data kolektibilitas belum tersedia.';
+      copy.textContent = 'Ringkasan akan mengikuti data actual setelah proses pemuatan selesai.';
+      setInsightStat('mkInsightStat1','-');
+      setInsightStat('mkInsightStat2','-');
+      setInsightStat('mkInsightStat3','-');
+      renderDriverList([], 'kolek');
+      return;
+    }
+
+    const nplPct = num(gt?.persentase_npl);
+    const nplNominal = num(gt?.bd_npl);
+    const nplNoa = num(gt?.noa_npl);
+
+    if (nplPct > 5) {
+      hero.classList.add('alert');
+      headline.textContent = `NPL saat ini ${fmt2(nplPct)}%. Perlu pengendalian lebih aktif menjelang akhir bulan.`;
+      copy.textContent = priorities.length
+        ? `Cabang dengan rasio NPL tertinggi antara lain ${priorities.slice(0,3).map(row => row.nama_unit || row.nama_kantor || row.kode_unit || row.kode_cabang || '-').join(', ')}. Gunakan Perbandingan NPL untuk memastikan cabang mana yang sedang mengalami kenaikan.`
+        : 'Gunakan Perbandingan NPL untuk melihat perubahan terhadap closing dan menentukan cabang prioritas.';
+    } else {
+      hero.classList.add('good');
+      headline.textContent = `Posisi NPL saat ini ${fmt2(nplPct)}%. Tetap jaga agar tidak memburuk sampai akhir bulan.`;
+      copy.textContent = 'Pantau cabang dengan % NPL tertinggi dan gunakan Perbandingan NPL untuk mendeteksi kenaikan lebih awal. Urutan tindak lanjut: Potensi NPL, Flow PAR, kemudian 25 NPL Terbesar.';
+    }
+
+    el('mkInsightStat1Label').textContent = '% NPL Saat Ini';
+    el('mkInsightStat2Label').textContent = 'Nominal NPL';
+    el('mkInsightStat3Label').textContent = 'NOA NPL';
+    setInsightStat('mkInsightStat1', `${fmt2(nplPct)}%`, nplPct > 5 ? 'bad' : '');
+    setInsightStat('mkInsightStat2', `Rp ${compactRupiah(nplNominal)}`);
+    setInsightStat('mkInsightStat3', `${fmt(nplNoa)} NOA`);
+    renderDriverList(priorities, 'kolek');
+  }
+
+  function syncMonitoringInfoMode() {
+    updateMonitoringInsight();
+  }
+
+  function positionMonitoringInfo() {
+    const button = el('mkInfoButton');
+    const panel = el('mkInfoPanel');
+    if (!button || !panel || !mkInfoOpen) return;
+
+    if (window.innerWidth < 768) {
+      panel.style.left = '0';
+      panel.style.right = '0';
+      panel.style.top = 'auto';
+      panel.style.bottom = '0';
+      panel.style.transform = 'none';
+      panel.style.width = '100%';
+      panel.style.maxHeight = '88dvh';
+      return;
+    }
+
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+    panel.style.left = '50%';
+    panel.style.top = '50%';
+    panel.style.transform = 'translate(-50%, -50%)';
+    panel.style.width = `${Math.min(820, window.innerWidth - 48)}px`;
+    panel.style.maxHeight = `${Math.min(Math.floor(window.innerHeight * 0.88), 760)}px`;
+  }
+
+  function openMonitoringInfo() {
+    const button = el('mkInfoButton');
+    const panel = el('mkInfoPanel');
+    const backdrop = el('mkInfoBackdrop');
+    if (!button || !panel || !backdrop) return;
+
+    mkInfoOpen = true;
+    updateMonitoringInsight();
+    panel.classList.add('open');
+    backdrop.classList.add('open');
+    panel.setAttribute('aria-hidden','false');
+    backdrop.setAttribute('aria-hidden','false');
+    button.setAttribute('aria-expanded','true');
+    requestAnimationFrame(() => {
+      positionMonitoringInfo();
+      el('mkInfoClose')?.focus({ preventScroll:true });
+    });
+  }
+
+  function closeMonitoringInfo(returnFocus = false) {
+    const button = el('mkInfoButton');
+    const panel = el('mkInfoPanel');
+    const backdrop = el('mkInfoBackdrop');
+    mkInfoOpen = false;
+    panel?.classList.remove('open');
+    backdrop?.classList.remove('open');
+    panel?.setAttribute('aria-hidden','true');
+    backdrop?.setAttribute('aria-hidden','true');
+    button?.setAttribute('aria-expanded','false');
+    if (returnFocus) button?.focus({ preventScroll:true });
+  }
+
+  function toggleMonitoringInfo() {
+    if (mkInfoOpen) closeMonitoringInfo(true);
+    else openMonitoringInfo();
+  }
 
   function setLoading(show) {
     el('mkLoading')?.classList.toggle('hidden', !show);
@@ -1384,6 +2256,7 @@
       ? 'Posisi kredit berdasarkan kolektibilitas, NOA, dan saldo'
       : 'NPL closing bulan sebelumnya dibanding actual harian';
 
+    syncMonitoringInfoMode();
     rebuildAreaOptions();
     requestAnimationFrame(updateStickyOffsets);
   }
@@ -1392,6 +2265,7 @@
     if (!['kolek','npl'].includes(tab) || state.activeTab === tab) return;
     state.activeTab = tab;
     updateTabUI();
+    if (mkInfoOpen) requestAnimationFrame(positionMonitoringInfo);
     closeFilterSmall();
 
     const scroll = tab === 'kolek' ? el('kolekScroller') : el('nplScrollerCombined');
@@ -1449,6 +2323,7 @@
       resetSortIcons('kolek');
       renderKolekTotal();
       renderKolekRows(state.kolekRows);
+      updateMonitoringInsight();
     } catch (error) {
       if (error.name !== 'AbortError') {
         console.error(error);
@@ -1501,6 +2376,7 @@
       resetSortIcons('npl');
       renderNplTotal();
       renderNplRows(state.nplRows);
+      updateMonitoringInsight();
     } catch (error) {
       if (error.name !== 'AbortError') {
         console.error(error);
@@ -2045,6 +2921,17 @@
     await fetchKolektibilitasCombined();
   }
 
+  el('mkInfoButton')?.addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleMonitoringInfo();
+  });
+  el('mkInfoClose')?.addEventListener('click', () => closeMonitoringInfo(true));
+  el('mkInfoBackdrop')?.addEventListener('click', () => closeMonitoringInfo(false));
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && mkInfoOpen) closeMonitoringInfo(true);
+  });
+
   el('mkFilterToggle')?.addEventListener('click', toggleFilter);
   el('mkViewToggle')?.addEventListener('click', () => {
     switchTab(state.activeTab === 'kolek' ? 'npl' : 'kolek');
@@ -2080,6 +2967,7 @@
       syncViewTogglePlacement();
       syncMonitoringCreditNavbarClearance();
       updateStickyOffsets();
+      if (mkInfoOpen) requestAnimationFrame(positionMonitoringInfo);
     },100);
   });
 

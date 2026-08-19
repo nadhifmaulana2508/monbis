@@ -27,6 +27,15 @@ switch ($method) {
         elseif ($type === 'default_acc_history_date') {
             $controller->apiGetDefaultAccHistoryDate();
         }
+        elseif ($type === 'lap_neraca_actual') {
+            $controller->apiGetLapNeracaActual($input);
+        }
+        elseif ($type === 'lap_laba_rugi_actual') {
+            $controller->apiGetLapLabaRugiActual($input);
+        }
+        elseif ($type === 'rekap_lapkeu_actual') {
+            $controller->apiGetRekapLapkeuActual($input);
+        }
         
         // ==========================================
         // ENDPOINT LAPORAN LABA RUGI (4, 5)

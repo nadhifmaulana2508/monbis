@@ -114,12 +114,881 @@
       box-shadow: inset -1px 0 0 #d7dee8, inset 0 -1px 0 #d7dee8 !important;
   }
 
+
+
+  /* ========================================================
+     RR UI V2 - KONSISTEN DENGAN PAGE MONBIS LAIN
+     ======================================================== */
+  #rrPage {
+    width:100%; max-width:none !important; min-height:0;
+    padding:10px 14px 12px !important; gap:10px;
+  }
+  #rrPage > .flex-none { margin-bottom:0 !important; }
+  #rrHeaderCard {
+    padding:9px 11px !important; border-color:#e2e8f0;
+    border-radius:12px; box-shadow:0 1px 3px rgba(15,23,42,.05);
+  }
+  #rrHeaderCard > div:first-child { gap:10px !important; }
+  #rrHeaderCard .bg-blue-600 { box-shadow:none !important; }
+  #rrHeaderTitle { font-size:17px !important; color:#172033 !important; letter-spacing:-.015em; }
+  #rrHeaderSubtitle { max-width:290px; font-size:9px !important; color:#64748b; font-style:normal !important; }
+
+  .rr-info-button {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:20px; min-width:20px; height:20px; padding:0;
+    border:1px solid #bfdbfe; border-radius:999px;
+    background:#eff6ff; color:#2563eb; font-size:11px; font-weight:900;
+    cursor:pointer; transition:.16s ease; flex:0 0 auto;
+  }
+  .rr-info-button:hover,.rr-info-button[aria-expanded="true"] { background:#2563eb; color:#fff; border-color:#2563eb; }
+
+  @media (min-width:1280px) {
+    #rrHeaderCard > div:first-child { flex-wrap:nowrap !important; }
+    #filterWrapperMain { display:flex !important; flex:1 1 auto; justify-content:flex-end; min-width:0; }
+    #formFilter { width:auto !important; }
+    #formFilter > div { flex-wrap:nowrap !important; gap:7px !important; }
+    #formFilter .field { flex:none !important; min-width:0 !important; }
+    #formFilter .field:nth-child(1), #formFilter .field:nth-child(2) { width:116px; }
+    #formFilter .field:nth-child(3) { width:122px; }
+    #formFilter .field:nth-child(4) { width:220px; }
+    #formFilter .inp { height:34px !important; font-size:10px !important; border-radius:8px; background:#fff !important; }
+    #formFilter .lbl { font-size:7.5px !important; margin-bottom:3px; }
+    #formFilter .btn-icon { width:34px !important; height:34px !important; border-radius:9px; }
+  }
+
+  /* Table utama: soft blue, bold, nyaman dibaca */
+  #tabelRR { min-width:1020px; font-size:11px; }
+  #tabelRR .rr-col-noa { width:72px; min-width:72px; max-width:72px; text-align:center; }
+  #tabelRR thead th { color:#1e3a5f !important; font-weight:900 !important; letter-spacing:.025em; }
+  #tabelRR thead tr.rr-row-1 th { background:#eaf4ff !important; }
+  #tabelRR thead tr.rr-row-2 th { background:#f4f7fb !important; }
+  #tabelRR thead th.sticky-left-1,#tabelRR thead th.sticky-left-2 { background:#eaf4ff !important; }
+  #tabelRR tbody td { color:#334155; font-variant-numeric:tabular-nums; }
+  #bodyRekap tr { height:44px !important; }
+
+  /* ===== INFO MODAL ===== */
+  .rr-info-backdrop {
+    position:fixed; inset:0; z-index:99990; display:none;
+    background:rgba(15,23,42,.58); backdrop-filter:blur(5px);
+  }
+  .rr-info-backdrop.open { display:block; }
+  .rr-info-panel {
+    position:fixed; left:50%; top:50%; z-index:100000; display:none;
+    width:min(820px,calc(100vw - 44px)); max-height:min(88dvh,760px);
+    transform:translate(-50%,-50%); overflow:auto;
+    border:1px solid #dbe3ee; border-radius:15px; background:#fff;
+    box-shadow:0 28px 70px rgba(15,23,42,.28);
+  }
+  .rr-info-panel.open { display:block; }
+  .rr-info-head {
+    position:sticky; top:0; z-index:4; display:flex; align-items:flex-start; justify-content:space-between;
+    gap:12px; padding:13px 15px 11px; border-bottom:1px solid #e2e8f0;
+    background:rgba(255,255,255,.97); backdrop-filter:blur(8px);
+  }
+  .rr-info-title { margin:0; color:#172033; font-size:15px; font-weight:900; line-height:1.2; }
+  .rr-info-subtitle { margin:3px 0 0; color:#64748b; font-size:9.5px; font-weight:650; line-height:1.4; }
+  .rr-info-close { width:30px; min-width:30px; height:30px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; color:#64748b; font-size:18px; cursor:pointer; }
+  .rr-info-close:hover { background:#fee2e2; color:#dc2626; border-color:#fecaca; }
+  .rr-info-body { padding:13px 15px 16px; }
+  .rr-info-context { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+  .rr-info-mode { padding:5px 8px; border:1px solid #bfdbfe; border-radius:999px; background:#eff6ff; color:#1d4ed8; font-size:8px; font-weight:900; text-transform:uppercase; }
+  .rr-info-date { overflow:hidden; color:#64748b; font-size:8.5px; font-weight:750; text-overflow:ellipsis; white-space:nowrap; }
+  .rr-insight-hero { padding:11px 12px; border:1px solid #dbeafe; border-radius:11px; background:#f8fbff; }
+  .rr-insight-hero.good { border-color:#bbf7d0; background:#f4fdf7; }
+  .rr-insight-hero.alert { border-color:#fecaca; background:#fff7f7; }
+  .rr-insight-hero.warn { border-color:#fde68a; background:#fffbeb; }
+  .rr-insight-eyebrow { color:#64748b; font-size:7.5px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }
+  .rr-insight-headline { margin-top:3px; color:#0f172a; font-size:12px; font-weight:900; line-height:1.35; }
+  .rr-insight-copy { margin-top:5px; color:#475569; font-size:9.5px; font-weight:650; line-height:1.5; }
+  .rr-insight-stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-top:8px; }
+  .rr-insight-stat { padding:8px 9px; border:1px solid #e2e8f0; border-radius:9px; background:#fff; min-width:0; }
+  .rr-insight-stat-label { color:#64748b; font-size:7px; font-weight:900; text-transform:uppercase; letter-spacing:.035em; }
+  .rr-insight-stat-value { margin-top:3px; color:#0f172a; font-size:12px; font-weight:900; font-variant-numeric:tabular-nums; }
+  .rr-insight-stat-value.bad { color:#dc2626; } .rr-insight-stat-value.good { color:#059669; }
+  .rr-insight-section { margin-top:9px; padding:10px; border:1px solid #e2e8f0; border-radius:10px; background:#fff; }
+  .rr-section-head { display:flex; justify-content:space-between; gap:8px; margin-bottom:8px; color:#1e293b; font-size:10px; font-weight:900; }
+  .rr-section-head span:last-child { color:#94a3b8; font-size:7.5px; font-weight:750; }
+  .rr-action-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+  .rr-action-card { display:grid; grid-template-columns:26px minmax(0,1fr); gap:8px; padding:9px; border:1px solid #e2e8f0; border-left-width:4px; border-radius:9px; background:#f8fafc; }
+  .rr-action-card b { color:#334155; font-size:9.5px; font-weight:900; }
+  .rr-action-card p { margin:3px 0 0; color:#64748b; font-size:8.5px; font-weight:650; line-height:1.45; }
+  .rr-action-num { display:flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:7px; background:#e2e8f0; font-size:9px; font-weight:900; }
+  .rr-action-danger { border-left-color:#e11d48; background:#fff9fa; } .rr-action-danger .rr-action-num { background:#ffe4e6; color:#be123c; }
+  .rr-action-warn { border-left-color:#f59e0b; background:#fffdf7; } .rr-action-warn .rr-action-num { background:#fef3c7; color:#b45309; }
+  .rr-action-info { border-left-color:#2563eb; background:#f8fbff; } .rr-action-info .rr-action-num { background:#dbeafe; color:#1d4ed8; }
+  .rr-action-neutral { border-left-color:#64748b; }
+  .rr-driver-list { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+  .rr-driver-item { display:grid; grid-template-columns:22px minmax(0,1fr) auto; gap:6px; align-items:center; padding:7px; border:1px solid #eef2f7; border-radius:8px; background:#f8fafc; min-width:0; }
+  .rr-driver-rank { display:flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:#fee2e2; color:#b91c1c; font-size:8px; font-weight:900; }
+  .rr-driver-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#334155; font-size:9px; font-weight:900; }
+  .rr-driver-meta { margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#94a3b8; font-size:7px; font-weight:700; }
+  .rr-driver-item strong { color:#dc2626; font-size:8.5px; white-space:nowrap; }
+  .rr-driver-empty { grid-column:1/-1; padding:10px; border:1px dashed #cbd5e1; border-radius:8px; color:#64748b; background:#f8fafc; font-size:9px; text-align:center; }
+  .rr-definition-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+  .rr-definition-grid > div { padding:8px; border:1px solid #eef2f7; border-radius:8px; background:#f8fafc; }
+  .rr-definition-grid b { display:block; color:#334155; font-size:9px; font-weight:900; }
+  .rr-definition-grid span { display:block; margin-top:2px; color:#64748b; font-size:8px; line-height:1.4; }
+  .rr-info-footnote { margin-top:8px; padding:8px 9px; border:1px solid #fde68a; border-radius:9px; background:#fffbeb; color:#92400e; font-size:8px; font-weight:700; line-height:1.45; }
+  .rr-info-lock { overflow:hidden !important; }
+
+  /* Detail modal: proporsional di desktop, bottom sheet di mobile */
+  #modalDetailRR > .relative.bg-white { width:min(1380px,calc(100vw - 28px)) !important; height:min(88dvh,820px) !important; border:1px solid rgba(226,232,240,.9); border-radius:14px !important; }
+  #modalDetailRR #modal-title-container { min-width:0 !important; }
+  #modalDetailRR #modalTitleRR { font-size:15px; }
+  #modalDetailRR #modalSubTitleRR { font-size:9px; }
+  #modalFilterWrapper > div { flex-wrap:wrap; overflow:visible !important; }
+  #modalFilterWrapper select { width:auto !important; min-width:118px; max-width:170px; }
+  #tableExportRR { font-size:10.5px; }
+  #tableExportRR th { height:38px !important; font-size:9px !important; color:#475569; }
+  #bodyModalRR tr { height:38px !important; }
+  #bodyModalRR td { font-size:10px !important; }
+
+  @media (min-width:768px) and (max-width:1279px) {
+    #rrPage { padding:8px !important; }
+    #rrHeaderCard { padding:8px 9px !important; }
+    #filterWrapperMain.flex { display:block !important; width:100%; padding-top:8px; border-top:1px solid #e2e8f0; }
+    #formFilter > div { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) 42px; gap:7px !important; }
+    #formFilter .field:nth-child(4) { grid-column:1/3; }
+  }
+
+  @media (max-width:767px) {
+    #rrPage { height:calc(100dvh - 56px) !important; padding:5px !important; gap:5px !important; }
+    #rrHeaderCard { padding:6px 7px !important; border-radius:9px !important; }
+    #rrHeaderCard > div:first-child { gap:5px !important; }
+    #rrHeaderCard .p-1\.5 { padding:5px !important; border-radius:7px !important; }
+    #rrHeaderCard .p-1\.5 svg { width:14px !important; height:14px !important; }
+    #rrHeaderTitle { font-size:11.5px !important; }
+    #rrHeaderSubtitle { max-width:170px; font-size:6.7px !important; margin-top:2px !important; }
+    .rr-info-button { width:18px; min-width:18px; height:18px; font-size:9px; }
+    #rrFilterToggle { height:28px !important; padding:0 8px !important; font-size:8px !important; border-radius:7px !important; }
+    #filterWrapperMain.flex { display:block !important; width:100%; padding-top:5px; border-top:1px solid #e2e8f0; }
+    #formFilter { width:100% !important; }
+    #formFilter > div { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) 32px; gap:4px !important; width:100% !important; }
+    #formFilter .field { min-width:0 !important; width:auto !important; }
+    #formFilter .field:nth-child(1) { grid-column:1; }
+    #formFilter .field:nth-child(2) { grid-column:2; }
+    #formFilter .field:nth-child(3) { grid-column:1; }
+    #formFilter .field:nth-child(4) { grid-column:2; }
+    #formFilter .btn-icon { grid-column:3; grid-row:2; width:29px !important; height:29px !important; align-self:end; border-radius:7px !important; }
+    #formFilter .inp { height:28px !important; min-width:0 !important; padding:0 5px !important; border-radius:6px !important; font-size:7.8px !important; }
+    #formFilter .lbl { font-size:6.2px !important; margin-bottom:1px !important; }
+
+    #tabelRR { min-width:760px !important; font-size:8px !important; }
+    #tabelRR .rr-col-noa { width:46px !important; min-width:46px !important; max-width:46px !important; padding-left:2px !important; padding-right:2px !important; }
+    .rr-row-1 th { height:27px !important; font-size:6.7px !important; }
+    .rr-row-2 th { top:27px !important; height:26px !important; font-size:6.2px !important; }
+    .rr-row-tot th { top:53px !important; height:31px !important; font-size:7.3px !important; }
+    #tabelRR thead th { padding:3px !important; line-height:1.05 !important; }
+    #bodyRekap tr { height:31px !important; }
+    #bodyRekap td { padding:3px 4px !important; font-size:7.5px !important; line-height:1.05 !important; }
+    #bodyRekap td div { font-size:7.5px !important; }
+    #bodyRekap td div + div { font-size:5.8px !important; margin-top:1px !important; }
+    .sticky-left-2 { min-width:94px !important; max-width:94px !important; width:94px !important; }
+
+    .rr-info-panel { left:0; right:0; top:auto; bottom:0; width:100%; max-height:88dvh; transform:none; border-left:0; border-right:0; border-bottom:0; border-radius:16px 16px 0 0; }
+    .rr-info-head { padding:10px 11px 9px; }
+    .rr-info-title { font-size:12px; }
+    .rr-info-subtitle { font-size:7.8px; }
+    .rr-info-body { padding:8px 9px 12px; }
+    .rr-info-context { margin-bottom:6px; }
+    .rr-info-mode { font-size:6.5px; padding:4px 6px; }
+    .rr-info-date { font-size:6.7px; }
+    .rr-insight-hero { padding:8px 9px; }
+    .rr-insight-headline { font-size:10px; }
+    .rr-insight-copy { font-size:8px; line-height:1.4; }
+    .rr-insight-stats { gap:4px; }
+    .rr-insight-stat { padding:6px; border-radius:7px; }
+    .rr-insight-stat-label { font-size:5.8px; }
+    .rr-insight-stat-value { font-size:9px; }
+    .rr-insight-section { margin-top:6px; padding:7px; }
+    .rr-section-head { margin-bottom:6px; font-size:8.5px; }
+    .rr-section-head span:last-child { font-size:6px; }
+    .rr-action-grid { grid-template-columns:1fr; gap:5px; }
+    .rr-action-card { grid-template-columns:22px minmax(0,1fr); padding:6px; gap:6px; }
+    .rr-action-num { width:22px; height:22px; font-size:7px; }
+    .rr-action-card b { font-size:8px; } .rr-action-card p { font-size:7px; }
+    .rr-driver-list { grid-template-columns:1fr; gap:5px; }
+    .rr-driver-item { padding:6px; }
+    .rr-definition-grid { grid-template-columns:1fr; gap:5px; }
+    .rr-definition-grid > div { padding:6px; }
+    .rr-info-footnote { font-size:7px; }
+
+    #modalDetailRR { align-items:flex-end !important; padding:0 !important; }
+    #modalDetailRR > .relative.bg-white { width:100% !important; height:94dvh !important; max-height:94dvh !important; border-left:0; border-right:0; border-bottom:0; border-radius:14px 14px 0 0 !important; }
+    #modalDetailRR .flex-row.items-center.justify-between { align-items:flex-start !important; padding:8px !important; overflow:visible !important; }
+    #modalDetailRR #modalTitleRR { font-size:11px !important; }
+    #modalDetailRR #modalSubTitleRR { font-size:7px !important; margin-left:0 !important; }
+    #modalDetailRR #search_nasabah { width:112px !important; height:29px !important; font-size:7.5px !important; }
+    #modalFilterWrapper > div { display:grid !important; grid-template-columns:repeat(2,minmax(0,1fr)) 31px; gap:4px !important; padding:5px 8px 7px !important; }
+    #modalFilterWrapper select { width:100% !important; min-width:0 !important; max-width:none !important; height:28px !important; font-size:7.5px !important; }
+    #modalFilterWrapper button { grid-column:3; grid-row:2; width:29px !important; height:28px !important; padding:0 !important; justify-self:end; }
+    #tableExportRR { font-size:8px !important; }
+    #tableExportRR th { height:30px !important; padding:4px !important; font-size:6.7px !important; line-height:1.05 !important; }
+    #bodyModalRR tr { height:30px !important; }
+    #bodyModalRR td { padding:3px 4px !important; font-size:7.4px !important; line-height:1.05 !important; }
+    .mod-freeze-nas,.mod-td-nasabah { min-width:108px !important; max-width:108px !important; width:108px !important; }
+  }
+
+
+  /* ========================================================
+     RR DETAIL MODAL V4 - COMPACT, TOTAL SUMMARY, RESPONSIVE
+     ======================================================== */
+  #modalDetailRR > .relative.bg-white {
+    width:min(1240px,calc(100vw - 36px)) !important;
+    height:min(84dvh,760px) !important;
+    max-width:none !important;
+    border-radius:14px !important;
+  }
+  .rr-detail-summary-wrap {
+    padding:0 14px 10px;
+    background:#fff;
+  }
+  .rr-detail-summary-head {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    margin-bottom:5px;
+  }
+  .rr-detail-summary-title {
+    color:#475569;
+    font-size:8px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+  }
+  .rr-detail-summary-scope {
+    color:#94a3b8;
+    font-size:7.5px;
+    font-weight:750;
+    white-space:nowrap;
+  }
+  .rr-detail-summary {
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:6px;
+  }
+  .rr-detail-summary-card {
+    min-width:0;
+    padding:7px 9px;
+    border:1px solid #e2e8f0;
+    border-radius:8px;
+    background:#f8fafc;
+  }
+  .rr-detail-summary-card .label {
+    color:#64748b;
+    font-size:7px;
+    font-weight:900;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  .rr-detail-summary-card .value {
+    margin-top:2px;
+    overflow:hidden;
+    color:#172033;
+    font-size:11px;
+    line-height:1.1;
+    font-weight:900;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-variant-numeric:tabular-nums;
+  }
+  .rr-detail-summary-card.is-blue .value { color:#1d4ed8; }
+  .rr-detail-summary-card.is-green .value { color:#047857; }
+  .rr-detail-summary-card.is-red .value { color:#dc2626; }
+
+  #modalFilterWrapper > div {
+    align-items:center;
+  }
+  #modalFilterWrapper select {
+    min-width:125px !important;
+    max-width:165px !important;
+  }
+  #status_pembayaran_modal { min-width:155px !important; }
+
+  #tableExportRR .rr-col-date-pay,
+  #bodyModalRR .rr-col-date-pay {
+    min-width:92px;
+    width:92px;
+    max-width:92px;
+    text-align:center;
+  }
+
+  @media (max-width:1023px) and (min-width:768px) {
+    #modalDetailRR > .relative.bg-white {
+      width:calc(100vw - 24px) !important;
+      height:88dvh !important;
+    }
+    .rr-detail-summary { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  }
+
+  @media (max-width:767px) {
+    #modalDetailRR > .relative.bg-white {
+      width:100% !important;
+      height:94dvh !important;
+      max-height:94dvh !important;
+      border-radius:14px 14px 0 0 !important;
+    }
+    .rr-detail-summary-wrap { padding:0 8px 7px; }
+    .rr-detail-summary-head { margin-bottom:4px; }
+    .rr-detail-summary-title { font-size:6.5px; }
+    .rr-detail-summary-scope { font-size:6px; }
+    .rr-detail-summary { grid-template-columns:repeat(2,minmax(0,1fr)); gap:4px; }
+    .rr-detail-summary-card { padding:5px 6px; border-radius:6px; }
+    .rr-detail-summary-card .label { font-size:5.8px; }
+    .rr-detail-summary-card .value { font-size:8.5px; }
+
+    #modalFilterWrapper > div {
+      display:grid !important;
+      grid-template-columns:minmax(0,1fr) minmax(0,1fr) 31px !important;
+      gap:4px !important;
+      padding:5px 8px 7px !important;
+    }
+    #modalFilterWrapper select {
+      width:100% !important;
+      min-width:0 !important;
+      max-width:none !important;
+      height:28px !important;
+      font-size:7.5px !important;
+    }
+    #opt_kankas_modal { grid-column:1; grid-row:1; }
+    #opt_ao_modal { grid-column:2; grid-row:1; }
+    #status_pembayaran_modal { grid-column:1 / 3; grid-row:2; min-width:0 !important; }
+    #modalFilterWrapper button {
+      grid-column:3 !important;
+      grid-row:1 !important;
+      width:29px !important;
+      min-width:29px !important;
+      height:28px !important;
+      padding:0 !important;
+      justify-self:end;
+    }
+    #tableExportRR .rr-col-date-pay,
+    #bodyModalRR .rr-col-date-pay {
+      min-width:76px;
+      width:76px;
+      max-width:76px;
+    }
+  }
+
+
+
+  /* ========================================================
+     RR UI V6 - MODAL TOOLBAR + WARNA RR + ARAH DELTA
+     ======================================================== */
+  .rr-pct-badge {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-width:58px;
+    min-height:24px;
+    padding:3px 8px;
+    border-radius:999px;
+    border:1px solid transparent;
+    font-size:10px;
+    line-height:1;
+    font-weight:900;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+  }
+  .rr-pct-low { color:#b91c1c; background:#fff1f2; border-color:#fecdd3; }
+  .rr-pct-mid { color:#a16207; background:#fffbeb; border-color:#fde68a; }
+  .rr-pct-high { color:#047857; background:#ecfdf5; border-color:#a7f3d0; }
+
+  .rr-movement {
+    display:inline-flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:4px;
+    font-size:10px;
+    line-height:1;
+    font-weight:900;
+    font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+  }
+  .rr-movement svg { width:11px; height:11px; flex:0 0 auto; }
+  .rr-movement-down { color:#dc2626; }
+  .rr-movement-up { color:#059669; }
+  .rr-movement-flat { color:#64748b; }
+  .rr-col-noa .rr-movement { justify-content:center; font-size:9px; }
+
+  .rr-modal-head-row {
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    width:100%;
+    padding:10px 12px 8px;
+  }
+  .rr-modal-title {
+    flex:1 1 auto;
+    min-width:180px;
+    overflow:hidden;
+  }
+  .rr-modal-toolbar {
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:6px;
+    min-width:0;
+    flex:0 1 auto;
+  }
+  .rr-modal-search {
+    position:relative;
+    width:200px;
+    flex:0 1 200px;
+    min-width:150px;
+  }
+  .rr-modal-filter-inline {
+    width:auto !important;
+    border:0 !important;
+    flex:0 1 auto;
+  }
+  #modalFilterWrapper > .rr-modal-filter-controls {
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:6px !important;
+    padding:0 !important;
+    overflow:visible !important;
+    flex-wrap:nowrap !important;
+  }
+  .rr-modal-select {
+    width:124px !important;
+    min-width:110px !important;
+    max-width:140px !important;
+    height:32px !important;
+    padding:0 25px 0 8px !important;
+    border-radius:8px !important;
+    font-size:9px !important;
+    font-weight:800 !important;
+    cursor:pointer;
+  }
+  .rr-modal-status { width:136px !important; max-width:150px !important; }
+  .rr-modal-export {
+    height:32px !important;
+    min-width:34px;
+    padding:0 10px !important;
+    gap:5px;
+  }
+  .rr-export-label { font-size:9px; font-weight:900; text-transform:uppercase; letter-spacing:.035em; }
+  .rr-modal-close {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:32px;
+    min-width:32px;
+    height:32px;
+    padding:0;
+    border:1px solid #fee2e2;
+    border-radius:8px;
+    background:#fff1f2;
+    color:#ef4444;
+    font-size:19px;
+    font-weight:800;
+    line-height:1;
+    cursor:pointer;
+    transition:.16s ease;
+  }
+  .rr-modal-close:hover { background:#ef4444; border-color:#ef4444; color:#fff; }
+  .rr-modal-filter-toggle {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:30px;
+    min-width:30px;
+    height:30px;
+    border:1px solid #cbd5e1;
+    border-radius:7px;
+    background:#fff;
+    color:#475569;
+  }
+  .rr-detail-summary-wrap { padding-top:0 !important; }
+
+  @media (max-width:1100px) and (min-width:768px) {
+    .rr-modal-head-row { align-items:flex-start; }
+    .rr-modal-toolbar { flex-wrap:wrap; max-width:680px; }
+    .rr-modal-search { width:180px; flex-basis:180px; }
+    .rr-modal-select { width:112px !important; min-width:100px !important; }
+    .rr-modal-status { width:124px !important; }
+    .rr-export-label { display:none; }
+    .rr-modal-export { width:32px !important; min-width:32px !important; padding:0 !important; }
+  }
+
+  @media (max-width:767px) {
+    .rr-pct-badge {
+      min-width:42px;
+      min-height:18px;
+      padding:2px 5px;
+      font-size:6.7px;
+    }
+    .rr-movement { gap:2px; font-size:7px; }
+    .rr-movement svg { width:8px; height:8px; }
+    .rr-col-noa .rr-movement { font-size:6.6px; }
+
+    .rr-modal-head-row {
+      display:grid;
+      grid-template-columns:minmax(0,1fr);
+      gap:6px;
+      padding:7px 8px 6px;
+    }
+    .rr-modal-title { min-width:0; width:100%; }
+    .rr-modal-toolbar {
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 30px 30px 30px;
+      gap:4px;
+      width:100%;
+    }
+    .rr-modal-search {
+      width:auto;
+      min-width:0;
+      max-width:none;
+      flex:none;
+    }
+    #modalDetailRR #search_nasabah {
+      width:100% !important;
+      height:30px !important;
+      font-size:7.8px !important;
+    }
+    .rr-modal-filter-toggle { grid-column:2; width:30px; height:30px; }
+    .rr-modal-export {
+      grid-column:3;
+      width:30px !important;
+      min-width:30px !important;
+      height:30px !important;
+      padding:0 !important;
+    }
+    .rr-modal-export .rr-export-label { display:none; }
+    .rr-modal-close { grid-column:4; width:30px; min-width:30px; height:30px; }
+
+    #modalFilterWrapper {
+      grid-column:1 / -1;
+      grid-row:2;
+      width:100% !important;
+      padding-top:2px;
+    }
+    #modalFilterWrapper > .rr-modal-filter-controls {
+      display:grid !important;
+      grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+      gap:4px !important;
+      width:100%;
+    }
+    .rr-modal-select,
+    .rr-modal-status {
+      width:100% !important;
+      min-width:0 !important;
+      max-width:none !important;
+      height:28px !important;
+      padding:0 20px 0 6px !important;
+      font-size:7.2px !important;
+    }
+    #status_pembayaran_modal { grid-column:1 / -1; }
+  }
+
+
+
+  /* ========================================================
+     RR UI V8 - MOBILE-FIRST COMPACT & RESPONSIVE
+     Tujuan:
+     - mobile tidak terasa "centered"
+     - kolom report lebih rapat, tanpa ruang kosong berlebihan
+     - text tetap terbaca dan alignment mengikuti tipe data
+     - desktop/tablet tetap mempertahankan layout yang sudah ada
+     ======================================================== */
+
+  /* Seluruh area scroll memanfaatkan lebar card, bukan menyisakan gutter semu. */
+  #rrPage > .flex-1 { min-width:0; }
+  #rrPage > .flex-1 > .custom-scrollbar { min-width:0; width:100%; }
+
+  /* Alignment semantik: label kiri, angka kanan, NOA/% tetap center. */
+  #tabelRR tbody td { vertical-align:middle; }
+  #tabelRR tbody td.sticky-left-1,
+  #tabelRR tbody td.sticky-left-2 { text-align:left; }
+  #tabelRR .rr-col-noa { text-align:center !important; }
+
+  /* Modal detail tidak lagi memakai alignment center sebagai default di HP. */
+  #tableExportRR,
+  #tableExportRR tbody,
+  #bodyModalRR { text-align:left !important; }
+  #tableExportRR td,
+  #tableExportRR th { vertical-align:middle; }
+  .rr-detail-summary-card { text-align:left; }
+
+  @media (min-width:768px) and (max-width:1279px) {
+    /* Tablet: filter tetap compact dan table memakai ruang yang tersedia. */
+    #tabelRR { width:max-content; min-width:100%; table-layout:auto; }
+    #rrHeaderSubtitle { max-width:240px; }
+    #modalDetailRR > .relative.bg-white { width:calc(100vw - 20px) !important; }
+  }
+
+  @media (max-width:767px) {
+    /* ---------- PAGE / HEADER ---------- */
+    html, body { overscroll-behavior:none; }
+    #rrPage {
+      width:100% !important;
+      max-width:100% !important;
+      padding:4px !important;
+      gap:4px !important;
+      overflow:hidden !important;
+    }
+    #rrHeaderCard {
+      width:100%;
+      padding:6px !important;
+      border-radius:10px !important;
+    }
+    #rrHeaderCard > div:first-child { width:100%; }
+    #rrHeaderCard .flex.items-center.justify-between.w-full { min-width:0; }
+    #rrHeaderTitle {
+      max-width:150px;
+      font-size:12px !important;
+      line-height:1.05 !important;
+      text-align:left !important;
+    }
+    #rrHeaderSubtitle {
+      max-width:160px !important;
+      font-size:6.6px !important;
+      line-height:1.2 !important;
+      text-align:left !important;
+    }
+    #rrFilterToggle {
+      min-width:46px;
+      margin-left:4px !important;
+      padding:0 7px !important;
+    }
+
+    /* ---------- MAIN REPORT ----------
+       Gunakan intrinsic width + ukuran kolom eksplisit. Dengan ini tabel tidak
+       membagi ruang rata (table-fixed) yang membuat banyak area kosong. */
+    #tabelRR {
+      width:max-content !important;
+      min-width:100% !important;
+      table-layout:auto !important;
+      font-size:8px !important;
+    }
+    #tabelRR thead,
+    #tabelRR tbody { width:auto !important; }
+
+    /* Kode disembunyikan di mobile; Nama Kantor menjadi kolom freeze utama. */
+    #tabelRR .sticky-left-2,
+    #tabelRR tbody td.sticky-left-2,
+    #tabelRR thead th.sticky-left-2 {
+      left:0 !important;
+      width:108px !important;
+      min-width:108px !important;
+      max-width:108px !important;
+      padding-left:7px !important;
+      padding-right:6px !important;
+      text-align:left !important;
+    }
+
+    /* Row-2 berisi pola: Nominal, NOA, %, diulang 3x. */
+    #tabelRR .rr-row-2 th:nth-child(3n + 1) {
+      width:92px !important;
+      min-width:92px !important;
+      max-width:92px !important;
+      text-align:right !important;
+    }
+    #tabelRR .rr-row-2 th:nth-child(3n + 2) {
+      width:42px !important;
+      min-width:42px !important;
+      max-width:42px !important;
+      text-align:center !important;
+    }
+    #tabelRR .rr-row-2 th:nth-child(3n) {
+      width:50px !important;
+      min-width:50px !important;
+      max-width:50px !important;
+      text-align:center !important;
+    }
+    #tabelRR .rr-row-2 th:nth-child(7) {
+      width:100px !important;
+      min-width:100px !important;
+      max-width:100px !important;
+    }
+
+    #tabelRR thead th {
+      padding:3px 4px !important;
+      line-height:1.05 !important;
+      white-space:normal !important;
+    }
+    #tabelRR .rr-row-1 th {
+      height:29px !important;
+      font-size:7px !important;
+    }
+    #tabelRR .rr-row-2 th {
+      top:29px !important;
+      height:29px !important;
+      font-size:6.3px !important;
+    }
+    #tabelRR .rr-row-tot th {
+      top:58px !important;
+      height:34px !important;
+      font-size:7.6px !important;
+      padding:4px 5px !important;
+    }
+    #bodyRekap tr { height:34px !important; }
+    #bodyRekap td {
+      height:34px !important;
+      padding:4px 5px !important;
+      font-size:7.8px !important;
+      line-height:1.15 !important;
+      white-space:nowrap;
+    }
+    #bodyRekap td.sticky-left-2 {
+      font-size:7.6px !important;
+      font-weight:850 !important;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    #bodyRekap td.rr-col-noa {
+      padding-left:2px !important;
+      padding-right:2px !important;
+      font-size:7.2px !important;
+    }
+    #tabelRR .rr-pct-badge {
+      min-width:43px;
+      min-height:19px;
+      padding:2px 4px;
+      font-size:6.8px;
+    }
+    #tabelRR .rr-movement {
+      width:100%;
+      justify-content:flex-end;
+      gap:2px;
+      font-size:6.8px;
+    }
+    #tabelRR .rr-col-noa .rr-movement { justify-content:center; }
+
+    /* ---------- DETAIL MODAL ---------- */
+    #modalDetailRR {
+      align-items:flex-end !important;
+      padding:0 !important;
+    }
+    #modalDetailRR > .relative.bg-white {
+      width:100% !important;
+      height:92dvh !important;
+      max-height:92dvh !important;
+      border-radius:14px 14px 0 0 !important;
+    }
+    .rr-modal-head-row {
+      gap:5px !important;
+      padding:7px 8px 5px !important;
+      text-align:left !important;
+    }
+    .rr-modal-title,
+    #modalTitleRR,
+    #modalSubTitleRR { text-align:left !important; }
+    #modalTitleRR {
+      font-size:10.8px !important;
+      line-height:1.15 !important;
+    }
+    #modalSubTitleRR {
+      max-width:100%;
+      font-size:6.7px !important;
+      line-height:1.2 !important;
+    }
+    .rr-modal-toolbar {
+      grid-template-columns:minmax(0,1fr) 30px 30px 30px !important;
+      gap:4px !important;
+    }
+    #modalDetailRR #search_nasabah {
+      height:30px !important;
+      font-size:7.7px !important;
+      text-align:left !important;
+    }
+
+    /* Summary lebih padat: 4 kartu tetap terbaca tanpa mengambil tinggi berlebih. */
+    .rr-detail-summary-wrap { padding:0 8px 6px !important; }
+    .rr-detail-summary-head { margin-bottom:3px !important; }
+    .rr-detail-summary { gap:4px !important; }
+    .rr-detail-summary-card {
+      min-height:38px;
+      padding:5px 6px !important;
+      text-align:left !important;
+    }
+    .rr-detail-summary-card .label { font-size:5.8px !important; }
+    .rr-detail-summary-card .value { font-size:8.4px !important; }
+
+    /* Tabel detail memakai lebar sesuai isi, bukan fixed-grid penuh ruang kosong. */
+    #tableExportRR {
+      width:max-content !important;
+      min-width:100% !important;
+      table-layout:auto !important;
+      text-align:left !important;
+      font-size:8px !important;
+    }
+    #tableExportRR th:not(.mod-freeze-rek):not(.mod-freeze-nas) {
+      width:auto !important;
+      min-width:70px !important;
+      max-width:138px !important;
+    }
+    #tableExportRR th,
+    #tableExportRR td {
+      padding:4px 6px !important;
+      line-height:1.12 !important;
+    }
+    #tableExportRR th {
+      height:31px !important;
+      font-size:6.7px !important;
+      white-space:nowrap !important;
+    }
+    #bodyModalRR tr { height:32px !important; }
+    #bodyModalRR td {
+      height:32px !important;
+      font-size:7.7px !important;
+      white-space:nowrap;
+    }
+
+    /* Nama adalah anchor utama saat scroll horizontal; rekening tetap disembunyikan. */
+    .mod-freeze-nas,
+    .mod-td-nasabah {
+      left:0 !important;
+      width:118px !important;
+      min-width:118px !important;
+      max-width:118px !important;
+      text-align:left !important;
+      padding-left:7px !important;
+    }
+    .mod-td-nasabah {
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    /* Alamat tidak lagi mengambil 200-350px di HP. */
+    #tableExportRR th:nth-child(3),
+    #bodyModalRR td:nth-child(3) {
+      width:142px !important;
+      min-width:142px !important;
+      max-width:142px !important;
+      text-align:left !important;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    /* Kolom teks operasional rata kiri; tanggal/WA/NOA tetap natural. */
+    #bodyModalRR td:nth-child(6) { text-align:left !important; }
+    #bodyModalRR td:nth-child(4),
+    #bodyModalRR td:nth-child(5),
+    #bodyModalRR td:nth-child(7),
+    #bodyModalRR td:nth-child(8) { text-align:center !important; }
+
+    /* Footer pagination lebih tipis agar tabel mendapat ruang vertikal lebih banyak. */
+    #modalDetailRR > .relative.bg-white > .px-3.py-2\.5 {
+      padding:6px 8px !important;
+    }
+    #pageInfoRR { font-size:7.5px !important; padding:4px 7px !important; }
+    #btnPrevRR, #btnNextRR {
+      height:29px;
+      padding:0 9px !important;
+      font-size:7.5px !important;
+    }
+  }
 </style>
 
-<div class="max-w-[1920px] mx-auto px-2 md:px-4 py-4 md:py-6 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
+<div id="rrPage" class="max-w-[1920px] mx-auto px-2 md:px-4 py-4 md:py-6 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
   
   <div class="flex-none mb-3 md:mb-4 w-full shrink-0">
-    <div class="relative rr-header-card px-3 md:px-5 py-3 md:py-4">
+    <div id="rrHeaderCard" class="relative rr-header-card px-3 md:px-5 py-3 md:py-4">
       <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 md:gap-4 w-full">
         <div class="flex items-center justify-between w-full xl:w-auto shrink-0">
           <div class="flex items-center gap-2 md:gap-3 min-w-0">
@@ -128,14 +997,14 @@
             </span>
             <div class="min-w-0">
               <div class="flex items-center gap-2 min-w-0">
-                <h1 class="text-[15px] md:text-2xl font-extrabold text-slate-800 tracking-tight leading-none truncate">Rekap Repayment Rate</h1>
-                <button type="button" onclick="toggleInfoRR()" class="w-4 h-4 md:w-5 md:h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-[10px] md:text-xs font-black hover:bg-blue-600 transition shrink-0" title="Informasi RR">i</button>
+                <h1 id="rrHeaderTitle" class="text-[15px] md:text-2xl font-extrabold text-slate-800 tracking-tight leading-none truncate">Repayment Rate (RR)</h1>
+                <button type="button" id="rrInfoButton" onclick="toggleInfoRR()" class="rr-info-button" title="Ringkasan kondisi RR" aria-label="Buka ringkasan kondisi Repayment Rate" aria-expanded="false">i</button>
               </div>
-              <p class="text-[9px] md:text-sm text-slate-500 italic mt-1">*RR = Total Baki Debet (Lancar) / Seluruh Baki Debet</p>
+              <p id="rrHeaderSubtitle" class="text-[9px] md:text-sm text-slate-500 mt-1 truncate">Posisi repayment closing dibanding actual harian</p>
             </div>
           </div>
 
-          <button type="button" onclick="toggleMainFilter()" class="xl:hidden h-[30px] px-3 bg-white border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm transition font-bold text-[10px] whitespace-nowrap ml-2 shrink-0">
+          <button type="button" id="rrFilterToggle" onclick="toggleMainFilter()" class="xl:hidden h-[30px] px-3 bg-white border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm transition font-bold text-[10px] whitespace-nowrap ml-2 shrink-0">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
             Filter
           </button>
@@ -173,22 +1042,93 @@
         </div>
       </div>
 
-      <div id="infoRR" class="rr-info-popover hidden">
-        <div class="px-4 py-3 border-b border-slate-100">
-          <h3 class="text-sm font-black text-slate-900">Informasi RR</h3>
+      <div id="rrInfoBackdrop" class="rr-info-backdrop" aria-hidden="true" onclick="closeRRInfo()"></div>
+      <aside id="infoRR" class="rr-info-panel custom-scrollbar" role="dialog" aria-modal="true" aria-labelledby="rrInfoTitle" aria-hidden="true">
+        <div class="rr-info-head">
+          <div class="min-w-0">
+            <h2 id="rrInfoTitle" class="rr-info-title">Ringkasan Repayment Rate</h2>
+            <p class="rr-info-subtitle">Kondisi actual dibanding closing dan prioritas follow-up agar kualitas repayment tetap terjaga.</p>
+          </div>
+          <button type="button" class="rr-info-close" onclick="closeRRInfo(true)" aria-label="Tutup informasi">&times;</button>
         </div>
-        <div class="px-4 py-3 text-[11px] md:text-xs text-slate-700 leading-relaxed space-y-2">
-          <p><b>Repayment Rate (RR)</b> adalah rasio kualitas pembayaran yang membandingkan <b>saldo lancar</b> terhadap <b>seluruh saldo outstanding</b>.</p>
-          <div class="rr-info-box"><b>M-1</b>: posisi data pada closing bulan sebelumnya.</div>
-          <div class="rr-info-box"><b>Actual</b>: posisi data harian / aktual pada tanggal yang dipilih.</div>
-          <div class="rr-info-box"><b>Tipe Saldo</b>: Baki Debet atau Saldo Bank. Rekening lancar dihitung dari kolektibilitas L dan hari menunggak 0.</div>
-          <div class="rr-info-box"><b>Delta</b>: detail migrasi RR, yaitu rekening yang pada closing masih L dan hari menunggak 0, lalu pada actual menjadi L dengan hari menunggak lebih dari 0.</div>
-          <div class="rr-info-box"><b>Rumus RR</b>: Total Saldo Lancar / Seluruh Saldo Outstanding sesuai tipe saldo yang dipilih.</div>
-          <div class="rr-info-box"><b>Status Pembayaran</b>: OTP bayar tepat waktu, Telat bayar setelah jatuh tempo, Belum Jatuh Tempo belum wajib bayar, Belum Bayar sudah lewat jatuh tempo.</div>
-          <div class="rr-info-box"><b>Hari Menunggak</b>: selisih tanggal actual dengan tgl jatuh tempo. <b>Tunggakan</b>: tunggakan pokok + tunggakan bunga.</div>
-          <div class="pt-1 border-t border-slate-200 font-bold text-slate-900">Semakin tinggi persentase RR, semakin baik kualitas repayment pada area tersebut.</div>
+
+        <div class="rr-info-body">
+          <div class="rr-info-context">
+            <span class="rr-info-mode">Kondisi Saat Ini</span>
+            <span id="rrInsightDate" class="rr-info-date">-</span>
+          </div>
+
+          <section id="rrInsightHero" class="rr-insight-hero">
+            <div class="rr-insight-eyebrow">Ringkasan</div>
+            <div id="rrInsightHeadline" class="rr-insight-headline">Memuat ringkasan Repayment Rate...</div>
+            <div id="rrInsightCopy" class="rr-insight-copy">Ringkasan mengikuti data dan filter yang sedang aktif.</div>
+          </section>
+
+          <div class="rr-insight-stats">
+            <div class="rr-insight-stat">
+              <div class="rr-insight-stat-label">RR Closing</div>
+              <div id="rrStatClosing" class="rr-insight-stat-value">-</div>
+            </div>
+            <div class="rr-insight-stat">
+              <div class="rr-insight-stat-label">RR Actual</div>
+              <div id="rrStatActual" class="rr-insight-stat-value">-</div>
+            </div>
+            <div class="rr-insight-stat">
+              <div class="rr-insight-stat-label">Perubahan</div>
+              <div id="rrStatDelta" class="rr-insight-stat-value">-</div>
+            </div>
+          </div>
+
+          <section class="rr-insight-section">
+            <div class="rr-section-head">
+              <span>Prioritas Tindak Lanjut</span>
+              <span>berdasarkan detail pembayaran</span>
+            </div>
+            <div class="rr-action-grid">
+              <div class="rr-action-card rr-action-danger">
+                <span class="rr-action-num">1</span>
+                <div><b>Belum Bayar</b><p>Prioritaskan rekening yang sudah melewati jatuh tempo tetapi belum melakukan pembayaran. Hubungi debitur dan pastikan komitmen pembayaran segera ditindaklanjuti.</p></div>
+              </div>
+              <div class="rr-action-card rr-action-warn">
+                <span class="rr-action-num">2</span>
+                <div><b>Telat Bayar</b><p>Pantau rekening yang sudah membayar namun melewati jatuh tempo. Cegah keterlambatan berulang agar RR tidak terus menurun pada posisi berikutnya.</p></div>
+              </div>
+              <div class="rr-action-card rr-action-info">
+                <span class="rr-action-num">3</span>
+                <div><b>Belum Jatuh Tempo</b><p>Rekening belum wajib bayar, tetapi tetap masuk daftar pantau sampai tanggal jatuh tempo. Pastikan saldo atau sumber pembayaran sudah tersedia.</p></div>
+              </div>
+              <div class="rr-action-card rr-action-neutral">
+                <span class="rr-action-num">4</span>
+                <div><b>Tunggakan & Tabungan</b><p>Gunakan filter <b>Tunggakan &gt; 0</b> dan status tabungan untuk menentukan rekening yang perlu follow-up lebih dulu atau memiliki sumber pembayaran yang dapat dipantau.</p></div>
+              </div>
+            </div>
+          </section>
+
+          <section class="rr-insight-section">
+            <div class="rr-section-head">
+              <span>Cabang Perlu Perhatian</span>
+              <span>penurunan RR terbesar</span>
+            </div>
+            <div id="rrDriverList" class="rr-driver-list">
+              <div class="rr-driver-empty">Data prioritas akan muncul setelah rekap selesai dimuat.</div>
+            </div>
+          </section>
+
+          <section class="rr-insight-section rr-definition-section">
+            <div class="rr-section-head"><span>Cara Membaca RR</span><span>ringkas</span></div>
+            <div class="rr-definition-grid">
+              <div><b>RR</b><span>Saldo lancar / seluruh saldo outstanding sesuai tipe saldo yang dipilih.</span></div>
+              <div><b>M-1</b><span>Posisi closing bulan sebelumnya sebagai pembanding.</span></div>
+              <div><b>Actual</b><span>Posisi harian pada tanggal yang dipilih.</span></div>
+              <div><b>Delta</b><span>Perubahan kondisi Actual terhadap M-1. Nilai negatif perlu menjadi perhatian.</span></div>
+              <div><b>OTP</b><span>Pembayaran dilakukan tepat waktu.</span></div>
+              <div><b>Belum Bayar</b><span>Sudah melewati jatuh tempo dan pembayaran belum diterima.</span></div>
+            </div>
+          </section>
+
+          <div class="rr-info-footnote">Gunakan angka Actual atau Delta pada tabel untuk membuka detail debitur. Ringkasan ini merupakan alat bantu monitoring; tindak lanjut tetap menyesuaikan kondisi rekening dan ketentuan internal.</div>
         </div>
-      </div>
+      </aside>
     </div>
   </div>
 
@@ -214,67 +1154,79 @@
   <div class="relative bg-white w-full h-[95vh] md:h-[92vh] max-w-[1600px] rounded-t-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
     
     <div class="flex flex-col bg-white border-b shrink-0 w-full z-50">
-        <div class="flex flex-row items-center justify-between px-3 py-2.5 md:px-4 md:py-3 gap-2 w-full overflow-x-auto no-scrollbar">
-            
-            <div class="flex-1 min-w-[180px] shrink-0" id="modal-title-container">
+        <div class="rr-modal-head-row">
+            <div class="rr-modal-title" id="modal-title-container">
               <h3 class="font-bold text-slate-800 flex items-center gap-1.5 text-[12px] md:text-xl leading-none truncate">
-                  <span class="w-1.5 md:w-2 h-4 md:h-6 bg-blue-600 rounded-full hidden md:block shrink-0"></span> 
+                  <span class="w-1.5 md:w-2 h-4 md:h-6 bg-blue-600 rounded-full hidden md:block shrink-0"></span>
                   <span id="modalTitleRR" class="truncate">Detail Rekap RR</span>
               </h3>
               <p class="text-[9px] md:text-sm text-slate-500 mt-1 md:ml-4 font-mono font-medium leading-none truncate" id="modalSubTitleRR">...</p>
             </div>
-            
-            <div class="flex flex-row items-center gap-1.5 md:gap-2 shrink-0">
-                <div class="relative w-[120px] md:w-[200px] shrink-0">
+
+            <div class="rr-modal-toolbar">
+                <div class="rr-modal-search">
                     <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
                         <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
-                    <input type="text" id="search_nasabah" onkeyup="filterTableDetail()" class="w-full pl-8 pr-3 py-1.5 h-[32px] bg-slate-50 border border-slate-200 rounded-lg text-[10px] md:text-xs outline-none focus:border-blue-500 focus:bg-white transition-all placeholder-slate-400 font-medium" placeholder="Cari nama...">
+                    <input type="text" id="search_nasabah" onkeyup="filterTableDetail()" class="w-full pl-8 pr-3 h-[32px] bg-slate-50 border border-slate-200 rounded-lg text-[10px] md:text-xs outline-none focus:border-blue-500 focus:bg-white transition-all placeholder-slate-400 font-medium" placeholder="Cari nama / rekening...">
                 </div>
-                
-                <button type="button" onclick="document.getElementById('modalFilterWrapper').classList.toggle('hidden'); document.getElementById('modalFilterWrapper').classList.toggle('block')" class="md:hidden h-[32px] w-[32px] bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-lg flex items-center justify-center transition shrink-0">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+
+                <button type="button" id="rrModalFilterToggle" onclick="toggleRRModalFilter()" class="rr-modal-filter-toggle md:hidden" aria-controls="modalFilterWrapper" aria-expanded="false" title="Filter detail">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M7 12h10M10 18h4"></path></svg>
                 </button>
-                
-                <button onclick="closeModalRR()" class="w-[32px] h-[32px] flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-xl leading-none shrink-0">&times;</button>
+
+                <div id="modalFilterWrapper" class="hidden md:block rr-modal-filter-inline">
+                    <div class="rr-modal-filter-controls">
+                        <select id="opt_kankas_modal" class="inp rr-modal-select text-blue-800 bg-blue-50/50 border-blue-200" onchange="handleModalKankasChangeRR()" title="Filter Kankas">
+                            <option value="">Semua Kankas</option>
+                        </select>
+
+                        <select id="opt_ao_modal" class="inp rr-modal-select text-slate-700 bg-slate-50 border-slate-200" onchange="loadDetailPage(1)" title="Filter AO">
+                            <option value="">Semua AO</option>
+                        </select>
+
+                        <select id="status_pembayaran_modal" class="inp rr-modal-select rr-modal-status text-slate-700 bg-slate-50 border-slate-200" onchange="loadDetailPage(1)" title="Status Pembayaran">
+                            <option value="ALL">Semua Status</option>
+                            <option value="OTP">OTP</option>
+                            <option value="TELAT">Telat</option>
+                            <option value="BELUM_JATUH_TEMPO">Belum Jatuh Tempo</option>
+                            <option value="BELUM_BAYAR">Belum Bayar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button onclick="downloadExcelFull(event)" class="rr-modal-export btn-icon bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm shrink-0" title="Export Excel" aria-label="Export Excel">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span class="rr-export-label">Export</span>
+                </button>
+
+                <button onclick="closeModalRR()" class="rr-modal-close" title="Tutup" aria-label="Tutup">&times;</button>
             </div>
         </div>
 
-        <div id="modalFilterWrapper" class="hidden md:block w-full border-t border-slate-100 md:border-none transition-all">
-            <div class="flex flex-row items-center justify-end gap-1.5 md:gap-2 px-3 pb-2.5 md:px-4 md:pb-3 overflow-x-auto no-scrollbar">
-                <select id="opt_kankas_modal" class="inp px-1 md:px-2 h-[32px] w-[100px] md:w-[130px] text-[10px] md:text-xs font-bold text-blue-800 bg-blue-50/50 border-blue-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)">
-                    <option value="">Semua Kankas</option>
-                </select>
-
-                <select id="opt_ao_modal" class="inp px-1 md:px-2 h-[32px] w-[100px] md:w-[130px] text-[10px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)">
-                    <option value="">Semua AO</option>
-                </select>
-
-                <select id="status_bayar_modal" class="inp px-1 md:px-2 h-[32px] w-[115px] md:w-[140px] text-[10px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)" title="Status Bayar">
-                    <option value="all">Semua Bayar</option>
-                    <option value="sudah_bayar">Sudah Bayar</option>
-                    <option value="belum_bayar">Belum Bayar</option>
-                </select>
-
-                <select id="status_tunggakan_modal" class="inp px-1 md:px-2 h-[32px] w-[115px] md:w-[145px] text-[10px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)" title="Status Tunggakan">
-                    <option value="all">Tunggakan All</option>
-                    <option value="nol">Tunggakan = 0</option>
-                    <option value="lebih">Tunggakan > 0</option>
-                </select>
-
-                <select id="status_pembayaran_modal" class="inp px-1 md:px-2 h-[32px] w-[140px] md:w-[175px] text-[10px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetailPage(1)" title="Status Pembayaran">
-                    <option value="ALL">Semua Status</option>
-                    <option value="OTP">OTP</option>
-                    <option value="TELAT">Telat</option>
-                    <option value="BELUM_JATUH_TEMPO">Belum Jatuh Tempo</option>
-                    <option value="BELUM_BAYAR">Belum Bayar</option>
-                </select>
-                
-                <button onclick="downloadExcelFull()" class="btn-icon bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 md:px-3 h-[32px] rounded-lg shadow-sm shrink-0" title="Export Excel">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    <span class="ml-1.5 text-[10px] md:text-xs font-bold uppercase tracking-wider hidden sm:inline">Export</span>
-                </button>
+        <div class="rr-detail-summary-wrap">
+          <div class="rr-detail-summary-head">
+            <span id="rrDetailSummaryTitle" class="rr-detail-summary-title">Ringkasan Detail</span>
+            <span id="rrDetailSummaryScope" class="rr-detail-summary-scope">Mengikuti filter aktif</span>
+          </div>
+          <div class="rr-detail-summary">
+            <div class="rr-detail-summary-card">
+              <div id="rrSummaryLabel1" class="label">Debitur</div>
+              <div id="rrSummaryValue1" class="value">0</div>
             </div>
+            <div class="rr-detail-summary-card is-green">
+              <div id="rrSummaryLabel2" class="label">Bayar</div>
+              <div id="rrSummaryValue2" class="value">0</div>
+            </div>
+            <div class="rr-detail-summary-card is-blue">
+              <div id="rrSummaryLabel3" class="label">Actual</div>
+              <div id="rrSummaryValue3" class="value">0</div>
+            </div>
+            <div class="rr-detail-summary-card is-red">
+              <div id="rrSummaryLabel4" class="label">Tunggakan</div>
+              <div id="rrSummaryValue4" class="value">0</div>
+            </div>
+          </div>
         </div>
 
     </div>
@@ -285,7 +1237,7 @@
          <span class="text-[10px] md:text-sm font-bold uppercase tracking-widest">Memuat Detail...</span>
       </div>
       
-      <table class="w-max min-w-full text-center md:text-left text-slate-700 border-separate border-spacing-0 md:border border-slate-200 md:rounded-xl shadow-sm bg-white table-fixed" id="tableExportRR">
+      <table class="w-max min-w-full text-left text-slate-700 border-separate border-spacing-0 md:border border-slate-200 md:rounded-xl shadow-sm bg-white table-fixed" id="tableExportRR">
         <thead id="headModalRR" class="text-[9px] md:text-xs text-slate-600 uppercase bg-slate-100 font-bold tracking-wider select-none"></thead>
         <tbody id="bodyModalRR" class="divide-y divide-slate-100 bg-white modal-tbody text-[9.5px] md:text-xs"></tbody>
       </table>
@@ -346,19 +1298,172 @@
   }
 
 
-  function toggleInfoRR() {
-      const el = document.getElementById('infoRR');
-      if (!el) return;
-      el.classList.toggle('hidden');
+  function toggleRRModalFilter() {
+      const wrapper = document.getElementById('modalFilterWrapper');
+      const button = document.getElementById('rrModalFilterToggle');
+      if (!wrapper) return;
+      const willOpen = wrapper.classList.contains('hidden');
+      wrapper.classList.toggle('hidden', !willOpen);
+      wrapper.classList.toggle('block', willOpen);
+      button?.setAttribute('aria-expanded', String(willOpen));
+  }
+  window.toggleRRModalFilter = toggleRRModalFilter;
+
+  let rrInfoOpen = false;
+
+  function rrNum(v) {
+      const n = Number(String(v ?? 0).replace('%','').replace(',','.'));
+      return Number.isFinite(n) ? n : 0;
   }
 
-  document.addEventListener('click', function(e) {
-      const info = document.getElementById('infoRR');
-      if (!info) return;
-      const btn = e.target.closest('[onclick="toggleInfoRR()"]');
-      const box = e.target.closest('#infoRR');
-      if (!btn && !box) info.classList.add('hidden');
-  });
+  function rrPct(v) {
+      return `${rrNum(v).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})}%`;
+  }
+
+  function rrSignedPct(v) {
+      const n = rrNum(v);
+      if (n > 0) return `+${n.toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})}%`;
+      if (n < 0) return `-${Math.abs(n).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})}%`;
+      return '0,00%';
+  }
+
+  // Delta NOA dan Delta % harus merepresentasikan perubahan Actual terhadap M-1.
+  // Jangan memakai delta_noa / delta_pct dari response API karena field tersebut
+  // dapat memiliki arti migrasi/flow pada endpoint RR. Untuk tabel rekap, hitung
+  // langsung dari angka yang benar-benar ditampilkan di kolom M-1 dan Actual.
+  function recalcRRDisplayDelta(row) {
+      if (!row || typeof row !== 'object') return row;
+
+      const m1Noa = Number(row.m1_all_noa || 0);
+      const actualNoa = Number(row.cur_all_noa || 0);
+      const m1Pct = rrNum(row.m1_pct);
+      const actualPct = rrNum(row.cur_pct);
+
+      row.delta_noa = actualNoa - m1Noa;
+      row.delta_pct = Number((actualPct - m1Pct).toFixed(2));
+      return row;
+  }
+
+  function rrDateLabel(value) {
+      if (!value) return '-';
+      const p = String(value).split('-');
+      return p.length === 3 ? `${p[2]}/${p[1]}/${p[0]}` : value;
+  }
+
+  function selectedRRAreaLabel() {
+      const select = document.getElementById('opt_kantor');
+      return select?.options?.[select.selectedIndex]?.textContent?.trim() || 'KONSOLIDASI';
+  }
+
+  function updateRRInsight() {
+      const gt = rekapGtCache || {};
+      const rows = Array.isArray(rekapDataCache) ? rekapDataCache : [];
+      const hero = document.getElementById('rrInsightHero');
+      const headline = document.getElementById('rrInsightHeadline');
+      const copy = document.getElementById('rrInsightCopy');
+      const date = document.getElementById('rrInsightDate');
+      const list = document.getElementById('rrDriverList');
+      if (!hero || !headline || !copy || !list) return;
+
+      hero.classList.remove('good','alert','warn');
+      if (date) {
+          date.textContent = `${selectedRRAreaLabel()} • ${rrDateLabel(document.getElementById('closing_date')?.value)} → ${rrDateLabel(document.getElementById('harian_date')?.value)}`;
+      }
+
+      if (!Object.keys(gt).length && !rows.length) {
+          headline.textContent = 'Data Repayment Rate belum tersedia.';
+          copy.textContent = 'Ringkasan akan otomatis diperbarui setelah data rekap selesai dimuat.';
+          document.getElementById('rrStatClosing').textContent = '-';
+          document.getElementById('rrStatActual').textContent = '-';
+          document.getElementById('rrStatDelta').textContent = '-';
+          list.innerHTML = '<div class="rr-driver-empty">Belum ada data yang dapat dianalisis.</div>';
+          return;
+      }
+
+      const m1 = rrNum(gt.m1_pct);
+      const actual = rrNum(gt.cur_pct);
+      const delta = rrNum(gt.delta_pct);
+      document.getElementById('rrStatClosing').textContent = rrPct(m1);
+      document.getElementById('rrStatActual').textContent = rrPct(actual);
+      const deltaNode = document.getElementById('rrStatDelta');
+      deltaNode.textContent = rrSignedPct(delta);
+      deltaNode.classList.remove('good','bad');
+      if (delta < 0) deltaNode.classList.add('bad');
+      if (delta > 0) deltaNode.classList.add('good');
+
+      const declining = [...rows]
+          .filter(r => rrNum(r.delta_pct) < 0)
+          .sort((a,b) => rrNum(a.delta_pct) - rrNum(b.delta_pct));
+
+      if (delta < 0) {
+          hero.classList.add('alert');
+          headline.textContent = `RR turun menjadi ${rrPct(actual)} dibanding closing ${rrPct(m1)}.`;
+          copy.textContent = declining.length
+              ? `${declining.length} cabang/area mengalami penurunan. Prioritaskan rekening Belum Bayar dan Telat pada cabang dengan penurunan terbesar agar kualitas repayment tidak semakin melemah.`
+              : 'Posisi RR turun dibanding closing. Buka detail Actual atau Delta untuk menelusuri rekening penyebab penurunan.';
+      } else if (delta > 0) {
+          hero.classList.add('good');
+          headline.textContent = `RR membaik menjadi ${rrPct(actual)} dibanding closing ${rrPct(m1)}.`;
+          copy.textContent = declining.length
+              ? `Secara total RR membaik, tetapi masih ada ${declining.length} cabang/area yang menurun dan perlu dipantau.`
+              : 'Tidak terlihat cabang dengan penurunan RR pada data yang tampil. Pertahankan follow-up pembayaran sampai akhir periode.';
+      } else {
+          hero.classList.add('warn');
+          headline.textContent = `RR relatif tetap di ${rrPct(actual)}.`;
+          copy.textContent = declining.length
+              ? `Total relatif tetap, namun ${declining.length} cabang/area masih mengalami penurunan. Gunakan daftar prioritas di bawah untuk follow-up.`
+              : 'Tetap pantau status Belum Bayar, Telat, dan rekening yang mendekati jatuh tempo.';
+      }
+
+      const top = declining.slice(0,3);
+      if (!top.length) {
+          list.innerHTML = '<div class="rr-driver-empty">Belum ada cabang/area dengan penurunan RR pada data yang tampil.</div>';
+      } else {
+          list.innerHTML = top.map((r,i) => `
+              <div class="rr-driver-item">
+                <span class="rr-driver-rank">${i+1}</span>
+                <div class="min-w-0">
+                  <div class="rr-driver-name" title="${attrRR(r.nama || r.kode || '-')}">${attrRR(r.nama || r.kode || '-')}</div>
+                  <div class="rr-driver-meta">M-1 ${rrPct(r.m1_pct)} → Actual ${rrPct(r.cur_pct)}</div>
+                </div>
+                <strong>${rrSignedPct(r.delta_pct)}</strong>
+              </div>`).join('');
+      }
+  }
+
+  function openRRInfo() {
+      const panel = document.getElementById('infoRR');
+      const backdrop = document.getElementById('rrInfoBackdrop');
+      const button = document.getElementById('rrInfoButton');
+      if (!panel || !backdrop) return;
+      rrInfoOpen = true;
+      updateRRInsight();
+      panel.classList.add('open');
+      backdrop.classList.add('open');
+      panel.setAttribute('aria-hidden','false');
+      backdrop.setAttribute('aria-hidden','false');
+      button?.setAttribute('aria-expanded','true');
+      document.documentElement.classList.add('rr-info-lock');
+  }
+
+  function closeRRInfo(returnFocus = false) {
+      const panel = document.getElementById('infoRR');
+      const backdrop = document.getElementById('rrInfoBackdrop');
+      const button = document.getElementById('rrInfoButton');
+      rrInfoOpen = false;
+      panel?.classList.remove('open');
+      backdrop?.classList.remove('open');
+      panel?.setAttribute('aria-hidden','true');
+      backdrop?.setAttribute('aria-hidden','true');
+      button?.setAttribute('aria-expanded','false');
+      document.documentElement.classList.remove('rr-info-lock');
+      if (returnFocus) button?.focus({preventScroll:true});
+  }
+
+  function toggleInfoRR() {
+      rrInfoOpen ? closeRRInfo(true) : openRRInfo();
+  }
+  window.closeRRInfo = closeRRInfo;
 
   window.addEventListener('DOMContentLoaded', async () => {
       const user = (window.getUser && window.getUser()) || null;
@@ -389,7 +1494,11 @@
       const opt = { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) };
       if (signal) opt.signal = signal;
       const res = await fetch(url, opt);
-      return await res.json();
+      let json = null;
+      try { json = await res.json(); }
+      catch (err) { throw new Error(`Response API tidak valid (HTTP ${res.status})`); }
+      if (!res.ok) throw new Error(json?.message || `HTTP ${res.status}`);
+      return json || {};
   }
 
   const attrRR = (v) => String(v ?? '').replace(/[&<>"']/g, ch => ({
@@ -484,7 +1593,6 @@
   // 🔥 SETUP HEADER UTAMA (KUNCI NAMA KANTOR) 🔥
   function setupHeaderRR(userKode) {
       const th = document.getElementById('headRR');
-      const saldoLabel = getTipeSaldoLabelRR();
       let thHtml = `<tr class="rr-row-1 text-[10px] md:text-sm">`;
 
       if (userKode === '000') {
@@ -505,30 +1613,39 @@
       }
 
       thHtml += `
-            <th colspan="2" class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 align-middle bg-[#dcedc8] text-slate-800 text-[10px] md:text-sm text-center">M-1</th>
-            <th colspan="2" class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 align-middle bg-[#dcedc8] text-slate-800 text-[10px] md:text-sm text-center">ACTUAL</th>
-            <th colspan="2" class="px-2 md:px-4 py-1.5 md:py-2 border-b border-slate-200 align-middle bg-[#dcedc8] text-slate-800 text-[10px] md:text-sm text-center">DELTA</th>
+            <th colspan="3" class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 align-middle bg-[#dcedc8] text-slate-800 text-[10px] md:text-sm text-center">M-1</th>
+            <th colspan="3" class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 align-middle bg-[#dcedc8] text-slate-800 text-[10px] md:text-sm text-center">ACTUAL</th>
+            <th colspan="3" class="px-2 md:px-4 py-1.5 md:py-2 border-b border-slate-200 align-middle bg-[#dcedc8] text-slate-800 text-[10px] md:text-sm text-center">DELTA</th>
           </tr>
           <tr class="rr-row-2 text-[8.5px] md:text-[10px] tracking-wider">
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('m1_lancar_os', 'number')">
-                <div class="flex items-center justify-end">${saldoLabel} ${getSortIcon('m1_lancar_os', sortCol, sortAsc)}</div>
+                <div class="flex items-center justify-end">NOMINAL ${getSortIcon('m1_lancar_os', sortCol, sortAsc)}</div>
+            </th>
+            <th class="rr-col-noa px-2 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('m1_all_noa', 'number')">
+                <div class="flex items-center justify-center">NOA ${getSortIcon('m1_all_noa', sortCol, sortAsc)}</div>
             </th>
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('m1_pct', 'number')">
                 <div class="flex items-center justify-center">% ${getSortIcon('m1_pct', sortCol, sortAsc)}</div>
             </th>
-            
+
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('cur_lancar_os', 'number')">
-                <div class="flex items-center justify-end">${saldoLabel} ${getSortIcon('cur_lancar_os', sortCol, sortAsc)}</div>
+                <div class="flex items-center justify-end">NOMINAL ${getSortIcon('cur_lancar_os', sortCol, sortAsc)}</div>
+            </th>
+            <th class="rr-col-noa px-2 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('cur_all_noa', 'number')">
+                <div class="flex items-center justify-center">NOA ${getSortIcon('cur_all_noa', sortCol, sortAsc)}</div>
             </th>
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('cur_pct', 'number')">
                 <div class="flex items-center justify-center">% ${getSortIcon('cur_pct', sortCol, sortAsc)}</div>
             </th>
 
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('delta_os_lancar', 'number')">
-                <div class="flex items-center justify-end">SELISIH ${saldoLabel} ${getSortIcon('delta_os_lancar', sortCol, sortAsc)}</div>
+                <div class="flex items-center justify-end">SELISIH NOMINAL ${getSortIcon('delta_os_lancar', sortCol, sortAsc)}</div>
+            </th>
+            <th class="rr-col-noa px-2 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('delta_noa', 'number')">
+                <div class="flex items-center justify-center">SELISIH NOA ${getSortIcon('delta_noa', sortCol, sortAsc)}</div>
             </th>
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('delta_pct', 'number')">
-                <div class="flex items-center justify-center">% ${getSortIcon('delta_pct', sortCol, sortAsc)}</div>
+                <div class="flex items-center justify-center">SELISIH % ${getSortIcon('delta_pct', sortCol, sortAsc)}</div>
             </th>
           </tr>
           <tr class="rr-row-tot font-bold text-[10px] md:text-sm bg-slate-100 sticky-total border-b border-slate-200" id="rowTotalRRAtas"></tr>
@@ -537,9 +1654,38 @@
   }
 
   function getTrafficLightColor(pct) {
-      if (pct < 50) return 'text-rose-600 font-bold';    
-      if (pct < 60) return 'text-amber-500 font-bold';  
-      return 'text-blue-700 font-bold';                
+      const value = Number(pct || 0);
+      if (value < 60) return 'rr-pct-badge rr-pct-low';
+      if (value <= 75) return 'rr-pct-badge rr-pct-mid';
+      return 'rr-pct-badge rr-pct-high';
+  }
+
+  function renderRRPercent(pct) {
+      const value = Number(pct || 0);
+      const label = Number.isFinite(value)
+          ? value.toLocaleString('id-ID', { maximumFractionDigits: 2 })
+          : '0';
+      return `<span class="${getTrafficLightColor(value)}">${label}%</span>`;
+  }
+
+  function rrMoveIcon(direction) {
+      if (direction === 'up') {
+          return `<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 3a1 1 0 0 1 .707.293l4 4a1 1 0 0 1-1.414 1.414L11 6.414V16a1 1 0 1 1-2 0V6.414L6.707 8.707a1 1 0 0 1-1.414-1.414l4-4A1 1 0 0 1 10 3Z" clip-rule="evenodd"/></svg>`;
+      }
+      return `<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 17a1 1 0 0 1-.707-.293l-4-4a1 1 0 0 1 1.414-1.414L9 13.586V4a1 1 0 1 1 2 0v9.586l2.293-2.293a1 1 0 0 1 1.414 1.414l-4 4A1 1 0 0 1 10 17Z" clip-rule="evenodd"/></svg>`;
+  }
+
+  function renderRRDelta(value, type = 'nominal') {
+      const n = Number(value || 0);
+      let label;
+      if (type === 'pct') {
+          label = `${Math.abs(n).toLocaleString('id-ID', { maximumFractionDigits: 2 })}%`;
+      } else {
+          label = fmt(Math.abs(n));
+      }
+      if (n < 0) return `<span class="rr-movement rr-movement-down">${rrMoveIcon('down')}<span>-${label}</span></span>`;
+      if (n > 0) return `<span class="rr-movement rr-movement-up">${rrMoveIcon('up')}<span>+${label}</span></span>`;
+      return `<span class="rr-movement rr-movement-flat"><span>${type === 'pct' ? '0%' : '0'}</span></span>`;
   }
 
   window.sortData = function(col, type) {
@@ -584,7 +1730,7 @@
 
       l.classList.remove('hidden'); 
       
-      const colSpan = userKodeGlobal === '000' ? 8 : 7;
+      const colSpan = userKodeGlobal === '000' ? 11 : 10;
       tb.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-20 text-slate-400 italic text-xs md:text-base">Sedang mengambil data...</td></tr>`;
       
       rekapDataCache = [];
@@ -604,8 +1750,8 @@
           const json = await apiCall(API_URL, payload, abortRekap.signal);
           if(json.status !== 200) throw new Error(json.message);
 
-          rekapDataCache = json.data?.data || [];
-          rekapGtCache = json.data?.grand_total || {};
+          rekapDataCache = (json.data?.data || []).map(row => recalcRRDisplayDelta({ ...row }));
+          rekapGtCache = recalcRRDisplayDelta({ ...(json.data?.grand_total || {}) });
 
           setupHeaderRR(userKodeGlobal);
 
@@ -615,6 +1761,7 @@
           }
 
           renderTableBodyRR(rekapDataCache, rekapGtCache);
+          updateRRInsight();
 
       } catch(e) { 
           if(e.name!=='AbortError') {
@@ -629,67 +1776,69 @@
       let html = '';
 
       rows.forEach(r => {
-          const dNoaClass = r.delta_noa < 0 ? 'text-rose-600' : 'text-slate-500';
-          const dOsClass  = r.delta_os_lancar < 0 ? 'text-rose-600' : 'text-slate-700';
-          const dPctClass = r.delta_pct < 0 ? 'text-rose-600' : 'text-slate-700';
-          
-          const pM1Class  = getTrafficLightColor(r.m1_pct);
-          const pCurClass = getTrafficLightColor(r.cur_pct);
 
           const rowKode = attrRR(r.kode || '');
           const rowNama = attrRR(r.nama || '');
-          const detailKode = userKodeGlobal === '000' ? rowKode : userKodeGlobal;
-          const detailKankas = userKodeGlobal === '000' ? '' : rowKode;
+
+          /*
+           * PENTING: ketika filter utama sudah memilih CABANG, baris rekap yang
+           * dikirim API adalah level KANKAS. Sebelumnya rowKode selalu dianggap
+           * sebagai kode_kantor untuk user pusat, sehingga payload detail menjadi
+           * salah: kode_kantor=<kode kankas>, kode_kankas=null.
+           *
+           * Context yang benar:
+           * - Konsolidasi pusat  : rowKode = kode cabang
+           * - Cabang terpilih    : rowKode = kode kankas, kode_kantor = cabang filter
+           * - Login cabang       : rowKode = kode kankas, kode_kantor = cabang login
+           */
+          const selectedMainBranch = String(document.getElementById('opt_kantor')?.value || '').trim();
+          const branchContext = (selectedMainBranch && selectedMainBranch !== '000')
+              ? selectedMainBranch
+              : (userKodeGlobal !== '000' ? userKodeGlobal : '');
+          const rowsAreKankas = branchContext !== '';
+          const detailKode = rowsAreKankas ? attrRR(branchContext) : rowKode;
+          const detailKankas = rowsAreKankas ? rowKode : '';
+
           const actualDetailAttr = `data-detail-rr="1" data-status="ALL" data-kode="${detailKode}" data-kankas="${detailKankas}" data-nama="${rowNama}" data-label="Actual" title="Klik detail Actual"`;
           const deltaDetailAttr = `data-detail-rr="1" data-status="TOTAL_BAYAR" data-kode="${detailKode}" data-kankas="${detailKankas}" data-nama="${rowNama}" data-label="Delta" title="Klik detail Delta"`;
           let rowHtml = `<tr class="transition h-[42px] md:h-[52px] border-b border-slate-100 hover:bg-slate-50">`;
-          
+
           if (userKodeGlobal === '000') {
-              // 🔥 HIDE KODE CABANG DI MOBILE 🔥
               rowHtml += `
                 <td class="hidden md:table-cell sticky-left-1 px-2 md:px-4 py-2 border-r border-slate-100 font-semibold text-blue-700 z-20 shadow-[inset_-1px_0_0_#e2e8f0] text-center text-[10px] md:text-sm">${r.kode}</td>
-                <td class="sticky-left-2 px-3 md:px-5 py-2 border-r border-slate-100 font-bold text-slate-700 text-left truncate z-20 shadow-[inset_-1px_0_0_#e2e8f0] text-[10px] md:text-sm min-w-[120px] max-w-[120px] md:min-w-[200px] md:max-w-[200px]" title="${r.nama}">${r.nama}</td>
+                <td class="sticky-left-2 px-3 md:px-5 py-2 border-r border-slate-100 font-bold text-slate-700 text-left truncate z-20 shadow-[inset_-1px_0_0_#e2e8f0] text-[10px] md:text-sm min-w-[120px] max-w-[120px] md:min-w-[200px] md:max-w-[200px]" title="${attrRR(r.nama)}">${attrRR(r.nama)}</td>
               `;
           } else {
               rowHtml += `
-                <td class="sticky-left-1 px-3 md:px-5 py-2 border-r border-slate-100 font-bold text-slate-700 text-left truncate z-20 shadow-[inset_-1px_0_0_#e2e8f0] text-[10px] md:text-sm min-w-[120px] max-w-[120px] md:min-w-[200px] md:max-w-[200px]" title="${r.nama}">${r.nama}</td>
+                <td class="sticky-left-1 px-3 md:px-5 py-2 border-r border-slate-100 font-bold text-slate-700 text-left truncate z-20 shadow-[inset_-1px_0_0_#e2e8f0] text-[10px] md:text-sm min-w-[120px] max-w-[120px] md:min-w-[200px] md:max-w-[200px]" title="${attrRR(r.nama)}">${attrRR(r.nama)}</td>
               `;
           }
 
           rowHtml += `
-                <td class="px-2 md:px-4 py-2 border-r border-slate-100 text-right">
-                    <div class="font-medium text-slate-700 text-[10px] md:text-sm">${fmt(r.m1_lancar_os)}</div>
-                    <div class="text-[8px] md:text-[10px] text-slate-400 mt-0.5">NOA: <span class="font-bold text-slate-500">${fmt(r.m1_all_noa)}</span></div>
-                </td>
-                <td class="px-2 md:px-4 py-2 border-r border-slate-100 text-center text-[10px] md:text-sm ${pM1Class}">${r.m1_pct}%</td>
-                
-                <td ${actualDetailAttr} class="px-2 md:px-4 py-2 border-r border-slate-100 text-right bg-blue-50/20 cursor-pointer hover:bg-blue-100/70 transition">
-                    <div class="font-medium text-blue-800 text-[10px] md:text-sm">${fmt(r.cur_lancar_os)}</div>
-                    <div class="text-[8px] md:text-[10px] text-blue-400 mt-0.5">NOA: <span class="font-bold text-blue-500">${fmt(r.cur_all_noa)}</span></div>
-                </td>
-                <td ${actualDetailAttr} class="px-2 md:px-4 py-2 border-r border-slate-100 text-center text-[10px] md:text-sm ${pCurClass} bg-blue-50/20 cursor-pointer hover:bg-blue-100/70 transition">${r.cur_pct}%</td>
-                
-                <td ${deltaDetailAttr} class="px-2 md:px-4 py-2 border-r border-slate-100 text-right cursor-pointer hover:bg-amber-50 transition">
-                    <div class="font-medium ${dOsClass} text-[10px] md:text-sm">${fmt(r.delta_os_lancar)}</div>
-                    <div class="text-[8px] md:text-[10px] text-slate-400 mt-0.5">NOA: <span class="font-bold ${dNoaClass}">${fmt(r.delta_noa)}</span></div>
-                </td>
-                <td ${deltaDetailAttr} class="px-2 md:px-4 py-2 text-center font-bold text-[10px] md:text-sm ${dPctClass} cursor-pointer hover:bg-amber-50 transition">${r.delta_pct}%</td>
+                <td class="px-2 md:px-4 py-2 border-r border-slate-100 text-right font-semibold text-slate-700 text-[10px] md:text-sm">${fmt(r.m1_lancar_os)}</td>
+                <td class="rr-col-noa px-2 py-2 border-r border-slate-100 text-center font-bold text-slate-600 text-[9px] md:text-xs">${fmt(r.m1_all_noa)}</td>
+                <td class="px-2 md:px-4 py-2 border-r border-slate-100 text-center">${renderRRPercent(r.m1_pct)}</td>
+
+                <td ${actualDetailAttr} class="px-2 md:px-4 py-2 border-r border-slate-100 text-right bg-blue-50/20 cursor-pointer hover:bg-blue-100/70 transition font-semibold text-blue-800 text-[10px] md:text-sm">${fmt(r.cur_lancar_os)}</td>
+                <td ${actualDetailAttr} class="rr-col-noa px-2 py-2 border-r border-slate-100 text-center bg-blue-50/20 cursor-pointer hover:bg-blue-100/70 transition font-bold text-blue-600 text-[9px] md:text-xs">${fmt(r.cur_all_noa)}</td>
+                <td ${actualDetailAttr} class="px-2 md:px-4 py-2 border-r border-slate-100 text-center bg-blue-50/20 cursor-pointer hover:bg-blue-100/70 transition">${renderRRPercent(r.cur_pct)}</td>
+
+                <td ${deltaDetailAttr} class="px-2 md:px-4 py-2 border-r border-slate-100 text-right cursor-pointer hover:bg-amber-50 transition">${renderRRDelta(r.delta_os_lancar, 'nominal')}</td>
+                <td ${deltaDetailAttr} class="rr-col-noa px-2 py-2 border-r border-slate-100 text-center cursor-pointer hover:bg-amber-50 transition">${renderRRDelta(r.delta_noa, 'noa')}</td>
+                <td ${deltaDetailAttr} class="px-2 md:px-4 py-2 text-center cursor-pointer hover:bg-amber-50 transition">${renderRRDelta(r.delta_pct, 'pct')}</td>
             </tr>`;
           html += rowHtml;
       });
       tb.innerHTML = html;
 
       if(gt && Object.keys(gt).length > 0) {
-          const gtDNoaClass = gt.delta_noa < 0 ? 'text-rose-700' : 'text-blue-600';
-          const gtDOsClass  = gt.delta_os_lancar < 0 ? 'text-rose-700' : 'text-blue-900';
-          const gtDPctClass = gt.delta_pct < 0 ? 'text-rose-700' : 'text-blue-900';
 
-          const gtM1Color  = getTrafficLightColor(gt.m1_pct);
-          const gtCurColor = getTrafficLightColor(gt.cur_pct);
-
-          const totalKode = attrRR(document.getElementById('opt_kantor')?.value || '');
-          const actualTotalAttr = `data-detail-rr="1" data-status="ALL" data-kode="${totalKode}" data-nama="TOTAL" data-label="Actual Total" title="Klik detail Actual Total"`;
-          const deltaTotalAttr = `data-detail-rr="1" data-status="TOTAL_BAYAR" data-kode="${totalKode}" data-nama="TOTAL" data-label="Delta Total" title="Klik detail Delta Total"`;
+          const selectedMainBranchTotal = String(document.getElementById('opt_kantor')?.value || '').trim();
+          const totalKode = attrRR(
+              selectedMainBranchTotal || (userKodeGlobal !== '000' ? userKodeGlobal : '')
+          );
+          const actualTotalAttr = `data-detail-rr="1" data-status="ALL" data-kode="${totalKode}" data-kankas="" data-nama="TOTAL" data-label="Actual Total" title="Klik detail Actual Total"`;
+          const deltaTotalAttr = `data-detail-rr="1" data-status="TOTAL_BAYAR" data-kode="${totalKode}" data-kankas="" data-nama="TOTAL" data-label="Delta Total" title="Klik detail Delta Total"`;
           let gtHtml = '';
           if (userKodeGlobal === '000') {
               gtHtml += `
@@ -703,23 +1852,17 @@
           }
 
           gtHtml += `
-              <th class="px-2 md:px-4 border-r border-blue-200 text-right align-middle bg-[#eff6ff]">
-                  <div class="font-bold text-[10px] md:text-sm text-blue-900">${fmt(gt.m1_lancar_os)}</div>
-                  <div class="text-[8px] md:text-[10px] text-blue-500 mt-0.5 font-normal">NOA: <span class="font-bold text-blue-700">${fmt(gt.m1_all_noa)}</span></div>
-              </th>
-              <th class="px-2 md:px-4 border-r border-blue-200 text-center align-middle font-bold text-[10px] md:text-sm ${gtM1Color} bg-[#eff6ff]">${gt.m1_pct}%</th>
-              
-              <th ${actualTotalAttr} class="px-2 md:px-4 border-r border-blue-200 text-right align-middle bg-[#eff6ff] cursor-pointer hover:bg-blue-100 transition">
-                  <div class="font-bold text-[10px] md:text-sm text-blue-900">${fmt(gt.cur_lancar_os)}</div>
-                  <div class="text-[8px] md:text-[10px] text-blue-500 mt-0.5 font-normal">NOA: <span class="font-bold text-blue-700">${fmt(gt.cur_all_noa)}</span></div>
-              </th>
-              <th ${actualTotalAttr} class="px-2 md:px-4 border-r border-blue-200 text-center align-middle font-bold text-[10px] md:text-sm ${gtCurColor} bg-[#eff6ff] cursor-pointer hover:bg-blue-100 transition">${gt.cur_pct}%</th>
-               
-              <th ${deltaTotalAttr} class="px-2 md:px-4 border-r border-blue-200 text-right align-middle bg-[#eff6ff] cursor-pointer hover:bg-amber-50 transition">
-                  <div class="font-bold text-[10px] md:text-sm ${gtDOsClass}">${fmt(gt.delta_os_lancar)}</div>
-                  <div class="text-[8px] md:text-[10px] text-slate-500 mt-0.5 font-normal">NOA: <span class="font-bold ${gtDNoaClass}">${fmt(gt.delta_noa)}</span></div>
-              </th>
-              <th ${deltaTotalAttr} class="px-2 md:px-4 text-center align-middle font-bold text-[10px] md:text-sm ${gtDPctClass} bg-[#eff6ff] cursor-pointer hover:bg-amber-50 transition">${gt.delta_pct}%</th>
+              <th class="px-2 md:px-4 border-r border-blue-200 text-right align-middle bg-[#eff6ff] font-bold text-[10px] md:text-sm text-blue-900">${fmt(gt.m1_lancar_os)}</th>
+              <th class="rr-col-noa px-2 border-r border-blue-200 text-center align-middle bg-[#eff6ff] font-extrabold text-blue-700 text-[9px] md:text-xs">${fmt(gt.m1_all_noa)}</th>
+              <th class="px-2 md:px-4 border-r border-blue-200 text-center align-middle bg-[#eff6ff]">${renderRRPercent(gt.m1_pct)}</th>
+
+              <th ${actualTotalAttr} class="px-2 md:px-4 border-r border-blue-200 text-right align-middle bg-[#eff6ff] cursor-pointer hover:bg-blue-100 transition font-bold text-[10px] md:text-sm text-blue-900">${fmt(gt.cur_lancar_os)}</th>
+              <th ${actualTotalAttr} class="rr-col-noa px-2 border-r border-blue-200 text-center align-middle bg-[#eff6ff] cursor-pointer hover:bg-blue-100 transition font-extrabold text-blue-700 text-[9px] md:text-xs">${fmt(gt.cur_all_noa)}</th>
+              <th ${actualTotalAttr} class="px-2 md:px-4 border-r border-blue-200 text-center align-middle bg-[#eff6ff] cursor-pointer hover:bg-blue-100 transition">${renderRRPercent(gt.cur_pct)}</th>
+
+              <th ${deltaTotalAttr} class="px-2 md:px-4 border-r border-blue-200 text-right align-middle bg-[#eff6ff] cursor-pointer hover:bg-amber-50 transition">${renderRRDelta(gt.delta_os_lancar, 'nominal')}</th>
+              <th ${deltaTotalAttr} class="rr-col-noa px-2 border-r border-blue-200 text-center align-middle bg-[#eff6ff] cursor-pointer hover:bg-amber-50 transition">${renderRRDelta(gt.delta_noa, 'noa')}</th>
+              <th ${deltaTotalAttr} class="px-2 md:px-4 text-center align-middle bg-[#eff6ff] cursor-pointer hover:bg-amber-50 transition">${renderRRDelta(gt.delta_pct, 'pct')}</th>
           `;
           trTot.innerHTML = gtHtml;
           trTot.classList.remove('cursor-pointer');
@@ -732,11 +1875,10 @@
       if(!rekapDataCache || rekapDataCache.length === 0) return alert("Tidak ada data rekap untuk didownload.");
 
       let csv = "";
-      const saldoLabel = getTipeSaldoLabelRR();
       if (userKodeGlobal === '000') {
-          csv = `Kode\tNama Kantor\tM-1 ${saldoLabel}\tM-1 NOA\tM-1 %\tActual ${saldoLabel}\tActual NOA\tActual %\tDelta ${saldoLabel}\tDelta NOA\tDelta %\n`;
+          csv = `Kode\tNama Kantor\tM-1 NOMINAL\tM-1 NOA\tM-1 %\tActual NOMINAL\tActual NOA\tActual %\tSelisih Nominal\tSelisih NOA\tSelisih %\n`;
       } else {
-          csv = `Nama Kantor\tM-1 ${saldoLabel}\tM-1 NOA\tM-1 %\tActual ${saldoLabel}\tActual NOA\tActual %\tDelta ${saldoLabel}\tDelta NOA\tDelta %\n`;
+          csv = `Nama Kantor\tM-1 NOMINAL\tM-1 NOA\tM-1 %\tActual NOMINAL\tActual NOA\tActual %\tSelisih Nominal\tSelisih NOA\tSelisih %\n`;
       }
       
       rekapDataCache.forEach(r => {
@@ -784,6 +1926,63 @@
       `;
   }
 
+  function getTglBayarRR(row) {
+      return row?.tgl_bayar_ini || '-';
+  }
+
+  function rrSummaryNumber(obj, keys, fallback = 0) {
+      if (!obj || typeof obj !== 'object') return fallback;
+      for (const key of keys) {
+          if (obj[key] !== undefined && obj[key] !== null && obj[key] !== '') {
+              const n = Number(obj[key]);
+              if (Number.isFinite(n)) return n;
+          }
+      }
+      return fallback;
+  }
+
+  function setRRDetailSummaryCard(index, label, value) {
+      const labelEl = document.getElementById(`rrSummaryLabel${index}`);
+      const valueEl = document.getElementById(`rrSummaryValue${index}`);
+      if (labelEl) labelEl.textContent = label;
+      if (valueEl) valueEl.textContent = value;
+  }
+
+  function renderRRDetailSummary(rows = [], totalRecords = 0, summary = null, page = 1) {
+      const list = Array.isArray(rows) ? rows : [];
+      const hasServerSummary = !!(summary && typeof summary === 'object' && Object.keys(summary).length);
+      const scope = document.getElementById('rrDetailSummaryScope');
+      const title = document.getElementById('rrDetailSummaryTitle');
+
+      if (currentMode === 'LUNAS') {
+          const osM1Page = list.reduce((a,r) => a + Number(r.os_lunas || 0), 0);
+          const plafonBaruPage = list.reduce((a,r) => a + Number(r.plafond_baru || 0), 0);
+          const refinancingPage = list.filter(r => String(r.status_lunas || '').toUpperCase().includes('REFINANC')).length;
+          const osM1 = hasServerSummary ? rrSummaryNumber(summary,['os_lunas','total_os_lunas','os_m1'],osM1Page) : osM1Page;
+          const plafonBaru = hasServerSummary ? rrSummaryNumber(summary,['plafond_baru','total_plafond_baru'],plafonBaruPage) : plafonBaruPage;
+          const refinancing = hasServerSummary ? rrSummaryNumber(summary,['refinancing','total_refinancing'],refinancingPage) : refinancingPage;
+          if (title) title.textContent = 'Ringkasan Pelunasan';
+          setRRDetailSummaryCard(1,'Debitur',fmt(totalRecords || list.length));
+          setRRDetailSummaryCard(2,'OS M-1',fmt(osM1));
+          setRRDetailSummaryCard(3,'Plafond Baru',fmt(plafonBaru));
+          setRRDetailSummaryCard(4,'Refinancing',fmt(refinancing));
+      } else {
+          const bayarPage = list.reduce((a,r) => a + Number(r.trx_bulan_ini || 0), 0);
+          const actualPage = list.reduce((a,r) => a + Number(r.os_curr || 0), 0);
+          const tunggakanPage = list.reduce((a,r) => a + Number(r.totung || 0), 0);
+          const bayar = hasServerSummary ? rrSummaryNumber(summary,['trx_bulan_ini','total_trx_bulan_ini','total_bayar','bayar'],bayarPage) : bayarPage;
+          const actual = hasServerSummary ? rrSummaryNumber(summary,['os_curr','total_os_curr','actual','total_actual'],actualPage) : actualPage;
+          const tunggakan = hasServerSummary ? rrSummaryNumber(summary,['totung','total_totung','total_tunggakan','tunggakan'],tunggakanPage) : tunggakanPage;
+          if (title) title.textContent = 'Ringkasan Detail RR';
+          setRRDetailSummaryCard(1,'Debitur',fmt(totalRecords || list.length));
+          setRRDetailSummaryCard(2,'Total Bayar',fmt(bayar));
+          setRRDetailSummaryCard(3,'Actual',fmt(actual));
+          setRRDetailSummaryCard(4,'Tunggakan',fmt(tunggakan));
+      }
+
+      if (scope) scope.textContent = hasServerSummary ? 'Total sesuai filter aktif' : `Nominal halaman ${page} • debitur seluruh filter`;
+  }
+
   function renderModalHeaderRR() {
       const mHead = document.getElementById('headModalRR');
       
@@ -810,6 +2009,9 @@
                   </th>
                   <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[70px] md:w-[100px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('tgl_jatuh_tempo', 'string')">
                       <div class="flex items-center justify-center">TGL JT ${getSortIcon('tgl_jatuh_tempo', sortDetailCol, sortDetailAsc)}</div>
+                  </th>
+                  <th class="rr-col-date-pay px-2 md:px-3 border-b border-r border-slate-300 text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('tgl_bayar_ini', 'string')">
+                      <div class="flex items-center justify-center">TGL BYR ${getSortIcon('tgl_bayar_ini', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[110px] md:w-[150px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('status_pembayaran_code', 'string')">
                       <div class="flex items-center justify-center">STATUS BAYAR ${getSortIcon('status_pembayaran_code', sortDetailCol, sortDetailAsc)}</div>
@@ -845,7 +2047,6 @@
                       <div class="flex items-center justify-center">DLL ${getSortIcon('status_ket', sortDetailCol, sortDetailAsc)}</div>
                   </th>
               </tr>
-              <tr id="rowTotalDetailAtas" class="modal-head-2 mod-row-tot"></tr>
           `;
       } else {
           mHead.innerHTML = `
@@ -881,7 +2082,6 @@
                       <div class="flex items-center justify-center">TGL REALISASI ${getSortIcon('tgl_baru', sortDetailCol, sortDetailAsc)}</div>
                   </th>
               </tr>
-              <tr id="rowTotalDetailAtas" class="modal-head-2 mod-row-tot"></tr>
           `;
       }
   }
@@ -919,81 +2119,126 @@
 
   async function initModalDetail(tgl, status, kodeKantor = null, namaArea = '', label = 'Detail', kodeKankasAwal = null) {
       currentMode = 'NORMAL';
-      const branch = kodeKantor || document.getElementById('opt_kantor').value || null;
-      
-      await loadKankasModalDropdown(branch);
-      if (kodeKankasAwal && document.getElementById('opt_kankas_modal')) {
-          document.getElementById('opt_kankas_modal').value = kodeKankasAwal;
-      }
-      const kankas = kodeKankasAwal || document.getElementById('opt_kankas_modal').value || null; 
-      
-      await loadAOModalDropdown(branch);
-      const ao = document.getElementById('opt_ao_modal').value || null;
-      
-      currentDetailParams = { 
-          type: 'detail_rekap_rr', 
-          closing_date: document.getElementById('closing_date').value, 
-          harian_date: document.getElementById('harian_date').value, 
-          kode_kantor: branch, 
-          kode_kankas: kankas,
-          kode_ao: ao,
-          tgl_tagih: tgl, 
-          status: status, 
+      const modal = document.getElementById('modalDetailRR');
+      const body = document.getElementById('bodyModalRR');
+      const loading = document.getElementById('loadingModalRR');
+      const branch = kodeKantor || document.getElementById('opt_kantor')?.value || null;
+
+      // Tampilkan modal langsung. Jangan menunggu dropdown Kankas/AO selesai,
+      // supaya detail tidak terasa "tidak muncul" saat endpoint kode lambat.
+      modal?.classList.remove('hidden');
+      loading?.classList.remove('hidden');
+      if (body) body.innerHTML = `<tr><td colspan="19" class="py-20 text-center text-slate-400 font-bold">Menyiapkan detail...</td></tr>`;
+
+      const titleArea = namaArea ? ` - ${namaArea}` : '';
+      const title = document.getElementById('modalTitleRR');
+      const subtitle = document.getElementById('modalSubTitleRR');
+      if (title) title.textContent = `${label} Rekap RR${titleArea}`;
+      if (subtitle) subtitle.textContent = `${getTipeSaldoLabelRR()} | Lancar = kolektibilitas L dan hari menunggak 0`;
+
+      const search = document.getElementById('search_nasabah');
+      if (search) search.value = '';
+      if (document.getElementById('status_pembayaran_modal')) document.getElementById('status_pembayaran_modal').value = 'ALL';
+
+      // Reset state dahulu agar request detail tidak membawa filter dari modal sebelumnya.
+      currentDetailParams = {
+          type: 'detail_rekap_rr',
+          closing_date: document.getElementById('closing_date')?.value || '',
+          harian_date: document.getElementById('harian_date')?.value || '',
+          kode_kantor: branch,
+          kode_kankas: kodeKankasAwal || null,
+          kode_ao: null,
+          tgl_tagih: tgl || 'ALL',
+          status: status || 'ALL',
           hitung_berdasarkan: getTipeSaldoRR(),
           status_bayar: 'all',
           status_tunggakan: 'all',
           status_pembayaran: 'ALL',
           search: '',
-          limit: detailLimit 
+          limit: detailLimit
       };
 
-      const titleArea = namaArea ? ` - ${namaArea}` : '';
-      document.getElementById('modalTitleRR').textContent = `${label} Rekap RR${titleArea}`;
-      document.getElementById('modalSubTitleRR').textContent = `${getTipeSaldoLabelRR()} | Lancar = kolektibilitas L dan hari menunggak 0`;
-      document.getElementById('modalDetailRR').classList.remove('hidden');
-      
-      document.getElementById('search_nasabah').value = '';
-      if (document.getElementById('status_bayar_modal')) document.getElementById('status_bayar_modal').value = 'all';
-      if (document.getElementById('status_tunggakan_modal')) document.getElementById('status_tunggakan_modal').value = 'all';
-      if (document.getElementById('status_pembayaran_modal')) document.getElementById('status_pembayaran_modal').value = 'ALL';
-      sortDetailCol = ''; sortDetailAsc = true;
+      sortDetailCol = '';
+      sortDetailAsc = true;
       renderModalHeaderRR();
+      renderRRDetailSummary([], 0, null, 1);
 
-      loadDetailPage(1);
+      // Dropdown hanya fasilitas filter. Kalau endpoint dropdown gagal,
+      // data detail utama tetap harus bisa dimuat.
+      await Promise.allSettled([
+          loadKankasModalDropdown(branch),
+          loadAOModalDropdown(branch)
+      ]);
+
+      const kankasEl = document.getElementById('opt_kankas_modal');
+      if (kankasEl) {
+          if (kodeKankasAwal && Array.from(kankasEl.options).some(o => o.value === kodeKankasAwal)) {
+              kankasEl.value = kodeKankasAwal;
+          }
+          currentDetailParams.kode_kankas = kodeKankasAwal || kankasEl.value || null;
+      }
+      const aoEl = document.getElementById('opt_ao_modal');
+      currentDetailParams.kode_ao = aoEl?.value || null;
+
+      await loadDetailPage(1, { preserveInitialKankas: true });
   }
   window.initModalDetail = initModalDetail;
 
   async function initModalLunas(tgl) {
       currentMode = 'LUNAS';
-      const branch = document.getElementById('opt_kantor').value || null;
+      const modal = document.getElementById('modalDetailRR');
+      const body = document.getElementById('bodyModalRR');
+      const loading = document.getElementById('loadingModalRR');
+      const branch = document.getElementById('opt_kantor')?.value || null;
 
-      await loadKankasModalDropdown(branch);
-      const kankas = document.getElementById('opt_kankas_modal').value || null;
-      
-      await loadAOModalDropdown(branch);
-      const ao = document.getElementById('opt_ao_modal').value || null;
-
-      currentDetailParams = { 
-          type: 'detail_lunas_rr', 
-          closing_date: document.getElementById('closing_date').value, 
-          harian_date: document.getElementById('harian_date').value, 
-          kode_kantor: branch, 
-          kode_kankas: kankas,
-          kode_ao: ao,
-          tgl_tagih: tgl, 
-          limit: detailLimit 
-      };
+      modal?.classList.remove('hidden');
+      loading?.classList.remove('hidden');
+      if (body) body.innerHTML = `<tr><td colspan="10" class="py-20 text-center text-slate-400 font-bold">Menyiapkan detail pelunasan...</td></tr>`;
 
       document.getElementById('modalTitleRR').textContent = `Detail Pelunasan (Tgl ${tgl})`;
       document.getElementById('modalSubTitleRR').textContent = `Cek Refinancing vs Prospek`;
-      document.getElementById('modalDetailRR').classList.remove('hidden');
-      
-      document.getElementById('search_nasabah').value = '';
-      sortDetailCol = ''; sortDetailAsc = true;
+      const search = document.getElementById('search_nasabah');
+      if (search) search.value = '';
+
+      currentDetailParams = {
+          type: 'detail_lunas_rr',
+          closing_date: document.getElementById('closing_date')?.value || '',
+          harian_date: document.getElementById('harian_date')?.value || '',
+          kode_kantor: branch,
+          kode_kankas: null,
+          kode_ao: null,
+          tgl_tagih: tgl,
+          search: '',
+          limit: detailLimit
+      };
+
+      sortDetailCol = '';
+      sortDetailAsc = true;
       renderModalHeaderRR();
+      renderRRDetailSummary([], 0, null, 1);
+
+      await Promise.allSettled([
+          loadKankasModalDropdown(branch),
+          loadAOModalDropdown(branch)
+      ]);
+      currentDetailParams.kode_kankas = document.getElementById('opt_kankas_modal')?.value || null;
+      currentDetailParams.kode_ao = document.getElementById('opt_ao_modal')?.value || null;
+      await loadDetailPage(1);
+  }
+
+  window.handleModalKankasChangeRR = function() {
+      const kankasEl = document.getElementById('opt_kankas_modal');
+      const aoEl = document.getElementById('opt_ao_modal');
+
+      currentDetailParams.kode_kankas = kankasEl?.value || null;
+
+      // AO pada modal berasal dari level cabang. Saat Kankas diganti, reset AO
+      // agar filter AO lama tidak membuat kombinasi filter menjadi kosong.
+      if (aoEl) aoEl.value = '';
+      currentDetailParams.kode_ao = null;
 
       loadDetailPage(1);
-  }
+  };
 
   let searchDetailTimerRR = null;
   window.filterTableDetail = function() {
@@ -1003,52 +2248,84 @@
       searchDetailTimerRR = setTimeout(() => loadDetailPage(1), 350);
   }
 
-  async function loadDetailPage(page) {
-      const l = document.getElementById('loadingModalRR'); 
-      const tb = document.getElementById('bodyModalRR'); 
+  async function loadDetailPage(page, options = {}) {
+      const l = document.getElementById('loadingModalRR');
+      const tb = document.getElementById('bodyModalRR');
       const info = document.getElementById('pageInfoRR');
-      l.classList.remove('hidden'); tb.innerHTML = '';
+      const prev = document.getElementById('btnPrevRR');
+      const next = document.getElementById('btnNextRR');
+      if (!tb) return;
+
+      l?.classList.remove('hidden');
+      tb.innerHTML = `<tr><td colspan="19" class="py-20 text-center text-slate-400 font-bold">Memuat detail...</td></tr>`;
 
       try {
-          const kankasModal = document.getElementById('opt_kankas_modal').value;
-          currentDetailParams.kode_kankas = kankasModal;
-
+          const kankasModal = document.getElementById('opt_kankas_modal');
           const aoModal = document.getElementById('opt_ao_modal');
-          if(aoModal) {
-              currentDetailParams.kode_ao = aoModal.value;
+
+          // Pada request pertama jangan menghapus kode kankas yang sudah dikirim
+          // dari row utama hanya karena option dropdown belum tersedia.
+          if (!options.preserveInitialKankas || kankasModal?.value) {
+              currentDetailParams.kode_kankas = kankasModal?.value || null;
           }
+          currentDetailParams.kode_ao = aoModal?.value || null;
           currentDetailParams.hitung_berdasarkan = getTipeSaldoRR();
-          currentDetailParams.status_bayar = document.getElementById('status_bayar_modal')?.value || 'all';
-          currentDetailParams.status_tunggakan = document.getElementById('status_tunggakan_modal')?.value || 'all';
+          currentDetailParams.status_bayar = 'all';
+          currentDetailParams.status_tunggakan = 'all';
           currentDetailParams.status_pembayaran = document.getElementById('status_pembayaran_modal')?.value || 'ALL';
+          currentDetailParams.search = document.getElementById('search_nasabah')?.value?.trim() || currentDetailParams.search || '';
 
-          const payload = { ...currentDetailParams, page: page };
-          const res = await apiCall(API_URL, payload);
-          if(res.status !== 200) throw new Error(res.message || 'Gagal memuat detail');
-          detailDataCache = res.data?.data || [];
-          const meta = res.data?.pagination || { total_records:0, total_pages:1 };
-
-          currentDetailPage = page; currentDetailTotalPages = meta.total_pages;
-
-          if(detailDataCache.length === 0) {
-              tb.innerHTML = `<tr><td colspan="17" class="py-20 text-center text-slate-500 italic text-xs md:text-base">Tidak ada data detail.</td></tr>`;
-              info.innerText = `0 Data`;
-          } else {
-              sortDetailCol = ''; sortDetailAsc = true;
-              renderModalHeaderRR();
-              renderTableDetailBodyRR(detailDataCache);
-
-              const start = ((page - 1) * detailLimit) + 1;
-              const end = Math.min(page * detailLimit, meta.total_records);
-              info.innerText = `Hal ${page} dari ${meta.total_pages} (${fmt(meta.total_records)} Data)`;
+          const payload = { ...currentDetailParams, page: Number(page) || 1, limit: detailLimit };
+          if (window.RR_DEBUG === true) {
+              console.log('[RR] detail payload', payload);
           }
-          document.getElementById('btnPrevRR').disabled = page <= 1;
-          document.getElementById('btnNextRR').disabled = page >= meta.total_pages;
-      } catch(err){ 
-          console.error(err); 
-          tb.innerHTML = `<tr><td colspan="17" class="py-16 text-center text-red-500 font-bold tracking-widest uppercase text-[10px] md:text-sm">Gagal memuat detail</td></tr>`;
-      } finally { l.classList.add('hidden'); }
+          const res = await apiCall(API_URL, payload);
+          const statusCode = Number(res?.status ?? 200);
+          if (statusCode !== 200) throw new Error(res?.message || 'Gagal memuat detail');
+
+          // Dukungan dua bentuk response API:
+          // {data:{data:[],pagination:{...}}} atau {data:[]}
+          const dataNode = res?.data;
+          const rows = Array.isArray(dataNode?.data)
+              ? dataNode.data
+              : (Array.isArray(dataNode) ? dataNode : []);
+          const pagination = dataNode?.pagination || {};
+          const detailSummary = dataNode?.grand_total || dataNode?.summary || dataNode?.total_summary || null;
+          const totalRecords = Number(pagination.total_records ?? pagination.total ?? rows.length ?? 0);
+          const totalPages = Math.max(1, Number(pagination.total_pages ?? pagination.last_page ?? 1));
+
+          detailDataCache = rows;
+          currentDetailPage = Number(page) || 1;
+          currentDetailTotalPages = totalPages;
+
+          renderModalHeaderRR();
+          renderRRDetailSummary(rows, totalRecords, detailSummary, currentDetailPage);
+
+          if (!rows.length) {
+              const colspan = currentMode === 'NORMAL' ? 19 : 10;
+              tb.innerHTML = `<tr><td colspan="${colspan}" class="py-20 px-4 text-center text-slate-500 italic text-xs md:text-sm">Tidak ada data detail untuk filter yang dipilih.</td></tr>`;
+              if (info) info.innerText = `0 Data`;
+          } else {
+              sortDetailCol = '';
+              sortDetailAsc = true;
+              renderTableDetailBodyRR(rows);
+              if (info) info.innerText = `Hal ${currentDetailPage} dari ${totalPages} (${fmt(totalRecords)} Data)`;
+          }
+
+          if (prev) prev.disabled = currentDetailPage <= 1;
+          if (next) next.disabled = currentDetailPage >= totalPages;
+      } catch (err) {
+          console.error('RR detail error:', err, currentDetailParams);
+          const colspan = currentMode === 'NORMAL' ? 19 : 10;
+          tb.innerHTML = `<tr><td colspan="${colspan}" class="py-16 px-4 text-center text-red-500 font-bold text-[10px] md:text-sm">Gagal memuat detail: ${attrRR(err?.message || 'Unknown error')}</td></tr>`;
+          if (info) info.innerText = 'Gagal memuat data';
+          if (prev) prev.disabled = true;
+          if (next) next.disabled = true;
+      } finally {
+          l?.classList.add('hidden');
+      }
   }
+  window.loadDetailPage = loadDetailPage;
 
   function getPaymentBadgeRR(r) {
       const code = r.status_pembayaran_code || '';
@@ -1090,6 +2367,7 @@
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-mono text-slate-500 text-[9px] md:text-sm">${r.kankas||'-'}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-center font-bold text-[9.5px] md:text-sm text-blue-700 truncate">${aoName}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-mono text-[9.5px] md:text-sm text-slate-500">${r.tgl_jatuh_tempo||'-'}</td>
+                    <td class="rr-col-date-pay px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-mono text-[9px] md:text-xs text-slate-600">${getTglBayarRR(r)}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center text-[9px] md:text-xs">${paymentBadge}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-right font-bold text-blue-700 bg-blue-50/20 text-[9.5px] md:text-sm">${fmt(r.trx_bulan_ini)}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-black text-[9.5px] md:text-sm ${hariFollowUp > 0 ? 'text-rose-600' : 'text-slate-500'}">${fmt(hariFollowUp)}</td>
@@ -1128,8 +2406,10 @@
       tb.innerHTML = h;
   }
 
-  async function downloadExcelFull() {
-      const btn = event.target.closest('button'); const txt = btn.innerHTML;
+  async function downloadExcelFull(evt) {
+      const btn = evt?.currentTarget || evt?.target?.closest('button');
+      if (!btn) return;
+      const txt = btn.innerHTML;
       btn.innerHTML = `<span class="animate-spin inline-block h-3.5 w-3.5 md:h-5 md:w-5 border-2 border-white border-t-transparent rounded-full md:mr-2"></span><span class="hidden md:inline">...</span>`;
       btn.disabled = true;
 
@@ -1144,8 +2424,8 @@
               kode_kankas: kankasModal,
               kode_ao: kodeAoVal,
               hitung_berdasarkan: getTipeSaldoRR(),
-              status_bayar: document.getElementById('status_bayar_modal')?.value || 'all',
-              status_tunggakan: document.getElementById('status_tunggakan_modal')?.value || 'all',
+              status_bayar: 'all',
+              status_tunggakan: 'all',
               status_pembayaran: document.getElementById('status_pembayaran_modal')?.value || 'ALL',
               page: 1,
               limit: 10000
@@ -1157,9 +2437,9 @@
 
           let csv = "";
           if(currentMode === 'NORMAL') {
-              csv = `No Rekening\tNama Nasabah\tAlamat\tNo HP\tKankas\tNama AO\tTgl JT\tStatus Pembayaran\tBayar Bulan Ini\tHari Telat\tHari Menunggak\tPlafond\tTarget (M-1)\tActual (Curr)\tTot Tunggakan\tDPD\tSaldo Tabungan\tStatus Tabungan\tStatus Tagih\n`;
+              csv = `No Rekening\tNama Nasabah\tAlamat\tNo HP\tKankas\tNama AO\tTgl JT\tTgl Bayar\tStatus Pembayaran\tBayar Bulan Ini\tHari Telat\tHari Menunggak\tPlafond\tTarget (M-1)\tActual (Curr)\tTot Tunggakan\tDPD\tSaldo Tabungan\tStatus Tabungan\tStatus Tagih\n`;
               rows.forEach(r => {
-                  csv += `'${r.no_rekening}\t${r.nama_nasabah}\t${r.alamat||''}\t'${r.no_hp||''}\t${r.kankas||''}\t${r.nama_ao}\t${r.tgl_jatuh_tempo}\t${r.status_pembayaran||''}\t${Math.round(r.trx_bulan_ini||0)}\t${r.hari_telat||0}\t${r.hari_menunggak_jt||0}\t${Math.round(r.jml_pinjaman)}\t${Math.round(r.os_m1)}\t${Math.round(r.os_curr)}\t${Math.round(r.totung)}\t${r.dpd_curr}\t${Math.round(r.tabungan)}\t${r.status_tabungan}\t${r.status_ket}\n`;
+                  csv += `'${r.no_rekening}\t${r.nama_nasabah}\t${r.alamat||''}\t'${r.no_hp||''}\t${r.kankas||''}\t${r.nama_ao}\t${r.tgl_jatuh_tempo}\t${getTglBayarRR(r)}\t${r.status_pembayaran||''}\t${Math.round(r.trx_bulan_ini||0)}\t${r.hari_telat||0}\t${r.hari_menunggak_jt||0}\t${Math.round(r.jml_pinjaman)}\t${Math.round(r.os_m1)}\t${Math.round(r.os_curr)}\t${Math.round(r.totung)}\t${r.dpd_curr}\t${Math.round(r.tabungan)}\t${r.status_tabungan}\t${r.status_ket}\n`;
               });
           } else {
               csv = `Nama Nasabah\tID Nasabah\tAlamat\tNama AO\tRek Lama\tPlafond Lama\tOS Lunas (M-1)\tStatus\tRek Baru\tPlafond Baru\tTgl Realisasi Baru\n`;
@@ -1180,6 +2460,9 @@
   }
 
   window.changePageDetail = (step) => { const n = currentDetailPage + step; if (n > 0 && n <= currentDetailTotalPages) loadDetailPage(n); }
-  window.closeModalRR = () => document.getElementById('modalDetailRR').classList.add('hidden');
-  document.addEventListener('keydown', e => { if(e.key === 'Escape') closeModalRR(); });
+  window.closeModalRR = () => {
+      document.getElementById('modalDetailRR')?.classList.add('hidden');
+      document.getElementById('loadingModalRR')?.classList.add('hidden');
+  };
+  document.addEventListener('keydown', e => { if(e.key === 'Escape') { closeModalRR(); closeRRInfo(); } });
 </script>

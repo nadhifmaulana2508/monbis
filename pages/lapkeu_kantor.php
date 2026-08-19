@@ -2863,6 +2863,389 @@
     }
   }
 
+
+
+  /* ========================================================
+     FINANCIAL HIERARCHY FIX V14
+     - Breakdown akun selalu menempel tepat di bawah parent.
+     - Level ditentukan dari parent terdekat yang benar, bukan panjang kode.
+     - Desktop/tablet/mobile tetap aman dan mudah dibaca.
+     ======================================================== */
+  #financialTableScroll {
+    position:relative;
+    scrollbar-gutter:stable;
+  }
+
+  #tabelLapKeu thead {
+    position:sticky;
+    top:0;
+    z-index:60;
+  }
+
+  #tabelLapKeu thead th {
+    position:sticky;
+    top:0;
+    z-index:61;
+    background:#f8fafc !important;
+    box-shadow:inset 0 -1px 0 #cbd5e1;
+  }
+
+  #tabelLapKeu tbody tr.financial-row {
+    transition:background-color .14s ease, box-shadow .14s ease;
+  }
+
+  #tabelLapKeu tbody tr.financial-row[data-parent="1"] {
+    cursor:pointer;
+  }
+
+  #tabelLapKeu .financial-name-wrap {
+    position:relative;
+    min-width:0;
+  }
+
+  #tabelLapKeu .financial-level-1 td:nth-child(2) {
+    box-shadow:inset 4px 0 0 #2563eb;
+  }
+
+  #tabelLapKeu .financial-level-2 td:nth-child(2) {
+    box-shadow:inset 3px 0 0 #94a3b8;
+  }
+
+  #tabelLapKeu .financial-level-3 td:nth-child(2) {
+    box-shadow:inset 2px 0 0 #cbd5e1;
+  }
+
+  #tabelLapKeu .financial-level-detail td:nth-child(2) {
+    box-shadow:inset 1px 0 0 #e2e8f0;
+  }
+
+  #tabelLapKeu tr[data-depth="1"] .financial-name,
+  #tabelLapKeu tr[data-depth="2"] .financial-name,
+  #tabelLapKeu tr[data-depth="3"] .financial-name {
+    font-weight:800;
+  }
+
+  #tabelLapKeu .caret {
+    border:1px solid transparent;
+  }
+
+  #tabelLapKeu tr[data-parent="1"]:hover .caret {
+    border-color:#dbeafe;
+    background:#eff6ff;
+  }
+
+  #tabelLapKeu tr[data-parent="1"]:focus-visible {
+    outline:2px solid #60a5fa;
+    outline-offset:-2px;
+  }
+
+  #tabelLapKeu tr[data-parent="1"]:focus-visible td {
+    background:#eff6ff !important;
+  }
+
+  .financial-tree-hint {
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    margin-left:6px;
+    color:#94a3b8;
+    font-size:7px;
+    font-weight:800;
+    white-space:nowrap;
+  }
+
+  @media (min-width:1280px) {
+    #tabelLapKeu .lap-code-col { width:74px !important; }
+    #tabelLapKeu .lap-value-col { width:142px !important; }
+    #tabelLapKeu .lap-pct-col { width:70px !important; }
+    #tabelLapKeu tbody td { font-size:10.5px !important; }
+    #tabelLapKeu .financial-amount { font-size:10.5px !important; }
+    #tabelLapKeu .financial-name { font-size:10.5px !important; }
+  }
+
+  @media (min-width:768px) and (max-width:1279px) {
+    #financialPanel { min-height:0; }
+    #financialTableScroll { overflow:auto !important; }
+    #tabelLapKeu {
+      min-width:760px !important;
+      width:100% !important;
+    }
+    #tabelLapKeu .lap-code-col { width:72px !important; }
+    #tabelLapKeu .lap-value-col { width:128px !important; }
+    #tabelLapKeu .lap-pct-col { width:68px !important; }
+  }
+
+  @media (max-width:767px) {
+    #financialPanel {
+      border-radius:9px !important;
+    }
+
+    .financial-toolbar {
+      grid-template-columns:minmax(0,1fr) minmax(0,auto) !important;
+      padding:5px 6px !important;
+    }
+
+    .financial-toolbar-main {
+      gap:5px !important;
+    }
+
+    .financial-toolbar-actions {
+      display:flex !important;
+      min-width:0;
+      gap:3px !important;
+    }
+
+    .financial-search-wrap {
+      width:min(128px,38vw) !important;
+      min-width:86px;
+    }
+
+    .financial-search {
+      width:100% !important;
+      height:28px !important;
+      padding:0 6px 0 25px !important;
+      font-size:8px !important;
+    }
+
+    .financial-search-wrap svg {
+      left:7px !important;
+      width:11px !important;
+      height:11px !important;
+    }
+
+    .financial-tool-btn {
+      width:28px !important;
+      min-width:28px !important;
+      height:28px !important;
+      border-radius:7px !important;
+    }
+
+    #financialTableScroll {
+      overflow:auto !important;
+      scrollbar-gutter:auto;
+    }
+
+    #tabelLapKeu {
+      width:100% !important;
+      min-width:540px !important;
+      table-layout:fixed !important;
+    }
+
+    #tabelLapKeu col:nth-child(2) { width:188px !important; }
+    #tabelLapKeu .lap-value-col { width:86px !important; }
+    #tabelLapKeu .lap-pct-col { width:52px !important; }
+
+    #tabelLapKeu thead th {
+      height:30px !important;
+      padding:5px !important;
+      font-size:7px !important;
+    }
+
+    #tabelLapKeu tbody tr { height:34px !important; }
+    #tabelLapKeu tbody td {
+      height:34px !important;
+      padding:5px !important;
+      font-size:8.2px !important;
+    }
+
+    #tabelLapKeu th:nth-child(2),
+    #tabelLapKeu td:nth-child(2) {
+      width:188px !important;
+      min-width:188px !important;
+      max-width:188px !important;
+    }
+
+    #tabelLapKeu .financial-name-wrap {
+      width:100%;
+      overflow:hidden;
+    }
+
+    #tabelLapKeu .financial-name {
+      display:block;
+      max-width:100%;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-size:8.3px !important;
+    }
+
+    #tabelLapKeu .financial-mobile-code {
+      margin-right:4px !important;
+      padding:2px 3px !important;
+      font-size:6.5px !important;
+    }
+
+    #tabelLapKeu .financial-amount-short {
+      font-size:8px !important;
+      letter-spacing:-.025em;
+    }
+
+    #tabelLapKeu .financial-pct {
+      font-size:7.5px !important;
+      letter-spacing:-.03em;
+    }
+
+    #tabelLapKeu .caret {
+      width:14px !important;
+      height:14px !important;
+      margin-right:2px !important;
+      font-size:6px !important;
+    }
+
+    #tabelLapKeu .financial-level-1 td:nth-child(2) {
+      box-shadow:inset 3px 0 0 #2563eb, 4px 0 8px -8px rgba(15,23,42,.8) !important;
+    }
+    #tabelLapKeu .financial-level-2 td:nth-child(2) {
+      box-shadow:inset 2px 0 0 #94a3b8, 4px 0 8px -8px rgba(15,23,42,.8) !important;
+    }
+
+    .financial-tree-hint { display:none; }
+  }
+
+  @media (max-width:380px) {
+    .financial-search-wrap { width:104px !important; }
+    #tabelLapKeu { min-width:510px !important; }
+    #tabelLapKeu col:nth-child(2),
+    #tabelLapKeu th:nth-child(2),
+    #tabelLapKeu td:nth-child(2) {
+      width:174px !important;
+      min-width:174px !important;
+      max-width:174px !important;
+    }
+    #tabelLapKeu .lap-value-col { width:82px !important; }
+    #tabelLapKeu .lap-pct-col { width:48px !important; }
+    #tabelLapKeu tbody td { padding:4px !important; }
+  }
+
+
+
+  /* ========================================================
+     TREN MINGGUAN - COMPACT METRIC DROPDOWN V15
+     Pilihan indikator memakai satu dropdown di semua device
+     agar toolbar tidak memakan ruang vertikal.
+     ======================================================== */
+  .weekly-chart-controls {
+    flex-wrap:nowrap !important;
+    align-items:center !important;
+    gap:6px !important;
+  }
+
+  .weekly-metric-select-wrap {
+    position:relative;
+    flex:0 1 176px;
+    width:176px;
+    min-width:132px;
+  }
+
+  .weekly-metric-select {
+    display:block;
+    width:100%;
+    height:36px;
+    min-width:0;
+    padding:0 32px 0 10px;
+    border:1px solid #dbe3ee;
+    border-radius:10px;
+    outline:none;
+    appearance:none;
+    -webkit-appearance:none;
+    background-color:#fff;
+    background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 9px center;
+    background-size:13px 13px;
+    color:#334155;
+    font-size:9.5px;
+    line-height:1;
+    font-weight:900;
+    text-overflow:ellipsis;
+    cursor:pointer;
+    box-shadow:0 1px 2px rgba(15,23,42,.035);
+    transition:border-color .15s ease,box-shadow .15s ease,background-color .15s ease;
+  }
+
+  .weekly-metric-select:hover {
+    border-color:#bfdbfe;
+    background-color:#fbfdff;
+  }
+
+  .weekly-metric-select:focus {
+    border-color:var(--chart-accent,#2563eb);
+    box-shadow:0 0 0 3px rgba(37,99,235,.10);
+  }
+
+  @media (min-width:768px) {
+    .weekly-chart-toolbar {
+      align-items:center !important;
+    }
+    .weekly-metric-select-wrap {
+      flex-basis:180px;
+      width:180px;
+    }
+  }
+
+  @media (max-width:767px) {
+    .weekly-chart-toolbar {
+      align-items:stretch !important;
+      flex-direction:column !important;
+      gap:6px !important;
+      padding:8px !important;
+    }
+
+    .weekly-chart-controls {
+      display:grid !important;
+      grid-template-columns:minmax(0,1fr) auto !important;
+      width:100% !important;
+      min-width:0 !important;
+      align-items:center !important;
+      justify-content:stretch !important;
+      gap:5px !important;
+    }
+
+    .weekly-metric-select-wrap {
+      width:100% !important;
+      min-width:0 !important;
+      max-width:none !important;
+    }
+
+    .weekly-metric-select {
+      width:100% !important;
+      height:30px !important;
+      padding-left:8px !important;
+      padding-right:25px !important;
+      border-radius:8px !important;
+      background-position:right 7px center !important;
+      background-size:11px 11px !important;
+      font-size:8.5px !important;
+    }
+
+    .weekly-mode-toggle {
+      height:30px !important;
+      min-width:68px;
+      padding:0 8px !important;
+      border-radius:8px !important;
+      font-size:8px !important;
+      justify-content:center;
+    }
+
+    .weekly-mode-toggle input {
+      width:13px !important;
+      height:13px !important;
+    }
+  }
+
+  @media (max-width:380px) {
+    .weekly-chart-controls {
+      grid-template-columns:minmax(0,1fr) 64px !important;
+      gap:4px !important;
+    }
+    .weekly-metric-select { font-size:8px !important; }
+    .weekly-mode-toggle {
+      min-width:64px;
+      padding:0 6px !important;
+      gap:5px !important;
+    }
+  }
+
 </style>
 
 <div id="lapkeuPage" class="max-w-[1920px] mx-auto px-2 md:px-4 py-2 md:py-4 h-[calc(100vh-10px)] flex flex-col space-y-2 md:space-y-4 bg-[#f8fafc]">
@@ -3275,34 +3658,178 @@
       }
   }
 
+
+  /* === HIERARKI AKUN: parent terdekat + pre-order === */
+  const financialCodeCollator = new Intl.Collator('id-ID', { numeric:true, sensitivity:'base' });
+  let financialHierarchyMeta = new Map();
+
+  function compareFinancialCode(a, b) {
+    const aa = String(a ?? '').trim();
+    const bb = String(b ?? '').trim();
+    if (!aa && bb) return 1;
+    if (aa && !bb) return -1;
+    return financialCodeCollator.compare(aa, bb);
+  }
+
+  function buildFinancialHierarchy(rows) {
+    const source = Array.isArray(rows) ? rows : [];
+    const indexed = source.map((row, index) => ({
+      row,
+      index,
+      code:String(row?.kode_perk ?? '').trim()
+    }));
+
+    const codeSet = new Set(indexed.filter(item => item.code).map(item => item.code));
+    const rowByCode = new Map();
+    indexed.forEach(item => {
+      if (item.code && !rowByCode.has(item.code)) rowByCode.set(item.code, item);
+    });
+
+    const parentByCode = new Map();
+    codeSet.forEach(code => {
+      let parentCode = '';
+      for (let length = code.length - 1; length >= 1; length--) {
+        const candidate = code.slice(0, length);
+        if (codeSet.has(candidate)) {
+          parentCode = candidate;
+          break;
+        }
+      }
+      parentByCode.set(code, parentCode);
+    });
+
+    const childrenByCode = new Map();
+    codeSet.forEach(code => childrenByCode.set(code, []));
+    const roots = [];
+    codeSet.forEach(code => {
+      const parentCode = parentByCode.get(code) || '';
+      if (parentCode && childrenByCode.has(parentCode)) childrenByCode.get(parentCode).push(code);
+      else roots.push(code);
+    });
+
+    roots.sort(compareFinancialCode);
+    childrenByCode.forEach(children => children.sort(compareFinancialCode));
+
+    financialHierarchyMeta = new Map();
+    const ordered = [];
+    const visited = new Set();
+
+    function walk(code, depth = 0, ancestors = []) {
+      if (visited.has(code)) return;
+      visited.add(code);
+      const item = rowByCode.get(code);
+      if (!item) return;
+
+      const parentCode = parentByCode.get(code) || '';
+      const children = childrenByCode.get(code) || [];
+      const path = [...ancestors, code];
+      financialHierarchyMeta.set(code, {
+        parentCode,
+        depth,
+        path,
+        hasChildren:children.length > 0,
+        children:[...children]
+      });
+      ordered.push(item.row);
+      children.forEach(child => walk(child, depth + 1, path));
+    }
+
+    roots.forEach(root => walk(root, 0, []));
+
+    // Baris tanpa kode atau duplikat kode tetap dipertahankan di bagian akhir.
+    indexed.forEach(item => {
+      if (!item.code || rowByCode.get(item.code)?.index !== item.index) ordered.push(item.row);
+    });
+
+    return ordered;
+  }
+
+  function financialRowMap() {
+    return new Map(
+      [...document.querySelectorAll('#lapBody tr.financial-row')]
+        .map(row => [row.dataset.kode || '', row])
+        .filter(([code]) => code)
+    );
+  }
+
+  function isFinancialRowVisibleByExpansion(row, rowMap) {
+    let parentCode = row.dataset.parentCode || '';
+    const visited = new Set();
+
+    while (parentCode) {
+      if (visited.has(parentCode)) return false;
+      visited.add(parentCode);
+      const parentRow = rowMap.get(parentCode);
+      if (!parentRow) return true;
+      const icon = parentRow.querySelector('.caret');
+      if (!icon?.classList.contains('rotate')) return false;
+      parentCode = parentRow.dataset.parentCode || '';
+    }
+    return true;
+  }
+
+  function syncFinancialHierarchyVisibility() {
+    const rows = [...document.querySelectorAll('#lapBody tr.financial-row')];
+    const rowMap = financialRowMap();
+    rows.forEach(row => {
+      row.classList.toggle('hidden-row', !isFinancialRowVisibleByExpansion(row, rowMap));
+    });
+  }
+
+  function financialAncestorCodes(row, rowMap) {
+    const result = [];
+    let parentCode = row?.dataset?.parentCode || '';
+    const visited = new Set();
+    while (parentCode && !visited.has(parentCode)) {
+      visited.add(parentCode);
+      result.push(parentCode);
+      parentCode = rowMap.get(parentCode)?.dataset?.parentCode || '';
+    }
+    return result;
+  }
+
+  function collapseFinancialDescendants(parentRow, allRows) {
+    const parentPath = parentRow?.dataset?.treePath || '';
+    if (!parentPath) return;
+    allRows.forEach(row => {
+      const path = row.dataset.treePath || '';
+      if (path.startsWith(`${parentPath}>`)) {
+        row.querySelector('.caret')?.classList.remove('rotate');
+      }
+    });
+  }
+
   function renderTable(data) {
     const tbody = document.getElementById('lapBody');
     const reportType = document.getElementById('type_report')?.value || '';
     const isNeraca = reportType.includes('neraca');
-    currentFinancialRows = Array.isArray(data) ? data : [];
+
+    // API kadang mengirim parent dahulu (1,2,3) lalu detail (101,102,...).
+    // Susun ulang menjadi pre-order agar breakdown selalu tepat di bawah parent.
+    currentFinancialRows = buildFinancialHierarchy(Array.isArray(data) ? data : []);
 
     const title = isNeraca ? 'Neraca Keuangan' : 'Laporan Laba Rugi';
     const toolbarTitle = document.getElementById('financialToolbarTitle');
     const toolbarMeta = document.getElementById('financialToolbarMeta');
     const search = document.getElementById('financialSearch');
     if (toolbarTitle) toolbarTitle.textContent = title;
-    if (toolbarMeta) toolbarMeta.textContent = `${currentFinancialRows.length} akun · Klik kelompok untuk membuka detail`;
+    if (toolbarMeta) toolbarMeta.innerHTML = `${currentFinancialRows.length} akun · Klik kelompok untuk membuka breakdown <span class="financial-tree-hint">Parent → Sub Akun</span>`;
     if (search) search.value = '';
 
-    const codeSet = new Set(currentFinancialRows.map(row => String(row?.kode_perk || '')));
-    const hasChildren = code => currentFinancialRows.some(row => {
-      const child = String(row?.kode_perk || '');
-      return child !== code && child.startsWith(code);
-    });
-
-    tbody.innerHTML = currentFinancialRows.map(d => {
-      const kode = String(d?.kode_perk || '');
-      const nama = safeText(d?.nama_perkiraan || '-');
-      const len = kode.length;
-      const parent = hasChildren(kode);
-      const levelClass = len === 1 ? 'financial-level-1' : (len === 2 ? 'financial-level-2' : (len === 3 ? 'financial-level-3' : 'financial-level-detail'));
-      const hiddenClass = len > 3 ? 'hidden-row' : '';
-      const indent = Math.min(46, Math.max(0, len - 1) * 7);
+    tbody.innerHTML = currentFinancialRows.map((d, index) => {
+      const kode = String(d?.kode_perk ?? '').trim();
+      const namaRaw = String(d?.nama_perkiraan || '-');
+      const nama = safeText(namaRaw);
+      const meta = financialHierarchyMeta.get(kode) || {
+        parentCode:'', depth:0, path:kode ? [kode] : [], hasChildren:false, children:[]
+      };
+      const depth = Math.max(0, Number(meta.depth || 0));
+      const parent = Boolean(meta.hasChildren);
+      const levelClass = depth === 0
+        ? 'financial-level-1'
+        : (depth === 1 ? 'financial-level-2' : (depth === 2 ? 'financial-level-3' : 'financial-level-detail'));
+      const hiddenClass = ''; // Default OPEN: seluruh breakdown langsung tampil
+      const indent = Math.min(64, depth * (window.innerWidth < 768 ? 10 : 14));
       const total = Number(d?.total_saldo || 0);
       const closing = Number(d?.closing_saldo || 0);
       const selisih = Number(d?.selisih_saldo ?? (total - closing));
@@ -3311,11 +3838,23 @@
       const closingClass = closing < 0 ? 'is-negative' : '';
       const diffClass = selisih > 0 ? 'is-positive' : (selisih < 0 ? 'is-negative' : '');
       const pctClass = growth > 0 ? 'is-positive' : (growth < 0 ? 'is-negative' : 'is-flat');
-      const parentIcon = parent ? '<span class="caret">▶</span>' : '<span class="caret" style="visibility:hidden">▶</span>';
+      const parentIcon = parent
+        ? '<span class="caret rotate" aria-hidden="true">▶</span>'
+        : '<span class="caret" aria-hidden="true" style="visibility:hidden">▶</span>';
       const parentBadge = parent ? '<span class="financial-parent-badge">Kelompok</span>' : '';
+      const treePath = (meta.path || [kode]).join('>');
+      const rowCode = kode || `__row_${index}`;
 
       return `
-        <tr class="financial-row ${levelClass} ${hiddenClass}" data-kode="${safeText(kode)}" data-len="${len}" data-parent="${parent ? '1' : '0'}" data-search="${safeText(`${kode} ${d?.nama_perkiraan || ''}`.toLowerCase())}" ${parent ? `onclick="toggleRow('${safeText(kode)}')"` : ''}>
+        <tr class="financial-row ${levelClass} ${hiddenClass}"
+            data-kode="${safeText(rowCode)}"
+            data-display-kode="${safeText(kode)}"
+            data-parent-code="${safeText(meta.parentCode || '')}"
+            data-tree-path="${safeText(treePath)}"
+            data-depth="${depth}"
+            data-parent="${parent ? '1' : '0'}"
+            data-search="${safeText(`${kode} ${namaRaw}`.toLowerCase())}"
+            ${parent ? `onclick="toggleRow('${safeText(rowCode)}')" tabindex="0" role="button" aria-expanded="true" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleRow('${safeText(rowCode)}')}"` : ''}>
           <td class="lap-code-col financial-code">${safeText(kode)}</td>
           <td>
             <div class="financial-name-wrap" style="padding-left:${indent}px">
@@ -3344,64 +3883,71 @@
       `;
     }).join('');
 
+    const empty = document.getElementById('financialEmptyState');
     if (!currentFinancialRows.length) {
-      document.getElementById('financialEmptyState').style.display = 'block';
+      if (empty) empty.style.display = 'block';
     } else {
-      document.getElementById('financialEmptyState').style.display = 'none';
+      if (empty) empty.style.display = 'none';
+      syncFinancialHierarchyVisibility();
+    }
+
+    const scroll = document.getElementById('financialTableScroll');
+    if (scroll) {
+      scroll.scrollTop = 0;
+      scroll.scrollLeft = 0;
     }
   }
 
   window.setFinancialExpansion = function(expand) {
-    const query = document.getElementById('financialSearch')?.value.trim() || '';
-    if (query) {
-      document.getElementById('financialSearch').value = '';
-    }
-    document.querySelectorAll('#lapBody tr.financial-row').forEach(row => {
-      const len = Number(row.dataset.len || 0);
-      row.classList.toggle('hidden-row', !expand && len > 3);
+    const search = document.getElementById('financialSearch');
+    if (search?.value.trim()) search.value = '';
+
+    const rows = [...document.querySelectorAll('#lapBody tr.financial-row')];
+    rows.forEach(row => {
       const icon = row.querySelector('.caret');
-      if (icon && row.dataset.parent === '1') icon.classList.toggle('rotate', expand);
+      if (icon && row.dataset.parent === '1') {
+        icon.classList.toggle('rotate', Boolean(expand));
+        row.setAttribute('aria-expanded', expand ? 'true' : 'false');
+      }
     });
-    filterFinancialRows();
+
+    syncFinancialHierarchyVisibility();
+    const empty = document.getElementById('financialEmptyState');
+    if (empty) empty.style.display = rows.length ? 'none' : 'block';
   };
 
   window.filterFinancialRows = function() {
     const input = document.getElementById('financialSearch');
     const query = String(input?.value || '').trim().toLowerCase();
     const rows = [...document.querySelectorAll('#lapBody tr.financial-row')];
+    const rowMap = financialRowMap();
     const empty = document.getElementById('financialEmptyState');
 
     if (!query) {
-      rows.forEach(row => {
-        const len = Number(row.dataset.len || 0);
-        const hasExpandedAncestor = [...rows].some(parent => {
-          if (parent.dataset.parent !== '1') return false;
-          const parentCode = parent.dataset.kode || '';
-          const rowCode = row.dataset.kode || '';
-          return rowCode !== parentCode && rowCode.startsWith(parentCode) && parent.querySelector('.caret')?.classList.contains('rotate');
-        });
-        row.classList.toggle('hidden-row', len > 3 && !hasExpandedAncestor);
-      });
+      syncFinancialHierarchyVisibility();
       if (empty) empty.style.display = rows.length ? 'none' : 'block';
       return;
     }
 
-    const matchedCodes = new Set();
+    const visibleCodes = new Set();
     rows.forEach(row => {
-      if ((row.dataset.search || '').includes(query)) matchedCodes.add(row.dataset.kode || '');
+      if ((row.dataset.search || '').includes(query)) {
+        const code = row.dataset.kode || '';
+        if (code) visibleCodes.add(code);
+        financialAncestorCodes(row, rowMap).forEach(parentCode => visibleCodes.add(parentCode));
+      }
     });
-    rows.forEach(parent => {
-      const parentCode = parent.dataset.kode || '';
-      if ([...matchedCodes].some(code => code.startsWith(parentCode))) matchedCodes.add(parentCode);
-    });
+
     let visible = 0;
     rows.forEach(row => {
-      const show = matchedCodes.has(row.dataset.kode || '');
+      const show = visibleCodes.has(row.dataset.kode || '');
       row.classList.toggle('hidden-row', !show);
       if (show) visible += 1;
     });
+
     if (empty) empty.style.display = visible ? 'none' : 'block';
   };
+
 
   function pctText(value) {
     return `${Number(value || 0).toFixed(2).replace('.', ',')}%`;
@@ -4590,10 +5136,13 @@
     const metric = configMap[metricKey] ? metricKey : 'aset_gabungan';
     weeklyTrendState.metric = metric;
     const config = configMap[metric];
-    document.querySelectorAll('.weekly-metric-tab').forEach(button => {
-      button.classList.toggle('active', button.dataset.metric === metric);
-      button.style.setProperty('--chart-accent', config.color);
-    });
+    const metricSelect = document.getElementById('weeklyMetricSelect');
+    if (metricSelect) {
+      metricSelect.value = metric;
+      metricSelect.style.setProperty('--chart-accent', config.color);
+    }
+    const chartShell = document.querySelector('#trendReport .weekly-chart-shell');
+    if (chartShell) chartShell.style.setProperty('--chart-accent', config.color);
     const canvas = document.getElementById('weeklyChartCanvas');
     if (canvas) canvas.innerHTML = buildWeeklyChartSvg(metric);
 
@@ -4697,13 +5246,15 @@
                 <div class="weekly-chart-sub">Pilih indikator untuk mengganti grafik · ${weeks.length} periode mingguan</div>
               </div>
               <div class="weekly-chart-controls">
+                <div class="weekly-metric-select-wrap">
+                  <select id="weeklyMetricSelect" class="weekly-metric-select" onchange="selectWeeklyMetric(this.value)" aria-label="Pilih indikator tren mingguan" title="Pilih indikator grafik">
+                    ${Object.entries(configs).map(([key,config]) => `<option value="${safeText(key)}" ${key === weeklyTrendState.metric ? 'selected' : ''}>${safeText(config.label)}</option>`).join('')}
+                  </select>
+                </div>
                 <label class="weekly-mode-toggle" title="Centang untuk tren nominal aktual. Hilangkan centang untuk tren selisih pekan.">
                   <input type="checkbox" ${weeklyTrendState.showActual ? 'checked' : ''} onchange="toggleWeeklyTrendMode(this.checked)">
                   <span>Aktual</span>
                 </label>
-                <div class="weekly-metric-tabs">
-                  ${Object.entries(configs).map(([key,config]) => `<button type="button" data-metric="${key}" class="weekly-metric-tab ${key === weeklyTrendState.metric ? 'active' : ''}" onclick="selectWeeklyMetric('${key}')">${safeText(config.label)}</button>`).join('')}
-                </div>
               </div>
             </div>
 
@@ -4741,6 +5292,7 @@
   window.toggleRow = function(parentKode) {
     const searchValue = document.getElementById('financialSearch')?.value.trim() || '';
     if (searchValue) return;
+
     const allRows = [...document.querySelectorAll('#lapBody tr.financial-row')];
     const clickedRow = allRows.find(row => row.dataset.kode === String(parentKode));
     const clickedIcon = clickedRow?.querySelector('.caret');
@@ -4748,21 +5300,24 @@
 
     const isOpening = !clickedIcon.classList.contains('rotate');
     clickedIcon.classList.toggle('rotate', isOpening);
-    const parentLen = Number(clickedRow.dataset.len || 0);
+    clickedRow.setAttribute('aria-expanded', isOpening ? 'true' : 'false');
 
-    allRows.forEach(row => {
-      const rowKode = row.dataset.kode || '';
-      if (!rowKode.startsWith(parentKode) || rowKode === parentKode) return;
-      if (!isOpening) {
-        row.classList.add('hidden-row');
-        row.querySelector('.caret')?.classList.remove('rotate');
-        return;
-      }
-      const rowLen = Number(row.dataset.len || 0);
-      if (rowLen <= parentLen + 2) row.classList.remove('hidden-row');
-    });
+    // Saat parent ditutup, seluruh turunan juga di-reset agar saat dibuka kembali
+    // hanya level anak langsung yang tampil. Ini mencegah baris "loncat".
+    if (!isOpening) {
+      collapseFinancialDescendants(clickedRow, allRows);
+      allRows.forEach(row => {
+        const parentPath = clickedRow.dataset.treePath || '';
+        const path = row.dataset.treePath || '';
+        if (parentPath && path.startsWith(`${parentPath}>`) && row.dataset.parent === '1') {
+          row.setAttribute('aria-expanded', 'false');
+        }
+      });
+    }
+
+    syncFinancialHierarchyVisibility();
   };
-  
+
   function renderSummary(data, type) {
     const container = document.getElementById('rekapContainer');
     if (!container) return;
