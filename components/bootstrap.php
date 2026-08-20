@@ -10,7 +10,7 @@ if (!function_exists('mb_ui_assets')) {
     function mb_ui_assets(string $base = '.'): void
     {
         $base = rtrim($base, '/');
-        echo '<link rel="stylesheet" href="' . mb_e($base . '/assets/css/monbis-components.css') . '?v=1">' . PHP_EOL;
-        echo '<script src="' . mb_e($base . '/assets/js/monbis-components.js') . '?v=1" defer></script>' . PHP_EOL;
+        echo '<link rel="stylesheet" href="' . mb_e($base . '/assets/css/monbis-components.css') . '?v=17">' . PHP_EOL;
+        echo '<script src="' . mb_e($base . '/assets/js/monbis-components.js') . '?v=17" defer></script>' . PHP_EOL;
     }
 }

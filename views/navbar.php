@@ -1,5 +1,623 @@
+<style id="monbisGlobalThemeStyle">
+  :root[data-monbis-theme="dark"] body { background:#0f172a; color:#e5e7eb; }
+  :root[data-monbis-theme="dark"] .bg-slate-50 { background-color:#0b1220 !important; }
+  :root[data-monbis-theme="dark"] .bg-white { background-color:#111827 !important; }
+  :root[data-monbis-theme="dark"] .border-slate-200,
+  :root[data-monbis-theme="dark"] .border-slate-100 { border-color:#334155 !important; }
+  :root[data-monbis-theme="dark"] .text-slate-800,
+  :root[data-monbis-theme="dark"] .text-slate-700 { color:#f8fafc !important; }
+  :root[data-monbis-theme="dark"] .text-slate-600,
+  :root[data-monbis-theme="dark"] .text-slate-500,
+  :root[data-monbis-theme="dark"] .text-slate-400 { color:#94a3b8 !important; }
+  :root[data-monbis-theme="dark"] .hover\:bg-slate-100:hover,
+  :root[data-monbis-theme="dark"] .hover\:bg-slate-50:hover { background-color:#1f2937 !important; }
+  :root[data-monbis-theme="dark"] .bg-blue-50 { background-color:#172554 !important; }
+  :root[data-monbis-theme="dark"] .shadow-sm,
+  :root[data-monbis-theme="dark"] .shadow-lg { box-shadow:0 14px 32px rgba(0,0,0,.35) !important; }
+  .monbis-theme-toggle {
+    display:none; align-items:center; justify-content:center;
+    width:36px; height:36px; border:1px solid #dbe3ee; border-radius:10px;
+    background:#fff; color:#475569; box-shadow:0 1px 2px rgba(15,23,42,.06);
+    transition:background .15s,border-color .15s,color .15s,transform .15s;
+  }
+  .monbis-theme-toggle:hover { transform:translateY(-1px); color:#2563eb; border-color:#bfdbfe; }
+  :root[data-monbis-theme="dark"] .monbis-theme-toggle { background:#0b1220; border-color:#475569; color:#cbd5e1; }
+  .monbis-theme-toggle .monbis-theme-icon-sun { display:none; }
+  :root[data-monbis-theme="dark"] .monbis-theme-toggle .monbis-theme-icon-moon { display:none; }
+  :root[data-monbis-theme="dark"] .monbis-theme-toggle .monbis-theme-icon-sun { display:block; }
+  :root {
+    --monbis-event-accent:#2563eb;
+    --monbis-event-header-bg:#ffffff;
+    --monbis-event-sidebar-bg:#ffffff;
+    --monbis-event-text:#0f172a;
+    --monbis-event-sidebar-text:#334155;
+    --monbis-event-border:#dbe3ee;
+    --monbis-event-font:Inter, system-ui, sans-serif;
+  }
+  :root[data-monbis-theme="dark"] {
+    --monbis-event-header-bg:#111827;
+    --monbis-event-sidebar-bg:#0f172a;
+    --monbis-event-text:#e5e7eb;
+    --monbis-event-sidebar-text:#cbd5e1;
+    --monbis-event-border:#334155;
+  }
+  body { font-family:var(--monbis-event-font); }
+  .monbis-app-shell {
+    background:
+      radial-gradient(circle at top left, rgba(37,99,235,.08), transparent 30%),
+      linear-gradient(180deg, #f8fafc 0%, #eef5fb 100%) !important;
+  }
+  #sidebar {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.94), rgba(248,250,252,.98)),
+      var(--monbis-event-sidebar-bg) !important;
+    border-color:var(--monbis-event-border) !important;
+    color:var(--monbis-event-sidebar-text);
+    box-shadow:16px 0 36px rgba(15,23,42,.08);
+  }
+  #sidebar > .h-16 {
+    height:68px;
+    padding-left:18px;
+    padding-right:14px;
+    border-color:rgba(148,163,184,.22) !important;
+  }
+  #sidebar > .h-16 img {
+    width:36px;
+    height:36px;
+    padding:4px;
+    border-radius:14px;
+    background:rgba(255,255,255,.86);
+    box-shadow:0 12px 24px rgba(15,23,42,.10);
+  }
+  #sidebar > .h-16 span {
+    font-size:20px;
+    font-weight:950;
+    letter-spacing:-.03em;
+  }
+  #sidebar nav {
+    padding:14px 10px 18px !important;
+    scrollbar-width:thin;
+  }
+  .monbis-sidebar-promo {
+    margin:10px;
+    min-height:78px;
+    border:1px solid rgba(148,163,184,.25);
+    border-radius:18px;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at top right, rgba(37,99,235,.18), transparent 38%),
+      linear-gradient(135deg, rgba(37,99,235,.10), rgba(14,165,233,.08));
+    color:var(--monbis-event-sidebar-text);
+    box-shadow:0 14px 26px rgba(15,23,42,.08);
+    flex-shrink:0;
+  }
+  .monbis-sidebar-promo__inner {
+    display:flex;
+    align-items:center;
+    gap:10px;
+    min-height:78px;
+    padding:12px;
+    background:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.18));
+  }
+  .monbis-sidebar-promo__spark {
+    width:34px;
+    height:34px;
+    border-radius:14px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    background:var(--monbis-event-accent);
+    box-shadow:0 10px 22px rgba(37,99,235,.25);
+    animation:monbisPulse 1.8s ease-in-out infinite;
+    flex:0 0 auto;
+  }
+  .monbis-sidebar-promo__text {
+    min-width:0;
+    opacity:1;
+    transition:opacity .2s ease;
+  }
+  .monbis-sidebar-promo__text strong {
+    display:block;
+    font-size:12px;
+    line-height:1.1;
+    font-weight:950;
+    letter-spacing:-.01em;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .monbis-sidebar-promo__text span {
+    display:block;
+    margin-top:3px;
+    font-size:10px;
+    line-height:1.2;
+    font-weight:800;
+    color:rgba(100,116,139,.88);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .monbis-sidebar-promo.has-image {
+    min-height:116px;
+    background-size:cover;
+    background-position:center;
+  }
+  .monbis-sidebar-promo.has-image .monbis-sidebar-promo__inner {
+    min-height:116px;
+    align-items:flex-end;
+    background:linear-gradient(180deg, rgba(15,23,42,.10), rgba(15,23,42,.78));
+    color:#fff;
+  }
+  .monbis-sidebar-promo.has-image .monbis-sidebar-promo__text span {
+    color:rgba(255,255,255,.76);
+  }
+  @keyframes monbisPulse {
+    0%,100% { transform:translateY(0) scale(1); }
+    50% { transform:translateY(-2px) scale(1.04); }
+  }
+  #sidebar .accordion-group {
+    margin:4px 0;
+  }
+  #sidebar .accordion-btn,
+  #sidebar nav > a {
+    position:relative;
+    min-height:46px;
+    border-radius:15px !important;
+    font-size:14px;
+    font-weight:720 !important;
+    letter-spacing:-.01em;
+    border:1px solid transparent;
+    transition:background .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease, transform .18s ease;
+  }
+  #sidebar .accordion-btn:hover,
+  #sidebar nav > a:hover {
+    transform:translateX(2px);
+    border-color:rgba(37,99,235,.14);
+    box-shadow:0 10px 22px rgba(15,23,42,.07);
+  }
+  #sidebar .accordion-btn > div > svg,
+  #sidebar nav > a > svg {
+    width:24px !important;
+    height:24px !important;
+    padding:4px;
+    border-radius:11px;
+    color:#64748b !important;
+    background:rgba(148,163,184,.10);
+    transition:background .18s ease, color .18s ease, box-shadow .18s ease;
+  }
+  #sidebar .accordion-btn > div > svg path,
+  #sidebar nav > a > svg path,
+  #sidebar .caret path {
+    stroke-width:1.7 !important;
+  }
+  #sidebar .accordion-btn:hover > div > svg,
+  #sidebar nav > a:hover > svg,
+  #sidebar .accordion-btn.is-active > div > svg,
+  #sidebar nav > a.is-active > svg,
+  #sidebar nav > a.bg-blue-50 > svg {
+    color:var(--monbis-event-accent) !important;
+    background:rgba(37,99,235,.09);
+    box-shadow:inset 0 0 0 1px rgba(37,99,235,.10);
+  }
+  #sidebar nav > a.is-active::before,
+  #sidebar nav > a.bg-blue-50::before,
+  #sidebar .accordion-btn.is-active::before {
+    content:"";
+    position:absolute;
+    left:6px;
+    top:12px;
+    bottom:12px;
+    width:3px;
+    border-radius:999px;
+    background:var(--monbis-event-accent);
+    box-shadow:0 0 0 4px rgba(37,99,235,.08);
+  }
+  #sidebar .accordion-content {
+    margin:4px 8px 8px 18px;
+    padding:6px 4px 6px 22px !important;
+    border-left:1px solid rgba(148,163,184,.28);
+  }
+  #sidebar .accordion-content a {
+    display:block;
+    min-height:32px;
+    padding:8px 10px !important;
+    border-radius:11px !important;
+    font-size:12px !important;
+    font-weight:680;
+    letter-spacing:-.005em;
+  }
+  #sidebar .accordion-content a.is-active {
+    color:var(--monbis-event-accent) !important;
+    background:rgba(37,99,235,.10) !important;
+  }
+  @media (min-width:768px) {
+    #sidebar {
+      width:78px !important;
+    }
+    #sidebar:hover {
+      width:278px !important;
+    }
+    #sidebar:not(:hover) .monbis-sidebar-promo {
+      min-height:54px;
+      border-radius:16px;
+    }
+    #sidebar:not(:hover) .monbis-sidebar-promo__inner {
+      min-height:54px;
+      justify-content:center;
+      padding:10px;
+    }
+    #sidebar:not(:hover) .monbis-sidebar-promo__text {
+      display:none;
+    }
+  }
+  #sidebar .accordion-btn,
+  #sidebar nav a,
+  #sidebar .text-slate-700,
+  #sidebar .text-slate-600,
+  #sidebar .text-slate-800 {
+    color:var(--monbis-event-sidebar-text) !important;
+  }
+  #sidebar nav a:hover,
+  #sidebar .accordion-btn:hover {
+    background:color-mix(in srgb, var(--monbis-event-accent) 10%, transparent) !important;
+    color:var(--monbis-event-accent) !important;
+  }
+  #sidebar nav a.bg-blue-50 {
+    background:color-mix(in srgb, var(--monbis-event-accent) 12%, white) !important;
+    color:var(--monbis-event-accent) !important;
+  }
+  #mainNavbar {
+    min-height:68px;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--monbis-event-header-bg) 92%, white), rgba(255,255,255,.92)) !important;
+    border-color:var(--monbis-event-border) !important;
+    color:var(--monbis-event-text);
+    box-shadow:0 14px 34px rgba(15,23,42,.07) !important;
+    backdrop-filter:blur(16px);
+  }
+  #mainNavbar .text-slate-800,
+  #mainNavbar .text-slate-700 { color:var(--monbis-event-text) !important; }
+  #btnToggleSidebar,
+  #mainNavbar button:not(#btnProfileMenu):not(#monbisThemeToggle) {
+    border-radius:12px;
+    transition:background .16s ease, color .16s ease, transform .16s ease, box-shadow .16s ease;
+  }
+  #btnToggleSidebar:hover,
+  #mainNavbar button:not(#btnProfileMenu):not(#monbisThemeToggle):hover {
+    background:rgba(37,99,235,.08);
+    color:var(--monbis-event-accent) !important;
+    transform:translateY(-1px);
+  }
+  #mainNavbar .border-l {
+    border-color:rgba(148,163,184,.28) !important;
+  }
+  #navUserName {
+    font-weight:900 !important;
+    letter-spacing:-.015em;
+  }
+  #navBranch {
+    font-weight:700;
+  }
+  #btnProfileMenu {
+    width:38px !important;
+    height:38px !important;
+    border-radius:14px !important;
+    background:linear-gradient(135deg, rgba(37,99,235,.12), rgba(14,165,233,.12)) !important;
+    color:var(--monbis-event-accent) !important;
+    border:1px solid rgba(37,99,235,.18) !important;
+    box-shadow:0 12px 24px rgba(37,99,235,.12) !important;
+  }
+  #btnProfileMenu:hover {
+    transform:translateY(-1px);
+    box-shadow:0 16px 28px rgba(37,99,235,.18) !important;
+  }
+  #dropdownProfileMenu {
+    width:190px !important;
+    border-radius:14px !important;
+    border-color:rgba(148,163,184,.24) !important;
+    box-shadow:0 22px 50px rgba(15,23,42,.16) !important;
+    overflow:hidden;
+  }
+  #dropdownProfileMenu a {
+    font-size:12px !important;
+    font-weight:850 !important;
+  }
+  .monbis-event-badge {
+    display:none;
+    align-items:center;
+    gap:8px;
+    min-width:0;
+    max-width:min(360px,38vw);
+    padding:6px 10px;
+    border:1px solid color-mix(in srgb, var(--monbis-event-accent) 35%, white);
+    border-radius:999px;
+    background:rgba(255,255,255,.72);
+    color:var(--monbis-event-text);
+    box-shadow:0 12px 26px rgba(15,23,42,.08);
+    backdrop-filter:blur(10px);
+  }
+  .monbis-event-badge.is-active { display:flex; }
+  .monbis-event-badge__image {
+    width:26px;
+    height:26px;
+    border-radius:999px;
+    object-fit:cover;
+    border:1px solid rgba(255,255,255,.7);
+    background:#fff;
+  }
+  .monbis-event-badge__title {
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:12px;
+    font-weight:900;
+    letter-spacing:.01em;
+  }
+  :root[data-monbis-theme="dark"] #mainNavbar {
+    background:linear-gradient(135deg, #111827, #0f172a) !important;
+    border-color:#334155 !important;
+  }
+  :root[data-monbis-theme="dark"] .monbis-app-shell {
+    background:
+      radial-gradient(circle at top left, rgba(37,99,235,.16), transparent 32%),
+      linear-gradient(180deg, #0b1220 0%, #0f172a 100%) !important;
+  }
+  :root[data-monbis-theme="dark"] #sidebar {
+    background:
+      linear-gradient(180deg, rgba(15,23,42,.96), rgba(2,6,23,.98)),
+      #0f172a !important;
+    border-color:#334155 !important;
+    color:#cbd5e1 !important;
+    box-shadow:16px 0 36px rgba(0,0,0,.32);
+  }
+  :root[data-monbis-theme="dark"] #sidebar .border-slate-200,
+  :root[data-monbis-theme="dark"] #sidebar .border-slate-100 {
+    border-color:#334155 !important;
+  }
+  :root[data-monbis-theme="dark"] #sidebar .accordion-btn,
+  :root[data-monbis-theme="dark"] #sidebar nav a,
+  :root[data-monbis-theme="dark"] #sidebar .text-slate-700,
+  :root[data-monbis-theme="dark"] #sidebar .text-slate-600,
+  :root[data-monbis-theme="dark"] #sidebar .text-slate-800 {
+    color:#cbd5e1 !important;
+  }
+  :root[data-monbis-theme="dark"] #sidebar nav a:hover,
+  :root[data-monbis-theme="dark"] #sidebar .accordion-btn:hover {
+    background:#1f2937 !important;
+    color:#93c5fd !important;
+  }
+  :root[data-monbis-theme="dark"] #sidebar nav a.bg-blue-50 {
+    background:#172554 !important;
+    color:#bfdbfe !important;
+  }
+  :root[data-monbis-theme="dark"] #sidebar .accordion-content {
+    border-left-color:rgba(71,85,105,.72);
+  }
+  :root[data-monbis-theme="dark"] .monbis-sidebar-promo {
+    background:
+      radial-gradient(circle at top right, rgba(59,130,246,.22), transparent 38%),
+      linear-gradient(135deg, rgba(15,23,42,.92), rgba(30,41,59,.92));
+    border-color:rgba(71,85,105,.75);
+  }
+  :root[data-monbis-theme="dark"] .monbis-sidebar-promo__inner {
+    background:linear-gradient(180deg, rgba(15,23,42,.44), rgba(15,23,42,.14));
+  }
+  :root[data-monbis-theme="dark"] .monbis-sidebar-promo__text span {
+    color:#94a3b8;
+  }
+  :root[data-monbis-theme="dark"] #sidebar .accordion-btn > div > svg,
+  :root[data-monbis-theme="dark"] #sidebar nav > a > svg {
+    color:#94a3b8 !important;
+    background:rgba(148,163,184,.12);
+  }
+  :root[data-monbis-theme="dark"] #sidebar svg.text-slate-400 {
+    color:#94a3b8 !important;
+  }
+  :root[data-monbis-theme="dark"] .monbis-event-badge {
+    background:rgba(15,23,42,.72);
+    border-color:#334155;
+  }
+  :root[data-monbis-theme="dark"] #dropdownProfileMenu {
+    background:#111827 !important;
+    border-color:#334155 !important;
+  }
+  :root[data-monbis-theme="dark"] #dropdownProfileMenu a {
+    color:#cbd5e1 !important;
+  }
+  :root[data-monbis-theme="dark"] #dropdownProfileMenu a:hover {
+    background:#1f2937 !important;
+    color:#93c5fd !important;
+  }
+  @media (max-width:767px) {
+    #mainNavbar {
+      min-height:56px;
+      height:56px !important;
+      padding-left:10px !important;
+      padding-right:10px !important;
+      gap:6px;
+    }
+    #btnToggleSidebar {
+      margin-right:6px !important;
+      padding:7px;
+      border:1px solid rgba(148,163,184,.25);
+      background:rgba(255,255,255,.45);
+    }
+    #mainNavbar .md\:hidden span {
+      max-width:84px;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+      font-size:13px !important;
+    }
+    #mainNavbar .flex.items-center.gap-4 {
+      gap:7px !important;
+    }
+    #mainNavbar .h-8.border-l,
+    #mainNavbar button.relative.text-slate-500 {
+      display:none !important;
+    }
+    .monbis-theme-toggle,
+    #btnProfileMenu {
+      width:34px !important;
+      height:34px !important;
+      border-radius:12px !important;
+      flex:0 0 auto;
+    }
+    .monbis-event-badge {
+      max-width:104px;
+      padding:4px 6px;
+      gap:5px;
+      margin-left:4px !important;
+    }
+    .monbis-event-badge__title { font-size:9px; max-width:70px; }
+    .monbis-event-badge__image { width:22px; height:22px; }
+    #sidebar {
+      width:min(82vw, 292px) !important;
+      box-shadow:24px 0 50px rgba(15,23,42,.22);
+    }
+    #sidebar > .h-16 {
+      height:60px;
+    }
+    #sidebar nav {
+      padding-bottom:10px !important;
+    }
+    .monbis-sidebar-promo {
+      margin:8px 10px 12px;
+    }
+  }
+</style>
+<script>
+  (function () {
+    const key = 'monbisTheme';
+    const root = document.documentElement;
+
+    function readUser() {
+      if (typeof window.getUser === 'function') {
+        const direct = window.getUser();
+        if (direct) return direct;
+      }
+      if (window.__USER) return window.__USER;
+      for (const storageKey of ['dpk_user', 'app_user', 'user']) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(storageKey) || 'null');
+          if (parsed) return parsed;
+        } catch (error) {}
+      }
+      return null;
+    }
+
+    function isOperasional(user) {
+      const values = [
+        user?.role,
+        user?.job_position,
+        user?.unit_kerja,
+        user?.division,
+        user?.divisi,
+        user?.department
+      ].map(value => String(value || '').toLowerCase());
+      return values.includes('dev') || values.some(value => value.includes('divisi operasional'));
+    }
+
+    function sync(user) {
+      const button = document.getElementById('monbisThemeToggle');
+      const allowed = isOperasional(user || readUser());
+      if (button) button.style.display = allowed ? 'inline-flex' : 'none';
+      if (!allowed) {
+        root.setAttribute('data-monbis-theme', 'light');
+        localStorage.setItem(key, 'light');
+        return;
+      }
+      const saved = localStorage.getItem(key) || 'light';
+      root.setAttribute('data-monbis-theme', saved === 'dark' ? 'dark' : 'light');
+    }
+
+    root.setAttribute('data-monbis-theme', 'light');
+    window.MonbisTheme = window.MonbisTheme || {};
+    window.MonbisTheme.sync = sync;
+    window.MonbisTheme.isOperasional = isOperasional;
+
+    document.addEventListener('click', function (event) {
+      const button = event.target.closest('#monbisThemeToggle');
+      if (!button) return;
+      if (!isOperasional(readUser())) {
+        sync(readUser());
+        return;
+      }
+      const next = root.getAttribute('data-monbis-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-monbis-theme', next);
+      localStorage.setItem(key, next);
+      document.dispatchEvent(new CustomEvent('monbis-theme-change', { detail:{ theme:next } }));
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      let tries = 0;
+      sync(readUser());
+      const timer = setInterval(() => {
+        tries += 1;
+        sync(readUser());
+        if (readUser() || tries >= 25) clearInterval(timer);
+      }, 200);
+    });
+  })();
+
+  (function () {
+    function readUser() {
+      if (typeof window.getUser === 'function') {
+        const direct = window.getUser();
+        if (direct) return direct;
+      }
+      for (const key of ['dpk_user', 'app_user', 'user']) {
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key) || 'null');
+          if (parsed) return parsed;
+        } catch (error) {}
+      }
+      return null;
+    }
+
+    function isOperasional(user) {
+      const fields = [
+        user?.job_position,
+        user?.unit_kerja,
+        user?.branch_name,
+        user?.role
+      ].map(value => String(value || '').toLowerCase());
+      return fields.some(value => value.includes('divisi operasional')) || fields.includes('dev');
+    }
+
+    function resolvePegId(user) {
+      const keys = ['id_peg', 'idPeg', 'id_pegawai', 'idPegawai', 'employee_id'];
+      for (const key of keys) {
+        const value = String(user?.[key] || '').trim();
+        if (value === '102-119') return value;
+      }
+      return '';
+    }
+
+    function applyDevMenuVisibility() {
+      const menu = document.getElementById('menuDevReport');
+      const adminMenu = document.getElementById('menuEventAdmin');
+      const user = readUser();
+      if (menu) menu.style.display = user && isOperasional(user) ? 'block' : 'none';
+      if (adminMenu) adminMenu.style.setProperty('display', user && resolvePegId(user) === '102-119' ? 'block' : 'none', 'important');
+      return !!user;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      let tries = 0;
+      applyDevMenuVisibility();
+      const timer = setInterval(() => {
+        tries += 1;
+        if (applyDevMenuVisibility() || tries >= 25) clearInterval(timer);
+      }, 200);
+    });
+  })();
+</script>
+
 <!-- Wrapper Utama: Full Screen -->
-<div class="flex h-screen bg-slate-50 font-sans overflow-hidden relative">
+<div class="monbis-app-shell flex h-screen bg-slate-50 font-sans overflow-hidden relative">
 
   <!-- ================= OVERLAY MOBILE SIDEBAR ================= -->
   <!-- z-[90] di atas tabel, di bawah sidebar -->
@@ -20,7 +638,7 @@
       
       <!-- Menu Single -->
       <a href="dashboard" class="flex items-center px-3 py-2.5 text-blue-600 bg-blue-50 rounded-lg font-medium transition-colors whitespace-nowrap">
-        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 001 1m-6 0h6"></path></svg>
+        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5.5A1.5 1.5 0 015.5 4h13A1.5 1.5 0 0120 5.5v13a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 18.5v-13zM8 16V9m4 7v-4m4 4V7"></path></svg>
         <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Dashboard</span>
       </a>
 
@@ -28,7 +646,7 @@
       <div class="accordion-group">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
-            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20a8 8 0 100-16 8 8 0 000 16zM12 7v5l3 2M5 19l3-3m11 3l-3-3"></path></svg>
             <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Pemasaran</span>
           </div>
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -125,7 +743,7 @@
           <a href="prospek" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Pipelane Prospek</a>
         </div>
       </div>
-
+      
       <!-- Parent Layanan Digital (Khusus Dev) -->
       <div id="menuLayananDigital" class="accordion-group" style="display: none;">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
@@ -142,7 +760,47 @@
           <a href="qris_merchant" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">QRIS Merchant</a>
         </div>
       </div>
+
+            <!-- Parent Dev Report (Khusus Divisi Operasional) -->
+      <div id="menuDevReport" class="accordion-group" style="display: none;">
+        <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
+          <div class="flex items-center shrink-0">
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20h4M4 7h16M5 7l2 13h10l2-13M9 7V4h6v3"></path></svg>
+            <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Dev Report</span>
+          </div>
+          <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+        <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
+          <a href="report_npl" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report NPL UI</a>
+          <a href="report_recovery_npl" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Recovery NPL</a>
+        </div>
+      </div>
+
+      <!-- Parent Admin Event (Khusus id_peg 102-119) -->
+      <div id="menuEventAdmin" class="accordion-group" style="display: none;">
+        <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
+          <div class="flex items-center shrink-0">
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4h10a2 2 0 012 2v3.5a2 2 0 01-.586 1.414l-5.5 5.5a2 2 0 01-2.828 0l-4.5-4.5A2 2 0 015 10.5V6a2 2 0 012-2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8h.01M4 20h16"></path></svg>
+            <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Admin</span>
+          </div>
+          <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+        <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
+          <a href="event_theme_admin" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Setting Event</a>
+        </div>
+      </div>
     </nav>
+    <div id="monbisSidebarPromo" class="monbis-sidebar-promo">
+      <div class="monbis-sidebar-promo__inner">
+        <div class="monbis-sidebar-promo__spark" aria-hidden="true">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+        </div>
+        <div class="monbis-sidebar-promo__text">
+          <strong>Semangat kerja</strong>
+          <span>Data rapi, keputusan cepat</span>
+        </div>
+      </div>
+    </div>
   </aside>
 
   <!-- ================= KONTEN KANAN ================= -->
@@ -150,7 +808,7 @@
     
     <!-- HEADER ATAS KONTEN -->
     <!-- z-[80] biar Navbar Header aman nutupin konten, tapi di bawah Overlay & Sidebar -->
-    <header class="h-16 bg-white border-b border-slate-200 flex items-center px-4 sm:px-6 z-[80] shadow-sm shrink-0">
+    <header id="mainNavbar" class="h-16 bg-white border-b border-slate-200 flex items-center px-4 sm:px-6 z-[80] shadow-sm shrink-0">
       
       <!-- Tombol Hamburger Mobile -->
       <button id="btnToggleSidebar" class="md:hidden text-slate-500 hover:text-slate-800 focus:outline-none mr-3">
@@ -163,10 +821,20 @@
         <span class="text-slate-800 text-lg font-bold tracking-tight">Monbis</span>
       </div>
 
+      <div id="monbisEventBadge" class="monbis-event-badge ml-2 sm:ml-0" title="">
+        <img id="monbisEventImage" class="monbis-event-badge__image hidden" alt="Event">
+        <span id="monbisEventTitle" class="monbis-event-badge__title"></span>
+      </div>
+
       <div class="flex-1"></div>
       
       <!-- Area Lonceng & Profile -->
       <div class="flex items-center gap-4 sm:gap-6 ml-auto">
+        <button id="monbisThemeToggle" type="button" class="monbis-theme-toggle" title="Ganti mode terang / gelap" aria-label="Ganti mode terang / gelap">
+          <svg class="monbis-theme-icon-moon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path></svg>
+          <svg class="monbis-theme-icon-sun w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364-1.414 1.414M7.05 16.95l-1.414 1.414m12.728 0-1.414-1.414M7.05 7.05 5.636 5.636M12 8a4 4 0 100 8 4 4 0 000-8z"></path></svg>
+        </button>
+
         <button class="relative text-slate-500 hover:text-slate-800 transition-colors">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
           <span class="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white bg-red-500"></span>

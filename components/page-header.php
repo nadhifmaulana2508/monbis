@@ -10,9 +10,10 @@ if (!function_exists('mb_render_field')) {
         $class = trim('mb-field-control ' . ($field['class'] ?? ''));
         $style = !empty($field['width']) ? 'min-width:' . $field['width'] . ';width:' . $field['width'] . ';' : '';
         $attrs = $field['attrs'] ?? [];
-        if ($style) $attrs['style'] = ($attrs['style'] ?? '') . $style;
+        $fieldAttrs = [];
+        if ($style) $fieldAttrs['style'] = $style;
 
-        echo '<label class="mb-field">';
+        echo '<label class="mb-field"' . mb_attrs($fieldAttrs) . '>';
         echo '<span class="mb-field-label">' . mb_e($label) . '</span>';
 
         if ($type === 'select') {

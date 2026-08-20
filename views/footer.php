@@ -35,6 +35,15 @@
         return null;
     };
 
+    function monbisResolvePegId(user) {
+        const keys = ['id_peg', 'idPeg', 'id_pegawai', 'idPegawai', 'employee_id'];
+        for (const key of keys) {
+            const value = String(user?.[key] || '').trim();
+            if (value === '102-119') return value;
+        }
+        return '';
+    }
+
     // --- 1. SCRIPT HELPDESK ---
     let isExpanded = false;
     function handleHelpdeskClick() {
@@ -79,6 +88,26 @@
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('sidebarOverlay');
       const btnToggle = document.getElementById('btnToggleSidebar');
+
+      function markActiveSidebarMenu() {
+        const current = (window.location.pathname.split('/').pop() || 'dashboard').replace(/\/+$/, '');
+        const links = document.querySelectorAll('#sidebar nav a[href]');
+        links.forEach(link => {
+          const href = (link.getAttribute('href') || '').replace(/^\.?\//, '').replace(/\/+$/, '');
+          const isActive = href === current || (!current && href === 'dashboard');
+          link.classList.toggle('is-active', isActive);
+          if (!isActive) {
+            link.classList.remove('bg-blue-50', 'text-blue-600');
+          }
+          if (isActive) {
+            const group = link.closest('.accordion-group');
+            const button = group?.querySelector('.accordion-btn');
+            button?.classList.add('is-active');
+          }
+        });
+      }
+
+      markActiveSidebarMenu();
 
       accordions.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -141,7 +170,8 @@
                   br = document.getElementById('navBranch'),
                   acc = document.getElementById('accHandle'),
                   menuMonevDev = document.getElementById('menuMonevDev'),
-                  menuLayananDigital = document.getElementById('menuLayananDigital');
+                  menuLayananDigital = document.getElementById('menuLayananDigital'),
+                  menuEventAdmin = document.getElementById('menuEventAdmin');
 
             if (name) name.textContent = u.full_name || u.nama || '-';
             if (br) br.textContent = u.branch_name || u.unit_kerja || '-';
@@ -154,6 +184,11 @@
             if (menuLayananDigital) {
                 menuLayananDigital.style.setProperty('display', isDev ? 'block' : 'none', 'important');
             }
+            if (menuEventAdmin) {
+                const isEventAdmin = monbisResolvePegId(u) > 0;
+                menuEventAdmin.style.setProperty('display', isEventAdmin ? 'block' : 'none', 'important');
+            }
+            window.MonbisTheme?.sync?.(u);
             return true;
         }
 
@@ -219,4 +254,119 @@
         const baseApp = window.BASE_APP || window.location.origin + (window.location.pathname.startsWith('/report-dpk') ? '/report-dpk' : '');
         window.location.href = baseApp + '/login';
     }
+
+    // --- 6. EVENT THEME NAVBAR & SIDEBAR ---
+    (function () {
+        const API_EVENT_ACTIVE = './api/event_theme/active';
+        const root = document.documentElement;
+        let currentTheme = null;
+
+        function assetUrl(path) {
+            if (!path) return '';
+            if (/^https?:\/\//i.test(path)) return path;
+            return './' + String(path).replace(/^\.?\//, '');
+        }
+
+        function applyTheme(theme) {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarPromo = document.getElementById('monbisSidebarPromo');
+            const badge = document.getElementById('monbisEventBadge');
+            const badgeTitle = document.getElementById('monbisEventTitle');
+            const badgeImage = document.getElementById('monbisEventImage');
+            const isDark = root.getAttribute('data-monbis-theme') === 'dark';
+            currentTheme = theme || null;
+
+            if (!theme) {
+                root.style.removeProperty('--monbis-event-accent');
+                root.style.removeProperty('--monbis-event-header-bg');
+                root.style.removeProperty('--monbis-event-sidebar-bg');
+                root.style.removeProperty('--monbis-event-text');
+                root.style.removeProperty('--monbis-event-sidebar-text');
+                root.style.removeProperty('--monbis-event-font');
+                if (sidebar) sidebar.style.backgroundImage = '';
+                if (sidebarPromo) {
+                    sidebarPromo.style.backgroundImage = '';
+                    sidebarPromo.classList.remove('has-image');
+                    const title = sidebarPromo.querySelector('strong');
+                    const desc = sidebarPromo.querySelector('span');
+                    if (title) title.textContent = 'Semangat kerja';
+                    if (desc) desc.textContent = 'Data rapi, keputusan cepat';
+                }
+                badge?.classList.remove('is-active');
+                return;
+            }
+
+            root.style.setProperty('--monbis-event-accent', theme.accent_color || '#2563eb');
+            root.style.setProperty('--monbis-event-header-bg', isDark ? '#111827' : (theme.header_bg || '#ffffff'));
+            root.style.setProperty('--monbis-event-sidebar-bg', isDark ? '#0f172a' : (theme.sidebar_bg || '#ffffff'));
+            root.style.setProperty('--monbis-event-text', isDark ? '#e5e7eb' : (theme.text_color || '#0f172a'));
+            root.style.setProperty('--monbis-event-sidebar-text', isDark ? '#cbd5e1' : (theme.sidebar_text || '#334155'));
+            root.style.setProperty('--monbis-event-font', theme.font_family || 'Inter, system-ui, sans-serif');
+
+            const img = assetUrl(theme.image_path);
+            if (sidebar && img) {
+                const shade = isDark ? 'rgba(15,23,42,.9), rgba(15,23,42,.96)' : 'rgba(255,255,255,.88), rgba(255,255,255,.96)';
+                sidebar.style.backgroundImage = `linear-gradient(180deg, ${shade}), url("${img}")`;
+                sidebar.style.backgroundSize = 'cover';
+                sidebar.style.backgroundPosition = 'center bottom';
+            } else if (sidebar) {
+                sidebar.style.backgroundImage = '';
+            }
+            if (sidebarPromo) {
+                if (img) {
+                    sidebarPromo.style.backgroundImage = `url("${img}")`;
+                    sidebarPromo.style.backgroundSize = theme.image_fit || 'cover';
+                    sidebarPromo.style.backgroundPosition = theme.image_position || 'center';
+                    sidebarPromo.style.backgroundRepeat = 'no-repeat';
+                    sidebarPromo.classList.add('has-image');
+                } else {
+                    sidebarPromo.style.backgroundImage = '';
+                    sidebarPromo.style.backgroundSize = '';
+                    sidebarPromo.style.backgroundPosition = '';
+                    sidebarPromo.style.backgroundRepeat = '';
+                    sidebarPromo.classList.remove('has-image');
+                }
+                const title = sidebarPromo.querySelector('strong');
+                const desc = sidebarPromo.querySelector('span');
+                if (title) title.textContent = theme.event_name || 'Event Monbis';
+                if (desc) desc.textContent = img ? 'Tema event aktif' : 'Data rapi, keputusan cepat';
+            }
+
+            if (badge && badgeTitle) {
+                badgeTitle.textContent = theme.event_name || 'Event Monbis';
+                badge.title = theme.event_name || '';
+                badge.classList.add('is-active');
+            }
+            if (badgeImage) {
+                if (img) {
+                    badgeImage.src = img;
+                    badgeImage.classList.remove('hidden');
+                } else {
+                    badgeImage.removeAttribute('src');
+                    badgeImage.classList.add('hidden');
+                }
+            }
+        }
+
+        async function refreshEventTheme() {
+            try {
+                const res = await fetch(API_EVENT_ACTIVE, { cache:'no-store' });
+                const json = await res.json();
+                applyTheme(json && json.status === 200 ? json.data : null);
+            } catch (error) {
+                console.warn('Gagal memuat event theme:', error);
+            }
+        }
+
+        window.MonbisEventTheme = window.MonbisEventTheme || {};
+        window.MonbisEventTheme.refresh = refreshEventTheme;
+        window.MonbisEventTheme.apply = applyTheme;
+        document.addEventListener('monbis-theme-change', () => applyTheme(currentTheme));
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', refreshEventTheme);
+        } else {
+            refreshEventTheme();
+        }
+    })();
 </script>

@@ -53,6 +53,48 @@
       el.classList.toggle('is-hidden', !show);
     },
 
+    debounce(fn, delay = 350) {
+      let timer = null;
+      return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), delay);
+      };
+    },
+
+    async postJson(url, payload, options = {}) {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
+        body: JSON.stringify(payload || {}),
+        signal: options.signal
+      });
+      const text = await response.text();
+      let json = {};
+      try { json = text ? JSON.parse(text) : {}; } catch (error) {
+        throw new Error('Response bukan JSON: ' + text.slice(0, 120));
+      }
+      if (!response.ok) throw new Error(json.message || ('HTTP ' + response.status));
+      return json;
+    },
+
+    fmt(value) {
+      const num = Number(value || 0);
+      return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(num);
+    },
+
+    fmt2(value) {
+      const num = Number(value || 0);
+      return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(num);
+    },
+
+    signed(value, formatter) {
+      const num = Number(value || 0);
+      const fmt = formatter || this.fmt.bind(this);
+      if (num > 0) return '+' + fmt(num);
+      if (num < 0) return '-' + fmt(Math.abs(num));
+      return fmt(0);
+    },
+
     renderSummary(id, cards) {
       const el = document.getElementById(id);
       if (!el) return;

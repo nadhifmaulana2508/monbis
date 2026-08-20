@@ -94,6 +94,9 @@ switch ($endpoint) {
     case 'pipelane_monitoring_kredit':
         require __DIR__ . '/routes/pipelane_monitoring_kredit.php';
         break;
+    case 'event_theme':
+        require __DIR__ . '/routes/event_theme.php';
+        break;
 
     default:
         sendResponse(404, "Endpoint tidak ditemukan");
