@@ -4478,12 +4478,17 @@
       ratioRow('Aset Likuid', liquid, 'liquid')
     ];
 
+    const kreditBakiDebet = Number(detail?.kredit_diberikan?.baki_debet || 0);
+    const eirSaldoBank = Number(detail?.kredit_diberikan?.saldo_bank_ead || 0);
+    const saldoBankKredit = kreditBakiDebet + eirSaldoBank;
+
     const fundingRows = [
       ['Dana masyarakat', { value:`Rp ${fmtSingkat(detail?.dana_masyarakat?.total)}` }, 'Basis pendanaan utama'],
       ['Tabungan', { value:`Rp ${fmtSingkat(detail?.dana_masyarakat?.tabungan)}` }, `Kontributor CASA · ${pctText(casa)}`],
       ['Deposito', { value:`Rp ${fmtSingkat(detail?.dana_masyarakat?.deposito)}` }, 'Pantau biaya dana dan konsentrasi deposan'],
+      ['Saldo Bank', { value:`Rp ${fmtSingkat(saldoBankKredit)}` }, 'Kredit baki debet + EIR'],
       ['Kredit baki debet', { value:`Rp ${fmtSingkat(detail?.kredit_diberikan?.baki_debet)}` }, `Produktivitas dana · LDR ${pctText(ldr)}`],
-      ['Saldo bank/EAD', { value:`Rp ${fmtSingkat(detail?.kredit_diberikan?.saldo_bank_ead)}` }, 'Eksposur kredit untuk monitoring risiko']
+      ['EIR', { value:`Rp ${fmtSingkat(eirSaldoBank)}` }, 'Selisih flat dan EIR']
     ];
 
     const riskRows = [
@@ -4934,8 +4939,9 @@
       {
         title:'Kredit & Penempatan',
         rows:[
+          ['Saldo Bank', (Number(detail.kredit_diberikan?.baki_debet || 0) + Number(detail.kredit_diberikan?.saldo_bank_ead || 0))],
           ['Kredit Baki Debet', detail.kredit_diberikan?.baki_debet],
-          ['Saldo Bank EAD', detail.kredit_diberikan?.saldo_bank_ead],
+          ['EIR', detail.kredit_diberikan?.saldo_bank_ead],
           ['PPBL', detail.ppbl],
         ]
       },

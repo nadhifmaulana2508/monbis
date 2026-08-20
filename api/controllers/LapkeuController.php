@@ -505,6 +505,9 @@ class LaporanKeuanganController
                     ah.kode_kantor,
                     COALESCE(kk.nama_kantor, CONCAT('Kc. ', ah.kode_kantor)) AS nama_kantor,
                     SUM(CASE WHEN ah.kode_perk IN ($assetIn) THEN ah.saldo_akhir ELSE 0 END) AS aset,
+                    SUM(CASE WHEN ah.kode_perk = '10601' THEN ah.saldo_akhir ELSE 0 END) AS kredit,
+                    SUM(CASE WHEN ah.kode_perk = '20401' THEN ah.saldo_akhir ELSE 0 END) AS tabungan,
+                    SUM(CASE WHEN ah.kode_perk = '20402' THEN ah.saldo_akhir ELSE 0 END) AS deposito,
                     SUM(CASE WHEN ah.kode_perk = '210' THEN ah.saldo_akhir ELSE 0 END) AS eliminasi_210,
                     SUM(CASE WHEN ah.kode_perk = '2' THEN ah.saldo_akhir ELSE 0 END) AS liabilitas,
                     SUM(CASE WHEN ah.kode_perk = '3' THEN ah.saldo_akhir ELSE 0 END) AS ekuitas,
@@ -516,7 +519,7 @@ class LaporanKeuanganController
                   $sqlKantor
                   AND (
                     ah.kode_perk IN ($assetIn)
-                    OR ah.kode_perk IN ('2','3','4','5','210')
+                    OR ah.kode_perk IN ('2','3','4','5','210','20401','20402')
                   )
                 GROUP BY ah.kode_kantor, kk.nama_kantor
                 ORDER BY ah.kode_kantor ASC
@@ -529,6 +532,9 @@ class LaporanKeuanganController
             $rows = [];
             $total = [
                 'aset' => 0.0,
+                'kredit' => 0.0,
+                'tabungan' => 0.0,
+                'deposito' => 0.0,
                 'liabilitas' => 0.0,
                 'ekuitas' => 0.0,
                 'pendapatan' => 0.0,
@@ -539,6 +545,9 @@ class LaporanKeuanganController
 
             foreach ($results as $row) {
                 $aset = (float)($row['aset'] ?? 0);
+                $kredit = (float)($row['kredit'] ?? 0);
+                $tabungan = (float)($row['tabungan'] ?? 0);
+                $deposito = (float)($row['deposito'] ?? 0);
                 $liabilitas = (float)($row['liabilitas'] ?? 0);
                 $ekuitas = (float)($row['ekuitas'] ?? 0);
                 $pendapatan = (float)($row['pendapatan'] ?? 0);
@@ -550,6 +559,9 @@ class LaporanKeuanganController
                     'kode_kantor' => str_pad((string)($row['kode_kantor'] ?? ''), 3, '0', STR_PAD_LEFT),
                     'nama_kantor' => (string)($row['nama_kantor'] ?? ''),
                     'aset' => $aset,
+                    'kredit' => $kredit,
+                    'tabungan' => $tabungan,
+                    'deposito' => $deposito,
                     'liabilitas' => $liabilitas,
                     'ekuitas' => $ekuitas,
                     'pendapatan' => $pendapatan,
@@ -559,6 +571,9 @@ class LaporanKeuanganController
                 ];
 
                 $total['aset'] += $aset;
+                $total['kredit'] += $kredit;
+                $total['tabungan'] += $tabungan;
+                $total['deposito'] += $deposito;
                 $total['liabilitas'] += $liabilitas;
                 $total['ekuitas'] += $ekuitas;
                 $total['pendapatan'] += $pendapatan;

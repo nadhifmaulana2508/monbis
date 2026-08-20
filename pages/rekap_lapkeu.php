@@ -62,21 +62,25 @@
           <col class="rl-col-office">
           <col class="rl-col-money"><col class="rl-col-money"><col class="rl-col-money">
           <col class="rl-col-money"><col class="rl-col-money"><col class="rl-col-money">
+          <col class="rl-col-money"><col class="rl-col-money"><col class="rl-col-money">
         </colgroup>
         <thead>
           <tr>
-            <th class="rl-sticky-code">Kode</th>
-            <th class="rl-sticky-office">Kantor</th>
-            <th>Aset</th>
-            <th>Liabilitas</th>
-            <th>Ekuitas</th>
-            <th>Pendapatan</th>
-            <th>Beban</th>
-            <th>Laba Kotor</th>
+            <th class="rl-sticky-code rl-sortable" data-sort="kode_kantor">Kode</th>
+            <th class="rl-sticky-office rl-sortable" data-sort="nama_kantor">Kantor</th>
+            <th class="rl-sortable" data-sort="aset">Aset</th>
+            <th class="rl-sortable" data-sort="kredit">Kredit</th>
+            <th class="rl-sortable" data-sort="tabungan">Tabungan</th>
+            <th class="rl-sortable" data-sort="deposito">Deposito</th>
+            <th class="rl-sortable" data-sort="liabilitas">Liabilitas</th>
+            <th class="rl-sortable" data-sort="ekuitas">Ekuitas</th>
+            <th class="rl-sortable" data-sort="pendapatan">Pendapatan</th>
+            <th class="rl-sortable" data-sort="beban">Beban</th>
+            <th class="rl-sortable" data-sort="laba_kotor">Laba Kotor</th>
           </tr>
         </thead>
         <tbody id="rlBody">
-          <tr><td colspan="8" class="rl-empty">Memuat data...</td></tr>
+          <tr><td colspan="11" class="rl-empty">Memuat data...</td></tr>
         </tbody>
       </table>
     </div>
@@ -512,6 +516,28 @@
     text-transform:uppercase;
     white-space:nowrap;
     box-shadow:inset 0 -1px 0 #cbd5e1;
+  }
+  #rlPage #rlTable thead th.rl-sortable {
+    cursor:pointer;
+    user-select:none;
+  }
+  #rlPage #rlTable thead th.rl-sortable::after {
+    content:"↕";
+    margin-left:4px;
+    color:#94a3b8;
+    font-size:8px;
+  }
+  #rlPage #rlTable thead th.rl-sort-active {
+    color:#1d4ed8;
+    background:#e8f1ff;
+  }
+  #rlPage #rlTable thead th.rl-sort-active[data-dir="asc"]::after {
+    content:"▲";
+    color:#2563eb;
+  }
+  #rlPage #rlTable thead th.rl-sort-active[data-dir="desc"]::after {
+    content:"▼";
+    color:#2563eb;
   }
 
   #rlPage #rlTable thead th.rl-sticky-code,
@@ -1287,6 +1313,7 @@
   let rlRows = [];
   let rlUser = null;
   let rlFetchTimer = null;
+  let rlSort = { key:'kode_kantor', dir:'asc' };
 
   const $ = (id) => document.getElementById(id);
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
@@ -1427,7 +1454,7 @@
       rlRows = Array.isArray(rlRaw.rows) ? rlRaw.rows : [];
       renderAll();
     } catch(e) {
-      $('rlBody').innerHTML = `<tr><td colspan="8" class="rl-empty">${esc(e.message || 'Gagal memuat data')}</td></tr>`;
+      $('rlBody').innerHTML = `<tr><td colspan="11" class="rl-empty">${esc(e.message || 'Gagal memuat data')}</td></tr>`;
     } finally {
       loader.classList.add('rl-hidden');
     }
@@ -1454,6 +1481,9 @@
           ${isTotal ? '' : `<span class="rl-office-code">${esc(kode)}</span>`}
         </td>
         ${moneyCell(row.aset)}
+        ${moneyCell(row.kredit)}
+        ${moneyCell(row.tabungan)}
+        ${moneyCell(row.deposito)}
         ${moneyCell(row.liabilitas)}
         ${moneyCell(row.ekuitas)}
         ${moneyCell(row.pendapatan)}
@@ -1465,10 +1495,29 @@
 
   function filteredRows(){
     const q = ($('rlSearch').value || '').trim().toLowerCase();
-    if (!q) return rlRows.slice();
-    return rlRows.filter(row => {
+    const rows = !q ? rlRows.slice() : rlRows.filter(row => {
       const hay = `${row.kode_kantor || ''} ${row.nama_kantor || ''}`.toLowerCase();
       return hay.includes(q);
+    });
+    return sortRows(rows);
+  }
+
+  function sortRows(rows){
+    const key = rlSort.key || 'kode_kantor';
+    const dir = rlSort.dir === 'desc' ? -1 : 1;
+    return rows.slice().sort((a, b) => {
+      if (key === 'kode_kantor' || key === 'nama_kantor') {
+        return String(a[key] || '').localeCompare(String(b[key] || ''), 'id', {numeric:true}) * dir;
+      }
+      return (Number(a[key] || 0) - Number(b[key] || 0)) * dir;
+    });
+  }
+
+  function updateSortHeaders(){
+    document.querySelectorAll('#rlTable th.rl-sortable').forEach(th => {
+      const active = th.dataset.sort === rlSort.key;
+      th.classList.toggle('rl-sort-active', active);
+      th.dataset.dir = active ? rlSort.dir : '';
     });
   }
 
@@ -1485,6 +1534,9 @@
       kode_kantor:'TOTAL',
       nama_kantor:'TOTAL',
       aset:total.aset,
+      kredit:total.kredit,
+      tabungan:total.tabungan,
+      deposito:total.deposito,
       liabilitas:total.liabilitas,
       ekuitas:total.ekuitas,
       pendapatan:total.pendapatan,
@@ -1493,11 +1545,12 @@
     }, true);
 
     if (!rows.length) {
-      html += `<tr><td colspan="8" class="rl-empty">Tidak ada data.</td></tr>`;
+      html += `<tr><td colspan="11" class="rl-empty">Tidak ada data.</td></tr>`;
     } else {
       rows.forEach(row => { html += rowHtml(row, false); });
     }
     $('rlBody').innerHTML = html;
+    updateSortHeaders();
     renderRlInfo();
   }
 
@@ -1647,10 +1700,10 @@
     const total = rlRaw?.total || {};
     const rows = filteredRows();
     const escXls = (v) => esc(v).replace(/\n/g, ' ');
-    let html = '<table border="1"><thead><tr><th>Kode</th><th>Kantor</th><th>Aset</th><th>Liabilitas</th><th>Ekuitas</th><th>Pendapatan</th><th>Beban</th><th>Laba Kotor</th></tr></thead><tbody>';
-    html += `<tr><td>TOTAL</td><td>TOTAL</td><td>${Number(total.aset || 0)}</td><td>${Number(total.liabilitas || 0)}</td><td>${Number(total.ekuitas || 0)}</td><td>${Number(total.pendapatan || 0)}</td><td>${Number(total.beban || 0)}</td><td>${Number(total.laba_kotor || 0)}</td></tr>`;
+    let html = '<table border="1"><thead><tr><th>Kode</th><th>Kantor</th><th>Aset</th><th>Kredit</th><th>Tabungan</th><th>Deposito</th><th>Liabilitas</th><th>Ekuitas</th><th>Pendapatan</th><th>Beban</th><th>Laba Kotor</th></tr></thead><tbody>';
+    html += `<tr><td>TOTAL</td><td>TOTAL</td><td>${Number(total.aset || 0)}</td><td>${Number(total.kredit || 0)}</td><td>${Number(total.tabungan || 0)}</td><td>${Number(total.deposito || 0)}</td><td>${Number(total.liabilitas || 0)}</td><td>${Number(total.ekuitas || 0)}</td><td>${Number(total.pendapatan || 0)}</td><td>${Number(total.beban || 0)}</td><td>${Number(total.laba_kotor || 0)}</td></tr>`;
     rows.forEach(row => {
-      html += `<tr><td style="mso-number-format:'\\@'">${escXls(row.kode_kantor || '')}</td><td>${escXls(row.nama_kantor || '')}</td><td>${Number(row.aset || 0)}</td><td>${Number(row.liabilitas || 0)}</td><td>${Number(row.ekuitas || 0)}</td><td>${Number(row.pendapatan || 0)}</td><td>${Number(row.beban || 0)}</td><td>${Number(row.laba_kotor || 0)}</td></tr>`;
+      html += `<tr><td style="mso-number-format:'\\@'">${escXls(row.kode_kantor || '')}</td><td>${escXls(row.nama_kantor || '')}</td><td>${Number(row.aset || 0)}</td><td>${Number(row.kredit || 0)}</td><td>${Number(row.tabungan || 0)}</td><td>${Number(row.deposito || 0)}</td><td>${Number(row.liabilitas || 0)}</td><td>${Number(row.ekuitas || 0)}</td><td>${Number(row.pendapatan || 0)}</td><td>${Number(row.beban || 0)}</td><td>${Number(row.laba_kotor || 0)}</td></tr>`;
     });
     html += '</tbody></table>';
     const blob = new Blob(['\ufeff' + html], {type:'application/vnd.ms-excel;charset=utf-8;'});
@@ -1684,6 +1737,18 @@
     $('rlTanggal').addEventListener('change', scheduleFetch);
     $('rlKantor').addEventListener('change', scheduleFetch);
     $('rlSearch').addEventListener('input', renderAll);
+    document.querySelectorAll('#rlTable th.rl-sortable').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.dataset.sort || 'kode_kantor';
+        if (rlSort.key === key) {
+          rlSort.dir = rlSort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          rlSort.key = key;
+          rlSort.dir = (key === 'kode_kantor' || key === 'nama_kantor') ? 'asc' : 'desc';
+        }
+        renderAll();
+      });
+    });
 
     const syncStickyHeaderHeight = () => {
       const shell = document.querySelector('#rlPage .rl-table-shell');
