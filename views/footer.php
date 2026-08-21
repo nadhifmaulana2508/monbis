@@ -185,7 +185,7 @@
                 menuLayananDigital.style.setProperty('display', isDev ? 'block' : 'none', 'important');
             }
             if (menuEventAdmin) {
-                const isEventAdmin = monbisResolvePegId(u) > 0;
+                const isEventAdmin = monbisResolvePegId(u) === '102-119';
                 menuEventAdmin.style.setProperty('display', isEventAdmin ? 'block' : 'none', 'important');
             }
             window.MonbisTheme?.sync?.(u);
@@ -368,5 +368,399 @@
         } else {
             refreshEventTheme();
         }
+    })();
+</script>
+
+<style>
+    .monbis-ai-chat {
+        position:fixed;
+        left:18px;
+        bottom:18px;
+        z-index:1200;
+        font-family:var(--monbis-event-font, Inter, system-ui, sans-serif);
+    }
+    .monbis-ai-chat__button {
+        display:none !important;
+        width:46px;
+        height:46px;
+        border:1px solid rgba(37,99,235,.28);
+        border-radius:16px;
+        background:linear-gradient(135deg,#2563eb,#06b6d4);
+        color:#fff;
+        display:none !important;
+        align-items:center;
+        justify-content:center;
+        box-shadow:0 18px 38px rgba(37,99,235,.26);
+        cursor:pointer;
+    }
+    .monbis-ai-chat__button svg { width:23px; height:23px; }
+    /* The sidebar promo is the only chatbot trigger. */
+    #monbisAiToggle { display:none !important; visibility:hidden !important; pointer-events:none !important; }
+    .monbis-ai-chat__panel {
+        position:absolute;
+        left:0;
+        bottom:0;
+        width:min(390px, calc(100vw - 24px));
+        height:min(680px, calc(100dvh - 112px));
+        max-height:calc(100dvh - 112px);
+        background:#fff;
+        color:#0f172a;
+        border:1px solid #dbe6f3;
+        border-radius:18px;
+        box-shadow:0 24px 80px rgba(15,23,42,.24);
+        overflow:hidden;
+        display:none;
+    }
+    .monbis-ai-chat.is-open .monbis-ai-chat__panel { display:flex; flex-direction:column; }
+    .monbis-ai-chat__head {
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        padding:12px 13px;
+        border-bottom:1px solid #e2e8f0;
+        background:linear-gradient(180deg,#f8fbff,#fff);
+    }
+    .monbis-ai-chat__title { display:flex; align-items:center; gap:9px; min-width:0; }
+    .monbis-ai-chat__icon {
+        width:34px;
+        height:34px;
+        border-radius:12px;
+        background:#eaf2ff;
+        color:#2563eb;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        flex:0 0 auto;
+    }
+    .monbis-ai-chat__icon svg { width:18px; height:18px; }
+    .monbis-ai-chat__title strong { display:block; font-size:14px; font-weight:900; line-height:1.15; }
+    .monbis-ai-chat__title span { display:block; font-size:10px; color:#64748b; font-weight:700; margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:260px; }
+    .monbis-ai-chat__close {
+        width:32px;
+        height:32px;
+        border-radius:10px;
+        border:1px solid #dbe6f3;
+        background:#fff;
+        color:#64748b;
+        cursor:pointer;
+        font-weight:900;
+    }
+    .monbis-ai-chat__body {
+        padding:12px;
+        overflow:auto;
+        min-height:0;
+        flex:1 1 auto;
+        display:flex;
+        flex-direction:column;
+        gap:9px;
+    }
+    .monbis-ai-chat__msg {
+        max-width:92%;
+        padding:9px 10px;
+        border-radius:13px;
+        font-size:12px;
+        line-height:1.45;
+        white-space:pre-wrap;
+        font-weight:650;
+    }
+    .monbis-ai-chat__msg--bot { background:#f1f5f9; color:#243044; align-self:flex-start; }
+    .monbis-ai-chat__msg--user { background:#2563eb; color:#fff; align-self:flex-end; }
+    .monbis-ai-chat__foot {
+        padding:10px;
+        border-top:1px solid #e2e8f0;
+        display:flex;
+        gap:8px;
+        background:#fff;
+    }
+    .monbis-ai-chat__input {
+        flex:1;
+        min-width:0;
+        height:38px;
+        border:1px solid #cbd5e1;
+        border-radius:12px;
+        padding:0 10px;
+        font-size:12px;
+        font-weight:750;
+        outline:none;
+    }
+    .monbis-ai-chat__input:focus { border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+    .monbis-ai-chat__send {
+        width:40px;
+        height:38px;
+        border:0;
+        border-radius:12px;
+        background:#059669;
+        color:#fff;
+        cursor:pointer;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+    }
+    .monbis-ai-chat__send:disabled { opacity:.55; cursor:wait; }
+    .monbis-ai-chat__send svg { width:18px; height:18px; }
+    .monbis-ai-chat__quick {
+        display:flex;
+        gap:6px;
+        padding:0 10px 10px;
+        background:#fff;
+        flex-wrap:wrap;
+    }
+    .monbis-ai-chat__quick button {
+        border:1px solid #dbe6f3;
+        background:#f8fafc;
+        color:#334155;
+        border-radius:999px;
+        padding:6px 9px;
+        font-size:10px;
+        font-weight:850;
+        cursor:pointer;
+    }
+    [data-monbis-theme="dark"] .monbis-ai-chat__panel {
+        background:#0f172a;
+        color:#e5e7eb;
+        border-color:#334155;
+        box-shadow:0 24px 80px rgba(0,0,0,.45);
+    }
+    [data-monbis-theme="dark"] .monbis-ai-chat__head,
+    [data-monbis-theme="dark"] .monbis-ai-chat__foot,
+    [data-monbis-theme="dark"] .monbis-ai-chat__quick { background:#111827; border-color:#334155; }
+    [data-monbis-theme="dark"] .monbis-ai-chat__msg--bot { background:#1e293b; color:#e5e7eb; }
+    [data-monbis-theme="dark"] .monbis-ai-chat__close,
+    [data-monbis-theme="dark"] .monbis-ai-chat__input,
+    [data-monbis-theme="dark"] .monbis-ai-chat__quick button {
+        background:#0f172a;
+        color:#e5e7eb;
+        border-color:#334155;
+    }
+    @media (max-width:640px) {
+        .monbis-ai-chat { left:12px; bottom:12px; }
+        .monbis-ai-chat__button { width:42px; height:42px; border-radius:14px; }
+        .monbis-ai-chat__panel { left:0; width:calc(100vw - 24px); max-height:72dvh; }
+    }
+</style>
+
+<div class="monbis-ai-chat" id="monbisAiChat">
+    <div class="monbis-ai-chat__panel" role="dialog" aria-label="Chatbot Monbis">
+        <div class="monbis-ai-chat__head">
+            <div class="monbis-ai-chat__title">
+                <div class="monbis-ai-chat__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M2 14h2M20 14h2M9 13h.01M15 13h.01M9 17h6"/></svg>
+                </div>
+                <div>
+                    <strong>Asisten Data</strong>
+                    <span id="monbisAiPageLabel">Menjelaskan halaman aktif</span>
+                </div>
+            </div>
+            <button type="button" class="monbis-ai-chat__close" id="monbisAiClose" aria-label="Tutup">×</button>
+        </div>
+        <div class="monbis-ai-chat__body" id="monbisAiBody">
+            <div class="monbis-ai-chat__msg monbis-ai-chat__msg--bot">Halo, aku bisa bantu jelaskan data pada halaman yang sedang dibuka. Data yang dikirim hanya ringkasan tampilan, bukan API key atau data rahasia.</div>
+        </div>
+        <div class="monbis-ai-chat__quick">
+            <button type="button" data-ai-question="Jelaskan ringkasan kondisi halaman ini.">Ringkasan</button>
+            <button type="button" data-ai-question="Apa anomali atau risiko utama dari data ini?">Risiko</button>
+            <button type="button" data-ai-question="Apa tindak lanjut yang disarankan?">Tindak lanjut</button>
+        </div>
+        <form class="monbis-ai-chat__foot" id="monbisAiForm">
+            <input class="monbis-ai-chat__input" id="monbisAiInput" placeholder="Tanya data halaman ini..." autocomplete="off">
+            <button class="monbis-ai-chat__send" id="monbisAiSend" type="submit" aria-label="Kirim">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4Z"/></svg>
+            </button>
+        </form>
+    </div>
+    <button type="button" class="monbis-ai-chat__button" id="monbisAiToggle" title="Asisten Data" aria-label="Asisten Data">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M2 14h2M20 14h2M9 13h.01M15 13h.01M9 17h6"/></svg>
+    </button>
+</div>
+
+<script>
+    (function () {
+        const root = document.getElementById('monbisAiChat');
+        if (!root || window.__MONBIS_AI_CHAT_INIT__) return;
+        window.__MONBIS_AI_CHAT_INIT__ = true;
+
+        const body = document.getElementById('monbisAiBody');
+        const input = document.getElementById('monbisAiInput');
+        const form = document.getElementById('monbisAiForm');
+        const send = document.getElementById('monbisAiSend');
+        const label = document.getElementById('monbisAiPageLabel');
+        const API_CHAT = './api/chatbot/ask';
+
+        function canUseAi() {
+            const user = window.getUser?.();
+            if (!user) return false;
+            return user.role === 'dev'
+                || user.unit_kerja === 'Divisi Operasional'
+                || user.unit_kerja === 'Dewan Komisaris dan Direksi';
+        }
+
+        function syncAiAccess() {
+            const allowed = canUseAi();
+            root.dataset.access = allowed ? 'allowed' : 'denied';
+            const promo = document.getElementById('monbisSidebarPromo');
+            const promoTitle = document.getElementById('monbisSidebarPromoTitle');
+            const promoSubtitle = document.getElementById('monbisSidebarPromoSubtitle');
+            promo?.setAttribute('aria-disabled', allowed ? 'false' : 'true');
+            promo?.classList.toggle('is-ai-access', allowed);
+            promo?.setAttribute('aria-label', allowed ? 'Buka Asisten Data' : 'Semangat kerja');
+            if (promoTitle) promoTitle.textContent = allowed ? 'Asisten Data' : 'Semangat kerja';
+            if (promoSubtitle) promoSubtitle.textContent = allowed ? 'Tanya kondisi halaman' : 'Data rapi, keputusan cepat';
+        }
+
+        syncAiAccess();
+        const accessTimer = window.setInterval(() => {
+            syncAiAccess();
+            if (window.getUser?.()) window.clearInterval(accessTimer);
+        }, 500);
+
+        function clean(text, max = 160) {
+            return String(text || '').replace(/\s+/g, ' ').trim().slice(0, max);
+        }
+
+        function visible(el) {
+            if (!el) return false;
+            const style = window.getComputedStyle(el);
+            return style.display !== 'none' && style.visibility !== 'hidden' && el.offsetParent !== null;
+        }
+
+        function addMessage(text, type) {
+            const msg = document.createElement('div');
+            msg.className = 'monbis-ai-chat__msg monbis-ai-chat__msg--' + (type || 'bot');
+            msg.textContent = text;
+            body.appendChild(msg);
+            body.scrollTop = body.scrollHeight;
+            return msg;
+        }
+
+        function cleanAnswer(text) {
+            return String(text || '')
+                .replace(/\*\*(.*?)\*\*/gs, '$1')
+                .replace(/\*(.*?)\*/gs, '$1')
+                .replace(/^\s*#{1,6}\s*/gm, '')
+                .replace(/[ \t]+\n/g, '\n')
+                .trim();
+        }
+
+        function pageTitle() {
+            const candidates = [
+                document.querySelector('.mb-page-title h1'),
+                document.querySelector('.mb-page-header h1'),
+                document.querySelector('main h1'),
+                document.querySelector('h1'),
+                document.querySelector('.mb-report-toolbar__title')
+            ];
+            for (const node of candidates) {
+                const text = clean(node?.textContent, 90);
+                if (text) return text;
+            }
+            return clean(document.title || location.pathname, 90);
+        }
+
+        function collectFilters(scope) {
+            return Array.from(scope.querySelectorAll('input, select'))
+                .filter(node => visible(node) && !node.closest('.monbis-ai-chat') && !node.closest('.mb-modal'))
+                .slice(0, 12)
+                .map(node => {
+                    const field = node.closest('label,.mb-field');
+                    const labelText = clean(field?.querySelector('span,label,.mb-field-label')?.textContent || node.getAttribute('aria-label') || node.id || node.name, 40);
+                    const value = node.tagName === 'SELECT'
+                        ? clean(node.options[node.selectedIndex]?.text || node.value, 70)
+                        : clean(node.value, 70);
+                    return value ? { label: labelText, value } : null;
+                })
+                .filter(Boolean);
+        }
+
+        function collectCards(scope) {
+            const selectors = '.mb-summary-card,.mb-metric-card,.mb-report-card,[class*="metric"],[class*="card"]';
+            return Array.from(scope.querySelectorAll(selectors))
+                .filter(node => visible(node) && !node.closest('.monbis-ai-chat') && !node.closest('.mb-modal') && !node.querySelector('table'))
+                .slice(0, 16)
+                .map(node => clean(node.textContent, 220))
+                .filter(text => text && text.length > 8);
+        }
+
+        function collectTables(scope) {
+            return Array.from(scope.querySelectorAll('table'))
+                .filter(table => visible(table) && !table.closest('.monbis-ai-chat') && !table.closest('.mb-modal'))
+                .slice(0, 2)
+                .map(table => {
+                    const headers = Array.from(table.querySelectorAll('thead th')).map(th => clean(th.textContent, 36)).filter(Boolean).slice(0, 12);
+                    const rows = Array.from(table.querySelectorAll('tbody tr'))
+                        .filter(tr => visible(tr))
+                        .slice(0, 12)
+                        .map(tr => Array.from(tr.children).map(td => clean(td.textContent, 60)).filter(Boolean).slice(0, 12))
+                        .filter(row => row.length);
+                    return { headers, rows };
+                })
+                .filter(table => table.headers.length || table.rows.length);
+        }
+
+        function collectContext() {
+            const main = document.querySelector('main') || document.body;
+            const title = pageTitle();
+            if (label) label.textContent = title;
+            return {
+                page: title,
+                path: location.pathname,
+                filters: collectFilters(main),
+                cards: collectCards(main),
+                tables: collectTables(main),
+                note: 'Konteks dipotong otomatis untuk hemat token. Detail nasabah/rekening tidak perlu dijelaskan.'
+            };
+        }
+
+        async function ask(question) {
+            if (!canUseAi()) return;
+            const q = clean(question || input.value, 1000);
+            if (!q) return;
+            addMessage(q, 'user');
+            input.value = '';
+            send.disabled = true;
+            const waiting = addMessage('Membaca halaman dan bertanya ke Gemini...', 'bot');
+            try {
+                const res = await fetch(API_CHAT, {
+                    method:'POST',
+                    headers:{ 'Content-Type':'application/json' },
+                    body:JSON.stringify({ question:q, context:collectContext() })
+                });
+                const json = await res.json();
+                if (!res.ok || json.status !== 200) throw new Error(json.message || 'Gagal meminta jawaban chatbot.');
+                waiting.textContent = cleanAnswer(json.data?.answer || 'Belum ada jawaban.');
+            } catch (error) {
+                waiting.textContent = error.message || 'Chatbot gagal memproses data.';
+            } finally {
+                send.disabled = false;
+            }
+        }
+
+        document.getElementById('monbisAiToggle')?.addEventListener('click', () => {
+            root.classList.toggle('is-open');
+            collectContext();
+            if (root.classList.contains('is-open')) setTimeout(() => input?.focus(), 80);
+        });
+        const sidebarTrigger = document.getElementById('monbisSidebarPromo');
+        function toggleFromSidebar() {
+            if (!canUseAi()) return;
+            root.classList.toggle('is-open');
+            collectContext();
+            if (root.classList.contains('is-open')) setTimeout(() => input?.focus(), 80);
+        }
+        sidebarTrigger?.addEventListener('click', toggleFromSidebar);
+        sidebarTrigger?.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                toggleFromSidebar();
+            }
+        });
+        document.getElementById('monbisAiClose')?.addEventListener('click', () => root.classList.remove('is-open'));
+        form?.addEventListener('submit', event => {
+            event.preventDefault();
+            ask(input.value);
+        });
+        document.querySelectorAll('[data-ai-question]').forEach(btn => {
+            btn.addEventListener('click', () => ask(btn.dataset.aiQuestion || 'Jelaskan data halaman ini.'));
+        });
     })();
 </script>

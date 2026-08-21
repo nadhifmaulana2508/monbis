@@ -90,6 +90,15 @@
     color:var(--monbis-event-sidebar-text);
     box-shadow:0 14px 26px rgba(15,23,42,.08);
     flex-shrink:0;
+    cursor:default;
+  }
+  .monbis-sidebar-promo.is-ai-access {
+    cursor:pointer;
+    border-color:rgba(37,99,235,.45);
+  }
+  .monbis-sidebar-promo.is-ai-access:hover {
+    transform:translateY(-1px);
+    box-shadow:0 16px 30px rgba(37,99,235,.16);
   }
   .monbis-sidebar-promo__inner {
     display:flex;
@@ -112,6 +121,9 @@
     animation:monbisPulse 1.8s ease-in-out infinite;
     flex:0 0 auto;
   }
+  .monbis-sidebar-promo__spark--chat { display:none; }
+  .monbis-sidebar-promo.is-ai-access .monbis-sidebar-promo__spark--electric { display:none; }
+  .monbis-sidebar-promo.is-ai-access .monbis-sidebar-promo__spark--chat { display:inline-flex; }
   .monbis-sidebar-promo__text {
     min-width:0;
     opacity:1;
@@ -790,14 +802,15 @@
         </div>
       </div>
     </nav>
-    <div id="monbisSidebarPromo" class="monbis-sidebar-promo">
+    <div id="monbisSidebarPromo" class="monbis-sidebar-promo" role="button" tabindex="0" aria-label="Buka Asisten Data">
       <div class="monbis-sidebar-promo__inner">
         <div class="monbis-sidebar-promo__spark" aria-hidden="true">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          <svg class="w-5 h-5 monbis-sidebar-promo__spark--electric" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          <svg class="w-5 h-5 monbis-sidebar-promo__spark--chat" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="13" rx="3" stroke-width="2"></rect><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7V4h3M15 7V4h-3M2 13h2m16 0h2M9 13h.01M15 13h.01M9 17h6"></path></svg>
         </div>
         <div class="monbis-sidebar-promo__text">
-          <strong>Semangat kerja</strong>
-          <span>Data rapi, keputusan cepat</span>
+          <strong id="monbisSidebarPromoTitle">Semangat kerja</strong>
+          <span id="monbisSidebarPromoSubtitle">Data rapi, keputusan cepat</span>
         </div>
       </div>
     </div>

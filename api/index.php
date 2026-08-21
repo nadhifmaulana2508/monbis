@@ -97,6 +97,9 @@ switch ($endpoint) {
     case 'event_theme':
         require __DIR__ . '/routes/event_theme.php';
         break;
+    case 'chatbot':
+        require __DIR__ . '/routes/chatbot.php';
+        break;
 
     default:
         sendResponse(404, "Endpoint tidak ditemukan");
