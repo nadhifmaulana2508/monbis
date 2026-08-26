@@ -96,7 +96,8 @@ class HapusBukuController {
 
 
     public function getDetailDebitur($input) {
-        $kode_kantor = str_pad($input['kode_kantor'], 3, '0', STR_PAD_LEFT); // pastikan 3 digit
+        $raw_kode = isset($input['kode_kantor']) ? strtoupper(trim((string)$input['kode_kantor'])) : 'ALL';
+        $kode_kantor = $raw_kode === 'ALL' ? null : str_pad($raw_kode, 3, '0', STR_PAD_LEFT);
         $start_date = $input['start_date'];
         $end_date = $input['end_date'];
 
@@ -111,8 +112,14 @@ class HapusBukuController {
             FROM 
                 transaksi_ph
             WHERE 
-                kode_kantor = :kode_kantor
-                AND tanggal_transaksi BETWEEN :start_date AND :end_date
+                tanggal_transaksi BETWEEN :start_date AND :end_date
+        ";
+
+        if ($kode_kantor !== null) {
+            $sql .= " AND kode_kantor = :kode_kantor";
+        }
+
+        $sql .= "
             GROUP BY 
                 no_rekening, nama_nasabah
             HAVING 
@@ -123,7 +130,9 @@ class HapusBukuController {
 
 
         $stmt = $this->pdo->prepare($sql);
-        $stmt->bindValue(':kode_kantor', $kode_kantor);
+        if ($kode_kantor !== null) {
+            $stmt->bindValue(':kode_kantor', $kode_kantor);
+        }
         $stmt->bindValue(':start_date', $start_date);
         $stmt->bindValue(':end_date', $end_date);
         $stmt->execute();
@@ -203,7 +212,8 @@ class HapusBukuController {
 
     public function getDetailLGD($input) {
        $end_history = isset($input['end_date']) ? $input['end_date'] : date('Y-m-d');
-        $kode_kantor = isset($input['kode_kantor']) ? str_pad($input['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+        $raw_kode = isset($input['kode_kantor']) ? strtoupper(trim((string)$input['kode_kantor'])) : '';
+        $kode_kantor = ($raw_kode === '' || $raw_kode === 'ALL') ? null : str_pad($raw_kode, 3, '0', STR_PAD_LEFT);
         
         // Range monitoring bulanan berdasarkan end_date
         $start_berjalan = date('Y-m-01', strtotime($end_history));

@@ -172,6 +172,10 @@ class KreditController {
         $filterSql = str_replace('t.kode_group1', 't.kode_group_1', $filterSql);
         
         $paramsBind = $filterData['params'];
+        if (!empty($b['pusat_only']) && (string)$kode_kantor === '000') {
+            $filterSql .= " AND t.kode_kantor = :kode_kantor_pusat";
+            $paramsBind[':kode_kantor_pusat'] = '000';
+        }
 
         // Masukkan tanggal ke binding parameter
         $paramsBind[':closing_date'] = $closing_date;
@@ -377,6 +381,10 @@ class KreditController {
         // Penyesuaian nama kolom khusus tabel update_realisasi_kredit
         $filterSql  = str_replace('t1.kode_cabang', 't1.kode_kantor', $filterSql);
         $paramsBind = $filterData['params'];
+        if (!empty($b['pusat_only']) && (string)($b['kode_kantor'] ?? '') === '000') {
+            $filterSql .= " AND t1.kode_kantor = :kode_kantor_pusat";
+            $paramsBind[':kode_kantor_pusat'] = '000';
+        }
 
         // 3. Base Where Clause untuk range tanggal
         $where = "WHERE t1.tanggal_realisasi > :closing AND t1.tanggal_realisasi <= :harian";

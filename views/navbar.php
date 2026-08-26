@@ -32,7 +32,7 @@
     --monbis-event-text:#0f172a;
     --monbis-event-sidebar-text:#334155;
     --monbis-event-border:#dbe3ee;
-    --monbis-event-font:Inter, system-ui, sans-serif;
+    --monbis-event-font:Roboto, Arial, system-ui, sans-serif;
   }
   :root[data-monbis-theme="dark"] {
     --monbis-event-header-bg:#111827;
@@ -708,7 +708,7 @@
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
         </button>
         <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
-          <a href="recovery_ph" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Recovery PH</a>
+          <a href="report_ph" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Recovery PH</a>
           <a href="lgd" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Rekap Recovery (LGD)</a>
         </div>
       </div> -->
@@ -750,8 +750,8 @@
           <a href="rbb_vs_realisasi" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">RBB vs Realisasi</a>
           <!-- <a href="realisasi_rbb" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Produksi vs RBB</a> -->
 
-          <a href="pipelane_monitoring_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Monitoring Pipeline Kredit</a>
           <a href="aging_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Rekap Aging Kredit</a>
+          <a href="pipelane_monitoring_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Monitoring Pipeline Kredit</a>
           <a href="prospek" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Pipelane Prospek</a>
         </div>
       </div>
@@ -785,6 +785,8 @@
         <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
           <a href="report_npl" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report NPL UI</a>
           <a href="report_recovery_npl" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Recovery NPL</a>
+          <a href="report_mutasi_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Mutasi Kredit</a>
+          <a href="report_potensi_npl" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Potensi NPL</a>
         </div>
       </div>
 

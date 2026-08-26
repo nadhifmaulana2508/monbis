@@ -2,74 +2,68 @@
 require_once __DIR__ . '/../components/bootstrap.php';
 mb_ui_assets('.');
 
-echo '<main class="mb-report-page mb-report-recovery" id="reportRecoveryPage">';
-
-mb_render_page_header([
-    'id' => 'reportRecoveryHeader',
-    'title' => 'Recovery NPL',
-    'subtitle' => 'Flow NPL, recovery, dan posisi bersih closing vs actual.',
-    'info_modal_id' => 'reportRecoveryInfo',
-    'filters' => [
-        ['id'=>'reportRecoveryClosing','label'=>'Closing (M-1)','type'=>'date','width'=>'126px','attrs'=>['onclick'=>'this.showPicker && this.showPicker()']],
-        ['id'=>'reportRecoveryActual','label'=>'Actual (Harian)','type'=>'date','width'=>'126px','attrs'=>['onclick'=>'this.showPicker && this.showPicker()']],
-        ['id'=>'reportRecoveryArea','label'=>'Kantor','type'=>'select','width'=>'260px','options'=>[
-            'ALL'=>'Konsolidasi',
-        ]],
+mb_render_report_page([
+    'id'=>'reportRecoveryPage',
+    'class'=>'mb-report-recovery mb-report-grouped-head',
+    'header'=>[
+        'id'=>'reportRecoveryHeader',
+        'title'=>'Recovery NPL',
+        'subtitle'=>'Flow NPL, recovery, dan posisi bersih closing vs actual.',
+        'info_modal_id'=>'reportRecoveryInfo',
+        'filters'=>[
+            ['id'=>'reportRecoveryClosing','label'=>'Closing (M-1)','type'=>'date','width'=>'126px','attrs'=>['onclick'=>'this.showPicker && this.showPicker()']],
+            ['id'=>'reportRecoveryActual','label'=>'Actual (Harian)','type'=>'date','width'=>'126px','attrs'=>['onclick'=>'this.showPicker && this.showPicker()']],
+            ['id'=>'reportRecoveryArea','label'=>'Kantor','type'=>'select','width'=>'260px','options'=>['ALL'=>'Konsolidasi']],
+        ],
+        'actions'=>[],
     ],
-    'actions' => [],
-]);
-?>
-
-  <section class="mb-report-card mb-report-card--grow">
-    <div class="mb-report-toolbar">
-      <div class="mb-report-toolbar__title">Rekap Recovery NPL</div>
-      <div class="mb-report-toolbar__tools">
-        <label class="mb-search">
-          <?php echo mb_svg('search'); ?>
-          <input type="search" id="reportRecoverySearch" class="mb-field-control" placeholder="Cari kantor..." autocomplete="off">
-        </label>
-        <button type="button" id="reportRecoveryExport" class="mb-icon-button mb-icon-button--success" title="Export Excel" aria-label="Export Excel"><?php echo mb_svg('download'); ?></button>
-      </div>
-    </div>
-    <?php
-      mb_render_table_shell([
+    'toolbar'=>[
+        'title'=>'Rekap Recovery NPL',
+        'search'=>['id'=>'reportRecoverySearch','placeholder'=>'Cari kantor...'],
+        'actions'=>[
+            ['attrs'=>['id'=>'reportRecoveryExport'],'tone'=>'success','icon'=>'download','title'=>'Export Excel','aria_label'=>'Export Excel'],
+        ],
+    ],
+    'table'=>[
           'wrapper_id'=>'reportRecoveryTableWrap',
           'table_id'=>'reportRecoveryTable',
           'loading_id'=>'reportRecoveryLoading',
           'loading_text'=>'Memuat data recovery...',
-          'class'=>'mb-recovery-table',
+          'class'=>'mb-recovery-table mb-table--grouped-head',
           'colgroup_html'=>'
-            <col style="width:46px">
-            <col style="width:112px">
-            <col style="width:84px">
-            <col style="width:84px">
-            <col style="width:84px">
-            <col style="width:84px">
-            <col style="width:92px">
-            <col style="width:92px">
+            <col style="width:44px">
+            <col style="width:136px">
+            <col style="width:94px">
+            <col style="width:88px">
             <col style="width:50px">
-            <col style="width:78px">
+            <col style="width:82px">
+            <col style="width:82px">
+            <col style="width:82px">
+            <col style="width:92px">
+            <col style="width:94px">
+            <col style="width:92px">
           ',
-          'thead_html'=>'
-            <tr>
-              <th class="mb-code-col mb-sticky-left mb-sort" data-sort="kode">Kode <span class="mb-sort-icon"></span></th>
-              <th class="mb-sticky-left-2 mb-text-left mb-sort" id="reportRecoveryNameHead" data-sort="kantor">Kantor <span class="mb-sort-icon"></span></th>
-              <th class="mb-group mb-sort" data-sort="flow_npl">Flow NPL <span class="mb-sort-icon"></span></th>
-              <th class="mb-group mb-sort" data-sort="lunas_npl">Lunas NPL <span class="mb-sort-icon"></span></th>
-              <th class="mb-group mb-sort" data-sort="backflow">Backflow <span class="mb-sort-icon"></span></th>
-              <th class="mb-group mb-sort" data-sort="angsuran_npl">Angsuran NPL <span class="mb-sort-icon"></span></th>
-              <th class="mb-group mb-sort" data-sort="total_recovery">Total Recovery <span class="mb-sort-icon"></span></th>
-              <th class="mb-group mb-sort" data-sort="net_flow_recovery">-/+ OSC NPL <span class="mb-sort-icon"></span></th>
-              <th class="mb-group mb-sort" data-sort="flow_ratio">% Flow <span class="mb-sort-icon"></span></th>
-              <th class="mb-group mb-sort" data-sort="osc_npl">OSC NPL <span class="mb-sort-icon"></span></th>
-            </tr>',
+          'thead_html'=>mb_build_grouped_thead([
+              ['label'=>'Kode','class'=>'mb-code-col mb-sticky-left','sort'=>'kode'],
+              ['label'=>'Kantor','class'=>'mb-sticky-left-2 mb-text-left','sort'=>'kantor','attrs'=>['id'=>'reportRecoveryNameHead','style'=>'--mb-sticky-1:44px']],
+              ['label'=>'OSC NPL Closing','class'=>'mb-group mb-group--blue','sort'=>'npl_closing'],
+              ['label'=>'Flow PAR','class'=>'mb-group mb-group--red','children'=>[
+                  ['label'=>'Baki Debet','class'=>'mb-group mb-group--red','sort'=>'flow_npl'],
+                  ['label'=>'%','class'=>'mb-group mb-group--red','sort'=>'flow_ratio'],
+              ]],
+              ['label'=>'Recovery NPL','class'=>'mb-group mb-group--green','children'=>[
+                  ['label'=>'Lunas','class'=>'mb-group mb-group--green','sort'=>'lunas_npl'],
+                  ['label'=>'OSC Backflow','class'=>'mb-group mb-group--green','sort'=>'backflow'],
+                  ['label'=>'Angsuran','class'=>'mb-group mb-group--green','sort'=>'angsuran_npl'],
+                  ['label'=>'Total','class'=>'mb-group mb-group--green','sort'=>'total_recovery'],
+              ]],
+              ['label'=>'OSC NPL Actual','class'=>'mb-group mb-group--blue','sort'=>'npl_actual'],
+              ['label'=>'-/+ OSC NPL','class'=>'mb-group mb-group--violet','sort'=>'osc_delta'],
+          ]),
           'tbody_ids'=>['reportRecoveryTotal','reportRecoveryBody'],
-      ]);
-    ?>
-  </section>
-</main>
+    ],
+]);
 
-<?php
 mb_render_info_modal([
     'id'=>'reportRecoveryInfo',
     'title'=>'Panduan Recovery NPL',
@@ -102,6 +96,10 @@ mb_render_detail_modal([
     'title'=>'Detail Debitur',
     'subtitle'=>'Daftar rekening recovery',
     'size'=>'xl',
+    'mobile_body_id'=>'reportRecoveryDetailMobile',
+    'search_near_close'=>true,
+    'collapsible_filters'=>true,
+    'toolbar_id'=>'reportRecoveryDetailFilters',
     'search'=>['id'=>'reportRecoveryDetailSearch','placeholder'=>'Cari nama / rekening...'],
     'filters'=>[
         ['id'=>'reportRecoveryDetailKind','label'=>'Jenis','type'=>'select','width'=>'150px','class'=>'is-hidden','options'=>[
@@ -124,6 +122,7 @@ mb_render_detail_modal([
   const API_NPL = './api/npl/';
   const API_DATE = './api/date/';
   const API_KODE = './api/kode/';
+  const ICON_DOWNLOAD = <?= json_encode(mb_svg('download'), JSON_UNESCAPED_SLASHES) ?>;
   const KORWIL = [
     { key:'SEMARANG', label:'Korwil Semarang' },
     { key:'SOLO', label:'Korwil Solo' },
@@ -223,8 +222,21 @@ mb_render_detail_modal([
     return num(row?.total_noa_recovery || (num(row?.noa_lunas) + num(row?.noa_backflow) + num(row?.noa_angsuran_npl)));
   }
 
+  // Alias fallback menjaga FE tetap kompatibel jika nama field API dirapikan nanti.
+  function oscClosing(row) {
+    return num(row?.osc_npl_closing ?? row?.npl_closing);
+  }
+
+  function oscActual(row) {
+    return num(row?.osc_npl_actual ?? row?.npl_harian ?? row?.npl_closing);
+  }
+
+  function oscDelta(row) {
+    return num(row?.selisih_os_npl ?? (oscActual(row) - oscClosing(row)));
+  }
+
   function flowRatio(row) {
-    const base = num(row?.npl_closing);
+    const base = oscClosing(row);
     return base > 0 ? (num(row?.baki_debet_flow_npl) / base) * 100 : 0;
   }
 
@@ -261,9 +273,10 @@ mb_render_detail_modal([
     if (column === 'backflow') return row?.baki_debet_backflow;
     if (column === 'angsuran_npl') return row?.baki_debet_angsuran_npl;
     if (column === 'total_recovery') return totalRecovery(row);
-    if (column === 'net_flow_recovery') return row?.net_flow_recovery;
     if (column === 'flow_ratio') return flowRatio(row);
-    if (column === 'osc_npl') return row?.npl_harian || row?.npl_closing || 0;
+    if (column === 'npl_closing') return oscClosing(row);
+    if (column === 'npl_actual') return oscActual(row);
+    if (column === 'osc_delta') return oscDelta(row);
     return row?.[column];
   }
 
@@ -398,7 +411,7 @@ mb_render_detail_modal([
     const total = state.total || {};
     const rec = totalRecovery(total);
     const flow = num(total.baki_debet_flow_npl);
-    const net = num(total.net_flow_recovery);
+    const net = oscDelta(total);
     if (el('reportRecoveryInfoRecovery')) el('reportRecoveryInfoRecovery').textContent = 'Rp ' + fmt(rec);
     if (el('reportRecoveryInfoFlow')) el('reportRecoveryInfoFlow').textContent = 'Rp ' + fmt(flow);
     if (el('reportRecoveryInfoNet')) {
@@ -416,16 +429,17 @@ mb_render_detail_modal([
     }
     const kode = totalDetailKode();
     body.innerHTML = '<tr class="mb-total-row">' +
-      '<td class="mb-code-col mb-sticky-left">ALL</td>' +
-      '<td class="mb-sticky-left-2 mb-name">TOTAL</td>' +
+      '<td class="mb-code-col mb-sticky-left mb-code">ALL</td>' +
+      '<td class="mb-sticky-left-2 mb-name" style="--mb-sticky-1:44px" title="GRAND TOTAL">GRAND TOTAL</td>' +
+      '<td class="mb-num">' + fmt(oscClosing(row)) + '</td>' +
       '<td class="mb-num">' + simpleMetric(row.baki_debet_flow_npl, row.noa_flow_npl, 'red') + '</td>' +
+      '<td class="mb-noa">' + ratioCell(row) + '</td>' +
       '<td class="mb-num">' + metric(row.baki_debet_lunas, row.noa_lunas, 'lunas', kode, 'blue') + '</td>' +
       '<td class="mb-num">' + metric(row.baki_debet_backflow, row.noa_backflow, 'backflow', kode, 'amber') + '</td>' +
       '<td class="mb-num">' + metric(row.baki_debet_angsuran_npl, row.noa_angsuran_npl, 'angsuran', kode, 'green') + '</td>' +
       '<td class="mb-num">' + metric(totalRecovery(row), totalRecoveryNoa(row), 'total_recovery', kode, 'cyan') + '</td>' +
-      '<td class="mb-num">' + netCell(row.net_flow_recovery) + '</td>' +
-      '<td class="mb-noa">' + ratioCell(row) + '</td>' +
-      '<td class="mb-num">' + fmt(row.npl_harian || row.npl_closing || 0) + '</td>' +
+      '<td class="mb-num">' + fmt(oscActual(row)) + '</td>' +
+      '<td class="mb-num">' + netCell(oscDelta(row)) + '</td>' +
       '</tr>';
   }
 
@@ -443,24 +457,24 @@ mb_render_detail_modal([
     if (!body) return;
     const rows = visibleRows();
     if (!rows.length) {
-      body.innerHTML = '<tr><td colspan="10" class="mb-empty">Tidak ada data recovery.</td></tr>';
+      body.innerHTML = '<tr><td colspan="11" class="mb-empty">Tidak ada data recovery.</td></tr>';
       return;
     }
 
     body.innerHTML = rows.map(row => {
       const kode = rowCode(row);
-      const net = num(row.net_flow_recovery);
       return '<tr>' +
         '<td class="mb-code-col mb-sticky-left mb-code">' + esc(kode) + '</td>' +
-        '<td class="mb-sticky-left-2 mb-name" title="' + esc(rowName(row)) + '">' + esc(rowName(row)) + '</td>' +
+        '<td class="mb-sticky-left-2 mb-name" style="--mb-sticky-1:44px" title="' + esc(rowName(row)) + '">' + esc(rowName(row)) + '</td>' +
+        '<td class="mb-num">' + fmt(oscClosing(row)) + '</td>' +
         '<td class="mb-num">' + simpleMetric(row.baki_debet_flow_npl, row.noa_flow_npl, 'red') + '</td>' +
+        '<td class="mb-noa">' + ratioCell(row) + '</td>' +
         '<td class="mb-num">' + metric(row.baki_debet_lunas, row.noa_lunas, 'lunas', kode, 'blue') + '</td>' +
         '<td class="mb-num">' + metric(row.baki_debet_backflow, row.noa_backflow, 'backflow', kode, 'amber') + '</td>' +
         '<td class="mb-num">' + metric(row.baki_debet_angsuran_npl, row.noa_angsuran_npl, 'angsuran', kode, 'green') + '</td>' +
         '<td class="mb-num">' + metric(totalRecovery(row), totalRecoveryNoa(row), 'total_recovery', kode, 'cyan') + '</td>' +
-        '<td class="mb-num">' + netCell(net) + '</td>' +
-        '<td class="mb-noa">' + ratioCell(row) + '</td>' +
-        '<td class="mb-num">' + fmt(row.npl_harian || row.npl_closing || 0) + '</td>' +
+        '<td class="mb-num">' + fmt(oscActual(row)) + '</td>' +
+        '<td class="mb-num">' + netCell(oscDelta(row)) + '</td>' +
         '</tr>';
     }).join('');
     updateSortIcons();
@@ -482,7 +496,6 @@ mb_render_detail_modal([
       const normalized = normalizeResponse(json);
       state.rows = normalized.rows;
       state.total = normalized.total;
-      if (el('reportRecoveryNameHead')) el('reportRecoveryNameHead').innerHTML = 'Kantor <span class="mb-sort-icon"></span>';
       renderTotal();
       renderRows();
       renderInfo();
@@ -490,7 +503,7 @@ mb_render_detail_modal([
     } catch (error) {
       if (error.name !== 'AbortError') {
         console.error(error);
-        el('reportRecoveryBody').innerHTML = '<tr><td colspan="10" class="mb-empty mb-negative">Gagal memuat data.</td></tr>';
+        el('reportRecoveryBody').innerHTML = '<tr><td colspan="11" class="mb-empty mb-negative">Gagal memuat data.</td></tr>';
       }
     } finally {
       MonbisUI.showLoading('reportRecoveryLoading', false);
@@ -602,10 +615,10 @@ mb_render_detail_modal([
     const to = Math.min(totalRows, state.detailPage * state.detailPageSize);
     footer.innerHTML = '<div class="mb-detail-page-info">Data ' + fmt(from) + ' - ' + fmt(to) + ' dari ' + fmt(totalRows) + '</div>' +
       '<div class="mb-detail-page-actions">' +
-        '<button type="button" class="mb-detail-page-btn mb-detail-page-btn--success" id="reportRecoveryDetailExport">Export Excel</button>' +
-        '<button type="button" class="mb-detail-page-btn" id="reportRecoveryDetailPrev" ' + (state.detailPage <= 1 ? 'disabled' : '') + '>&lsaquo; Prev</button>' +
+        '<span class="mb-detail-footer-actions"><button type="button" class="mb-detail-footer-icon mb-detail-footer-icon--export" id="reportRecoveryDetailExport" title="Export detail" aria-label="Export detail">' + ICON_DOWNLOAD + '</button></span>' +
+        '<span class="mb-detail-pagination"><button type="button" class="mb-detail-page-btn" id="reportRecoveryDetailPrev" ' + (state.detailPage <= 1 ? 'disabled' : '') + '>&lsaquo; Prev</button>' +
         '<span class="mb-detail-page-status">Hal ' + fmt(state.detailPage) + ' / ' + fmt(totalPages) + '</span>' +
-        '<button type="button" class="mb-detail-page-btn" id="reportRecoveryDetailNext" ' + (state.detailPage >= totalPages ? 'disabled' : '') + '>Next &rsaquo;</button>' +
+        '<button type="button" class="mb-detail-page-btn" id="reportRecoveryDetailNext" ' + (state.detailPage >= totalPages ? 'disabled' : '') + '>Next &rsaquo;</button></span>' +
       '</div>';
     el('reportRecoveryDetailExport')?.addEventListener('click', exportDetailExcel);
     el('reportRecoveryDetailPrev')?.addEventListener('click', () => {
@@ -620,6 +633,33 @@ mb_render_detail_modal([
         renderDetail();
       }
     });
+  }
+
+  function renderDetailMobile(rows) {
+    const mobile = el('reportRecoveryDetailMobile');
+    if (!mobile) return;
+    if (!rows.length) {
+      mobile.innerHTML = '<div class="mb-empty">Detail tidak ditemukan.</div>';
+      return;
+    }
+    mobile.innerHTML = rows.map(row => {
+      const status = state.detailType === 'lunas' ? 'Lunas' : (row.jt_status || row.status || row.jenis_recovery);
+      return '<article class="mb-detail-card">' +
+        '<div class="mb-detail-card__head"><div class="mb-detail-card__identity">' +
+          '<div class="mb-detail-card__name">' + esc(row.nama_nasabah || '-') + '</div>' +
+          '<div class="mb-detail-card__meta">' + esc(row.no_rekening || row.rekening || '-') + '</div>' +
+        '</div>' + statusBadge(status) + '</div>' +
+        '<div class="mb-detail-card__metrics">' +
+          '<div class="mb-detail-card__metric"><span>Baki Debet</span><strong>' + fmt(row.baki_debet) + '</strong></div>' +
+          '<div class="mb-detail-card__metric"><span>Recovery</span><strong class="mb-positive">' + fmt(row.recovery_nominal || row.nominal || 0) + '</strong></div>' +
+          '<div class="mb-detail-card__metric"><span>Jenis</span><strong>' + esc(recoveryKindLabel(row)) + '</strong></div>' +
+          '<div class="mb-detail-card__metric"><span>Kolek</span><strong>' + esc(row.kolek || '-') + ' / ' + esc(row.kolek_update || '-') + '</strong></div>' +
+          '<div class="mb-detail-card__metric"><span>Tanggal</span><strong>' + fmtDay(detailDate(row)) + '</strong></div>' +
+          '<div class="mb-detail-card__metric"><span>Tgl Bayar</span><strong>' + fmtDate(row.tgl_trans || row.tgl_bayar) + '</strong></div>' +
+          '<div class="mb-detail-card__metric"><span>Angsuran Pokok</span><strong>' + fmt(row.angsuran_pokok || row.nominal_pokok || 0) + '</strong></div>' +
+          '<div class="mb-detail-card__metric"><span>Angsuran Bunga</span><strong>' + fmt(row.angsuran_bunga || row.nominal_bunga || 0) + '</strong></div>' +
+        '</div></article>';
+    }).join('');
   }
 
   function renderDetail() {
@@ -642,6 +682,7 @@ mb_render_detail_modal([
 
     if (!rows.length) {
       body.innerHTML = '<div class="mb-empty">Detail tidak ditemukan.</div>';
+      renderDetailMobile([]);
       renderDetailFooter(0, 1);
       return;
     }
@@ -650,6 +691,7 @@ mb_render_detail_modal([
     state.detailPage = Math.min(Math.max(1, state.detailPage), totalPages);
     const start = (state.detailPage - 1) * state.detailPageSize;
     const pageRows = rows.slice(start, start + state.detailPageSize);
+    renderDetailMobile(pageRows);
 
     body.innerHTML = '<table class="mb-table mb-detail-mini"><thead><tr>' +
       '<th>Rekening</th><th>Nama Nasabah</th><th>Baki Debet</th><th>Recovery</th><th>Jenis</th><th>Kolek</th><th>Status</th><th>Tgl</th><th>Tgl Bayar</th><th>Angs. Pokok</th><th>Angs. Bunga</th>' +
@@ -693,8 +735,10 @@ mb_render_detail_modal([
     if (jt) jt.classList.toggle('is-hidden', type !== 'backflow');
     if (jt) jt.closest('.mb-field')?.classList.toggle('is-hidden', type !== 'backflow');
 
+    MonbisUI.closeMobileFilter('reportRecoveryDetailFilters');
     MonbisUI.openModal('reportRecoveryDetail');
     el('reportRecoveryDetailBody').innerHTML = '<div class="mb-empty">Memuat detail debitur...</div>';
+    el('reportRecoveryDetailMobile').innerHTML = '<div class="mb-empty">Memuat detail debitur...</div>';
     renderDetailFooter(0, 1);
 
     try {
@@ -712,17 +756,18 @@ mb_render_detail_modal([
     const rows = state.rows || [];
     if (!rows.length) return;
     const allRows = state.total ? [{ ...state.total, kode_cabang:'ALL', nama_kantor:'TOTAL' }, ...rows] : rows;
-    let html = '<table border="1"><thead><tr><th>Kode</th><th>Nama Kantor</th><th>NOA Flow NPL</th><th>Nominal Flow NPL</th><th>NOA Lunas</th><th>Nominal Lunas</th><th>NOA Backflow</th><th>Nominal Backflow</th><th>NOA Angsuran NPL</th><th>Nominal Angsuran NPL</th><th>Total NOA Recovery</th><th>Total Nominal Recovery</th><th>-/+ OSC NPL</th><th>% Flow</th><th>OSC NPL</th></tr></thead><tbody>';
+    let html = '<table border="1"><thead><tr><th>Kode</th><th>Nama Kantor</th><th>OSC NPL Closing</th><th>NOA Flow PAR</th><th>Baki Debet Flow PAR</th><th>% Flow PAR</th><th>NOA Lunas</th><th>Lunas</th><th>NOA Backflow</th><th>OSC Backflow</th><th>NOA Angsuran</th><th>Angsuran</th><th>Total NOA Recovery</th><th>Total Recovery</th><th>OSC NPL Actual</th><th>-/+ OSC NPL</th></tr></thead><tbody>';
     allRows.forEach(row => {
       html += '<tr>' +
         '<td style="mso-number-format:\'\\@\'">' + esc(row.kode_cabang || row.kode_unit || '') + '</td>' +
         '<td>' + esc(row.nama_kantor || row.nama_unit || '') + '</td>' +
-        '<td>' + num(row.noa_flow_npl) + '</td><td>' + num(row.baki_debet_flow_npl) + '</td>' +
+        '<td>' + oscClosing(row) + '</td>' +
+        '<td>' + num(row.noa_flow_npl) + '</td><td>' + num(row.baki_debet_flow_npl) + '</td><td>' + flowRatio(row).toFixed(2) + '%</td>' +
         '<td>' + num(row.noa_lunas) + '</td><td>' + num(row.baki_debet_lunas) + '</td>' +
         '<td>' + num(row.noa_backflow) + '</td><td>' + num(row.baki_debet_backflow) + '</td>' +
         '<td>' + num(row.noa_angsuran_npl) + '</td><td>' + num(row.baki_debet_angsuran_npl) + '</td>' +
         '<td>' + totalRecoveryNoa(row) + '</td><td>' + totalRecovery(row) + '</td>' +
-        '<td>' + num(row.net_flow_recovery) + '</td><td>' + flowRatio(row).toFixed(2) + '%</td><td>' + num(row.npl_harian || row.npl_closing) + '</td>' +
+        '<td>' + oscActual(row) + '</td><td>' + oscDelta(row) + '</td>' +
       '</tr>';
     });
     html += '</tbody></table>';

@@ -4,7 +4,7 @@
             <div class="bg-emerald-50 px-2 py-1.5 rounded-lg text-emerald-600 font-black text-sm">P</div>
             <div class="min-w-0">
                 <p class="text-[9px] font-black tracking-[0.25em] text-emerald-400 uppercase">Analytics Overview</p>
-                <h2 class="text-base md:text-xl font-extrabold text-gray-900 tracking-tight leading-tight">Pendapatan dan Beban per Kantor</h2>
+                <h2 id="title_dist_pendapatan_beban" class="text-base md:text-xl font-extrabold text-gray-900 tracking-tight leading-tight">Pendapatan dan Beban per Kantor</h2>
                 <p id="label_dist_pendapatan_beban_period" class="text-[10px] text-gray-500 font-bold">Posisi data per kantor</p>
             </div>
         </div>
@@ -14,7 +14,8 @@
                 <div class="flex items-start justify-between gap-3 mb-2 shrink-0">
                     <div>
                         <p class="text-[9px] font-black tracking-[0.2em] text-emerald-400 uppercase">Pendapatan</p>
-                        <h3 class="font-extrabold text-gray-900 text-sm md:text-base">Pendapatan per Kantor</h3>
+                        <h3 id="title_dist_pendapatan" class="font-extrabold text-gray-900 text-sm md:text-base">Pendapatan per Kantor</h3>
+                        <p id="total_dist_pendapatan" class="hidden mt-1 text-[10px] font-black text-emerald-600"></p>
                     </div>
                     <div class="tv-distribution-toggle">
                         <button type="button" id="btn_dist_pendapatan_bar" class="is-active" onclick="setDistributionView('pendapatan','bar')">Bar</button>
@@ -30,7 +31,8 @@
                 <div class="flex items-start justify-between gap-3 mb-2 shrink-0">
                     <div>
                         <p class="text-[9px] font-black tracking-[0.2em] text-red-400 uppercase">Beban</p>
-                        <h3 class="font-extrabold text-gray-900 text-sm md:text-base">Beban per Kantor</h3>
+                        <h3 id="title_dist_beban" class="font-extrabold text-gray-900 text-sm md:text-base">Beban per Kantor</h3>
+                        <p id="total_dist_beban" class="hidden mt-1 text-[10px] font-black text-red-600"></p>
                     </div>
                     <div class="tv-distribution-toggle">
                         <button type="button" id="btn_dist_beban_bar" onclick="setDistributionView('beban','bar')">Bar</button>

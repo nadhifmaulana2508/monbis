@@ -2,13 +2,24 @@
     // ==========================================
     // 1. KIOSK LOGIN & NAVIGATION SYSTEM
     // ==========================================
+    const TV_CABANG_MODE = window.TV_CABANG_MODE === true;
     const TV_PIN = "123456"; 
     let currentSlide = 0;
     let slideIntervalId = null;
     let totalSlides = 0;
     let isSlideshowPaused = localStorage.getItem('tv_slideshow_paused') === '1';
 
-    function checkTvLogin() {
+    async function checkTvLogin() {
+        if (TV_CABANG_MODE) {
+            const access = await resolveTvCabangAccess();
+            if (!access) {
+                showTvCabangAccessError();
+                return;
+            }
+            tvCabangAccess = access;
+            initTvDashboard();
+            return;
+        }
         if (localStorage.getItem('tv_kiosk_authorized') !== 'true') {
             document.getElementById('tvLoginModal').classList.remove('hidden');
             document.getElementById('tvPinInput').focus();
@@ -341,7 +352,7 @@
     };
     const TV_KORWIL = ['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'];
     const TV_STORAGE_KEYS = {
-        kantor: 'tv_filter_kantor',
+        kantor: TV_CABANG_MODE ? 'tv_cabang_filter_kantor' : 'tv_filter_kantor',
         header_hidden: 'tv_header_hidden',
         zoom: 'tv_display_zoom',
         slideshow_paused: 'tv_slideshow_paused'
@@ -373,9 +384,86 @@
     let tvInitialHarianDate = null;
     let tvFitTimer = null;
     let tvChromeAutoHideTimer = null;
+    let tvCabangAccess = null;
     const TV_CHROME_AUTO_HIDE_DELAY = 5000;
 
     const apiCall = (url, opt={}) => fetch(url, opt);
+
+    function readTvLoggedUser() {
+        if(typeof window.getUser === 'function') {
+            const directUser = window.getUser();
+            if(directUser) return directUser;
+        }
+        if(window.__USER) return window.__USER;
+        for(const key of ['dpk_user', 'app_user', 'user']) {
+            try {
+                const user = JSON.parse(localStorage.getItem(key) || 'null');
+                if(user) return user;
+            } catch(error) {}
+        }
+        return null;
+    }
+
+    function getTvUserBranchCode(user) {
+        const candidates = [user?.kode_kantor, user?.kode, user?.kode_cabang, user?.branch_code, user?.office_code];
+        for(const candidate of candidates) {
+            const raw = String(candidate ?? '').trim();
+            if(/^\d{1,3}$/.test(raw)) return raw.padStart(3, '0');
+        }
+        return '';
+    }
+
+    function getTvKorwilForBranch(branchCode) {
+        const code = Number(branchCode);
+        if(code >= 1 && code <= 7) return 'SEMARANG';
+        if(code >= 8 && code <= 14) return 'SOLO';
+        if(code >= 15 && code <= 21) return 'BANYUMAS';
+        if(code >= 22 && code <= 28) return 'PEKALONGAN';
+        return '';
+    }
+
+    async function resolveTvCabangAccess() {
+        let user = readTvLoggedUser();
+        if(!user) {
+            const token = localStorage.getItem('dpk_token');
+            if(token) {
+                try {
+                    const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+                    const ssoBase = isLocalHost ? 'http://localhost/rest_api_sso' : 'https://apisso.bkkjateng.co.id';
+                    const response = await fetch(`${ssoBase}/api/auth/whoami`, {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    const result = await response.json();
+                    if(response.ok && result?.data) {
+                        user = result.data;
+                        localStorage.setItem('dpk_user', JSON.stringify(user));
+                    }
+                } catch(error) {
+                    console.error('Gagal memulihkan profil user TV Cabang', error);
+                }
+            }
+        }
+
+        const branch = getTvUserBranchCode(user);
+        const korwil = getTvKorwilForBranch(branch);
+        return branch && korwil ? { branch, korwil, user } : null;
+    }
+
+    function showTvCabangAccessError() {
+        const loading = document.getElementById('loadingDash');
+        if(!loading) return;
+        loading.innerHTML = `
+            <div class="max-w-md rounded-2xl border border-red-200 bg-red-50 p-6 text-center shadow-sm">
+                <div class="text-base font-black text-red-700">TV Cabang tidak dapat dibuka</div>
+                <p class="mt-2 text-sm font-semibold text-red-600">Kode kantor akun tidak dikenali sebagai cabang 001-028.</p>
+                <a href="./dashboard" class="mt-4 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white">Kembali ke Dashboard</a>
+            </div>`;
+    }
+
+    function normalizeTvCabangScope(value) {
+        if(!TV_CABANG_MODE || !tvCabangAccess) return value;
+        return value === tvCabangAccess.korwil ? tvCabangAccess.korwil : tvCabangAccess.branch;
+    }
 
     async function refreshTvLatestDatesIfAuto() {
         if(!TV_CONFIG.auto_date) return false;
@@ -512,7 +600,8 @@
     }
 
     function getTvCurrentKantor() {
-        return document.getElementById('tv_filter_kantor')?.value || TV_CONFIG.kantor || 'konsolidasi';
+        const selected = document.getElementById('tv_filter_kantor')?.value || TV_CONFIG.kantor || 'konsolidasi';
+        return normalizeTvCabangScope(selected);
     }
 
     function refreshTvTriggerLabel(selectId) {
@@ -636,12 +725,27 @@
         try {
             const res = await apiCall('./api/kode/', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({type:'kode_kantor'}) });
             const j = await res.json();
-            let html = `<option value="konsolidasi">Konsolidasi</option><option value="000">000 - Kantor Pusat</option><option value="SEMARANG">Korwil Semarang</option><option value="SOLO">Korwil Solo</option><option value="BANYUMAS">Korwil Banyumas</option><option value="PEKALONGAN">Korwil Pekalongan</option>`;
-            if(j.data) j.data.filter(x => x.kode_kantor !== '000').forEach(k => html += `<option value="${k.kode_kantor}">${k.kode_kantor} - ${k.nama_kantor || k.nama_cabang || ''}</option>`);
+            let html = '';
+            if(TV_CABANG_MODE && tvCabangAccess) {
+                const office = (j.data || []).find(item => String(item.kode_kantor || '').padStart(3, '0') === tvCabangAccess.branch);
+                const officeName = office?.nama_kantor || office?.nama_cabang || `Cabang ${tvCabangAccess.branch}`;
+                const korwilLabel = tvCabangAccess.korwil.charAt(0) + tvCabangAccess.korwil.slice(1).toLowerCase();
+                html = `<option value="${tvCabangAccess.branch}">${tvCabangAccess.branch} - ${escapeTv(officeName)}</option>`
+                    + `<option value="${tvCabangAccess.korwil}">Korwil ${korwilLabel}</option>`;
+            } else {
+                html = `<option value="konsolidasi">Konsolidasi</option><option value="000">000 - Kantor Pusat</option><option value="SEMARANG">Korwil Semarang</option><option value="SOLO">Korwil Solo</option><option value="BANYUMAS">Korwil Banyumas</option><option value="PEKALONGAN">Korwil Pekalongan</option>`;
+                if(j.data) j.data.filter(x => x.kode_kantor !== '000').forEach(k => html += `<option value="${k.kode_kantor}">${k.kode_kantor} - ${escapeTv(k.nama_kantor || k.nama_cabang || '')}</option>`);
+            }
             optKantor.innerHTML = html;
             optKantor.value = TV_CONFIG.kantor;
         } catch(e) {
-            optKantor.innerHTML = `<option value="000">000 - Kantor Pusat</option>`;
+            if(TV_CABANG_MODE && tvCabangAccess) {
+                const korwilLabel = tvCabangAccess.korwil.charAt(0) + tvCabangAccess.korwil.slice(1).toLowerCase();
+                optKantor.innerHTML = `<option value="${tvCabangAccess.branch}">Cabang ${tvCabangAccess.branch}</option><option value="${tvCabangAccess.korwil}">Korwil ${korwilLabel}</option>`;
+                optKantor.value = tvCabangAccess.branch;
+            } else {
+                optKantor.innerHTML = `<option value="000">000 - Kantor Pusat</option>`;
+            }
         }
     }
 
@@ -862,7 +966,7 @@
     }
 
     async function initTvDashboard() {
-        const savedKantor = localStorage.getItem(TV_STORAGE_KEYS.kantor) || '';
+        const savedKantor = TV_CABANG_MODE ? '' : (localStorage.getItem(TV_STORAGE_KEYS.kantor) || '');
         try { 
             const r = await apiCall('./api/date/'); 
             const j = await r.json(); 
@@ -875,7 +979,8 @@
             console.error("Gagal get date", e);
         }
 
-        if(savedKantor) TV_CONFIG.kantor = savedKantor;
+        if(TV_CABANG_MODE && tvCabangAccess) TV_CONFIG.kantor = tvCabangAccess.branch;
+        else if(savedKantor) TV_CONFIG.kantor = savedKantor;
 
         TV_CONFIG.screen_profile = localStorage.getItem('tv_screen_profile') || 'tv_sd';
         TV_CONFIG.zoom = clampTvZoom(localStorage.getItem(TV_STORAGE_KEYS.zoom) || 100);
@@ -1681,6 +1786,169 @@
         return map[metric] || map.aset;
     }
 
+    const TV_MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+    function setDistributionBranchTrendMode(enabled) {
+        const titles = {
+            aset: enabled ? 'Tren Aset Tahun Berjalan' : 'Aset per Kantor',
+            laba: enabled ? 'Laba Rugi Bulanan' : 'Laba Rugi per Kantor',
+            pendapatan: enabled ? 'Pendapatan Bulanan' : 'Pendapatan per Kantor',
+            beban: enabled ? 'Beban Bulanan' : 'Beban per Kantor'
+        };
+        setText('title_dist_aset_laba', enabled ? 'Tren Aset dan Laba Cabang' : 'Aset dan Laba per Kantor');
+        setText('title_dist_pendapatan_beban', enabled ? 'Tren Pendapatan dan Beban Cabang' : 'Pendapatan dan Beban per Kantor');
+
+        Object.entries(titles).forEach(([metric, title]) => {
+            setText(`title_dist_${metric}`, title);
+            document.getElementById(`btn_dist_${metric}_bar`)?.closest('.tv-distribution-toggle')?.classList.remove('hidden');
+            document.getElementById(`dist_${metric}_summary`)?.classList.toggle('hidden', enabled);
+            document.getElementById(`total_dist_${metric}`)?.classList.toggle('hidden', !enabled);
+            document.getElementById(`dist_${metric}_table`)?.classList.add('hidden');
+            document.getElementById(`dist_${metric}_bar`)?.classList.remove('hidden');
+        });
+
+        if(enabled) {
+            ['aset', 'laba', 'pendapatan', 'beban'].forEach(metric => setDistributionView(metric, 'bar'));
+        } else {
+            setDistributionView('aset', 'bar');
+            setDistributionView('laba', 'table');
+            setDistributionView('pendapatan', 'bar');
+            setDistributionView('beban', 'table');
+        }
+    }
+
+    function getBranchYtdMetricSeries(metric, items) {
+        const rows = Array.isArray(items) ? items : [];
+        return rows.map((item, index) => {
+            const value = Number(item?.[metric] || 0);
+            const previousValue = index > 0 ? Number(rows[index - 1]?.[metric] || 0) : null;
+            const delta = previousValue === null ? null : value - previousValue;
+            const growth = previousValue === null
+                ? null
+                : (previousValue !== 0 ? (delta / Math.abs(previousValue)) * 100 : (value !== 0 ? 100 : 0));
+            return { ...item, value, previousValue, delta, growth };
+        });
+    }
+
+    function formatBranchGrowth(growth) {
+        if(growth === null || growth === undefined || !Number.isFinite(Number(growth))) return '-';
+        const value = Number(growth);
+        const direction = value > 0 ? 'Naik' : (value < 0 ? 'Turun' : 'Tetap');
+        return `${direction} ${Math.abs(value).toFixed(2).replace('.', ',')}%`;
+    }
+
+    function branchGrowthTone(metric, growth) {
+        const value = Number(growth || 0);
+        if(value === 0) return 'text-gray-500';
+        const isGood = metric === 'beban' ? value < 0 : value > 0;
+        return isGood ? 'text-green-600' : 'text-red-600';
+    }
+
+    function renderBranchYtdDetail(metric, items) {
+        const rows = getBranchYtdMetricSeries(metric, items);
+        const box = document.getElementById(`dist_${metric}_table`);
+        const totalBox = document.getElementById(`total_dist_${metric}`);
+        const latest = rows[rows.length - 1] || null;
+        const total = metric === 'aset'
+            ? Number(latest?.value || 0)
+            : rows.reduce((sum, item) => sum + Number(item.value || 0), 0);
+
+        if(totalBox) {
+            const totalLabel = metric === 'aset' ? 'Posisi terakhir' : 'Total tahun berjalan';
+            const compareText = latest ? `${formatBranchGrowth(latest.growth)} dari bulan sebelumnya` : '-';
+            totalBox.innerHTML = `${totalLabel}: <span class="text-gray-900">${formatSignedRp(total)}</span> <span class="${branchGrowthTone(metric, latest?.growth)}">• ${compareText}</span>`;
+        }
+
+        if(!box) return;
+        box.innerHTML = `
+            <table>
+                <thead><tr><th>Bulan</th><th>${metric === 'aset' ? 'Posisi' : 'Nominal Bulanan'}</th><th>Perubahan</th></tr></thead>
+                <tbody>
+                    ${rows.map(item => `
+                        <tr>
+                            <td>
+                                ${TV_MONTH_LABELS[Math.max(0, Number(item.bulan || 1) - 1)] || '-'}
+                                <div class="text-[9px] text-gray-400 font-bold mt-0.5">${item.tanggal || '-'}</div>
+                            </td>
+                            <td style="text-align:right">${formatSignedRp(item.value)}</td>
+                            <td><span class="font-black ${branchGrowthTone(metric, item.growth)}">${formatBranchGrowth(item.growth)}</span></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>`;
+    }
+
+    function renderBranchYtdChart(metric, items, existingInstance) {
+        const meta = distributionMetricMeta(metric);
+        const canvas = document.getElementById(meta.canvas);
+        if(!canvas || typeof Chart === 'undefined') return existingInstance;
+        if(existingInstance) existingInstance.destroy();
+
+        const rows = getBranchYtdMetricSeries(metric, items);
+        const labels = rows.map(item => TV_MONTH_LABELS[Math.max(0, Number(item.bulan || 1) - 1)] || item.tanggal || '-');
+        const values = rows.map(item => item.value);
+        const growthValues = rows.map(item => item.growth);
+        const dates = rows.map(item => item.tanggal || '-');
+        const theme = tvChartTheme();
+
+        return new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [{
+                    label: meta.label,
+                    data: values,
+                    borderColor: meta.color,
+                    backgroundColor: meta.bg,
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: meta.color,
+                    pointBorderWidth: 3,
+                    fill: true,
+                    tension: 0.32
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { top: 12, right: 14, bottom: 2, left: 4 } },
+                interaction: { mode: 'index', axis: 'x', intersect: false },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: 'rgba(17, 24, 39, 0.95)',
+                        padding: 12,
+                        titleFont: { size: 13, family: 'sans-serif' },
+                        bodyFont: { size: 12, family: 'sans-serif' },
+                        callbacks: {
+                            title: context => `${context[0]?.label || '-'} ${String(dates[context[0]?.dataIndex] || '').slice(0, 4)}`,
+                            label: context => `${meta.label}: ${formatSignedRp(context.raw)}`,
+                            afterLabel: context => [
+                                `Perubahan: ${formatBranchGrowth(growthValues[context.dataIndex])}`,
+                                `Posisi data: ${dates[context.dataIndex] || '-'}`
+                            ]
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: theme.muted, font: { size: 10, weight: 'bold' } },
+                        grid: { display: false }
+                    },
+                    y: {
+                        ticks: { color: theme.muted, callback: value => fmtB(value) },
+                        grid: { color: theme.grid, borderDash: [4, 4] }
+                    }
+                }
+            }
+        });
+    }
+
     function formatSignedRp(value) {
         const num = Number(value || 0);
         return `${num < 0 ? '-' : ''}Rp ${fmtB(Math.abs(num))}`;
@@ -1818,6 +2086,31 @@
             });
             const json = await res.json();
             const metrics = json.data?.metrics || {};
+            const branchYtd = json.data?.branch_ytd || null;
+            const branchYtdItems = Array.isArray(branchYtd?.items) ? branchYtd.items : [];
+            const useBranchTrend = !!branchYtd && branchYtdItems.length > 0;
+            setDistributionBranchTrendMode(useBranchTrend);
+
+            if(useBranchTrend) {
+                const branchInfo = metrics.aset?.items?.[0] || {};
+                const branchLabel = `${branchInfo.kode_kantor || branchYtd.kode_kantor || '-'} - ${(branchInfo.nama_kantor || 'Cabang').replace(/^Kc\.\s*/i, '')}`;
+                const firstMonth = TV_MONTH_LABELS[Math.max(0, Number(branchYtdItems[0]?.bulan || 1) - 1)] || 'Jan';
+                const lastMonth = TV_MONTH_LABELS[Math.max(0, Number(branchYtdItems[branchYtdItems.length - 1]?.bulan || 1) - 1)] || '-';
+                const periodText = `Tren ${firstMonth} - ${lastMonth} ${branchYtd.tahun || '-'} | ${branchLabel}`;
+                setText('label_dist_aset_laba_period', periodText);
+                setText('label_dist_pendapatan_beban_period', periodText);
+
+                ['aset', 'laba', 'pendapatan', 'beban'].forEach(metric => {
+                    renderBranchYtdDetail(metric, branchYtdItems);
+                });
+                chartDistAsetInstance = renderBranchYtdChart('aset', branchYtdItems, chartDistAsetInstance);
+                chartDistLabaInstance = renderBranchYtdChart('laba', branchYtdItems, chartDistLabaInstance);
+                chartDistPendapatanInstance = renderBranchYtdChart('pendapatan', branchYtdItems, chartDistPendapatanInstance);
+                chartDistBebanInstance = renderBranchYtdChart('beban', branchYtdItems, chartDistBebanInstance);
+                scheduleTvFit(120);
+                return;
+            }
+
             const periodText = `Posisi ${json.data?.tanggal || '-'} | Pembanding ${json.data?.tanggal_bulan_lalu || '-'}`;
             setText('label_dist_aset_laba_period', periodText);
             setText('label_dist_pendapatan_beban_period', periodText);

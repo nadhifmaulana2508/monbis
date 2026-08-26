@@ -177,7 +177,7 @@
             if (br) br.textContent = u.branch_name || u.unit_kerja || '-';
             if (acc) acc.textContent = (u.account_handle || u.username || u.email || u.employee_id || u.kode || '-');
 
-            const isDev = (u.role === 'dev' || u.unit_kerja === 'Divisi Operasional' || u.unit_kerja === 'Dewan Komisaris dan Direksi');
+            const isDev = (u.role === 'dev' || u.unit_kerja === 'Divisi Operasional' || u.unit_kerja === 'Dewan Komisaris dan Direksi' || u.unit_kerja ===  'Divisi Perencanaan dan Litbang');
             if (menuMonevDev) {
                 menuMonevDev.style.setProperty('display', isDev ? 'block' : 'none', 'important');
             }
@@ -301,7 +301,7 @@
             root.style.setProperty('--monbis-event-sidebar-bg', isDark ? '#0f172a' : (theme.sidebar_bg || '#ffffff'));
             root.style.setProperty('--monbis-event-text', isDark ? '#e5e7eb' : (theme.text_color || '#0f172a'));
             root.style.setProperty('--monbis-event-sidebar-text', isDark ? '#cbd5e1' : (theme.sidebar_text || '#334155'));
-            root.style.setProperty('--monbis-event-font', theme.font_family || 'Inter, system-ui, sans-serif');
+            root.style.setProperty('--monbis-event-font', theme.font_family || 'Roboto, Arial, system-ui, sans-serif');
 
             const img = assetUrl(theme.image_path);
             if (sidebar && img) {
@@ -377,7 +377,7 @@
         left:18px;
         bottom:18px;
         z-index:1200;
-        font-family:var(--monbis-event-font, Inter, system-ui, sans-serif);
+        font-family:var(--monbis-event-font, Roboto, Arial, system-ui, sans-serif);
     }
     .monbis-ai-chat__button {
         display:none !important;

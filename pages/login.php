@@ -175,6 +175,8 @@
     return '';
   }
   const BASE_APP = window.BASE_APP || location.origin + getBasePath();
+  const requestedNextPage = new URLSearchParams(window.location.search).get('next');
+  const postLoginPage = requestedNextPage === 'tv_cabang' ? 'tv_cabang' : 'dashboard';
   
   // 1. DETEKSI ENVIRONMENT 
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
@@ -269,7 +271,7 @@
             console.error("Error mengambil data user (whoami):", err);
         }
 
-        location.href = `${BASE_APP}/dashboard`;
+        location.href = `${BASE_APP}/${postLoginPage}`;
 
     } catch (error) {
         errMsg.textContent = error.message.includes("Failed to fetch") 

@@ -904,8 +904,16 @@ public function getTop25NplPerCabang($input) {
         $jt_start = date('Y-m-15', strtotime($harian_date . ' -1 month'));
         $jt_end   = $akhirBulan;
 
-        $kc = $input['kode_kantor'] ?? null;
-        if ($kc === '000' || $kc === '') $kc = null;
+        $kc = $this->normalizeKodeKantor($input['kode_kantor'] ?? null);
+        $korwilInput = strtoupper(trim((string)($input['korwil'] ?? '')));
+        $korwilInput = preg_replace('/^KOR\s*-\s*/i', '', $korwilInput);
+        $korwilRange = $kc || $korwilInput === '' || $korwilInput === 'ALL'
+            ? null
+            : $this->korwilRange($korwilInput);
+        if (!$kc && $korwilInput !== '' && $korwilInput !== 'ALL' && !$korwilRange) {
+            sendResponse(422, "Korwil tidak valid. Pilihan: SEMARANG, SOLO, BANYUMAS, atau PEKALONGAN.");
+            return;
+        }
 
         // --- LOGIC MASTER TABLE (Agar Kantor 0 tetap tampil) ---
         if ($kc) {
@@ -917,6 +925,7 @@ public function getTop25NplPerCabang($input) {
             $filterHarian = "AND h.kode_cabang = :kc1";
             $filterClosing = "AND n.kode_cabang = :kc2";
             $kc_val       = str_pad((string)$kc, 3, '0', STR_PAD_LEFT);
+            $totalLabel   = 'TOTAL CABANG ' . $kc_val;
         } else {
             $masterTable  = "kode_kantor k";
             $colKey       = "kode_cabang";
@@ -926,6 +935,13 @@ public function getTop25NplPerCabang($input) {
             $filterHarian = "";
             $filterClosing = "";
             $kc_val       = null;
+            $totalLabel   = 'TOTAL KONSOLIDASI';
+            if ($korwilRange) {
+                $filterMaster .= " AND k.kode_kantor BETWEEN :kw_master_start AND :kw_master_end";
+                $filterHarian = "AND h.kode_cabang BETWEEN :kw_harian_start AND :kw_harian_end";
+                $filterClosing = "AND n.kode_cabang BETWEEN :kw_closing_start AND :kw_closing_end";
+                $totalLabel = 'TOTAL KORWIL ' . $korwilInput;
+            }
         }
 
         $sql = "
@@ -1002,6 +1018,13 @@ public function getTop25NplPerCabang($input) {
                 $stmt->bindValue(':kc_master', $kc_val);
                 $stmt->bindValue(':kc1', $kc_val);
                 $stmt->bindValue(':kc2', $kc_val);
+            } elseif ($korwilRange) {
+                $stmt->bindValue(':kw_master_start', $korwilRange[0]);
+                $stmt->bindValue(':kw_master_end', $korwilRange[1]);
+                $stmt->bindValue(':kw_harian_start', $korwilRange[0]);
+                $stmt->bindValue(':kw_harian_end', $korwilRange[1]);
+                $stmt->bindValue(':kw_closing_start', $korwilRange[0]);
+                $stmt->bindValue(':kw_closing_end', $korwilRange[1]);
             }
             
             $stmt->execute();
@@ -1009,7 +1032,7 @@ public function getTop25NplPerCabang($input) {
 
             $grandTotal = [
                 'kode_cabang' => '',
-                'nama_cabang' => $kc_val ? 'TOTAL' : 'TOTAL KONSOLIDASI',
+                'nama_cabang' => $totalLabel,
                 'total_noa' => 0,
                 'total_baki' => 0,
                 'noa_aman' => 0,
@@ -1039,9 +1062,16 @@ public function getTop25NplPerCabang($input) {
 
     public function getDetailPotensiNpl($input = [])
     {
-        $kode_kantor = isset($input['kode_kantor']) && $input['kode_kantor'] !== ''
-            ? str_pad($input['kode_kantor'], 3, '0', STR_PAD_LEFT)
-            : null;
+        $kode_kantor = $this->normalizeKodeKantor($input['kode_kantor'] ?? null);
+        $korwilInput = strtoupper(trim((string)($input['korwil'] ?? '')));
+        $korwilInput = preg_replace('/^KOR\s*-\s*/i', '', $korwilInput);
+        $korwilRange = $kode_kantor || $korwilInput === '' || $korwilInput === 'ALL'
+            ? null
+            : $this->korwilRange($korwilInput);
+        if (!$kode_kantor && $korwilInput !== '' && $korwilInput !== 'ALL' && !$korwilRange) {
+            sendResponse(422, "Korwil tidak valid. Pilihan: SEMARANG, SOLO, BANYUMAS, atau PEKALONGAN.");
+            return;
+        }
             
         $kode_kankas = $input['kode_kankas'] ?? '';
         $kode_ao = $input['kode_ao'] ?? '';
@@ -1071,6 +1101,10 @@ public function getTop25NplPerCabang($input) {
         $filterAoClosing     = $kode_ao !== '' ? " AND n.kode_group2 = :kode_ao " : "";
         
         $filterKantorTrx     = $kode_kantor && $kode_kantor !== '000' ? " AND t.kode_kantor = :kode_kantor_trx " : "";
+        if ($korwilRange) {
+            $filterKantorClosing = " AND n.kode_cabang BETWEEN :kw_detail_closing_start AND :kw_detail_closing_end ";
+            $filterKantorTrx = " AND t.kode_kantor BETWEEN :kw_detail_trx_start AND :kw_detail_trx_end ";
+        }
 
         $sql = "
             WITH kandidat AS (
@@ -1209,6 +1243,11 @@ public function getTop25NplPerCabang($input) {
             if ($kode_kantor && $kode_kantor !== '000') {
                 $st->bindValue(':kode_kantor_c',   $kode_kantor);
                 $st->bindValue(':kode_kantor_trx', $kode_kantor);
+            } elseif ($korwilRange) {
+                $st->bindValue(':kw_detail_closing_start', $korwilRange[0]);
+                $st->bindValue(':kw_detail_closing_end', $korwilRange[1]);
+                $st->bindValue(':kw_detail_trx_start', $korwilRange[0]);
+                $st->bindValue(':kw_detail_trx_end', $korwilRange[1]);
             }
             if ($kode_kankas !== '') {
                 $st->bindValue(':kode_kankas', $kode_kankas);

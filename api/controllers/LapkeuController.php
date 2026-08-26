@@ -1196,6 +1196,89 @@ class LaporanKeuanganController
         }
     }
 
+    private function getBranchYtdMakro(string $kodeKantor, string $baseDate, array $asetCodes): array
+    {
+        $baseDateObj = new DateTime($baseDate);
+        $year = (int) $baseDateObj->format('Y');
+        $throughMonth = (int) $baseDateObj->format('n');
+        $periodStart = sprintf('%04d-01-01', $year);
+        $asetIn = implode(',', array_map([$this->pdo, 'quote'], $asetCodes));
+        $trackedIn = implode(',', array_map([$this->pdo, 'quote'], array_merge($asetCodes, ['4', '5'])));
+
+        $sql = "
+            SELECT
+                ah.tanggal,
+                SUM(CASE WHEN ah.kode_perk IN ($asetIn) THEN ah.saldo_akhir ELSE 0 END) AS aset,
+                SUM(CASE WHEN ah.kode_perk = '4' THEN ah.saldo_akhir ELSE 0 END) AS pendapatan,
+                SUM(CASE WHEN ah.kode_perk = '5' THEN ah.saldo_akhir ELSE 0 END) AS beban
+            FROM acc_history ah
+            INNER JOIN (
+                SELECT YEAR(tanggal) AS tahun, MONTH(tanggal) AS bulan, MAX(tanggal) AS tanggal
+                FROM acc_history
+                WHERE kode_kantor = :kode_tanggal
+                  AND tanggal BETWEEN :periode_awal AND :periode_akhir
+                GROUP BY YEAR(tanggal), MONTH(tanggal)
+            ) periode ON periode.tanggal = ah.tanggal
+            WHERE ah.kode_kantor = :kode_nilai
+              AND ah.kode_perk IN ($trackedIn)
+            GROUP BY ah.tanggal
+            ORDER BY ah.tanggal ASC
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':kode_tanggal' => $kodeKantor,
+            ':kode_nilai' => $kodeKantor,
+            ':periode_awal' => $periodStart,
+            ':periode_akhir' => $baseDate,
+        ]);
+
+        $rowsByMonth = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $month = (int) (new DateTime((string) $row['tanggal']))->format('n');
+            $pendapatan = (float) ($row['pendapatan'] ?? 0);
+            $beban = (float) ($row['beban'] ?? 0);
+            $rowsByMonth[$month] = [
+                'tanggal' => (string) $row['tanggal'],
+                'aset' => (float) ($row['aset'] ?? 0),
+                'pendapatan_akumulasi' => $pendapatan,
+                'beban_akumulasi' => $beban,
+                'laba_akumulasi' => $pendapatan - $beban,
+            ];
+        }
+
+        $items = [];
+        for ($month = 1; $month <= $throughMonth; $month++) {
+            if (!isset($rowsByMonth[$month])) {
+                continue;
+            }
+            $current = $rowsByMonth[$month];
+            $previous = $month > 1 ? ($rowsByMonth[$month - 1] ?? null) : null;
+            $previousPendapatan = (float) ($previous['pendapatan_akumulasi'] ?? 0);
+            $previousBeban = (float) ($previous['beban_akumulasi'] ?? 0);
+            $previousLaba = (float) ($previous['laba_akumulasi'] ?? 0);
+
+            $items[] = [
+                'bulan' => $month,
+                'tanggal' => $current['tanggal'],
+                'aset' => $current['aset'],
+                'pendapatan' => $current['pendapatan_akumulasi'] - $previousPendapatan,
+                'beban' => $current['beban_akumulasi'] - $previousBeban,
+                'laba' => $current['laba_akumulasi'] - $previousLaba,
+                'pendapatan_akumulasi' => $current['pendapatan_akumulasi'],
+                'beban_akumulasi' => $current['beban_akumulasi'],
+                'laba_akumulasi' => $current['laba_akumulasi'],
+            ];
+        }
+
+        return [
+            'tahun' => $year,
+            'sampai_bulan' => $throughMonth,
+            'kode_kantor' => $kodeKantor,
+            'items' => $items,
+        ];
+    }
+
     public function apiGetDistribusiMakroKantor(array $input)
     {
         try {
@@ -1232,19 +1315,18 @@ class LaporanKeuanganController
                 return $this->pdo->quote((string) $code);
             };
             $asetIn = implode(',', array_map($quoteCode, $asetCodes));
-            $trackedCodes = array_merge($asetCodes, ['210', '4', '5']);
+            // Distribusi ini menampilkan posisi setiap kantor, sehingga saldo 210
+            // tidak boleh dieliminasi pada masing-masing cabang. Eliminasi 210
+            // hanya berlaku sekali pada total konsolidasi di laporan keuangan.
+            $trackedCodes = array_merge($asetCodes, ['4', '5']);
             $trackedIn = implode(',', array_map($quoteCode, array_unique($trackedCodes)));
-            $assetAdjustmentSql = $isConsolidated
-                ? " - SUM(CASE WHEN ah.kode_perk = '210' THEN ah.saldo_akhir ELSE 0 END)"
-                : '';
 
             $sql = "
                 SELECT
                     ah.tanggal,
                     ah.kode_kantor,
                     COALESCE(kk.nama_kantor, CONCAT('Kc. ', ah.kode_kantor)) AS nama_kantor,
-                    SUM(CASE WHEN ah.kode_perk IN ($asetIn) THEN ah.saldo_akhir ELSE 0 END)
-                    $assetAdjustmentSql AS aset,
+                    SUM(CASE WHEN ah.kode_perk IN ($asetIn) THEN ah.saldo_akhir ELSE 0 END) AS aset,
                     SUM(CASE WHEN ah.kode_perk = '4' THEN ah.saldo_akhir ELSE 0 END) AS pendapatan,
                     SUM(CASE WHEN ah.kode_perk = '5' THEN ah.saldo_akhir ELSE 0 END) AS beban,
                     SUM(CASE WHEN ah.kode_perk = '4' THEN ah.saldo_akhir ELSE 0 END)
@@ -1334,15 +1416,24 @@ class LaporanKeuanganController
                 ];
             }
 
+            $singleBranchCode = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
+            $isSingleBranch = !$korwilRange
+                && !$isConsolidated
+                && preg_match('/^\d{3}$/', $singleBranchCode)
+                && $singleBranchCode >= '001'
+                && $singleBranchCode <= '028';
+            $branchYtd = $isSingleBranch
+                ? $this->getBranchYtdMakro($singleBranchCode, $baseDate, $asetCodes)
+                : null;
+
             sendResponse(200, "Berhasil memuat distribusi makro kantor (" . $scopeLabel . ")", [
                 'scope' => $scopeLabel,
                 'tanggal' => $baseDate,
                 'tanggal_bulan_lalu' => $previousDate,
                 'mode' => 'distribusi_makro',
-                'keterangan' => $isConsolidated
-                    ? 'Aset konsolidasi memakai komponen aset dikurangi kode 210.'
-                    : 'Aset kantor/korwil memakai seluruh komponen aset tanpa eliminasi kode 210.',
+                'keterangan' => 'Distribusi aset per kantor memakai seluruh komponen aset tanpa eliminasi kode 210. Eliminasi 210 hanya diterapkan pada total konsolidasi.',
                 'metrics' => $response,
+                'branch_ytd' => $branchYtd,
             ]);
         } catch (Exception $e) {
             sendResponse(500, "Gagal memuat distribusi makro kantor: " . $e->getMessage(), null);

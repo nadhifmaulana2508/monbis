@@ -1,6 +1,57 @@
 <?php
 require_once __DIR__ . '/helpers.php';
 
+if (!function_exists('mb_build_grouped_thead')) {
+    /**
+     * Membuat thead satu atau dua tingkat dari konfigurasi kolom.
+     * Kolom biasa otomatis memakai rowspan=2 ketika ada group children.
+     */
+    function mb_build_grouped_thead(array $columns): string
+    {
+        $hasGroups = false;
+        foreach ($columns as $column) {
+            if (!empty($column['children']) && is_array($column['children'])) {
+                $hasGroups = true;
+                break;
+            }
+        }
+
+        $renderTh = static function (array $column, array $extraAttrs = []): string {
+            $sort = $column['sort'] ?? null;
+            $class = trim(($column['class'] ?? '') . ($sort ? ' mb-sort' : ''));
+            $attrs = array_merge($column['attrs'] ?? [], $extraAttrs);
+            if ($class !== '') $attrs['class'] = $class;
+            if ($sort) $attrs['data-sort'] = $sort;
+
+            $label = mb_e($column['label'] ?? '');
+            if ($sort) $label .= ' <span class="mb-sort-icon"></span>';
+            return '<th' . mb_attrs($attrs) . '>' . $label . '</th>';
+        };
+
+        $firstRow = '';
+        $secondRow = '';
+        foreach ($columns as $column) {
+            $children = (!empty($column['children']) && is_array($column['children']))
+                ? $column['children']
+                : [];
+
+            if ($children) {
+                $firstRow .= $renderTh($column, ['colspan' => count($children), 'scope' => 'colgroup']);
+                foreach ($children as $child) {
+                    $secondRow .= $renderTh($child, ['scope' => 'col']);
+                }
+                continue;
+            }
+
+            $attrs = ['scope' => 'col'];
+            if ($hasGroups) $attrs['rowspan'] = 2;
+            $firstRow .= $renderTh($column, $attrs);
+        }
+
+        return '<tr>' . $firstRow . '</tr>' . ($hasGroups ? '<tr>' . $secondRow . '</tr>' : '');
+    }
+}
+
 if (!function_exists('mb_render_table_shell')) {
     function mb_render_table_shell(array $cfg): void
     {

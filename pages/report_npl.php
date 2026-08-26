@@ -2,58 +2,68 @@
 require_once __DIR__ . '/../components/bootstrap.php';
 mb_ui_assets('.');
 
-echo '<main class="mb-report-page mb-report-npl" id="reportNplPage">';
+$reportNplTabs = '<div class="mb-segmented" role="tablist" aria-label="Jenis report NPL">'
+    . '<button type="button" id="btnReportKolek" class="mb-segmented__btn is-active" data-report-view="kolek" title="Kolektibilitas" aria-label="Kolektibilitas">' . mb_svg('file') . '</button>'
+    . '<button type="button" id="btnReportNpl" class="mb-segmented__btn" data-report-view="npl" title="Perbandingan NPL" aria-label="Perbandingan NPL">' . mb_svg('chart') . '</button>'
+    . '</div>';
 
-mb_render_page_header([
-    'id' => 'reportNplHeader',
-    'title' => 'Monitoring Kredit',
-    'subtitle' => 'Rekap kolektibilitas kredit dan perbandingan NPL closing vs actual.',
-    'info_modal_id' => 'reportNplInfo',
-    'filters' => [
-        ['id'=>'reportNplSaldo','label'=>'Tipe Saldo','type'=>'select','width'=>'132px','options'=>[
-            'baki_debet'=>'Baki Debet',
-            'saldo_bank'=>'Saldo Bank',
-        ]],
-        ['id'=>'reportNplClosing','label'=>'Closing (M-1)','type'=>'date','width'=>'126px','attrs'=>['onclick'=>'this.showPicker && this.showPicker()']],
-        ['id'=>'reportNplActual','label'=>'Actual (Harian)','type'=>'date','width'=>'126px','attrs'=>['onclick'=>'this.showPicker && this.showPicker()']],
-        ['id'=>'reportNplArea','label'=>'Area / Cabang','type'=>'select','width'=>'260px','options'=>[
-            'ALL'=>'Konsolidasi',
-        ]],
-    ],
-    'actions' => [],
+$reportNplCompareHead = mb_build_grouped_thead([
+    ['label'=>'Kode','class'=>'mb-code-col mb-sticky-left','sort'=>'kode_unit','attrs'=>['style'=>'width:44px']],
+    ['label'=>'Kantor','class'=>'mb-sticky-left-2 mb-text-left','sort'=>'nama_unit','attrs'=>['style'=>'--mb-sticky-1:44px;width:136px']],
+    ['label'=>'Closing','class'=>'mb-group mb-group--blue','children'=>[
+        ['label'=>'Baki Debet','class'=>'mb-group mb-group--blue','sort'=>'npl_closing','attrs'=>['style'=>'width:118px']],
+        ['label'=>'%','class'=>'mb-group mb-group--blue','sort'=>'npl_closing_persen','attrs'=>['style'=>'width:58px']],
+    ]],
+    ['label'=>'Actual','class'=>'mb-group mb-group--red','children'=>[
+        ['label'=>'Baki Debet','class'=>'mb-group mb-group--red','sort'=>'npl_harian','attrs'=>['style'=>'width:118px']],
+        ['label'=>'%','class'=>'mb-group mb-group--red','sort'=>'npl_harian_persen','attrs'=>['style'=>'width:58px']],
+    ]],
+    ['label'=>'Growth','class'=>'mb-group mb-group--green','children'=>[
+        ['label'=>'Baki Debet','class'=>'mb-group mb-group--green','sort'=>'selisih_npl','attrs'=>['style'=>'width:112px']],
+        ['label'=>'%','class'=>'mb-group mb-group--green','sort'=>'selisih_npl_persen','attrs'=>['style'=>'width:58px']],
+    ]],
+    ['label'=>'Status','class'=>'mb-group mb-group--cyan','attrs'=>['style'=>'width:58px']],
 ]);
-?>
 
-  <section class="mb-report-card mb-report-card--grow">
-    <div class="mb-report-toolbar">
-      <div class="mb-report-toolbar__title" id="reportNplTableTitle">Kolektibilitas</div>
-      <div class="mb-report-toolbar__tools">
-        <div class="mb-segmented" role="tablist" aria-label="Jenis report NPL">
-          <button type="button" id="btnReportKolek" class="mb-segmented__btn is-active" data-report-view="kolek" title="Kolektibilitas" aria-label="Kolektibilitas"><?php echo mb_svg('file'); ?></button>
-          <button type="button" id="btnReportNpl" class="mb-segmented__btn" data-report-view="npl" title="Perbandingan NPL" aria-label="Perbandingan NPL"><?php echo mb_svg('chart'); ?></button>
-        </div>
-        <label class="mb-search">
-          <?php echo mb_svg('search'); ?>
-          <input type="search" id="reportNplSearch" class="mb-field-control" placeholder="Cari kode / kantor..." autocomplete="off">
-        </label>
-        <button type="button" id="reportNplViewSwitch" class="mb-view-switch" title="Ganti report" aria-label="Ganti report"><?php echo mb_svg('chart'); ?></button>
-        <button type="button" id="reportNplExport" class="mb-icon-button mb-icon-button--success" title="Export Excel" aria-label="Export Excel"><?php echo mb_svg('download'); ?></button>
-      </div>
-    </div>
-    <?php
-      mb_render_table_shell([
-          'wrapper_id'=>'reportNplTableWrap',
-          'table_id'=>'reportNplTable',
-          'loading_id'=>'reportNplLoading',
-          'loading_text'=>'Memuat data kredit...',
-          'thead_html'=>'',
-          'tbody_ids'=>['reportNplTotal','reportNplBody'],
-      ]);
-    ?>
-  </section>
-</main>
+mb_render_report_page([
+    'id'=>'reportNplPage',
+    'class'=>'mb-report-npl',
+    'header'=>[
+        'id'=>'reportNplHeader',
+        'title'=>'Monitoring Kredit',
+        'subtitle'=>'Rekap kolektibilitas kredit dan perbandingan NPL closing vs actual.',
+        'info_modal_id'=>'reportNplInfo',
+        'filters'=>[
+            ['id'=>'reportNplSaldo','label'=>'Tipe Saldo','type'=>'select','width'=>'132px','options'=>[
+                'baki_debet'=>'Baki Debet',
+                'saldo_bank'=>'Saldo Bank',
+            ]],
+            ['id'=>'reportNplClosing','label'=>'Closing (M-1)','type'=>'date','width'=>'126px','attrs'=>['onclick'=>'this.showPicker && this.showPicker()']],
+            ['id'=>'reportNplActual','label'=>'Actual (Harian)','type'=>'date','width'=>'126px','attrs'=>['onclick'=>'this.showPicker && this.showPicker()']],
+            ['id'=>'reportNplArea','label'=>'Area / Cabang','type'=>'select','width'=>'260px','options'=>['ALL'=>'Konsolidasi']],
+        ],
+        'actions'=>[],
+    ],
+    'toolbar'=>[
+        'title'=>'Kolektibilitas',
+        'title_id'=>'reportNplTableTitle',
+        'before_html'=>$reportNplTabs,
+        'search'=>['id'=>'reportNplSearch','placeholder'=>'Cari kode / kantor...'],
+        'actions'=>[
+            ['attrs'=>['id'=>'reportNplViewSwitch'],'variant'=>'view-switch','icon'=>'chart','title'=>'Ganti report','aria_label'=>'Ganti report'],
+            ['attrs'=>['id'=>'reportNplExport'],'tone'=>'success','icon'=>'download','title'=>'Export Excel','aria_label'=>'Export Excel'],
+        ],
+    ],
+    'table'=>[
+        'wrapper_id'=>'reportNplTableWrap',
+        'table_id'=>'reportNplTable',
+        'loading_id'=>'reportNplLoading',
+        'loading_text'=>'Memuat data kredit...',
+        'thead_html'=>'',
+        'tbody_ids'=>['reportNplTotal','reportNplBody'],
+    ],
+]);
 
-<?php
 mb_render_info_modal([
     'id'=>'reportNplInfo',
     'title'=>'Ringkasan Kondisi NPL',
@@ -88,6 +98,7 @@ mb_render_info_modal([
   const API_KOLEK = './api/kredit/';
   const API_DATE = './api/date/';
   const API_KODE = './api/kode/';
+  const NPL_COMPARE_HEAD = <?= json_encode($reportNplCompareHead, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
   const KORWIL = [
     { key:'SEMARANG', label:'Korwil Semarang' },
     { key:'SOLO', label:'Korwil Solo' },
@@ -118,8 +129,8 @@ mb_render_info_modal([
   };
   const signedPct = value => {
     const n = num(value);
-    if (n > 0) return '^ ' + fmt2(n) + '%';
-    if (n < 0) return 'v ' + fmt2(Math.abs(n)) + '%';
+    if (n > 0) return '+' + fmt2(n) + '%';
+    if (n < 0) return '-' + fmt2(Math.abs(n)) + '%';
     return fmt2(0) + '%';
   };
 
@@ -287,8 +298,8 @@ mb_render_info_modal([
   function renderKolekHead() {
     setHead(`
       <tr>
-        <th class="mb-code-col mb-sticky-left mb-sort" data-sort="kode_unit" style="width:46px">Kode <span class="mb-sort-icon"></span></th>
-        <th class="mb-sticky-left-2 mb-sort" data-sort="nama_unit" style="--mb-sticky-1:46px;width:154px;text-align:left">Nama Kantor <span class="mb-sort-icon"></span></th>
+        <th class="mb-code-col mb-sticky-left mb-sort" data-sort="kode_unit" style="width:44px">Kode <span class="mb-sort-icon"></span></th>
+        <th class="mb-sticky-left-2 mb-sort" data-sort="nama_unit" style="--mb-sticky-1:44px;width:136px;text-align:left">Kantor <span class="mb-sort-icon"></span></th>
         <th class="mb-group mb-group--blue mb-sort" data-sort="bd_L" style="width:104px">Lancar <span class="mb-sort-icon"></span></th>
         <th class="mb-group mb-group--amber mb-sort" data-sort="bd_DP" style="width:100px">DPK <span class="mb-sort-icon"></span></th>
         <th class="mb-group mb-group--amber mb-sort" data-sort="bd_KL" style="width:106px">KL <span class="mb-sort-icon"></span></th>
@@ -301,26 +312,15 @@ mb_render_info_modal([
   }
 
   function renderNplHead() {
-    setHead(`
-      <tr>
-        <th class="mb-code-col mb-sticky-left mb-sort" data-sort="kode_unit" style="width:46px">Kode <span class="mb-sort-icon"></span></th>
-        <th class="mb-sticky-left-2 mb-sort" data-sort="nama_unit" style="--mb-sticky-1:46px;width:150px;text-align:left">Nama Kantor <span class="mb-sort-icon"></span></th>
-        <th class="mb-group mb-group--blue mb-sort" data-sort="npl_closing" style="width:118px">Closing <span class="mb-sort-icon"></span></th>
-        <th class="mb-group mb-group--red mb-sort" data-sort="npl_harian" style="width:118px">Actual <span class="mb-sort-icon"></span></th>
-        <th class="mb-group mb-group--amber mb-sort" data-sort="selisih_npl" style="width:112px">Selisih <span class="mb-sort-icon"></span></th>
-        <th class="mb-group mb-group--blue mb-sort" data-sort="npl_closing_persen" style="width:58px">Cl. % <span class="mb-sort-icon"></span></th>
-        <th class="mb-group mb-group--red mb-sort" data-sort="npl_harian_persen" style="width:58px">Act. % <span class="mb-sort-icon"></span></th>
-        <th class="mb-group mb-group--amber mb-sort" data-sort="selisih_npl_persen" style="width:58px">Sel. % <span class="mb-sort-icon"></span></th>
-        <th class="mb-group mb-group--cyan" style="width:58px">Arah</th>
-      </tr>`);
+    setHead(NPL_COMPARE_HEAD);
   }
 
   function renderKolekRow(row, isTotal = false) {
     const trClass = isTotal ? ' class="mb-total-row"' : '';
     return `
       <tr${trClass}>
-        <td class="mb-code-col mb-sticky-left">${isTotal ? 'ALL' : esc(codeOf(row))}</td>
-        <td class="mb-sticky-left-2 mb-name" style="--mb-sticky-1:46px" title="${esc(isTotal ? 'GRAND TOTAL' : nameOf(row))}">${isTotal ? 'GRAND TOTAL' : esc(nameOf(row))}</td>
+        <td class="mb-code-col mb-sticky-left mb-code">${isTotal ? 'ALL' : esc(codeOf(row))}</td>
+        <td class="mb-sticky-left-2 mb-name" style="--mb-sticky-1:44px" title="${esc(isTotal ? 'GRAND TOTAL' : nameOf(row))}">${isTotal ? 'GRAND TOTAL' : esc(nameOf(row))}</td>
         <td class="mb-num">${moneyWithNoa(row.bd_L, row.noa_L)}</td>
         <td class="mb-num">${moneyWithNoa(row.bd_DP, row.noa_DP)}</td>
         <td class="mb-num mb-negative">${moneyWithNoa(row.bd_KL, row.noa_KL, 'mb-negative')}</td>
@@ -338,13 +338,13 @@ mb_render_info_modal([
     const trClass = isTotal ? ' class="mb-total-row"' : '';
     return `
       <tr${trClass}>
-        <td class="mb-code-col mb-sticky-left">${isTotal ? 'ALL' : esc(codeOf(row))}</td>
-        <td class="mb-sticky-left-2 mb-name" style="--mb-sticky-1:46px" title="${esc(isTotal ? 'GRAND TOTAL' : nameOf(row))}">${isTotal ? 'GRAND TOTAL' : esc(nameOf(row))}</td>
+        <td class="mb-code-col mb-sticky-left mb-code">${isTotal ? 'ALL' : esc(codeOf(row))}</td>
+        <td class="mb-sticky-left-2 mb-name" style="--mb-sticky-1:44px" title="${esc(isTotal ? 'GRAND TOTAL' : nameOf(row))}">${isTotal ? 'GRAND TOTAL' : esc(nameOf(row))}</td>
         <td class="mb-num">${fmt(row.npl_closing)}</td>
-        <td class="mb-num">${fmt(row.npl_harian)}</td>
-        <td class="mb-num ${diffClass}">${signed(row.selisih_npl)}</td>
         <td class="mb-num">${fmt2(row.npl_closing_persen)}%</td>
+        <td class="mb-num">${fmt(row.npl_harian)}</td>
         <td class="mb-num">${fmt2(row.npl_harian_persen)}%</td>
+        <td class="mb-num ${diffClass}">${signed(row.selisih_npl)}</td>
         <td class="mb-num ${pctClass}">${signedPct(row.selisih_npl_persen)}</td>
         <td class="mb-noa">${trendIcon(row.selisih_npl)}</td>
       </tr>`;
@@ -386,6 +386,8 @@ mb_render_info_modal([
   function setView(view) {
     state.view = view;
     state.sort = { column:'kode_unit', direction:'asc' };
+    el('reportNplPage')?.classList.toggle('mb-report-grouped-head', view === 'npl');
+    el('reportNplTable')?.classList.toggle('mb-table--grouped-head', view === 'npl');
     document.querySelectorAll('[data-report-view]').forEach(btn => btn.classList.toggle('is-active', btn.dataset.reportView === view));
     const switchBtn = el('reportNplViewSwitch');
     if (switchBtn) {
@@ -468,10 +470,10 @@ mb_render_info_modal([
     const rows = [state.total ? { ...state.total, kode_unit:'ALL', nama_unit:'GRAND TOTAL' } : null, ...sortRows(state.rows)].filter(Boolean);
     const headers = state.view === 'kolek'
       ? ['Kode','Nama Kantor','Lancar','Noa Lancar','DPK','Noa DPK','KL','Noa KL','D','Noa D','M','Noa M','Total NPL','Noa NPL','Portofolio','Noa Portofolio','% NPL']
-      : ['Kode','Nama Kantor','NPL Closing','NPL Actual','Selisih','% Closing','% Actual','% Selisih','Status'];
+      : ['Kode','Nama Kantor','Closing Baki Debet','Closing %','Actual Baki Debet','Actual %','Growth Baki Debet','Growth %','Status'];
     const lines = [headers.join('\t')].concat(rows.map(row => state.view === 'kolek'
       ? [row.kode_unit || codeOf(row), row.nama_unit || nameOf(row), row.bd_L, row.noa_L, row.bd_DP, row.noa_DP, row.bd_KL, row.noa_KL, row.bd_D, row.noa_D, row.bd_M, row.noa_M, row.bd_npl, row.noa_npl, row.total_bd, row.total_noa, fmt2(row.persentase_npl)].join('\t')
-      : [row.kode_unit || codeOf(row), row.nama_unit || nameOf(row), row.npl_closing, row.npl_harian, row.selisih_npl, fmt2(row.npl_closing_persen), fmt2(row.npl_harian_persen), fmt2(row.selisih_npl_persen), num(row.selisih_npl) > 0 ? 'Naik' : (num(row.selisih_npl) < 0 ? 'Turun' : 'Tetap')].join('\t')
+      : [row.kode_unit || codeOf(row), row.nama_unit || nameOf(row), row.npl_closing, fmt2(row.npl_closing_persen), row.npl_harian, fmt2(row.npl_harian_persen), row.selisih_npl, fmt2(row.selisih_npl_persen), num(row.selisih_npl) > 0 ? 'Naik' : (num(row.selisih_npl) < 0 ? 'Turun' : 'Tetap')].join('\t')
     ));
     const blob = new Blob([lines.join('\n')], { type:'application/vnd.ms-excel;charset=utf-8' });
     const a = document.createElement('a');

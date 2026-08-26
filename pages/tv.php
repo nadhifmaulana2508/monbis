@@ -1,4 +1,13 @@
-<?php include 'components/display_direksi/tv_login_modal.php'; ?>
+<?php
+$isTvCabang = !empty($tvCabangMode);
+if (!$isTvCabang) {
+    include 'components/display_direksi/tv_login_modal.php';
+}
+?>
+
+<script>
+    window.TV_CABANG_MODE = <?= $isTvCabang ? 'true' : 'false' ?>;
+</script>
 
 <div id="tvWrapper" class="tv-shell max-w-[1920px] mx-auto px-3 sm:px-4 lg:px-8 py-3 lg:py-5 h-screen max-h-screen overflow-hidden flex flex-col bg-gray-50 text-gray-900 font-sans transition-colors duration-500">
     
@@ -6,7 +15,7 @@
 
     <div id="loadingDash" class="flex flex-col justify-center items-center flex-grow min-h-0">
         <div class="animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-blue-500 mb-4"></div>
-        <span class="text-sm text-gray-500 font-semibold animate-pulse">Menyiapkan Data Konsolidasi...</span>
+        <span class="text-sm text-gray-500 font-semibold animate-pulse"><?= $isTvCabang ? 'Menyiapkan Data Cabang...' : 'Menyiapkan Data Konsolidasi...' ?></span>
     </div>
 
     <div id="contentDash" class="hidden relative flex-grow w-full min-h-0 overflow-hidden">
