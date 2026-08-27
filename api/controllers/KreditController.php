@@ -191,7 +191,7 @@ class KreditController {
         if ($displayMode === 'BREAKDOWN_KANKAS') {
             // --- MODE CABANG: Breakdown Data per Kankas ---
             $sql = "
-                SELECT 
+                SELECT
                     COALESCE(NULLIF(t.kode_group_1, ''), CONCAT(t.kode_kantor, '000')) AS kode_kantor,
                     COALESCE(k.deskripsi_group1, CONCAT('KAS ', COALESCE(NULLIF(t.kode_group_1, ''), CONCAT(t.kode_kantor, '000')))) AS nama_kantor,
                     
@@ -237,7 +237,7 @@ class KreditController {
         } else {
             // --- MODE KONSOLIDASI: Breakdown Data per Cabang ---
             $sql = "
-                SELECT 
+                SELECT
                     t.kode_kantor,
                     COALESCE(k.nama_kantor, CONCAT('CABANG ', t.kode_kantor)) AS nama_kantor,
                     
@@ -1311,7 +1311,7 @@ class KreditController {
             * - Alias subquery pakai rls, bukan real, supaya aman di MariaDB.
             * - AO belum realisasi tetap muncul karena FROM utama dari ao_kredit.
             */
-            $sql = "
+            $sqlBase = "
                 SELECT
                     LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') AS kode_kantor,
                     COALESCE(kk.nama_kantor, LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0')) AS nama_kantor,
@@ -1342,9 +1342,45 @@ class KreditController {
                     ON rls.kode_ao = ao.kode_group2
                     AND rls.kode_kantor = LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0')
                 {$aoWhereSql}
+            ";
+
+            /*
+            * GRAND TOTAL harus dihitung dari seluruh AO sesuai filter aktif,
+            * bukan hanya 10 baris yang sedang tampil pada pagination.
+            */
+            $sqlSummary = "
+                SELECT
+                    COUNT(*) AS total_ao,
+                    COALESCE(SUM(all_ao.total_noa), 0) AS total_noa,
+                    COALESCE(SUM(all_ao.total_realisasi), 0) AS total_realisasi
+                FROM ({$sqlBase}) all_ao
+            ";
+
+            $stmtSummary = $this->pdo->prepare($sqlSummary);
+            $stmtSummary->bindValue(':posisi_date', $harian_date);
+            $stmtSummary->bindValue(':closing_date', $closing_date);
+            $stmtSummary->bindValue(':harian_date', $harian_date);
+
+            foreach ($trxParams as $key => $val) {
+                $stmtSummary->bindValue($key, $val);
+            }
+
+            foreach ($aoParams as $key => $val) {
+                $stmtSummary->bindValue($key, $val);
+            }
+
+            $stmtSummary->execute();
+            $summaryRow = $stmtSummary->fetch(PDO::FETCH_ASSOC) ?: [];
+            $summary = [
+                'total_ao'        => (int)($summaryRow['total_ao'] ?? $totalData),
+                'total_noa'       => (int)($summaryRow['total_noa'] ?? 0),
+                'total_realisasi' => (float)($summaryRow['total_realisasi'] ?? 0),
+            ];
+
+            $sql = $sqlBase . "
                 ORDER BY
-                    COALESCE(rls.total_realisasi, 0) DESC,
-                    ao.nama_ao ASC
+                    total_realisasi DESC,
+                    nama_ao ASC
             ";
 
             if ($is_konsolidasi && !$korwilRange) {
@@ -1367,17 +1403,6 @@ class KreditController {
 
             $stmt->execute();
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $summary = [
-                'total_ao'        => count($data),
-                'total_noa'       => 0,
-                'total_realisasi' => 0,
-            ];
-
-            foreach ($data as $row) {
-                $summary['total_noa'] += (int)($row['total_noa'] ?? 0);
-                $summary['total_realisasi'] += (float)($row['total_realisasi'] ?? 0);
-            }
 
             $dropdownData = [];
             if (function_exists('getDropdownKankasAo')) {

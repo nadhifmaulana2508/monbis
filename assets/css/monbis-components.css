@@ -368,6 +368,7 @@ select.mb-field-control { appearance:none; padding-right:28px; background-image:
 .mb-negative { color:#dc2626 !important; }
 .mb-amber { color:#c2410c !important; }
 .mb-violet { color:#7c3aed !important; }
+.mb-blue { color:#1d4ed8 !important; }
 .mb-text-left { text-align:left !important; }
 .mb-text-center { text-align:center !important; }
 .mb-text-right { text-align:right !important; }
@@ -389,6 +390,7 @@ select.mb-field-control { appearance:none; padding-right:28px; background-image:
 .mb-report-npl .mb-icon-button,
 .mb-report-recovery .mb-icon-button { width:34px; min-width:34px; padding:0; }
 .mb-report-npl .mb-view-switch { display:inline-flex; width:34px; height:34px; }
+.mb-report-rbb .mb-view-switch { display:inline-flex; width:34px; height:34px; }
 .mb-report-npl .mb-info-button {
   width:22px;
   height:22px;
@@ -1510,6 +1512,7 @@ button.mb-potensi-metric:hover .mb-potensi-metric__value { text-decoration:under
 .mb-detail-footer-actions,
 .mb-detail-pagination { display:inline-flex; align-items:center; gap:4px; }
 .mb-potensi-detail-table { width:max-content; min-width:1780px !important; }
+.mb-flowpar-detail-table { width:max-content; min-width:1540px !important; }
 .mb-potensi-detail-table th,
 .mb-potensi-detail-table td { height:36px; padding:5px 7px; }
 :root[data-monbis-theme="dark"] .mb-amber { color:#fbbf24 !important; }
@@ -1542,16 +1545,17 @@ button.mb-potensi-metric:hover .mb-potensi-metric__value { text-decoration:under
 .mb-detail-card__note strong { display:block; margin-top:2px; overflow:hidden; color:#334155; font-size:8px; font-weight:800; text-overflow:ellipsis; white-space:nowrap; }
 
 @media (max-width:1023px) {
-  .mb-report-potensi .mb-table { min-width:760px; }
+  .mb-report-potensi .mb-table,
+  .mb-report-flowpar .mb-table { min-width:760px; }
 }
 
 @media (max-width:767px) {
-  .mb-report-potensi .mb-filter-row .mb-field:last-child { grid-column:1 / -1; }
-  .mb-report-potensi .mb-table { min-width:560px; }
-  .mb-report-potensi .mb-table col:first-child { width:0 !important; }
-  .mb-report-potensi .mb-table col:nth-child(2) { width:100px !important; }
-  .mb-report-potensi .mb-table col:nth-child(n+3) { width:92px !important; }
-  .mb-report-potensi .mb-table .mb-sticky-left-2 {
+  :is(.mb-report-potensi,.mb-report-flowpar) .mb-filter-row .mb-field:last-child { grid-column:1 / -1; }
+  :is(.mb-report-potensi,.mb-report-flowpar) .mb-table { min-width:560px; }
+  :is(.mb-report-potensi,.mb-report-flowpar) .mb-table col:first-child { width:0 !important; }
+  :is(.mb-report-potensi,.mb-report-flowpar) .mb-table col:nth-child(2) { width:100px !important; }
+  :is(.mb-report-potensi,.mb-report-flowpar) .mb-table col:nth-child(n+3) { width:92px !important; }
+  :is(.mb-report-potensi,.mb-report-flowpar) .mb-table .mb-sticky-left-2 {
     display:table-cell !important;
     left:0 !important;
     width:100px !important;
@@ -1560,16 +1564,16 @@ button.mb-potensi-metric:hover .mb-potensi-metric__value { text-decoration:under
     overflow:hidden;
     text-overflow:ellipsis;
   }
-  .mb-report-potensi .mb-table .mb-name { line-height:1.15; }
-  .mb-report-potensi .mb-potensi-mobile-code {
+  :is(.mb-report-potensi,.mb-report-flowpar) .mb-table .mb-name { line-height:1.15; }
+  :is(.mb-report-potensi,.mb-report-flowpar) .mb-potensi-mobile-code {
     display:block;
     margin-top:2px;
     color:#64748b;
     font-size:6.5px;
     font-weight:850;
   }
-  .mb-report-potensi .mb-potensi-metric__value { font-size:7.8px; }
-  .mb-report-potensi .mb-potensi-metric .mb-subvalue { font-size:6px; }
+  :is(.mb-report-potensi,.mb-report-flowpar) .mb-potensi-metric__value { font-size:7.8px; }
+  :is(.mb-report-potensi,.mb-report-flowpar) .mb-potensi-metric .mb-subvalue { font-size:6px; }
   .mb-modal--search-near-close .mb-detail-header {
     grid-template-columns:minmax(82px,1fr) minmax(112px,142px);
     grid-template-areas:"heading close" "toolbar toolbar";
@@ -1678,6 +1682,7 @@ button.mb-potensi-metric:hover .mb-potensi-metric__value { text-decoration:under
 :is(.mb-theme-dark, :root[data-monbis-theme="dark"]) .mb-negative { color:#f87171 !important; }
 :is(.mb-theme-dark, :root[data-monbis-theme="dark"]) .mb-amber { color:#fbbf24 !important; }
 :is(.mb-theme-dark, :root[data-monbis-theme="dark"]) .mb-violet { color:#c4b5fd !important; }
+:is(.mb-theme-dark, :root[data-monbis-theme="dark"]) .mb-blue { color:#60a5fa !important; }
 :is(.mb-theme-dark, :root[data-monbis-theme="dark"]) .mb-pill--success {
   border-color:#065f46;
   background:#052e2b;
@@ -1699,8 +1704,8 @@ button.mb-potensi-metric:hover .mb-potensi-metric__value { text-decoration:under
 :is(.mb-theme-dark, :root[data-monbis-theme="dark"]) .mb-potensi-metric--amber .mb-potensi-metric__value { color:#fbbf24; }
 :is(.mb-theme-dark, :root[data-monbis-theme="dark"]) .mb-potensi-metric--red .mb-potensi-metric__value { color:#f87171; }
 :is(.mb-theme-dark, :root[data-monbis-theme="dark"]) .mb-potensi-metric--violet .mb-potensi-metric__value { color:#c4b5fd; }
-:is(.mb-theme-dark, :root[data-monbis-theme="dark"]) .mb-report-potensi .mb-group--blue { background:#172554; color:#93c5fd; }
-:is(.mb-theme-dark, :root[data-monbis-theme="dark"]) .mb-report-potensi .mb-group--green { background:#052e2b; color:#6ee7b7; }
-:is(.mb-theme-dark, :root[data-monbis-theme="dark"]) .mb-report-potensi .mb-group--amber { background:#2a1b0d; color:#fbbf24; }
-:is(.mb-theme-dark, :root[data-monbis-theme="dark"]) .mb-report-potensi .mb-group--red { background:#2a1018; color:#fca5a5; }
-:is(.mb-theme-dark, :root[data-monbis-theme="dark"]) .mb-report-potensi .mb-group--violet { background:#24153f; color:#c4b5fd; }
+:is(.mb-theme-dark, :root[data-monbis-theme="dark"]) :is(.mb-report-potensi,.mb-report-flowpar) .mb-group--blue { background:#172554; color:#93c5fd; }
+:is(.mb-theme-dark, :root[data-monbis-theme="dark"]) :is(.mb-report-potensi,.mb-report-flowpar) .mb-group--green { background:#052e2b; color:#6ee7b7; }
+:is(.mb-theme-dark, :root[data-monbis-theme="dark"]) :is(.mb-report-potensi,.mb-report-flowpar) .mb-group--amber { background:#2a1b0d; color:#fbbf24; }
+:is(.mb-theme-dark, :root[data-monbis-theme="dark"]) :is(.mb-report-potensi,.mb-report-flowpar) .mb-group--red { background:#2a1018; color:#fca5a5; }
+:is(.mb-theme-dark, :root[data-monbis-theme="dark"]) :is(.mb-report-potensi,.mb-report-flowpar) .mb-group--violet { background:#24153f; color:#c4b5fd; }

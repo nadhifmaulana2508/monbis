@@ -566,10 +566,11 @@
       const wrapper = res.data || {};
       const list = wrapper.data || [];
       const pag = wrapper.pagination || {};
+      const summary = wrapper.summary || {};
 
       lastTopData = list;
 
-      renderTable(list, (page - 1) * 10);
+      renderTable(list, (page - 1) * 10, summary);
       updatePaginationUI(pag);
     } catch (e) {
       id("tbodyAO").innerHTML = `
@@ -586,11 +587,11 @@
     }
   }
 
-  function renderTable(rows, startIdx) {
+  function renderTable(rows, startIdx, summary) {
     const tbody = id("tbodyAO");
     rows = rows || [];
 
-    updateTotalRow(rows);
+    updateTotalRow(summary);
 
     if (!rows.length) {
       tbody.innerHTML = `
@@ -656,22 +657,19 @@
     });
   }
 
-  function updateTotalRow(rows) {
+  function updateTotalRow(summary) {
     const totalRow = id("totalRow");
 
-    if (!rows || !rows.length) {
+    if (!summary || Number(summary.total_ao || 0) <= 0) {
       totalRow.classList.add("hidden");
       return;
     }
 
     totalRow.classList.remove("hidden");
 
-    const totalNOA = rows.reduce((sum, row) => sum + Number(row.total_noa || 0), 0);
-    const totalRealisasi = rows.reduce((sum, row) => sum + Number(row.total_realisasi || 0), 0);
-
-    id("totalAO").innerText = `${fmt(rows.length)} AO`;
-    id("totalNOA").innerText = fmt(totalNOA);
-    id("totalRealisasi").innerText = fmt(totalRealisasi);
+    id("totalAO").innerText = `${fmt(summary.total_ao || 0)} AO`;
+    id("totalNOA").innerText = fmt(summary.total_noa || 0);
+    id("totalRealisasi").innerText = fmt(summary.total_realisasi || 0);
   }
 
   async function openDetailAO(kodeAO, namaAO) {

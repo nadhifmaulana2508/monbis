@@ -38,6 +38,8 @@ dan responsif yang sama dari `assets/` dan `components/`.
 | Realisasi & Growth | `report_realisasi_kredit_growth.php` | Selesai | Selesai | Perlu visual QA | Kantor 000 dipertahankan dan menu tersedia di Dev Report |
 | Mutasi Kredit | `report_mutasi_kredit.php` | Selesai | Selesai | Perlu visual QA | Menggunakan komponen bersama dan menampilkan nominal BE tanpa pembagian 1000 |
 | Potensi NPL | `report_potensi_npl.php` | Selesai | Selesai | Perlu visual QA | Dev Report; grouped thead, detail component, serta filter konsolidasi/korwil/cabang |
+| Flow PAR | `report_flowpar.php` | Selesai | Selesai | Perlu visual QA | Dev Report; memakai API Flow PAR lama dengan grouped thead dan detail component |
+| Produksi Kredit vs RBB | `rbb_produksi_kredit.php` | Selesai | Tidak ada | Perlu visual QA | Dua view: Produksi vs RBB dan Pertumbuhan/YoY; tanpa card ringkasan |
 | Recovery PH lama | `recovery_ph.php` | Belum | Ada | Lama | Dipertahankan sebagai pembanding |
 
 ## Aturan Tambahan

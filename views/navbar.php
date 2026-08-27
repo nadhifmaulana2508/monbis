@@ -783,10 +783,12 @@
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
         </button>
         <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
-          <a href="report_npl" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report NPL UI</a>
+          <a href="report_npl" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report NPL</a>
           <a href="report_recovery_npl" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Recovery NPL</a>
           <a href="report_mutasi_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Mutasi Kredit</a>
           <a href="report_potensi_npl" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Potensi NPL</a>
+          <a href="report_flowpar" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Flow PAR</a>
+          <a href="rbb_produksi_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Produksi vs RBB</a>
         </div>
       </div>
 
