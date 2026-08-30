@@ -81,8 +81,8 @@ class AuthController {
             sendResponse(400, "ID Karyawan tidak ditemukan dalam token");
         }
     
-        $user = $this->remember('whoami_' . md5($employee_id), 300, function () use ($employee_id) {
-            $stmt = $this->pdo->prepare("SELECT id, kode, employee_id, full_name, job_position, branch_name, level, role FROM users WHERE employee_id = :employee_id");
+        $user = $this->remember('whoami_v2_' . md5($employee_id), 300, function () use ($employee_id) {
+            $stmt = $this->pdo->prepare("SELECT id, kode, employee_id, full_name, job_position, branch_name, unit_kerja, level, group_jabatan, role FROM users WHERE employee_id = :employee_id");
             $stmt->execute([':employee_id' => $employee_id]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return $row ?: [];

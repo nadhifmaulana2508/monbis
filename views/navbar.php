@@ -33,6 +33,9 @@
     --monbis-event-sidebar-text:#334155;
     --monbis-event-border:#dbe3ee;
     --monbis-event-font:Roboto, Arial, system-ui, sans-serif;
+    --monbis-page-scroll-thumb:#94a3b8;
+    --monbis-page-scroll-thumb-hover:#64748b;
+    --monbis-page-scroll-track:rgba(226,232,240,.42);
   }
   :root[data-monbis-theme="dark"] {
     --monbis-event-header-bg:#111827;
@@ -40,7 +43,30 @@
     --monbis-event-text:#e5e7eb;
     --monbis-event-sidebar-text:#cbd5e1;
     --monbis-event-border:#334155;
+    --monbis-page-scroll-thumb:#475569;
+    --monbis-page-scroll-thumb-hover:#64748b;
+    --monbis-page-scroll-track:rgba(15,23,42,.55);
   }
+  html,
+  body,
+  .monbis-app-shell main {
+    scrollbar-width:thin;
+    scrollbar-color:var(--monbis-page-scroll-thumb) var(--monbis-page-scroll-track);
+  }
+  :is(html,body,.monbis-app-shell main)::-webkit-scrollbar { width:5px; height:5px; }
+  :is(html,body,.monbis-app-shell main)::-webkit-scrollbar-track {
+    background:var(--monbis-page-scroll-track);
+    border-radius:999px;
+  }
+  :is(html,body,.monbis-app-shell main)::-webkit-scrollbar-thumb {
+    border:1px solid transparent;
+    border-radius:999px;
+    background:var(--monbis-page-scroll-thumb);
+    background-clip:padding-box;
+  }
+  :is(html,body,.monbis-app-shell main)::-webkit-scrollbar-thumb:hover { background:var(--monbis-page-scroll-thumb-hover); }
+  :is(html,body,.monbis-app-shell main)::-webkit-scrollbar-button { display:none; width:0; height:0; }
+  :is(html,body,.monbis-app-shell main)::-webkit-scrollbar-corner { background:transparent; }
   body { font-family:var(--monbis-event-font); }
   .monbis-app-shell {
     background:
@@ -599,6 +625,15 @@
       return fields.some(value => value.includes('divisi operasional')) || fields.includes('dev');
     }
 
+    function canAccessMappingAo(user) {
+      const job = String(user?.job_position || '').toLowerCase();
+      const unit = String(user?.unit_kerja || '').toLowerCase();
+      return job.includes('kepala cabang')
+        || job.includes('kepala bidang pemasaran')
+        || unit.includes('divisi operasional')
+        || unit.includes('divisi penyelesaian kredit');
+    }
+
     function resolvePegId(user) {
       const keys = ['id_peg', 'idPeg', 'id_pegawai', 'idPegawai', 'employee_id'];
       for (const key of keys) {
@@ -612,7 +647,15 @@
       const menu = document.getElementById('menuDevReport');
       const adminMenu = document.getElementById('menuEventAdmin');
       const user = readUser();
-      if (menu) menu.style.display = user && isOperasional(user) ? 'block' : 'none';
+      if (menu) {
+        const operational = !!user && isOperasional(user);
+        const mappingAccess = !!user && canAccessMappingAo(user);
+        menu.style.display = operational || mappingAccess ? 'block' : 'none';
+        menu.querySelectorAll('a').forEach(link => {
+          const mappingLink = link.getAttribute('href') === 'maping_ao_remedial';
+          link.style.display = operational || mappingLink ? '' : 'none';
+        });
+      }
       if (adminMenu) adminMenu.style.setProperty('display', user && resolvePegId(user) === '102-119' ? 'block' : 'none', 'important');
       return !!user;
     }
@@ -789,6 +832,25 @@
           <a href="report_potensi_npl" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Potensi NPL</a>
           <a href="report_flowpar" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Flow PAR</a>
           <a href="rbb_produksi_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Produksi vs RBB</a>
+          <a href="report_realisasi_ao" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Realisasi AO</a>
+          <a href="report_otp" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report OTP</a>
+          <a href="maping_ao_remedial" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Mapping AO Remedial</a>
+        </div>
+      </div>
+
+      <!-- Parent KPI Bisnis (mengikuti akses menu Laporan) -->
+      <div id="menuKpiBisnis" class="accordion-group" style="display: none;">
+        <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
+          <div class="flex items-center shrink-0">
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" d="M4 19V5m0 14h16M8 16v-4m4 4V8m4 8v-7"></path></svg>
+            <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">KPI Bisnis</span>
+          </div>
+          <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+        <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
+          <a href="setting_kpi_jabatan" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Setting KPI Jabatan</a>
+          <a href="hitung_kpi_ao_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Hitung KPI AO Kredit</a>
+          <a href="rekap_kpi_ao_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Rekap KPI Triwulan</a>
         </div>
       </div>
 

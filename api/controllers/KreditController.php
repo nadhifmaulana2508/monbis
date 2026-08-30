@@ -1441,6 +1441,232 @@ class KreditController {
     }
 
 
+    public function getKelolaanAoBe($input = [])
+    {
+        $b = is_array($input) ? $input : [];
+        $actual = $b['harian_date'] ?? date('Y-m-d');
+        $closing = $b['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month', strtotime($actual)));
+        $kode = trim((string)($b['kode_kantor'] ?? ''));
+        $korwil = strtoupper(trim((string)($b['korwil'] ?? '')));
+        $kelolaanScope = strtoupper(trim((string)($b['kelolaan_scope'] ?? 'SC')));
+        $closingDpdScope = $kelolaanScope === 'ALL' ? '' : ' AND COALESCE(n.hari_menunggak,0) BETWEEN 0 AND 30';
+        $ranges = ['SEMARANG'=>['001','007'],'SOLO'=>['008','014'],'BANYUMAS'=>['015','021'],'PEKALONGAN'=>['022','028']];
+        $scopeClosing = '';
+        $scopeActual = '';
+        $params = [
+            ':closing_date'=>$closing,
+            ':actual_cohort'=>$actual,
+            ':actual_realisasi_date'=>$actual,
+            ':closing_realisasi'=>$closing,
+            ':actual_realisasi'=>$actual,
+        ];
+        if ($kode !== '' && $kode !== '000' && strtoupper($kode) !== 'ALL') {
+            $scopeClosing = " AND LPAD(CAST(n.kode_cabang AS CHAR),3,'0') = :kode_closing";
+            $scopeActual = " AND LPAD(CAST(n.kode_cabang AS CHAR),3,'0') = :kode_actual";
+            $params[':kode_closing'] = str_pad($kode, 3, '0', STR_PAD_LEFT);
+            $params[':kode_actual'] = str_pad($kode, 3, '0', STR_PAD_LEFT);
+        } elseif (isset($ranges[$korwil])) {
+            $scopeClosing = " AND LPAD(CAST(n.kode_cabang AS CHAR),3,'0') BETWEEN :awal_closing AND :akhir_closing";
+            $scopeActual = " AND LPAD(CAST(n.kode_cabang AS CHAR),3,'0') BETWEEN :awal_actual AND :akhir_actual";
+            $params[':awal_closing'] = $ranges[$korwil][0];
+            $params[':akhir_closing'] = $ranges[$korwil][1];
+            $params[':awal_actual'] = $ranges[$korwil][0];
+            $params[':akhir_actual'] = $ranges[$korwil][1];
+        }
+
+        $sql = "
+            WITH ao_ranked AS (
+                SELECT ak.*, ROW_NUMBER() OVER (
+                    PARTITION BY LPAD(CAST(ak.kode_kantor AS CHAR),3,'0'), ak.kode_group2
+                    ORDER BY ak.status DESC, ak.id DESC
+                ) urutan
+                FROM ao_kredit ak
+            ), ao_master AS (
+                SELECT kode_group2,nama_ao,LPAD(CAST(kode_kantor AS CHAR),3,'0') kode_kantor,id_peg,status
+                FROM ao_ranked WHERE urutan=1
+            ), closing_accounts AS (
+                SELECT LPAD(CAST(n.kode_cabang AS CHAR),3,'0') kode_cabang,n.kode_group2,
+                    n.no_rekening,COALESCE(n.baki_debet,0) baki_debet,COALESCE(n.nilai_ckpn,0) nilai_ckpn
+                FROM nominatif n
+                WHERE n.created=:closing_date {$closingDpdScope} {$scopeClosing}
+            ), porto_closing AS (
+                SELECT kode_cabang,kode_group2,COUNT(*) noa_closing,SUM(baki_debet) porto_closing,SUM(nilai_ckpn) ckpn_closing
+                FROM closing_accounts GROUP BY kode_cabang,kode_group2
+            ), porto_actual AS (
+                SELECT c.kode_cabang,c.kode_group2,
+                    COUNT(n.no_rekening) noa_actual,SUM(COALESCE(n.baki_debet,0)) porto_actual,
+                    SUM(COALESCE(n.nilai_ckpn,0)) ckpn_actual,
+                    SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('L','1') AND COALESCE(n.hari_menunggak,0) BETWEEN 0 AND 7 THEN 1 ELSE 0 END) noa_0_7,
+                    SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('L','1') AND COALESCE(n.hari_menunggak,0) BETWEEN 0 AND 7 THEN COALESCE(n.baki_debet,0) ELSE 0 END) nominal_0_7,
+                    SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('L','1') AND COALESCE(n.hari_menunggak,0) BETWEEN 8 AND 30 THEN 1 ELSE 0 END) noa_8_30,
+                    SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('L','1') AND COALESCE(n.hari_menunggak,0) BETWEEN 8 AND 30 THEN COALESCE(n.baki_debet,0) ELSE 0 END) nominal_8_30,
+                    SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('DP','DPK','2') AND COALESCE(n.hari_menunggak,0) BETWEEN 0 AND 30 THEN 1 ELSE 0 END) noa_dp,
+                    SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('DP','DPK','2') AND COALESCE(n.hari_menunggak,0) BETWEEN 0 AND 30 THEN COALESCE(n.baki_debet,0) ELSE 0 END) nominal_dp,
+                    SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('KL','D','M') THEN 1 ELSE 0 END) noa_npl,
+                    SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('KL','D','M') THEN COALESCE(n.baki_debet,0) ELSE 0 END) nominal_npl,
+                    SUM(CASE WHEN COALESCE(n.hari_menunggak,0)>30 THEN 1 ELSE 0 END) noa_flow_fe
+                FROM closing_accounts c
+                LEFT JOIN nominatif n ON n.no_rekening=c.no_rekening AND n.created=:actual_cohort
+                GROUP BY c.kode_cabang,c.kode_group2
+            ), realisasi_ao AS (
+                SELECT LPAD(CAST(n.kode_cabang AS CHAR),3,'0') kode_cabang,n.kode_group2,
+                    COUNT(DISTINCT n.no_rekening) noa_realisasi,
+                    SUM(COALESCE(n.jml_pinjaman,0)) realisasi,
+                    SUM(COALESCE(n.baki_debet,0)) bd_realisasi_actual,
+                    SUM(COALESCE(n.nilai_ckpn,0)) ckpn_realisasi_actual
+                FROM nominatif n WHERE n.created=:actual_realisasi_date {$scopeActual}
+                    AND STR_TO_DATE(REPLACE(CAST(n.tgl_realisasi AS CHAR),'-',''),'%Y%m%d')>:closing_realisasi
+                    AND STR_TO_DATE(REPLACE(CAST(n.tgl_realisasi AS CHAR),'-',''),'%Y%m%d')<=:actual_realisasi
+                GROUP BY LPAD(CAST(n.kode_cabang AS CHAR),3,'0'),n.kode_group2
+            ), daftar_ao AS (
+                SELECT kode_cabang,kode_group2 FROM porto_closing
+                UNION SELECT kode_cabang,kode_group2 FROM realisasi_ao WHERE realisasi<>0
+            )
+            SELECT d.kode_cabang,COALESCE(kk.nama_kantor,d.kode_cabang) nama_kantor,d.kode_group2,
+                CASE WHEN a.kode_group2 IS NULL THEN 'AO BELUM TERDAFTAR (SEGERA CLEANSING)'
+                     WHEN COALESCE(a.status,0)=0 THEN CONCAT(COALESCE(a.nama_ao,'AO TIDAK AKTIF'),' (SEGERA CLEANSING)')
+                     ELSE a.nama_ao END nama_ao,
+                a.id_peg,COALESCE(a.status,0) status_ao,
+                COALESCE(c.noa_closing,0) noa_closing,COALESCE(c.porto_closing,0) porto_closing,
+                COALESCE(r.noa_realisasi,0) noa_realisasi,COALESCE(r.realisasi,0) realisasi,
+                COALESCE(r.bd_realisasi_actual,0) bd_realisasi_actual,
+                COALESCE(x.noa_0_7,0) noa_0_7,COALESCE(x.nominal_0_7,0) nominal_0_7,
+                COALESCE(x.noa_8_30,0) noa_8_30,COALESCE(x.nominal_8_30,0) nominal_8_30,
+                COALESCE(x.noa_dp,0) noa_dp,COALESCE(x.nominal_dp,0) nominal_dp,
+                COALESCE(x.noa_npl,0) noa_npl,COALESCE(x.nominal_npl,0) nominal_npl,
+                COALESCE(x.noa_actual,0)+COALESCE(r.noa_realisasi,0) noa_actual,
+                COALESCE(x.porto_actual,0)+COALESCE(r.bd_realisasi_actual,0) porto_actual,
+                ROUND(COALESCE(x.nominal_npl,0)/NULLIF(COALESCE(x.porto_actual,0)+COALESCE(r.bd_realisasi_actual,0),0)*100,2) persen_npl,
+                COALESCE(c.ckpn_closing,0) ckpn_closing,
+                COALESCE(x.ckpn_actual,0)+COALESCE(r.ckpn_realisasi_actual,0) ckpn_actual,
+                COALESCE(x.ckpn_actual,0)+COALESCE(r.ckpn_realisasi_actual,0)-COALESCE(c.ckpn_closing,0) selisih_ckpn,
+                COALESCE(x.porto_actual,0)+COALESCE(r.bd_realisasi_actual,0)-COALESCE(c.porto_closing,0) growth,
+                ROUND((COALESCE(x.porto_actual,0)+COALESCE(r.bd_realisasi_actual,0)-COALESCE(c.porto_closing,0))/NULLIF(COALESCE(c.porto_closing,0),0)*100,2) growth_persen,
+                COALESCE(x.porto_actual,0)+COALESCE(r.bd_realisasi_actual,0)-COALESCE(c.porto_closing,0) run_off,
+                COALESCE(x.noa_flow_fe,0) noa_flow_fe
+            FROM daftar_ao d
+            LEFT JOIN porto_closing c ON c.kode_cabang=d.kode_cabang AND c.kode_group2=d.kode_group2
+            LEFT JOIN porto_actual x ON x.kode_cabang=d.kode_cabang AND x.kode_group2=d.kode_group2
+            LEFT JOIN realisasi_ao r ON r.kode_cabang=d.kode_cabang AND r.kode_group2=d.kode_group2
+            LEFT JOIN ao_master a ON a.kode_kantor=d.kode_cabang AND a.kode_group2=d.kode_group2
+            LEFT JOIN kode_kantor kk ON kk.kode_kantor=d.kode_cabang
+            ORDER BY CASE WHEN a.kode_group2 IS NULL OR COALESCE(a.status,0)=0 THEN 0 ELSE 1 END,d.kode_cabang,d.kode_group2
+        ";
+        try {
+            $stmt=$this->pdo->prepare($sql);
+            foreach($params as $key=>$value) $stmt->bindValue($key,$value);
+            $stmt->execute();
+            $data=$stmt->fetchAll(PDO::FETCH_ASSOC);
+            $total=['kode_cabang'=>'ALL','nama_kantor'=>'GRAND TOTAL','kode_group2'=>'ALL','nama_ao'=>count($data).' AO'];
+            foreach(['noa_closing','porto_closing','noa_realisasi','realisasi','noa_0_7','nominal_0_7','noa_8_30','nominal_8_30','noa_dp','nominal_dp','noa_npl','nominal_npl','noa_actual','porto_actual','ckpn_closing','ckpn_actual','selisih_ckpn','growth','run_off','noa_flow_fe'] as $field){$total[$field]=array_sum(array_map(fn($row)=>(float)($row[$field]??0),$data));}
+            $total['persen_npl']=$total['porto_actual']?round($total['nominal_npl']/$total['porto_actual']*100,2):0;
+            $total['growth_persen']=$total['porto_closing']?round($total['growth']/$total['porto_closing']*100,2):0;
+            return sendResponse(200,'Sukses load kelolaan AO BE',['data'=>$data,'grand_total'=>$total,'periode'=>['closing_date'=>$closing,'harian_date'=>$actual],'kelolaan_scope'=>$kelolaanScope]);
+        } catch(Exception $e){return sendResponse(500,'Error: '.$e->getMessage());}
+    }
+
+    public function getDetailKelolaanAoBe($input = [])
+    {
+        $b=is_array($input)?$input:[];
+        $actual=$b['harian_date']??date('Y-m-d');
+        $closing=$b['closing_date']??date('Y-m-d',strtotime('last day of previous month',strtotime($actual)));
+        $vaPosition=date('Y-m-t',strtotime($actual));
+        $kode=str_pad((string)($b['kode_kantor']??''),3,'0',STR_PAD_LEFT);
+        $ao=(string)($b['kode_ao']??'');
+        $bucket=strtoupper((string)($b['bucket']??'ALL'));
+        $status=strtoupper((string)($b['status_bayar']??'ALL'));
+        $kelolaanScope=strtoupper(trim((string)($b['kelolaan_scope']??'SC')));
+        if($kode===''||$kode==='000'||$ao===''||$ao==='ALL') return sendResponse(400,'Kode kantor dan AO wajib diisi');
+        $where=["c.created=:closing_posisi","LPAD(CAST(c.kode_cabang AS CHAR),3,'0')=:kode","c.kode_group2=:ao"];
+        if($kelolaanScope!=='ALL')$where[]="COALESCE(c.hari_menunggak,0) BETWEEN 0 AND 30";
+        if($bucket==='0_7')$where[]="UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('L','1') AND COALESCE(n.hari_menunggak,0) BETWEEN 0 AND 7";
+        elseif($bucket==='8_30')$where[]="UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('L','1') AND COALESCE(n.hari_menunggak,0) BETWEEN 8 AND 30";
+        elseif($bucket==='DP')$where[]="UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('DP','DPK','2') AND COALESCE(n.hari_menunggak,0) BETWEEN 0 AND 30";
+        elseif($bucket==='NPL')$where[]="UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('KL','D','M')";
+        if($status==='SUDAH')$where[]="COALESCE(tx.total_bayar,0)>0";
+        elseif($status==='BELUM')$where[]="COALESCE(tx.total_bayar,0)<=0";
+        $realisasiDate="STR_TO_DATE(REPLACE(CAST(COALESCE(n.tgl_realisasi,c.tgl_realisasi) AS CHAR),'-',''),'%Y%m%d')";
+        $sql="SELECT c.no_rekening,COALESCE(n.nama_nasabah,c.nama_nasabah) nama_nasabah,COALESCE(n.alamat,c.alamat) alamat,
+                    COALESCE(n.kode_produk,c.kode_produk) kode_produk,c.kode_group1,c.kode_group2,
+                    c.kolektibilitas kolektibilitas_closing,c.hari_menunggak hari_menunggak_closing,c.baki_debet baki_debet_closing,
+                    n.kolektibilitas,n.hari_menunggak,n.hari_menunggak_pokok,n.hari_menunggak_bunga,
+                    n.tunggakan_pokok,n.tunggakan_bunga,
+                    COALESCE(n.tunggakan_pokok,0)+COALESCE(n.tunggakan_bunga,0) total_tunggakan,
+                    n.jml_pinjaman,COALESCE(n.baki_debet,0) baki_debet,n.nilai_ckpn,
+                    COALESCE(tb.saldo_akhir,0) saldo_tabungan,
+                    COALESCE(va.va_mandiri,'') va_mandiri,COALESCE(va.va_permata,'') va_permata,
+                    COALESCE(n.tgl_jatuh_tempo,c.tgl_jatuh_tempo) tgl_jatuh_tempo,{$realisasiDate} tanggal_realisasi,
+                    COALESCE(tx.total_bayar,0) total_bayar,tx.tgl_bayar_terakhir,
+                    CASE WHEN COALESCE(tx.total_bayar,0)>0 THEN 'SUDAH BAYAR'
+                         WHEN COALESCE(n.tgl_jatuh_tempo,c.tgl_jatuh_tempo)<:actual_due_status THEN 'LEWAT TANGGAL BAYAR / BELUM BAYAR'
+                         ELSE 'BELUM JATUH TANGGAL BAYAR' END status_bayar,
+                    CASE WHEN n.no_rekening IS NULL OR COALESCE(n.baki_debet,0)<=0 THEN 'LUNAS'
+                         WHEN COALESCE(n.hari_menunggak,0)>30 THEN 'FLOW KE FE' ELSE 'TETAP KELOLAAN' END status_flow,
+                    CASE WHEN {$realisasiDate} IS NULL THEN 'EXISTING'
+                         WHEN TIMESTAMPDIFF(MONTH,DATE_FORMAT({$realisasiDate},'%Y-%m-01'),DATE_FORMAT(:actual_cohort_label,'%Y-%m-01'))=0 THEN 'REALISASI BARU'
+                         WHEN TIMESTAMPDIFF(MONTH,DATE_FORMAT({$realisasiDate},'%Y-%m-01'),DATE_FORMAT(:actual_cohort_mob,'%Y-%m-01'))=1 THEN 'FPD'
+                         WHEN TIMESTAMPDIFF(MONTH,DATE_FORMAT({$realisasiDate},'%Y-%m-01'),DATE_FORMAT(:actual_cohort_existing,'%Y-%m-01')) BETWEEN 2 AND 6 THEN 'MOB'
+                         ELSE 'EXISTING' END status_cohort
+              FROM nominatif c
+              LEFT JOIN nominatif n ON n.no_rekening=c.no_rekening AND n.created=:actual_posisi
+              LEFT JOIN tabungan tb ON tb.no_rekening=COALESCE(n.norek_tabungan,c.norek_tabungan)
+              LEFT JOIN (SELECT no_rekening,MAX(va_mandiri) va_mandiri,MAX(va_permata) va_permata
+                         FROM nominatif_proyeksi_va WHERE created=:va_position GROUP BY no_rekening) va ON va.no_rekening=c.no_rekening
+              LEFT JOIN (SELECT no_rekening,MAX(tgl_trans) tgl_bayar_terakhir,
+                                SUM(COALESCE(angsuran_pokok,0)+COALESCE(angsuran_bunga,0)-COALESCE(diskon_bunga,0)) total_bayar
+                         FROM transaksi_kredit WHERE tgl_trans>:closing_transaksi AND tgl_trans<=:actual_transaksi GROUP BY no_rekening) tx ON tx.no_rekening=n.no_rekening
+              WHERE ".implode(' AND ',$where)." ORDER BY FIELD(status_flow,'FLOW KE FE','TETAP KELOLAAN','LUNAS'),status_bayar ASC,COALESCE(n.baki_debet,c.baki_debet) DESC,c.no_rekening";
+        try {
+            $stmt=$this->pdo->prepare($sql);
+            foreach([':actual_posisi'=>$actual,':closing_posisi'=>$closing,':va_position'=>$vaPosition,':closing_transaksi'=>$closing,':actual_transaksi'=>$actual,':actual_due_status'=>$actual,':actual_cohort_label'=>$actual,':actual_cohort_mob'=>$actual,':actual_cohort_existing'=>$actual,':kode'=>$kode,':ao'=>$ao] as $key=>$value)$stmt->bindValue($key,$value);
+            $stmt->execute();
+            $data=$stmt->fetchAll(PDO::FETCH_ASSOC);
+            $bucketDpd=static function($value):array{
+                $dpd=max(0,(int)($value??0));
+                if($dpd===0)return ['code'=>'A','label'=>'DPD 0','tag'=>'SC'];
+                if($dpd<=30)return ['code'=>'B','label'=>'DPD 1-30','tag'=>'SC'];
+                if($dpd<=60)return ['code'=>'C','label'=>'DPD 31-60','tag'=>'FE'];
+                if($dpd<=90)return ['code'=>'D','label'=>'DPD 61-90','tag'=>'FE'];
+                if($dpd<=120)return ['code'=>'E','label'=>'DPD 91-120','tag'=>'FE'];
+                if($dpd<=150)return ['code'=>'F','label'=>'DPD 121-150','tag'=>'FE'];
+                if($dpd<=180)return ['code'=>'G','label'=>'DPD 151-180','tag'=>'FE'];
+                if($dpd<=210)return ['code'=>'H','label'=>'DPD 181-210','tag'=>'BE'];
+                if($dpd<=240)return ['code'=>'I','label'=>'DPD 211-240','tag'=>'BE'];
+                if($dpd<=270)return ['code'=>'J','label'=>'DPD 241-270','tag'=>'BE'];
+                if($dpd<=300)return ['code'=>'K','label'=>'DPD 271-300','tag'=>'BE'];
+                if($dpd<=330)return ['code'=>'L','label'=>'DPD 301-330','tag'=>'BE'];
+                if($dpd<=360)return ['code'=>'M','label'=>'DPD 331-360','tag'=>'BE'];
+                return ['code'=>'N','label'=>'DPD >360','tag'=>'BE'];
+            };
+            $summary=['total_noa'=>count($data),'sudah_bayar'=>0,'belum_bayar'=>0,'perbaikan'=>0,'pemburukan'=>0,'restruk'=>0,'total_baki'=>0,'total_bayar'=>0,'total_tunggakan'=>0];
+            foreach($data as &$row){
+                $closingBucket=$bucketDpd($row['hari_menunggak_closing']??0);
+                $actualBucket=$bucketDpd($row['hari_menunggak']??0);
+                $row['bucket_closing']=$closingBucket['label'];
+                $row['bucket_actual']=$actualBucket['label'];
+                $row['tag_closing']=$closingBucket['tag'];
+                $row['tag_actual']=$actualBucket['tag'];
+                $steps=ord($actualBucket['code'])-ord($closingBucket['code']);
+                if($steps>0){$movement='PEMBURUKAN '.$steps.' BUCKET';$summary['pemburukan']++;}
+                elseif($steps<0){$movement='PERBAIKAN '.abs($steps).' BUCKET';$summary['perbaikan']++;}
+                else{$movement='TETAP '.$actualBucket['label'];}
+                if(in_array($closingBucket['tag'],['FE','BE'],true)&&$actualBucket['tag']==='SC')$movement='BACKFLOW DARI '.$closingBucket['tag'].' · '.$movement;
+                if(empty($row['kolektibilitas'])||(float)$row['baki_debet']<=0)$statusRekening='LUNAS';
+                elseif((float)$row['baki_debet']>(float)$row['baki_debet_closing']){$statusRekening='RESTRUK';$summary['restruk']++;}
+                else{$statusRekening=$movement;}
+                $row['pergerakan_bucket']=$movement;
+                $row['status_rekening']=$statusRekening;
+                $row['status_flow']=$statusRekening;
+                $summary[$row['status_bayar']==='SUDAH BAYAR'?'sudah_bayar':'belum_bayar']++;
+                $summary['total_baki']+=(float)$row['baki_debet'];
+                $summary['total_bayar']+=(float)$row['total_bayar'];
+                $summary['total_tunggakan']+=(float)$row['total_tunggakan'];
+            }
+            unset($row);
+            return sendResponse(200,'Sukses load detail kelolaan AO BE',['data'=>$data,'summary'=>$summary,'va_position'=>$vaPosition]);
+        } catch(Exception $e){return sendResponse(500,'Error: '.$e->getMessage());}
+    }
+
     public function getDetailRealisasiAO($input = [])
     {
         set_time_limit(300);
@@ -1549,6 +1775,7 @@ class KreditController {
                 SELECT
                     t1.no_rekening,
                     COALESCE(t1.nama_nasabah, n.nama_nasabah, '-') AS nama_nasabah,
+                    n.alamat,
                     t1.realisasi_pokok AS plafond,
                     t1.tanggal_realisasi,
 

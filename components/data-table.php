@@ -71,6 +71,7 @@ if (!function_exists('mb_render_table_shell')) {
         }
         echo '    </table>';
         echo '  </div>';
+        if (!empty($cfg['footer_html'])) echo $cfg['footer_html'];
         echo '</div>';
     }
 }

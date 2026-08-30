@@ -3,9 +3,35 @@
 class RepaymentRateController {
 
     private $pdo;
+    private $reportCacheTtl = 300;
 
     public function __construct($pdo) {
         $this->pdo = $pdo;
+    }
+
+    private function reportCachePath(string $key): string {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'report_dpk_rr_cache';
+        if (!is_dir($dir)) @mkdir($dir, 0777, true);
+        return $dir . DIRECTORY_SEPARATOR . hash('sha256', $key) . '.json';
+    }
+
+    private function getReportCache(string $key, bool $refresh = false): ?array {
+        $path = $this->reportCachePath($key);
+        if ($refresh || !is_file($path)) return null;
+        $age = time() - (int)filemtime($path);
+        if ($age > $this->reportCacheTtl) return null;
+        $data = json_decode((string)@file_get_contents($path), true);
+        if (!is_array($data)) return null;
+        $data['meta'] = is_array($data['meta'] ?? null) ? $data['meta'] : [];
+        $data['meta']['cache_hit'] = true;
+        $data['meta']['cache_age_seconds'] = max(0, $age);
+        return $data;
+    }
+
+    private function putReportCache(string $key, array $data): void {
+        $data['meta'] = is_array($data['meta'] ?? null) ? $data['meta'] : [];
+        $data['meta']['cache_hit'] = false;
+        @file_put_contents($this->reportCachePath($key), json_encode($data), LOCK_EX);
     }
 
     private function send($status, $msg, $data = []) {
@@ -136,6 +162,14 @@ class RepaymentRateController {
 
             if (!$closing || !$harian) return $this->send(400, "Tanggal wajib diisi.");
 
+            $reportCacheKey = 'rekap_rr|' . json_encode([
+                'closing' => $closing, 'harian' => $harian, 'kantor' => $kc,
+                'korwil' => $korwil, 'kankas' => $kankas, 'ao' => $ao,
+                'dpd' => $dpdBucket, 'include_127' => $include127,
+            ]);
+            $cachedReport = $this->getReportCache($reportCacheKey, filter_var($b['refresh'] ?? false, FILTER_VALIDATE_BOOLEAN));
+            if ($cachedReport !== null) $this->send(200, "Sukses Rekap RR (cache)", $cachedReport);
+
             [$s1, $e1] = $this->getDayRange($closing);
             [$s2, $e2] = $this->getDayRange($harian);
 
@@ -212,6 +246,7 @@ class RepaymentRateController {
                 if ($ao) $sqlFast .= " AND t1.kode_group2 = :ao_fast";
                 $sqlFast .= " GROUP BY {$dayMapCase} ORDER BY tgl ASC";
 
+                $fastMainStarted = microtime(true);
                 $stmtFast = $this->pdo->prepare($sqlFast);
                 $stmtFast->bindValue(':s1_fast', $s1);
                 $stmtFast->bindValue(':e1_fast', $e1);
@@ -225,6 +260,7 @@ class RepaymentRateController {
                 if ($kankas) $stmtFast->bindValue(':kankas_fast', $kankas);
                 if ($ao) $stmtFast->bindValue(':ao_fast', $ao);
                 $stmtFast->execute();
+                $fastMainMs = round((microtime(true) - $fastMainStarted) * 1000);
 
                 $report = [];
                 for ($i = 1; $i <= $cutoffDay; $i++) {
@@ -325,6 +361,7 @@ class RepaymentRateController {
                             ) paid
                             GROUP BY paid.tgl, bucket";
 
+                $fastPaidStarted = microtime(true);
                 $stmtPaid = $this->pdo->prepare($sqlPaid);
                 $stmtPaid->bindValue(':s1_paid', $s1);
                 $stmtPaid->bindValue(':e1_paid', $e1);
@@ -340,6 +377,7 @@ class RepaymentRateController {
                 if ($kankas) $stmtPaid->bindValue(':kankas_paid', $kankas);
                 if ($ao) $stmtPaid->bindValue(':ao_paid', $ao);
                 $stmtPaid->execute();
+                $fastPaidMs = round((microtime(true) - $fastPaidStarted) * 1000);
                 foreach ($stmtPaid->fetchAll(PDO::FETCH_ASSOC) as $paidRow) {
                     $tglPaid = (int)$paidRow['tgl'];
                     $bucket = $paidRow['bucket'] ?? 'tanpa_tanggal';
@@ -406,12 +444,14 @@ class RepaymentRateController {
                     return (float)$r['target_os'] > 0;
                 }));
 
-                $this->send(200, "Sukses Rekap RR", [
-                    'meta' => ['m1' => $closing, 'cur' => $harian, 'include_127' => $include127, 'dpd_bucket' => $dpdBucket, 'cutoff_day' => $cutoffDay, 'actual_day' => $actualDay, 'mode' => 'fast'],
+                $responseData = [
+                    'meta' => ['m1' => $closing, 'cur' => $harian, 'include_127' => $include127, 'dpd_bucket' => $dpdBucket, 'cutoff_day' => $cutoffDay, 'actual_day' => $actualDay, 'mode' => 'fast', 'main_query_ms' => $fastMainMs, 'paid_query_ms' => $fastPaidMs],
                     'grand_total' => $grandTotal,
                     'due_summary' => $dueSummary,
                     'data' => $reportRows
-                ]);
+                ];
+                $this->putReportCache($reportCacheKey, $responseData);
+                $this->send(200, "Sukses Rekap RR", $responseData);
             } catch (Exception $fastError) {
                 // Fallback ke jalur lama jika SQL agregasi tidak cocok di server.
             }
@@ -630,12 +670,14 @@ class RepaymentRateController {
                 return (float)$r['target_os'] > 0;
             }));
 
-            $this->send(200, "Sukses Rekap RR", [
+            $responseData = [
                 'meta' => ['m1' => $closing, 'cur' => $harian, 'include_127' => $include127, 'dpd_bucket' => $dpdBucket, 'cutoff_day' => $cutoffDay, 'actual_day' => $actualDay],
                 'grand_total' => $grandTotal,
                 'due_summary' => $dueSummary,
                 'data' => $reportRows
-            ]);
+            ];
+            $this->putReportCache($reportCacheKey, $responseData);
+            $this->send(200, "Sukses Rekap RR", $responseData);
     }
 
     /**
@@ -1238,7 +1280,7 @@ class RepaymentRateController {
                 $osM1 = (float)($rowFast['os_m1'] ?? 0);
                 $osCur = (float)($actual['saldo_terpilih'] ?? 0);
                 $dpd = (int)($actual['hari_menunggak'] ?? 0);
-                $totung = (float)($actual['tunggakan_pokok'] ?? 0) + (float)($actual['tunggakan_bunga'] ?? 0);
+                $totung = max(0, (float)($actual['tunggakan_pokok'] ?? 0) + (float)($actual['tunggakan_bunga'] ?? 0));
                 $tglBayarIni = $trx['tgl_bayar_ini'] ?? null;
                 $trxBulanIni = (float)($trx['trx_bulan_ini'] ?? 0);
                 $dueDate = $rowFast['tgl_jatuh_tempo'] ?? null;
@@ -1416,7 +1458,7 @@ class RepaymentRateController {
                  t1.{$saldoCol} as os_m1, 
                  COALESCE(t2.{$saldoCol}, 0) as os_curr, 
                  COALESCE(t2.hari_menunggak, 0) as dpd_curr,
-                 (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) as totung,
+                 GREATEST(0, COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) as totung,
                  COALESCE(trx.trx_bulan_lalu, 0) as trx_bulan_lalu,
                  trx.tgl_bayar_lalu,
                  COALESCE(trx.trx_bulan_ini, 0) as trx_bulan_ini,
@@ -1613,7 +1655,7 @@ class RepaymentRateController {
                     {$t2Saldo} AS os_curr,
                     COALESCE(trx.trx_bulan_ini, 0) AS trx_bulan_ini,
                     trx.tgl_bayar_ini,
-                    (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) AS totung,
+                    GREATEST(0, COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) AS totung,
                     COALESCE(t2.hari_menunggak, 0) AS dpd_curr,
                     COALESCE(tb.saldo_akhir, 0) AS tabungan,
                     CASE WHEN {$lancarCur} THEN 'LANCAR' ELSE 'MENUNGGAK' END AS status_ket,
@@ -2426,7 +2468,7 @@ class RepaymentRateController {
                  t2.tunggakan_bunga,
                  t2.hari_menunggak_pokok as dpd_pokok,
                  t2.hari_menunggak_bunga as dpd_bunga,
-                 (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) as totung,
+                 GREATEST(0, COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) as totung,
                  trx.tgl_trans_sekarang,
                  COALESCE(trx.total_bayar_sekarang, 0) as total_bayar_sekarang,
                  trx.tgl_trans_lalu,

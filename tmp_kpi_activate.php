@@ -1,0 +1,1 @@
+<?php require 'api/controllers/config/database.php'; $s=$pdo->prepare("UPDATE kpi_indikator SET status='AKTIF' WHERE kode='PIPELINE' AND jabatan_id=(SELECT id FROM kpi_jabatan WHERE kode='AO_KREDIT')");$s->execute();echo "updated ".$s->rowCount().PHP_EOL;

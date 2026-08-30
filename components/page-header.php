@@ -10,10 +10,10 @@ if (!function_exists('mb_render_field')) {
         $class = trim('mb-field-control ' . ($field['class'] ?? ''));
         $style = !empty($field['width']) ? 'min-width:' . $field['width'] . ';width:' . $field['width'] . ';' : '';
         $attrs = $field['attrs'] ?? [];
-        $fieldAttrs = [];
+        $fieldAttrs = ['class' => trim('mb-field ' . ($type === 'checkbox' ? 'mb-field--checkbox ' : '') . ($field['field_class'] ?? ''))];
         if ($style) $fieldAttrs['style'] = $style;
 
-        echo '<label class="mb-field"' . mb_attrs($fieldAttrs) . '>';
+        echo '<label' . mb_attrs($fieldAttrs) . '>';
         echo '<span class="mb-field-label">' . mb_e($label) . '</span>';
 
         if ($type === 'select') {
@@ -23,6 +23,12 @@ if (!function_exists('mb_render_field')) {
                 echo '<option value="' . mb_e($value) . '"' . $selected . '>' . mb_e($text) . '</option>';
             }
             echo '</select>';
+        } elseif ($type === 'checkbox') {
+            $attrs['type'] = 'checkbox';
+            $attrs['id'] = $id;
+            $attrs['class'] = trim('mb-checkbox-control ' . ($field['class'] ?? ''));
+            if (!empty($field['value'])) $attrs['checked'] = true;
+            echo '<span class="mb-checkbox-shell"><input' . mb_attrs($attrs) . '><span class="mb-checkbox-mark" aria-hidden="true"></span></span>';
         } else {
             $attrs['type'] = $type;
             $attrs['id'] = $id;

@@ -1,176 +1,125 @@
-<!-- 📋 Mapping AO Remedial — My List -->
-<div class="max-w-7xl mx-auto px-4 py-6">
-  <h1 class="text-2xl font-bold mb-4">📋 Mapping AO Remedial — My List</h1>
+<?php
+require_once __DIR__ . '/../components/bootstrap.php';
+mb_ui_assets('.');
 
-  <!-- Loading -->
-  <div id="loadingMa" class="hidden flex items-center gap-2 text-sm text-gray-600 mb-4">
-    <svg class="animate-spin h-5 w-5 text-blue-600" viewBox="0 0 24 24">
-      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-    </svg>
-    <span>Memuat data Mapping Account…</span>
-  </div>
+$tabs = '<div class="mb-segmented" role="tablist" aria-label="Tampilan mapping">'
+    . '<button type="button" class="mb-segmented__btn is-active" data-map-view="mapping">' . mb_svg('edit') . '<span>Mapping</span></button>'
+    . '<button type="button" class="mb-segmented__btn" data-map-view="recap">' . mb_svg('chart') . '<span>Rekap AO</span></button></div>';
+$summary = '<div id="mappingAoSummary" class="mb-summary">'
+    . '<div class="mb-summary-card mb-summary-card--blue"><div class="mb-summary-card__label">Total Kelolaan</div><div id="mappingSumTotal" class="mb-summary-card__value">-</div><div class="mb-summary-card__meta">FE + BE pada closing</div></div>'
+    . '<div class="mb-summary-card mb-summary-card--green"><div class="mb-summary-card__label">Sudah Mapping</div><div id="mappingSumMapped" class="mb-summary-card__value">-</div><div class="mb-summary-card__meta">Mapping FE dan BE lengkap</div></div>'
+    . '<div class="mb-summary-card mb-summary-card--red"><div class="mb-summary-card__label">Belum Mapping</div><div id="mappingSumUnmapped" class="mb-summary-card__value">-</div><div class="mb-summary-card__meta">Perlu ditindaklanjuti</div></div>'
+    . '<div class="mb-summary-card mb-summary-card--amber"><div class="mb-summary-card__label">Bucket FE / BE</div><div id="mappingSumBucket" class="mb-summary-card__value">-</div><div id="mappingSumBd" class="mb-summary-card__meta">-</div></div></div>';
+$head = mb_build_grouped_thead([
+    ['label'=>'Pilih','class'=>'mb-map-check','attrs'=>['style'=>'width:34px']],
+    ['label'=>'Kantor','class'=>'mb-code-col mb-sticky-left','attrs'=>['style'=>'width:62px']],
+    ['label'=>'Rekening / Nasabah','class'=>'mb-sticky-left-2 mb-text-left','attrs'=>['style'=>'--mb-sticky-1:62px;width:235px']],
+    ['label'=>'Kolek / Bucket','attrs'=>['style'=>'width:86px']],
+    ['label'=>'DPD','class'=>'mb-group--amber','attrs'=>['style'=>'width:105px']],
+    ['label'=>'Total Tunggakan','class'=>'mb-group--red','attrs'=>['style'=>'width:145px']],
+    ['label'=>'Baki Debet','attrs'=>['style'=>'width:125px']],
+    ['label'=>'Kelurahan / Unit','class'=>'mb-text-left mb-group--cyan','attrs'=>['style'=>'width:165px']],
+    ['label'=>'Mapping FE / BE','class'=>'mb-text-left mb-group--blue','attrs'=>['style'=>'width:245px']],
+    ['label'=>'Tgl Tagih','attrs'=>['style'=>'width:86px']],
+    ['label'=>'Nilai CKPN','class'=>'mb-group--violet','attrs'=>['style'=>'width:105px']],
+    ['label'=>'Status','attrs'=>['style'=>'width:78px']],
+]);
 
-  <div id="errMa" class="hidden mb-3 p-3 rounded border border-red-200 text-red-700 bg-red-50 text-sm"></div>
-
-  <!-- Tabel -->
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm text-left text-gray-700 bg-white rounded shadow" id="tabelMa">
-      <thead class="text-xs text-gray-700 uppercase bg-gray-100">
-        <tr>
-          <th class="px-4 py-2">No</th>
-          <th class="px-4 py-2">No Rekening</th>
-          <th class="px-4 py-2">Nama Debitur</th>
-          <th class="px-4 py-2">Alamat</th>
-          <th class="px-4 py-2 text-right">Baki Debet</th>
-          <th class="px-4 py-2 text-center">Tgl Realisasi (dd)</th>
-          <th class="px-4 py-2 text-right">Tunggakan Pokok</th>
-          <th class="px-4 py-2 text-right">Tunggakan Bunga</th>
-          <th class="px-4 py-2 text-right">CKPN</th>
-          <th class="px-4 py-2">Bucket</th>
-          <th class="px-4 py-2 text-right">Plan CKPN</th>
-          <th class="px-4 py-2 text-right">Pemulihan Pembentukan</th>
-          <th class="px-4 py-2 text-right">BD Harian</th>
-          <th class="px-4 py-2 text-center">DPD Harian</th>
-          <th class="px-4 py-2 text-right">Angs. Pokok</th>
-          <th class="px-4 py-2 text-right">Angs. Bunga</th>
-          <th class="px-4 py-2 text-center">Tgl Trans (dd/mm/yy)</th>
-        </tr>
-      </thead>
-      <tbody id="bodyMa"></tbody>
-
-      <tfoot class="bg-gray-100">
-        <tr>
-          <td colspan="4" class="px-4 py-2 font-semibold">Total</td>
-          <td id="tot_bd" class="px-4 py-2 text-right font-semibold">-</td>
-          <td class="px-4 py-2"></td>
-          <td id="tot_tp" class="px-4 py-2 text-right font-semibold">-</td>
-          <td id="tot_tb" class="px-4 py-2 text-right font-semibold">-</td>
-          <td id="tot_ckpn" class="px-4 py-2 text-right font-semibold">-</td>
-          <td class="px-4 py-2"></td>
-          <td id="tot_plan_ckpn" class="px-4 py-2 text-right font-semibold">-</td>
-          <td id="tot_pemulihan" class="px-4 py-2 text-right font-semibold">-</td>
-          <td id="tot_bd_harian" class="px-4 py-2 text-right font-semibold">-</td>
-          <td class="px-4 py-2"></td>
-          <td id="tot_ap" class="px-4 py-2 text-right font-semibold">-</td>
-          <td id="tot_ab" class="px-4 py-2 text-right font-semibold">-</td>
-          <td class="px-4 py-2"></td>
-        </tr>
-      </tfoot>
-    </table>
-  </div>
-</div>
-
+mb_render_report_page([
+    'id'=>'mappingAoPage','class'=>'mb-mapping-ao',
+    'header'=>['id'=>'mappingAoHeader','title'=>'Mapping Kelolaan AO Remedial','subtitle'=>'Penetapan kelolaan FE dan BE berdasarkan closing yang dipilih.','icon'=>mb_svg('edit'),'info_modal_id'=>'mappingAoInfo',
+        'filters'=>[
+            ['id'=>'mappingAoClosing','label'=>'Closing','type'=>'date','width'=>'126px'],
+            ['id'=>'mappingAoActual','label'=>'Actual','type'=>'date','width'=>'126px'],
+            ['id'=>'mappingAoOffice','label'=>'Kantor','type'=>'select','width'=>'210px','options'=>['000'=>'Konsolidasi']],
+            ['id'=>'mappingAoBucket','label'=>'Bucket','type'=>'select','width'=>'100px','options'=>['ALL'=>'FE + BE','FE'=>'FE','BE'=>'BE']],
+            ['id'=>'mappingAoStatus','label'=>'Mapping','type'=>'select','width'=>'130px','options'=>['ALL'=>'Semua','UNMAPPED'=>'Belum Mapping','MAPPED'=>'Sudah Mapping']],
+        ]],
+    'toolbar'=>['title'=>'Mapping Rekening','title_id'=>'mappingAoTitle','before_html'=>$tabs,'search'=>['id'=>'mappingAoSearch','placeholder'=>'Cari rekening / nasabah...'],
+        'actions'=>[
+            ['attrs'=>['id'=>'mappingAoViewSwitch'],'variant'=>'view-switch','icon'=>'chart','title'=>'Ganti tampilan','aria_label'=>'Ganti tampilan'],
+            ['attrs'=>['id'=>'mappingAoAssign'],'tone'=>'primary','icon'=>'edit','title'=>'Simpan mapping AO','aria_label'=>'Simpan mapping AO','label'=>'Simpan']],
+    ],
+    'legend_html'=>$summary,
+    'table'=>['wrapper_id'=>'mappingAoTableWrap','table_id'=>'mappingAoTable','loading_id'=>'mappingAoLoading','loading_text'=>'Memuat mapping AO remedial...','class'=>'mb-mapping-table','thead_html'=>$head,'tbody_ids'=>['mappingAoBody'],'footer_html'=>'<div id="mappingAoPager" class="mb-map-pager is-hidden"></div>'],
+]);
+mb_render_info_modal([
+    'id'=>'mappingAoInfo','title'=>'Panduan Mapping AO Remedial','subtitle'=>'Penetapan kelolaan debitur FE dan BE.',
+    'body_html'=>'<div class="mb-npl-brief"><div class="mb-npl-brief__alert"><strong>Satu rekening ditetapkan kepada AO FE dan AO BE sekaligus.</strong><span>Ketika bucket berubah, AO aktif otomatis mengikuti posisi debitur pada closing.</span></div><div class="mb-npl-brief__priority-grid"><div class="mb-npl-brief__priority mb-npl-brief__priority--blue"><b>1</b><div><strong>Pilih Rekening</strong><span>Centang beberapa debitur dari cabang yang sama.</span></div></div><div class="mb-npl-brief__priority mb-npl-brief__priority--violet"><b>2</b><div><strong>Tetapkan AO</strong><span>Pilih penanggung jawab FE dan BE dalam satu proses.</span></div></div><div class="mb-npl-brief__priority mb-npl-brief__priority--red"><b>3</b><div><strong>Cek Rekap</strong><span>Klik rekap AO untuk melihat posisi closing dan actual debiturnya.</span></div></div></div></div>',
+]);
+mb_render_assignment_modal([
+    'id'=>'mappingAoAssignModal','title'=>'Tetapkan Kelolaan FE & BE','subtitle'=>'Tentukan dua penanggung jawab untuk rekening yang ditandai.','submit_id'=>'mappingAoSave',
+    'selects'=>[
+        ['id'=>'mappingAoAssigneeFe','label'=>'AO saat bucket FE','placeholder'=>'Pilih AO kelolaan FE'],
+        ['id'=>'mappingAoAssigneeBe','label'=>'AO saat bucket BE','placeholder'=>'Pilih AO kelolaan BE'],
+    ],
+    'help'=>'Perpindahan FE dan BE tidak perlu dimapping ulang; AO aktif mengikuti bucket closing.',
+]);
+mb_render_detail_modal([
+    'id'=>'mappingAoDetail','title'=>'Detail Kelolaan AO','subtitle'=>'Posisi closing dibandingkan dengan data actual.','size'=>'xl',
+    'mobile_body_id'=>'mappingAoDetailMobile','search_near_close'=>true,
+    'search'=>['id'=>'mappingAoDetailSearch','placeholder'=>'Cari rekening / nasabah...'],
+]);
+?>
 <script>
-  // ========== Helpers ==========
-  const fmt = n => Number(n||0).toLocaleString('id-ID');
-
-  // Ambil token dari navbar / localStorage (tanpa "Bearer")
-  function getToken() {
-    const t = (window.AUTH_TOKEN || localStorage.getItem('dpk_token') || '').trim();
-    return t.replace(/^Bearer\s+/i, '');
+(() => {
+  'use strict';
+  const API='./api/maping_ao_remedial/', el=id=>document.getElementById(id), ui=()=>window.MonbisUI||{};
+  const state={view:'mapping',rows:[],recap:[],selected:new Set(),lockedBranch:'',canMap:false,timer:null,actualDate:'',mappingPage:1,mappingPagination:{page:1,pages:1,total:0,limit:50},detail:{office:'',bucket:'',ao:'',name:'',status:'ALL',page:1,pages:1,rows:[],timer:null}};
+  const esc=v=>ui().escape?ui().escape(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num=v=>Number(v||0), fmt=v=>new Intl.NumberFormat('id-ID').format(num(v));
+  const date=v=>{if(!v)return '-';const p=String(v).slice(0,10).split('-');return p.length===3?p.reverse().join('/'):'-'};
+  const dpdBucket=v=>{const n=num(v);if(n<=0)return '0';if(n<=30)return '1-30';if(n<=60)return '31-60';if(n<=90)return '61-90';if(n<=120)return '91-120';if(n<=150)return '121-150';if(n<=180)return '151-180';if(n<=210)return '181-210';if(n<=240)return '211-240';if(n<=270)return '241-270';if(n<=300)return '271-300';if(n<=330)return '301-330';if(n<=360)return '331-360';return '361+'};
+  const dueDate=v=>{if(!v)return '-';const raw=String(v).slice(0,10),parts=raw.split('-');if(parts.length!==3)return '-';const due=new Date(raw+'T00:00:00'),reference=new Date((el('mappingAoActual').value||new Date().toISOString().slice(0,10))+'T00:00:00'),recent=new Date(reference);recent.setMonth(recent.getMonth()-3);return due<reference&&due>=recent?parts.reverse().join('/') : parts[2]};
+  const closingValue=()=>{const value=el('mappingAoClosing').value;if(!/^\d{4}-\d{2}$/.test(value))return value;const [year,month]=value.split('-').map(Number);return new Date(Date.UTC(year,month,0)).toISOString().slice(0,10)};
+  function cookieToken(){const m=document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/);return m?decodeURIComponent(m[1]):''}
+  function token(){return String(window.AUTH_TOKEN||localStorage.getItem('dpk_token')||cookieToken()||'').replace(/^Bearer\s+/i,'').trim()}
+  async function post(body){const headers={'Content-Type':'application/json'},auth=token();if(auth)headers.Authorization='Bearer '+auth;const response=await fetch(API,{method:'POST',credentials:'same-origin',headers,body:JSON.stringify(body)}),json=await response.json().catch(()=>({}));if(!response.ok||Number(json.status)!==200)throw new Error(json.message||('HTTP '+response.status));return json.data}
+  function payload(type){const office=state.lockedBranch||el('mappingAoOffice').value;return {type,closing_date:closingValue(),actual_date:el('mappingAoActual').value,kode_kantor:office,bucket:el('mappingAoBucket').value,mapping_status:el('mappingAoStatus').value,search:el('mappingAoSearch').value.trim(),page:state.mappingPage,limit:50,all:office!=='000'&&!office.startsWith('KOR-')}}
+  const pill=(text,tone)=>'<span class="mb-pill mb-pill--'+tone+'">'+esc(text)+'</span>';
+  const movementPill=status=>pill(status,status==='LUNAS'||status==='BACKFLOW'||status==='PERBAIKAN'?'success':status==='FLOW'||status==='PEMBURUKAN'?'danger':'warning');
+  const sub=text=>'<span class="mb-subvalue">'+text+'</span>';
+  function setSummary(s={}){el('mappingSumTotal').textContent=fmt(s.total);el('mappingSumMapped').textContent=fmt(s.mapped);el('mappingSumUnmapped').textContent=fmt(s.unmapped);el('mappingSumBucket').textContent=fmt(s.fe)+' / '+fmt(s.be);el('mappingSumBd').textContent='Belum mapping Rp '+fmt(s.unmapped_bd)}
+  function owner(name,id,bucket,active){return '<div class="mb-map-owner '+(active?'is-active':'')+'"><span class="mb-map-owner__bucket">'+bucket+'</span><div><strong>'+esc(name||'Belum ditetapkan')+'</strong>'+sub(esc(id||'-')+(active?' · Aktif':'') )+'</div></div>'}
+  function mainRow(r){
+    const complete=Number(r.mapping_lengkap)===1, checked=state.selected.has(String(r.no_rekening));
+    return '<tr><td class="mb-map-check"><input type="checkbox" class="mb-map-row-check" data-rek="'+esc(r.no_rekening)+'" data-branch="'+esc(r.kode_kantor)+'" '+(checked?'checked':'')+' '+(!state.canMap?'disabled':'')+'></td>'
+      +'<td class="mb-code-col mb-sticky-left mb-code"><strong>'+esc(r.kode_kantor)+'</strong><span>'+esc(r.nama_kantor)+'</span></td>'
+      +'<td class="mb-sticky-left-2 mb-name" style="--mb-sticky-1:62px"><strong title="'+esc(r.nama_nasabah)+'">'+esc(r.nama_nasabah)+'</strong><span>'+esc(r.no_rekening)+'</span><small title="'+esc(r.alamat||'-')+'">'+esc(r.alamat||'-')+'</small></td>'
+      +'<td class="mb-text-center"><strong>'+esc(r.kolektibilitas||'-')+'</strong>'+sub(pill(r.bucket,r.bucket==='FE'?'warning':'danger'))+'</td>'
+      +'<td class="mb-num mb-map-stacked"><strong>'+fmt(r.hari_menunggak)+'</strong>'+sub('P '+fmt(r.hari_menunggak_pokok)+' · B '+fmt(r.hari_menunggak_bunga))+'</td>'
+      +'<td class="mb-num mb-map-stacked mb-negative"><strong>'+fmt(r.total_tunggakan)+'</strong>'+sub('P '+fmt(r.tunggakan_pokok)+' · B '+fmt(r.tunggakan_bunga))+'</td>'
+      +'<td class="mb-num mb-strong">'+fmt(r.baki_debet)+'</td>'
+      +'<td class="mb-text-left mb-map-location"><strong>'+esc(r.deskripsi_kode_kelurahan||'-')+'</strong>'+sub(esc(r.kantor_kas||'-')+' · '+esc(r.deskripsi_kode_kecamatan||'-'))+'</td>'
+      +'<td class="mb-map-owners">'+(r.bucket==='FE'?owner(r.ao_fe_nama,r.ao_fe_id_peg,'FE',true):owner(r.ao_be_nama,r.ao_be_id_peg,'BE',true))+'</td>'
+      +'<td class="mb-text-center mb-map-due">'+dueDate(r.tgl_jatuh_tempo)+'</td>'
+      +'<td class="mb-num mb-map-ckpn">'+fmt(r.nilai_ckpn)+'</td>'
+      +'<td class="mb-text-center">'+pill(complete?'Lengkap':'Belum',complete?'success':'danger')+'</td></tr>';
   }
-
-  // Bangun URL absolut dari path relatif (anti nyasar ke root)
-  const API_BUCKET = new URL('./api/bucket/', window.location.href).toString();
-
-  // ========== INIT seperti pola flow_par ==========
-  (async () => {
-    // tidak perlu tanggal untuk mapping; langsung fetch
-    await fetchMapping();
-  })();
-
-  // ========== Fetch ==========
-  function fetchMapping() {
-    const url   = API_BUCKET;              // contoh: http://localhost/e-pipelane/api/bucket/
-    const token = getToken();
-
-    const tbody = document.getElementById('bodyMa');
-    const errEl = document.getElementById('errMa');
-    if (errEl) { errEl.classList.add('hidden'); errEl.textContent=''; }
-    if (tbody)  tbody.innerHTML = `<tr><td colspan="17" class="px-2 py-4 text-center text-gray-500">Memuat...</td></tr>`;
-
-    // log debug
-    console.log('[MAPING] href   =', location.href);
-    console.log('[MAPING] target =', url);
-    console.log('[MAPING] token? =', token ? 'YA' : 'TIDAK');
-
-    fetch(url, {
-      method : 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': token         // TANPA "Bearer"
-      },
-      body: JSON.stringify({ type: 'maping_account' })
-    })
-    .then(res => res.json().catch(()=>({})).then(j => ({ ok:res.ok, status:res.status, json:j })))
-    .then(({ ok, status, json }) => {
-      console.log('[MAPING] status =', status);
-      console.log('[MAPING] json   =', json);
-
-      if (!ok) throw new Error(json?.message || ('HTTP '+status));
-      const rows = Array.isArray(json?.data) ? json.data : [];
-      renderTable(rows);
-    })
-    .catch(err => {
-      console.error('[MAPING] ERROR =', err);
-      if (tbody) tbody.innerHTML = '';
-      if (errEl) { errEl.textContent = err?.message || 'Gagal memuat data'; errEl.classList.remove('hidden'); }
-    });
-  }
-
-  // ========== Render ==========
-  function renderTable(rows){
-    const tbody = document.getElementById('bodyMa');
-    if (!tbody) return;
-
-    if (!Array.isArray(rows) || rows.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="17" class="px-2 py-6 text-center text-gray-500">Tidak ada data</td></tr>`;
-      setTotals([]);
-      return;
-    }
-
-    tbody.innerHTML = rows.map((r,i)=>`
-      <tr class="border-b hover:bg-gray-50">
-        <td class="px-2 py-1 border text-center">${i+1}</td>
-        <td class="px-2 py-1 border font-mono whitespace-nowrap">${r.no_rekening||''}</td>
-        <td class="px-2 py-1 border">${r.nama_debitur||''}</td>
-        <td class="px-2 py-1 border">${r.alamat||''}</td>
-        <td class="px-2 py-1 border text-right">${fmt(r.baki_debet)}</td>
-        <td class="px-2 py-1 border text-center">${r.tgl_realisasi||''}</td>
-        <td class="px-2 py-1 border text-right">${fmt(r.tunggakan_pokok)}</td>
-        <td class="px-2 py-1 border text-right">${fmt(r.tunggakan_bunga)}</td>
-        <td class="px-2 py-1 border text-right">${fmt(r.ckpn)}</td>
-        <td class="px-2 py-1 border">${r.bucket||''}</td>
-        <td class="px-2 py-1 border text-right">${fmt(r.plan_ckpn)}</td>
-        <td class="px-2 py-1 border text-right">${fmt(r.pemulihan_pembentukan)}</td>
-        <td class="px-2 py-1 border text-right">${fmt(r.baki_debet_harian)}</td>
-        <td class="px-2 py-1 border text-center">${r.hari_menunggak_harian ?? ''}</td>
-        <td class="px-2 py-1 border text-right">${fmt(r.angsuran_pokok)}</td>
-        <td class="px-2 py-1 border text-right">${fmt(r.angsuran_bunga)}</td>
-        <td class="px-2 py-1 border text-center">${r.tgl_trans || ''}</td>
-      </tr>
-    `).join('');
-
-    setTotals(rows);
-  }
-
-  function setTotals(rows){
-    const sum = (k) => rows.reduce((a,r)=>a+(Number(r?.[k])||0),0);
-    const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent = fmt(v); };
-    set('tot_bd',            sum('baki_debet'));
-    set('tot_tp',            sum('tunggakan_pokok'));
-    set('tot_tb',            sum('tunggakan_bunga'));
-    set('tot_ckpn',          sum('ckpn'));
-    set('tot_plan_ckpn',     sum('plan_ckpn'));
-    set('tot_pemulihan',     sum('pemulihan_pembentukan'));
-    set('tot_bd_harian',     sum('baki_debet_harian'));
-    set('tot_ap',            sum('angsuran_pokok'));
-    set('tot_ab',            sum('angsuran_bunga'));
-  }
-
-  // tombol refresh (opsional)
-  document.getElementById('btnRefreshMa')?.addEventListener('click', fetchMapping);
+  const recapData=(r,status)=>'data-recap-office="'+esc(r.kode_kantor)+'" data-recap-bucket="'+esc(r.bucket)+'" data-recap-ao="'+esc(r.ao_id_peg||'')+'" data-recap-name="'+esc(r.ao_nama)+'" data-recap-status="'+status+'"';
+  function recapMetric(r,key,status,tone){const value=num(r[key]),bd=num(r[key.replace('_noa','_bd')]);return value>0||bd>0?'<button type="button" class="mb-map-metric mb-map-metric--'+tone+'" '+recapData(r,status)+'>'+fmt(bd)+sub(fmt(value)+' NOA')+'</button>':'<span class="mb-map-metric is-zero">0</span>'}
+  function recapRow(r){const empty=!r.ao_id_peg;return '<tr class="'+(empty?'mb-map-unmapped':'')+'"><td class="mb-sticky-left mb-name mb-recap-office"><strong>'+esc(r.nama_kantor)+'</strong>'+sub(esc(r.kode_kantor))+'</td><td class="mb-text-left"><button type="button" class="mb-recap-owner" '+recapData(r,'ALL')+'><strong>'+esc(r.ao_nama)+'</strong>'+sub(pill(r.bucket,r.bucket==='FE'?'warning':'danger')+' '+esc(r.ao_id_peg||''))+'</button></td><td class="mb-text-center"><strong class="mb-positive">'+fmt(r.mapped_noa)+'</strong> / <strong class="mb-negative">'+fmt(r.unmapped_noa)+'</strong>'+sub('Sudah / Belum')+'</td><td class="mb-text-center">'+recapMetric(r,'flow_noa','FLOW','red')+'</td><td class="mb-text-center">'+recapMetric(r,'backflow_noa','BACKFLOW','cyan')+'</td><td class="mb-text-center">'+recapMetric(r,'lunas_noa','LUNAS','green')+'</td><td class="mb-text-center">'+recapMetric(r,'perbaikan_noa','PERBAIKAN','green')+'</td><td class="mb-text-center">'+recapMetric(r,'stay_noa','STAY','amber')+'</td><td class="mb-text-center">'+recapMetric(r,'pemburukan_noa','PEMBURUKAN','red')+'</td><td class="mb-num mb-positive mb-strong">'+fmt(r.amount_call)+'</td><td class="mb-num"><button type="button" class="mb-recap-total" '+recapData(r,'ALL')+'><strong>'+fmt(r.total_noa)+' NOA</strong>'+sub('Rp '+fmt(r.total_baki))+'</button></td></tr>'}
+  function recapTotalRow(r){return '<tr class="mb-total-row"><td class="mb-sticky-left mb-name mb-recap-office"><strong>ALL</strong>'+sub('GRAND TOTAL')+'</td><td class="mb-text-left"><strong>GRAND TOTAL</strong>'+sub(fmt(r.total_noa)+' NOA')+'</td><td class="mb-text-center"><strong class="mb-positive">'+fmt(r.mapped_noa)+'</strong> / <strong class="mb-negative">'+fmt(r.unmapped_noa)+'</strong>'+sub('Sudah / Belum')+'</td><td class="mb-text-center">'+fmt(r.flow_bd)+sub(fmt(r.flow_noa)+' NOA')+'</td><td class="mb-text-center">'+fmt(r.backflow_bd)+sub(fmt(r.backflow_noa)+' NOA')+'</td><td class="mb-text-center">'+fmt(r.lunas_bd)+sub(fmt(r.lunas_noa)+' NOA')+'</td><td class="mb-text-center">'+fmt(r.perbaikan_bd)+sub(fmt(r.perbaikan_noa)+' NOA')+'</td><td class="mb-text-center">'+fmt(r.stay_bd)+sub(fmt(r.stay_noa)+' NOA')+'</td><td class="mb-text-center">'+fmt(r.pemburukan_bd)+sub(fmt(r.pemburukan_noa)+' NOA')+'</td><td class="mb-num mb-positive mb-strong">'+fmt(r.amount_call)+'</td><td class="mb-num mb-strong">'+fmt(r.total_baki)+'</td></tr>'}
+  function mappingHead(){el('mappingAoTable').querySelector('thead').innerHTML=<?= json_encode($head, JSON_UNESCAPED_SLASHES) ?>}
+  function recapHead(){el('mappingAoTable').querySelector('thead').innerHTML='<tr><th rowspan="2" class="mb-sticky-left mb-text-left" style="width:155px">Kantor</th><th rowspan="2" class="mb-text-left" style="width:230px">AO / Bucket Closing</th><th rowspan="2">Mapping</th><th colspan="3" class="mb-group--blue">Kolektibilitas</th><th colspan="3" class="mb-group--amber">Bucket</th><th rowspan="2">Amount Call</th><th rowspan="2">Kelolaan</th></tr><tr><th>Flow</th><th>Backflow</th><th>Lunas</th><th>Perbaikan</th><th>Stay</th><th>Pemburukan</th></tr>'}
+  function pager(){const node=el('mappingAoPager');if(!node)return;const p=state.mappingPagination,branchTotal=state.lockedBranch?state.rows.filter(r=>r.kode_kantor===state.lockedBranch).length:0,total=state.lockedBranch?branchTotal:p.total,page=state.lockedBranch?1:p.page,pages=state.lockedBranch?1:p.pages,limit=state.lockedBranch?Math.max(1,total):p.limit,hidden=state.view==='recap'||!total;node.classList.toggle('is-hidden',hidden);if(hidden)return;const start=(page-1)*limit+1,end=Math.min(page*limit,total),label=state.lockedBranch?'Data cabang terpilih':'Halaman '+page+' / '+pages;node.innerHTML='<span>Data '+fmt(start)+' - '+fmt(end)+' dari '+fmt(total)+'</span><div><button type="button" data-mapping-page="prev" '+(page<=1?'disabled':'')+'>‹ Prev</button><strong>'+label+'</strong><button type="button" data-mapping-page="next" '+(page>=pages?'disabled':'')+'>Next ›</button></div>'}
+  function render(){const recap=state.view==='recap',mainRows=state.lockedBranch?state.rows.filter(r=>r.kode_kantor===state.lockedBranch):state.rows;el('mappingAoTable').classList.toggle('is-recap',recap);if(!recap)el('mappingAoTitle').textContent=state.lockedBranch?'Mapping Rekening · Cabang '+state.lockedBranch:'Mapping Rekening · '+fmt(state.mappingPagination.total||mainRows.length)+' data';el('mappingAoBody').innerHTML=recap?(state.recap.length?recapTotalRow(state.recapTotal||{})+state.recap.map(recapRow).join(''):'<tr><td colspan="11" class="mb-empty">Data rekap tidak ditemukan.</td></tr>'):(mainRows.length?mainRows.map(mainRow).join(''):'<tr><td colspan="12" class="mb-empty">Data mapping tidak ditemukan.</td></tr>');pager()}
+  async function load(){ui().showLoading?.('mappingAoLoading',true);try{if(state.view==='recap'){const data=await post(payload('recap'));state.recap=data.rows||[];state.recapTotal=data.total||{};const t=state.recapTotal;setSummary({total:t.total_noa||0,mapped:t.mapped_noa||0,unmapped:t.unmapped_noa||0,fe:t.fe_noa||0,be:t.be_noa||0})}else{const data=await post(payload('list'));state.rows=data.rows||[];state.mappingPagination=data.pagination||state.mappingPagination;state.canMap=!!data.can_map;const office=el('mappingAoOffice').value;el('mappingAoAssign').classList.toggle('is-hidden',!state.canMap||!/^\d{3}$/.test(office)||office==='000')}render()}catch(error){el('mappingAoBody').innerHTML='<tr><td colspan="12" class="mb-empty mb-negative">'+esc(error.message)+'</td></tr>'}finally{ui().showLoading?.('mappingAoLoading',false)}}
+  function applyDates(data,includeClosing=false){if(includeClosing)el('mappingAoClosing').value=data.closing_date||'';const actual=el('mappingAoActual');actual.value=data.actual_date||data.closing_date||'';actual.min=closingValue();actual.max=data.max_actual_date||data.actual_date||'';state.actualDate=actual.value}
+  async function changeClosing(){ui().showLoading?.('mappingAoLoading',true);try{const data=await post({type:'bootstrap',closing_date:closingValue()});applyDates(data,false);state.selected.clear();state.lockedBranch='';await load()}catch(error){alert(error.message)}finally{ui().showLoading?.('mappingAoLoading',false)}}
+  async function boot(){try{const data=await post({type:'bootstrap'});state.canMap=!!data.user?.can_map;applyDates(data,true);const office=el('mappingAoOffice');if(data.user?.can_view_all){const korwil='<option value="KOR-SEMARANG">Korwil Semarang</option><option value="KOR-SOLO">Korwil Solo</option><option value="KOR-BANYUMAS">Korwil Banyumas</option><option value="KOR-PEKALONGAN">Korwil Pekalongan</option>';office.innerHTML='<option value="000">Konsolidasi</option>'+korwil+((data.offices||[]).map(x=>'<option value="'+esc(x.kode_kantor)+'">'+esc(x.kode_kantor)+' - '+esc(x.nama_kantor)+'</option>').join(''))}else{office.innerHTML='<option value="'+esc(data.user?.kode_kantor)+'">'+esc(data.user?.kode_kantor)+' - Kantor sendiri</option>';office.disabled=true}if(!state.canMap){el('mappingAoAssign').classList.add('is-hidden');el('mappingAoPage').classList.add('is-readonly')}await load()}catch(error){el('mappingAoBody').innerHTML='<tr><td colspan="12" class="mb-empty mb-negative">'+esc(error.message)+'</td></tr>'}}
+  async function openAssign(){const selected=[...state.selected];if(!selected.length)return alert('Pilih rekening yang akan dimapping.');const rows=state.rows.filter(r=>state.selected.has(String(r.no_rekening))),branches=[...new Set(rows.map(r=>r.kode_kantor))];if(branches.length!==1)return alert('Pilih rekening dari satu cabang saja.');try{const options=await post({type:'ao_options',kode_kantor:branches[0],closing_date:closingValue()}),html='<option value="">Pilih AO remedial</option>'+options.map(x=>'<option value="'+esc(x.id_peg)+'">['+esc(x.remedial)+'] '+esc(x.nama)+' · FE '+fmt(x.total_mapped_fe)+' / BE '+fmt(x.total_mapped_be)+'</option>').join('');el('mappingAoAssigneeFe').innerHTML=html;el('mappingAoAssigneeBe').innerHTML=html;el('mappingAoAssignModalNotice').innerHTML='<strong>'+selected.length+' rekening dipilih</strong><span>Cabang '+esc(branches[0])+' · Pilih AO dengan format total kelolaan FE / BE.</span>';ui().openModal?.('mappingAoAssignModal')}catch(error){alert(error.message)}}
+  async function save(){const aoFe=el('mappingAoAssigneeFe').value,aoBe=el('mappingAoAssigneeBe').value;if(!aoFe||!aoBe)return alert('Pilih AO kelolaan FE dan AO kelolaan BE.');const button=el('mappingAoSave');button.disabled=true;try{const data=await post({type:'assign',closing_date:closingValue(),ao_fe_id_peg:aoFe,ao_be_id_peg:aoBe,no_rekening:[...state.selected]});state.selected.clear();state.lockedBranch='';ui().closeModal?.('mappingAoAssignModal');await load();alert(data.count+' rekening berhasil dimapping.')}catch(error){alert(error.message)}finally{button.disabled=false}}
+  function detailTable(rows){const body=rows.map(r=>'<tr><td class="mb-sticky-left mb-code" style="width:120px">'+esc(r.no_rekening)+'</td><td class="mb-sticky-left-2 mb-name" style="--mb-sticky-1:120px;width:190px"><strong>'+esc(r.nama_nasabah)+'</strong>'+sub(esc(r.kantor_kas||'-')+' · '+esc(r.alamat||'-'))+'</td><td class="mb-text-center">'+pill(state.detail.bucket,state.detail.bucket==='FE'?'warning':'danger')+sub('Closing')+'</td><td class="mb-text-center">'+pill(r.bucket_actual||'-',r.bucket_actual==='SC'?'success':r.bucket_actual==='FE'?'warning':'danger')+sub('Actual')+'</td><td class="mb-text-center">'+esc(r.kolektibilitas_closing||'-')+' → '+esc(r.kolektibilitas_actual||'-')+'</td><td class="mb-text-center mb-map-migration"><strong>'+dpdBucket(r.dpd_closing)+' → '+dpdBucket(r.dpd_actual)+'</strong>'+sub(movementPill(r.movement_status))+'</td><td class="mb-num">'+fmt(r.dpd_closing)+' → '+fmt(r.dpd_actual)+sub('P '+fmt(r.dpd_pokok_actual)+' · B '+fmt(r.dpd_bunga_actual))+'</td><td class="mb-num">'+fmt(r.baki_debet_closing)+' → '+fmt(r.baki_debet_actual)+'</td><td class="mb-num mb-negative">'+fmt(r.total_tunggakan)+sub('P '+fmt(r.tunggakan_pokok)+' · B '+fmt(r.tunggakan_bunga))+'</td><td class="mb-num mb-positive">'+fmt(r.pembayaran_pokok)+sub('B '+fmt(r.pembayaran_bunga)+' · D '+fmt(r.pembayaran_denda))+'</td><td class="mb-num mb-strong mb-positive">'+fmt(r.amount_call)+sub('Diskon '+fmt(r.diskon_bunga))+'</td><td class="mb-text-center">'+date(r.tanggal_bayar_terakhir)+'</td></tr>').join('');return '<table class="mb-table mb-detail-mini mb-mapping-detail-table"><thead><tr><th class="mb-sticky-left" style="width:120px">Rekening</th><th class="mb-sticky-left-2 mb-text-left" style="--mb-sticky-1:120px;width:190px">Nasabah / Unit</th><th>Bucket C</th><th>Bucket A</th><th>Kolek C → A</th><th>Migrasi Bucket</th><th>DPD C → A</th><th>BD C → A</th><th>Tunggakan Act</th><th>Bayar P / B / D</th><th>Amount Call</th><th>Bayar Terakhir</th></tr></thead><tbody>'+(body||'<tr><td colspan="12" class="mb-empty">Detail tidak ditemukan.</td></tr>')+'</tbody></table>'}
+  function detailCards(rows){return rows.length?rows.map(r=>'<article class="mb-detail-card"><div class="mb-detail-card__head"><div class="mb-detail-card__identity"><div class="mb-detail-card__name">'+esc(r.nama_nasabah)+'</div><div class="mb-detail-card__meta">'+esc(r.no_rekening)+' · '+esc(r.kantor_kas||'-')+'</div></div>'+movementPill(r.movement_status)+'</div><div class="mb-detail-card__address"><span>Alamat</span><strong>'+esc(r.alamat||'-')+'</strong></div><div class="mb-detail-card__metrics"><div class="mb-detail-card__metric"><span>Status Bucket Closing → Actual</span><strong>'+esc(state.detail.bucket)+' → '+esc(r.bucket_actual||'-')+'</strong></div><div class="mb-detail-card__metric"><span>Migrasi Bucket DPD</span><strong>'+dpdBucket(r.dpd_closing)+' → '+dpdBucket(r.dpd_actual)+'</strong><small>'+esc(r.movement_status||'-')+'</small></div><div class="mb-detail-card__metric"><span>Kolek Closing → Actual</span><strong>'+esc(r.kolektibilitas_closing||'-')+' → '+esc(r.kolektibilitas_actual||'-')+'</strong></div><div class="mb-detail-card__metric"><span>DPD Closing → Actual</span><strong>'+fmt(r.dpd_closing)+' → '+fmt(r.dpd_actual)+'</strong></div><div class="mb-detail-card__metric"><span>BD Closing → Actual</span><strong>'+fmt(r.baki_debet_closing)+' → '+fmt(r.baki_debet_actual)+'</strong></div><div class="mb-detail-card__metric"><span>Total Tunggakan</span><strong class="mb-negative">Rp '+fmt(r.total_tunggakan)+'</strong></div><div class="mb-detail-card__metric"><span>Bayar Pokok / Bunga / Denda</span><strong class="mb-positive">'+fmt(r.pembayaran_pokok)+' / '+fmt(r.pembayaran_bunga)+' / '+fmt(r.pembayaran_denda)+'</strong></div><div class="mb-detail-card__metric"><span>Amount Call</span><strong class="mb-positive">Rp '+fmt(r.amount_call)+'</strong><small>Diskon bunga Rp '+fmt(r.diskon_bunga)+'</small></div></div></article>').join(''):'<div class="mb-empty">Detail tidak ditemukan.</div>'}
+  function renderDetail(data){const s=data.summary||{};const summary=el('mappingAoDetailSummary');summary.classList.remove('is-hidden');summary.innerHTML='<div class="mb-summary-card mb-summary-card--blue"><div class="mb-summary-card__label">Total Debitur</div><div class="mb-summary-card__value">'+fmt(s.total)+' NOA</div></div><div class="mb-summary-card mb-summary-card--amber"><div class="mb-summary-card__label">BD Closing</div><div class="mb-summary-card__value">Rp '+fmt(s.baki_closing)+'</div></div><div class="mb-summary-card mb-summary-card--green"><div class="mb-summary-card__label">BD Actual</div><div class="mb-summary-card__value">Rp '+fmt(s.baki_actual)+'</div></div>';el('mappingAoDetailBody').innerHTML=detailTable(data.rows||[]);el('mappingAoDetailMobile').innerHTML=detailCards(data.rows||[]);state.detail.pages=data.pagination?.pages||1;const total=Number(data.pagination?.total||0),start=(state.detail.page-1)*Number(data.pagination?.limit||20);const footer=el('mappingAoDetailFooter');footer.classList.toggle('is-hidden',!total);footer.innerHTML=total?'<div class="mb-detail-page-info">Data '+fmt(start+1)+' - '+fmt(Math.min(start+(data.rows||[]).length,total))+' dari '+fmt(total)+'</div><span class="mb-detail-pagination"><button type="button" class="mb-detail-page-btn" data-detail-page="prev" '+(state.detail.page<=1?'disabled':'')+'>&lsaquo; Prev</button><span class="mb-detail-page-status">Hal '+state.detail.page+' / '+state.detail.pages+'</span><button type="button" class="mb-detail-page-btn" data-detail-page="next" '+(state.detail.page>=state.detail.pages?'disabled':'')+'>Next &rsaquo;</button></span>':''}
+  async function fetchDetail(){el('mappingAoDetailBody').innerHTML='<div class="mb-empty">Memuat detail debitur...</div>';el('mappingAoDetailMobile').innerHTML='<div class="mb-empty">Memuat detail debitur...</div>';try{const data=await post({type:'detail',closing_date:closingValue(),actual_date:el('mappingAoActual').value,kode_kantor:state.detail.office,bucket:state.detail.bucket,ao_id_peg:state.detail.ao,movement_status:state.detail.status,search:el('mappingAoDetailSearch').value.trim(),page:state.detail.page,limit:20});state.detail.rows=data.rows||[];renderDetail(data)}catch(error){el('mappingAoDetailBody').innerHTML='<div class="mb-empty mb-negative">'+esc(error.message)+'</div>';el('mappingAoDetailMobile').innerHTML='<div class="mb-empty mb-negative">'+esc(error.message)+'</div>'}}
+  function openDetail(target){const status=target.dataset.recapStatus||'ALL';state.detail={...state.detail,office:target.dataset.recapOffice,bucket:target.dataset.recapBucket,ao:target.dataset.recapAo||'',name:target.dataset.recapName||'Belum Termapping',status,page:1};el('mappingAoDetailSearch').value='';el('mappingAoDetailTitle').textContent='Detail '+(status==='ALL'?state.detail.bucket:status)+' - '+state.detail.name;el('mappingAoDetailSubtitle').textContent='Closing '+date(closingValue())+' vs actual '+date(el('mappingAoActual').value);ui().openModal?.('mappingAoDetail');fetchDetail()}
+  document.addEventListener('change',event=>{if(event.target.matches('.mb-map-row-check')){const rek=event.target.dataset.rek,branch=event.target.dataset.branch;if(event.target.checked){if(state.lockedBranch&&state.lockedBranch!==branch){event.target.checked=false;return alert('Selesaikan mapping cabang '+state.lockedBranch+' terlebih dahulu.')}state.lockedBranch=branch;state.selected.add(rek)}else{state.selected.delete(rek);if(!state.selected.size)state.lockedBranch=''}render();return}if(event.target.id==='mappingAoClosing'){state.mappingPage=1;changeClosing();return}if(event.target.id==='mappingAoActual'){state.actualDate=event.target.value;if(state.view==='recap')load();else render();return}if(['mappingAoOffice','mappingAoBucket','mappingAoStatus'].includes(event.target.id)){state.selected.clear();state.lockedBranch='';state.mappingPage=1;load()}});
+  document.addEventListener('click',event=>{const viewSwitch=event.target.closest('#mappingAoViewSwitch');if(viewSwitch){document.querySelector('[data-map-view="'+(state.view==='mapping'?'recap':'mapping')+'"]').click();return}const mapPage=event.target.closest('[data-mapping-page]');if(mapPage&&!mapPage.disabled){state.mappingPage+=mapPage.dataset.mappingPage==='next'?1:-1;load();return}const tab=event.target.closest('[data-map-view]');if(tab){state.view=tab.dataset.mapView;state.mappingPage=1;document.querySelectorAll('[data-map-view]').forEach(x=>x.classList.toggle('is-active',x===tab));el('mappingAoTitle').textContent=state.view==='mapping'?'Mapping Rekening':'Rekap AO Sesuai Bucket Closing';el('mappingAoAssign').classList.toggle('is-hidden',state.view!=='mapping'||!state.canMap);state.view==='mapping'?mappingHead():recapHead();load();return}const recap=event.target.closest('[data-recap-office]');if(recap){openDetail(recap);return}const detailPage=event.target.closest('[data-detail-page]');if(detailPage&&!detailPage.disabled){state.detail.page+=detailPage.dataset.detailPage==='next'?1:-1;fetchDetail()}});
+  el('mappingAoAssign')?.addEventListener('click',openAssign);el('mappingAoSave')?.addEventListener('click',save);
+  el('mappingAoSearch')?.addEventListener('input',()=>{clearTimeout(state.timer);state.timer=setTimeout(()=>load(),300)});
+  el('mappingAoDetailSearch')?.addEventListener('input',()=>{clearTimeout(state.detail.timer);state.detail.timer=setTimeout(()=>{state.detail.page=1;fetchDetail()},300)});
+  document.readyState==='loading'?document.addEventListener('DOMContentLoaded',boot):boot();
+})();
 </script>
-
-

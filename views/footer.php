@@ -170,6 +170,7 @@
                   br = document.getElementById('navBranch'),
                   acc = document.getElementById('accHandle'),
                   menuMonevDev = document.getElementById('menuMonevDev'),
+                  menuKpiBisnis = document.getElementById('menuKpiBisnis'),
                   menuLayananDigital = document.getElementById('menuLayananDigital'),
                   menuEventAdmin = document.getElementById('menuEventAdmin');
 
@@ -180,6 +181,9 @@
             const isDev = (u.role === 'dev' || u.unit_kerja === 'Divisi Operasional' || u.unit_kerja === 'Dewan Komisaris dan Direksi' || u.unit_kerja ===  'Divisi Perencanaan dan Litbang');
             if (menuMonevDev) {
                 menuMonevDev.style.setProperty('display', isDev ? 'block' : 'none', 'important');
+            }
+            if (menuKpiBisnis) {
+                menuKpiBisnis.style.setProperty('display', isDev ? 'block' : 'none', 'important');
             }
             if (menuLayananDigital) {
                 menuLayananDigital.style.setProperty('display', isDev ? 'block' : 'none', 'important');

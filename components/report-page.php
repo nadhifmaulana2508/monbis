@@ -3,6 +3,21 @@ require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/page-header.php';
 require_once __DIR__ . '/data-table.php';
 
+if (!function_exists('mb_build_report_legend')) {
+    /** Membuat legenda singkatan report yang ringkas dan dapat dipakai ulang. */
+    function mb_build_report_legend(array $items, array $attrs = []): string
+    {
+        $attrs['class'] = trim('mb-report-legend ' . ($attrs['class'] ?? ''));
+        $html = '<div' . mb_attrs($attrs) . '>';
+        foreach ($items as $item) {
+            $tone = preg_replace('/[^a-z0-9_-]/i', '', (string)($item['tone'] ?? 'blue'));
+            $html .= '<div class="mb-report-legend__item mb-report-legend__item--' . mb_e($tone) . '"><strong>'
+                . mb_e($item['code'] ?? '') . '</strong><span>' . mb_e($item['text'] ?? '') . '</span></div>';
+        }
+        return $html . '</div>';
+    }
+}
+
 if (!function_exists('mb_render_report_toolbar')) {
     function mb_render_report_toolbar(array $cfg): void
     {
@@ -57,6 +72,7 @@ if (!function_exists('mb_render_report_page')) {
         mb_render_page_header($header);
         echo '<section class="mb-report-card mb-report-card--grow">';
         mb_render_report_toolbar($toolbar);
+        if (!empty($cfg['legend_html'])) echo $cfg['legend_html'];
         mb_render_table_shell($table);
         echo '</section>';
         echo '</main>';
