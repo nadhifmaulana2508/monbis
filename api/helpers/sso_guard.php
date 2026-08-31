@@ -54,11 +54,22 @@ function ssoWhoami(string $token): ?array
 
 function requireAppAuth(): array
 {
-    $token = getAppAuthToken();
-    if ($token === '') sendResponse(401, 'Token tidak ditemukan. Silakan login kembali.');
-    $local = verifyJWT($token, $_ENV['JWT_SECRET'] ?? 'your-secret-key');
-    if (is_array($local) && !empty($local['employee_id'])) return $local;
-    $sso = ssoWhoami($token);
-    if (!$sso) sendResponse(401, 'Token SSO tidak valid atau sudah kedaluwarsa.');
-    return $sso;
+    // Cookie SSO dapat lebih baru daripada token LocalStorage yang dikirim lewat
+    // Authorization. Coba keduanya agar token lama tidak menutupi sesi yang valid.
+    $cookieToken = trim((string)preg_replace('/^Bearer\s+/i', '', (string)($_COOKIE['sso_token'] ?? '')));
+    $headerToken = getAppAuthToken();
+    $tokens = array_values(array_unique(array_filter([$cookieToken, $headerToken])));
+
+    if (!$tokens) sendResponse(401, 'Token tidak ditemukan. Silakan login kembali.');
+
+    foreach ($tokens as $token) {
+        $local = verifyJWT($token, $_ENV['JWT_SECRET'] ?? 'your-secret-key');
+        if (is_array($local) && !empty($local['employee_id'])) return $local;
+    }
+    foreach ($tokens as $token) {
+        $sso = ssoWhoami($token);
+        if (is_array($sso) && !empty($sso['employee_id'])) return $sso;
+    }
+
+    sendResponse(401, 'Token SSO tidak valid atau sudah kedaluwarsa.');
 }
