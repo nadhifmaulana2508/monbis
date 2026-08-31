@@ -42,8 +42,7 @@ mb_render_report_page([
     const fmt = value => new Intl.NumberFormat('id-ID', {maximumFractionDigits: 2}).format(Number(value || 0));
     const pct = value => fmt(Number(value || 0) * 100) + '%';
     const money = value => 'Rp ' + fmt(value);
-    const token = () => String(document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/)?.[1] || window.AUTH_TOKEN || localStorage.getItem('dpk_token') || '').replace(/^Bearer\s+/i, '').trim();
-    const headers = () => { const value=token(), result={'Content-Type':'application/json'}; if(value) result.Authorization='Bearer '+value; return result; };
+    const headers = () => ({'Content-Type':'application/json'});
     const post = async body => {
         const response = await fetch(API, {method:'POST', credentials:'same-origin', headers:headers(), body:JSON.stringify(body)});
         const json = await response.json();
