@@ -10,7 +10,7 @@ mb_render_info_modal(['id'=>'hitungKpiAoInfo','title'=>'Cara Hitung KPI AO Kredi
 ?>
 <style>.mb-kpi-targets{display:flex;gap:10px;align-items:end;padding:10px 12px;border-bottom:1px solid var(--mb-border,#dbe4ef);background:var(--mb-soft,#f8fafc);flex-wrap:wrap}.mb-kpi-targets label{display:flex;flex-direction:column;gap:4px;font-size:10px;font-weight:700;color:#52627a}.mb-kpi-targets input{width:150px;padding:8px 9px;border:1px solid #cbd8e8;border-radius:8px;background:var(--mb-card,#fff);font:inherit;color:inherit}.mb-kpi-targets small{font-size:10px;color:#718096}</style>
 <script>
-(()=>{const API='./api/kpi/',el=id=>document.getElementById(id),ui=()=>window.MonbisUI||{},esc=v=>ui().escape?ui().escape(v):String(v??''),num=v=>Number(v||0),fmt=v=>new Intl.NumberFormat('id-ID',{maximumFractionDigits:2}).format(num(v)),money=v=>'Rp '+new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(num(v)),pct=v=>fmt(num(v)*100)+'%',post=async body=>{const r=await(window.apiFetch||fetch)(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),j=await r.json();if(!r.ok||Number(j.status)!==200)throw Error(j.message||'Gagal memuat KPI');return j.data||{}},state={boot:null,detail:[]};
+(()=>{const API='./api/index.php?request=kpi',el=id=>document.getElementById(id),ui=()=>window.MonbisUI||{},esc=v=>ui().escape?ui().escape(v):String(v??''),num=v=>Number(v||0),fmt=v=>new Intl.NumberFormat('id-ID',{maximumFractionDigits:2}).format(num(v)),money=v=>'Rp '+new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(num(v)),pct=v=>fmt(num(v)*100)+'%',post=async body=>{const r=await(window.apiFetch||fetch)(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}),j=await r.json();if(!r.ok||Number(j.status)!==200)throw Error(j.message||'Gagal memuat KPI');return j.data||{}},state={boot:null,detail:[]};
 function fill(d){state.boot=d;const dates=d.closing_dates||[],ao=d.ao_kredit||[];el('hitungKpiClosing').innerHTML=dates.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');el('hitungKpiAo').innerHTML='<option value="">Pilih AO Kredit</option>'+ao.map(x=>`<option value="${esc(x.kode_ao)}">${esc(x.kode_ao)} · ${esc(x.nama_ao)} · ${esc(x.kode_kantor)}</option>`).join('');if(dates.length)el('hitungKpiClosing').value=dates[dates.length-1]}
 function selectedAo(){return(state.boot?.ao_kredit||[]).find(x=>x.kode_ao===el('hitungKpiAo').value)}
 function render(){const b=el('hitungKpiBody'),rows=state.detail||[],ao=selectedAo(),show=x=>x.unit==='RUPIAH'?money(x):x.unit==='PERSEN'?pct(x):fmt(x);el('hitungKpiAoName').textContent=ao?.nama_ao||'-';el('hitungKpiAoMeta').textContent=ao?`${ao.kode_ao} · KCU ${ao.kode_kantor}`:'Pilih AO Kredit';b.innerHTML=rows.length?rows.map(x=>`<tr><td class="mb-sticky-left mb-text-left"><strong>${esc(x.nama)}</strong><small class="mb-subvalue">${esc(x.kelompok||'')}</small></td><td class="mb-num">${show(x.target)}</td><td class="mb-num mb-strong">${show(x.realisasi)}</td><td class="mb-num">${x.unit==='PERSEN'?pct(x.indeks):fmt(x.indeks)}</td><td class="mb-num">${fmt(x.skor)} / 5</td><td class="mb-num">${pct(x.bobot)}</td><td class="mb-num mb-strong">${fmt(x.nilai_100)}</td><td>${x.formula_key==='MOB_6'?`OS ${money(x.os_mob_menunggak)} / ${money(x.os_mob_total)} · ${pct(x.realisasi)}`:x.formula_key==='REPAYMENT_RATE'?`OS DPD 0 ${money(x.os_dpd0)} / OS Kelolaan ${money(x.os_kelolaan)} · ${pct(x.realisasi)}`:x.formula_key==='EARLY_RUN_OFF'?`OS Lunas Murni ${money(x.os_run_off)} / OS DPD 0 M-1 ${money(x.os_dpd0_m1)} · ${pct(x.realisasi)}`:esc(x.catatan||'Terhitung')}</td></tr>`).join(''):'<tr><td colspan="8" class="mb-empty">Pilih AO dan closing, lalu klik Hitung KPI.</td></tr>'}
@@ -23,7 +23,7 @@ el('hitungKpiRun')?.addEventListener('click',run);el('hitungKpiAo')?.addEventLis
   const office = document.getElementById('hitungKpiKantor'), ao = document.getElementById('hitungKpiAo');
   if (!office || !ao) return;
   const esc = value => window.MonbisUI?.escape ? window.MonbisUI.escape(value) : String(value ?? '');
-  const post = async body => { const r=await (window.apiFetch||fetch)('./api/kpi/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); const j=await r.json(); if(!r.ok||Number(j.status)!==200) throw Error(j.message||'Gagal'); return j.data||{}; };
+  const post = async body => { const r=await (window.apiFetch||fetch)('./api/index.php?request=kpi',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}); const j=await r.json(); if(!r.ok||Number(j.status)!==200) throw Error(j.message||'Gagal'); return j.data||{}; };
   let data;
   setTimeout(async () => {
     try {
@@ -63,7 +63,7 @@ el('hitungKpiRun')?.addEventListener('click',run);el('hitungKpiAo')?.addEventLis
     const branch = office.value;
     if (!branch) return alert('Pilih kantor terlebih dahulu.');
     const status = document.getElementById('hitungKpiBulkStatus'), body = document.getElementById('hitungKpiBulkBody');
-    const post = async payload => { const r = await (window.apiFetch || fetch)('./api/kpi/', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const j=await r.json(); if(!r.ok||Number(j.status)!==200) throw Error(j.message||'Gagal'); return j.data||{}; };
+    const post = async payload => { const r = await (window.apiFetch || fetch)('./api/index.php?request=kpi', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}); const j=await r.json(); if(!r.ok||Number(j.status)!==200) throw Error(j.message||'Gagal'); return j.data||{}; };
     const boot = await post({type:'bootstrap',year:document.getElementById('hitungKpiYear').value});
     const aos = (boot.ao_kredit||[]).filter(x => x.kode_kantor === branch), dates = boot.closing_dates||[];
     body.innerHTML=''; let done=0; status.textContent=`Memproses ${aos.length} AO × ${dates.length} closing...`;
@@ -92,7 +92,7 @@ el('hitungKpiRun')?.addEventListener('click',run);el('hitungKpiAo')?.addEventLis
     bulk.disabled = true;
     try {
       const post = async body => {
-        const r = await (window.apiFetch || fetch)('./api/kpi/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+        const r = await (window.apiFetch || fetch)('./api/index.php?request=kpi', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
         const j = await r.json(); if (!r.ok || Number(j.status) !== 200) throw Error(j.message || 'Gagal'); return j.data || {};
       };
       const boot = await post({type:'bootstrap', year:document.getElementById('hitungKpiYear').value});

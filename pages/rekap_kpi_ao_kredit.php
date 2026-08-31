@@ -35,7 +35,7 @@ mb_render_report_page([
 ?>
 <script>
 (() => {
-    const API = './api/kpi/';
+    const API = './api/index.php?request=kpi';
     const state = {boot:null};
     const el = id => document.getElementById(id);
     const esc = value => window.MonbisUI?.escape ? window.MonbisUI.escape(value) : String(value ?? '');
