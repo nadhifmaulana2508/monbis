@@ -34,7 +34,14 @@ class MappingAoRemedialController
             if ($date = $stmt->fetchColumn()) return (string)$date;
             sendResponse(422, 'Data closing akhir bulan yang dipilih tidak tersedia.');
         }
-        $date = $this->pdo->query('SELECT MAX(created) FROM nominatif WHERE created=LAST_DAY(created)')->fetchColumn();
+        // Konsisten dengan report_npl: closing default adalah akhir bulan
+        // sebelum snapshot actual terbaru, bukan snapshot terbaru itu sendiri.
+        // Jika actual kebetulan jatuh pada akhir bulan, memakai MAX(month-end)
+        // akan membandingkan tanggal yang sama dan seluruh migrasi menjadi STAY.
+        $date = $this->pdo->query("SELECT MAX(created)
+            FROM nominatif
+            WHERE created=LAST_DAY(created)
+              AND created < DATE_FORMAT((SELECT MAX(created) FROM nominatif),'%Y-%m-01')")->fetchColumn();
         if (!$date) sendResponse(404, 'Data closing nominatif belum tersedia.');
         return (string)$date;
     }
