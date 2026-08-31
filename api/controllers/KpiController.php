@@ -5,7 +5,14 @@ require_once __DIR__ . '/../helpers/response.php';
 
 final class KpiController
 {
-    public function __construct(private PDO $pdo) {}
+    // Ditulis tanpa constructor property promotion agar kompatibel dengan
+    // PHP 7.4 yang umum dipakai pada deployment AAPanel.
+    private PDO $pdo;
+
+    public function __construct(PDO $pdo)
+    {
+        $this->pdo = $pdo;
+    }
 
     private function input(array $input): array { return $input; }
 
