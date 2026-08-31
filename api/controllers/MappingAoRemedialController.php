@@ -19,7 +19,7 @@ class MappingAoRemedialController
         $unit = strtolower((string)$user['unit_kerja']);
         $branchLeader = preg_match('/kepala cabang|kepala bidang pemasaran/', $job) === 1;
         $headOffice = $user['kode_kantor'] === '000' && (
-            str_contains($unit, 'divisi operasional') || str_contains($unit, 'divisi penyelesaian kredit')
+            strpos($unit, 'divisi operasional') !== false || strpos($unit, 'divisi penyelesaian kredit') !== false
         );
         $user['can_map'] = $user['kode_kantor'] === '000' ? $headOffice : $branchLeader;
         $user['can_view_all'] = $user['kode_kantor'] === '000';
@@ -72,13 +72,13 @@ class MappingAoRemedialController
 
     private function korwilRange(?string $value): ?array
     {
-        return match (strtoupper(trim((string)$value))) {
-            'SEMARANG' => ['001','007'],
-            'SOLO' => ['008','014'],
-            'BANYUMAS' => ['015','021'],
-            'PEKALONGAN' => ['022','028'],
-            default => null,
-        };
+        switch (strtoupper(trim((string)$value))) {
+            case 'SEMARANG': return ['001','007'];
+            case 'SOLO': return ['008','014'];
+            case 'BANYUMAS': return ['015','021'];
+            case 'PEKALONGAN': return ['022','028'];
+            default: return null;
+        }
     }
 
     private function context(array $input, array $user): array

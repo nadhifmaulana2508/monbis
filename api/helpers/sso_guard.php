@@ -22,7 +22,7 @@ function ssoWhoami(string $token): ?array
         if (is_array($cached) && !empty($cached['employee_id'])) return $cached;
     }
     $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
-    $local = str_contains($host, 'localhost') || str_contains($host, '127.0.0.1');
+    $local = strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false;
     $base = getenv('SSO_API_BASE') ?: ($local ? 'http://localhost/rest_api_sso' : 'https://apisso.bkkjateng.co.id');
     $url = rtrim($base, '/') . '/api/auth/whoami';
     $body = false; $status = 0;
