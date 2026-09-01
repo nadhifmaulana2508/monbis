@@ -13,7 +13,7 @@ $head = mb_build_grouped_thead([
 mb_render_report_page([
     'id'=>'rekapKpiAoPage',
     'header'=>[
-        'id'=>'rekapKpiAoHeader', 'title'=>'Rekap KPI AO Kredit',
+        'id'=>'rekapKpiAoHeader', 'title'=>'Rekap KPI AO',
         'subtitle'=>'Penilaian resmi triwulanan dari data KPI bulanan.',
         'icon'=>mb_svg('chart'),
         'filters'=>[

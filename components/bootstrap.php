@@ -2,6 +2,7 @@
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/page-header.php';
 require_once __DIR__ . '/info-modal.php';
+require_once __DIR__ . '/generate-confirm.php';
 require_once __DIR__ . '/summary-cards.php';
 require_once __DIR__ . '/detail-modal.php';
 require_once __DIR__ . '/locked-report.php';

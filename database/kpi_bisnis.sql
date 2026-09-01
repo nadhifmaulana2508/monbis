@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS kpi_penilaian (
   id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   jabatan_id INT UNSIGNED NOT NULL,
   id_peg VARCHAR(30) NOT NULL,
+  kode_kantor VARCHAR(10) NULL,
   kode_ao VARCHAR(30) NULL,
   nama_ao VARCHAR(150) NULL,
   tahun SMALLINT UNSIGNED NOT NULL,
@@ -109,6 +110,7 @@ CREATE TABLE IF NOT EXISTS kpi_penilaian (
   approved_at DATETIME NULL,
   PRIMARY KEY (id),
   UNIQUE KEY uq_kpi_penilaian (jabatan_id,id_peg,tahun,bulan),
+  KEY idx_kpi_penilaian_pegawai (id_peg,kode_kantor,tahun,bulan),
   KEY idx_kpi_penilaian_period (tahun,bulan,jabatan_id),
   CONSTRAINT fk_kpi_penilaian_jabatan FOREIGN KEY (jabatan_id) REFERENCES kpi_jabatan(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

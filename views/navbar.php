@@ -850,8 +850,9 @@
         </button>
         <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
           <a href="setting_kpi_jabatan" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Setting KPI Jabatan</a>
-          <a href="hitung_kpi_ao_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Hitung KPI AO Kredit</a>
-          <a href="rekap_kpi_ao_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Rekap KPI Triwulan</a>
+           <a href="hitung_kpi_ao" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Nilai KPI AO</a>
+           <a href="generate_kpi_ao" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Generate KPI AO</a>
+           <a href="rekap_kpi_ao" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Rekap KPI AO</a>
         </div>
       </div>
 

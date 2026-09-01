@@ -179,11 +179,12 @@
             if (acc) acc.textContent = (u.account_handle || u.username || u.email || u.employee_id || u.kode || '-');
 
             const isDev = (u.role === 'dev' || u.unit_kerja === 'Divisi Operasional' || u.unit_kerja === 'Dewan Komisaris dan Direksi' || u.unit_kerja ===  'Divisi Perencanaan dan Litbang');
+            const isKpiAllowed = isDev || u.unit_kerja === 'Divisi SDM dan Umum';
             if (menuMonevDev) {
                 menuMonevDev.style.setProperty('display', isDev ? 'block' : 'none', 'important');
             }
             if (menuKpiBisnis) {
-                menuKpiBisnis.style.setProperty('display', isDev ? 'block' : 'none', 'important');
+                menuKpiBisnis.style.setProperty('display', isKpiAllowed ? 'block' : 'none', 'important');
             }
             if (menuLayananDigital) {
                 menuLayananDigital.style.setProperty('display', isDev ? 'block' : 'none', 'important');
