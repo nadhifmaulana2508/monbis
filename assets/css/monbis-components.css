@@ -2069,13 +2069,25 @@ button.mb-potensi-metric:hover .mb-potensi-metric__value { text-decoration:under
 :root[data-monbis-theme="dark"] .mb-map-metric--amber { border-color:#92400e; background:#2a1b0d; color:#fbbf24; }
 :root[data-monbis-theme="dark"] .mb-map-metric--red { border-color:#991b1b; background:#2a1018; color:#fca5a5; }
 @media (max-width:767px) {
-  .mb-mapping-ao .mb-report-toolbar__tools { flex-wrap:wrap; }
-  .mb-mapping-ao .mb-search { flex:1 1 145px; min-width:0; }
+  .mb-mapping-ao .mb-page-header { gap:6px; padding:8px; }
+  .mb-mapping-ao .mb-page-header__title { font-size:11px; }
+  .mb-mapping-ao .mb-page-header__subtitle { max-width:190px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mb-mapping-ao .mb-page-header__filters { padding-top:5px; }
+  .mb-mapping-ao .mb-filter-row { grid-template-columns:repeat(2,minmax(0,1fr)); gap:5px; }
+  .mb-mapping-ao .mb-report-toolbar { display:grid; grid-template-columns:minmax(68px,1fr) auto; align-items:center; gap:5px; padding:7px; }
+  .mb-mapping-ao .mb-report-toolbar__title { font-size:10px; }
+  .mb-mapping-ao .mb-report-toolbar__tools { display:grid; width:auto; grid-template-columns:minmax(76px,96px) 29px 29px; align-items:center; justify-content:end; gap:4px; }
+  .mb-mapping-ao .mb-report-toolbar__tools .mb-search { width:100%; min-width:0; flex:none; }
+  .mb-mapping-ao .mb-report-toolbar__tools .mb-search .mb-field-control { height:29px; padding-left:23px; padding-right:4px; font-size:7px; }
+  .mb-mapping-ao .mb-report-toolbar__tools .mb-search svg { left:7px; width:11px; height:11px; }
+  .mb-mapping-ao .mb-report-toolbar__tools .mb-icon-button,
+  .mb-mapping-ao .mb-report-toolbar__tools .mb-view-switch { width:29px; min-width:29px; height:29px; padding:0; }
   .mb-mapping-ao .mb-icon-button__label { display:none; }
   .mb-mapping-ao .mb-summary { grid-template-columns:repeat(2,minmax(0,1fr)); }
   .mb-mapping-table { min-width:1100px; }
   .mb-mapping-table.is-recap { min-width:980px; }
-  .mb-mapping-ao .mb-summary-card { min-height:48px; padding:6px 7px; }
+  .mb-mapping-ao .mb-summary-card { min-height:48px; padding:6px 7px; overflow:hidden; }
+  .mb-mapping-ao .mb-summary-card__value { font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .mb-mapping-ao .mb-summary-card__meta { display:none; }
   .mb-mapping-table .mb-code-col { width:48px !important; min-width:48px; max-width:48px; }
   .mb-mapping-table .mb-sticky-left-2 { --mb-sticky-1:48px !important; width:172px !important; min-width:172px; max-width:172px; }

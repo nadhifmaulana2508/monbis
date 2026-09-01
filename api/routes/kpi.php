@@ -15,6 +15,7 @@ switch(strtolower(trim((string)($body['type']??'bootstrap')))){
   case 'calculate':$controller->calculate($body,$user);break;
   case 'setting':$controller->setting($body,$user);break;
   case 'save_indicator':$controller->saveIndicator($body,$user);break;
+  case 'save_target_default':$controller->saveTargetDefault($body,$user);break;
   case 'save_score':$controller->saveScoreParameter($body,$user);break;
   case 'save_risk':$controller->saveRiskGate($body,$user);break;
   default:sendResponse(400,'Type KPI tidak dikenali.');

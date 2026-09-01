@@ -47,7 +47,7 @@ final class KpiController
                                     FROM kpi_indikator i JOIN kpi_jabatan j ON j.id=i.jabatan_id
                                     WHERE i.status IN ('PILOT','AKTIF') ORDER BY j.nama,i.urutan,i.id");
         $ind->execute();
-        $score = $this->pdo->query("SELECT skor,min_indeks,max_indeks,predikat FROM kpi_parameter_skor WHERE aktif=1 ORDER BY skor")->fetchAll(PDO::FETCH_ASSOC);
+        $score = $this->pdo->query("SELECT s.id,s.jabatan_id,s.skor,s.min_indeks,s.max_indeks,s.predikat,s.aktif,j.kode AS jabatan_kode FROM kpi_parameter_skor_jabatan s JOIN kpi_jabatan j ON j.id=s.jabatan_id WHERE j.kode='AO_KREDIT' AND s.aktif=1 ORDER BY s.skor")->fetchAll(PDO::FETCH_ASSOC);
         $risk = $this->pdo->query("SELECT kode,nama,faktor,perlakuan FROM kpi_risk_gate WHERE aktif=1 ORDER BY faktor DESC")->fetchAll(PDO::FETCH_ASSOC);
         $ao = $this->pdo->query("SELECT kode_group2 AS kode_ao,MAX(nama_ao) AS nama_ao,LPAD(CAST(MAX(kode_kantor) AS CHAR),3,'0') AS kode_kantor
                                  FROM ao_kredit WHERE status=1 GROUP BY kode_group2 ORDER BY nama_ao")->fetchAll(PDO::FETCH_ASSOC);
@@ -102,7 +102,7 @@ final class KpiController
             }));
         }
         if (!$indikator) {$this->json(422,'Indikator KPI belum aktif');return;}
-        $scoreRows=$this->pdo->query("SELECT skor,min_indeks,max_indeks,predikat FROM kpi_parameter_skor WHERE aktif=1 ORDER BY skor")->fetchAll(PDO::FETCH_ASSOC);
+        $scoreRows=$this->pdo->prepare("SELECT skor,min_indeks,max_indeks,predikat FROM kpi_parameter_skor_jabatan WHERE jabatan_id=:jab AND aktif=1 ORDER BY skor");$scoreRows->execute([':jab'=>$jab]);$scoreRows=$scoreRows->fetchAll(PDO::FETCH_ASSOC);
         $risk=$this->pdo->query("SELECT kode,faktor FROM kpi_risk_gate WHERE aktif=1 ORDER BY id")->fetchAll(PDO::FETCH_KEY_PAIR);
         $aoSt=$this->pdo->prepare("SELECT kode_group2,nama_ao,id_peg,LPAD(CAST(kode_kantor AS CHAR),3,'0') kode_kantor FROM ao_kredit WHERE kode_group2=:ao AND status=1 ORDER BY id DESC LIMIT 1");$aoSt->execute([':ao'=>$kodeAo]);$ao=$aoSt->fetch(PDO::FETCH_ASSOC);
         if(!$ao){$this->json(404,'AO Kredit tidak ditemukan');return;}
@@ -113,10 +113,16 @@ final class KpiController
             // bulan closing, lalu mundur satu hari untuk memperoleh closing sebelumnya.
             $prev=date('Y-m-d',strtotime(date('Y-m-01',strtotime($closing)).' -1 day'));
             $actual=$this->actualMetrics($kodeAo,$closing,$prev);
-            $targetSt=$this->pdo->prepare("SELECT indikator_id,target FROM kpi_target_bulanan WHERE jabatan_id=:jab AND tahun=:tahun AND bulan=:bulan AND (id_peg=:idpeg OR id_peg IS NULL) AND (kode_kantor=:kantor OR kode_kantor IS NULL) ORDER BY id_peg DESC,kode_kantor DESC");
+            // Prioritas target: target periode/AO/kantor, lalu target default global
+            // (tahun=0, bulan=0). Target default dikelola dari halaman setting.
+            $targetSt=$this->pdo->prepare("SELECT indikator_id,target FROM kpi_target_bulanan
+                WHERE jabatan_id=:jab AND ( (tahun=:tahun AND bulan=:bulan) OR (tahun=0 AND bulan=0) )
+                  AND (id_peg=:idpeg OR id_peg IS NULL)
+                  AND (kode_kantor=:kantor OR kode_kantor IS NULL)
+                ORDER BY (tahun=0) DESC, (id_peg IS NULL) DESC, (kode_kantor IS NULL) DESC, id ASC");
             $targetSt->execute([':jab'=>$jab,':tahun'=>(int)date('Y',strtotime($closing)),':bulan'=>(int)date('n',strtotime($closing)),':idpeg'=>(string)($ao['id_peg']?:$ao['kode_group2']),':kantor'=>$ao['kode_kantor']]);$targets=[];foreach($targetSt as $t){$targets[(int)$t['indikator_id']] = (float)$t['target'];}
             $ready=true;$weighted=0;$details=[];$gate='NORMAL';
-            foreach($indikator as $i){$key=$i['formula_key'];$target=$targets[(int)$i['id']]??0;if($target<=0&&$key==='REALISASI_KREDIT'&&!empty($input['target_realisasi']))$target=(float)$input['target_realisasi'];if($target<=0&&$key==='NOA_REALISASI'&&!empty($input['target_noa']))$target=(float)$input['target_noa'];if($target<=0&&$key==='MOB_6')$target=0.05;if($target<=0&&$key==='REPAYMENT_RATE')$target=1.0;if($target<=0&&$key==='EARLY_RUN_OFF')$target=0.01;if($target<=0&&$key==='PIPELINE')$target=1.0;$real=$actual[$key]??null;$note='';$score=0;$idx=0;$value100=0;
+            foreach($indikator as $i){$key=$i['formula_key'];$target=$targets[(int)$i['id']]??0;if($target<=0&&$key==='REALISASI_KREDIT'&&!empty($input['target_realisasi']))$target=(float)$input['target_realisasi'];if($target<=0&&$key==='NOA_REALISASI'&&!empty($input['target_noa']))$target=(float)$input['target_noa'];if($target<=0&&$key==='MOB_6')$target=0.05;if($target<=0&&$key==='REPAYMENT_RATE')$target=0.65;if($target<=0&&$key==='EARLY_RUN_OFF')$target=0.01;if($target<=0&&$key==='PIPELINE')$target=1.0;$real=$actual[$key]??null;$note='';$score=0;$idx=0;$value100=0;
                 if($real===null){$ready=false;$note='Sumber data indikator belum dikonfigurasi';}
                 elseif($target<=0){$ready=false;$note='Target periode belum diisi';}
                 else{if($key==='MOB_6'){$idx=(float)$real;$score=$real<=0.05?5:($real<=0.06?4:($real<=0.07?3:($real<=0.08?2:1)));$note='OS menunggak MOB 1–6 / total OS MOB 1–6';}elseif($key==='EARLY_RUN_OFF'){$idx=(float)$real;$score=$real<=0.01?5:($real<=0.0125?4:($real<=0.015?3:($real<=0.02?2:1)));$note='OS pelunasan murni / OS DPD 0 closing sebelumnya; refinancing/top-up dikecualikan';}elseif($key==='PIPELINE'){$idx=(float)$real;$score=min(5,(int)$real+1);$note='NOA pipeline yang cair/realisasi pada periode berjalan';}else{$idx=strtoupper($i['arah'])==='LOWER'?($real==0?1.5:min($target/$real,1.5)):min($real/$target,1.5);foreach($scoreRows as $s){if($idx>=(float)$s['min_indeks']&&$idx<(float)$s['max_indeks']||((int)$s['skor']===5&&$idx>=(float)$s['min_indeks'])){$score=(int)$s['skor'];break;}}}$weighted=(float)$i['bobot']*$score;$value100=min((float)$i['bobot']*100,$weighted/5*100);}
@@ -153,10 +159,16 @@ final class KpiController
     public function setting(array $input, array $user): void
     {
         $jabatan = $this->pdo->query("SELECT id,kode,nama,deskripsi,aktif FROM kpi_jabatan ORDER BY nama")->fetchAll(PDO::FETCH_ASSOC);
-        $st=$this->pdo->query("SELECT i.*,j.kode AS jabatan_kode,j.nama AS jabatan_nama
+        $st=$this->pdo->query("SELECT i.*,j.kode AS jabatan_kode,j.nama AS jabatan_nama,
+                                      CASE WHEN i.formula_key='PIPELINE' THEN 'NOA' ELSE i.unit END AS unit,
+                                      COALESCE((SELECT t.target FROM kpi_target_bulanan t
+                                                WHERE t.indikator_id=i.id AND t.jabatan_id=i.jabatan_id
+                                                  AND t.tahun=0 AND t.bulan=0
+                                                  AND t.id_peg IS NULL AND t.kode_kantor IS NULL
+                                                ORDER BY t.id DESC LIMIT 1),0) AS target_default
                                FROM kpi_indikator i JOIN kpi_jabatan j ON j.id=i.jabatan_id
                                ORDER BY j.nama,i.urutan,i.id");
-        $this->json(200,'Setting KPI berhasil dimuat',['jabatan'=>$jabatan,'indikator'=>$st->fetchAll(PDO::FETCH_ASSOC),'parameter_skor'=>$this->pdo->query("SELECT * FROM kpi_parameter_skor ORDER BY skor")->fetchAll(PDO::FETCH_ASSOC),'risk_gate'=>$this->pdo->query("SELECT * FROM kpi_risk_gate ORDER BY id")->fetchAll(PDO::FETCH_ASSOC),'can_manage'=>$this->canManage($user)]);
+        $this->json(200,'Setting KPI berhasil dimuat',['jabatan'=>$jabatan,'indikator'=>$st->fetchAll(PDO::FETCH_ASSOC),'parameter_skor'=>$this->pdo->query("SELECT s.id,s.jabatan_id,s.indikator_id,s.skor,s.min_indeks,s.max_indeks,s.predikat,s.aktif,j.kode AS jabatan_kode,j.nama AS jabatan_nama,i.unit FROM kpi_parameter_skor_jabatan s JOIN kpi_jabatan j ON j.id=s.jabatan_id JOIN kpi_indikator i ON i.id=s.indikator_id ORDER BY j.nama,s.indikator_id,s.skor")->fetchAll(PDO::FETCH_ASSOC),'can_manage'=>$this->canManage($user)]);
     }
 
     public function detail(array $input, array $user): void
@@ -197,15 +209,58 @@ final class KpiController
         $id=(int)($input['id']??0); $fields=['bobot','arah','unit','frekuensi','status','definisi','sumber_data','validator']; $set=[];$params=[':id'=>$id];
         foreach($fields as $field){ if(array_key_exists($field,$input)){ $set[]="{$field}=:{$field}"; $params[":{$field}"]=$input[$field]; }}
         if(!$id||!$set){$this->json(422,'Data indikator tidak lengkap');return;}
-        $st=$this->pdo->prepare('UPDATE kpi_indikator SET '.implode(',',$set).' WHERE id=:id');$st->execute($params);
+        $this->pdo->beginTransaction();
+        try {
+            $st=$this->pdo->prepare('UPDATE kpi_indikator SET '.implode(',',$set).' WHERE id=:id');$st->execute($params);
+            if (array_key_exists('target',$input)) {
+                $raw=trim((string)$input['target']);
+                if ($raw==='' || !is_numeric($raw)) { $this->pdo->rollBack(); $this->json(422,'Target default harus berupa angka'); return; }
+                $target=max(0,(float)$raw);
+                $meta=$this->pdo->prepare('SELECT jabatan_id FROM kpi_indikator WHERE id=:id LIMIT 1');$meta->execute([':id'=>$id]);$jabatanId=(int)$meta->fetchColumn();
+                if (!$jabatanId) { $this->pdo->rollBack(); $this->json(404,'Indikator KPI tidak ditemukan'); return; }
+                $del=$this->pdo->prepare('DELETE FROM kpi_target_bulanan WHERE jabatan_id=:jab AND indikator_id=:indikator AND tahun=0 AND bulan=0 AND id_peg IS NULL AND kode_kantor IS NULL');
+                $del->execute([':jab'=>$jabatanId,':indikator'=>$id]);
+                $ins=$this->pdo->prepare('INSERT INTO kpi_target_bulanan (jabatan_id,indikator_id,tahun,bulan,id_peg,kode_kantor,target,catatan) VALUES (:jab,:indikator,0,0,NULL,NULL,:target,:catatan)');
+                $ins->execute([':jab'=>$jabatanId,':indikator'=>$id,':target'=>$target,':catatan'=>'Target default dari Setting KPI Jabatan']);
+            }
+            $this->pdo->commit();
+        } catch (Throwable $e) {
+            $this->pdo->rollBack(); throw $e;
+        }
         $this->json(200,'Parameter indikator disimpan');
+    }
+
+    public function saveTargetDefault(array $input, array $user): void
+    {
+        if (!$this->canManage($user)) { $this->json(403,'Tidak memiliki hak mengubah target KPI'); return; }
+        $indicatorId=(int)($input['indikator_id']??0);
+        if (!$indicatorId || !array_key_exists('target',$input) || !is_numeric($input['target'])) {
+            $this->json(422,'Indikator dan target wajib diisi'); return;
+        }
+        $target=max(0,(float)$input['target']);
+        $st=$this->pdo->prepare('SELECT jabatan_id FROM kpi_indikator WHERE id=:id LIMIT 1');
+        $st->execute([':id'=>$indicatorId]); $jabatanId=(int)$st->fetchColumn();
+        if (!$jabatanId) { $this->json(404,'Indikator KPI tidak ditemukan'); return; }
+        $this->pdo->beginTransaction();
+        try {
+            // Unique key pada kolom nullable dapat mengizinkan duplikasi NULL,
+            // jadi hapus scope default lebih dulu agar selalu hanya ada satu nilai aktif.
+            $del=$this->pdo->prepare('DELETE FROM kpi_target_bulanan WHERE jabatan_id=:jab AND indikator_id=:indikator AND tahun=0 AND bulan=0 AND id_peg IS NULL AND kode_kantor IS NULL');
+            $del->execute([':jab'=>$jabatanId,':indikator'=>$indicatorId]);
+            $ins=$this->pdo->prepare('INSERT INTO kpi_target_bulanan (jabatan_id,indikator_id,tahun,bulan,id_peg,kode_kantor,target,catatan) VALUES (:jab,:indikator,0,0,NULL,NULL,:target,:catatan)');
+            $ins->execute([':jab'=>$jabatanId,':indikator'=>$indicatorId,':target'=>$target,':catatan'=>'Target default dari Setting KPI Jabatan']);
+            $this->pdo->commit();
+        } catch (Throwable $e) {
+            $this->pdo->rollBack(); throw $e;
+        }
+        $this->json(200,'Target default indikator disimpan',['indikator_id'=>$indicatorId,'target'=>$target]);
     }
 
     public function saveScoreParameter(array $input, array $user): void
     {
         if (!$this->canManage($user)) { $this->json(403,'Tidak memiliki hak mengubah parameter skor'); return; }
         $id=(int)($input['id']??0); if(!$id){$this->json(422,'ID parameter wajib diisi');return;}
-        $st=$this->pdo->prepare('UPDATE kpi_parameter_skor SET min_indeks=:min,max_indeks=:max,predikat=:predikat,aktif=:aktif WHERE id=:id');
+        $st=$this->pdo->prepare('UPDATE kpi_parameter_skor_jabatan SET min_indeks=:min,max_indeks=:max,predikat=:predikat,aktif=:aktif WHERE id=:id');
         $st->execute([':min'=>(float)$input['min_indeks'],':max'=>(float)$input['max_indeks'],':predikat'=>(string)$input['predikat'],':aktif'=>(int)($input['aktif']??1),':id'=>$id]);
         $this->json(200,'Parameter skor disimpan');
     }

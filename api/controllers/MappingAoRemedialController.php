@@ -17,7 +17,7 @@ class MappingAoRemedialController
         $user['kode_kantor'] = str_pad((string)$user['kode'], 3, '0', STR_PAD_LEFT);
         $job = strtolower((string)$user['job_position']);
         $unit = strtolower((string)$user['unit_kerja']);
-        $branchLeader = preg_match('/kepala cabang|kepala bidang pemasaran/', $job) === 1;
+        $branchLeader = preg_match('/kepala cabang|kepala bidang pemasaran|kepala sub bidang remedial/', $job) === 1;
         $headOffice = $user['kode_kantor'] === '000' && (
             strpos($unit, 'divisi operasional') !== false || strpos($unit, 'divisi penyelesaian kredit') !== false
         );
@@ -88,10 +88,10 @@ class MappingAoRemedialController
         }
     }
 
-    private function context(array $input, array $user): array
+    private function context(array $input, array $user, bool $includePrevious = true): array
     {
         $closing = $this->closingDate($input['closing_date'] ?? null);
-        return [$closing, $this->previousClosing($closing), $this->scope($input, $user)];
+        return [$closing, $includePrevious ? $this->previousClosing($closing) : null, $this->scope($input, $user)];
     }
 
     public function bootstrap(array $input, array $token): void
@@ -110,7 +110,7 @@ class MappingAoRemedialController
 
     private function listParts(array $input, array $user): array
     {
-        [$closing, $previous, $scope] = $this->context($input, $user);
+        [$closing, , $scope] = $this->context($input, $user, false);
         $bucket = strtoupper(trim((string)($input['bucket'] ?? 'ALL')));
         $status = strtoupper(trim((string)($input['mapping_status'] ?? 'ALL')));
         $search = trim((string)($input['search'] ?? ''));
@@ -129,7 +129,7 @@ class MappingAoRemedialController
             $where[] = '(n.no_rekening LIKE :search_rek OR n.nama_nasabah LIKE :search_nama OR n.kode_cabang LIKE :search_kode OR m.ao_fe_nama LIKE :search_fe OR m.ao_be_nama LIKE :search_be OR n.deskripsi_kode_kelurahan LIKE :search_kel OR n.deskripsi_kode_kecamatan LIKE :search_kec)';
             foreach([':search_rek',':search_nama',':search_kode',':search_fe',':search_be',':search_kel',':search_kec'] as $key)$params[$key]='%'.$search.'%';
         }
-        return [$closing,$previous,$scope,implode(' AND ',$where),$params];
+        return [$closing,null,$scope,implode(' AND ',$where),$params];
     }
 
     public function list(array $input, array $token): void
@@ -140,12 +140,15 @@ class MappingAoRemedialController
         $page = max(1,(int)($input['page'] ?? 1));
         $limit = min(100,max(10,(int)($input['limit'] ?? 25)));
         $offset = ($page-1)*$limit;
-        $count = $this->pdo->prepare("SELECT COUNT(*) FROM nominatif n LEFT JOIN mapping_ao_remedial m ON m.no_rekening=n.no_rekening WHERE {$where}");
-        $count->execute($params); $total = (int)$count->fetchColumn();
+        $total = 0;
+        if (!$all) {
+            $count = $this->pdo->prepare("SELECT COUNT(*) FROM nominatif n LEFT JOIN mapping_ao_remedial m ON m.no_rekening=n.no_rekening WHERE {$where}");
+            $count->execute($params); $total = (int)$count->fetchColumn();
+        }
         $limitSql=$all?'':"LIMIT {$limit} OFFSET {$offset}";
-        $sql = "SELECT base.*
-                FROM (
-                    SELECT n.kode_cabang kode_kantor,n.no_rekening,n.nama_nasabah,n.alamat,n.baki_debet,
+        // The derived table used to sort twice (and made the branch view
+        // noticeably slower). One ordered query is enough for both modes.
+        $sql = "SELECT n.kode_cabang kode_kantor,n.no_rekening,n.nama_nasabah,n.alamat,n.baki_debet,
                            n.hari_menunggak,n.hari_menunggak_pokok,n.hari_menunggak_bunga,
                            n.tunggakan_pokok,n.tunggakan_bunga,
                            GREATEST(COALESCE(n.tunggakan_pokok,0),0)+GREATEST(COALESCE(n.tunggakan_bunga,0),0) total_tunggakan,
@@ -157,15 +160,15 @@ class MappingAoRemedialController
                            CASE WHEN n.hari_menunggak BETWEEN 31 AND 180 THEN m.ao_fe_nama ELSE m.ao_be_nama END ao_aktif_nama,
                            (NULLIF(TRIM(m.ao_fe_id_peg),'') IS NOT NULL AND NULLIF(TRIM(m.ao_be_id_peg),'') IS NOT NULL) mapping_lengkap,
                            m.assigned_at,m.assigned_by_name
-                    FROM nominatif n
-                    LEFT JOIN mapping_ao_remedial m ON m.no_rekening=n.no_rekening
-                    WHERE {$where}
-                    ORDER BY (NULLIF(TRIM(m.ao_fe_id_peg),'') IS NULL OR NULLIF(TRIM(m.ao_be_id_peg),'') IS NULL) DESC,
-                             n.deskripsi_kode_kelurahan,n.kode_cabang,n.hari_menunggak DESC,n.baki_debet DESC
-                    {$limitSql}
-                ) base
-                ORDER BY base.deskripsi_kode_kelurahan,base.kode_kantor,base.mapping_lengkap,base.hari_menunggak DESC,base.baki_debet DESC";
+                FROM nominatif n
+                LEFT JOIN mapping_ao_remedial m ON m.no_rekening=n.no_rekening
+                WHERE {$where}
+                ORDER BY n.deskripsi_kode_kelurahan,n.kode_cabang,
+                         (NULLIF(TRIM(m.ao_fe_id_peg),'') IS NULL OR NULLIF(TRIM(m.ao_be_id_peg),'') IS NULL) DESC,
+                         n.hari_menunggak DESC,n.baki_debet DESC
+                {$limitSql}";
         $stmt=$this->pdo->prepare($sql); $stmt->execute($params); $listRows=$stmt->fetchAll(PDO::FETCH_ASSOC);
+        if ($all) $total = count($listRows);
         $officeMap=[];
         foreach($this->pdo->query('SELECT kode_kantor,nama_kantor FROM kode_kantor')->fetchAll(PDO::FETCH_ASSOC) as $office)$officeMap[(string)$office['kode_kantor']]=$office['nama_kantor'];
         $kankasMap=[];
@@ -176,16 +179,34 @@ class MappingAoRemedialController
         }
         unset($row);
 
-        $summaryWhere=['n.created=:closing','n.baki_debet>0','n.hari_menunggak>=31'];
-        $summaryParams=[':closing'=>$closing];
-        if($scope!=='000'){ $summaryWhere[]='n.kode_cabang=:kode'; $summaryParams[':kode']=$scope; }
+        // A selected branch is already returned completely. Reuse those rows
+        // for the summary instead of scanning nominatif a second time.
+        $summary = null;
+        $canReuseRows = $all
+            && strtoupper(trim((string)($input['bucket'] ?? 'ALL'))) === 'ALL'
+            && strtoupper(trim((string)($input['mapping_status'] ?? 'ALL'))) === 'ALL'
+            && trim((string)($input['search'] ?? '')) === '';
+        if ($canReuseRows) {
+            $summary = ['total'=>count($listRows),'fe'=>0,'be'=>0,'mapped'=>0,'unmapped'=>0,'unmapped_bd'=>0];
+            foreach ($listRows as $row) {
+                if (($row['bucket'] ?? '') === 'FE') $summary['fe']++;
+                else $summary['be']++;
+                if ((int)($row['mapping_lengkap'] ?? 0) === 1) $summary['mapped']++;
+                else { $summary['unmapped']++; $summary['unmapped_bd'] += (float)($row['baki_debet'] ?? 0); }
+            }
+        } else {
+            $summaryWhere=['n.created=:closing','n.baki_debet>0','n.hari_menunggak>=31'];
+            $summaryParams=[':closing'=>$closing];
+            if($scope!=='000'){ $summaryWhere[]='n.kode_cabang=:kode'; $summaryParams[':kode']=$scope; }
 $sum=$this->pdo->prepare("SELECT COUNT(*) total,SUM(n.hari_menunggak BETWEEN 31 AND 180) fe,SUM(n.hari_menunggak>180) be,
                 SUM(NULLIF(TRIM(m.ao_fe_id_peg),'') IS NOT NULL AND NULLIF(TRIM(m.ao_be_id_peg),'') IS NOT NULL) mapped,
                 SUM(NULLIF(TRIM(m.ao_fe_id_peg),'') IS NULL OR NULLIF(TRIM(m.ao_be_id_peg),'') IS NULL) unmapped,
                 SUM(CASE WHEN NULLIF(TRIM(m.ao_fe_id_peg),'') IS NULL OR NULLIF(TRIM(m.ao_be_id_peg),'') IS NULL THEN n.baki_debet ELSE 0 END) unmapped_bd
             FROM nominatif n LEFT JOIN mapping_ao_remedial m ON m.no_rekening=n.no_rekening WHERE ".implode(' AND ',$summaryWhere));
-        $sum->execute($summaryParams);
-        sendResponse(200,'Data mapping AO remedial.',['rows'=>$listRows,'summary'=>$sum->fetch(PDO::FETCH_ASSOC),'pagination'=>['page'=>$all?1:$page,'limit'=>$all?$total:$limit,'total'=>$total,'pages'=>$all?1:max(1,(int)ceil($total/$limit))],'closing_date'=>$closing,'previous_closing_date'=>$previous,'can_map'=>(bool)$user['can_map'],'scope'=>$scope]);
+            $sum->execute($summaryParams);
+            $summary=$sum->fetch(PDO::FETCH_ASSOC);
+        }
+        sendResponse(200,'Data mapping AO remedial.',['rows'=>$listRows,'summary'=>$summary,'pagination'=>['page'=>$all?1:$page,'limit'=>$all?$total:$limit,'total'=>$total,'pages'=>$all?1:max(1,(int)ceil($total/$limit))],'closing_date'=>$closing,'previous_closing_date'=>$previous,'can_map'=>(bool)$user['can_map'],'scope'=>$scope]);
     }
 
     public function aoOptions(array $input, array $token): void
@@ -204,7 +225,7 @@ $sum=$this->pdo->prepare("SELECT COUNT(*) total,SUM(n.hari_menunggak BETWEEN 31 
 
     public function recap(array $input, array $token): void
     {
-        $user=$this->currentUser($token); [$closing,,$scope]=$this->context($input,$user);
+        $user=$this->currentUser($token); [$closing,,$scope]=$this->context($input,$user,false);
         $actual=$this->actualDate($input['actual_date']??null,$closing);
         $bucket=strtoupper(trim((string)($input['bucket']??'ALL')));
         $status=strtoupper(trim((string)($input['mapping_status']??'ALL')));
@@ -295,7 +316,7 @@ $sum=$this->pdo->prepare("SELECT COUNT(*) total,SUM(n.hari_menunggak BETWEEN 31 
     public function detail(array $input, array $token): void
     {
         $user=$this->currentUser($token);
-        [$closing,,$scope]=$this->context($input,$user);
+        [$closing,,$scope]=$this->context($input,$user,false);
         $actual=$this->actualDate($input['actual_date']??null,$closing);
         $office=str_pad(trim((string)($input['kode_kantor']??'')),3,'0',STR_PAD_LEFT);
         $bucket=strtoupper(trim((string)($input['bucket']??'')));

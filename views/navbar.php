@@ -630,6 +630,7 @@
       const unit = String(user?.unit_kerja || '').toLowerCase();
       return job.includes('kepala cabang')
         || job.includes('kepala bidang pemasaran')
+        || job.includes('kepala sub bidang remedial')
         || unit.includes('divisi operasional')
         || unit.includes('divisi penyelesaian kredit');
     }
