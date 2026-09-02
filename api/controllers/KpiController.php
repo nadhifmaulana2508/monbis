@@ -223,7 +223,57 @@ final class KpiController
             }));
         }
         if (!$indikator) {$this->json(422,'Indikator KPI belum aktif');return;}
-        $scoreRows=$this->pdo->prepare("SELECT indikator_id,skor,min_indeks,max_indeks,predikat FROM kpi_parameter_skor_jabatan WHERE jabatan_id=:jab AND aktif=1 ORDER BY indikator_id,skor");$scoreRows->execute([':jab'=>$jab]);$scoreRows=$scoreRows->fetchAll(PDO::FETCH_ASSOC);$scoreByIndicator=[];foreach($scoreRows as $scoreRow){$scoreByIndicator[(int)($scoreRow['indikator_id']??0)][]=$scoreRow;}$scoreFor=static function(int $indikatorId,float $value,array $ranges,bool $isCount=false): int {foreach($ranges[$indikatorId]??[] as $range){$min=(float)$range['min_indeks'];$max=(float)$range['max_indeks'];$score=(int)$range['skor'];if($isCount){if(abs($max-$min)<0.0000001&&abs($value-$min)<0.0000001)return $score;if($value>=$min&&($max>=999||$value<=$max))return $score;continue;}if(($value>=$min&&$value<$max)||($score===5&&$value>=$min))return $score;}return 0;};
+        $scoreRows=$this->pdo->prepare("SELECT indikator_id,skor,min_indeks,max_indeks,predikat FROM kpi_parameter_skor_jabatan WHERE jabatan_id=:jab AND aktif=1 ORDER BY indikator_id,skor");$scoreRows->execute([':jab'=>$jab]);$scoreRows=$scoreRows->fetchAll(PDO::FETCH_ASSOC);$scoreByIndicator=[];foreach($scoreRows as $scoreRow){$scoreByIndicator[(int)($scoreRow['indikator_id']??0)][]=$scoreRow;}
+        $scoreFor=static function(int $indikatorId,float $value,array $ranges,bool $isCount=false,bool $isLower=false): int {
+            $items=array_values($ranges[$indikatorId]??[]);
+            if(!$items)return 0;
+            $matches=static function(float $current,float $min,float $max,int $score): bool {
+                if($max>=999)return $current>=$min;
+                return $current>=$min&&($current<$max||($score===5&&abs($current-$max)<0.0000001));
+            };
+            if($isCount){
+                foreach($items as $range){
+                    $min=(float)$range['min_indeks'];$max=(float)$range['max_indeks'];$score=(int)$range['skor'];
+                    if(abs($max-$min)<0.0000001&&abs($value-$min)<0.0000001)return $score;
+                    if($value>=$min&&($max>=999||$value<=$max))return $score;
+                }
+                return 0;
+            }
+            if($isLower){
+                $byScore=[];foreach($items as $range)$byScore[(int)$range['skor']]=$range;
+                $scoreKeys=array_keys($byScore);sort($scoreKeys,SORT_NUMERIC);
+                $lowestScore=(int)reset($scoreKeys);$highestScore=(int)end($scoreKeys);
+                $lowestMin=(float)$byScore[$lowestScore]['min_indeks'];$highestMin=(float)$byScore[$highestScore]['min_indeks'];
+                // Sebagian range LOWER disimpan dari nilai terbaik ke terburuk
+                // (skor 5 memiliki batas bawah paling kecil). Sebagian data lama
+                // tersimpan seperti range HIGHER, sehingga skor perlu dibalik.
+                $bestToWorst=$highestMin<=$lowestMin;
+                if($bestToWorst){
+                    usort($items,static fn(array $a,array $b): int => (int)$b['skor']<=>(int)$a['skor']);
+                    foreach($items as $range){
+                        $min=(float)$range['min_indeks'];$max=(float)$range['max_indeks'];$score=(int)$range['skor'];
+                        if($max>=999){if($value>=$min)return $score;continue;}
+                        // Nilai di bawah batas minimum skor terbaik tetap masuk
+                        // skor terbaik (contoh Early Run Off 0,74% <= 1%).
+                        if($value<=$max)return $score;
+                    }
+                    return $lowestScore;
+                }
+                foreach($items as $range){
+                    $min=(float)$range['min_indeks'];$max=(float)$range['max_indeks'];$score=(int)$range['skor'];
+                    if($matches($value,$min,$max,$score))return max($lowestScore,min($highestScore,$lowestScore+$highestScore-$score));
+                }
+                // Nilai yang lebih kecil dari range pertama adalah kondisi
+                // terbaik untuk indikator LOWER.
+                $firstMin=min(array_map(static fn(array $row): float => (float)$row['min_indeks'],$items));
+                return $value<$firstMin?$highestScore:$lowestScore;
+            }
+            foreach($items as $range){
+                $min=(float)$range['min_indeks'];$max=(float)$range['max_indeks'];$score=(int)$range['skor'];
+                if($matches($value,$min,$max,$score))return $score;
+            }
+            return 0;
+        };
         $risk=$this->pdo->query("SELECT kode,faktor FROM kpi_risk_gate WHERE aktif=1 ORDER BY id")->fetchAll(PDO::FETCH_KEY_PAIR);
         $ao=$this->findAo($jabatanKode,$kodeAo);
         if(!$ao){$this->json(404,'AO tidak ditemukan pada jabatan yang dipilih');return;}
@@ -276,7 +326,7 @@ final class KpiController
                 elseif($real===null){$ready=false;$note='Sumber data indikator belum dikonfigurasi';}
                 elseif($target<=0){$ready=false;$note='Target periode belum diisi';}
                 else{if($key==='MOB_6'){$idx=(float)$real;$score=$real<=0.05?5:($real<=0.06?4:($real<=0.07?3:($real<=0.08?2:1)));$note='OS menunggak MOB 1–6 / total OS MOB 1–6';}elseif($key==='EARLY_RUN_OFF'){$idx=(float)$real;$score=$real<=0.01?5:($real<=0.0125?4:($real<=0.015?3:($real<=0.02?2:1)));$note='OS pelunasan murni / OS DPD 0 closing sebelumnya; refinancing/top-up dikecualikan';}elseif($key==='PIPELINE'){$idx=(float)$real;$score=min(5,(int)$real+1);$note='NOA pipeline yang cair/realisasi pada periode berjalan';}else{$idx=strtoupper($i['arah'])==='LOWER'?($real==0?1.5:min($target/$real,1.5)):min($real/$target,1.5);foreach($scoreRows as $s){if($idx>=(float)$s['min_indeks']&&$idx<(float)$s['max_indeks']||((int)$s['skor']===5&&$idx>=(float)$s['min_indeks'])){$score=(int)$s['skor'];break;}}}$weighted=(float)$i['bobot']*$score;$value100=min((float)$i['bobot']*100,$weighted/5*100);}
-                $isCount=in_array(strtoupper((string)($i['unit']??'')),['NOA','JUMLAH'],true);$scoreBasis=$isCount?(float)$real:(float)$idx;$score=$scoreFor((int)$i['id'],$scoreBasis,$scoreByIndicator,$isCount);$weighted=(float)$i['bobot']*$score;$value100=min((float)$i['bobot']*100,$weighted/5*100);$details[]=['indikator'=>$i,'target'=>$target,'realisasi'=>$real,'indeks'=>$idx,'skor'=>$score,'nilai_tertimbang'=>$weighted,'nilai_100'=>$value100,'os_mob_menunggak'=>$key==='MOB_6'?(float)($actual['OS_MOB_MENUNGGAK']??0):0,'os_mob_total'=>$key==='MOB_6'?(float)($actual['OS_MOB_TOTAL']??0):0,'os_dpd0'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_DPD0']??0):0,'os_kelolaan'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_KELOLAAN']??0):0,'os_run_off'=>$key==='EARLY_RUN_OFF'?(float)($actual['OS_RUN_OFF']??0):0,'os_dpd0_m1'=>$key==='EARLY_RUN_OFF'?(float)($actual['OS_DPD0_M1']??0):0,'catatan'=>$note];
+                $isCount=in_array(strtoupper((string)($i['unit']??'')),['NOA','JUMLAH'],true);$isLower=strtoupper((string)($i['arah']??''))==='LOWER';$scoreBasis=$isCount?(float)$real:(float)$idx;$score=$scoreFor((int)$i['id'],$scoreBasis,$scoreByIndicator,$isCount,$isLower);$weighted=(float)$i['bobot']*$score;$value100=min((float)$i['bobot']*100,$weighted/5*100);$details[]=['indikator'=>$i,'target'=>$target,'realisasi'=>$real,'indeks'=>$idx,'skor'=>$score,'nilai_tertimbang'=>$weighted,'nilai_100'=>$value100,'os_mob_menunggak'=>$key==='MOB_6'?(float)($actual['OS_MOB_MENUNGGAK']??0):0,'os_mob_total'=>$key==='MOB_6'?(float)($actual['OS_MOB_TOTAL']??0):0,'os_dpd0'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_DPD0']??0):0,'os_kelolaan'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_KELOLAAN']??0):0,'os_run_off'=>$key==='EARLY_RUN_OFF'?(float)($actual['OS_RUN_OFF']??0):0,'os_dpd0_m1'=>$key==='EARLY_RUN_OFF'?(float)($actual['OS_DPD0_M1']??0):0,'catatan'=>$note];
             }
             $base=$ready?array_sum(array_column($details,'nilai_100')):0;$factor=(float)($risk[$gate]??1);$final=$base*$factor;$partial=(bool)$selectedCodes;$status=$ready&&!$partial&&!$dummyMode?'DISETUJUI':'DRAFT';
             $this->pdo->beginTransaction();try{
