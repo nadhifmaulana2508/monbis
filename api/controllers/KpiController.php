@@ -122,13 +122,14 @@ final class KpiController
         $selectedJabatan=$this->requestedJabatan($input);
         $jabatan=$this->pdo->query("SELECT id,kode,nama,deskripsi,aktif FROM kpi_jabatan WHERE aktif=1 ORDER BY nama")->fetchAll(PDO::FETCH_ASSOC);
         $kantor=$this->pdo->query("SELECT kode_kantor,nama_kantor FROM kode_kantor WHERE LPAD(CAST(kode_kantor AS CHAR),3,'0') BETWEEN '001' AND '028' ORDER BY kode_kantor")->fetchAll(PDO::FETCH_ASSOC);
+        $tukin=$this->pdo->query("SELECT min_skor,max_skor,min_nilai,max_nilai,faktor_persen,label,urutan FROM kpi_parameter_tukin WHERE aktif=1 ORDER BY urutan,id")->fetchAll(PDO::FETCH_ASSOC);
         $includeAll=!empty($input['include_all_ao']);
         $requiresOffice=$selectedJabatan['kode']!=='AO_KREDIT'&&!$includeAll;
         $ao=$this->aoDirectory((string)$selectedJabatan['kode'],(string)($input['kode_kantor']??''),$requiresOffice);
         $generated=($input['include_generated']??true)===false?[]:$this->generatedPeriods((int)$selectedJabatan['id'],$year);
         $this->json(200,'Direktori KPI berhasil dimuat',[
             'year'=>$year,'closing_dates'=>$this->latestClosingDates($year),'jabatan'=>$jabatan,
-            'jabatan_terpilih'=>$selectedJabatan,'ao'=>$ao,'kantor'=>$kantor,'generated'=>$generated
+            'jabatan_terpilih'=>$selectedJabatan,'ao'=>$ao,'kantor'=>$kantor,'generated'=>$generated,'tukin_rules'=>$tukin
         ]);
     }
 
@@ -222,7 +223,8 @@ final class KpiController
             }));
         }
         if (!$indikator) {$this->json(422,'Indikator KPI belum aktif');return;}
-        $scoreRows=$this->pdo->prepare("SELECT indikator_id,skor,min_indeks,max_indeks,predikat FROM kpi_parameter_skor_jabatan WHERE jabatan_id=:jab AND aktif=1 ORDER BY indikator_id,skor");$scoreRows->execute([':jab'=>$jab]);$scoreRows=$scoreRows->fetchAll(PDO::FETCH_ASSOC);$scoreByIndicator=[];foreach($scoreRows as $scoreRow){$scoreByIndicator[(int)($scoreRow['indikator_id']??0)][]=$scoreRow;}$scoreFor=static function(int $indikatorId,float $indeks,array $ranges): int {foreach($ranges[$indikatorId]??[] as $range){$min=(float)$range['min_indeks'];$max=(float)$range['max_indeks'];if(($indeks>=$min&&$indeks<$max)||((int)$range['skor']===5&&$indeks>=$min))return (int)$range['skor'];}return 0;};
+        $lowerScoreIds=[];foreach($indikator as $candidate){$formula=(string)($candidate['formula_key']??'');if(in_array($formula,['MOB_6','EARLY_RUN_OFF'],true))$lowerScoreIds[(int)$candidate['id']]=$formula;}
+        $scoreRows=$this->pdo->prepare("SELECT indikator_id,skor,min_indeks,max_indeks,predikat FROM kpi_parameter_skor_jabatan WHERE jabatan_id=:jab AND aktif=1 ORDER BY indikator_id,skor");$scoreRows->execute([':jab'=>$jab]);$scoreRows=$scoreRows->fetchAll(PDO::FETCH_ASSOC);$scoreByIndicator=[];foreach($scoreRows as $scoreRow){$scoreByIndicator[(int)($scoreRow['indikator_id']??0)][]=$scoreRow;}$scoreFor=static function(int $indikatorId,float $indeks,array $ranges) use ($lowerScoreIds): int {$formula=$lowerScoreIds[$indikatorId]??'';if($formula==='MOB_6'){if($indeks<=0.05)return 5;if($indeks<=0.06)return 4;if($indeks<=0.07)return 3;if($indeks<=0.08)return 2;return 1;}if($formula==='EARLY_RUN_OFF'){if($indeks<=0.01)return 5;if($indeks<=0.0125)return 4;if($indeks<=0.015)return 3;if($indeks<=0.02)return 2;return 1;}foreach($ranges[$indikatorId]??[] as $range){$min=(float)$range['min_indeks'];$max=(float)$range['max_indeks'];if(($indeks>=$min&&$indeks<$max)||((int)$range['skor']===5&&$indeks>=$min))return (int)$range['skor'];}return 0;};
         $risk=$this->pdo->query("SELECT kode,faktor FROM kpi_risk_gate WHERE aktif=1 ORDER BY id")->fetchAll(PDO::FETCH_KEY_PAIR);
         $ao=$this->findAo($jabatanKode,$kodeAo);
         if(!$ao){$this->json(404,'AO tidak ditemukan pada jabatan yang dipilih');return;}
