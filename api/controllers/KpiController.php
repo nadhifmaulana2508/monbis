@@ -69,18 +69,18 @@ final class KpiController
                                       ORDER BY nama")->fetchAll(PDO::FETCH_ASSOC);
         }
         if ($jabatanKode === 'AO_DANA') {
-            return $this->pdo->query("SELECT kode_ao,
-                                             COALESCE(MAX(CASE WHEN sumber='DEP' THEN nama_ao END),MAX(nama_ao)) AS nama_ao,
-                                             kode_ao AS id_peg,
-                                             LPAD(MAX(CAST(kode_kantor AS CHAR)),3,'0') AS kode_kantor
-                                      FROM (
-                                          SELECT kode_group2 AS kode_ao,deskripsi_group2 AS nama_ao,kode_kantor,'TAB' AS sumber FROM kode_ao_tab WHERE TRIM(deskripsi_group2) REGEXP '[A-Za-z]'
-                                          UNION ALL
-                                          SELECT kode_group2 AS kode_ao,deskripsi_group2 AS nama_ao,kode_kantor,'DEP' AS sumber FROM kode_ao_dep WHERE TRIM(deskripsi_group2) REGEXP '[A-Za-z]'
-                                      ) dana
-                                      WHERE RIGHT(kode_ao,3)<>'000'{$officeWhere}
-                                      GROUP BY kode_ao
-                                      ORDER BY nama_ao")->fetchAll(PDO::FETCH_ASSOC);
+            // AO Dana memiliki master pegawai sendiri. Kode grup tabungan dan
+            // deposito disimpan sebagai atribut pendukung, bukan sebagai ID AO.
+            return $this->pdo->query("SELECT id_peg AS kode_ao,
+                                             nama AS nama_ao,
+                                             id_peg,
+                                             kode_group2_tab,
+                                             kode_group2_dep,
+                                             LPAD(CAST(kode_kantor AS CHAR),3,'0') AS kode_kantor
+                                      FROM ao_dana
+                                      WHERE status=1
+                                        AND LPAD(CAST(kode_kantor AS CHAR),3,'0') BETWEEN '001' AND '028'{$officeWhere}
+                                      ORDER BY nama")->fetchAll(PDO::FETCH_ASSOC);
         }
         return $this->pdo->query("SELECT kode_group2 AS kode_ao,MAX(nama_ao) AS nama_ao,MAX(id_peg) AS id_peg,
                                          LPAD(CAST(MAX(kode_kantor) AS CHAR),3,'0') AS kode_kantor
@@ -115,6 +115,32 @@ final class KpiController
         return $st->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    /** Data ringan untuk filter halaman KPI; tidak memuat indikator dan range skor. */
+    public function directory(array $input, array $user): void
+    {
+        $year=max(2020,min(2100,(int)($input['year']??date('Y'))));
+        $selectedJabatan=$this->requestedJabatan($input);
+        $jabatan=$this->pdo->query("SELECT id,kode,nama,deskripsi,aktif FROM kpi_jabatan WHERE aktif=1 ORDER BY nama")->fetchAll(PDO::FETCH_ASSOC);
+        $kantor=$this->pdo->query("SELECT kode_kantor,nama_kantor FROM kode_kantor WHERE LPAD(CAST(kode_kantor AS CHAR),3,'0') BETWEEN '001' AND '028' ORDER BY kode_kantor")->fetchAll(PDO::FETCH_ASSOC);
+        $includeAll=!empty($input['include_all_ao']);
+        $requiresOffice=$selectedJabatan['kode']!=='AO_KREDIT'&&!$includeAll;
+        $ao=$this->aoDirectory((string)$selectedJabatan['kode'],(string)($input['kode_kantor']??''),$requiresOffice);
+        $generated=($input['include_generated']??true)===false?[]:$this->generatedPeriods((int)$selectedJabatan['id'],$year);
+        $this->json(200,'Direktori KPI berhasil dimuat',[
+            'year'=>$year,'closing_dates'=>$this->latestClosingDates($year),'jabatan'=>$jabatan,
+            'jabatan_terpilih'=>$selectedJabatan,'ao'=>$ao,'kantor'=>$kantor,'generated'=>$generated
+        ]);
+    }
+
+    /** Daftar AO saja ketika kantor berubah, agar tidak mengulang bootstrap penuh. */
+    public function aoList(array $input, array $user): void
+    {
+        $selectedJabatan=$this->requestedJabatan($input);
+        $office=(string)($input['kode_kantor']??'');
+        $ao=$this->aoDirectory((string)$selectedJabatan['kode'],$office,$selectedJabatan['kode']!=='AO_KREDIT');
+        $this->json(200,'Daftar AO berhasil dimuat',['jabatan_terpilih'=>$selectedJabatan,'ao'=>$ao]);
+    }
+
     public function bootstrap(array $input, array $user): void
     {
         $year = max(2020, min(2100, (int)($input['year'] ?? date('Y'))));
@@ -128,13 +154,14 @@ final class KpiController
         $scoreSt->execute([':jabatan_id'=>(int)$selectedJabatan['id']]);
         $score = $scoreSt->fetchAll(PDO::FETCH_ASSOC);
         $risk = $this->pdo->query("SELECT kode,nama,faktor,perlakuan FROM kpi_risk_gate WHERE aktif=1 ORDER BY faktor DESC")->fetchAll(PDO::FETCH_ASSOC);
+        $tukin = $this->pdo->query("SELECT min_skor,max_skor,min_nilai,max_nilai,faktor_persen,label,urutan FROM kpi_parameter_tukin WHERE aktif=1 ORDER BY urutan,id")->fetchAll(PDO::FETCH_ASSOC);
         $kantor = $this->pdo->query("SELECT kode_kantor,nama_kantor FROM kode_kantor WHERE LPAD(CAST(kode_kantor AS CHAR),3,'0') BETWEEN '001' AND '028' ORDER BY kode_kantor")->fetchAll(PDO::FETCH_ASSOC);
         // Kirim hanya master AO dari jabatan yang sedang dipilih. Selain lebih
         // ringan, ini mencegah daftar AO dari jabatan lain ikut terbaca di FE.
         // AO Kredit tetap dikirim tanpa filter untuk kompatibilitas halaman
         // rekap lama. Halaman hitung tetap mengunci pilihan AO sampai kantor
         // dipilih; Dana/Remedial langsung kosong sebelum ada kantor.
-        $requiresOffice = $selectedJabatan['kode'] !== 'AO_KREDIT';
+        $requiresOffice = $selectedJabatan['kode'] !== 'AO_KREDIT' && empty($input['include_all_ao']);
         $ao = $this->aoDirectory((string)$selectedJabatan['kode'], (string)($input['kode_kantor'] ?? ''), $requiresOffice);
         $this->json(200, 'Bootstrap KPI berhasil dimuat', [
             'year'=>$year,
@@ -143,6 +170,7 @@ final class KpiController
             'indikator'=>$ind->fetchAll(PDO::FETCH_ASSOC),
             'parameter_skor'=>$score,
             'risk_gate'=>$risk,
+            'tukin_rules'=>$tukin,
             'jabatan_terpilih'=>$selectedJabatan,
             'generated'=>$this->generatedPeriods((int)$selectedJabatan['id'], $year),
             'ao'=>$ao,
@@ -194,18 +222,44 @@ final class KpiController
             }));
         }
         if (!$indikator) {$this->json(422,'Indikator KPI belum aktif');return;}
-        $scoreRows=$this->pdo->prepare("SELECT indikator_id,skor,min_indeks,max_indeks,predikat FROM kpi_parameter_skor_jabatan WHERE jabatan_id=:jab AND aktif=1 ORDER BY indikator_id,skor");$scoreRows->execute([':jab'=>$jab]);$scoreRows=$scoreRows->fetchAll(PDO::FETCH_ASSOC);$scoreByIndicator=[];foreach($scoreRows as $scoreRow){$scoreByIndicator[(int)($scoreRow['indikator_id']??0)][]=$scoreRow;}
+        $scoreRows=$this->pdo->prepare("SELECT indikator_id,skor,min_indeks,max_indeks,predikat FROM kpi_parameter_skor_jabatan WHERE jabatan_id=:jab AND aktif=1 ORDER BY indikator_id,skor");$scoreRows->execute([':jab'=>$jab]);$scoreRows=$scoreRows->fetchAll(PDO::FETCH_ASSOC);$scoreByIndicator=[];foreach($scoreRows as $scoreRow){$scoreByIndicator[(int)($scoreRow['indikator_id']??0)][]=$scoreRow;}$scoreFor=static function(int $indikatorId,float $indeks,array $ranges): int {foreach($ranges[$indikatorId]??[] as $range){$min=(float)$range['min_indeks'];$max=(float)$range['max_indeks'];if(($indeks>=$min&&$indeks<$max)||((int)$range['skor']===5&&$indeks>=$min))return (int)$range['skor'];}return 0;};
         $risk=$this->pdo->query("SELECT kode,faktor FROM kpi_risk_gate WHERE aktif=1 ORDER BY id")->fetchAll(PDO::FETCH_KEY_PAIR);
         $ao=$this->findAo($jabatanKode,$kodeAo);
         if(!$ao){$this->json(404,'AO tidak ditemukan pada jabatan yang dipilih');return;}
-        if($jabatanKode!=='AO_KREDIT'){$this->json(422,'Daftar '.$selectedJabatan['nama'].' sudah tersedia. Rumus perhitungannya akan diaktifkan setelah sumber data indikatornya siap.');return;}
-        $dates=!empty($input['closing_date'])?[(string)$input['closing_date']]:$this->latestClosingDates($year);$saved=[];
+        // Sumber data real AO Dana dan AO Remedial belum tersedia. Izinkan
+        // generate lebih dulu memakai data dummy agar alur skor, bobot,
+        // penyimpanan, dan tampilan dapat diuji. Catatan dummy ikut disimpan
+        // pada detail supaya tidak disalahartikan sebagai nilai real.
+        $dummyMode=$jabatanKode!=='AO_KREDIT';
+        $dummyTargets=[
+            'TABUNGAN_AO'=>35000000,
+            'DEPOSITO_AO'=>15000000,
+            'NOA_BARU_DANA'=>3,
+            'NOA_DANA_REALISASI'=>3,
+            'PIPELINE_AO_DANA'=>1,
+            'PIPELINE_DANA'=>1,
+            'BACKFLOW'=>0.10,
+            'AMOUNT_COLLECTION'=>100000000,
+            'PTP_DIPENUHI'=>1,
+            'PENURUNAN_NPL'=>0.08,
+            'PENYELESAIAN_KREDIT'=>0.75,
+            'DOKUMENTASI_PENAGIHAN'=>1,
+            'RECOVERY'=>0.75,
+            'PIPELINE_DANA'=>20,
+        ];
+        $dates=!empty($input['closing_date'])?[(string)$input['closing_date']]:$this->latestClosingDates($year);$saved=[];$targetId=(string)($ao['id_peg']?:$ao['kode_group2']);
         foreach($dates as $closing){
+            if (!empty($input['skip_existing'])) {
+                $existingSt=$this->pdo->prepare('SELECT nilai_akhir,status FROM kpi_penilaian WHERE jabatan_id=:jab AND id_peg=:idpeg AND tahun=:tahun AND bulan=:bulan LIMIT 1');
+                $existingSt->execute([':jab'=>$jab,':idpeg'=>$targetId,':tahun'=>(int)date('Y',strtotime($closing)),':bulan'=>(int)date('n',strtotime($closing))]);
+                $existing=$existingSt->fetch(PDO::FETCH_ASSOC);
+                if ($existing) { $saved[]=['closing_date'=>$closing,'status'=>'SUDAH ADA','nilai_dasar'=>null,'nilai_akhir'=>(float)$existing['nilai_akhir']]; continue; }
+            }
             // Jangan mengurangi satu bulan langsung dari tanggal 29/30/31
             // karena PHP dapat overflow ke bulan berjalan. Ambil hari pertama
             // bulan closing, lalu mundur satu hari untuk memperoleh closing sebelumnya.
             $prev=date('Y-m-d',strtotime(date('Y-m-01',strtotime($closing)).' -1 day'));
-            $actual=$this->actualMetrics($kodeAo,$closing,$prev);
+            $actual=$dummyMode?[]:$this->actualMetrics($kodeAo,$closing,$prev);
             // Prioritas target: target periode/AO/kantor, lalu target default global
             // (tahun=0, bulan=0). Target default dikelola dari halaman setting.
             $targetSt=$this->pdo->prepare("SELECT indikator_id,target FROM kpi_target_bulanan
@@ -215,18 +269,20 @@ final class KpiController
                 ORDER BY (tahun=0) DESC, (id_peg IS NULL) DESC, (kode_kantor IS NULL) DESC, id ASC");
             $targetSt->execute([':jab'=>$jab,':tahun'=>(int)date('Y',strtotime($closing)),':bulan'=>(int)date('n',strtotime($closing)),':idpeg'=>(string)($ao['id_peg']?:$ao['kode_group2']),':kantor'=>$ao['kode_kantor']]);$targets=[];foreach($targetSt as $t){$targets[(int)$t['indikator_id']] = (float)$t['target'];}
             $ready=true;$weighted=0;$details=[];$gate='NORMAL';
-            foreach($indikator as $i){$key=$i['formula_key'];$target=$targets[(int)$i['id']]??0;if($target<=0&&$key==='REALISASI_KREDIT'&&!empty($input['target_realisasi']))$target=(float)$input['target_realisasi'];if($target<=0&&$key==='NOA_REALISASI'&&!empty($input['target_noa']))$target=(float)$input['target_noa'];if($target<=0&&$key==='MOB_6')$target=0.05;if($target<=0&&$key==='REPAYMENT_RATE')$target=0.65;if($target<=0&&$key==='EARLY_RUN_OFF')$target=0.01;if($target<=0&&$key==='PIPELINE')$target=1.0;$real=$actual[$key]??null;$note='';$score=0;$idx=0;$value100=0;
-                if($real===null){$ready=false;$note='Sumber data indikator belum dikonfigurasi';}
+            foreach($indikator as $i){$key=$i['formula_key'];$target=$targets[(int)$i['id']]??0;if($target<=0&&$key==='REALISASI_KREDIT'&&!empty($input['target_realisasi']))$target=(float)$input['target_realisasi'];if($target<=0&&$key==='NOA_REALISASI'&&!empty($input['target_noa']))$target=(float)$input['target_noa'];if($target<=0&&$key==='MOB_6')$target=0.05;if($target<=0&&$key==='REPAYMENT_RATE')$target=0.65;if($target<=0&&$key==='EARLY_RUN_OFF')$target=0.01;if($target<=0&&$key==='PIPELINE')$target=1.0;if($dummyMode&&$target<=0)$target=(float)($dummyTargets[$key]??(strtoupper((string)$i['unit'])==='PERSEN'?1:1));$real=$actual[$key]??null;$note='';$score=0;$idx=0;$value100=0;$dummyIndex=null;
+                if($dummyMode){foreach($scoreByIndicator[(int)$i['id']]??[] as $dummyRange){if((int)$dummyRange['skor']===3){$dummyMin=(float)$dummyRange['min_indeks'];$dummyMax=(float)$dummyRange['max_indeks'];$dummyIndex=$dummyMax>=999?$dummyMin+0.25:($dummyMin+$dummyMax)/2;break;}}if($dummyIndex===null||$dummyIndex<=0)$dummyIndex=0.80;$real=strtoupper((string)$i['arah'])==='LOWER'?$target/$dummyIndex:$target*$dummyIndex;$note='DUMMY - sumber data real '.$selectedJabatan['nama'].' belum tersedia';}
+                if($dummyMode){$idx=(float)$dummyIndex;}
+                elseif($real===null){$ready=false;$note='Sumber data indikator belum dikonfigurasi';}
                 elseif($target<=0){$ready=false;$note='Target periode belum diisi';}
                 else{if($key==='MOB_6'){$idx=(float)$real;$score=$real<=0.05?5:($real<=0.06?4:($real<=0.07?3:($real<=0.08?2:1)));$note='OS menunggak MOB 1–6 / total OS MOB 1–6';}elseif($key==='EARLY_RUN_OFF'){$idx=(float)$real;$score=$real<=0.01?5:($real<=0.0125?4:($real<=0.015?3:($real<=0.02?2:1)));$note='OS pelunasan murni / OS DPD 0 closing sebelumnya; refinancing/top-up dikecualikan';}elseif($key==='PIPELINE'){$idx=(float)$real;$score=min(5,(int)$real+1);$note='NOA pipeline yang cair/realisasi pada periode berjalan';}else{$idx=strtoupper($i['arah'])==='LOWER'?($real==0?1.5:min($target/$real,1.5)):min($real/$target,1.5);foreach($scoreRows as $s){if($idx>=(float)$s['min_indeks']&&$idx<(float)$s['max_indeks']||((int)$s['skor']===5&&$idx>=(float)$s['min_indeks'])){$score=(int)$s['skor'];break;}}}$weighted=(float)$i['bobot']*$score;$value100=min((float)$i['bobot']*100,$weighted/5*100);}
-                $details[]=['indikator'=>$i,'target'=>$target,'realisasi'=>$real,'indeks'=>$idx,'skor'=>$score,'nilai_tertimbang'=>$weighted,'nilai_100'=>$value100,'os_mob_menunggak'=>$key==='MOB_6'?(float)($actual['OS_MOB_MENUNGGAK']??0):0,'os_mob_total'=>$key==='MOB_6'?(float)($actual['OS_MOB_TOTAL']??0):0,'os_dpd0'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_DPD0']??0):0,'os_kelolaan'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_KELOLAAN']??0):0,'os_run_off'=>$key==='EARLY_RUN_OFF'?(float)($actual['OS_RUN_OFF']??0):0,'os_dpd0_m1'=>$key==='EARLY_RUN_OFF'?(float)($actual['OS_DPD0_M1']??0):0,'catatan'=>$note];
+                $score=$scoreFor((int)$i['id'],(float)$idx,$scoreByIndicator);$weighted=(float)$i['bobot']*$score;$value100=min((float)$i['bobot']*100,$weighted/5*100);$details[]=['indikator'=>$i,'target'=>$target,'realisasi'=>$real,'indeks'=>$idx,'skor'=>$score,'nilai_tertimbang'=>$weighted,'nilai_100'=>$value100,'os_mob_menunggak'=>$key==='MOB_6'?(float)($actual['OS_MOB_MENUNGGAK']??0):0,'os_mob_total'=>$key==='MOB_6'?(float)($actual['OS_MOB_TOTAL']??0):0,'os_dpd0'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_DPD0']??0):0,'os_kelolaan'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_KELOLAAN']??0):0,'os_run_off'=>$key==='EARLY_RUN_OFF'?(float)($actual['OS_RUN_OFF']??0):0,'os_dpd0_m1'=>$key==='EARLY_RUN_OFF'?(float)($actual['OS_DPD0_M1']??0):0,'catatan'=>$note];
             }
-            $base=$ready?array_sum(array_column($details,'nilai_100')):0;$factor=(float)($risk[$gate]??1);$final=$base*$factor;$partial=(bool)$selectedCodes;$status=$ready&&!$partial?'DISETUJUI':'DRAFT';
+            $base=$ready?array_sum(array_column($details,'nilai_100')):0;$factor=(float)($risk[$gate]??1);$final=$base*$factor;$partial=(bool)$selectedCodes;$status=$ready&&!$partial&&!$dummyMode?'DISETUJUI':'DRAFT';
             $this->pdo->beginTransaction();try{
                 $up=$this->pdo->prepare("INSERT INTO kpi_penilaian(jabatan_id,id_peg,kode_kantor,kode_ao,nama_ao,tahun,bulan,closing_date,nilai_dasar,risk_gate,faktor_risiko,nilai_akhir,predikat,status,generated_at) VALUES(:jab,:idpeg,:kantor,:ao,:nama,:tahun,:bulan,:closing,:base,:gate,:factor,:final,:predikat,:status,NOW()) ON DUPLICATE KEY UPDATE kode_kantor=VALUES(kode_kantor),kode_ao=VALUES(kode_ao),nama_ao=VALUES(nama_ao),closing_date=VALUES(closing_date),nilai_dasar=VALUES(nilai_dasar),risk_gate=VALUES(risk_gate),faktor_risiko=VALUES(faktor_risiko),nilai_akhir=VALUES(nilai_akhir),predikat=VALUES(predikat),status=VALUES(status),generated_at=NOW()");
-                $targetId=(string)($ao['id_peg']?:$ao['kode_group2']);$up->execute([':jab'=>$jab,':idpeg'=>$targetId,':kantor'=>$ao['kode_kantor']??null,':ao'=>$kodeAo,':nama'=>$ao['nama_ao'],':tahun'=>(int)date('Y',strtotime($closing)),':bulan'=>(int)date('n',strtotime($closing)),':closing'=>$closing,':base'=>$base,':gate'=>$gate,':factor'=>$factor,':final'=>$final,':predikat'=>$partial?'Fokus 2 indikator':($ready?($final>=90?'Istimewa':($final>=80?'Melampaui target':($final>=60?'Memenuhi target':'Perlu perbaikan'))):'Belum lengkap'),':status'=>$status]);
+                $up->execute([':jab'=>$jab,':idpeg'=>$targetId,':kantor'=>$ao['kode_kantor']??null,':ao'=>$kodeAo,':nama'=>$ao['nama_ao'],':tahun'=>(int)date('Y',strtotime($closing)),':bulan'=>(int)date('n',strtotime($closing)),':closing'=>$closing,':base'=>$base,':gate'=>$gate,':factor'=>$factor,':final'=>$final,':predikat'=>$dummyMode?'DUMMY - sumber data real belum tersedia':($partial?'Fokus 2 indikator':($ready?($final>=90?'Istimewa':($final>=80?'Melampaui target':($final>=60?'Memenuhi target':'Perlu perbaikan'))):'Belum lengkap')),':status'=>$status]);
                 $idSt=$this->pdo->prepare("SELECT id FROM kpi_penilaian WHERE jabatan_id=:jab AND id_peg=:idpeg AND tahun=:tahun AND bulan=:bulan");$idSt->execute([':jab'=>$jab,':idpeg'=>$targetId,':tahun'=>(int)date('Y',strtotime($closing)),':bulan'=>(int)date('n',strtotime($closing))]);$pid=(int)$idSt->fetchColumn();
-                $this->pdo->prepare('DELETE FROM kpi_penilaian_detail WHERE penilaian_id=:pid')->execute([':pid'=>$pid]);$det=$this->pdo->prepare("INSERT INTO kpi_penilaian_detail(penilaian_id,indikator_id,target,realisasi,indeks,skor,nilai_tertimbang,nilai_100,os_mob_menunggak,os_mob_total,os_dpd0,os_kelolaan,os_run_off,os_dpd0_m1,sumber_snapshot,catatan) VALUES(:pid,:iid,:target,:real,:idx,:score,:weighted,:value100,:os_bad,:os_total,:os_dpd0,:os_kelolaan,:os_run_off,:os_dpd0_m1,:source,:note)");foreach($details as $d){$det->execute([':pid'=>$pid,':iid'=>$d['indikator']['id'],':target'=>$d['target'],':real'=>(float)($d['realisasi']??0),':idx'=>(float)$d['indeks'],':score'=>$d['skor'],':weighted'=>$d['nilai_tertimbang'],':value100'=>$d['nilai_100'],':os_bad'=>$d['os_mob_menunggak'],':os_total'=>$d['os_mob_total'],':os_dpd0'=>$d['os_dpd0'],':os_kelolaan'=>$d['os_kelolaan'],':os_run_off'=>$d['os_run_off'],':os_dpd0_m1'=>$d['os_dpd0_m1'],':source'=>$d['indikator']['sumber_data'],':note'=>$d['catatan']]);}$this->pdo->commit();$saved[]=['closing_date'=>$closing,'status'=>$status,'nilai_dasar'=>$base,'nilai_akhir'=>$final];
+                $this->pdo->prepare('DELETE FROM kpi_penilaian_detail WHERE penilaian_id=:pid')->execute([':pid'=>$pid]);$det=$this->pdo->prepare("INSERT INTO kpi_penilaian_detail(penilaian_id,indikator_id,target,realisasi,indeks,skor,nilai_tertimbang,nilai_100,os_mob_menunggak,os_mob_total,os_dpd0,os_kelolaan,os_run_off,os_dpd0_m1,sumber_snapshot,catatan) VALUES(:pid,:iid,:target,:real,:idx,:score,:weighted,:value100,:os_bad,:os_total,:os_dpd0,:os_kelolaan,:os_run_off,:os_dpd0_m1,:source,:note)");foreach($details as $d){$det->execute([':pid'=>$pid,':iid'=>$d['indikator']['id'],':target'=>$d['target'],':real'=>(float)($d['realisasi']??0),':idx'=>(float)$d['indeks'],':score'=>$d['skor'],':weighted'=>$d['nilai_tertimbang'],':value100'=>$d['nilai_100'],':os_bad'=>$d['os_mob_menunggak'],':os_total'=>$d['os_mob_total'],':os_dpd0'=>$d['os_dpd0'],':os_kelolaan'=>$d['os_kelolaan'],':os_run_off'=>$d['os_run_off'],':os_dpd0_m1'=>$d['os_dpd0_m1'],':source'=>$d['indikator']['sumber_data'],':note'=>$d['catatan']]);}$this->pdo->commit();$saved[]=['closing_date'=>$closing,'status'=>$status,'nilai_dasar'=>$base,'nilai_akhir'=>$final,'keterangan'=>$dummyMode?'DUMMY - sumber data real belum tersedia':null];
             }catch(Throwable $e){$this->pdo->rollBack();throw $e;}
         }
         $this->json(200,'KPI AO berhasil dihitung',['year'=>$year,'kode_ao'=>$kodeAo,'data'=>$saved]);
@@ -264,11 +320,166 @@ final class KpiController
         $this->json(200,'Setting KPI berhasil dimuat',['jabatan'=>$jabatan,'indikator'=>$st->fetchAll(PDO::FETCH_ASSOC),'parameter_skor'=>$this->pdo->query("SELECT s.id,s.jabatan_id,s.indikator_id,s.skor,s.min_indeks,s.max_indeks,s.predikat,s.aktif,j.kode AS jabatan_kode,j.nama AS jabatan_nama,i.unit FROM kpi_parameter_skor_jabatan s JOIN kpi_jabatan j ON j.id=s.jabatan_id JOIN kpi_indikator i ON i.id=s.indikator_id ORDER BY j.nama,s.indikator_id,s.skor")->fetchAll(PDO::FETCH_ASSOC),'can_manage'=>$this->canManage($user)]);
     }
 
+    /** Range skor saja untuk editor inline di halaman setting. */
+    public function settingScores(array $input, array $user): void
+    {
+        $rows=$this->pdo->query("SELECT s.id,s.jabatan_id,s.indikator_id,s.skor,s.min_indeks,s.max_indeks,s.predikat,s.aktif,
+                                        j.kode AS jabatan_kode,j.nama AS jabatan_nama,i.unit
+                                 FROM kpi_parameter_skor_jabatan s
+                                 JOIN kpi_jabatan j ON j.id=s.jabatan_id
+                                 JOIN kpi_indikator i ON i.id=s.indikator_id
+                                 WHERE j.aktif=1
+                                 ORDER BY j.nama,s.indikator_id,s.skor")->fetchAll(PDO::FETCH_ASSOC);
+        $this->json(200,'Range skor berhasil dimuat',['parameter_skor'=>$rows]);
+    }
+
     public function detail(array $input, array $user): void
     {
         $id=(int)($input['penilaian_id']??0); if(!$id){$this->json(422,'ID penilaian wajib diisi');return;}
-        $st=$this->pdo->prepare("SELECT d.*,i.kelompok,i.nama,i.bobot,i.arah,i.unit,i.formula_key,i.sumber_data FROM kpi_penilaian_detail d JOIN kpi_indikator i ON i.id=d.indikator_id WHERE d.penilaian_id=:id ORDER BY i.urutan,i.id");$st->execute([':id'=>$id]);
+        $st=$this->pdo->prepare("SELECT d.*,i.kelompok,i.nama,i.bobot,i.arah,i.unit,i.formula_key,i.sumber_data,i.input_pa FROM kpi_penilaian_detail d JOIN kpi_indikator i ON i.id=d.indikator_id WHERE d.penilaian_id=:id ORDER BY i.urutan,i.id");$st->execute([':id'=>$id]);
         $this->json(200,'Detail KPI berhasil dimuat',['data'=>$st->fetchAll(PDO::FETCH_ASSOC)]);
+    }
+
+    /**
+     * Rekap tahunan KPI semua jabatan AO.
+     *
+     * Satu baris mewakili satu AO, sedangkan nilai tiap bulan diambil dari
+     * kpi_penilaian yang memang sudah pernah digenerate. Bulan yang belum
+     * digenerate dibiarkan kosong agar tidak dianggap bernilai nol.
+     */
+    public function annual(array $input, array $user): void
+    {
+        $year=max(2020,min(2100,(int)($input['year']??date('Y'))));
+        $ao=trim((string)($input['kode_ao']??''));
+        $kantor=trim((string)($input['kode_kantor']??''));
+        $selectedJabatan=$this->requestedJabatan($input);
+        $jabatanKode=(string)$selectedJabatan['kode'];
+        if($jabatanKode==='AO_DANA'){
+            $aoJoin="JOIN ao_dana ao ON ao.id_peg=COALESCE(NULLIF(p.id_peg,''),p.kode_ao) AND ao.status=1";
+        }elseif($jabatanKode==='AO_REMEDIAL'){
+            $aoJoin="JOIN ao_remedial ao ON ao.id_peg=COALESCE(NULLIF(p.id_peg,''),p.kode_ao)
+                     AND (ao.status IS NULL OR TRIM(ao.status)='' OR UPPER(ao.status) IN ('1','AKTIF','ACTIVE'))";
+        }else{
+            $aoJoin="JOIN ao_kredit ao ON ao.kode_group2=p.kode_ao AND ao.status=1";
+        }
+        $params=[':tahun'=>$year,':jabatan_id'=>(int)$selectedJabatan['id']];
+        $where=' WHERE p.jabatan_id=:jabatan_id AND p.tahun=:tahun';
+        if($ao!==''){$where.=' AND p.kode_ao=:ao';$params[':ao']=$ao;}
+        if($kantor!=='' && $kantor!=='000'){
+            $where.=" AND LPAD(CAST(ao.kode_kantor AS CHAR),3,'0')=:kantor";
+            $params[':kantor']=str_pad($kantor,3,'0',STR_PAD_LEFT);
+        }
+        $sql="SELECT p.id,p.id_peg,p.kode_ao,p.nama_ao,
+                     LPAD(CAST(ao.kode_kantor AS CHAR),3,'0') AS kode_kantor,
+                     p.bulan,p.closing_date,p.nilai_akhir,p.status
+              FROM kpi_penilaian p
+              {$aoJoin}
+              {$where}
+              ORDER BY p.nama_ao,p.bulan";
+        $st=$this->pdo->prepare($sql);$st->execute($params);
+        $raw=$st->fetchAll(PDO::FETCH_ASSOC);
+
+        $tukinRows=$this->pdo->query("SELECT id,min_skor,max_skor,min_nilai,max_nilai,faktor_persen,label,urutan
+                                      FROM kpi_parameter_tukin WHERE aktif=1 ORDER BY urutan,id")->fetchAll(PDO::FETCH_ASSOC);
+        $tukin=static function(float $score) use ($tukinRows): array {
+            foreach($tukinRows as $rule){
+                $min=(float)$rule['min_skor'];$max=$rule['max_skor']===null?null:(float)$rule['max_skor'];
+                if($score>=$min&&($max===null||$score<$max))return ['persen'=>(float)$rule['faktor_persen'],'label'=>$rule['label']];
+            }
+            return ['persen'=>0,'label'=>'Belum ada parameter'];
+        };
+
+        $byAo=[];$monthly=[];
+        foreach($raw as $row){
+            $key=(string)$row['id_peg'];
+            if(!isset($byAo[$key]))$byAo[$key]=[
+                'id_peg'=>$row['id_peg'],'kode_ao'=>$row['kode_ao'],'nama_ao'=>$row['nama_ao'],
+                'kode_kantor'=>$row['kode_kantor'],'bulan_terisi'=>0,'nilai_akhir'=>null,
+                'skor_final'=>null,'tukin_persen'=>null,'tukin_label'=>null,'monthly'=>[]
+            ];
+            $value=(float)$row['nilai_akhir'];
+            $byAo[$key]['monthly'][(int)$row['bulan']]=[
+                'nilai_akhir'=>$value,'skor'=>round($value/20,2),'tukin_persen'=>$tukin($value/20)['persen'],
+                'status'=>$row['status'],'closing_date'=>$row['closing_date'],'penilaian_id'=>(int)$row['id']
+            ];
+        }
+        foreach($byAo as &$item){
+            $values=array_column($item['monthly'],'nilai_akhir');
+            $item['bulan_terisi']=count($values);
+            if($values){
+                $item['nilai_akhir']=round(array_sum($values)/count($values),2);
+                $item['skor_final']=round($item['nilai_akhir']/20,2);
+                $item['tukin_persen']=$tukin($item['skor_final'])['persen'];
+                $item['tukin_label']=$tukin($item['skor_final'])['label'];
+            }
+        }
+        unset($item);
+        $rows=array_values($byAo);
+        usort($rows,static function(array $a,array $b): int {
+            $scoreA=$a['nilai_akhir']===null?-1:(float)$a['nilai_akhir'];
+            $scoreB=$b['nilai_akhir']===null?-1:(float)$b['nilai_akhir'];
+            return $scoreA===$scoreB?strcasecmp((string)$a['nama_ao'],(string)$b['nama_ao']):($scoreB<=>$scoreA);
+        });
+        $totalAo=count($rows);
+        $isConsolidated=$kantor===''||$kantor==='000';
+        $visibleAoKeys=null;
+        if($isConsolidated){
+            $rows=array_slice($rows,0,5);
+            $visibleAoKeys=[];
+            foreach($rows as $item)$visibleAoKeys[(string)$item['id_peg']]=true;
+        }
+
+        $monthSummary=[];
+        for($month=1;$month<=12;$month++){
+            $values=[];
+            foreach($rows as $item)if(isset($item['monthly'][$month]))$values[]=(float)$item['monthly'][$month]['nilai_akhir'];
+            $avg=$values?round(array_sum($values)/count($values),2):null;
+            $monthSummary[]=[
+                'bulan'=>$month,'terisi'=>count($values),'nilai_akhir'=>$avg,
+                'skor'=>$avg===null?null:round($avg/20,2),
+                'tukin_persen'=>$avg===null?null:$tukin($avg/20)['persen']
+            ];
+        }
+        $breakdownSql="SELECT p.id AS penilaian_id,p.bulan,p.closing_date,p.id_peg,p.nama_ao,
+                              LPAD(CAST(ao.kode_kantor AS CHAR),3,'0') AS kode_kantor,
+                              i.kode,i.nama,i.kelompok,i.unit,i.bobot,i.input_pa,
+                              d.target,d.realisasi,d.indeks,d.skor,d.nilai_100,d.catatan
+                       FROM kpi_penilaian_detail d
+                       JOIN kpi_penilaian p ON p.id=d.penilaian_id
+                       {$aoJoin}
+                       JOIN kpi_indikator i ON i.id=d.indikator_id
+                       {$where}
+                       ORDER BY p.nama_ao,p.bulan,i.urutan,i.id";
+        $breakdownSt=$this->pdo->prepare($breakdownSql);$breakdownSt->execute($params);
+        $breakdown=$breakdownSt->fetchAll(PDO::FETCH_ASSOC);
+        $monthlyMeta=[];
+        foreach($rows as $item){
+            foreach($item['monthly'] as $month=>$monthlyValue){
+                $monthlyMeta[(string)$item['id_peg'].'|'.(int)$month]=[
+                    'nilai_akhir_bulan'=>$monthlyValue['nilai_akhir'],
+                    'tukin_persen_bulan'=>$monthlyValue['tukin_persen']
+                ];
+            }
+        }
+        foreach($breakdown as &$item){
+            $meta=$monthlyMeta[(string)$item['id_peg'].'|'.(int)$item['bulan']]??[];
+            $item['nilai_akhir_bulan']=$meta['nilai_akhir_bulan']??null;
+            $item['tukin_persen_bulan']=$meta['tukin_persen_bulan']??null;
+        }
+        unset($item);
+        if($visibleAoKeys!==null){
+            $breakdown=array_values(array_filter(
+                $breakdown,
+                static fn(array $item): bool => isset($visibleAoKeys[(string)$item['id_peg']])
+            ));
+        }
+        $this->json(200,'Rekap KPI tahunan berhasil dimuat',[
+            'year'=>$year,'kode_ao'=>$ao,'kode_kantor'=>$kantor,
+            'jabatan'=>$selectedJabatan,'total_ao'=>$totalAo,'is_konsolidasi'=>$isConsolidated,'konsolidasi_top'=>5,
+            'ao'=>$rows,'months'=>$monthSummary,
+            'indicator_breakdown'=>$breakdown,'indicator_breakdown_monthly'=>$breakdown,
+            'tukin_rules'=>$tukinRows
+        ]);
     }
 
     public function quarterly(array $input, array $user): void
@@ -299,7 +510,7 @@ final class KpiController
     public function saveIndicator(array $input, array $user): void
     {
         if (!$this->canManage($user)) { $this->json(403,'Tidak memiliki hak mengubah setting KPI'); return; }
-        $id=(int)($input['id']??0); $fields=['bobot','arah','unit','frekuensi','status','definisi','sumber_data','validator']; $set=[];$params=[':id'=>$id];
+        $id=(int)($input['id']??0); $fields=['bobot','arah','unit','frekuensi','status','definisi','sumber_data','validator','input_pa']; $set=[];$params=[':id'=>$id];
         foreach($fields as $field){ if(array_key_exists($field,$input)){ $set[]="{$field}=:{$field}"; $params[":{$field}"]=$input[$field]; }}
         if(!$id||!$set){$this->json(422,'Data indikator tidak lengkap');return;}
         $this->pdo->beginTransaction();

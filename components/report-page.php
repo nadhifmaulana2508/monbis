@@ -59,6 +59,34 @@ if (!function_exists('mb_render_report_toolbar')) {
     }
 }
 
+if (!function_exists('mb_render_icon_tabs')) {
+    /** Membuat switch tab ringkas berbasis icon yang konsisten di toolbar report. */
+    function mb_render_icon_tabs(array $items, string $active = '', array $attrs = []): string
+    {
+        $attrs['class'] = trim('mb-segmented ' . ($attrs['class'] ?? ''));
+        $attrs['role'] = 'tablist';
+        $attrs['aria-label'] = $attrs['aria-label'] ?? 'Pilihan tampilan';
+
+        $html = '<div' . mb_attrs($attrs) . '>';
+        foreach ($items as $item) {
+            $key = (string)($item['key'] ?? '');
+            $label = (string)($item['label'] ?? $key);
+            $isActive = $key !== '' && $key === $active;
+            $buttonAttrs = [
+                'type' => 'button',
+                'class' => 'mb-segmented__btn' . ($isActive ? ' is-active' : ''),
+                'data-kpi-tab' => $key,
+                'role' => 'tab',
+                'aria-selected' => $isActive ? 'true' : 'false',
+                'aria-label' => $label,
+                'title' => $label,
+            ];
+            $html .= '<button' . mb_attrs($buttonAttrs) . '>' . ($item['icon'] ?? mb_svg('chart')) . '</button>';
+        }
+        return $html . '</div>';
+    }
+}
+
 if (!function_exists('mb_render_report_page')) {
     function mb_render_report_page(array $cfg): void
     {

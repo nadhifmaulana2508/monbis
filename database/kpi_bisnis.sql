@@ -1,6 +1,57 @@
 -- Fondasi KPI lini bisnis.
 -- Jalankan sekali pada database aplikasi. Seed ini sengaja hanya mengaktifkan
--- AO Kredit dan AO Remedial; perhitungan indikator dapat dikalibrasi kemudian.
+-- AO Kredit, AO Dana, dan AO Remedial; perhitungan indikator dapat dikalibrasi kemudian.
+
+-- Master AO Dana. Data awal diisi melalui database/ao_dana.sql setelah tabel
+-- users, kode_ao_tab, dan kode_ao_dep tersedia.
+CREATE TABLE IF NOT EXISTS ao_dana (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  kode_kantor VARCHAR(10) NOT NULL,
+  id_peg VARCHAR(30) NOT NULL,
+  nama VARCHAR(150) NOT NULL,
+  kode_group2_tab VARCHAR(30) NULL,
+  kode_group2_dep VARCHAR(30) NULL,
+  status TINYINT(1) NOT NULL DEFAULT 1,
+  created DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_ao_dana_pegawai (kode_kantor,id_peg),
+  KEY idx_ao_dana_kantor_status (kode_kantor,status),
+  KEY idx_ao_dana_group_tab (kode_group2_tab),
+  KEY idx_ao_dana_group_dep (kode_group2_dep)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Parameter faktor tukin disimpan terpisah agar dapat disesuaikan tanpa
+-- mengubah perhitungan atau tampilan aplikasi.
+CREATE TABLE IF NOT EXISTS kpi_parameter_tukin (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  min_skor DECIMAL(5,2) NOT NULL,
+  max_skor DECIMAL(5,2) NULL,
+  min_nilai DECIMAL(6,2) NOT NULL,
+  max_nilai DECIMAL(6,2) NULL,
+  faktor_persen DECIMAL(6,2) NOT NULL,
+  label VARCHAR(80) NOT NULL,
+  urutan TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  aktif TINYINT(1) NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_kpi_tukin_urutan (urutan),
+  KEY idx_kpi_tukin_aktif (aktif,urutan)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+INSERT INTO kpi_parameter_tukin
+  (min_skor,max_skor,min_nilai,max_nilai,faktor_persen,label,urutan,aktif)
+VALUES
+  (0.00,2.50,0.00,50.00,25.00,'< 2,50',1,1),
+  (2.50,3.00,50.00,60.00,60.00,'2,50 – 2,99',2,1),
+  (3.00,3.50,60.00,70.00,80.00,'3,00 – 3,49',3,1),
+  (3.50,4.00,70.00,80.00,90.00,'3,50 – 3,99',4,1),
+  (4.00,4.25,80.00,85.00,100.00,'4,00 – 4,24',5,1),
+  (4.25,4.50,85.00,90.00,110.00,'4,25 – 4,49',6,1),
+  (4.50,NULL,90.00,100.00,120.00,'4,50 – 5,00',7,1)
+ON DUPLICATE KEY UPDATE
+  min_skor=VALUES(min_skor),max_skor=VALUES(max_skor),min_nilai=VALUES(min_nilai),
+  max_nilai=VALUES(max_nilai),faktor_persen=VALUES(faktor_persen),label=VALUES(label),aktif=VALUES(aktif);
 
 CREATE TABLE IF NOT EXISTS kpi_jabatan (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -27,6 +78,7 @@ CREATE TABLE IF NOT EXISTS kpi_indikator (
   definisi TEXT NULL,
   sumber_data VARCHAR(150) NULL,
   validator VARCHAR(100) NULL,
+  input_pa VARCHAR(255) NULL,
   status ENUM('DRAFT','PILOT','AKTIF','NONAKTIF') NOT NULL DEFAULT 'PILOT',
   urutan SMALLINT UNSIGNED NOT NULL DEFAULT 1,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -245,3 +297,19 @@ SET i.nama=CASE i.kode
   WHEN 'PIPELINE_AO_DANA' THEN 'Maintaince Nasabah 20 Besar'
   ELSE i.nama END
 WHERE j.kode='AO_DANA';
+
+-- Cara input/akumulasi PA per indikator. Nilai ini menjadi metadata formula
+-- dan ikut disimpan pada breakdown penilaian bulanan.
+UPDATE kpi_indikator i JOIN kpi_jabatan j ON j.id=i.jabatan_id
+SET i.input_pa=CASE
+  WHEN j.kode='AO_KREDIT' AND i.kode='EARLY_RUN_OFF' THEN 'Average sampai akhir penilaian'
+  WHEN j.kode='AO_KREDIT' AND i.kode='PENCAIRAN_NETO' THEN 'Jumlah (akumulasi) realisasi netto setiap bulan'
+  WHEN j.kode='AO_KREDIT' AND i.kode='NOA_BARU' THEN 'Jumlah (akumulasi) NOA Baru (NEW CIF) setiap bulan'
+  WHEN j.kode='AO_KREDIT' AND i.kode='PIPELINE' THEN 'DSAR (Daily Sales Activity Report)'
+  WHEN j.kode='AO_KREDIT' AND i.kode IN ('REPAYMENT_RATE','MOB_6') THEN 'Average sampai akhir penilaian'
+  WHEN j.kode='AO_REMEDIAL' THEN 'Average sampai akhir penilaian'
+  WHEN j.kode='AO_DANA' AND i.kode IN ('TABUNGAN_AO','DEPOSITO_AO') THEN 'Jumlah nominal sampai akhir penilaian'
+  WHEN j.kode='AO_DANA' AND i.kode='NOA_BARU_DANA' THEN 'Jumlah (akumulasi) NOA Baru (NEW CIF) setiap bulan'
+  WHEN j.kode='AO_DANA' AND i.kode='PIPELINE_AO_DANA' THEN 'DSAR (Daily Sales Activity Report)'
+  ELSE i.input_pa END
+WHERE j.kode IN ('AO_KREDIT','AO_DANA','AO_REMEDIAL');
