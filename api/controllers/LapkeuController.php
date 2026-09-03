@@ -187,6 +187,10 @@ class LaporanKeuanganController
 
             $kodeKantorReq = trim((string)($input['kode_kantor'] ?? '000'));
             $korwilReq = strtoupper(trim((string)($input['korwil'] ?? '')));
+            $detailKantorReq = trim((string)($input['detail_kantor'] ?? ''));
+            $detailKantor = preg_match('/^\d{1,3}$/', $detailKantorReq)
+                ? str_pad($detailKantorReq, 3, '0', STR_PAD_LEFT)
+                : '';
             $korwilRange = $this->getKorwilRange($korwilReq);
 
             $params = [':tanggal' => $tanggal];
@@ -210,6 +214,12 @@ class LaporanKeuanganController
                 $params[':kode_kantor'] = $kodeKantor;
                 $scopeLabel = $kodeKantor;
                 $isConsolidated = false;
+            }
+
+            // Saat user membuka laporan cabang, sertakan metadata audit COA
+            // untuk cabang tersebut agar tombol breakdown tetap tersedia.
+            if ($detailKantor === '' && !$korwilRange && preg_match('/^\d{1,3}$/', $kodeKantorReq) && str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT) !== '000') {
+                $detailKantor = str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT);
             }
 
             $sql = "
@@ -308,6 +318,238 @@ class LaporanKeuanganController
                 }
             }
 
+            // Pada konsolidasi, sediakan jejak selisih per cabang agar total
+            // gabungan dapat ditelusuri sampai ke sumber saldonya.
+            $branchBreakdown = [];
+            if ($isConsolidated || $detailKantor !== '') {
+                $branchFilter = "AND ah.kode_kantor BETWEEN '000' AND '028'";
+                $branchParams = [];
+                if ($detailKantor !== '') {
+                    $branchFilter = 'AND ah.kode_kantor = :detail_kantor';
+                    $branchParams[':detail_kantor'] = $detailKantor;
+                }
+                $sqlBranch = "
+                    SELECT
+                        TRIM(CAST(ah.kode_kantor AS CHAR)) AS kode_kantor,
+                        MAX(NULLIF(TRIM(kk.nama_kantor), '')) AS nama_kantor,
+                        SUM(CASE WHEN TRIM(CAST(ah.kode_perk AS CHAR)) = '1' THEN ah.saldo_akhir ELSE 0 END) AS aktiva,
+                        SUM(CASE WHEN TRIM(CAST(ah.kode_perk AS CHAR)) IN ('2', '3') THEN ah.saldo_akhir ELSE 0 END) AS pasiva,
+                        SUM(CASE WHEN TRIM(CAST(ah.kode_perk AS CHAR)) = '210' THEN ah.saldo_akhir ELSE 0 END) AS eliminasi_210
+                    FROM acc_history ah
+                    LEFT JOIN kode_kantor kk ON kk.kode_kantor = ah.kode_kantor
+                    WHERE ah.tanggal = :tanggal_branch
+                      {$branchFilter}
+                      AND ah.kode_perk >= '1'
+                      AND ah.kode_perk < '4'
+                    GROUP BY TRIM(CAST(ah.kode_kantor AS CHAR))
+                    ORDER BY TRIM(CAST(ah.kode_kantor AS CHAR)) ASC
+                ";
+                $stmtBranch = $this->pdo->prepare($sqlBranch);
+                $stmtBranch->execute(array_merge([':tanggal_branch' => $tanggal], $branchParams));
+                foreach ($stmtBranch->fetchAll(PDO::FETCH_ASSOC) as $branch) {
+                    $aktivaBruto = (float)($branch['aktiva'] ?? 0);
+                    $pasivaBruto = (float)($branch['pasiva'] ?? 0);
+                    $eliminasi210 = (float)($branch['eliminasi_210'] ?? 0);
+                    $aktivaBersih = $aktivaBruto - $eliminasi210;
+                    $pasivaBersih = $pasivaBruto - $eliminasi210;
+                    $kodeBranch = str_pad(trim((string)$branch['kode_kantor']), 3, '0', STR_PAD_LEFT);
+                    $branchBreakdown[] = [
+                        'kode_kantor' => $kodeBranch,
+                        'nama_kantor' => trim((string)($branch['nama_kantor'] ?? '')) ?: ($kodeBranch === '000' ? 'Pusat' : 'Cabang ' . $kodeBranch),
+                        'aktiva' => $aktivaBersih,
+                        'pasiva' => $pasivaBersih,
+                        'selisih' => $aktivaBersih - $pasivaBersih,
+                        'sumber' => [
+                            'aktiva_akun_1' => $aktivaBruto,
+                            'pasiva_akun_2_3' => $pasivaBruto,
+                            'eliminasi_akun_210' => $eliminasi210,
+                        ],
+                        'coa_breakdown' => [],
+                    ];
+                }
+
+                // Rincian COA per cabang untuk menelusuri angka pembentuk selisih.
+                $previousDateSql = 'SELECT MAX(tanggal) FROM acc_history WHERE tanggal < :tanggal_previous_lookup';
+                $previousDateParams = [':tanggal_previous_lookup' => $tanggal];
+                if ($detailKantor !== '') {
+                    $previousDateSql .= ' AND kode_kantor = :detail_kantor_previous';
+                    $previousDateParams[':detail_kantor_previous'] = $detailKantor;
+                }
+                $stmtPreviousDate = $this->pdo->prepare($previousDateSql);
+                $stmtPreviousDate->execute($previousDateParams);
+                $tanggalSebelumnya = (string)($stmtPreviousDate->fetchColumn() ?: '');
+                $previousJoin = '';
+                $previousSelect = 'NULL AS saldo_akhir_sebelumnya';
+                $branchCoaParams = array_merge([':tanggal_branch_coa' => $tanggal], $branchParams);
+                if ($tanggalSebelumnya !== '') {
+                    $previousJoin = "
+                        LEFT JOIN (
+                            SELECT
+                                TRIM(CAST(kode_kantor AS CHAR)) AS kode_kantor,
+                                TRIM(CAST(kode_perk AS CHAR)) AS kode_perk,
+                                SUM(saldo_akhir) AS saldo_akhir_sebelumnya
+                            FROM acc_history
+                            WHERE tanggal = :tanggal_branch_coa_prev
+                              " . ($detailKantor !== '' ? 'AND kode_kantor = :detail_kantor_prev' : "AND kode_kantor BETWEEN '000' AND '028'") . "
+                              AND kode_perk >= '1'
+                              AND kode_perk < '4'
+                            GROUP BY TRIM(CAST(kode_kantor AS CHAR)), TRIM(CAST(kode_perk AS CHAR))
+                        ) prev ON prev.kode_kantor = TRIM(CAST(ah.kode_kantor AS CHAR))
+                              AND prev.kode_perk = TRIM(CAST(ah.kode_perk AS CHAR))
+                    ";
+                    $previousSelect = 'prev.saldo_akhir_sebelumnya AS saldo_akhir_sebelumnya';
+                    $branchCoaParams[':tanggal_branch_coa_prev'] = $tanggalSebelumnya;
+                    if ($detailKantor !== '') $branchCoaParams[':detail_kantor_prev'] = $detailKantor;
+                }
+                $sqlBranchCoa = "
+                    SELECT
+                        TRIM(CAST(ah.kode_kantor AS CHAR)) AS kode_kantor,
+                        TRIM(CAST(ah.kode_perk AS CHAR)) AS kode_perk,
+                        MAX(NULLIF(TRIM(ah.nama_perk), '')) AS nama_perkiraan,
+                        MAX(TRIM(CAST(ah.kode_induk AS CHAR))) AS kode_induk,
+                        SUM(ah.saldo_awal) AS saldo_awal,
+                        SUM(ah.debet) AS debet,
+                        SUM(ah.kredit) AS kredit,
+                        SUM(ah.saldo_akhir) AS saldo,
+                        {$previousSelect}
+                    FROM acc_history ah
+                    {$previousJoin}
+                    WHERE ah.tanggal = :tanggal_branch_coa
+                      {$branchFilter}
+                      AND ah.kode_perk >= '1'
+                      AND ah.kode_perk < '4'
+                    GROUP BY TRIM(CAST(ah.kode_kantor AS CHAR)), TRIM(CAST(ah.kode_perk AS CHAR))
+                    HAVING SUM(ah.saldo_akhir) <> 0
+                        OR SUM(ah.saldo_awal) <> 0
+                        OR SUM(ah.debet) <> 0
+                        OR SUM(ah.kredit) <> 0
+                    ORDER BY TRIM(CAST(ah.kode_kantor AS CHAR)), ABS(SUM(ah.saldo_akhir)) DESC
+                ";
+                $stmtBranchCoa = $this->pdo->prepare($sqlBranchCoa);
+                $stmtBranchCoa->execute($branchCoaParams);
+                $branchIndex = [];
+                foreach ($branchBreakdown as $idx => $branchItem) {
+                    $branchIndex[$branchItem['kode_kantor']] = $idx;
+                }
+                foreach ($stmtBranchCoa->fetchAll(PDO::FETCH_ASSOC) as $coa) {
+                    $kodeBranch = str_pad(trim((string)$coa['kode_kantor']), 3, '0', STR_PAD_LEFT);
+                    if (!isset($branchIndex[$kodeBranch])) continue;
+                    $branchBreakdown[$branchIndex[$kodeBranch]]['coa_breakdown'][] = [
+                        'kode_perk' => trim((string)$coa['kode_perk']),
+                        'nama_perkiraan' => trim((string)($coa['nama_perkiraan'] ?? '')) ?: trim((string)$coa['kode_perk']),
+                        'kode_induk' => trim((string)($coa['kode_induk'] ?? '')),
+                        'saldo_awal' => (float)($coa['saldo_awal'] ?? 0),
+                        'debet' => (float)($coa['debet'] ?? 0),
+                        'kredit' => (float)($coa['kredit'] ?? 0),
+                        'saldo' => (float)($coa['saldo'] ?? 0),
+                        'saldo_akhir_sebelumnya' => $coa['saldo_akhir_sebelumnya'] !== null ? (float)$coa['saldo_akhir_sebelumnya'] : null,
+                        'selisih_saldo_awal_coa' => $coa['saldo_akhir_sebelumnya'] !== null
+                            ? (float)$coa['saldo_awal'] - (float)$coa['saldo_akhir_sebelumnya']
+                            : null,
+                    ];
+                }
+
+                foreach ($branchBreakdown as &$branchItem) {
+                    $parentCodes = [];
+                    foreach ($branchItem['coa_breakdown'] as $coaItem) {
+                        $parent = trim((string)($coaItem['kode_induk'] ?? ''));
+                        if ($parent !== '') $parentCodes[$parent] = true;
+                    }
+                    foreach ($branchItem['coa_breakdown'] as &$coaItem) {
+                        $coaItem['is_leaf'] = !isset($parentCodes[$coaItem['kode_perk']]);
+                        // Dampak ke (Aktiva - Pasiva): debit menambah selisih,
+                        // kredit mengurangi selisih; berlaku untuk kedua sisi.
+                        $coaItem['impact_mutasi'] = (float)$coaItem['debet'] - (float)$coaItem['kredit'];
+                        $coaItem['perubahan_saldo'] = (float)$coaItem['saldo'] - (float)$coaItem['saldo_awal'];
+                        $isAktiva = strpos((string)$coaItem['kode_perk'], '1') === 0;
+                        $saldoSeharusnya = $isAktiva
+                            ? (float)$coaItem['saldo_awal'] + (float)$coaItem['debet'] - (float)$coaItem['kredit']
+                            : (float)$coaItem['saldo_awal'] - (float)$coaItem['debet'] + (float)$coaItem['kredit'];
+                        $coaItem['rekonsiliasi_saldo'] = (float)$coaItem['saldo'] - $saldoSeharusnya;
+                        $coaItem['indikasi'] = [];
+                        if ($coaItem['is_leaf'] && $coaItem['selisih_saldo_awal_coa'] !== null && abs((float)$coaItem['selisih_saldo_awal_coa']) > 0.01) {
+                            $coaItem['indikasi'][] = 'Saldo awal tidak sama dengan saldo akhir sebelumnya';
+                        }
+                        if ($coaItem['is_leaf'] && abs((float)$coaItem['rekonsiliasi_saldo']) > 0.01) {
+                            $coaItem['indikasi'][] = 'Rumus saldo awal/debet/kredit tidak sesuai saldo akhir';
+                        }
+                    }
+                    unset($coaItem);
+                }
+                unset($branchItem);
+
+                foreach ($branchBreakdown as &$branchItem) {
+                    $root = [];
+                    foreach ($branchItem['coa_breakdown'] as $coaItem) {
+                        $kodeCoa = $coaItem['kode_perk'];
+                        if (in_array($kodeCoa, ['1', '2', '3', '210'], true)) {
+                            $root[$kodeCoa] = $coaItem;
+                        }
+                    }
+                    $zero = ['saldo_awal' => 0.0, 'debet' => 0.0, 'kredit' => 0.0, 'saldo' => 0.0];
+                    $r1 = $root['1'] ?? $zero;
+                    $r2 = $root['2'] ?? $zero;
+                    $r3 = $root['3'] ?? $zero;
+                    $r210 = $root['210'] ?? $zero;
+                    $totalDebetLeaf = 0.0;
+                    $totalKreditLeaf = 0.0;
+                    foreach ($branchItem['coa_breakdown'] as $coaItem) {
+                        if ($coaItem['is_leaf']) {
+                            $totalDebetLeaf += (float)$coaItem['debet'];
+                            $totalKreditLeaf += (float)$coaItem['kredit'];
+                        }
+                    }
+                    $awalPasiva = (float)$r2['saldo_awal'] + (float)$r3['saldo_awal'];
+                    $akhirPasiva = (float)$r2['saldo'] + (float)$r3['saldo'];
+                    $debetPasiva = (float)$r2['debet'] + (float)$r3['debet'];
+                    $kreditPasiva = (float)$r2['kredit'] + (float)$r3['kredit'];
+                    $branchItem['analisa'] = [
+                        'tanggal_sebelumnya' => $tanggalSebelumnya !== '' ? $tanggalSebelumnya : null,
+                        'saldo_awal_aktiva' => (float)$r1['saldo_awal'],
+                        'saldo_awal_pasiva' => $awalPasiva,
+                        'selisih_saldo_awal' => (float)$r1['saldo_awal'] - $awalPasiva,
+                        'debet_aktiva' => (float)$r1['debet'],
+                        'debet_pasiva' => $debetPasiva,
+                        'kredit_aktiva' => (float)$r1['kredit'],
+                        'kredit_pasiva' => $kreditPasiva,
+                        'total_debet_leaf' => $totalDebetLeaf,
+                        'total_kredit_leaf' => $totalKreditLeaf,
+                        'selisih_debet_kredit' => $totalDebetLeaf - $totalKreditLeaf,
+                        'saldo_akhir_aktiva' => (float)$r1['saldo'],
+                        'saldo_akhir_pasiva' => $akhirPasiva,
+                        'mutasi_aktiva' => ((float)$r1['debet'] - (float)$r1['kredit']),
+                        'mutasi_pasiva' => (($kreditPasiva - $debetPasiva)),
+                        'selisih_mutasi' => ((float)$r1['saldo'] - (float)$r1['saldo_awal']) - ($akhirPasiva - $awalPasiva),
+                        'rekonsiliasi_akun_1' => (float)$r1['saldo'] - ((float)$r1['saldo_awal'] + (float)$r1['debet'] - (float)$r1['kredit']),
+                        'rekonsiliasi_akun_2' => (float)$r2['saldo'] - ((float)$r2['saldo_awal'] - (float)$r2['debet'] + (float)$r2['kredit']),
+                        'rekonsiliasi_akun_3' => (float)$r3['saldo'] - ((float)$r3['saldo_awal'] - (float)$r3['debet'] + (float)$r3['kredit']),
+                        'saldo_akun_210' => (float)$r210['saldo'],
+                    ];
+                }
+                unset($branchItem);
+
+                foreach ($branchBreakdown as &$branchItem) {
+                    $debetKreditGap = abs((float)($branchItem['analisa']['selisih_debet_kredit'] ?? 0));
+                    if ($debetKreditGap > 0.01) {
+                        foreach ($branchItem['coa_breakdown'] as &$coaItem) {
+                            if ($coaItem['is_leaf'] && abs((float)$coaItem['impact_mutasi']) > 0.01) {
+                                $coaItem['indikasi'][] = 'Debet/kredit ikut membentuk mismatch';
+                            }
+                        }
+                        unset($coaItem);
+                    }
+                    $branchItem['coa_issue_count'] = 0;
+                    foreach ($branchItem['coa_breakdown'] as $coaItem) {
+                        if ($coaItem['is_leaf'] && !empty($coaItem['indikasi'])) $branchItem['coa_issue_count']++;
+                    }
+                    $branchItem['has_coa_issue'] = $branchItem['coa_issue_count'] > 0;
+                }
+                unset($branchItem);
+                usort($branchBreakdown, static function ($a, $b) {
+                    return abs((float)$b['selisih']) <=> abs((float)$a['selisih']);
+                });
+            }
+
             sendResponse(200, "Berhasil memuat Lap Neraca Actual", [
                 'tanggal' => $tanggal,
                 'kode_kantor' => $kodeKantorReq,
@@ -321,6 +563,7 @@ class LaporanKeuanganController
                     'selisih' => $totalAsset - $totalPasiva,
                     'eliminasi_210' => $isConsolidated ? $saldoAkun210 : 0,
                 ],
+                'branch_breakdown' => $branchBreakdown,
             ]);
         } catch (Exception $e) {
             sendResponse(500, "Gagal memuat Lap Neraca Actual: " . $e->getMessage(), null);

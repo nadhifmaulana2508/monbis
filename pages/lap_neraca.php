@@ -60,6 +60,9 @@
           <span class="ln-status-dot"></span>
           <span>Memuat</span>
         </div>
+        <button type="button" id="lnDifferenceBtn" class="ln-difference-btn" onclick="openLnDifference()" title="Lihat selisih per cabang" aria-label="Lihat selisih per cabang" hidden>
+          <span aria-hidden="true">&Delta;</span>
+        </button>
 
         <label class="ln-level-control" title="Batasi level akun yang terbuka otomatis">
           <span>Level</span>
@@ -148,6 +151,27 @@
       <strong id="lnMobileFootValue">Rp 0</strong>
     </div>
   </section>
+</div>
+
+<!-- DETAIL SELISIH KONSOLIDASI -->
+<div id="lnDifferenceModal" class="ln-info-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="lnDifferenceTitle">
+  <div class="ln-info-card ln-difference-card">
+    <div class="ln-info-header">
+      <div class="ln-info-heading">
+        <span class="ln-info-icon ln-difference-icon" aria-hidden="true">&Delta;</span>
+        <div>
+          <h3 id="lnDifferenceTitle">Audit Selisih &amp; COA Konsolidasi</h3>
+          <p id="lnDifferenceSubtitle">Pilih cabang yang selisih untuk membuka COA terindikasi.</p>
+        </div>
+      </div>
+      <button type="button" class="ln-info-close" onclick="closeLnDifference()" aria-label="Tutup detail selisih" title="Tutup">&times;</button>
+    </div>
+    <div class="ln-info-body">
+      <div id="lnDifferenceSummary" class="ln-info-condition"></div>
+      <div id="lnDifferenceList" class="ln-difference-list"></div>
+      <div class="ln-info-note">Rumus tiap cabang: Aktiva bersih = akun 1 - akun 210; Pasiva bersih = akun 2 + akun 3 - akun 210; Selisih = Aktiva bersih - Pasiva bersih.</div>
+    </div>
+  </div>
 </div>
 
 <!-- INFO MODAL -->
@@ -487,6 +511,23 @@
   .ln-balance-warn { color:#b45309; border-color:#fde68a; background:#fffbeb; }
   .ln-balance-bad { color:#be123c; border-color:#fecdd3; background:#fff1f2; }
   .ln-balance-neutral { color:#64748b; border-color:#e2e8f0; background:#f8fafc; }
+  .ln-difference-btn { width:27px; height:27px; border:1px solid #fecdd3; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:#be123c; background:#fff1f2; cursor:pointer; font-size:14px; font-weight:900; }
+  .ln-difference-btn:hover { background:#ffe4e6; border-color:#fda4af; }
+  .ln-difference-card { max-width:720px; }
+  .ln-difference-icon { color:#be123c !important; background:#fff1f2 !important; border-color:#fecdd3 !important; font-weight:900; font-size:16px; }
+  .ln-difference-list { display:flex; flex-direction:column; gap:6px; max-height:360px; overflow:auto; }
+  .ln-difference-row { border:1px solid #e2e8f0; border-radius:8px; padding:8px 9px; background:#fff; }
+  .ln-difference-row.ln-difference-audit { border-color:#fde68a; background:#fffbeb; }
+  .ln-difference-row.is-balanced { border-color:#bbf7d0; background:#f0fdf4; }
+  .ln-difference-row-head { display:flex; justify-content:space-between; gap:8px; align-items:center; font-size:10px; font-weight:900; }
+  .ln-difference-row-head small { color:#64748b; font-size:8px; font-weight:700; }
+  .ln-difference-row-value { color:#be123c; white-space:nowrap; }
+  .ln-difference-row.is-balanced .ln-difference-row-value { color:#047857; }
+  .ln-difference-row.ln-difference-audit .ln-difference-row-value { color:#b45309; }
+  .ln-difference-source { display:flex; flex-wrap:wrap; gap:5px 12px; margin-top:5px; color:#64748b; font-size:8px; font-weight:700; }
+  .ln-difference-source b { color:#334155; }
+  .ln-difference-link { display:inline-flex; align-items:center; gap:4px; margin-top:7px; padding:0; border:0; background:transparent; color:#2563eb; font:inherit; font-size:8px; font-weight:900; text-decoration:none; cursor:pointer; }
+  .ln-difference-link:hover { color:#1d4ed8; text-decoration:underline; }
 
   .ln-level-control {
     height:31px;
@@ -1470,6 +1511,107 @@
     }
   }
 
+  function renderLnDifference() {
+    const rows = Array.isArray(lnRaw?.branch_breakdown) ? lnRaw.branch_breakdown : [];
+    const summary = document.getElementById('lnDifferenceSummary');
+    const list = document.getElementById('lnDifferenceList');
+    if (!summary || !list) return;
+    const total = Number(lnRaw?.totals?.selisih || 0);
+    const issues = rows.filter(row => Math.abs(Number(row.selisih || 0)) > 0.01 || row.has_coa_issue);
+    summary.innerHTML = issues.length
+      ? `<b>${issues.length} cabang memiliki selisih/indikasi COA.</b> Total konsolidasi ${fmtLnRp(total)}. Klik cabang untuk melihat audit COA.`
+      : '<b>Semua cabang balance.</b> Tidak ada selisih pada rincian cabang.';
+    list.innerHTML = issues.length ? issues.map(row => {
+      const selisih = Number(row.selisih || 0);
+      const src = row.sumber || {};
+      const isBalancedAudit = Math.abs(selisih) <= 0.01;
+      return `<div class="ln-difference-row ${isBalancedAudit ? 'ln-difference-audit' : ''}">
+        <div class="ln-difference-row-head"><span>${safeLn(row.kode_kantor)} - ${safeLn(row.nama_kantor)}</span><span class="ln-difference-row-value">${isBalancedAudit ? 'Balance &middot; cek COA' : fmtLnRp(selisih)}</span></div>
+        <div class="ln-difference-source"><span>Aktiva 1: <b>${fmtLnRp(src.aktiva_akun_1)}</b></span><span>Pasiva 2+3: <b>${fmtLnRp(src.pasiva_akun_2_3)}</b></span><span>Eliminasi 210: <b>${fmtLnRp(src.eliminasi_akun_210)}</b></span></div>
+        <button type="button" class="ln-difference-link" onclick="postLnDifferencePage('${safeLn(lnRaw?.tanggal || '')}', '${safeLn(row.kode_kantor || '')}')">${isBalancedAudit ? 'Lihat audit COA &rarr;' : 'Lihat rincian COA terindikasi &rarr;'}</button>
+      </div>`;
+    }).join('') : '<div class="ln-empty">Tidak ada cabang dengan selisih pada tanggal ini.</div>';
+  }
+
+  function openLnDifference() {
+    const kantor = String(document.getElementById('lnKantor')?.value || '');
+    if (/^\d{3}$/.test(kantor) && kantor !== '000') {
+      const tanggal = document.getElementById('lnTanggal')?.value || lnRaw?.tanggal || '';
+      postLnDifferencePage(tanggal, kantor);
+      return;
+    }
+    renderLnDifference();
+    const modal = document.getElementById('lnDifferenceModal');
+    modal?.classList.add('open');
+    modal?.setAttribute('aria-hidden','false');
+    document.documentElement.style.overflow = 'hidden';
+  }
+
+  function closeLnDifference() {
+    const modal = document.getElementById('lnDifferenceModal');
+    modal?.classList.remove('open');
+    modal?.setAttribute('aria-hidden','true');
+    document.documentElement.style.overflow = '';
+  }
+
+  function postLnDifferencePage(tanggal, kantor) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = './lap_neraca_selisih';
+    form.style.display = 'none';
+    [['tanggal', tanggal], ['kode_kantor', kantor]].forEach(([name, value]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value || '';
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  function toggleLnCoa(code) {
+    const details = document.getElementById(`lnCoa_${code}`);
+    const button = document.querySelector(`[data-coa-toggle="${code}"]`);
+    if (!details) return;
+    const open = details.classList.toggle('open');
+    if (button) button.textContent = open ? 'Sembunyikan COA' : 'Lihat rincian COA';
+  }
+
+  function renderLnCoaDetails(row) {
+    const code = safeLn(row.kode_kantor);
+    const coa = Array.isArray(row.coa_breakdown) ? row.coa_breakdown : [];
+    if (!coa.length || Math.abs(Number(row.selisih || 0)) === 0) return '';
+    const a = row.analisa || {};
+    const awalGap = Number(a.selisih_saldo_awal || 0);
+    const mutasiGap = Number(a.selisih_mutasi || 0);
+    const recon = Math.abs(Number(a.rekonsiliasi_akun_1 || 0)) + Math.abs(Number(a.rekonsiliasi_akun_2 || 0)) + Math.abs(Number(a.rekonsiliasi_akun_3 || 0));
+    const openingAlerts = coa.filter(item => item.is_leaf && Math.abs(Number(item.selisih_saldo_awal_coa || 0)) > 0.01);
+    const firstOpeningAlert = openingAlerts[0];
+    const diagnosis = firstOpeningAlert
+      ? `Indikasi utama: saldo awal COA <b>${safeLn(firstOpeningAlert.kode_perk)} - ${safeLn(firstOpeningAlert.nama_perkiraan)}</b> berbeda dari saldo akhir ${safeLn(a.tanggal_sebelumnya || 'tanggal sebelumnya')} sebesar ${fmtLnRp(firstOpeningAlert.selisih_saldo_awal_coa)}.`
+      : Math.abs(awalGap) > 0.01
+        ? `Indikasi utama: selisih sudah terbawa dari <b>saldo awal</b> sebesar ${fmtLnRp(awalGap)}.`
+      : Math.abs(mutasiGap) > 0.01
+        ? `Indikasi utama: selisih terbentuk dari <b>mutasi periode</b> sebesar ${fmtLnRp(mutasiGap)}.`
+        : 'Saldo awal dan mutasi periode konsisten; lanjutkan pengecekan jurnal sumber jika selisih tetap muncul.';
+    const leafCoa = coa.filter(item => item.is_leaf);
+    const orderedCoa = [...(leafCoa.length ? leafCoa : coa)].sort((x, y) => {
+      const movementX = Math.max(Math.abs(Number(x.impact_mutasi || 0)), Math.abs(Number(x.selisih_saldo_awal_coa || 0)));
+      const movementY = Math.max(Math.abs(Number(y.impact_mutasi || 0)), Math.abs(Number(y.selisih_saldo_awal_coa || 0)));
+      if (movementY !== movementX) return movementY - movementX;
+      return Math.abs(Number(y.saldo || 0)) - Math.abs(Number(x.saldo || 0));
+    });
+    return `<button type="button" class="ln-coa-toggle" data-coa-toggle="${code}" onclick="toggleLnCoa('${code}')">Lihat rincian COA</button>
+      <div class="ln-mutation-analysis">
+        <div class="ln-mutation-item ${Math.abs(awalGap) > 0.01 ? 'is-alert' : ''}">Selisih saldo awal<b>${fmtLnRp(awalGap)}</b></div>
+        <div class="ln-mutation-item ${Math.abs(mutasiGap) > 0.01 ? 'is-alert' : ''}">Dampak mutasi periode<b>${fmtLnRp(mutasiGap)}</b></div>
+        <div class="ln-mutation-item ${recon > 0.01 ? 'is-alert' : ''}">Cek rumus saldo<b>${recon > 0.01 ? fmtLnRp(recon) : 'Sesuai'}</b></div>
+      </div>
+      <div class="ln-mutation-diagnosis">${diagnosis}</div>
+      <div id="lnCoa_${code}" class="ln-coa-details">${orderedCoa.map(item => `<div class="ln-coa-item ${Math.abs(Number(item.selisih_saldo_awal_coa || 0)) > 0.01 ? 'is-alert' : ''}"><span><b>${safeLn(item.kode_perk)}</b> - ${safeLn(item.nama_perkiraan)}</span><span class="ln-coa-values">Awal ${fmtLnRp(item.saldo_awal)} · Sebelumnya ${item.saldo_akhir_sebelumnya === null ? '-' : fmtLnRp(item.saldo_akhir_sebelumnya)} · Gap awal ${item.selisih_saldo_awal_coa === null ? '-' : fmtLnRp(item.selisih_saldo_awal_coa)} · D ${fmtLnRp(item.debet)} · K ${fmtLnRp(item.kredit)} · Akhir ${fmtLnRp(item.saldo)} · Dampak ${fmtLnRp(item.impact_mutasi)}</span></div>`).join('')}</div>`;
+  }
+
   function renderLapNeraca() {
     const query = (document.getElementById('lnSearch')?.value || '').toLowerCase().trim();
     const aktiva = getLnVisibleRows('aktiva', query);
@@ -1501,8 +1643,20 @@
     document.getElementById('lnMeta').textContent = `${lnRaw?.scope_label || '-'} · Posisi ${lnRaw?.tanggal || '-'} · Level ${levelLabel} · ${aktivaRows} akun Aktiva · ${pasivaRows} akun Pasiva`;
 
     updateLnBalanceStatus(selisih);
+    const differenceBtn = document.getElementById('lnDifferenceBtn');
+    if (differenceBtn) {
+      const kantor = String(document.getElementById('lnKantor')?.value || '');
+      const isCabang = /^\d{3}$/.test(kantor) && kantor !== '000';
+      const hasConsolidationBreakdown = kantor === '000' && Array.isArray(lnRaw?.branch_breakdown) && lnRaw.branch_breakdown.length;
+      const selectedBranchMeta = isCabang && Array.isArray(lnRaw?.branch_breakdown) ? lnRaw.branch_breakdown[0] : null;
+      const hasBranchIssue = isCabang && (Math.abs(selisih) > 0.01 || selectedBranchMeta?.has_coa_issue);
+      differenceBtn.hidden = !hasConsolidationBreakdown && !hasBranchIssue;
+      differenceBtn.title = hasBranchIssue ? 'Lihat rincian selisih cabang' : 'Lihat selisih per cabang';
+      differenceBtn.setAttribute('aria-label', differenceBtn.title);
+    }
     renderLnMobileTable();
     renderLnInfo();
+    renderLnDifference();
   }
 
   function renderLnInfo() {
@@ -1598,9 +1752,13 @@
     document.getElementById('lnInfoModal')?.addEventListener('click', e => {
       if (e.target.id === 'lnInfoModal') closeLnInfo();
     });
+    document.getElementById('lnDifferenceModal')?.addEventListener('click', e => {
+      if (e.target.id === 'lnDifferenceModal') closeLnDifference();
+    });
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && document.getElementById('lnInfoModal')?.classList.contains('open')) closeLnInfo();
+      if (e.key === 'Escape' && document.getElementById('lnDifferenceModal')?.classList.contains('open')) closeLnDifference();
     });
 
     fetchLapNeraca();
