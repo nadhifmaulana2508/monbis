@@ -87,7 +87,7 @@
     padding-right:14px;
     border-color:rgba(148,163,184,.22) !important;
   }
-  #sidebar > .h-16 img {
+  #sidebar > .h-16 .monbis-logo--icon {
     width:36px;
     height:36px;
     padding:4px;
@@ -95,6 +95,7 @@
     background:rgba(255,255,255,.86);
     box-shadow:0 12px 24px rgba(15,23,42,.10);
   }
+  #sidebar > .h-16 .monbis-logo--wordmark { display:none; }
   #sidebar > .h-16 span {
     font-size:20px;
     font-weight:950;
@@ -287,6 +288,23 @@
     }
     #sidebar:not(:hover) .monbis-sidebar-promo__text {
       display:none;
+    }
+    #sidebar:hover > .h-16 .monbis-logo--icon { display:none; }
+    #sidebar:hover > .h-16 .monbis-logo--wordmark {
+      display:block;
+      width:180px;
+      height:auto;
+      max-height:50px;
+      padding:0;
+      border-radius:0;
+      background:transparent;
+      box-shadow:none;
+      object-fit:contain;
+    }
+    :root[data-monbis-theme="dark"] #sidebar:hover > .h-16 .monbis-logo--wordmark {
+      padding:4px 8px;
+      border-radius:10px;
+      background:#ffffff;
     }
   }
   #sidebar .accordion-btn,
@@ -685,8 +703,8 @@
     
     <!-- Bagian Logo (Di Sidebar) -->
     <div class="h-16 flex items-center px-4 border-b border-slate-200 shrink-0 whitespace-nowrap">
-      <img src="./img/logodpk.png" class="h-8 w-8 object-contain shrink-0" alt="Logo">
-      <span class="text-slate-800 text-xl font-bold tracking-tight opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300 ml-3">Monbis</span>
+      <img src="./img/monbis-icon.png?v=4" class="monbis-logo--icon h-8 w-8 object-contain shrink-0" alt="Monbis">
+      <img src="./img/monbis-judul.png?v=4" class="monbis-logo--wordmark object-contain shrink-0" alt="Monbis Monitoring Bisnis">
     </div>
 
     <!-- Navigasi Menu -->
@@ -898,8 +916,7 @@
 
       <!-- Logo Monbis Mobile -->
       <div class="flex items-center md:hidden">
-        <img src="./img/logodpk.png" class="h-8 w-8 object-contain mr-2" alt="Logo">
-        <span class="text-slate-800 text-lg font-bold tracking-tight">Monbis</span>
+        <img src="./img/monbis-icon.png?v=4" class="h-8 w-8 object-contain mr-2" alt="Monbis">
       </div>
 
       <div id="monbisEventBadge" class="monbis-event-badge ml-2 sm:ml-0" title="">

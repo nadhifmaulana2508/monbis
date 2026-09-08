@@ -10,7 +10,7 @@
 
       <a href="home" class="flex items-center gap-2">
 
-        <img src="./img/logodpk.png" class="h-8 w-8 object-contain" alt="Logo">
+        <img src="./img/monbis-icon.png?v=4" class="h-8 w-8 object-contain" alt="Monbis">
 
         <span class="text-slate-800 text-lg font-semibold">DPK Report</span>
 

@@ -11,19 +11,20 @@
   
   <script src="https://cdn.tailwindcss.com"></script>
 
-<link rel="icon" href="./img/favicon.ico?v=3">
-<link rel="shortcut icon" href="./img/favicon.ico?v=3"> <!-- legacy fallback -->
+<link rel="icon" type="image/png" sizes="32x32" href="./img/monbis-icon.png?v=4">
+<link rel="icon" type="image/png" sizes="16x16" href="./img/monbis-icon.png?v=4">
 
-<link rel="icon" type="image/png" sizes="32x32" href="./img/logodpk.png?v=3">
-<link rel="icon" type="image/png" sizes="16x16" href="./img/logodpk.png?v=3">
-
-<link rel="apple-touch-icon" sizes="180x180" href="./img/logodpk.png?v=3">
+<link rel="apple-touch-icon" sizes="180x180" href="./img/monbis-icon.png?v=4">
 
 
 
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/flowbite@3.1.2/dist/flowbite.min.js"></script>
+  <?php if (($page ?? '') === 'login'): ?>
+    <link rel="stylesheet" href="./assets/css/login.css?v=3">
+    <script src="./assets/js/login-showcase.js?v=1" defer></script>
+  <?php endif; ?>
   <title>MONBIS</title>
 </head>
 <body class="bg-sky-50">
