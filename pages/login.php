@@ -8,10 +8,10 @@ require_once __DIR__ . '/../components/login-showcase.php';
   <div class="mb-login-form-pane">
     <div class="mb-login-card">
       <div class="mb-login-desktop-brand">
-        <img src="./img/monbis-judul.png?v=4" alt="Monbis Monitoring Bisnis">
+        <img src="./img/monbis-judul.webp?v=1" alt="Monbis Monitoring Bisnis">
       </div>
       <div class="mb-login-mobile-brand">
-        <img src="./img/monbis-icon.png?v=4" alt="Monbis">
+        <img src="./img/monbis-icon.webp?v=1" alt="Monbis">
       </div>
       <div class="mb-login-card__heading">
         <span class="mb-login-card__eyebrow">PORTAL INTERNAL MONBIS</span>

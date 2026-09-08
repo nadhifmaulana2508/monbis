@@ -14,7 +14,7 @@ if (!function_exists('mb_render_login_showcase')) {
             <div class="mb-login-showcase__content">
                 <div class="mb-login-showcase__eyebrow">
                     <span class="mb-login-showcase__eyebrow-icon" aria-hidden="true">
-                        <img src="./img/monbis-icon.png?v=4" alt="">
+                        <img src="./img/monbis-icon.webp?v=1" alt="">
                     </span>
                     <span>MONBIS INSIGHT</span>
                 </div>

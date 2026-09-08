@@ -11,10 +11,10 @@
   
   <script src="https://cdn.tailwindcss.com"></script>
 
-<link rel="icon" type="image/png" sizes="32x32" href="./img/monbis-icon.png?v=4">
-<link rel="icon" type="image/png" sizes="16x16" href="./img/monbis-icon.png?v=4">
+<link rel="icon" type="image/webp" sizes="32x32" href="./img/monbis-icon.webp?v=1">
+<link rel="icon" type="image/webp" sizes="16x16" href="./img/monbis-icon.webp?v=1">
 
-<link rel="apple-touch-icon" sizes="180x180" href="./img/monbis-icon.png?v=4">
+<link rel="apple-touch-icon" sizes="180x180" href="./img/monbis-icon.webp?v=1">
 
 
 

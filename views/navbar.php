@@ -703,8 +703,8 @@
     
     <!-- Bagian Logo (Di Sidebar) -->
     <div class="h-16 flex items-center px-4 border-b border-slate-200 shrink-0 whitespace-nowrap">
-      <img src="./img/monbis-icon.png?v=4" class="monbis-logo--icon h-8 w-8 object-contain shrink-0" alt="Monbis">
-      <img src="./img/monbis-judul.png?v=4" class="monbis-logo--wordmark object-contain shrink-0" alt="Monbis Monitoring Bisnis">
+      <img src="./img/monbis-icon.webp?v=1" class="monbis-logo--icon h-8 w-8 object-contain shrink-0" alt="Monbis">
+      <img src="./img/monbis-judul.webp?v=1" class="monbis-logo--wordmark object-contain shrink-0" alt="Monbis Monitoring Bisnis">
     </div>
 
     <!-- Navigasi Menu -->
@@ -916,7 +916,7 @@
 
       <!-- Logo Monbis Mobile -->
       <div class="flex items-center md:hidden">
-        <img src="./img/monbis-icon.png?v=4" class="h-8 w-8 object-contain mr-2" alt="Monbis">
+        <img src="./img/monbis-icon.webp?v=1" class="h-8 w-8 object-contain mr-2" alt="Monbis">
       </div>
 
       <div id="monbisEventBadge" class="monbis-event-badge ml-2 sm:ml-0" title="">
