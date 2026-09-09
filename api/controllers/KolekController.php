@@ -905,6 +905,7 @@ class KolekController {
         $closing = $this->asDate($b['closing_date'] ?? null);
         $harian  = $this->asDate($b['harian_date'] ?? null);
         $is_proj = (bool)($b['is_proyeksi'] ?? false);
+        $nominalField = $this->normalizeMigrasiNominalField($b['nominal_field'] ?? 'baki_debet');
         $kc_raw  = $b['kode_kantor'] ?? null;
         $kc      = ($kc_raw === null || $kc_raw === '') ? null : str_pad((string)$kc_raw, 3, '0', STR_PAD_LEFT);
         
@@ -917,8 +918,8 @@ class KolekController {
         $orderTo = array_merge($order, ['O']);
 
         // 1. Tarik Data M-1 dan Harian/Actual
-        $M1  = $this->computeOSForDate($closing, $kc, $defs, 'nominatif');
-        $CUR = $this->computeOSForDate($harian, $kc, $defs, $targetTable);
+        $M1  = $this->computeOSForDate($closing, $kc, $defs, 'nominatif', $nominalField);
+        $CUR = $this->computeOSForDate($harian, $kc, $defs, $targetTable, $nominalField);
 
         // 2. Hitung Realisasi Baru (Ada di Actual, tidak ada di M-1)
         $realisasi = ['noa' => 0, 'os' => 0];
@@ -1144,10 +1145,11 @@ class KolekController {
     /**
      * COMPUTE OS DINAMIS (Dibuat se-aman mungkin)
      */
-    private function computeOSForDate(string $d, ?string $kc, array $defs, string $tableName = 'nominatif'): array {
+    private function computeOSForDate(string $d, ?string $kc, array $defs, string $tableName = 'nominatif', string $nominalField = 'baki_debet'): array {
         [$ds, $de] = $this->dayRange($d);
-        
-        $sql = "SELECT no_rekening, hari_menunggak, baki_debet AS os, kolektibilitas AS kol 
+
+        $nominalField = $this->normalizeMigrasiNominalField($nominalField);
+        $sql = "SELECT no_rekening, hari_menunggak, COALESCE({$nominalField}, 0) AS os, kolektibilitas AS kol 
                 FROM {$tableName} 
                 WHERE created >= ? AND created < ?";
         
@@ -1191,6 +1193,11 @@ class KolekController {
             'bucketByAcc' => $bucketByAcc,
             'kolByAcc'    => $kolByAcc
         ];
+    }
+
+    /** Pilihan nominal hanya boleh berasal dari dua kolom yang didukung. */
+    private function normalizeMigrasiNominalField($field): string {
+      return strtolower(trim((string)$field)) === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
     }
 
     /* ====== Utilities yang sudah kamu punya ====== */
@@ -1381,10 +1388,12 @@ class KolekController {
       $search = $b['search'] ?? null;
       $page     = max(1, (int)($b['page'] ?? 1));
       $per_page = max(1, min(100, (int)($b['per_page'] ?? 20)));
+      $export_all = !empty($b['export_all']);
 
       // Proyeksi mode
       $is_proj = (bool)($b['is_proyeksi'] ?? false);
       $targetTable = $is_proj ? 'nominatif_proyeksi_va' : 'nominatif';
+      $nominalField = $this->normalizeMigrasiNominalField($b['nominal_field'] ?? 'baki_debet');
 
       if (!$closing || !$harian) return sendResponse(400, "closing_date & harian_date wajib (YYYY-MM-DD)");
 
@@ -1393,26 +1402,27 @@ class KolekController {
       // REALISASI
       if ($fb === 'REALISASI') {
         $tbFilter = ($tb !== '' && in_array($tb, $VALID, true)) ? $tb : null;
-        return $this->getMigrasiBucketDetailRealisasi($closing, $harian, $kc, $tbFilter, $kankas, $ao, $search, $page, $per_page, $targetTable);
+        return $this->getMigrasiBucketDetailRealisasi($closing, $harian, $kc, $tbFilter, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField);
       }
 
       // O_LUNAS — wajib from_bucket (A..N)
       if ($tb === 'O' || $tb === 'O_LUNAS') {
         if (!in_array($fb, $VALID, true)) return sendResponse(400, "O_LUNAS: from_bucket wajib A..N.");
-        return $this->getMigrasiBucketDetailOLunas($closing, $harian, $kc, $fb, $kankas, $ao, $search, $page, $per_page, $targetTable);
+        return $this->getMigrasiBucketDetailOLunas($closing, $harian, $kc, $fb, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField);
       }
 
       // ACTUAL — A..N → A..N
       if (!in_array($fb, $VALID, true) || !in_array($tb, $VALID, true))
         return sendResponse(400, "Actual: from_bucket & to_bucket wajib A..N.");
 
-      return $this->getMigrasiBucketDetailActual($closing, $harian, $kc, $fb, $tb, $kankas, $ao, $search, $page, $per_page, $targetTable);
+      return $this->getMigrasiBucketDetailActual($closing, $harian, $kc, $fb, $tb, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField);
     }
 
 
     /*********************** REALISASI (akun baru) ***********************/
-    public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, ?string $kc, ?string $tbFilter = null, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif')
+    public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, ?string $kc, ?string $tbFilter = null, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet')
     {
+      $nominalField = $this->normalizeMigrasiNominalField($nominalField);
       [$dsH, $deH] = $this->dayRange($harian);
 
       $whereFilter = "";
@@ -1453,6 +1463,7 @@ class KolekController {
       $totalCount = (int)$stCount->fetchColumn();
 
       $offset = ($page - 1) * $per_page;
+      $limitSql = $export_all ? '' : 'LIMIT :lmt OFFSET :ofs';
 
       $sql = "
         SELECT
@@ -1475,6 +1486,8 @@ class KolekController {
           nh.hari_menunggak_pokok,
           nh.hari_menunggak_bunga,
           nh.saldo_bank,
+          nh.saldo_bank AS saldo_bank_actual,
+          nh.baki_debet AS baki_debet_actual,
           nh.tgl_jatuh_tempo,
           nh.tgl_realisasi,
           nh.nilai_ckpn,
@@ -1482,7 +1495,7 @@ class KolekController {
           NULL AS angsuran_pokok,
           NULL AS angsuran_bunga,
           NULL AS os_m1,
-          nh.baki_debet AS os_curr,
+          COALESCE(nh.{$nominalField}, 0) AS os_curr,
           NULL AS ckpn_actual,
           NULL AS ckpn_m1,
           NULL AS tgl_trans_terakhir
@@ -1498,8 +1511,8 @@ class KolekController {
           AND nh.tgl_realisasi <= :hrd
           " . ($tbFilter ? " AND rb2.dpd_code = :tb " : "") . "
           $whereFilter
-        ORDER BY nh.baki_debet DESC
-        LIMIT :lmt OFFSET :ofs
+        ORDER BY nh.{$nominalField} DESC
+        $limitSql
       ";
 
       $st = $this->pdo->prepare($sql);
@@ -1512,19 +1525,22 @@ class KolekController {
       if ($kankas)   $st->bindValue(':kankas', $kankas);
       if ($ao)       $st->bindValue(':ao', $ao);
       if ($search)   $st->bindValue(':search', "%$search%");
-      $st->bindValue(':lmt', $per_page, PDO::PARAM_INT);
-      $st->bindValue(':ofs', $offset, PDO::PARAM_INT);
+      if (!$export_all) {
+        $st->bindValue(':lmt', $per_page, PDO::PARAM_INT);
+        $st->bindValue(':ofs', $offset, PDO::PARAM_INT);
+      }
 
       $st->execute();
       $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
-      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'realisasi', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $per_page]);
+      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'realisasi', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $export_all ? $totalCount : $per_page]);
     }
 
 
     /*********************** ACTUAL A..N → A..N (FAST + BUCKET INFO) ***********************/
-    public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif')
+    public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet')
     {
+      $nominalField = $this->normalizeMigrasiNominalField($nominalField);
       if ($kc !== null) $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
 
       [$dsC,$deC] = $this->dayRange($closing);
@@ -1576,6 +1592,7 @@ class KolekController {
       $totalCount = (int)$stCount->fetchColumn();
 
       $offset = ($page - 1) * $per_page;
+      $limitSql = $export_all ? '' : 'LIMIT :lmt OFFSET :ofs';
 
       $sql = "
         SELECT
@@ -1609,11 +1626,13 @@ class KolekController {
           h.hari_menunggak_pokok,
           h.hari_menunggak_bunga,
           h.saldo_bank,
+          h.saldo_bank AS saldo_bank_actual,
+          h.baki_debet AS baki_debet_actual,
           h.tgl_jatuh_tempo,
           h.nilai_ckpn,
 
-          c.baki_debet  AS os_m1,
-          h.baki_debet  AS os_curr,
+          COALESCE(c.{$nominalField}, 0) AS os_m1,
+          COALESCE(h.{$nominalField}, 0) AS os_curr,
 
           NULL AS angsuran_pokok,
           NULL AS angsuran_bunga,
@@ -1636,8 +1655,8 @@ class KolekController {
         WHERE c.created >= :dsC AND c.created < :deC
           $kcCondC
           $whereFilter
-        ORDER BY h.baki_debet DESC
-        LIMIT :lmt OFFSET :ofs
+        ORDER BY h.{$nominalField} DESC
+        $limitSql
       ";
 
       $st = $this->pdo->prepare($sql);
@@ -1650,19 +1669,22 @@ class KolekController {
       if ($kankas) $st->bindValue(':kankas', $kankas);
       if ($ao)     $st->bindValue(':ao', $ao);
       if ($search) $st->bindValue(':search', "%$search%");
-      $st->bindValue(':lmt', $per_page, PDO::PARAM_INT);
-      $st->bindValue(':ofs', $offset, PDO::PARAM_INT);
+      if (!$export_all) {
+        $st->bindValue(':lmt', $per_page, PDO::PARAM_INT);
+        $st->bindValue(':ofs', $offset, PDO::PARAM_INT);
+      }
 
       $st->execute();
       $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
-      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'actual', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $per_page]);
+      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'actual', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $export_all ? $totalCount : $per_page]);
     }
 
 
     /*********************** O_LUNAS (M-1 → O) — FAST + BUCKET INFO ***********************/
-    public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif')
+    public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet')
     {
+      $nominalField = $this->normalizeMigrasiNominalField($nominalField);
       if ($kc !== null) $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
 
       [$dsC,$deC] = $this->dayRange($closing);
@@ -1711,6 +1733,7 @@ class KolekController {
       $totalCount = (int)$stCount->fetchColumn();
 
       $offset = ($page - 1) * $per_page;
+      $limitSql = $export_all ? '' : 'LIMIT :lmt OFFSET :ofs';
 
       $sql = "
         SELECT
@@ -1744,10 +1767,12 @@ class KolekController {
           c.hari_menunggak_pokok,
           c.hari_menunggak_bunga,
           c.saldo_bank,
+          NULL AS saldo_bank_actual,
+          NULL AS baki_debet_actual,
           c.tgl_jatuh_tempo,
           c.nilai_ckpn,
 
-          c.baki_debet  AS os_m1,
+          COALESCE(c.{$nominalField}, 0) AS os_m1,
           NULL          AS os_curr,
 
           NULL AS angsuran_pokok,
@@ -1768,8 +1793,8 @@ class KolekController {
           $kcCondC
           AND h.no_rekening IS NULL
           $whereFilter
-        ORDER BY c.baki_debet DESC
-        LIMIT :lmt OFFSET :ofs
+        ORDER BY c.{$nominalField} DESC
+        $limitSql
       ";
 
       $st = $this->pdo->prepare($sql);
@@ -1781,13 +1806,15 @@ class KolekController {
       if ($kankas) $st->bindValue(':kankas', $kankas);
       if ($ao)     $st->bindValue(':ao', $ao);
       if ($search) $st->bindValue(':search', "%$search%");
-      $st->bindValue(':lmt', $per_page, PDO::PARAM_INT);
-      $st->bindValue(':ofs', $offset, PDO::PARAM_INT);
+      if (!$export_all) {
+        $st->bindValue(':lmt', $per_page, PDO::PARAM_INT);
+        $st->bindValue(':ofs', $offset, PDO::PARAM_INT);
+      }
 
       $st->execute();
       $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
-      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'o_lunas', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $per_page]);
+      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'o_lunas', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $export_all ? $totalCount : $per_page]);
     }
 
     /*********************** ATTACH CKPN & CAST ***********************/
@@ -1846,6 +1873,7 @@ class KolekController {
         'baki_debet','tunggakan_pokok','tunggakan_bunga',
         'hari_menunggak','hari_menunggak_pokok','hari_menunggak_bunga',
         'saldo_bank','angsuran_pokok','angsuran_bunga','os_m1','os_curr',
+        'saldo_bank_actual','baki_debet_actual',
         'ckpn_actual','ckpn_m1', 'nilai_ckpn', 'pemulihan_pembentukan',
         'pd_actual', 'lgd_actual'
       ];

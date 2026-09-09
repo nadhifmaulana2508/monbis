@@ -27,6 +27,14 @@
           </label>
       </div>
 
+      <div class="flex flex-col gap-0.5 flex-1 lg:flex-none lg:w-[125px]">
+        <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1" for="MB_nominalField">Dasar Nominal</label>
+        <select id="MB_nominalField" onchange="MB_checkDate()" class="w-full border border-slate-300 rounded-md px-2 text-[11px] font-medium h-7 shadow-sm focus:border-blue-500 outline-none cursor-pointer">
+          <option value="baki_debet" selected>Baki Debet</option>
+          <option value="saldo_bank">Saldo Bank</option>
+        </select>
+      </div>
+
       <div class="flex flex-col gap-0.5 flex-1 lg:flex-none lg:w-[110px]">
         <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1" for="MB_closing">Closing</label>
         <input type="date" id="MB_closing" onchange="MB_checkDate()" class="w-full border border-slate-300 rounded-md px-2 text-[11px] font-medium h-7 shadow-sm focus:border-blue-500 outline-none cursor-pointer">
@@ -68,11 +76,11 @@
               <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 border-b pb-1">📊 NPL Closing (M-1)</div>
               <div class="flex justify-between items-end">
                   <div>
-                      <div class="text-[10px] text-slate-400 font-medium">Total OS M-1</div>
+                      <div id="MB_labelTotalM1" class="text-[10px] text-slate-400 font-medium">Total Baki Debet M-1</div>
                       <div id="stat_os_m1" class="text-sm font-bold text-slate-700">0</div>
                   </div>
                   <div class="text-right">
-                      <div class="text-[10px] text-red-400 font-medium">NPL OS M-1</div>
+                      <div id="MB_labelNplM1" class="text-[10px] text-red-400 font-medium">NPL Baki Debet M-1</div>
                       <div class="flex items-baseline gap-1 justify-end">
                           <div id="stat_npl_m1" class="text-sm font-bold text-red-600">0</div>
                           <div id="stat_pct_m1" class="text-[10px] font-bold text-red-600 bg-red-50 px-1 rounded">0%</div>
@@ -85,11 +93,11 @@
               <div class="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-2 border-b border-blue-100 pb-1">📈 NPL Actual/Proyeksi</div>
               <div class="flex justify-between items-end">
                   <div>
-                      <div class="text-[10px] text-slate-500 font-medium">Total OS Act</div>
+                      <div id="MB_labelTotalActual" class="text-[10px] text-slate-500 font-medium">Total Baki Debet Actual</div>
                       <div id="stat_os_act" class="text-sm font-bold text-slate-800">0</div>
                   </div>
                   <div class="text-right">
-                      <div class="text-[10px] text-red-500 font-medium">NPL OS Act</div>
+                      <div id="MB_labelNplActual" class="text-[10px] text-red-500 font-medium">NPL Baki Debet Actual</div>
                       <div class="flex items-baseline gap-1 justify-end">
                           <div id="stat_npl_act" class="text-sm font-bold text-red-600">0</div>
                           <div id="stat_pct_act" class="text-[10px] font-bold text-white bg-red-500 px-1 rounded shadow-sm">0%</div>
@@ -114,6 +122,11 @@
               </div>
           </div>
 
+      </div>
+
+      <div id="angsuran_category_summary" class="hidden mb-3 rounded-lg border border-blue-200 bg-blue-50/40 px-3 py-2">
+          <div class="mb-1 text-[10px] font-bold uppercase tracking-wider text-blue-700">Angsuran periode — ringkasan per kategori</div>
+          <div id="angsuran_category_summary_content" class="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[9px] text-slate-600"></div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -164,7 +177,7 @@
       <h3 class="font-bold text-amber-800 text-sm flex items-center gap-2">💡 Analisis Eksekutif & Rekomendasi</h3>
       <button onclick="document.getElementById('MB_modalAnalisis').classList.add('hidden')" class="text-amber-800 hover:text-red-600 font-bold text-lg leading-none">&times;</button>
     </div>
-    <div class="p-4 text-xs text-amber-900 space-y-3 leading-relaxed" id="MB_narrative_box">
+    <div class="p-4 text-xs text-amber-900 space-y-3 leading-relaxed max-h-[85vh] overflow-y-auto" id="MB_narrative_box">
         </div>
   </div>
 </div>
@@ -183,7 +196,7 @@
         </div>
         <select id="MB_modKankas" onchange="MB_filterDetail()" class="w-20 md:w-28 px-1 h-7 bg-white border border-slate-200 rounded text-[10px] outline-none focus:border-blue-500 text-slate-600 shrink-0"><option value="">Kankas (All)</option></select>
         <select id="MB_modAo" onchange="MB_filterDetail()" class="w-20 md:w-28 px-1 h-7 bg-white border border-slate-200 rounded text-[10px] outline-none focus:border-blue-500 text-slate-600 shrink-0"><option value="">AO (All)</option></select>
-        <button onclick="MB_exportDetail()" class="flex items-center justify-center w-7 h-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-sm transition shrink-0" title="Download Excel">📥</button>
+        <button id="MB_exportDetailBtn" onclick="MB_exportDetail()" class="flex items-center justify-center w-7 h-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-sm transition shrink-0" title="Download seluruh detail Excel">📥</button>
         <button id="MB_modalClose" class="w-7 h-7 flex items-center justify-center rounded bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-base leading-none shrink-0">&times;</button>
       </div>
     </div>
@@ -333,6 +346,10 @@
   let _filterTimer = null;
   let _isInitialDetailLoad = false;
 
+  function getSelectedNominalLabel() {
+    return document.getElementById('MB_nominalField')?.value === 'saldo_bank' ? 'Saldo Bank' : 'Baki Debet';
+  }
+
   document.getElementById('MB_modalClose').onclick = () => elMod.classList.add('hidden');
   elMod.addEventListener('click', e => { if(!e.target.closest('#MB_modalCard')) elMod.classList.add('hidden'); });
   window.addEventListener('keydown', e => { if(e.key==='Escape') elMod.classList.add('hidden'); });
@@ -441,6 +458,7 @@
           type:'migrasi bucket', 
           closing_date, 
           harian_date,
+          nominal_field: document.getElementById('MB_nominalField')?.value || 'baki_debet',
           is_proyeksi: document.getElementById('MB_isProyeksi').checked 
       };
       if(kode_kantor) payload.kode_kantor = kode_kantor;
@@ -486,6 +504,11 @@
   }
 
   function renderBucket(data){
+    const nominalLabel = getSelectedNominalLabel();
+    $('#MB_labelTotalM1').textContent = `Total ${nominalLabel} M-1`;
+    $('#MB_labelNplM1').textContent = `NPL ${nominalLabel} M-1`;
+    $('#MB_labelTotalActual').textContent = `Total ${nominalLabel} Actual`;
+    $('#MB_labelNplActual').textContent = `NPL ${nominalLabel} Actual`;
     const orderTo = (Array.isArray(data.order_to) && data.order_to.length) ? data.order_to : ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O'];
     const matrixArr = Array.isArray(data.matrix) ? data.matrix : [];
     const colTotalsData = data.column_totals || {};
@@ -538,28 +561,41 @@
     renderListCol(details.stay_list, 'list_stay', true);
     renderListCol(details.pemburukan_list, 'list_pemburukan', true);
 
-    // SC/FE/BE Category Breakdown
+    // SC/FE/BE Category Breakdown.
+    // Angsuran adalah agregasi lintas movement, jadi tampilkan sekali di
+    // ringkasan terpisah agar tidak terulang di Perbaikan/Stay/Pemburukan.
     const mCat = data.movement_by_category || {sc:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}, fe:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}, be:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}};
     const angsCat = data.angsuran_by_category || {sc:{noa:0,os:0}, fe:{noa:0,os:0}, be:{noa:0,os:0}};
     const osM1Cat = data.os_m1_per_category || {sc:0, fe:0, be:0};
-    function catBreakdownHtml(catData, angsuranData, osM1PerCat) {
-      function catRow(label, cat, angs, catKey, osM1PerCat) {
-        const denom = osM1PerCat[catKey] || 0;
-        const angsPct = denom > 0 ? ((angs.os / denom) * 100).toFixed(1) : '0.0';
-        return `<div><b>${label}:</b> ${nfID.format(cat.noa)} akun (Rp ${fmtFull(cat.os)}) <span class="text-blue-600">| Angs: Rp ${fmtFull(angs.os)} (${angsPct}%)</span></div>`;
+    function catBreakdownHtml(catData) {
+      function catRow(label, cat) {
+        return `<div><b>${label}:</b> ${nfID.format(cat.noa)} akun (Rp ${fmtFull(cat.os)})</div>`;
       }
       return `<div class="text-[9px] text-slate-500 mt-1 space-y-0.5">
-        ${catRow('SC', catData.sc, angsuranData.sc, 'sc', osM1PerCat)}
-        ${catRow('FE', catData.fe, angsuranData.fe, 'fe', osM1PerCat)}
-        ${catRow('BE', catData.be, angsuranData.be, 'be', osM1PerCat)}
+        ${catRow('SC', catData.sc)}
+        ${catRow('FE', catData.fe)}
+        ${catRow('BE', catData.be)}
       </div>`;
+    }
+    const angsSummary = document.getElementById('angsuran_category_summary');
+    const angsSummaryContent = document.getElementById('angsuran_category_summary_content');
+    if (angsSummary && angsSummaryContent) {
+      angsSummaryContent.innerHTML = ['sc', 'fe', 'be'].map(catKey => {
+        const item = angsCat[catKey] || {noa: 0, os: 0};
+        const denom = getNum(osM1Cat[catKey]);
+        const pct = denom > 0 ? ((getNum(item.os) / denom) * 100).toFixed(1) : '0.0';
+        return `<div class="rounded border border-blue-100 bg-white px-2 py-1">
+          <b class="uppercase text-blue-700">${catKey}</b>: ${nfID.format(getNum(item.noa))} akun · Rp ${fmtFull(item.os)} <span class="text-blue-600">(${pct}% OS M-1)</span>
+        </div>`;
+      }).join('');
+      angsSummary.classList.remove('hidden');
     }
     const elCatBaik = document.getElementById('cat_breakdown_baik');
     const elCatStay = document.getElementById('cat_breakdown_stay');
     const elCatBuruk = document.getElementById('cat_breakdown_buruk');
-    if (elCatBaik) elCatBaik.innerHTML = catBreakdownHtml({sc: mCat.sc.perbaikan, fe: mCat.fe.perbaikan, be: mCat.be.perbaikan}, angsCat, osM1Cat);
-    if (elCatStay) elCatStay.innerHTML = catBreakdownHtml({sc: mCat.sc.stay, fe: mCat.fe.stay, be: mCat.be.stay}, angsCat, osM1Cat);
-    if (elCatBuruk) elCatBuruk.innerHTML = catBreakdownHtml({sc: mCat.sc.pemburukan, fe: mCat.fe.pemburukan, be: mCat.be.pemburukan}, angsCat, osM1Cat);
+    if (elCatBaik) elCatBaik.innerHTML = catBreakdownHtml({sc: mCat.sc.perbaikan, fe: mCat.fe.perbaikan, be: mCat.be.perbaikan});
+    if (elCatStay) elCatStay.innerHTML = catBreakdownHtml({sc: mCat.sc.stay, fe: mCat.fe.stay, be: mCat.be.stay});
+    if (elCatBuruk) elCatBuruk.innerHTML = catBreakdownHtml({sc: mCat.sc.pemburukan, fe: mCat.fe.pemburukan, be: mCat.be.pemburukan});
 
     // GENERATE NARRATIVE (Analisis Modal)
     let narGrowth = '';
@@ -567,6 +603,17 @@
         narGrowth = `<span class="text-red-600 font-bold">⚠️ Pertumbuhan Negatif:</span> Harus segera mendorong <i>growth</i>! Realisasi baru (<b>Rp ${fmtFull(flow.realisasi.os)}</b>) tertinggal dari Run Off / Pelunasan (<b>Rp ${fmtFull(flow.run_off)}</b>). Portofolio menyusut dan berdampak pada pendapatan.`;
     } else {
         narGrowth = `<span class="text-emerald-600 font-bold">✅ Pertumbuhan Positif:</span> Ekspansi berjalan baik. Realisasi baru (<b>Rp ${fmtFull(flow.realisasi.os)}</b>) berhasil melampaui Run Off.`;
+    }
+
+    // Tegaskan nilai growth berdasarkan arus masuk dikurangi run-off.
+    const netGrowthFlow = getNum(flow.realisasi?.os) - getNum(flow.run_off);
+    const netGrowthFlowText = `Rp ${fmtFull(Math.abs(netGrowthFlow))}`;
+    if (netGrowthFlow < 0) {
+      narGrowth = `<span class="text-red-600 font-bold">⚠️ Terjadi growth negatif sebesar ${netGrowthFlowText}:</span> Realisasi baru (<b>Rp ${fmtFull(flow.realisasi.os)}</b>) lebih kecil daripada Run Off / Pelunasan (<b>Rp ${fmtFull(flow.run_off)}</b>). Portofolio menyusut dan berdampak pada pendapatan. Segera dorong pencairan berkualitas dan percepat tindak lanjut debitur.`;
+    } else if (netGrowthFlow > 0) {
+      narGrowth = `<span class="text-emerald-600 font-bold">✅ Terjadi growth positif sebesar ${netGrowthFlowText}:</span> Realisasi baru (<b>Rp ${fmtFull(flow.realisasi.os)}</b>) lebih besar daripada Run Off / Pelunasan (<b>Rp ${fmtFull(flow.run_off)}</b>). Pertumbuhan portofolio berjalan baik, tetap jaga kualitas pencairan.`;
+    } else {
+      narGrowth = `<span class="text-slate-600 font-bold">ℹ️ Growth seimbang (Rp 0):</span> Realisasi baru sama dengan Run Off / Pelunasan. Pertahankan keseimbangan pertumbuhan dan kualitas portofolio.`;
     }
 
     let d_to_e_os = 0;
@@ -586,6 +633,47 @@
     $('#MB_narrative_box').innerHTML = `
         <div class="border-b border-amber-200/50 pb-2"><p>${narGrowth}</p></div>
         <div class="pt-1"><p>${narCkpn}</p></div>
+    `;
+
+    // Tambahkan pengingat posisi yang perlu ditindaklanjuti, bukan hanya
+    // kesimpulan angka.
+    const categoryNames = {sc: 'SC (0-30 hari)', fe: 'FE (31-180 hari)', be: 'BE (>180 hari)'};
+    const categoryKeys = Object.keys(categoryNames);
+    const topBurukCategory = categoryKeys.sort((a, b) =>
+      getNum(mCat[b]?.pemburukan?.os) - getNum(mCat[a]?.pemburukan?.os)
+    )[0];
+    const topBuruk = [...(details.pemburukan_list || [])]
+      .filter(item => getNum(item.os) > 0)
+      .sort((a, b) => getNum(b.os) - getNum(a.os))[0];
+    const nplGrowth = getNum(data.npl_comparison?.delta?.npl_growth);
+    const recommendations = [];
+
+    if (netGrowthFlow < 0) {
+      recommendations.push(`<b>Kejar pertumbuhan:</b> realisasi baru masih di bawah run-off. Prioritaskan pipeline pencairan yang sudah siap agar portofolio tidak terus menyusut.`);
+    } else {
+      recommendations.push(`<b>Jaga pertumbuhan:</b> realisasi sudah menutup run-off. Pastikan kualitas debitur baru tetap terkontrol dan tidak menambah pemburukan.`);
+    }
+    if (m.pemburukan.os > m.perbaikan.os) {
+      recommendations.push(`<b>Fokus kualitas:</b> pemburukan lebih besar daripada perbaikan. Periksa posisi <b>${categoryNames[topBurukCategory]}</b> terlebih dahulu dan buat daftar kunjungan/penagihan berdasarkan saldo terbesar.`);
+    } else {
+      recommendations.push(`<b>Pertahankan recovery:</b> perbaikan masih lebih besar daripada pemburukan. Jangan mengurangi monitoring pada posisi FE dan BE karena pergeseran kecil dapat meningkatkan NPL.`);
+    }
+    if (topBuruk) {
+      recommendations.push(`<b>Posisi paling perlu dicek:</b> bucket <b>${topBuruk.from_bucket} → ${topBuruk.to_bucket}</b> sebesar <b>Rp ${fmtFull(topBuruk.os)}</b>. Buka detailnya lalu susun follow-up untuk akun dengan saldo terbesar.`);
+    }
+    if (d_to_e_os > 0) {
+      recommendations.push(`<b>Peringatan DPD:</b> terdapat perpindahan D → E sebesar <b>Rp ${fmtFull(d_to_e_os)}</b>. Segera lakukan review penyebab tunggakan dan eskalasi sebelum masuk bucket yang lebih berat.`);
+    }
+    if (nplGrowth > 0) {
+      recommendations.push(`<b>Kontrol NPL:</b> NPL naik sebesar <b>Rp ${fmtFull(nplGrowth)}</b> dibanding closing. Minta PIC menjelaskan akun penyumbang terbesar dan target penyelesaiannya.`);
+    }
+    recommendations.push(`<b>Catatan pembacaan:</b> seluruh angka summary memakai basis <b>${nominalLabel}</b>. Detail tetap menyediakan Saldo Bank Actual dan Baki Debet Actual untuk rekonsiliasi.`);
+
+    $('#MB_narrative_box').innerHTML += `
+      <div class="mt-2 border-t border-amber-200/70 pt-2">
+        <div class="font-bold text-amber-800 mb-1">Masukan tindak lanjut / posisi yang perlu diingat</div>
+        <ol class="list-decimal pl-4 space-y-1">${recommendations.map(item => `<li>${item}</li>`).join('')}</ol>
+      </div>
     `;
 
     // MATRIKS RENDER
@@ -702,7 +790,7 @@
     const tLabel = DPD_LABEL[to_raw] || to_raw;
 
     elModTitle.innerHTML = `Detail Migrasi <span class="bg-blue-100 text-blue-800 text-[10px] lg:text-xs px-2 py-1 rounded-md font-mono border border-blue-200 ml-1.5 lg:ml-2">${fLabel} ➔ ${tLabel}</span>`;
-    $('#MB_modalSubtitle').textContent = `Posisi: ${closing} vs ${harian}`;
+    $('#MB_modalSubtitle').textContent = `Posisi: ${closing} vs ${harian} • Basis: ${getSelectedNominalLabel()}`;
     
     // Read current filter values from DOM
     const searchVal = document.getElementById('MB_searchDetail')?.value || '';
@@ -731,6 +819,7 @@
         to_bucket: to_raw,
         page: pg,
         per_page: currentDetailPerPage,
+        nominal_field: document.getElementById('MB_nominalField')?.value || 'baki_debet',
         is_proyeksi: document.getElementById('MB_isProyeksi').checked
       };
       if(kode) payload.kode_kantor = kode;
@@ -766,20 +855,28 @@
 
       // Only populate dropdowns on initial load (no filters active, page 1)
       if (_isInitialDetailLoad) {
-        const uniqueKankas = [...new Set(currentDetailData.map(d => d.kankas).filter(Boolean))].sort();
-        const uniqueAo = [...new Set(currentDetailData.map(d => d.ao_kredit).filter(Boolean))].sort();
+        // Nilai option memakai kode karena backend memfilter berdasarkan kode,
+        // sedangkan label tetap menampilkan nama agar mudah dibaca.
+        const uniqueKankas = [...new Map(currentDetailData
+          .filter(d => d.kankas_kode || d.kankas)
+          .map(d => [String(d.kankas_kode || d.kankas), String(d.kankas || d.kankas_kode)])
+        )].sort((a, b) => a[1].localeCompare(b[1], 'id', {numeric:true}));
+        const uniqueAo = [...new Map(currentDetailData
+          .filter(d => d.ao_kredit_kode || d.ao_kredit)
+          .map(d => [String(d.ao_kredit_kode || d.ao_kredit), String(d.ao_kredit || d.ao_kredit_kode)])
+        )].sort((a, b) => a[1].localeCompare(b[1], 'id', {numeric:true}));
 
         const modKankas = document.getElementById('MB_modKankas');
         if (modKankas) {
             modKankas.innerHTML = '<option value="">Kankas (All)</option>' + 
-                uniqueKankas.map(k => `<option value="${k}">${k}</option>`).join('');
+            uniqueKankas.map(([code, name]) => `<option value="${code}">${name}</option>`).join('');
             modKankas.value = '';
         }
 
         const modAo = document.getElementById('MB_modAo');
         if (modAo) {
             modAo.innerHTML = '<option value="">AO (All)</option>' + 
-                uniqueAo.map(a => `<option value="${a}">${a}</option>`).join('');
+                uniqueAo.map(([code, name]) => `<option value="${code}">${name}</option>`).join('');
             modAo.value = '';
         }
       }
@@ -824,6 +921,8 @@
         noa: list.length,
         os_m1: sum('os_m1'),
         os_curr: sum('os_curr'),
+        saldo_bank_actual: sum('saldo_bank_actual'),
+        baki_debet_actual: sum('baki_debet_actual'),
         ckpn_m1: sum('ckpn_m1'),
         ckpn_actual: sum('ckpn_actual'),
         pemulihan: sum('pemulihan_pembentukan'),
@@ -835,9 +934,11 @@
 
       elModTotals.innerHTML = `
         <div class="px-2 py-1 bg-blue-50 text-blue-900 border border-blue-100 rounded min-w-[70px]"><span class="block text-[8px] uppercase font-bold text-blue-600">Total NOA</span><b class="text-[10px]">${nf.format(total.noa)}</b></div>
-        <div class="px-2 py-1 bg-white border border-slate-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-slate-500">Total OS M-1</span><b class="text-[10px]">${nf.format(total.os_m1)}</b></div>
+        <div class="px-2 py-1 bg-white border border-slate-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-slate-500">${getSelectedNominalLabel()} M-1</span><b class="text-[10px]">${nf.format(total.os_m1)}</b></div>
         <div class="px-2 py-1 bg-purple-50 text-purple-900 border border-purple-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-purple-600">CKPN M-1</span><b class="text-[10px]">${nf.format(total.ckpn_m1)}</b></div>
-        <div class="px-2 py-1 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-emerald-600">Total OS Actual</span><b class="text-[10px]">${nf.format(total.os_curr)}</b></div>
+        <div class="px-2 py-1 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-emerald-600">${getSelectedNominalLabel()} Actual</span><b class="text-[10px]">${nf.format(total.os_curr)}</b></div>
+        <div class="px-2 py-1 bg-cyan-50 text-cyan-900 border border-cyan-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-cyan-600">Saldo Bank Actual</span><b class="text-[10px]">${nf.format(total.saldo_bank_actual)}</b></div>
+        <div class="px-2 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-amber-600">Baki Debet Actual</span><b class="text-[10px]">${nf.format(total.baki_debet_actual)}</b></div>
         <div class="px-2 py-1 bg-fuchsia-50 text-fuchsia-900 border border-fuchsia-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-fuchsia-600">CKPN Actual</span><b class="text-[10px]">${nf.format(total.ckpn_actual)}</b></div>
         <div class="px-2 py-1 bg-orange-50 text-orange-900 border border-orange-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-orange-600">+/- CKPN</span><b class="text-[10px]">${nf.format(total.pemulihan)}</b></div>
         <div class="px-2 py-1 bg-white border border-slate-200 rounded min-w-[90px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-slate-500">Angs. Pokok</span><b class="text-[10px]">${nf.format(total.angs_p)}</b></div>
@@ -851,9 +952,11 @@
         ['ao_kredit','AO Kredit','md','text'],  
         ['alamat','Alamat','lgA','text'],
         ['kolektibilitas','KOL','sm','text'],
-        ['os_m1','OS M-1','md','num'],
+        ['os_m1',`${getSelectedNominalLabel()} M-1`,'md','num'],
         ['ckpn_m1','CKPN M-1','md','num'],
-        ['os_curr','OS Act','md','num'],
+        ['os_curr',`${getSelectedNominalLabel()} Actual`,'md','num'],
+        ['saldo_bank_actual','Saldo Bank Actual','md','num'],
+        ['baki_debet_actual','Baki Debet Actual','md','num'],
         ['ckpn_actual','CKPN Act','md','num'],
         ['pemulihan_pembentukan','+/- CKPN','md','num'],
         ['pd_actual','PD (%)','sm','num'],
@@ -875,8 +978,8 @@
         let isNum = false;
         if (key==='no_rekening') v = `<span class="hidden md:inline text-slate-700">TOTAL</span>`; 
         else if (key==='nama_nasabah') v = `<span class="md:hidden text-slate-700">TOTAL</span> <span class="text-blue-700 md:ml-1">(${nf.format(total.noa)} Akun)</span>`;
-        else if (['os_m1','os_curr','ckpn_m1','ckpn_actual','pemulihan_pembentukan','angsuran_pokok','angsuran_bunga','tunggakan_pokok','tunggakan_bunga'].includes(key)){
-          const mapKey = ({os_m1:'os_m1',os_curr:'os_curr',ckpn_m1:'ckpn_m1',ckpn_actual:'ckpn_actual',pemulihan_pembentukan:'pemulihan',angsuran_pokok:'angs_p',angsuran_bunga:'angs_b',tunggakan_pokok:'tung_p',tunggakan_bunga:'tung_b'})[key];
+        else if (['os_m1','os_curr','saldo_bank_actual','baki_debet_actual','ckpn_m1','ckpn_actual','pemulihan_pembentukan','angsuran_pokok','angsuran_bunga','tunggakan_pokok','tunggakan_bunga'].includes(key)){
+          const mapKey = ({os_m1:'os_m1',os_curr:'os_curr',saldo_bank_actual:'saldo_bank_actual',baki_debet_actual:'baki_debet_actual',ckpn_m1:'ckpn_m1',ckpn_actual:'ckpn_actual',pemulihan_pembentukan:'pemulihan',angsuran_pokok:'angs_p',angsuran_bunga:'angs_b',tunggakan_pokok:'tung_p',tunggakan_bunga:'tung_b'})[key];
           v = nf.format(total[mapKey]);
           isNum = true;
         }
@@ -998,11 +1101,73 @@
       a.download = `Rekap_Migrasi_Bucket_${elClosing.value}_vs_${elHarian.value}.xls`; a.click();
   };
 
-  window.MB_exportDetail = function() {
-      if(!currentDetailData || currentDetailData.length === 0) {
+  window.MB_exportDetail = async function() {
+      if((!currentDetailData || currentDetailData.length === 0) && currentDetailTotal <= 0) {
           alert("Tidak ada data detail untuk di-download.");
           return;
       }
+
+      const exportButton = document.getElementById('MB_exportDetailBtn');
+      const oldButtonHtml = exportButton ? exportButton.innerHTML : '';
+      if (exportButton) {
+        exportButton.disabled = true;
+        exportButton.innerHTML = '…';
+        exportButton.title = 'Menyiapkan seluruh data...';
+      }
+
+      let exportRows = [];
+      try {
+        const kode = elKantor.disabled ? elKantor.value : (elKantor.value || null);
+        const payload = {
+          type: 'detail debutir migrasi',
+          closing_date: elClosing.value,
+          harian_date: elHarian.value,
+          from_bucket: currentFromRaw,
+          to_bucket: currentToRaw,
+          page: 1,
+          per_page: 100,
+          export_all: true,
+          nominal_field: document.getElementById('MB_nominalField')?.value || 'baki_debet',
+          is_proyeksi: document.getElementById('MB_isProyeksi').checked
+        };
+        if (kode) payload.kode_kantor = kode;
+        const searchVal = document.getElementById('MB_searchDetail')?.value || '';
+        const kankasVal = document.getElementById('MB_modKankas')?.value || '';
+        const aoVal = document.getElementById('MB_modAo')?.value || '';
+        if (searchVal) payload.search = searchVal;
+        if (kankasVal) payload.kankas = kankasVal;
+        if (aoVal) payload.ao_kredit = aoVal;
+
+        const f = (window.apiFetch || fetch);
+        const response = await f('./api/kolek/', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result?.status && Number(result.status) !== 200) {
+          throw new Error(result.message || 'Gagal mengambil seluruh detail.');
+        }
+        exportRows = Array.isArray(result?.data?.rows)
+          ? result.data.rows
+          : (Array.isArray(result?.data) ? result.data : []);
+      } catch (error) {
+        alert(error?.message || 'Gagal mengambil seluruh data detail untuk export.');
+        return;
+      } finally {
+        if (exportButton) {
+          exportButton.disabled = false;
+          exportButton.innerHTML = oldButtonHtml;
+          exportButton.title = 'Download seluruh detail Excel';
+        }
+      }
+
+      if (exportRows.length === 0) {
+        alert("Tidak ada data detail untuk di-download.");
+        return;
+      }
+
+      const nominalLabel = getSelectedNominalLabel().toUpperCase();
       
       let html = `<table border="1"><thead><tr>
         <th style="background:#f1f5f9">NO REKENING</th>
@@ -1011,9 +1176,11 @@
         <th style="background:#f1f5f9">AO KREDIT</th>
         <th style="background:#f1f5f9">ALAMAT</th>
         <th style="background:#f1f5f9">KOL</th>
-        <th style="background:#fef08a">OS M-1</th>
+        <th style="background:#fef08a">${nominalLabel} M-1</th>
         <th style="background:#fef08a">CKPN M-1</th>
-        <th style="background:#dcfce7">OS ACTUAL</th>
+        <th style="background:#dcfce7">${nominalLabel} ACTUAL</th>
+        <th style="background:#cffafe">SALDO BANK ACTUAL</th>
+        <th style="background:#fef3c7">BAKI DEBET ACTUAL</th>
         <th style="background:#dcfce7">CKPN ACTUAL</th>
         <th style="background:#ffedd5">+/- CKPN</th>
         <th style="background:#f1f5f9">PD (%)</th>
@@ -1030,21 +1197,9 @@
         <th style="background:#f1f5f9">ANGS. BUNGA</th>
       </tr></thead><tbody>`;
 
-      const searchInput = document.getElementById("MB_searchDetail").value.toLowerCase();
-      const kankasInput = document.getElementById("MB_modKankas").value.toLowerCase();
-      const aoInput     = document.getElementById("MB_modAo").value.toLowerCase();
-
-      const filtered = currentDetailData.filter(d => {
-        const rek  = String(d.no_rekening || '').toLowerCase();
-        const nama = String(d.nama_nasabah || '').toLowerCase();
-        const almt = String(d.alamat || '').toLowerCase();
-        const knk  = String(d.kankas || '').toLowerCase();
-        const aok  = String(d.ao_kredit || '').toLowerCase();
-        
-        return (searchInput === '' || rek.includes(searchInput) || nama.includes(searchInput) || almt.includes(searchInput)) &&
-               (kankasInput === '' || knk === kankasInput) &&
-               (aoInput === '' || aok === aoInput);
-      });
+      // Filter sudah diterapkan oleh endpoint pada seluruh dataset, bukan
+      // hanya pada halaman detail yang sedang terbuka.
+      const filtered = exportRows;
 
       filtered.forEach(d => {
           html += `<tr>
@@ -1057,6 +1212,8 @@
               <td>${getNum(d.os_m1)}</td>
               <td>${getNum(d.ckpn_m1)}</td>
               <td>${getNum(d.os_curr)}</td>
+              <td>${getNum(d.saldo_bank_actual)}</td>
+              <td>${getNum(d.baki_debet_actual)}</td>
               <td>${getNum(d.ckpn_actual)}</td>
               <td>${getNum(d.pemulihan_pembentukan)}</td>
               <td>${d.pd_actual!=null ? d.pd_actual : ''}</td>
