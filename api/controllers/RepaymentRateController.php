@@ -1714,56 +1714,116 @@ class RepaymentRateController {
             $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
             $stmt->execute();
         } else {
+            // Detail Delta mengikuti selisih langsung Actual - M-1. Karena
+            // rekening dapat hanya ada di salah satu snapshot, mulai dari
+            // UNION seluruh nomor rekening pada dua tanggal.
             $filters = "";
-            if ($kc && $kc !== '000') $filters .= " AND t2.kode_cabang = :kc";
-            if ($kankas) $filters .= " AND t2.kode_group1 = :kankas";
-            if ($ao) $filters .= " AND t2.kode_group2 = :ao";
+            if ($kc && $kc !== '000') $filters .= " AND COALESCE(t2.kode_cabang, t1.kode_cabang) = :kc";
+            if ($kankas) $filters .= " AND COALESCE(t2.kode_group1, t1.kode_group1) = :kankas";
+            if ($ao) $filters .= " AND COALESCE(t2.kode_group2, t1.kode_group2) = :ao";
             if ($search !== '') {
-                $filters .= " AND (t2.no_rekening LIKE :search OR t2.nama_nasabah LIKE :search2 OR t2.hp LIKE :search3)";
+                $filters .= " AND (COALESCE(t2.no_rekening, t1.no_rekening) LIKE :search
+                    OR COALESCE(t2.nama_nasabah, t1.nama_nasabah) LIKE :search2
+                    OR COALESCE(t2.hp, t1.hp) LIKE :search3)";
             }
 
             $deltaJoinForFilter = $needsTrxFilter ? $trxJoin : "";
-            $deltaWhere = "t2.created BETWEEN :s2 AND :e2
-                           {$filters}
-                           AND {$migrasiRr}
-                           {$detailExtraWhere}";
+            $deltaM1Os = "CASE WHEN {$lancarM1} THEN {$t1Saldo} ELSE 0 END";
+            $deltaCurOs = "CASE WHEN {$lancarCur} THEN {$t2Saldo} ELSE 0 END";
+            $deltaWhere = "({$lancarM1} OR {$lancarCur}) {$filters} {$detailExtraWhere}";
 
-            $stmtCnt = $this->pdo->prepare("SELECT COUNT(1)
-                    FROM nominatif t2
-                    LEFT JOIN nominatif t1 ON t1.no_rekening = t2.no_rekening AND t1.created BETWEEN :s1 AND :e1
-                    {$deltaJoinForFilter}
-                    WHERE {$deltaWhere}");
-            $bind($stmtCnt);
+            $keyFilterM1 = '';
+            $keyFilterCur = '';
+            if ($kc && $kc !== '000') {
+                $keyFilterM1 .= ' AND kode_cabang = :kc_key_m1';
+                $keyFilterCur .= ' AND kode_cabang = :kc_key_cur';
+            }
+            if ($kankas) {
+                $keyFilterM1 .= ' AND kode_group1 = :kankas_key_m1';
+                $keyFilterCur .= ' AND kode_group1 = :kankas_key_cur';
+            }
+            if ($ao) {
+                $keyFilterM1 .= ' AND kode_group2 = :ao_key_m1';
+                $keyFilterCur .= ' AND kode_group2 = :ao_key_cur';
+            }
+            $selectColumnsDelta = str_replace(
+                ["{$t1Saldo} AS os_m1", "{$t2Saldo} AS os_curr", "({$t2Saldo} - {$t1Saldo}) AS delta_os"],
+                ["{$deltaM1Os} AS os_m1", "{$deltaCurOs} AS os_curr", "({$deltaCurOs} - {$deltaM1Os}) AS delta_os"],
+                $selectColumns
+            );
+            // Ambil hanya rekening yang memang masuk basis RR pada salah satu
+            // snapshot. Ini menjaga detail tetap sama dengan summary sekaligus
+            // mencegah database menggabungkan seluruh nominatif terlebih dahulu.
+            $keysSql = "(SELECT no_rekening
+                         FROM nominatif
+                         WHERE created BETWEEN :s1_keys AND :e1_keys
+                           AND {$saldoCol} > 0
+                           AND COALESCE(kolektibilitas, '') = 'L'
+                           AND COALESCE(hari_menunggak, 0) = 0
+                           {$keyFilterM1}
+                         UNION
+                         SELECT no_rekening
+                         FROM nominatif
+                         WHERE created BETWEEN :s2_keys AND :e2_keys
+                           AND {$saldoCol} > 0
+                           AND COALESCE(kolektibilitas, '') = 'L'
+                           AND COALESCE(hari_menunggak, 0) = 0
+                           {$keyFilterCur}) rr_keys";
+
+            $sqlBase = "FROM {$keysSql}
+                        LEFT JOIN nominatif t1 ON t1.no_rekening = rr_keys.no_rekening AND t1.created BETWEEN :s1 AND :e1
+                        LEFT JOIN nominatif t2 ON t2.no_rekening = rr_keys.no_rekening AND t2.created BETWEEN :s2 AND :e2
+                        {$deltaJoinForFilter}";
+
+            $bindDelta = function($stmt) use ($bind, $s1, $e1, $s2, $e2, $kc, $kankas, $ao) {
+                $stmt->bindValue(':s1_keys', $s1);
+                $stmt->bindValue(':e1_keys', $e1);
+                $stmt->bindValue(':s2_keys', $s2);
+                $stmt->bindValue(':e2_keys', $e2);
+                if ($kc && $kc !== '000') {
+                    $stmt->bindValue(':kc_key_m1', $kc);
+                    $stmt->bindValue(':kc_key_cur', $kc);
+                }
+                if ($kankas) {
+                    $stmt->bindValue(':kankas_key_m1', $kankas);
+                    $stmt->bindValue(':kankas_key_cur', $kankas);
+                }
+                if ($ao) {
+                    $stmt->bindValue(':ao_key_m1', $ao);
+                    $stmt->bindValue(':ao_key_cur', $ao);
+                }
+                if (preg_match('/\:s1_join(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':s1_join', $s1);
+                if (preg_match('/\:e1_join(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':e1_join', $e1);
+                if (preg_match('/\:s2_join(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':s2_join', $s2);
+                if (preg_match('/\:e2_join(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':e2_join', $e2);
+                $bind($stmt);
+            };
+
+            $stmtCnt = $this->pdo->prepare("SELECT COUNT(1) {$sqlBase} WHERE {$deltaWhere}");
+            $bindDelta($stmtCnt);
             $stmtCnt->execute();
             $total = (int)$stmtCnt->fetchColumn();
 
-            $sql = "SELECT {$selectColumns}
-                    FROM (
-                        SELECT t2.no_rekening
-                        FROM nominatif t2
-                        LEFT JOIN nominatif t1 ON t1.no_rekening = t2.no_rekening AND t1.created BETWEEN :s1_pick AND :e1_pick
-                        {$deltaJoinForFilter}
-                        WHERE " . str_replace([':s1', ':e1'], [':s1_pick', ':e1_pick'], $deltaWhere) . "
-                        ORDER BY ABS(COALESCE(t2.{$saldoCol}, 0) - COALESCE(t1.{$saldoCol}, 0)) DESC, t2.nama_nasabah ASC
-                        LIMIT :lim OFFSET :off
-                    ) pick
-                    INNER JOIN nominatif t2 ON t2.no_rekening = pick.no_rekening AND t2.created BETWEEN :s2_data AND :e2_data
-                    LEFT JOIN nominatif t1 ON t1.no_rekening = pick.no_rekening AND t1.created BETWEEN :s1_data AND :e1_data
+            // Paginate nomor rekening terlebih dahulu. Join transaksi yang
+            // relatif berat hanya dilakukan untuk baris yang benar-benar tampil.
+            $sqlPick = "SELECT rr_keys.no_rekening
+                        {$sqlBase}
+                        WHERE {$deltaWhere}
+                        ORDER BY ABS({$deltaCurOs} - {$deltaM1Os}) DESC,
+                                 COALESCE(t2.nama_nasabah, t1.nama_nasabah) ASC
+                        LIMIT :lim OFFSET :off";
+
+            $sql = "SELECT {$selectColumnsDelta}
+                    FROM ({$sqlPick}) pick
+                    LEFT JOIN nominatif t1 ON t1.no_rekening = pick.no_rekening AND t1.created BETWEEN :s1_join AND :e1_join
+                    LEFT JOIN nominatif t2 ON t2.no_rekening = pick.no_rekening AND t2.created BETWEEN :s2_join AND :e2_join
                     {$trxJoinOuter}
                     LEFT JOIN ao_kredit ao ON COALESCE(t2.kode_group2, t1.kode_group2) = ao.kode_group2
                     LEFT JOIN kankas kn ON COALESCE(t2.kode_group1, t1.kode_group1) = kn.kode_group1
-                    LEFT JOIN tabungan tb ON COALESCE(t2.norek_tabungan, t1.norek_tabungan) = tb.no_rekening
-                    ORDER BY ABS({$t2Saldo} - {$t1Saldo}) DESC, COALESCE(t2.nama_nasabah, t1.nama_nasabah) ASC
-                    ";
+                    LEFT JOIN tabungan tb ON COALESCE(t2.norek_tabungan, t1.norek_tabungan) = tb.no_rekening";
 
             $stmt = $this->pdo->prepare($sql);
-            $bind($stmt);
-            $stmt->bindValue(':s1_pick', $s1);
-            $stmt->bindValue(':e1_pick', $e1);
-            $stmt->bindValue(':s2_data', $s2);
-            $stmt->bindValue(':e2_data', $e2);
-            $stmt->bindValue(':s1_data', $s1);
-            $stmt->bindValue(':e1_data', $e1);
+            $bindDelta($stmt);
             $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
             $stmt->execute();
@@ -1955,7 +2015,18 @@ class RepaymentRateController {
         $b = is_array($input) ? $input : [];
         $closing = $b['closing_date'] ?? null;
         $harian  = $b['harian_date'] ?? null;
-        $userKode = $b['kode_kantor'] ?? '000'; 
+        $userKode = str_pad((string)($b['kode_kantor'] ?? '000'), 3, '0', STR_PAD_LEFT);
+        $kc      = $userKode !== '000' ? $userKode : null;
+        $korwil  = strtoupper(trim((string)($b['korwil'] ?? '')));
+        $kwStart = null;
+        $kwEnd = null;
+        switch ($korwil) {
+            case 'SEMARANG':   $kwStart = '001'; $kwEnd = '007'; break;
+            case 'SOLO':       $kwStart = '008'; $kwEnd = '014'; break;
+            case 'BANYUMAS':   $kwStart = '015'; $kwEnd = '021'; break;
+            case 'PEKALONGAN': $kwStart = '022'; $kwEnd = '028'; break;
+            default: $korwil = '';
+        }
         $saldoCol = $this->getSaldoColumn($b);
         $saldoExpr = "COALESCE({$saldoCol}, 0)";
 
@@ -1964,7 +2035,8 @@ class RepaymentRateController {
         [$s1, $e1] = $this->getDayRange($closing);
         [$s2, $e2] = $this->getDayRange($harian);
 
-        $isPusat = ($userKode === '000');
+        // Konsolidasi dan Korwil diringkas per cabang; pilihan cabang diringkas per kankas.
+        $isPusat = !$kc;
         $groupByCol = $isPusat ? 'kode_cabang' : 'kode_group1';
 
         // 1. QUERY M-1 (CLOSING)
@@ -1978,12 +2050,14 @@ class RepaymentRateController {
                   WHERE created BETWEEN :s1 AND :e1 
                   AND {$saldoExpr} > 0";
                   
-        if (!$isPusat) $sqlM1 .= " AND kode_cabang = :kc";
+        if ($kc) $sqlM1 .= " AND kode_cabang = :kc";
+        elseif ($kwStart && $kwEnd) $sqlM1 .= " AND kode_cabang BETWEEN :kw_start AND :kw_end";
         $sqlM1 .= " GROUP BY $groupByCol";
 
         $stmt1 = $this->pdo->prepare($sqlM1);
         $stmt1->bindValue(':s1', $s1); $stmt1->bindValue(':e1', $e1);
-        if (!$isPusat) $stmt1->bindValue(':kc', $userKode);
+        if ($kc) $stmt1->bindValue(':kc', $kc);
+        elseif ($kwStart && $kwEnd) { $stmt1->bindValue(':kw_start', $kwStart); $stmt1->bindValue(':kw_end', $kwEnd); }
         $stmt1->execute();
         $dataM1 = $stmt1->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
 
@@ -1998,47 +2072,16 @@ class RepaymentRateController {
                    WHERE created BETWEEN :s2 AND :e2 
                    AND {$saldoExpr} > 0";
 
-        if (!$isPusat) $sqlCur .= " AND kode_cabang = :kc";
+        if ($kc) $sqlCur .= " AND kode_cabang = :kc";
+        elseif ($kwStart && $kwEnd) $sqlCur .= " AND kode_cabang BETWEEN :kw_start AND :kw_end";
         $sqlCur .= " GROUP BY $groupByCol";
 
         $stmt2 = $this->pdo->prepare($sqlCur);
         $stmt2->bindValue(':s2', $s2); $stmt2->bindValue(':e2', $e2);
-        if (!$isPusat) $stmt2->bindValue(':kc', $userKode);
+        if ($kc) $stmt2->bindValue(':kc', $kc);
+        elseif ($kwStart && $kwEnd) { $stmt2->bindValue(':kw_start', $kwStart); $stmt2->bindValue(':kw_end', $kwEnd); }
         $stmt2->execute();
         $dataCur = $stmt2->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
-
-        // Delta RR = rekening yang saat closing masih lancar, lalu pada actual tetap kolek L
-        // tetapi sudah mulai punya hari menunggak. Query ini disamakan dengan detail klik Delta.
-        $t1SaldoExpr = "COALESCE(t1.{$saldoCol}, 0)";
-        $t2SaldoExpr = "COALESCE(t2.{$saldoCol}, 0)";
-        $deltaGroupByCol = $isPusat ? 't2.kode_cabang' : 't2.kode_group1';
-        $sqlDelta = "SELECT
-                        {$deltaGroupByCol} AS grp,
-                        COUNT(1) AS delta_noa,
-                        COALESCE(SUM({$t2SaldoExpr} - {$t1SaldoExpr}), 0) AS delta_os_lancar
-                     FROM nominatif t2
-                     INNER JOIN nominatif t1
-                        ON t1.no_rekening = t2.no_rekening
-                       AND t1.created BETWEEN :s1_delta AND :e1_delta
-                     WHERE t2.created BETWEEN :s2_delta AND :e2_delta
-                       AND {$t1SaldoExpr} > 0
-                       AND COALESCE(t1.kolektibilitas, '') = 'L'
-                       AND COALESCE(t1.hari_menunggak, 0) = 0
-                       AND {$t2SaldoExpr} > 0
-                       AND COALESCE(t2.kolektibilitas, '') = 'L'
-                       AND COALESCE(t2.hari_menunggak, 0) > 0";
-
-        if (!$isPusat) $sqlDelta .= " AND t2.kode_cabang = :kc_delta";
-        $sqlDelta .= " GROUP BY {$deltaGroupByCol}";
-
-        $stmtDelta = $this->pdo->prepare($sqlDelta);
-        $stmtDelta->bindValue(':s1_delta', $s1);
-        $stmtDelta->bindValue(':e1_delta', $e1);
-        $stmtDelta->bindValue(':s2_delta', $s2);
-        $stmtDelta->bindValue(':e2_delta', $e2);
-        if (!$isPusat) $stmtDelta->bindValue(':kc_delta', $userKode);
-        $stmtDelta->execute();
-        $dataDelta = $stmtDelta->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
 
         // 3. FETCH MASTER NAMA
         $namaMap = [];
@@ -2057,7 +2100,7 @@ class RepaymentRateController {
 
         // 4. MENGGABUNGKAN DATA M-1 DAN ACTUAL
         $finalData = [];
-        $allKeys = array_unique(array_merge(array_keys($dataM1), array_keys($dataCur), array_keys($dataDelta)));
+        $allKeys = array_unique(array_merge(array_keys($dataM1), array_keys($dataCur)));
 
         $grandTotal = [
             'm1_all_noa' => 0, 'm1_all_os' => 0, 'm1_lancar_os' => 0,
@@ -2073,15 +2116,13 @@ class RepaymentRateController {
             
             $m1  = $dataM1[$grpId] ?? ['all_noa'=>0, 'all_os'=>0, 'lancar_os'=>0];
             $cur = $dataCur[$grpId] ?? ['all_noa'=>0, 'all_os'=>0, 'lancar_os'=>0];
-            $delta = $dataDelta[$grpId] ?? ['delta_noa'=>0, 'delta_os_lancar'=>0];
-
             $m1AllOs = (float)$m1['all_os'];
             $curAllOs = (float)$cur['all_os'];
 
             $m1LancarOs = (float)$m1['lancar_os'];
             $curLancarOs = (float)$cur['lancar_os'];
-            $deltaNoa = (int)$delta['delta_noa'];
-            $deltaOsLancar = (float)$delta['delta_os_lancar'];
+            $deltaNoa = (int)$cur['all_noa'] - (int)$m1['all_noa'];
+            $deltaOsLancar = $curLancarOs - $m1LancarOs;
 
             // Kalkulasi persentase RR per Cabang/Kankas
             $m1Pct  = $m1AllOs > 0 ? ($m1LancarOs / $m1AllOs) * 100 : 0;
@@ -2104,7 +2145,7 @@ class RepaymentRateController {
                 'delta_noa'       => $deltaNoa,
                 'delta_os'        => $curAllOs - $m1AllOs,
                 'delta_os_lancar' => $deltaOsLancar,
-                'delta_pct'       => $m1LancarOs > 0 ? round(($deltaOsLancar / $m1LancarOs) * 100, 2) : 0
+                'delta_pct'       => round($curPct - $m1Pct, 2)
             ];
 
             // Akumulasi Grand Total
@@ -2130,7 +2171,7 @@ class RepaymentRateController {
         $grandTotal['m1_pct']          = round($gtM1Pct, 2);
         $grandTotal['cur_pct']         = round($gtCurPct, 2);
         $grandTotal['delta_os']        = $grandTotal['cur_all_os'] - $grandTotal['m1_all_os'];
-        $grandTotal['delta_pct']       = $grandTotal['m1_lancar_os'] > 0 ? round(($grandTotal['delta_os_lancar'] / $grandTotal['m1_lancar_os']) * 100, 2) : 0;
+        $grandTotal['delta_pct']       = round($grandTotal['cur_pct'] - $grandTotal['m1_pct'], 2);
 
         $this->send(200, "Sukses", [
             'meta' => [

@@ -1090,6 +1090,11 @@ public function getTop25NplPerCabang($input) {
 
         $bulan_awal      = date('Y-m-01', strtotime($harian_date));
         $bulan_akhir     = date('Y-m-t',  strtotime($harian_date));
+        // Harus sama dengan rentang jatuh tempo yang dipakai rekap flow:
+        // rekening JT mulai tanggal 15 bulan sebelumnya sampai akhir bulan actual
+        // tetap menjadi kandidat apabila sampai posisi actual belum selesai.
+        $jt_start        = date('Y-m-15', strtotime($harian_date . ' -1 month'));
+        $jt_end          = $bulan_akhir;
         
         $jml_hari_bulan = (int) date('t', strtotime($harian_date));
         $tgl_harian     = (int) date('d', strtotime($harian_date));
@@ -1132,7 +1137,7 @@ public function getTop25NplPerCabang($input) {
                         (COALESCE(n.hari_menunggak,0)       + :jml_hari1) >= 90
                     OR (COALESCE(n.hari_menunggak_pokok,0) + :jml_hari2) >= 90
                     OR (COALESCE(n.hari_menunggak_bunga,0) + :jml_hari3) >= 90
-                    OR (n.tgl_jatuh_tempo BETWEEN :bulan_awal1 AND :bulan_akhir1)
+                    OR (n.tgl_jatuh_tempo BETWEEN :jt_start_detail AND :jt_end_detail)
                 )
             ),
             harian AS (
@@ -1198,7 +1203,7 @@ public function getTop25NplPerCabang($input) {
                 km.nominal,
                 km.alasan
             FROM kandidat kd
-            LEFT JOIN harian h ON kd.no_rekening = h.no_rekening
+            JOIN harian h ON kd.no_rekening = h.no_rekening
             LEFT JOIN trx    tr ON kd.no_rekening = tr.no_rekening
             LEFT JOIN komitmen_flowpar km
                 ON km.id = (
@@ -1235,10 +1240,10 @@ public function getTop25NplPerCabang($input) {
             $st->bindValue(':sisa_hari2', $sisa_hari, PDO::PARAM_INT);
             $st->bindValue(':sisa_hari3', $sisa_hari, PDO::PARAM_INT);
 
-            $st->bindValue(':bulan_awal1',  $bulan_awal);
-            $st->bindValue(':bulan_akhir1', $bulan_akhir);
             $st->bindValue(':bulan_awal2',  $bulan_awal);
             $st->bindValue(':bulan_akhir2', $bulan_akhir);
+            $st->bindValue(':jt_start_detail', $jt_start);
+            $st->bindValue(':jt_end_detail', $jt_end);
 
             if ($kode_kantor && $kode_kantor !== '000') {
                 $st->bindValue(':kode_kantor_c',   $kode_kantor);

@@ -1,3 +1,9 @@
+<?php
+require_once __DIR__ . '/../components/bootstrap.php';
+mb_ui_assets('.');
+
+?>
+
 <style>
   :root { --primary: #059669; --bg: #f8fafc; --text: #334155; }
   body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
@@ -21,7 +27,7 @@
   /* Scroller Tabel Utama */
   #progScroller { 
       --prog_headH: 40px; 
-      overflow: auto; height: 100%; border-radius: 8px; 
+      overflow-y: auto; overflow-x: hidden; height: 100%; border-radius: 8px; 
       border: 1px solid #e2e8f0; background: white; position: relative;
       -webkit-overflow-scrolling: touch; 
   }
@@ -68,93 +74,71 @@
       .mod-freeze-nas, .mod-td-nas { left: 0 !important; box-shadow: inset -1px 0 0 #f1f5f9; min-width: 150px;}
       .mod-freeze-rek, .mod-td-rek { display: none !important; }
   }
+
+  /* Penyesuaian kecil agar shell report standar tetap nyaman di layar kecil. */
+  #agingKreditPage { height:calc(100dvh - 64px); min-height:0; }
+  #agingKreditPage .mb-report-card--grow { min-height:0; }
+  #agingKreditPage .mb-table { width:100%; min-width:0; table-layout:fixed; }
+  #agingKreditPage .mb-table th, #agingKreditPage .mb-table td { padding:8px 10px; text-align:left; }
+  #agingKreditPage .mb-table th:first-child, #agingKreditPage .mb-table td:first-child { width:18%; }
+  #agingKreditPage .mb-table th:nth-child(2), #agingKreditPage .mb-table td:nth-child(2) { width:14%; }
+  #agingKreditPage .mb-table th:nth-child(3), #agingKreditPage .mb-table td:nth-child(3) { width:14%; }
+  #agingKreditPage .mb-table th:nth-child(n+4):not(:last-child), #agingKreditPage .mb-table td:nth-child(n+4):not(:last-child) { width:9.2%; }
+  #agingKreditPage .mb-table th:last-child, #agingKreditPage .mb-table td:last-child { width:8%; }
+  #agingKreditPage .mb-table td:not(:first-child) { text-align:right; overflow:hidden; text-overflow:ellipsis; }
+  #agingKreditPage .prog-sub { display:block; margin-top:2px; color:#64748b; font-size:7.3px; font-weight:800; line-height:1.1; }
+  @media (max-width:767px) {
+      #agingKreditPage { height:calc(100dvh - 58px); padding:6px; }
+      #agingKreditPage .mb-report-card--grow { height:calc(100dvh - 154px); }
+      #agingKreditPage .mb-table { min-width:0; font-size:7px; }
+      #agingKreditPage .mb-table th, #agingKreditPage .mb-table td { padding:5px 6px; }
+      #agingKreditPage .mb-table th:first-child, #agingKreditPage .mb-table td:first-child { width:19%; }
+      #agingKreditPage .mb-table th:nth-child(2), #agingKreditPage .mb-table td:nth-child(2),
+      #agingKreditPage .mb-table th:nth-child(3), #agingKreditPage .mb-table td:nth-child(3) { width:14%; }
+      #agingKreditPage .mb-table th:nth-child(n+4):not(:last-child), #agingKreditPage .mb-table td:nth-child(n+4):not(:last-child) { width:9.2%; }
+      #agingKreditPage .mb-table th:last-child, #agingKreditPage .mb-table td:last-child { width:7%; }
+      #agingKreditPage .mb-table td:not(:first-child) { text-align:right; }
+      #agingKreditPage .prog-sub { font-size:5.6px; white-space:normal; }
+  }
 </style>
 
-<div class="max-w-[1600px] mx-auto px-3 md:px-4 py-4 h-[calc(100vh-80px)] md:h-[calc(100vh-120px)] flex flex-col relative z-10">
-  
-  <div class="flex flex-col xl:flex-row xl:items-end justify-between gap-3 mb-4 shrink-0">
-    <div class="flex items-start justify-between w-full xl:w-auto">
-        <div>
-            <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
-                <span class="bg-emerald-600 text-white p-1.5 rounded-lg text-sm shadow-sm">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-                </span> 
-                <span>Rekap Aging Kredit (% Usia Kredit)</span>
-            </h1>
-             <p class="text-[9px] md:text-xs text-rose-600 font-bold italic ml-8 md:ml-[42px] leading-tight">
-                  *progress usia kredit.
-              </p>
-            <!-- <p class="text-[10px] md:text-xs text-slate-500 mt-1 ml-1 font-medium" id="lbl_filter_aktif">*Posisi Harian: Menunggu data...</p> -->
-        </div>
+<?php
+mb_render_report_page([
+    'id' => 'agingKreditPage',
+    'class' => 'mb-report-aging',
+    'header' => [
+        'id' => 'agingKreditHeader',
+        'title' => 'Rekap Aging Kredit',
+        'subtitle' => 'Progress usia kredit berdasarkan tanggal realisasi dan jatuh tempo.',
+        'filter_toggle_id' => 'btnToggleProgFilter',
+        'filter_panel_id' => 'panelFilterProg',
+        'filters' => [
+            ['id' => 'harian_date_prog', 'label' => 'Tanggal Actual', 'type' => 'date', 'width' => '130px', 'attrs' => ['onclick' => 'this.showPicker && this.showPicker()']],
+            ['id' => 'opt_kantor_prog', 'label' => 'Cabang', 'type' => 'select', 'width' => '210px', 'options' => ['' => 'ALL | SEMUA CABANG'], 'attrs' => ['onchange' => 'handleCabangChange()']],
+            ['id' => 'opt_sub_prog', 'label' => 'Korwil', 'label_id' => 'lbl_sub_prog', 'type' => 'select', 'width' => '160px', 'options' => ['' => 'ALL KORWIL', 'SEMARANG' => 'SEMARANG', 'SOLO' => 'SOLO', 'BANYUMAS' => 'BANYUMAS', 'PEKALONGAN' => 'PEKALONGAN'], 'attrs' => ['onchange' => 'triggerAutoRefresh()']],
+        ],
+    ],
+    'toolbar' => [
+        'title' => 'Progress Jalan Kredit',
+        'title_id' => 'agingKreditTableTitle',
+        'actions' => [
+            ['attrs' => ['id' => 'btnSwitchAgingProduk'], 'variant' => 'view-switch', 'icon' => 'list', 'title' => 'Ganti ke By Produk', 'aria_label' => 'Ganti ke By Produk'],
+            ['attrs' => ['id' => 'btnExportProg'], 'tone' => 'success', 'icon' => 'download', 'title' => 'Export Excel', 'aria_label' => 'Export Excel'],
+        ],
+    ],
+    'table' => [
+        'wrapper_id' => 'progScroller',
+        'table_id' => 'tabelProgKredit',
+        'loading_id' => 'loadingProg',
+        'loading_text' => 'Menganalisa progress...',
+        'thead_id' => 'theadProg',
+        'thead_class' => 'uppercase bg-slate-50 text-slate-600 font-bold select-none',
+        'thead_html' => '<tr><th class="col-kategori text-left">PROGRESS JALAN (%)</th><th class="text-left">TOTAL PORTO</th><th class="text-left text-rose-700">TOTAL NPL</th><th class="text-left text-emerald-700">L</th><th class="text-left text-amber-700">DP</th><th class="text-left text-rose-700">KL</th><th class="text-left text-red-700">D</th><th class="text-left text-red-700">M</th><th class="text-left text-rose-700">% NPL</th></tr>',
+        'tbody_ids' => ['totalProg', 'bodyProg'],
+    ],
+]);
+?>
 
-        <button id="btnToggleProgFilter" class="xl:hidden flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-sm font-semibold text-slate-700 shadow-sm transition">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-            Filter
-        </button>
-    </div>
-
-    <div id="panelFilterProg" class="hidden xl:block bg-white border border-gray-200 rounded-xl p-3 shadow-sm w-full xl:w-auto transition-all">
-        <form id="formFilterProg" class="flex flex-col md:flex-row items-end gap-2 md:gap-3 w-full">
-            <div class="flex flex-col w-full md:w-[130px]">
-                <label class="text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">TANGGAL</label>
-                <input type="date" id="harian_date_prog" class="inp shadow-sm text-slate-700" required>
-            </div>
-
-            <div class="flex flex-col w-full md:w-[200px]" id="wrap-cabang">
-                <label class="text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">CABANG</label>
-                <select id="opt_kantor_prog" class="inp text-slate-700 shadow-sm truncate" onchange="handleCabangChange()">
-                    <option value="">ALL | SEMUA CABANG</option>
-                </select>
-            </div>
-
-            <div class="flex flex-col w-full md:w-[160px]">
-                <label id="lbl_sub_prog" class="text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">KORWIL</label>
-                <select id="opt_sub_prog" class="inp text-slate-700 shadow-sm truncate" onchange="triggerAutoRefresh()">
-                    <option value="">ALL KORWIL</option>
-                    <option value="SEMARANG">SEMARANG</option>
-                    <option value="SOLO">SOLO</option>
-                    <option value="BANYUMAS">BANYUMAS</option>
-                    <option value="PEKALONGAN">PEKALONGAN</option>
-                </select>
-            </div>
-            
-            <div class="flex gap-2 shrink-0 mt-2 md:mt-0 w-full md:w-auto">
-                <button type="submit" class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white h-9 px-4 rounded-lg font-bold text-sm shadow-sm flex items-center justify-center gap-2 transition">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <span class="hidden md:inline">CARI</span>
-                </button>
-                <button type="button" onclick="exportProgExcel()" class="bg-indigo-600 hover:bg-indigo-700 text-white h-9 px-3 md:w-11 rounded-lg shadow-sm flex items-center justify-center transition" title="Download Excel Rekap">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    <span class="md:hidden ml-1 font-bold text-xs">EXCEL</span>
-                </button>
-            </div>
-        </form>
-    </div>
-  </div>
-
-  <div class="flex-1 min-h-0 relative flex flex-col bg-white rounded-xl shadow-sm border border-slate-200">
-    <div id="loadingProg" class="hidden absolute inset-0 bg-white/80 z-[100] flex flex-col items-center justify-center text-emerald-600 font-bold text-sm backdrop-blur-sm rounded-xl">
-        <div class="animate-spin h-8 w-8 border-4 border-emerald-200 border-t-emerald-600 rounded-full mb-2"></div>
-        Menganalisa Progress...
-    </div>
-
-    <div class="table-wrapper custom-scrollbar" id="progScroller">
-      <table id="tabelProgKredit">
-        <thead id="theadProg">
-          <tr>
-            <th class="col-kategori text-left">PROGRESS JALAN (%)</th>
-            <th class="text-right min-w-[100px] text-blue-800">TOTAL PORTOFOLIO</th>
-            <th class="text-right min-w-[120px] text-emerald-700">LANCAR & DPK (L, DP)</th>
-            <th class="text-right min-w-[120px] text-red-600">NPL (KL, D, M)</th>
-            <th class="text-center min-w-[80px] border-l border-slate-300">% NPL KONTRIBUSI</th>
-          </tr>
-        </thead>
-        <tbody id="totalProg"></tbody>
-        <tbody id="bodyProg"></tbody>
-      </table>
-    </div>
-  </div>
-</div>
 
 <div id="modalDetailProg" class="fixed inset-0 hidden z-[9999] flex items-end md:items-center justify-center p-0 sm:p-4">
   <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModalProg()"></div>
@@ -228,6 +212,8 @@
 
   const nf = new Intl.NumberFormat('id-ID');
   const fmt = n => nf.format(Number(n||0));
+  const nfProgCompact = new Intl.NumberFormat('id-ID', {notation:'compact', maximumFractionDigits:2});
+  const fmtProg = n => window.innerWidth <= 767 ? nfProgCompact.format(Number(n || 0)) : fmt(n);
   const fmt2 = x => (x == null || x === '' ? '0.00' : Number(x).toFixed(2));
 
   window.progDataRaw = [];
@@ -238,9 +224,12 @@
   let currentProgPage = 1;
   let currentProgTotalPages = 1;
 
-  document.getElementById('btnToggleProgFilter').addEventListener('click', function() {
-      document.getElementById('panelFilterProg').classList.toggle('hidden');
+  document.getElementById('btnSwitchAgingProduk')?.addEventListener('click', () => {
+      window.location.href = 'aging_produk';
   });
+
+  document.getElementById('btnExportProg')?.addEventListener('click', exportProgExcel);
+  document.getElementById('harian_date_prog')?.addEventListener('change', triggerAutoRefresh);
 
   function updateStickyHeaderProg() {
       const thead = document.getElementById('theadProg');
@@ -312,7 +301,7 @@
   }
 
   function triggerAutoRefresh() {
-      if(window.innerWidth < 1280) document.getElementById('panelFilterProg').classList.add('hidden');
+      if(window.innerWidth < 1280) document.getElementById('panelFilterProg')?.classList.remove('is-open');
       fetchProgKredit();
   }
 
@@ -345,11 +334,6 @@
       } catch(err) { }
   }
 
-  document.getElementById('formFilterProg').addEventListener('submit', e => { 
-      e.preventDefault(); 
-      triggerAutoRefresh(); 
-  });
-
   // ==========================================
   // FETCH & RENDER DATA UTAMA
   // ==========================================
@@ -375,7 +359,7 @@
           kode_kankas: reqKankas
       };
 
-      loading.classList.remove('hidden');
+      loading.classList.remove('hidden', 'is-hidden');
       
       try {
           const res = await fetch(API_KREDIT, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
@@ -392,9 +376,34 @@
           renderProgTable(window.progDataRaw);
           setTimeout(updateStickyHeaderProg, 50);
       } catch(e) { 
-          document.getElementById('bodyProg').innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500 font-bold uppercase tracking-widest">${e.message || 'Error Load Data'}</td></tr>`;
+          document.getElementById('bodyProg').innerHTML = `<tr><td colspan="9" class="text-center py-10 text-red-500 font-bold uppercase tracking-widest">${e.message || 'Error Load Data'}</td></tr>`;
           document.getElementById('totalProg').innerHTML = '';
-      } finally { loading.classList.add('hidden'); }
+      } finally { loading.classList.add('hidden', 'is-hidden'); }
+  }
+
+  function pctProg(value, total) {
+      const denominator = Number(total || 0);
+      return denominator > 0 ? (Number(value || 0) * 100 / denominator).toLocaleString('id-ID', {maximumFractionDigits:2}) : '0';
+  }
+
+  function statusCellProg(row, status, category) {
+      const key = status.toLowerCase();
+      const os = Number(row['os_' + key] || 0);
+      const noa = Number(row['noa_' + key] || 0);
+      const tone = {L:'text-emerald-700', DP:'text-amber-700', KL:'text-rose-700', D:'text-red-700', M:'text-red-700'}[status] || 'text-slate-700';
+      return `<td class="font-bold ${tone}"><a href="#" onclick="openModalProg('${category}', '${status}'); return false;" class="hover:underline">${fmtProg(os)}</a><span class="prog-sub">${fmtProg(noa)} NOA • ${pctProg(os, row.total_os)}%</span></td>`;
+  }
+
+  function amountCellProg(value, noa, tone = 'text-slate-700') {
+      return `<td class="font-bold ${tone}">${fmtProg(value)}<span class="prog-sub">${fmtProg(noa)} NOA</span></td>`;
+  }
+
+  function nplCellProg(row) {
+      return `<td class="font-bold text-rose-700">${fmtProg(row.os_npl)}<span class="prog-sub">${fmtProg(row.noa_npl)} NOA</span></td>`;
+  }
+
+  function nplPctCellProg(row) {
+      return `<td class="font-bold text-rose-700">${pctProg(row.os_npl, row.total_os)}%<span class="prog-sub">dari porto</span></td>`;
   }
 
   function renderProgTotal(gt) {
@@ -406,10 +415,14 @@
       tbodyTotal.innerHTML = `
         <tr class="sticky-total">
             <td class="col-kategori text-left text-slate-800 uppercase tracking-widest">GRAND TOTAL</td>
-            <td class="text-right font-black text-blue-800 text-sm">${fmt(gt.total_os)} <div class="text-[10px] text-slate-500 font-semibold">${fmt(gt.total_noa)} NOA</div></td>
-            <td class="text-right font-black text-emerald-700 text-sm"><a href="#" onclick="openModalProg('ALL', 'PERFORMING'); return false;" class="hover:underline">${fmt(gt.os_performing)}</a> <div class="text-[10px] text-slate-500 font-semibold">${fmt(gt.noa_performing)} NOA</div></td>
-            <td class="text-right font-black text-red-600 text-sm"><a href="#" onclick="openModalProg('ALL', 'NPL'); return false;" class="hover:underline">${fmt(gt.os_npl)}</a> <div class="text-[10px] text-slate-500 font-semibold">${fmt(gt.noa_npl)} NOA</div></td>
-            <td class="text-center font-black text-slate-800 text-sm border-l border-slate-300 align-top pt-3">${fmt2(gt.persen_npl)}%</td>
+            ${amountCellProg(gt.total_os, gt.total_noa, 'text-slate-800')}
+            ${nplCellProg(gt)}
+            ${statusCellProg(gt, 'L', 'ALL')}
+            ${statusCellProg(gt, 'DP', 'ALL')}
+            ${statusCellProg(gt, 'KL', 'ALL')}
+            ${statusCellProg(gt, 'D', 'ALL')}
+            ${statusCellProg(gt, 'M', 'ALL')}
+            ${nplPctCellProg(gt)}
         </tr>`;
   }
 
@@ -417,7 +430,7 @@
       const tbody = document.getElementById('bodyProg');
       tbody.innerHTML = '';
       if (rows.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="5" class="text-center py-12 text-slate-400 font-medium">Data tidak ditemukan.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="9" class="text-center py-12 text-slate-400 font-medium">Data tidak ditemukan.</td></tr>`;
           return;
       }
       
@@ -436,10 +449,14 @@
           html += `
             <tr class="transition border-b h-[56px]">
                 <td class="col-kategori font-bold text-slate-700 tracking-wide text-xs">${r.kategori}</td>
-                <td class="text-right font-bold text-blue-700">${fmt(r.total_os)} <div class="text-[10px] text-slate-400 font-medium">${fmt(r.total_noa)} NOA</div></td>
-                <td class="text-right font-semibold text-emerald-600"><a href="#" onclick="openModalProg('${k}', 'PERFORMING'); return false;" class="hover:underline">${fmt(r.os_performing)}</a> <div class="text-[10px] text-slate-400 font-medium">${fmt(r.noa_performing)} NOA</div></td>
-                <td class="text-right font-semibold text-red-500"><a href="#" onclick="openModalProg('${k}', 'NPL'); return false;" class="hover:underline">${fmt(r.os_npl)}</a> <div class="text-[10px] text-slate-400 font-medium">${fmt(r.noa_npl)} NOA</div></td>
-                <td class="text-center font-extrabold border-l border-slate-100 align-top pt-4 ${r.persen_npl > 5 ? 'text-red-600 bg-red-50/30' : 'text-emerald-600'}">${fmt2(r.persen_npl)}%</td>
+                ${amountCellProg(r.total_os, r.total_noa, 'text-slate-800')}
+                ${nplCellProg(r)}
+                ${statusCellProg(r, 'L', k)}
+                ${statusCellProg(r, 'DP', k)}
+                ${statusCellProg(r, 'KL', k)}
+                ${statusCellProg(r, 'D', k)}
+                ${statusCellProg(r, 'M', k)}
+                ${nplPctCellProg(r)}
             </tr>`;
       });
       tbody.innerHTML = html;
@@ -614,9 +631,10 @@
       const gt = window.progGtRaw || null;
       if(rows.length === 0) return alert("Data Kosong!");
 
-      let csv = "PROGRESS JALAN (%)\tTOTAL PORTOFOLIO (OS)\tTOTAL PORTO (NOA)\tLANCAR & DPK (OS)\tLANCAR & DPK (NOA)\tNPL (OS)\tNPL (NOA)\t% NPL KONTRIBUSI\n";
-      if(gt) csv += `GRAND TOTAL\t${gt.total_os}\t${gt.total_noa}\t${gt.os_performing}\t${gt.noa_performing}\t${gt.os_npl}\t${gt.noa_npl}\t${gt.persen_npl}\n`;
-      rows.forEach(r => { csv += `${r.kategori}\t${r.total_os}\t${r.total_noa}\t${r.os_performing}\t${r.noa_performing}\t${r.os_npl}\t${r.noa_npl}\t${r.persen_npl}\n`; });
+      let csv = "PROGRESS JALAN (%)\tTOTAL PORTO\tPORTO NOA\tTOTAL NPL\tNPL NOA\tNPL %\tL OS\tL NOA\tL %\tDP OS\tDP NOA\tDP %\tKL OS\tKL NOA\tKL %\tD OS\tD NOA\tD %\tM OS\tM NOA\tM %\n";
+      const csvRow = r => [r.kategori || 'GRAND TOTAL', r.total_os, r.total_noa, r.os_npl, r.noa_npl, pctProg(r.os_npl, r.total_os), r.os_l, r.noa_l, pctProg(r.os_l, r.total_os), r.os_dp, r.noa_dp, pctProg(r.os_dp, r.total_os), r.os_kl, r.noa_kl, pctProg(r.os_kl, r.total_os), r.os_d, r.noa_d, pctProg(r.os_d, r.total_os), r.os_m, r.noa_m, pctProg(r.os_m, r.total_os)].join('\t') + '\n';
+      if(gt) csv += csvRow(gt);
+      rows.forEach(r => { csv += csvRow(r); });
       
       const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
       const a = document.createElement('a');

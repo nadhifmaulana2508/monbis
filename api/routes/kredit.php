@@ -54,6 +54,10 @@ switch ($method) {
             $controller->getRekapProgressKredit($input);
         } elseif ($input['type'] === 'detail_progress_kredit') {
             $controller->getDetailProgressKredit($input);
+        } elseif ($input['type'] === 'produk_kredit') {
+            $controller->getRekapProdukKredit($input);
+        } elseif ($input['type'] === 'detail_produk_kredit') {
+            $controller->getDetailProdukKredit($input);
         
             
 

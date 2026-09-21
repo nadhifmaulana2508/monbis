@@ -12,6 +12,680 @@ class RbbController
         $this->pdo = $pdo;
     }
 
+    private function requireOperational(array $auth): array
+    {
+        // Akses RBB sementara dibatasi khusus pemilik employee_id/id_peg 102-119.
+        // Jangan hanya mengandalkan visibility menu karena endpoint dapat dipanggil
+        // langsung dari URL atau DevTools.
+        $identityKeys = ['employee_id', 'id_peg', 'idPeg', 'id_pegawai', 'idPegawai'];
+        foreach ($identityKeys as $key) {
+            if (trim((string)($auth[$key] ?? '')) === '102-119') {
+                $employeeId = trim((string)($auth['employee_id'] ?? ''));
+                if ($employeeId === '') $employeeId = '102-119';
+                $stmt = $this->pdo->prepare('SELECT employee_id, full_name, job_position, unit_kerja, role FROM users WHERE employee_id = ? LIMIT 1');
+                $stmt->execute([$employeeId]);
+                $user = $stmt->fetch(PDO::FETCH_ASSOC);
+                return $user ?: [
+                    'employee_id' => $employeeId,
+                    'full_name' => '',
+                    'job_position' => '',
+                    'unit_kerja' => '',
+                    'role' => '',
+                ];
+            }
+        }
+
+        $employeeId = trim((string)($auth['employee_id'] ?? ''));
+        if ($employeeId === '') {
+            sendResponse(401, 'Identitas pengguna tidak ditemukan.');
+        }
+
+        $stmt = $this->pdo->prepare('SELECT employee_id, full_name, job_position, unit_kerja, role FROM users WHERE employee_id = ? LIMIT 1');
+        $stmt->execute([$employeeId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user) {
+            sendResponse(401, 'Pengguna tidak ditemukan.');
+        }
+
+        if ($employeeId !== '102-119') {
+            sendResponse(403, 'Menu Input RBB sementara hanya untuk employee_id/id_peg 102-119.');
+        }
+
+        return $user;
+    }
+
+    private function rbbPeriod($value): string
+    {
+        $period = trim((string)$value);
+        if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])(?:-\d{2})?$/', $period)) {
+            sendResponse(422, 'Periode RBB harus berformat YYYY-MM atau YYYY-MM-01.');
+        }
+        return substr($period, 0, 7) . '-01';
+    }
+
+    private function rbbBranch($value): string
+    {
+        $branch = str_pad(trim((string)$value), 3, '0', STR_PAD_LEFT);
+        if (!preg_match('/^(00[1-9]|0(?:1[0-9]|2[0-8]))$/', $branch)) {
+            sendResponse(422, 'Kode cabang RBB harus berada pada rentang 001 sampai 028.');
+        }
+        return $branch;
+    }
+
+    private function rbbAmount($value): ?float
+    {
+        if (is_int($value) || is_float($value)) {
+            return is_finite((float)$value) ? round((float)$value, 2) : null;
+        }
+
+        $raw = trim((string)$value);
+        if ($raw === '') return null;
+        $negative = preg_match('/^\(.*\)$/', $raw) === 1 || str_starts_with($raw, '-');
+        $raw = trim($raw, "() \t\r\n");
+        $raw = preg_replace('/[^0-9,\.]/', '', $raw);
+        if ($raw === '') return null;
+
+        $lastComma = strrpos($raw, ',');
+        $lastDot = strrpos($raw, '.');
+        if ($lastComma !== false && $lastDot !== false) {
+            if ($lastComma > $lastDot) {
+                $raw = str_replace('.', '', $raw);
+                $raw = str_replace(',', '.', $raw);
+            } else {
+                $raw = str_replace(',', '', $raw);
+            }
+        } elseif ($lastComma !== false) {
+            $fractionLength = strlen($raw) - $lastComma - 1;
+            $raw = $fractionLength > 0 && $fractionLength <= 2
+                ? str_replace('.', '', substr($raw, 0, $lastComma)) . '.' . substr($raw, $lastComma + 1)
+                : str_replace(',', '', $raw);
+        } elseif ($lastDot !== false) {
+            $fractionLength = strlen($raw) - $lastDot - 1;
+            if ($fractionLength === 3 && substr_count($raw, '.') >= 1) {
+                $raw = str_replace('.', '', $raw);
+            }
+        }
+
+        if (!is_numeric($raw)) return null;
+        $amount = (float)$raw;
+        if ($negative) $amount *= -1;
+        return is_finite($amount) ? round($amount, 2) : null;
+    }
+
+    public function getRbbCabangData(array $input, array $auth): void
+    {
+        $this->requireOperational($auth);
+        $period = $this->rbbPeriod($input['periode'] ?? '');
+        $branch = $this->rbbBranch($input['kode_kantor'] ?? '');
+
+        try {
+            $sql = "SELECT r.kode_monbis, COALESCE(ref.keterangan, '-') AS keterangan,
+                           COALESCE(r.`{$branch}`, 0) AS nilai_rbb
+                    FROM rbb r
+                    LEFT JOIN ref_rbb ref ON ref.kode_monbis = r.kode_monbis
+                    WHERE r.periode = :periode
+                    ORDER BY CAST(r.kode_monbis AS UNSIGNED), r.kode_monbis";
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':periode' => $period]);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as &$row) $row['nilai_rbb'] = (float)$row['nilai_rbb'];
+            unset($row);
+
+            sendResponse(200, 'Data RBB cabang berhasil dimuat.', [
+                'periode' => $period,
+                'kode_kantor' => $branch,
+                'data' => $rows,
+            ]);
+        } catch (PDOException $e) {
+            error_log('PDO Error Data RBB Cabang: ' . $e->getMessage());
+            sendResponse(500, 'Gagal memuat data RBB cabang.');
+        }
+    }
+
+    public function importRbbCabang(array $input, array $auth): void
+    {
+        $this->requireOperational($auth);
+        $period = $this->rbbPeriod($input['periode'] ?? '');
+        $branch = $this->rbbBranch($input['kode_kantor'] ?? '');
+        $rows = $input['rows'] ?? null;
+        if (!is_array($rows) || count($rows) === 0) {
+            sendResponse(422, 'Tidak ada baris RBB yang dapat diimport.');
+        }
+        if (count($rows) > 1000) {
+            sendResponse(422, 'Maksimal 1.000 baris per import.');
+        }
+
+        $validStmt = $this->pdo->query('SELECT DISTINCT kode_monbis FROM ref_rbb');
+        $validCodes = [];
+        foreach ($validStmt->fetchAll(PDO::FETCH_COLUMN) as $code) $validCodes[(string)$code] = true;
+
+        $normalized = [];
+        $errors = [];
+        foreach ($rows as $index => $row) {
+            $line = (int)$index + 2;
+            if (!is_array($row)) {
+                $errors[] = "Baris {$line}: format baris tidak valid.";
+                continue;
+            }
+            $code = trim((string)($row['kode_monbis'] ?? $row['kode'] ?? ''));
+            $amount = $this->rbbAmount($row['nilai_rbb'] ?? $row['target_rbb'] ?? $row['nilai'] ?? null);
+            if ($code === '') $errors[] = "Baris {$line}: kode_monbis wajib diisi.";
+            elseif (!isset($validCodes[$code])) $errors[] = "Baris {$line}: kode_monbis {$code} tidak ada di ref_rbb.";
+            if ($amount === null || $amount < 0 || $amount > 9999999999999999.99) {
+                $errors[] = "Baris {$line}: nilai_rbb tidak valid.";
+            }
+            if ($code !== '' && isset($normalized[$code])) $errors[] = "Baris {$line}: kode_monbis {$code} duplikat.";
+            if ($code !== '' && isset($validCodes[$code]) && $amount !== null && $amount >= 0) {
+                $normalized[$code] = $amount;
+            }
+        }
+        if ($errors) sendResponse(422, 'Validasi import gagal.', ['errors' => $errors]);
+
+        $column = '`' . $branch . '`';
+        try {
+            $this->pdo->beginTransaction();
+            $find = $this->pdo->prepare('SELECT id FROM rbb WHERE periode = ? AND kode_monbis = ? LIMIT 1');
+            $update = $this->pdo->prepare("UPDATE rbb SET {$column} = ? WHERE id = ?");
+            $insert = $this->pdo->prepare("INSERT INTO rbb (kode_monbis, periode, {$column}) VALUES (?, ?, ?)");
+            $updated = 0;
+            $inserted = 0;
+            foreach ($normalized as $code => $amount) {
+                $find->execute([$period, $code]);
+                $id = $find->fetchColumn();
+                if ($id !== false) {
+                    $update->execute([$amount, $id]);
+                    $updated++;
+                } else {
+                    $insert->execute([$code, $period, $amount]);
+                    $inserted++;
+                }
+            }
+            $this->pdo->commit();
+            sendResponse(200, 'Import RBB cabang berhasil.', [
+                'periode' => $period,
+                'kode_kantor' => $branch,
+                'total' => count($normalized),
+                'updated' => $updated,
+                'inserted' => $inserted,
+            ]);
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            error_log('Import RBB Cabang Error: ' . $e->getMessage());
+            sendResponse(500, 'Import RBB gagal diproses: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * RBB Planning memakai tabel terpisah dari rbb lama. Tabel lama tetap menjadi
+     * sumber report historis, sedangkan rbb_plan menyimpan draft dan approval 2027.
+     */
+    private function ensureRbbPlanningSchema(): void
+    {
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS rbb_plan (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            tahun SMALLINT UNSIGNED NOT NULL,
+            kode_kantor VARCHAR(3) NOT NULL,
+            status VARCHAR(32) NOT NULL DEFAULT 'DRAFT',
+            catatan TEXT NULL,
+            created_by VARCHAR(50) NULL,
+            updated_by VARCHAR(50) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_rbb_plan_tahun_kantor (tahun, kode_kantor),
+            KEY idx_rbb_plan_status (status)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS rbb_plan_value (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            plan_id BIGINT UNSIGNED NOT NULL,
+            kode_monbis VARCHAR(20) NOT NULL,
+            bulan TINYINT UNSIGNED NOT NULL,
+            nilai DECIMAL(20,2) NOT NULL DEFAULT 0,
+            input_mode VARCHAR(16) NOT NULL DEFAULT 'MANUAL',
+            input_source VARCHAR(64) NULL,
+            updated_by VARCHAR(50) NULL,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_rbb_plan_value (plan_id, kode_monbis, bulan),
+            KEY idx_rbb_plan_value_code (kode_monbis),
+            CONSTRAINT fk_rbb_plan_value_plan FOREIGN KEY (plan_id) REFERENCES rbb_plan(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS rbb_plan_approval (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            plan_id BIGINT UNSIGNED NOT NULL,
+            action VARCHAR(24) NOT NULL,
+            from_status VARCHAR(32) NOT NULL,
+            to_status VARCHAR(32) NOT NULL,
+            actor_id VARCHAR(50) NULL,
+            actor_name VARCHAR(150) NULL,
+            note TEXT NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_rbb_plan_approval_plan (plan_id),
+            CONSTRAINT fk_rbb_plan_approval_plan FOREIGN KEY (plan_id) REFERENCES rbb_plan(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS rbb_plan_aba (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            plan_id BIGINT UNSIGNED NOT NULL,
+            tipe VARCHAR(16) NOT NULL DEFAULT 'PLACEMENT',
+            no_urut INT NOT NULL DEFAULT 0,
+            jenis_penempatan VARCHAR(80) NULL,
+            nama_bank VARCHAR(150) NULL,
+            no_rekening_aba VARCHAR(80) NULL,
+            no_rekening_cbs VARCHAR(80) NULL,
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_rbb_plan_aba_plan (plan_id, tipe),
+            CONSTRAINT fk_rbb_plan_aba_plan FOREIGN KEY (plan_id) REFERENCES rbb_plan(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS rbb_plan_aba_value (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            aba_id BIGINT UNSIGNED NOT NULL,
+            bulan TINYINT UNSIGNED NOT NULL,
+            nilai DECIMAL(20,2) NOT NULL DEFAULT 0,
+            bunga DECIMAL(20,2) NOT NULL DEFAULT 0,
+            updated_by VARCHAR(50) NULL,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_rbb_plan_aba_value (aba_id, bulan),
+            CONSTRAINT fk_rbb_plan_aba_value_line FOREIGN KEY (aba_id) REFERENCES rbb_plan_aba(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $abaValueColumns = $this->pdo->query('SHOW COLUMNS FROM rbb_plan_aba_value')->fetchAll(PDO::FETCH_COLUMN, 0);
+        if (!in_array('bunga', $abaValueColumns, true)) {
+            $this->pdo->exec('ALTER TABLE rbb_plan_aba_value ADD COLUMN bunga DECIMAL(20,2) NOT NULL DEFAULT 0 AFTER nilai');
+        }
+
+        $this->pdo->exec("CREATE TABLE IF NOT EXISTS rbb_coa (
+            id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+            kode_monbis VARCHAR(20) NOT NULL,
+            kode_perk VARCHAR(50) NULL,
+            sandi_lbbpr VARCHAR(50) NULL,
+            kategori VARCHAR(50) NOT NULL,
+            keterangan VARCHAR(255) NOT NULL,
+            input_mode VARCHAR(16) NOT NULL DEFAULT 'MANUAL',
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            sort_order INT NOT NULL DEFAULT 0,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            UNIQUE KEY uq_rbb_coa_monbis (kode_monbis),
+            KEY idx_rbb_coa_kode_perk (kode_perk),
+            KEY idx_rbb_coa_kategori (kategori)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $this->pdo->exec("INSERT IGNORE INTO rbb_coa (kode_monbis, kode_perk, sandi_lbbpr, kategori, keterangan, sort_order)
+            SELECT kode_monbis, NULLIF(kode_perkiraan, ''), sandi_lbbpr, kategori, COALESCE(NULLIF(keterangan, ''), kode_monbis), id_ref
+            FROM ref_rbb");
+    }
+
+    private function planningYear($value): int
+    {
+        $year = (int)$value;
+        if ($year < 2020 || $year > 2100) sendResponse(422, 'Tahun RBB tidak valid.');
+        return $year;
+    }
+
+    private function planningCategory($value): string
+    {
+        $category = strtoupper(trim((string)($value ?: 'ASET')));
+        $allowed = ['ASET', 'DAMAS', 'KREDIT', 'PRODUKSI KREDIT', 'RUN OFF KREDIT', 'KREDIT SALDO BANK', 'PENDAPATAN', 'BEBAN', 'LIABILITAS', 'EKUITAS', 'IKHTISAR', 'LAINNYA', 'ALL'];
+        if (!in_array($category, $allowed, true)) sendResponse(422, 'Kategori RBB tidak valid.');
+        return $category;
+    }
+
+    private function planningCode($value): string
+    {
+        $code = str_pad(trim((string)$value), 3, '0', STR_PAD_LEFT);
+        if (!preg_match('/^(00[1-9]|0(?:1[0-9]|2[0-8]))$/', $code)) {
+            sendResponse(422, 'RBB planning hanya dapat diinput untuk kantor cabang 001 sampai 028.');
+        }
+        return $code;
+    }
+
+    private function planningMode(array $row): string
+    {
+        $code = (string)($row['kode_monbis'] ?? '');
+        if (in_array($code, ['RBB_PH', 'RBB_AYDA'], true)) return 'MANUAL';
+        if (in_array($code, ['RBB_TOTAL_OS', '31', '44', '45', '46', '47', '48', '49', '50', '51', '52', '53', '54', '55', '56'], true)) return 'AUTO';
+        $category = strtoupper(trim((string)($row['kategori'] ?? '')));
+        $label = strtolower((string)($row['keterangan'] ?? ''));
+        if (in_array($category, ['IKHTISAR', 'LAINNYA', 'PASIFA'], true)
+            || preg_match('/outstanding|total os|saldo bank|laba \(rugi\)|rasio/', $label)) {
+            return 'AUTO';
+        }
+        return 'MANUAL';
+    }
+
+    private function planningPlan(int $year, string $branch): ?array
+    {
+        $stmt = $this->pdo->prepare('SELECT * FROM rbb_plan WHERE tahun = ? AND kode_kantor = ? LIMIT 1');
+        $stmt->execute([$year, $branch]);
+        $plan = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $plan ?: null;
+    }
+
+    public function getRbbPlanningData(array $input, array $auth): void
+    {
+        $user = $this->requireOperational($auth);
+        $this->ensureRbbPlanningSchema();
+        $year = $this->planningYear($input['tahun'] ?? date('Y'));
+        $branch = $this->planningCode($input['kode_kantor'] ?? '001');
+        $category = $this->planningCategory($input['kategori'] ?? 'ASET');
+        $plan = $this->planningPlan($year, $branch);
+
+        $offices = $this->pdo->query("SELECT LPAD(CAST(kode_kantor AS CHAR), 3, '0') AS kode_kantor, nama_kantor
+            FROM kode_kantor WHERE LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN '001' AND '028' ORDER BY kode_kantor")->fetchAll(PDO::FETCH_ASSOC);
+
+        $where = $category === 'ALL' ? '1=1' : ($category === 'KREDIT'
+            ? "UPPER(TRIM(kategori)) IN ('PRODUKSI KREDIT', 'RUN OFF KREDIT', 'KREDIT SALDO BANK')"
+            : 'UPPER(TRIM(kategori)) = :kategori');
+        $coaStmt = $this->pdo->prepare("SELECT id AS id_ref, kode_monbis, kode_perk AS kode_perkiraan, sandi_lbbpr, kategori, keterangan
+            FROM rbb_coa WHERE is_active = 1 AND {$where} ORDER BY sort_order, id");
+        if ($category === 'ALL' || $category === 'KREDIT') $coaStmt->execute(); else $coaStmt->execute([':kategori' => $category]);
+        $coaRows = $coaStmt->fetchAll(PDO::FETCH_ASSOC);
+        if ($category === 'KREDIT') {
+            $coaRows[] = ['id_ref'=>0, 'kode_monbis'=>'RBB_PH', 'kode_perkiraan'=>'rencana.ph', 'sandi_lbbpr'=>null, 'kategori'=>'KREDIT', 'keterangan'=>'Rencana PH'];
+            $coaRows[] = ['id_ref'=>0, 'kode_monbis'=>'RBB_AYDA', 'kode_perkiraan'=>'rencana.ayda', 'sandi_lbbpr'=>null, 'kategori'=>'KREDIT', 'keterangan'=>'Rencana AYDA'];
+            $coaRows[] = ['id_ref'=>0, 'kode_monbis'=>'RBB_TOTAL_OS', 'kode_perkiraan'=>'formula.total_os', 'sandi_lbbpr'=>null, 'kategori'=>'KREDIT', 'keterangan'=>'Total OS (otomatis)'];
+        }
+
+        $values = [];
+        if ($plan) {
+            $stmt = $this->pdo->prepare('SELECT kode_monbis, bulan, nilai FROM rbb_plan_value WHERE plan_id = ?');
+            $stmt->execute([(int)$plan['id']]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $value) $values[(string)$value['kode_monbis']][(int)$value['bulan']] = (float)$value['nilai'];
+        }
+
+        $column = '`' . $branch . '`';
+        $history = [];
+        try {
+            $stmt = $this->pdo->prepare("SELECT kode_monbis, MONTH(periode) AS bulan, MAX(COALESCE({$column}, 0)) AS nilai
+                FROM rbb WHERE YEAR(periode) = ? GROUP BY kode_monbis, MONTH(periode)");
+            $stmt->execute([$year - 1]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $value) $history[(string)$value['kode_monbis']][(int)$value['bulan']] = (float)$value['nilai'];
+        } catch (Throwable $e) {
+            error_log('RBB planning history unavailable: ' . $e->getMessage());
+        }
+
+        $accHistory = [];
+        try {
+            $stmt = $this->pdo->prepare("SELECT ah.kode_perk, MONTH(ah.tanggal) AS bulan, ah.saldo_akhir AS nilai
+                FROM acc_history ah
+                INNER JOIN (
+                    SELECT kode_perk, MAX(tanggal) AS tanggal
+                    FROM acc_history
+                    WHERE kode_kantor = ? AND YEAR(tanggal) = ?
+                    GROUP BY kode_perk, MONTH(tanggal)
+                ) latest ON latest.kode_perk = ah.kode_perk AND latest.tanggal = ah.tanggal
+                WHERE ah.kode_kantor = ? AND YEAR(ah.tanggal) = ?");
+            $stmt->execute([$branch, $year - 1, $branch, $year - 1]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $value) $accHistory[(string)$value['kode_perk']][(int)$value['bulan']] = (float)$value['nilai'];
+        } catch (Throwable $e) {
+            error_log('RBB acc_history unavailable: ' . $e->getMessage());
+        }
+
+        // Formula kredit: total OS berjalan dari OS bulan sebelumnya + produksi - runoff - PH - AYDA.
+        // Produksi baru dimasukkan ke kolektibilitas L; bucket lain dibawa dari history sebagai baseline.
+        if ($category === 'KREDIT') {
+            for ($month = 1; $month <= 12; $month++) {
+                $production = 0.0;
+                for ($product = 32; $product <= 43; $product++) $production += (float)($values[(string)$product][$month] ?? 0);
+                $runoff = (float)($values['277'][$month] ?? 0);
+                $ph = (float)($values['RBB_PH'][$month] ?? 0);
+                $ayda = (float)($values['RBB_AYDA'][$month] ?? 0);
+                $previousTotal = $month === 1 ? (float)($history['44'][12] ?? 0) : (float)($values['44'][$month - 1] ?? 0);
+                $previousL = $month === 1 ? (float)($history['46'][12] ?? 0) : (float)($values['46'][$month - 1] ?? 0);
+                $values['31'][$month] = $production;
+                $values['44'][$month] = max(0.0, $previousTotal + $production - $runoff - $ph - $ayda);
+                $values['46'][$month] = max(0.0, $previousL + $production - $runoff - $ph - $ayda);
+                foreach (['48','50','52','54'] as $bucket) {
+                    $values[$bucket][$month] = $month === 1
+                        ? (float)($history[$bucket][12] ?? 0)
+                        : (float)($values[$bucket][$month - 1] ?? 0);
+                }
+                $values['RBB_TOTAL_OS'][$month] = $values['44'][$month];
+            }
+        }
+
+        $rows = [];
+        foreach ($coaRows as $row) {
+            $code = (string)$row['kode_monbis'];
+            $current = [];
+            $previous = [];
+            $total = 0.0;
+            $historyTotal = 0.0;
+            $mode = $this->planningMode($row);
+            for ($month = 1; $month <= 12; $month++) {
+                $current[$month] = (float)($values[$code][$month] ?? 0);
+                $previous[$month] = (float)($history[$code][$month] ?? 0);
+                $total += $current[$month];
+                $historyTotal += $previous[$month];
+            }
+            $rows[] = [
+                'id_ref' => (int)$row['id_ref'], 'kode_monbis' => $code,
+                'kode_perkiraan' => $row['kode_perkiraan'], 'sandi_lbbpr' => $row['sandi_lbbpr'],
+                'kategori' => $row['kategori'], 'keterangan' => $row['keterangan'],
+                'input_mode' => $mode, 'values' => $current, 'history' => $previous,
+                'acc_history' => $accHistory[(string)($row['kode_perkiraan'] ?? '')] ?? [],
+                'total' => $total, 'history_total' => $historyTotal,
+            ];
+        }
+
+        sendResponse(200, 'Data RBB planning berhasil dimuat.', [
+            'tahun' => $year, 'kode_kantor' => $branch, 'kategori' => $category,
+            'plan' => $plan ? ['id' => (int)$plan['id'], 'status' => $plan['status'], 'catatan' => $plan['catatan']] : null,
+            'months' => ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'],
+            'offices' => $offices, 'rows' => $rows,
+            'permissions' => ['can_edit' => !$plan || in_array($plan['status'], ['DRAFT', 'REJECTED'], true), 'user' => $user['full_name'] ?? ''],
+        ]);
+    }
+
+    public function getRbbProjectionData(array $input, array $auth): void
+    {
+        $this->requireOperational($auth);
+        $this->ensureRbbPlanningSchema();
+        $year = $this->planningYear($input['tahun'] ?? date('Y'));
+        $branch = $this->planningCode($input['kode_kantor'] ?? '001');
+        $plan = $this->planningPlan($year, $branch);
+        $stmt = $this->pdo->prepare('SELECT id AS id_ref, kode_monbis, kode_perk AS kode_perkiraan, sandi_lbbpr, kategori, keterangan FROM rbb_coa WHERE is_active = 1 ORDER BY sort_order, id');
+        $stmt->execute();
+        $coaRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $values = [];
+        if ($plan) {
+            $stmt = $this->pdo->prepare('SELECT kode_monbis, bulan, nilai FROM rbb_plan_value WHERE plan_id = ?');
+            $stmt->execute([(int)$plan['id']]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $value) $values[(string)$value['kode_monbis']][(int)$value['bulan']] = (float)$value['nilai'];
+        }
+        $aba = [
+            'PLACEMENT'=>array_fill(1,12,0.0),
+            'CKPN'=>array_fill(1,12,0.0),
+            'INTEREST'=>array_fill(1,12,0.0),
+        ];
+        if ($plan) {
+            $stmt = $this->pdo->prepare('SELECT a.tipe, v.bulan, SUM(v.nilai) AS nilai, SUM(ROUND(v.nilai * 0.005, 2)) AS ckpn, SUM(v.bunga) AS bunga FROM rbb_plan_aba a INNER JOIN rbb_plan_aba_value v ON v.aba_id = a.id WHERE a.plan_id = ? AND a.tipe = \'PLACEMENT\' AND a.is_active = 1 GROUP BY a.tipe, v.bulan');
+            $stmt->execute([(int)$plan['id']]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $value) {
+                $month = (int)$value['bulan'];
+                $aba['PLACEMENT'][$month] = (float)$value['nilai'];
+                $aba['CKPN'][$month] = (float)$value['ckpn'];
+                $aba['INTEREST'][$month] = (float)$value['bunga'];
+            }
+        }
+        // Pemetaan PROYEKSI: 104 = penempatan, 105 = CKPN PPBL, 401010102 = pendapatan bunga.
+        foreach (['61'=>'PLACEMENT', '62'=>'CKPN', '166'=>'INTEREST'] as $code => $type) for ($month=1;$month<=12;$month++) $values[$code][$month]=$aba[$type][$month];
+        $rows=[];
+        foreach ($coaRows as $row) {
+            $code=(string)$row['kode_monbis']; $current=[]; $total=0.0;
+            for($month=1;$month<=12;$month++){ $current[$month]=(float)($values[$code][$month]??0); $total+=$current[$month]; }
+            $rows[]=['id_ref'=>(int)$row['id_ref'],'kode_monbis'=>$code,'kode_perkiraan'=>$row['kode_perkiraan'],'sandi_lbbpr'=>$row['sandi_lbbpr'],'kategori'=>$row['kategori'],'keterangan'=>$row['keterangan'],'input_mode'=>'AUTO','values'=>$current,'total'=>$total,'source'=>in_array($code,['61','62','166'],true)?'INPUT ABA':'INPUT COA'];
+        }
+        sendResponse(200,'Proyeksi RBB berhasil dimuat.',['tahun'=>$year,'kode_kantor'=>$branch,'plan'=>$plan?['id'=>(int)$plan['id'],'status'=>$plan['status']]:null,'months'=>['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'],'rows'=>$rows,'aba_summary'=>$aba,'aba_ckpn_rate'=>0.005]);
+    }
+
+    public function getRbbAbaData(array $input, array $auth): void
+    {
+        $this->requireOperational($auth); $this->ensureRbbPlanningSchema();
+        $year=$this->planningYear($input['tahun']??date('Y')); $branch=$this->planningCode($input['kode_kantor']??'001'); $type=strtoupper(trim((string)($input['tipe']??'PLACEMENT')));
+        if($type !== 'PLACEMENT') sendResponse(422,'CKPN ABA dihitung otomatis dari nominal penempatan.');
+        $plan=$this->planningPlan($year,$branch); $rows=[];
+        if($plan){$stmt=$this->pdo->prepare('SELECT a.id,a.no_urut,a.jenis_penempatan,a.nama_bank,a.no_rekening_aba,a.no_rekening_cbs,v.bulan,v.nilai,v.bunga FROM rbb_plan_aba a LEFT JOIN rbb_plan_aba_value v ON v.aba_id=a.id WHERE a.plan_id=? AND a.tipe=? AND a.is_active=1 ORDER BY a.no_urut,a.id');$stmt->execute([(int)$plan['id'],$type]);$map=[];foreach($stmt->fetchAll(PDO::FETCH_ASSOC) as $r){$id=(int)$r['id'];if(!isset($map[$id]))$map[$id]=['id'=>$id,'no_urut'=>(int)$r['no_urut'],'jenis_penempatan'=>$r['jenis_penempatan'],'nama_bank'=>$r['nama_bank'],'no_rekening_aba'=>$r['no_rekening_aba'],'no_rekening_cbs'=>$r['no_rekening_cbs'],'values'=>array_fill(1,12,0.0),'interest_values'=>array_fill(1,12,0.0)];if($r['bulan']!==null){$month=(int)$r['bulan'];$map[$id]['values'][$month]=(float)$r['nilai'];$map[$id]['interest_values'][$month]=(float)$r['bunga'];}}$rows=array_values($map);}
+        $historyYears=[$year-3,$year-2,$year-1];
+        $history=['years'=>$historyYears,'nominal'=>[],'ckpn'=>[],'interest'=>[]];
+        foreach($historyYears as $historyYear){$history['nominal'][$historyYear]=array_fill(1,12,0.0);$history['ckpn'][$historyYear]=array_fill(1,12,0.0);$history['interest'][$historyYear]=array_fill(1,12,0.0);}
+        try {
+            $historyStmt=$this->pdo->prepare("SELECT ah.kode_perk,YEAR(ah.tanggal) AS tahun,MONTH(ah.tanggal) AS bulan,ah.saldo_akhir
+                FROM acc_history ah
+                INNER JOIN (
+                    SELECT kode_perk,YEAR(tanggal) AS tahun,MONTH(tanggal) AS bulan,MAX(tanggal) AS tanggal
+                    FROM acc_history
+                    WHERE kode_kantor=? AND YEAR(tanggal) BETWEEN ? AND ? AND kode_perk IN ('104','105','401010102')
+                    GROUP BY kode_perk,YEAR(tanggal),MONTH(tanggal)
+                ) latest ON latest.kode_perk=ah.kode_perk AND latest.tahun=YEAR(ah.tanggal) AND latest.bulan=MONTH(ah.tanggal) AND latest.tanggal=ah.tanggal
+                WHERE ah.kode_kantor=? AND YEAR(ah.tanggal) BETWEEN ? AND ?");
+            $historyStmt->execute([$branch,$historyYears[0],$historyYears[2],$branch,$historyYears[0],$historyYears[2]]);
+            foreach($historyStmt->fetchAll(PDO::FETCH_ASSOC) as $item){$historyYear=(int)$item['tahun'];$month=(int)$item['bulan'];$code=(string)$item['kode_perk'];$value=(float)$item['saldo_akhir'];if($code==='104')$history['nominal'][$historyYear][$month]=$value;elseif($code==='105')$history['ckpn'][$historyYear][$month]=$value;elseif($code==='401010102')$history['interest'][$historyYear][$month]=$value;}
+        } catch(Throwable $e) { error_log('RBB ABA history unavailable: '.$e->getMessage()); }
+        sendResponse(200,'Data ABA berhasil dimuat.',['tahun'=>$year,'kode_kantor'=>$branch,'tipe'=>$type,'plan'=>$plan?['id'=>(int)$plan['id'],'status'=>$plan['status']]:null,'rows'=>$rows,'interest_rate'=>0.0125,'history'=>$history]);
+    }
+
+    public function saveRbbAba(array $input, array $auth): void
+    {
+        $user=$this->requireOperational($auth); $this->ensureRbbPlanningSchema(); $year=$this->planningYear($input['tahun']??''); $branch=$this->planningCode($input['kode_kantor']??''); $type='PLACEMENT'; $rows=$input['rows']??[];
+        if(!is_array($rows))sendResponse(422,'Data input ABA tidak valid.');
+        $plan=$this->planningPlan($year,$branch); if($plan&&!in_array($plan['status'],['DRAFT','REJECTED'],true))sendResponse(422,'RBB sudah diajukan atau disetujui dan tidak dapat diedit.');
+        try{$this->pdo->beginTransaction();if(!$plan){$stmt=$this->pdo->prepare("INSERT INTO rbb_plan (tahun,kode_kantor,status,created_by,updated_by) VALUES (?,?, 'DRAFT',?,?)");$stmt->execute([$year,$branch,$user['employee_id']??null,$user['employee_id']??null]);$plan=$this->planningPlan($year,$branch);}else{$this->pdo->prepare("UPDATE rbb_plan SET status='DRAFT',updated_by=? WHERE id=?")->execute([$user['employee_id']??null,(int)$plan['id']]);}$find=$this->pdo->prepare('SELECT id FROM rbb_plan_aba WHERE id=? AND plan_id=? AND tipe=\'PLACEMENT\' LIMIT 1');$insert=$this->pdo->prepare('INSERT INTO rbb_plan_aba (plan_id,tipe,no_urut,jenis_penempatan,nama_bank,no_rekening_aba,no_rekening_cbs,is_active) VALUES (?,?,?,?,?,?,?,1)');$update=$this->pdo->prepare('UPDATE rbb_plan_aba SET no_urut=?,jenis_penempatan=?,nama_bank=?,no_rekening_aba=?,no_rekening_cbs=?,is_active=1 WHERE id=? AND plan_id=? AND tipe=\'PLACEMENT\'');$value=$this->pdo->prepare("INSERT INTO rbb_plan_aba_value (aba_id,bulan,nilai,bunga,updated_by) VALUES (?,?,?,?,?) ON DUPLICATE KEY UPDATE nilai=VALUES(nilai),bunga=VALUES(bunga),updated_by=VALUES(updated_by)");$seen=[];foreach($rows as $index=>$row){if(!is_array($row))continue;$id=(int)($row['id']??0);$args=[(int)($row['no_urut']??($index+1)),trim((string)($row['jenis_penempatan']??'')),trim((string)($row['nama_bank']??'')),trim((string)($row['no_rekening_aba']??'')),trim((string)($row['no_rekening_cbs']??''))];if($id>0){$find->execute([$id,(int)$plan['id']]);if($find->fetchColumn()!==false){$update->execute([...$args,$id,(int)$plan['id']]);}else{$insert->execute([(int)$plan['id'],$type,...$args]);$id=(int)$this->pdo->lastInsertId();}}else{$insert->execute([(int)$plan['id'],$type,...$args]);$id=(int)$this->pdo->lastInsertId();}$seen[]=$id;for($month=1;$month<=12;$month++){$amount=$this->rbbAmount(($row['values']??[])[$month]??($row['values']??[])[(string)$month]??0);if($amount===null||$amount<0)sendResponse(422,'Nilai ABA tidak valid.');$interest=round($amount*(0.0125/12),2);$value->execute([$id,$month,$amount,$interest,$user['employee_id']??null]);}}if($seen){$marks=implode(',',array_fill(0,count($seen),'?'));$off=$this->pdo->prepare("UPDATE rbb_plan_aba SET is_active=0 WHERE plan_id=? AND tipe=? AND id NOT IN ({$marks})");$off->execute(array_merge([(int)$plan['id'],$type],$seen));}else{$this->pdo->prepare('UPDATE rbb_plan_aba SET is_active=0 WHERE plan_id=? AND tipe=?')->execute([(int)$plan['id'],$type]);}$this->pdo->commit();sendResponse(200,'Input ABA berhasil disimpan.',['plan_id'=>(int)$plan['id'],'total_rows'=>count($seen),'interest_rate'=>0.0125]);}catch(Throwable $e){if($this->pdo->inTransaction())$this->pdo->rollBack();error_log('Save RBB ABA Error: '.$e->getMessage());sendResponse(500,'Input ABA gagal disimpan.');}
+    }
+
+    public function saveRbbPlanning(array $input, array $auth): void
+    {
+        $user = $this->requireOperational($auth);
+        $this->ensureRbbPlanningSchema();
+        $year = $this->planningYear($input['tahun'] ?? '');
+        $branch = $this->planningCode($input['kode_kantor'] ?? '');
+        $rows = $input['rows'] ?? [];
+        if (!is_array($rows)) sendResponse(422, 'Format baris RBB tidak valid.');
+        $codes = $this->pdo->query('SELECT kode_monbis, kategori, keterangan FROM rbb_coa WHERE is_active = 1')->fetchAll(PDO::FETCH_ASSOC);
+        $master = [];
+        foreach ($codes as $row) $master[(string)$row['kode_monbis']] = $row;
+        $master['RBB_PH'] = ['kode_monbis'=>'RBB_PH', 'kategori'=>'KREDIT', 'keterangan'=>'Rencana PH'];
+        $master['RBB_AYDA'] = ['kode_monbis'=>'RBB_AYDA', 'kategori'=>'KREDIT', 'keterangan'=>'Rencana AYDA'];
+        $master['RBB_TOTAL_OS'] = ['kode_monbis'=>'RBB_TOTAL_OS', 'kategori'=>'KREDIT', 'keterangan'=>'Total OS (otomatis)'];
+
+        $plan = $this->planningPlan($year, $branch);
+        if ($plan && !in_array($plan['status'], ['DRAFT', 'REJECTED'], true)) sendResponse(422, 'RBB yang sudah diajukan atau disetujui tidak dapat diedit.');
+        try {
+            $this->pdo->beginTransaction();
+            if (!$plan) {
+                $stmt = $this->pdo->prepare('INSERT INTO rbb_plan (tahun, kode_kantor, status, created_by, updated_by) VALUES (?, ?, \'DRAFT\', ?, ?)');
+                $stmt->execute([$year, $branch, $user['employee_id'] ?? null, $user['employee_id'] ?? null]);
+                $plan = $this->planningPlan($year, $branch);
+            } else {
+                $stmt = $this->pdo->prepare('UPDATE rbb_plan SET status = \'DRAFT\', updated_by = ? WHERE id = ?');
+                $stmt->execute([$user['employee_id'] ?? null, (int)$plan['id']]);
+            }
+
+            $upsert = $this->pdo->prepare("INSERT INTO rbb_plan_value (plan_id, kode_monbis, bulan, nilai, input_mode, input_source, updated_by)
+                VALUES (?, ?, ?, ?, ?, 'USER', ?)
+                ON DUPLICATE KEY UPDATE nilai = VALUES(nilai), input_mode = VALUES(input_mode), input_source = VALUES(input_source), updated_by = VALUES(updated_by)");
+            foreach ($rows as $row) {
+                $code = trim((string)($row['kode_monbis'] ?? ''));
+                if ($code === '' || !isset($master[$code])) continue;
+                $mode = $this->planningMode($master[$code]);
+                if ($mode === 'AUTO') continue;
+                $months = is_array($row['values'] ?? null) ? $row['values'] : [];
+                for ($month = 1; $month <= 12; $month++) {
+                    $value = $this->rbbAmount($months[$month] ?? $months[(string)$month] ?? 0);
+                    if ($value === null || $value < 0 || $value > 999999999999999999.99) sendResponse(422, "Nilai {$code} bulan {$month} tidak valid.");
+                    $upsert->execute([(int)$plan['id'], $code, $month, $value, $mode, $user['employee_id'] ?? null]);
+                }
+            }
+            $this->pdo->commit();
+            sendResponse(200, 'Draft RBB berhasil disimpan.', ['plan_id' => (int)$plan['id'], 'status' => 'DRAFT']);
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            error_log('Save RBB Planning Error: ' . $e->getMessage());
+            sendResponse(500, 'Draft RBB gagal disimpan.');
+        }
+    }
+
+    public function submitRbbPlanning(array $input, array $auth): void
+    {
+        $user = $this->requireOperational($auth);
+        $this->ensureRbbPlanningSchema();
+        $plan = $this->planningPlan($this->planningYear($input['tahun'] ?? ''), $this->planningCode($input['kode_kantor'] ?? ''));
+        if (!$plan) sendResponse(404, 'Draft RBB belum dibuat.');
+        if (!in_array($plan['status'], ['DRAFT', 'REJECTED'], true)) sendResponse(422, 'Status RBB tidak dapat diajukan ulang.');
+        $this->transitionRbbPlanning($plan, 'SUBMIT_KANWIL', 'SUBMITTED_KANWIL', $user, $input['catatan'] ?? null);
+    }
+
+    public function approveRbbPlanning(array $input, array $auth): void
+    {
+        $user = $this->requireOperational($auth);
+        $this->ensureRbbPlanningSchema();
+        $plan = $this->planningPlan($this->planningYear($input['tahun'] ?? ''), $this->planningCode($input['kode_kantor'] ?? ''));
+        if (!$plan) sendResponse(404, 'Rencana RBB tidak ditemukan.');
+        $action = strtoupper(trim((string)($input['action'] ?? '')));
+        $map = [
+            'APPROVE_KANWIL' => ['SUBMITTED_KANWIL', 'APPROVED_KANWIL'],
+            'APPROVE_PUSAT' => ['APPROVED_KANWIL', 'APPROVED_PUSAT'],
+            'REJECT' => [$plan['status'], 'REJECTED'],
+        ];
+        if (!isset($map[$action])) sendResponse(422, 'Aksi approval tidak valid.');
+        [$from, $to] = $map[$action];
+        if ($action !== 'REJECT' && $plan['status'] !== $from) sendResponse(422, 'Status RBB belum sesuai untuk approval ini.');
+        $this->transitionRbbPlanning($plan, $action, $to, $user, $input['catatan'] ?? null);
+    }
+
+    private function transitionRbbPlanning(array $plan, string $action, string $toStatus, array $user, ?string $note): void
+    {
+        $this->pdo->beginTransaction();
+        try {
+            $update = $this->pdo->prepare('UPDATE rbb_plan SET status = ?, catatan = ?, updated_by = ? WHERE id = ?');
+            $update->execute([$toStatus, $note, $user['employee_id'] ?? null, (int)$plan['id']]);
+            $log = $this->pdo->prepare('INSERT INTO rbb_plan_approval (plan_id, action, from_status, to_status, actor_id, actor_name, note) VALUES (?, ?, ?, ?, ?, ?, ?)');
+            $log->execute([(int)$plan['id'], $action, $plan['status'], $toStatus, $user['employee_id'] ?? null, $user['full_name'] ?? null, $note]);
+            $this->pdo->commit();
+            sendResponse(200, 'Status RBB berhasil diperbarui.', ['status' => $toStatus]);
+        } catch (Throwable $e) {
+            if ($this->pdo->inTransaction()) $this->pdo->rollBack();
+            error_log('Transition RBB Planning Error: ' . $e->getMessage());
+            sendResponse(500, 'Status RBB gagal diperbarui.');
+        }
+    }
+
+    public function getRbbPlanningCoa(array $input, array $auth): void
+    {
+        $this->requireOperational($auth);
+        $this->ensureRbbPlanningSchema();
+        $stmt = $this->pdo->query('SELECT id AS id_ref, kode_monbis, kode_perk AS kode_perkiraan, sandi_lbbpr, kategori, keterangan, input_mode, is_active FROM rbb_coa ORDER BY sort_order, id');
+        sendResponse(200, 'Master COA RBB berhasil dimuat.', ['rows' => $stmt->fetchAll(PDO::FETCH_ASSOC)]);
+    }
+
+    public function saveRbbPlanningCoa(array $input, array $auth): void
+    {
+        $user = $this->requireOperational($auth);
+        $this->ensureRbbPlanningSchema();
+        $id = (int)($input['id_ref'] ?? 0);
+        $code = trim((string)($input['kode_monbis'] ?? ''));
+        $label = trim((string)($input['keterangan'] ?? ''));
+        $category = strtoupper(trim((string)($input['kategori'] ?? 'LAINNYA')));
+        if ($code === '' || $label === '') sendResponse(422, 'Kode monbis dan keterangan wajib diisi.');
+        if ($id > 0) {
+            $stmt = $this->pdo->prepare('UPDATE rbb_coa SET kode_monbis = ?, kode_perk = ?, sandi_lbbpr = ?, kategori = ?, keterangan = ?, input_mode = ?, is_active = ? WHERE id = ?');
+            $stmt->execute([$code, $input['kode_perk'] ?? $input['kode_perkiraan'] ?? null, $input['sandi_lbbpr'] ?? null, $category, $label, strtoupper((string)($input['input_mode'] ?? 'MANUAL')) === 'AUTO' ? 'AUTO' : 'MANUAL', !empty($input['is_active']) ? 1 : 0, $id]);
+        } else {
+            $stmt = $this->pdo->prepare('INSERT INTO rbb_coa (kode_monbis, kode_perk, sandi_lbbpr, kategori, keterangan, input_mode, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)');
+            $stmt->execute([$code, $input['kode_perk'] ?? $input['kode_perkiraan'] ?? null, $input['sandi_lbbpr'] ?? null, $category, $label, strtoupper((string)($input['input_mode'] ?? 'MANUAL')) === 'AUTO' ? 'AUTO' : 'MANUAL', 1]);
+        }
+        error_log('RBB COA changed by ' . ($user['employee_id'] ?? 'unknown'));
+        sendResponse(200, 'Master COA RBB berhasil disimpan.');
+    }
+
     /**
      * LAPORAN ASSET VS RBB (PERIODE JUNI 2026)
      * UPDATE FORMULA: Khusus Saldo Bank (id_ref 63) dihitung dari 10601 + 10606

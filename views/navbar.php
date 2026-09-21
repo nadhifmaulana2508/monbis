@@ -662,8 +662,14 @@
       return '';
     }
 
+    function canAccessInputRbb(user) {
+      return resolvePegId(user) === '102-119';
+    }
+    window.MonbisRbbAccess = canAccessInputRbb;
+
     function applyDevMenuVisibility() {
       const menu = document.getElementById('menuDevReport');
+      const menuInputRbb = document.getElementById('menuInputRbb');
       const adminMenu = document.getElementById('menuEventAdmin');
       const user = readUser();
       if (menu) {
@@ -674,6 +680,9 @@
           const mappingLink = link.getAttribute('href') === 'maping_ao_remedial';
           link.style.display = operational || mappingLink ? '' : 'none';
         });
+      }
+      if (menuInputRbb) {
+        menuInputRbb.style.display = canAccessInputRbb(user) ? 'block' : 'none';
       }
       if (adminMenu) adminMenu.style.setProperty('display', user && resolvePegId(user) === '102-119' ? 'block' : 'none', 'important');
       return !!user;
@@ -854,6 +863,25 @@
           <a href="report_realisasi_ao" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report Realisasi AO</a>
           <a href="report_otp" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Report OTP</a>
           <a href="maping_ao_remedial" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Mapping AO Remedial</a>
+        </div>
+      </div>
+
+      <!-- Parent Input RBB (sementara khusus employee_id/id_peg 102-119) -->
+      <div id="menuInputRbb" class="accordion-group" style="display: none;">
+        <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
+          <div class="flex items-center shrink-0">
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19V5m0 14h16M8 16v-4m4 4V8m4 8v-7"></path></svg>
+            <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Input RBB</span>
+          </div>
+          <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+        <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
+          <a href="input_rbb" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Proyeksi RBB</a>
+          <a href="input_rbb_aba" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Input RBB ABA</a>
+          <a href="input_rbb_detail?bagian=kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Input RBB Kredit</a>
+          <a href="input_rbb_detail?bagian=damas" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Input RBB DAMAS</a>
+          <a href="input_rbb_detail?bagian=pendapatan" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Input RBB Pendapatan</a>
+          <a href="input_rbb_detail?bagian=beban" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Input RBB Beban</a>
         </div>
       </div>
 

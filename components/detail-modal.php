@@ -16,6 +16,7 @@ if (!function_exists('mb_render_detail_modal')) {
         $searchNearClose = !empty($cfg['search_near_close']);
         $collapsibleFilters = !empty($cfg['collapsible_filters']) && !empty($cfg['filters']);
         $toolbarId = $cfg['toolbar_id'] ?? ($id . 'Filters');
+        $cardClass = trim('mb-modal__card mb-modal__card--' . $size . ' ' . ($cfg['card_class'] ?? ''));
 
         $modalClass = 'mb-modal mb-modal--detail'
             . ($mobileBodyId !== '' ? ' mb-modal--responsive-detail' : '')
@@ -29,7 +30,7 @@ if (!function_exists('mb_render_detail_modal')) {
         };
         echo '<div id="' . mb_e($id) . '" class="' . mb_e($modalClass) . '" role="dialog" aria-modal="true" aria-hidden="true">';
         echo '  <div class="mb-modal__backdrop" data-mb-close-modal="' . mb_e($id) . '"></div>';
-        echo '  <section class="mb-modal__card mb-modal__card--' . mb_e($size) . '">';
+        echo '  <section class="' . mb_e($cardClass) . '">';
         echo '    <header class="mb-detail-header">';
         echo '      <div class="mb-modal__heading">';
         echo '        <span class="mb-modal__icon">' . ($cfg['icon'] ?? mb_svg('file')) . '</span>';
@@ -45,24 +46,35 @@ if (!function_exists('mb_render_detail_modal')) {
             $attrs['type'] = 'button';
             $attrs['class'] = 'mb-icon-button mb-icon-button--' . ($action['tone'] ?? 'success');
             if (!empty($action['title'])) $attrs['title'] = $action['title'];
+            if (!empty($action['aria_label'])) $attrs['aria-label'] = $action['aria_label'];
             echo '<button' . mb_attrs($attrs) . '>' . mb_svg($action['icon'] ?? 'download') . '</button>';
         }
         echo '      </div>';
         echo '      <div class="mb-detail-close-tools">';
         if ($searchNearClose) $renderSearch();
         if ($collapsibleFilters) {
-            echo '        <button type="button" class="mb-detail-filter-toggle" data-mb-filter-target="' . mb_e($toolbarId) . '" aria-label="Buka atau tutup filter" aria-expanded="false">' . mb_svg('filter') . '</button>';
+            $toggleAttrs = [
+                'type' => 'button',
+                'class' => 'mb-detail-filter-toggle',
+                'data-mb-filter-target' => $toolbarId,
+                'aria-label' => 'Buka atau tutup filter',
+                'aria-expanded' => 'false',
+            ];
+            if (!empty($cfg['filter_toggle_id'])) $toggleAttrs['id'] = $cfg['filter_toggle_id'];
+            echo '        <button' . mb_attrs($toggleAttrs) . '>' . mb_svg('filter') . '</button>';
         }
         echo '        <button type="button" class="mb-modal__close" data-mb-close-modal="' . mb_e($id) . '" aria-label="Tutup">' . mb_svg('close') . '</button>';
         echo '      </div>';
         echo '    </header>';
 
-        echo '    <div id="' . mb_e($summaryId) . '" class="mb-summary is-hidden"></div>';
-        echo '    <div class="mb-detail-content"><div id="' . mb_e($bodyId) . '" class="mb-detail-body' . ($mobileBodyId !== '' ? ' mb-detail-desktop' : '') . '"></div>';
-        if ($mobileBodyId !== '') {
-            echo '      <div id="' . mb_e($mobileBodyId) . '" class="mb-detail-mobile"></div>';
+        if (array_key_exists('summary_html', $cfg)) echo $cfg['summary_html'];
+        else echo '    <div id="' . mb_e($summaryId) . '" class="mb-summary is-hidden"></div>';
+        if (array_key_exists('content_html', $cfg)) echo $cfg['content_html'];
+        else {
+            echo '    <div class="mb-detail-content"><div id="' . mb_e($bodyId) . '" class="mb-detail-body' . ($mobileBodyId !== '' ? ' mb-detail-desktop' : '') . '"></div>';
+            if ($mobileBodyId !== '') echo '      <div id="' . mb_e($mobileBodyId) . '" class="mb-detail-mobile"></div>';
+            echo '    </div>';
         }
-        echo '    </div>';
         echo '    <footer id="' . mb_e($footerId) . '" class="mb-detail-footer' . (empty($cfg['footer_html']) ? ' is-hidden' : '') . '">' . ($cfg['footer_html'] ?? '') . '</footer>';
         echo '  </section>';
         echo '</div>';

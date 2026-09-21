@@ -59,13 +59,19 @@ if (!function_exists('mb_render_table_shell')) {
         $tableId = $cfg['table_id'] ?? 'mbTable';
         $loadingId = $cfg['loading_id'] ?? ($tableId . 'Loading');
         $class = trim('mb-table ' . ($cfg['class'] ?? ''));
+        $tableAttrs = $cfg['table_attrs'] ?? [];
+        $tableAttrs['id'] = $tableId;
+        $tableAttrs['class'] = $class;
+        $theadAttrs = [];
+        if (!empty($cfg['thead_id'])) $theadAttrs['id'] = $cfg['thead_id'];
+        if (!empty($cfg['thead_class'])) $theadAttrs['class'] = $cfg['thead_class'];
 
         echo '<div class="mb-table-region">';
         echo '  <div id="' . mb_e($loadingId) . '" class="mb-loading is-hidden"><span class="mb-spinner"></span><span>' . mb_e($cfg['loading_text'] ?? 'Memuat data...') . '</span></div>';
         echo '  <div id="' . mb_e($wrapId) . '" class="mb-table-wrap">';
-        echo '    <table id="' . mb_e($tableId) . '" class="' . mb_e($class) . '">';
+        echo '    <table' . mb_attrs($tableAttrs) . '>';
         if (!empty($cfg['colgroup_html'])) echo $cfg['colgroup_html'];
-        echo '      <thead>' . ($cfg['thead_html'] ?? '') . '</thead>';
+        echo '      <thead' . mb_attrs($theadAttrs) . '>' . ($cfg['thead_html'] ?? '') . '</thead>';
         foreach (($cfg['tbody_ids'] ?? ['mbTableBody']) as $tbodyId) {
             echo '      <tbody id="' . mb_e($tbodyId) . '"></tbody>';
         }

@@ -172,7 +172,8 @@
                   menuMonevDev = document.getElementById('menuMonevDev'),
                   menuKpiBisnis = document.getElementById('menuKpiBisnis'),
                   menuLayananDigital = document.getElementById('menuLayananDigital'),
-                  menuEventAdmin = document.getElementById('menuEventAdmin');
+                  menuEventAdmin = document.getElementById('menuEventAdmin'),
+                  menuInputRbb = document.getElementById('menuInputRbb');
 
             if (name) name.textContent = u.full_name || u.nama || '-';
             if (br) br.textContent = u.branch_name || u.unit_kerja || '-';
@@ -192,6 +193,11 @@
             if (menuEventAdmin) {
                 const isEventAdmin = monbisResolvePegId(u) === '102-119';
                 menuEventAdmin.style.setProperty('display', isEventAdmin ? 'block' : 'none', 'important');
+            }
+            if (menuInputRbb) {
+                const canAccessRbb = (window.MonbisRbbAccess || monbisResolvePegId)(u) === true
+                    || monbisResolvePegId(u) === '102-119';
+                menuInputRbb.style.setProperty('display', canAccessRbb ? 'block' : 'none', 'important');
             }
             window.MonbisTheme?.sync?.(u);
             return true;

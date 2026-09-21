@@ -43,10 +43,10 @@
         <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1" for="MB_harian">Act/Proj</label>
         <input type="date" id="MB_harian" onchange="MB_checkDate()" class="w-full border border-slate-300 rounded-md px-2 text-[11px] font-medium h-7 shadow-sm focus:border-blue-500 outline-none cursor-pointer">
       </div>
-      <div class="flex flex-col gap-0.5 w-full lg:w-auto lg:min-w-[150px]">
-        <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1" for="MB_optKantor">Cabang</label>
-        <select id="MB_optKantor" onchange="MB_checkDate()" class="w-full border border-slate-300 rounded-md px-2 text-[11px] font-medium h-7 shadow-sm focus:border-blue-500 outline-none cursor-pointer">
-          <option value="">Konsolidasi (Semua)</option>
+      <div class="flex flex-col gap-0.5 flex-1 lg:flex-none lg:w-[220px]">
+        <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1" for="MB_optFilter">Area/Cabang</label>
+        <select id="MB_optFilter" onchange="MB_filterWilayah()" class="border-b-2 border-transparent hover:border-slate-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-blue-500 bg-transparent transition-colors font-bold text-slate-700 cursor-pointer w-full truncate">
+          <option value="000">Konsolidasi</option>
         </select>
       </div>
 
@@ -324,7 +324,7 @@
 
   const elClosing = $('#MB_closing');
   const elHarian = $('#MB_harian');
-  const elKantor = $('#MB_optKantor');
+  const elFilter = $('#MB_optFilter');
   
   const elHead = $('#MB_thead');
   const elBody = $('#MB_tbody');
@@ -345,6 +345,20 @@
   let currentDetailPerPage = 20;
   let _filterTimer = null;
   let _isInitialDetailLoad = false;
+  let kantorList = [];
+  const MB_KORWIL_RANGES = {
+    SEMARANG: ['001', '007'],
+    SOLO: ['008', '014'],
+    BANYUMAS: ['015', '021'],
+    PEKALONGAN: ['022', '028']
+  };
+
+  function getSelectedWilayah() {
+    const value = elFilter.value || '000';
+    if (MB_KORWIL_RANGES[value]) return { korwil: value, kode: null };
+    if (value !== '000') return { korwil: null, kode: value };
+    return { korwil: null, kode: null };
+  }
 
   function getSelectedNominalLabel() {
     return document.getElementById('MB_nominalField')?.value === 'saldo_bank' ? 'Saldo Bank' : 'Baki Debet';
@@ -365,8 +379,9 @@
     const user = (window.getUser && window.getUser()) || {};
     const kodeLogin = String(user?.kode||'').padStart(3,'0');
     if(kodeLogin && kodeLogin!=='000'){
-      elKantor.value = kodeLogin; elKantor.disabled = true;
-      elKantor.classList.add('bg-slate-100','text-slate-500','cursor-not-allowed');
+      elFilter.value = kodeLogin;
+      elFilter.disabled = true;
+      elFilter.classList.add('bg-slate-100','text-slate-500','cursor-not-allowed');
     }
     MB_autoFetch();
   })();
@@ -417,8 +432,13 @@
 
   window.MB_autoFetch = function() {
       if(elClosing.value && elHarian.value) {
-          fetchBucket(elClosing.value, elHarian.value, elKantor.disabled ? elKantor.value : (elKantor.value || null));
+          const selected = getSelectedWilayah();
+          fetchBucket(elClosing.value, elHarian.value, selected.kode, selected.korwil);
       }
+  };
+
+  window.MB_filterWilayah = function() {
+      MB_autoFetch();
   };
 
   window.MB_showAnalisis = function() {
@@ -427,26 +447,58 @@
 
   async function getLastDates(){ try{ const r=await fetch('./api/date/'); const j=await r.json(); return j.data||null; }catch{ return null; } }
   
-  async function populateKantor(){
+  async function populateKantorLegacy(){
     try{
       const r = await fetch('./api/kode/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_kantor'})});
       const j = await r.json();
       const list = Array.isArray(j.data)?j.data:[];
-      let html = `<option value="">Konsolidasi (Semua)</option>`;
+      let html = `<option value="000">Konsolidasi</option>`;
       list.filter(x=>x.kode_kantor && x.kode_kantor!=='000')
           .sort((a,b)=> String(a.kode_kantor).localeCompare(String(b.kode_kantor)))
           .forEach(it=>{
             const code=String(it.kode_kantor).padStart(3,'0');
             html += `<option value="${code}">${code} — ${it.nama_kantor||it.nama_cabang||''}</option>`;
           });
-      elKantor.innerHTML = html;
+      elFilter.innerHTML = html;
     }catch{
-      elKantor.innerHTML = `<option value="">Konsolidasi (Semua)</option>`;
+      elFilter.innerHTML = `<option value="000">Konsolidasi</option>`;
+    }
+  }
+
+  // Satu dropdown berisi konsolidasi, Korwil, dan cabang.
+  function renderWilayahOptions() {
+      let html = '<option value="000">Konsolidasi</option>';
+      Object.keys(MB_KORWIL_RANGES).forEach(korwil => {
+        const label = korwil.charAt(0) + korwil.slice(1).toLowerCase();
+        html += `<option value="${korwil}">Korwil ${label}</option>`;
+      });
+      kantorList.forEach(item => {
+        html += `<option value="${item.code}">${item.code} - ${item.name}</option>`;
+      });
+      elFilter.innerHTML = html;
+  }
+
+  // Override loader so the master cabang list is cached once and reused.
+  async function populateKantor(){
+    try{
+      const r = await fetch('./api/kode/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_kantor'})});
+      const j = await r.json();
+      const list = Array.isArray(j.data) ? j.data : [];
+      kantorList = list.filter(x => x.kode_kantor && x.kode_kantor !== '000')
+        .sort((a,b) => String(a.kode_kantor).localeCompare(String(b.kode_kantor)))
+        .map(it => ({
+          code: String(it.kode_kantor).padStart(3, '0'),
+          name: it.nama_kantor || it.nama_cabang || ''
+        }));
+      renderWilayahOptions();
+    } catch {
+      kantorList = [];
+      renderWilayahOptions();
     }
   }
 
   // FETCH UTAMA
-  async function fetchBucket(closing_date, harian_date, kode_kantor){
+  async function fetchBucket(closing_date, harian_date, kode_kantor, korwil){
     if(ABORT) ABORT.abort();
     ABORT = new AbortController();
     gIsKonsol = !kode_kantor;
@@ -462,6 +514,7 @@
           is_proyeksi: document.getElementById('MB_isProyeksi').checked 
       };
       if(kode_kantor) payload.kode_kantor = kode_kantor;
+      if(korwil) payload.korwil = korwil;
 
       const f = (window.apiFetch || fetch);
       const r = await f('./api/kolek/', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal:ABORT.signal });
@@ -784,7 +837,9 @@
       MB_renderPagination();
     }
     const closing = elClosing.value, harian = elHarian.value;
-    const kode = elKantor.disabled ? elKantor.value : (elKantor.value || null);
+    const selectedWilayah = getSelectedWilayah();
+    const kode = selectedWilayah.kode;
+    const korwil = selectedWilayah.korwil || '';
 
     const fLabel = DPD_LABEL[from_raw] || from_raw;
     const tLabel = DPD_LABEL[to_raw] || to_raw;
@@ -823,6 +878,7 @@
         is_proyeksi: document.getElementById('MB_isProyeksi').checked
       };
       if(kode) payload.kode_kantor = kode;
+      if(korwil) payload.korwil = korwil;
       if(searchVal) payload.search = searchVal;
       if(kankasVal) payload.kankas = kankasVal;
       if(aoVal) payload.ao_kredit = aoVal;
@@ -1117,7 +1173,9 @@
 
       let exportRows = [];
       try {
-        const kode = elKantor.disabled ? elKantor.value : (elKantor.value || null);
+        const selectedWilayah = getSelectedWilayah();
+        const kode = selectedWilayah.kode;
+        const korwil = selectedWilayah.korwil || '';
         const payload = {
           type: 'detail debutir migrasi',
           closing_date: elClosing.value,
@@ -1131,6 +1189,7 @@
           is_proyeksi: document.getElementById('MB_isProyeksi').checked
         };
         if (kode) payload.kode_kantor = kode;
+        if (korwil) payload.korwil = korwil;
         const searchVal = document.getElementById('MB_searchDetail')?.value || '';
         const kankasVal = document.getElementById('MB_modKankas')?.value || '';
         const aoVal = document.getElementById('MB_modAo')?.value || '';

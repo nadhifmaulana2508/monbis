@@ -906,6 +906,7 @@ class KolekController {
         $harian  = $this->asDate($b['harian_date'] ?? null);
         $is_proj = (bool)($b['is_proyeksi'] ?? false);
         $nominalField = $this->normalizeMigrasiNominalField($b['nominal_field'] ?? 'baki_debet');
+        $korwilBounds = $this->getMigrasiKorwilBounds($b['korwil'] ?? null);
         $kc_raw  = $b['kode_kantor'] ?? null;
         $kc      = ($kc_raw === null || $kc_raw === '') ? null : str_pad((string)$kc_raw, 3, '0', STR_PAD_LEFT);
         
@@ -918,8 +919,8 @@ class KolekController {
         $orderTo = array_merge($order, ['O']);
 
         // 1. Tarik Data M-1 dan Harian/Actual
-        $M1  = $this->computeOSForDate($closing, $kc, $defs, 'nominatif', $nominalField);
-        $CUR = $this->computeOSForDate($harian, $kc, $defs, $targetTable, $nominalField);
+        $M1  = $this->computeOSForDate($closing, $kc, $defs, 'nominatif', $nominalField, $korwilBounds);
+        $CUR = $this->computeOSForDate($harian, $kc, $defs, $targetTable, $nominalField, $korwilBounds);
 
         // 2. Hitung Realisasi Baru (Ada di Actual, tidak ada di M-1)
         $realisasi = ['noa' => 0, 'os' => 0];
@@ -1145,7 +1146,7 @@ class KolekController {
     /**
      * COMPUTE OS DINAMIS (Dibuat se-aman mungkin)
      */
-    private function computeOSForDate(string $d, ?string $kc, array $defs, string $tableName = 'nominatif', string $nominalField = 'baki_debet'): array {
+    private function computeOSForDate(string $d, ?string $kc, array $defs, string $tableName = 'nominatif', string $nominalField = 'baki_debet', ?array $korwilBounds = null): array {
         [$ds, $de] = $this->dayRange($d);
 
         $nominalField = $this->normalizeMigrasiNominalField($nominalField);
@@ -1157,6 +1158,10 @@ class KolekController {
         if ($kc !== null) { 
             $sql .= " AND LPAD(CAST(kode_cabang AS CHAR), 3, '0') = ?"; 
             $params[] = $kc; 
+        } elseif ($korwilBounds) {
+            $sql .= " AND LPAD(CAST(kode_cabang AS CHAR), 3, '0') BETWEEN ? AND ?";
+            $params[] = $korwilBounds[0];
+            $params[] = $korwilBounds[1];
         } else { 
             $sql .= " AND LPAD(CAST(kode_cabang AS CHAR), 3, '0') <> '000'"; 
         }
@@ -1198,6 +1203,17 @@ class KolekController {
     /** Pilihan nominal hanya boleh berasal dari dua kolom yang didukung. */
     private function normalizeMigrasiNominalField($field): string {
       return strtolower(trim((string)$field)) === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+    }
+
+    /** Rentang kode cabang Korwil yang digunakan pada laporan Migrasi DPD. */
+    private function getMigrasiKorwilBounds($korwil): ?array {
+      switch (strtoupper(trim((string)$korwil))) {
+        case 'SEMARANG': return ['001', '007'];
+        case 'SOLO': return ['008', '014'];
+        case 'BANYUMAS': return ['015', '021'];
+        case 'PEKALONGAN': return ['022', '028'];
+        default: return null;
+      }
     }
 
     /* ====== Utilities yang sudah kamu punya ====== */
@@ -1381,6 +1397,7 @@ class KolekController {
       $tb      = strtoupper(trim($b['to_bucket']   ?? ''));
       $kc_raw  = $b['kode_kantor'] ?? null;
       $kc      = ($kc_raw === null || $kc_raw === '') ? null : str_pad((string)$kc_raw, 3, '0', STR_PAD_LEFT);
+      $korwil  = strtoupper(trim((string)($b['korwil'] ?? '')));
 
       // Ambil request filter
       $kankas = $b['kankas'] ?? null;
@@ -1402,27 +1419,28 @@ class KolekController {
       // REALISASI
       if ($fb === 'REALISASI') {
         $tbFilter = ($tb !== '' && in_array($tb, $VALID, true)) ? $tb : null;
-        return $this->getMigrasiBucketDetailRealisasi($closing, $harian, $kc, $tbFilter, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField);
+        return $this->getMigrasiBucketDetailRealisasi($closing, $harian, $kc, $tbFilter, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField, $korwil);
       }
 
       // O_LUNAS — wajib from_bucket (A..N)
       if ($tb === 'O' || $tb === 'O_LUNAS') {
         if (!in_array($fb, $VALID, true)) return sendResponse(400, "O_LUNAS: from_bucket wajib A..N.");
-        return $this->getMigrasiBucketDetailOLunas($closing, $harian, $kc, $fb, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField);
+        return $this->getMigrasiBucketDetailOLunas($closing, $harian, $kc, $fb, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField, $korwil);
       }
 
       // ACTUAL — A..N → A..N
       if (!in_array($fb, $VALID, true) || !in_array($tb, $VALID, true))
         return sendResponse(400, "Actual: from_bucket & to_bucket wajib A..N.");
 
-      return $this->getMigrasiBucketDetailActual($closing, $harian, $kc, $fb, $tb, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField);
+      return $this->getMigrasiBucketDetailActual($closing, $harian, $kc, $fb, $tb, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField, $korwil);
     }
 
 
     /*********************** REALISASI (akun baru) ***********************/
-    public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, ?string $kc, ?string $tbFilter = null, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet')
+    public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, ?string $kc, ?string $tbFilter = null, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet', ?string $korwil = null)
     {
       $nominalField = $this->normalizeMigrasiNominalField($nominalField);
+      $korwilBounds = $this->getMigrasiKorwilBounds($korwil);
       [$dsH, $deH] = $this->dayRange($harian);
 
       $whereFilter = "";
@@ -1430,9 +1448,13 @@ class KolekController {
       if ($ao)     $whereFilter .= " AND nh.kode_group2 = :ao ";
       if ($search) $whereFilter .= " AND (nh.nama_nasabah LIKE :search OR nh.no_rekening LIKE :search) ";
 
-      $kcCondition = ($kc !== null)
-        ? "AND LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') = :kcH"
-        : "AND LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') <> '000'";
+      if ($kc !== null) {
+        $kcCondition = "AND LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') = :kcH";
+      } elseif ($korwilBounds) {
+        $kcCondition = "AND LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') BETWEEN :kwStartH AND :kwEndH";
+      } else {
+        $kcCondition = "AND LPAD(CAST(nh.kode_cabang AS CHAR),3,'0') <> '000'";
+      }
 
       // COUNT query for pagination
       $countSql = "
@@ -1453,6 +1475,10 @@ class KolekController {
       $stCount->bindValue(':dsH1', $dsH);
       $stCount->bindValue(':deH1', $deH);
       if ($kc !== null) $stCount->bindValue(':kcH', $kc);
+      if ($kc === null && $korwilBounds) {
+        $stCount->bindValue(':kwStartH', $korwilBounds[0]);
+        $stCount->bindValue(':kwEndH', $korwilBounds[1]);
+      }
       $stCount->bindValue(':cld', $closing);
       $stCount->bindValue(':hrd', $harian);
       if ($tbFilter) $stCount->bindValue(':tb', $tbFilter);
@@ -1519,6 +1545,10 @@ class KolekController {
       $st->bindValue(':dsH1', $dsH);
       $st->bindValue(':deH1', $deH);
       if ($kc !== null) $st->bindValue(':kcH', $kc);
+      if ($kc === null && $korwilBounds) {
+        $st->bindValue(':kwStartH', $korwilBounds[0]);
+        $st->bindValue(':kwEndH', $korwilBounds[1]);
+      }
       $st->bindValue(':cld',  $closing);
       $st->bindValue(':hrd',  $harian);
       if ($tbFilter) $st->bindValue(':tb', $tbFilter);
@@ -1538,9 +1568,10 @@ class KolekController {
 
 
     /*********************** ACTUAL A..N → A..N (FAST + BUCKET INFO) ***********************/
-    public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet')
+    public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet', ?string $korwil = null)
     {
       $nominalField = $this->normalizeMigrasiNominalField($nominalField);
+      $korwilBounds = $this->getMigrasiKorwilBounds($korwil);
       if ($kc !== null) $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
 
       [$dsC,$deC] = $this->dayRange($closing);
@@ -1551,12 +1582,16 @@ class KolekController {
       if ($ao)     $whereFilter .= " AND h.kode_group2 = :ao ";
       if ($search) $whereFilter .= " AND (h.nama_nasabah LIKE :search OR h.no_rekening LIKE :search) ";
 
-      $kcCondH = ($kc !== null)
-        ? "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') = :kcH"
-        : "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') <> '000'";
-      $kcCondC = ($kc !== null)
-        ? "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') = :kcC"
-        : "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') <> '000'";
+      if ($kc !== null) {
+        $kcCondH = "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') = :kcH";
+        $kcCondC = "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') = :kcC";
+      } elseif ($korwilBounds) {
+        $kcCondH = "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') BETWEEN :kwStartH AND :kwEndH";
+        $kcCondC = "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') BETWEEN :kwStartC AND :kwEndC";
+      } else {
+        $kcCondH = "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') <> '000'";
+        $kcCondC = "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') <> '000'";
+      }
 
       // COUNT query for pagination
       $countSql = "
@@ -1581,6 +1616,12 @@ class KolekController {
 
       $stCount = $this->pdo->prepare($countSql);
       if ($kc !== null) { $stCount->bindValue(':kcH', $kc); $stCount->bindValue(':kcC', $kc); }
+      if ($kc === null && $korwilBounds) {
+        $stCount->bindValue(':kwStartH', $korwilBounds[0]);
+        $stCount->bindValue(':kwEndH', $korwilBounds[1]);
+        $stCount->bindValue(':kwStartC', $korwilBounds[0]);
+        $stCount->bindValue(':kwEndC', $korwilBounds[1]);
+      }
       $stCount->bindValue(':dsH', $dsH); $stCount->bindValue(':deH', $deH);
       $stCount->bindValue(':dsC', $dsC); $stCount->bindValue(':deC', $deC);
       $stCount->bindValue(':fb', $fb);
@@ -1661,6 +1702,12 @@ class KolekController {
 
       $st = $this->pdo->prepare($sql);
       if ($kc !== null) { $st->bindValue(':kcH', $kc); $st->bindValue(':kcC', $kc); }
+      if ($kc === null && $korwilBounds) {
+        $st->bindValue(':kwStartH', $korwilBounds[0]);
+        $st->bindValue(':kwEndH', $korwilBounds[1]);
+        $st->bindValue(':kwStartC', $korwilBounds[0]);
+        $st->bindValue(':kwEndC', $korwilBounds[1]);
+      }
       $st->bindValue(':dsH', $dsH); $st->bindValue(':deH', $deH);
       $st->bindValue(':dsC', $dsC); $st->bindValue(':deC', $deC);
       $st->bindValue(':fb',  $fb);
@@ -1682,9 +1729,10 @@ class KolekController {
 
 
     /*********************** O_LUNAS (M-1 → O) — FAST + BUCKET INFO ***********************/
-    public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet')
+    public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet', ?string $korwil = null)
     {
       $nominalField = $this->normalizeMigrasiNominalField($nominalField);
+      $korwilBounds = $this->getMigrasiKorwilBounds($korwil);
       if ($kc !== null) $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
 
       [$dsC,$deC] = $this->dayRange($closing);
@@ -1696,12 +1744,16 @@ class KolekController {
       if ($ao)     $whereFilter .= " AND c.kode_group2 = :ao ";
       if ($search) $whereFilter .= " AND (c.nama_nasabah LIKE :search OR c.no_rekening LIKE :search) ";
 
-      $kcCondH = ($kc !== null)
-        ? "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') = :kcH"
-        : "";
-      $kcCondC = ($kc !== null)
-        ? "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') = :kcC"
-        : "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') <> '000'";
+      if ($kc !== null) {
+        $kcCondH = "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') = :kcH";
+        $kcCondC = "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') = :kcC";
+      } elseif ($korwilBounds) {
+        $kcCondH = "AND LPAD(CAST(h.kode_cabang AS CHAR),3,'0') BETWEEN :kwStartH AND :kwEndH";
+        $kcCondC = "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') BETWEEN :kwStartC AND :kwEndC";
+      } else {
+        $kcCondH = "";
+        $kcCondC = "AND LPAD(CAST(c.kode_cabang AS CHAR),3,'0') <> '000'";
+      }
 
       // COUNT query for pagination
       $countSql = "
@@ -1723,6 +1775,12 @@ class KolekController {
 
       $stCount = $this->pdo->prepare($countSql);
       if ($kc !== null) { $stCount->bindValue(':kcH', $kc); $stCount->bindValue(':kcC', $kc); }
+      if ($kc === null && $korwilBounds) {
+        $stCount->bindValue(':kwStartH', $korwilBounds[0]);
+        $stCount->bindValue(':kwEndH', $korwilBounds[1]);
+        $stCount->bindValue(':kwStartC', $korwilBounds[0]);
+        $stCount->bindValue(':kwEndC', $korwilBounds[1]);
+      }
       $stCount->bindValue(':dsH', $dsH); $stCount->bindValue(':deH', $deH);
       $stCount->bindValue(':dsC', $dsC); $stCount->bindValue(':deC', $deC);
       $stCount->bindValue(':fb', $fromBucket);
@@ -1799,6 +1857,12 @@ class KolekController {
 
       $st = $this->pdo->prepare($sql);
       if ($kc !== null) { $st->bindValue(':kcH', $kc); $st->bindValue(':kcC', $kc); }
+      if ($kc === null && $korwilBounds) {
+        $st->bindValue(':kwStartH', $korwilBounds[0]);
+        $st->bindValue(':kwEndH', $korwilBounds[1]);
+        $st->bindValue(':kwStartC', $korwilBounds[0]);
+        $st->bindValue(':kwEndC', $korwilBounds[1]);
+      }
       $st->bindValue(':dsH', $dsH); $st->bindValue(':deH', $deH);
       $st->bindValue(':dsC', $dsC); $st->bindValue(':deC', $deC);
       $st->bindValue(':fb',  $fromBucket);

@@ -25,6 +25,7 @@ if (!function_exists('mb_render_report_toolbar')) {
         $titleId = $cfg['title_id'] ?? '';
 
         echo '<div class="mb-report-toolbar">';
+        if (!empty($cfg['leading_html'])) echo '<div class="mb-report-toolbar__leading">' . $cfg['leading_html'] . '</div>';
         echo '  <div class="mb-report-toolbar__title"' . ($titleId !== '' ? ' id="' . mb_e($titleId) . '"' : '') . '>' . mb_e($title) . '</div>';
         echo '  <div class="mb-report-toolbar__tools">';
 
