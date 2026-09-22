@@ -20,6 +20,8 @@ function v2_icon(string $name, int $size = 18): string
         'refresh' => '<path d="M20 11a8 8 0 1 0 1 5"/><path d="M20 4v7h-7"/>',
         'plus' => '<path d="M12 5v14M5 12h14"/>',
         'download' => '<path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/>',
+        'edit' => '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/>',
+        'save' => '<path d="M5 3h12l3 3v15H4V3Z"/><path d="M8 3v5h8V3M8 21v-5h8v5"/>',
         'search' => '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
         'bell' => '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>',
         'user' => '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
