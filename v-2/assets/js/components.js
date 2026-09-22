@@ -1,8 +1,8 @@
 (() => {
   'use strict';
   const root = document.documentElement;
-  const key = 'monbis_v2_settings';
-  const defaults = { theme: 'dim', scale: 'normal', density: 'comfortable', accent: 'teal', sidebar: 'expanded' };
+  const key = 'monbis_v2_settings_v2';
+  const defaults = { theme: 'light', scale: 'normal', density: 'comfortable', accent: 'teal', sidebar: 'expanded' };
   const read = () => { try { return { ...defaults, ...(JSON.parse(localStorage.getItem(key) || '{}')) }; } catch { return { ...defaults }; } };
   let settings = read();
   const apply = () => {
@@ -17,13 +17,24 @@
       if (control.dataset.v2Setting in settings) control.value = settings[control.dataset.v2Setting];
     });
     document.querySelector('[data-v2-sidebar-state]')?.replaceChildren(document.createTextNode(settings.sidebar === 'collapsed' ? 'Ringkas' : 'Lebar'));
+    document.querySelectorAll('[data-v2-theme-toggle]').forEach((button) => {
+      const dark = settings.theme === 'dark';
+      button.classList.toggle('is-dark', dark);
+      button.title = dark ? 'Gunakan mode terang' : 'Gunakan mode gelap';
+      button.setAttribute('aria-label', button.title);
+    });
+    document.querySelectorAll('[data-v2-sidebar-setting]').forEach((button) => {
+      button.classList.toggle('is-collapsed', settings.sidebar === 'collapsed');
+      button.title = settings.sidebar === 'collapsed' ? 'Buka sidebar' : 'Ringkas sidebar';
+      button.setAttribute('aria-label', button.title);
+    });
   };
   const save = (name, value) => { settings[name] = value; apply(); };
   window.V2Settings = { get: () => ({ ...settings }), set: save, reset: () => { settings = { ...defaults }; apply(); } };
   apply();
   document.querySelectorAll('[data-v2-setting]').forEach((control) => control.addEventListener('change', () => save(control.dataset.v2Setting, control.value)));
   document.querySelector('[data-v2-settings-reset]')?.addEventListener('click', () => { window.V2Settings.reset(); window.V2Toast?.show('Pengaturan dikembalikan ke default.'); });
-  document.querySelector('[data-v2-sidebar-setting]')?.addEventListener('click', () => save('sidebar', settings.sidebar === 'collapsed' ? 'expanded' : 'collapsed'));
+  document.querySelectorAll('[data-v2-sidebar-setting]').forEach((button) => button.addEventListener('click', () => save('sidebar', settings.sidebar === 'collapsed' ? 'expanded' : 'collapsed')));
   document.querySelectorAll('[data-v2-toast]').forEach((button) => button.addEventListener('click', () => window.V2Toast?.show(button.dataset.v2Toast || 'Aksi berhasil.')));
   document.querySelectorAll('[data-v2-alert-close]').forEach((button) => button.addEventListener('click', () => button.closest('.v2-alert')?.remove()));
   document.querySelectorAll('[data-v2-tab]').forEach((tab) => tab.addEventListener('click', () => {

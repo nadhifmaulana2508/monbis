@@ -7,6 +7,7 @@ function v2_icon(string $name, int $size = 18): string
         'close' => '<path d="m6 6 12 12M18 6 6 18"/>',
         'arrow-left' => '<path d="m15 18-6-6 6-6"/><path d="M9 12h11"/>',
         'sun' => '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32 1.41-1.41"/>',
+        'moon' => '<path d="M20.5 14.6A8.5 8.5 0 0 1 9.4 3.5 8.5 8.5 0 1 0 20.5 14.6Z"/>',
         'home' => '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M9 21v-6h6v6"/>',
         'chart' => '<path d="M4 19V5m0 14h16"/><path d="m7 15 3-4 3 2 5-7"/>',
         'file' => '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',

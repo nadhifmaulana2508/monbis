@@ -3,7 +3,7 @@
 <div class="v2-component-grid" style="margin-top:16px">
   <?= v2_card_open('Tema dan tipografi', 'Token visual global untuk seluruh page v2.') ?>
   <div class="v2-card-body v2-form-stack">
-    <?= v2_select('v2SettingTheme', 'Tema', ['dim'=>'Soft light', 'dark'=>'Dark mode'], 'dim', ['data-v2-setting'=>'theme']) ?>
+    <?= v2_select('v2SettingTheme', 'Tema', ['light'=>'Light', 'dim'=>'Soft light', 'dark'=>'Dark mode'], 'light', ['data-v2-setting'=>'theme']) ?>
     <?= v2_select('v2SettingScale', 'Ukuran teks', ['small'=>'Kecil', 'normal'=>'Normal', 'large'=>'Besar'], 'normal', ['data-v2-setting'=>'scale']) ?>
     <?= v2_select('v2SettingDensity', 'Kerapatan komponen', ['comfortable'=>'Nyaman', 'compact'=>'Compact'], 'comfortable', ['data-v2-setting'=>'density']) ?>
   </div>

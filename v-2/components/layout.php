@@ -8,7 +8,7 @@ function v2_render_sidebar(string $active, string $baseUrl, string $baseRoot): v
 {
     $link = static fn(string $page): string => $baseUrl . '/?page=' . rawurlencode($page);
     $is = static fn(string $page): string => $active === $page ? ' is-active' : '';
-    echo '<aside class="v2-sidebar" id="v2Sidebar"><div class="v2-brand"><span class="v2-brand-mark">M</span><div><strong>MONBIS</strong><small>Business Intelligence</small></div><button type="button" class="v2-icon-button v2-sidebar-close" data-v2-sidebar-close aria-label="Tutup menu">' . v2_icon('close', 18) . '</button></div>';
+    echo '<aside class="v2-sidebar" id="v2Sidebar"><div class="v2-brand"><span class="v2-brand-mark">M</span><div><strong>MONBIS</strong><small>Business Intelligence</small></div><button type="button" class="v2-icon-button v2-sidebar-collapse" data-v2-sidebar-setting aria-label="Ringkas sidebar" title="Ringkas sidebar">' . v2_icon('arrow-left', 17) . '</button><button type="button" class="v2-icon-button v2-sidebar-close" data-v2-sidebar-close aria-label="Tutup menu">' . v2_icon('close', 18) . '</button></div>';
     echo '<nav class="v2-nav" aria-label="Navigasi v2">';
     echo '<p class="v2-nav-label">MAIN MENU</p>';
     echo '<a class="v2-nav-item' . $is('dashboard') . '" href="' . v2_e($link('dashboard')) . '">' . v2_icon('home') . '<span>Overview</span></a>';

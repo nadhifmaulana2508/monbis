@@ -80,3 +80,30 @@ function v2_icon_button(string $icon, string $label, string $tone = 'default', a
     $attrs['title'] = $attrs['title'] ?? $label;
     return '<button type="button" class="v2-icon-button v2-icon-button--' . v2_e($tone) . '"' . v2_attributes($attrs) . '>' . v2_icon($icon, 18) . '</button>';
 }
+
+function v2_spinner(string $label = 'Memuat data...'): string
+{
+    return '<span class="v2-spinner-wrap" role="status"><span class="v2-spinner"></span><span>' . v2_e($label) . '</span></span>';
+}
+
+function v2_skeleton(string $variant = 'text'): string
+{
+    return '<span class="v2-skeleton v2-skeleton--' . v2_e($variant) . '" aria-hidden="true"></span>';
+}
+
+function v2_empty_state(string $title = 'Belum ada data', string $message = 'Data akan tampil setelah filter diterapkan.', string $icon = 'file'): string
+{
+    return '<div class="v2-empty-state"><span class="v2-empty-icon">' . v2_icon($icon, 22) . '</span><strong>' . v2_e($title) . '</strong><p>' . v2_e($message) . '</p></div>';
+}
+
+function v2_switch(string $id, string $label, bool $checked = false): string
+{
+    return '<label class="v2-switch"><input id="' . v2_e($id) . '" type="checkbox"' . ($checked ? ' checked' : '') . '><span class="v2-switch-track"><i></i></span><span>' . v2_e($label) . '</span></label>';
+}
+
+function v2_pagination(int $current = 1, int $total = 5): string
+{
+    $html = '<nav class="v2-pagination" aria-label="Pagination"><button type="button" disabled>Prev</button>';
+    for ($page = 1; $page <= $total; $page++) $html .= '<button type="button"' . ($page === $current ? ' class="is-active"' : '') . '>' . $page . '</button>';
+    return $html . '<button type="button">Next</button></nav>';
+}
