@@ -11,6 +11,7 @@ $tabUrl = static fn(string $name): string => $baseUrl . '/kpi/?tab=' . rawurlenc
 <?= v2_filter_drawer([
     ['name'=>'year', 'id'=>'v2KpiYear', 'label'=>'Tahun', 'type'=>'number', 'value'=>date('Y'), 'attrs'=>['min'=>'2020','max'=>'2100','step'=>'1']],
     ['name'=>'jabatan', 'id'=>'v2KpiJabatan', 'label'=>'Jabatan', 'type'=>'select', 'value'=>'AO_KREDIT', 'options'=>['AO_KREDIT'=>'AO Kredit']],
+    ['name'=>'unit', 'id'=>'v2KpiUnit', 'label'=>'Unit indikator', 'type'=>'select', 'value'=>'', 'options'=>[''=>'Semua unit']],
     ['name'=>'kantor', 'id'=>'v2KpiKantor', 'label'=>'Kantor', 'type'=>'select', 'value'=>'', 'options'=>[''=>'Semua kantor']],
     ['name'=>'ao', 'id'=>'v2KpiAo', 'label'=>'AO', 'type'=>'select', 'value'=>'', 'options'=>[''=>'Semua AO']],
     ['name'=>'closing', 'id'=>'v2KpiClosing', 'label'=>'Closing KPI', 'type'=>'date', 'value'=>''],
@@ -40,7 +41,12 @@ $tabUrl = static fn(string $name): string => $baseUrl . '/kpi/?tab=' . rawurlenc
     <div class="v2-table-wrap v2-module-table-wrap"><table class="v2-table v2-kpi-generated-table"><thead><tr><th>AO</th><th>KANTOR</th><th>CLOSING</th><th>STATUS</th><th>NILAI AKHIR</th><th>KETERANGAN</th></tr></thead><tbody id="v2KpiGeneratedBody"><tr><td colspan="6" class="v2-empty">Memuat periode KPI...</td></tr></tbody></table></div>
 <?php else: ?>
     <div class="v2-module-callout"><div><strong>Parameter KPI</strong><p>Ubah bobot dan target default. Perubahan langsung disimpan ke master KPI yang dipakai proses generate.</p></div><button type="button" class="v2-button v2-button--success" id="v2KpiSave"><?= v2_icon('check', 16) ?><span>Simpan perubahan</span></button></div>
+    <div class="v2-kpi-setting-tools"><label class="v2-search-field"><?= v2_icon('search', 14) ?><input id="v2KpiSettingSearch" type="search" placeholder="Cari indikator..."></label><span class="v2-muted-text">Pilih jabatan dan unit dari tombol Filter.</span></div>
     <div class="v2-table-wrap v2-module-table-wrap"><table class="v2-table v2-kpi-setting-table"><thead><tr><th>JABATAN</th><th>KELOMPOK</th><th>INDIKATOR</th><th>BOBOT %</th><th>TARGET</th><th>ARAH</th><th>UNIT</th><th>STATUS</th></tr></thead><tbody id="v2KpiSettingBody"><tr><td colspan="8" class="v2-empty">Memuat setting KPI...</td></tr></tbody></table></div>
+    <section class="v2-kpi-score-card">
+      <div class="v2-card-heading"><div><h3>Penyesuaian Parameter Skor</h3><p>Atur range indeks skor 0–5 untuk jabatan dan indikator yang dipilih.</p></div><span class="v2-inline-badge">Range indeks</span></div>
+      <div class="v2-table-wrap v2-module-table-wrap"><table class="v2-table v2-kpi-score-table"><thead><tr><th>INDIKATOR</th><th>BOBOT</th><th>SKOR 0</th><th>SKOR 1</th><th>SKOR 2</th><th>SKOR 3</th><th>SKOR 4</th><th>SKOR 5</th></tr></thead><tbody id="v2KpiScoreBody"><tr><td colspan="8" class="v2-empty">Memuat parameter skor...</td></tr></tbody></table></div>
+    </section>
 <?php endif; ?>
   </div>
 </section>
@@ -49,6 +55,7 @@ $tabUrl = static fn(string $name): string => $baseUrl . '/kpi/?tab=' . rawurlenc
 (() => {
   const TAB = <?= json_encode($tab) ?>;
   const API = <?= json_encode($legacyBase . '/api/index.php?request=kpi') ?>;
+  const scoreIcon = <?= json_encode(v2_icon('check', 12)) ?>;
   const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   const state = { directory: null, setting: null };
   const el = (id) => document.getElementById(id);
@@ -101,20 +108,58 @@ $tabUrl = static fn(string $name): string => $baseUrl . '/kpi/?tab=' . rawurlenc
     const rows = data.generated || [];
     el('v2KpiGeneratedBody').innerHTML = rows.length ? rows.map(item => `<tr><td>${esc(item.nama_ao || item.kode_ao || '-')}<small>${esc(item.id_peg || '-')}</small></td><td>${esc(item.kode_kantor || '-')}</td><td>${esc(item.closing_date || '-')}</td><td>${esc(item.status || '-')}</td><td class="v2-num">${fmt(item.nilai_akhir)}</td><td>${esc(item.keterangan || '-')}</td></tr>`).join('') : '<tr><td colspan="6" class="v2-empty">Belum ada periode KPI yang digenerate.</td></tr>';
   }
-  function renderSetting() {
+  const settingIndicators = () => {
     const job = field('jabatan')?.value || 'AO_KREDIT';
-    const rows = (state.setting?.indikator || []).filter(item => item.jabatan_kode === job && item.status !== 'NONAKTIF');
-    el('v2KpiSettingBody').innerHTML = rows.length ? rows.map(item => `<tr data-kpi-id="${num(item.id)}"><td>${esc(item.jabatan_nama)}</td><td>${esc(item.kelompok || '-')}</td><td><strong>${esc(item.nama)}</strong><small>${esc(item.definisi || '-')}</small></td><td><input class="v2-inline-input" data-kpi-field="bobot" value="${fmt(num(item.bobot) * 100)}" inputmode="decimal"></td><td><input class="v2-inline-input" data-kpi-field="target" value="${fmt(item.target_default)}" inputmode="decimal"></td><td>${esc(item.arah || '-')}</td><td>${esc(item.unit || '-')}</td><td><select class="v2-inline-input" data-kpi-field="status"><option value="AKTIF"${item.status === 'AKTIF' ? ' selected' : ''}>AKTIF</option><option value="PILOT"${item.status === 'PILOT' ? ' selected' : ''}>PILOT</option></select></td></tr>`).join('') : '<tr><td colspan="8" class="v2-empty">Tidak ada indikator aktif untuk jabatan ini.</td></tr>';
+    const unit = field('unit')?.value || '';
+    const query = (el('v2KpiSettingSearch')?.value || '').trim().toLowerCase();
+    return (state.setting?.indikator || []).filter(item => {
+      const haystack = `${item.nama || ''} ${item.kelompok || ''} ${item.definisi || ''}`.toLowerCase();
+      return item.jabatan_kode === job && item.status !== 'NONAKTIF' && (!unit || item.unit === unit) && (!query || haystack.includes(query));
+    });
+  };
+  const isScoreCount = (unit) => ['NOA', 'JUMLAH'].includes(String(unit || '').toUpperCase());
+  const scoreValue = (value, unit, blankInfinity = false) => {
+    const valueNumber = num(value);
+    if (blankInfinity && valueNumber >= 999) return '';
+    return isScoreCount(unit) ? fmt(valueNumber) : `${fmt(valueNumber * 100)}%`;
+  };
+  const parseScore = (value, unit) => {
+    let raw = String(value ?? '').trim().replace(',', '.');
+    if (!raw) return 999;
+    if (raw.endsWith('%')) return (parseFloat(raw.slice(0, -1)) || 0) / 100;
+    const valueNumber = parseFloat(raw);
+    if (!Number.isFinite(valueNumber)) return 0;
+    return isScoreCount(unit) ? valueNumber : valueNumber / 100;
+  };
+  const renderScoreCell = (item, score, unit) => {
+    if (!item) return '<span class="v2-muted-cell">-</span>';
+    return `<div class="v2-score-editor" data-score-id="${num(item.id)}" data-score-unit="${esc(unit || '')}" data-score-predikat="${esc(item.predikat || '')}"><div class="v2-score-range"><input data-score-field="min" value="${esc(scoreValue(item.min_indeks, unit))}" inputmode="decimal" aria-label="Indeks minimum skor ${score}"><span>–</span><input data-score-field="max" value="${esc(scoreValue(item.max_indeks, unit, true))}" placeholder="∞" inputmode="decimal" aria-label="Indeks maksimum skor ${score}"></div><button type="button" class="v2-score-save" data-v2-score-save title="Simpan range skor ${score}" aria-label="Simpan range skor ${score}">${scoreIcon}</button></div>`;
+  };
+  function renderScores() {
+    const body = el('v2KpiScoreBody');
+    if (!body) return;
+    const job = field('jabatan')?.value || 'AO_KREDIT';
+    const ranges = (state.setting?.parameter_skor || []).filter(item => item.jabatan_kode === job && num(item.aktif));
+    const rows = settingIndicators();
+    body.innerHTML = rows.length ? rows.map(item => `<tr><td><strong>${esc(item.nama)}</strong><small>${esc(item.kelompok || '-')} · ${esc(item.unit || '-')}</small></td><td class="v2-num">${pct(num(item.bobot) * 100)}</td>${[0,1,2,3,4,5].map(score => { const range = ranges.find(candidate => Number(candidate.indikator_id) === Number(item.id) && Number(candidate.skor) === score); return `<td>${renderScoreCell(range, score, item.unit)}</td>`; }).join('')}</tr>`).join('') : '<tr><td colspan="8" class="v2-empty">Parameter skor belum tersedia untuk filter ini.</td></tr>';
+  }
+  function renderSetting() {
+    const rows = settingIndicators();
+    el('v2KpiSettingBody').innerHTML = rows.length ? rows.map(item => `<tr data-kpi-id="${num(item.id)}"><td>${esc(item.jabatan_nama)}</td><td>${esc(item.kelompok || '-')}</td><td><strong>${esc(item.nama)}</strong><small>${esc(item.definisi || '-')}</small></td><td><input class="v2-inline-input" data-kpi-field="bobot" value="${fmt(num(item.bobot) * 100)}" inputmode="decimal"></td><td><input class="v2-inline-input" data-kpi-field="target" value="${fmt(item.target_default)}" inputmode="decimal"></td><td>${esc(item.arah || '-')}</td><td>${esc(item.unit || '-')}</td><td><select class="v2-inline-input" data-kpi-field="status"><option value="AKTIF"${item.status === 'AKTIF' ? ' selected' : ''}>AKTIF</option><option value="PILOT"${item.status === 'PILOT' ? ' selected' : ''}>PILOT</option></select></td></tr>`).join('') : '<tr><td colspan="8" class="v2-empty">Tidak ada indikator aktif untuk filter ini.</td></tr>';
+    renderScores();
   }
   async function loadSummary() { try { renderSummary(await post({type:'annual', ...filters()})); } catch (error) { showError('v2KpiSummaryBody', error.message, 18); } }
   async function loadDirectory() { try { fillDirectory(await post({type:'directory', year:field('year')?.value || new Date().getFullYear(), jabatan_kode:field('jabatan')?.value || 'AO_KREDIT', include_all_ao:true, include_generated:true})); if (TAB === 'summary') await loadSummary(); if (TAB === 'calculate') renderGenerated(state.directory); } catch (error) { const target = TAB === 'summary' ? 'v2KpiSummaryBody' : (TAB === 'calculate' ? 'v2KpiGeneratedBody' : 'v2KpiSettingBody'); showError(target, error.message, TAB === 'summary' ? 18 : TAB === 'calculate' ? 6 : 8); } }
-  async function loadSetting() { try { state.setting = await post({type:'setting'}); const job = el('v2KpiJabatan'); if (job) { job.innerHTML = (state.setting.jabatan || []).map(item => `<option value="${esc(item.kode)}">${esc(item.nama)}</option>`).join(''); job.value = job.value || 'AO_KREDIT'; } renderSetting(); } catch (error) { showError('v2KpiSettingBody', error.message, 8); } }
+  async function loadSetting() { try { state.setting = await post({type:'setting'}); const job = el('v2KpiJabatan'); if (job) { const currentJob = job.value || 'AO_KREDIT'; job.innerHTML = (state.setting.jabatan || []).map(item => `<option value="${esc(item.kode)}">${esc(item.nama)}</option>`).join(''); job.value = (state.setting.jabatan || []).some(item => item.kode === currentJob) ? currentJob : (state.setting.jabatan?.[0]?.kode || ''); } const unit = el('v2KpiUnit'); if (unit) { const currentUnit = unit.value || ''; const units = [...new Set((state.setting.indikator || []).map(item => item.unit).filter(Boolean))].sort(); unit.innerHTML = '<option value="">Semua unit</option>' + units.map(item => `<option value="${esc(item)}">${esc(item)}</option>`).join(''); unit.value = units.includes(currentUnit) ? currentUnit : ''; } renderSetting(); } catch (error) { showError('v2KpiSettingBody', error.message, 8); showError('v2KpiScoreBody', error.message, 8); } }
   el('v2KpiKantor')?.addEventListener('change', () => { fillAo(); if (TAB === 'summary') loadSummary(); });
   el('v2KpiAo')?.addEventListener('change', () => { if (TAB === 'summary') loadSummary(); });
   el('v2KpiYear')?.addEventListener('change', loadDirectory);
   el('v2KpiJabatan')?.addEventListener('change', async () => { if (TAB === 'setting') { await loadSetting(); } else await loadDirectory(); });
+  el('v2KpiUnit')?.addEventListener('change', renderSetting);
+  el('v2KpiSettingSearch')?.addEventListener('input', renderSetting);
   el('v2KpiRun')?.addEventListener('click', async () => { const option = el('v2KpiAo')?.selectedOptions[0], code = el('v2KpiAo')?.value; if (!code || !option?.dataset.idPeg) return toast('Pilih AO terlebih dahulu.'); const status = el('v2KpiRunStatus'); status.hidden = false; status.textContent = 'Memproses penilaian KPI...'; try { const result = await post({type:'calculate', year:field('year').value, jabatan_kode:field('jabatan').value, kode_ao:code, id_peg:option.dataset.idPeg, kode_kantor:option.dataset.kantor, closing_date:field('closing')?.value || '', skip_existing:true}); status.textContent = `${(result.data || []).length} periode berhasil diproses.`; toast('KPI berhasil digenerate.'); await loadDirectory(); } catch (error) { status.textContent = error.message; toast(error.message); } });
   el('v2KpiSave')?.addEventListener('click', async () => { const rows = [...document.querySelectorAll('#v2KpiSettingBody tr[data-kpi-id]')]; if (!rows.length) return; const button = el('v2KpiSave'); button.disabled = true; try { await Promise.all(rows.map(row => post({type:'save_indicator', id:Number(row.dataset.kpiId), bobot:num(row.querySelector('[data-kpi-field="bobot"]')?.value) / 100, target:num(row.querySelector('[data-kpi-field="target"]')?.value), status:row.querySelector('[data-kpi-field="status"]')?.value || 'AKTIF'}))); toast('Setting KPI berhasil disimpan.'); await loadSetting(); } catch (error) { toast(error.message); } finally { button.disabled = false; } });
+  document.addEventListener('click', async (event) => { const button = event.target.closest('[data-v2-score-save]'); if (!button) return; const editor = button.closest('[data-score-id]'); const minInput = editor?.querySelector('[data-score-field="min"]'); const maxInput = editor?.querySelector('[data-score-field="max"]'); const unit = editor?.dataset.scoreUnit || ''; const min = parseScore(minInput?.value, unit); const max = parseScore(maxInput?.value, unit); if (!editor || max < min) return toast('Indeks maksimum tidak boleh lebih kecil dari minimum.'); button.disabled = true; try { await post({type:'save_score', id:Number(editor.dataset.scoreId), min_indeks:min, max_indeks:max, predikat:editor.dataset.scorePredikat || '', aktif:1}); const saved = (state.setting?.parameter_skor || []).find(item => Number(item.id) === Number(editor.dataset.scoreId)); if (saved) { saved.min_indeks = min; saved.max_indeks = max; } toast('Parameter skor berhasil disimpan.'); renderScores(); } catch (error) { toast(error.message); } finally { button.disabled = false; } });
   if (TAB === 'setting') loadSetting(); else loadDirectory();
 })();
 </script>

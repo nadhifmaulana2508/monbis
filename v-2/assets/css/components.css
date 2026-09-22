@@ -340,6 +340,27 @@ html[data-v2-theme="dark"] .v2-collection-table .v2-total-row td { color: var(--
 .v2-kpi-summary-table, .v2-rbb-projection-table, .v2-rbb-detail-table, .v2-rbb-aba-table { min-width: 1500px !important; }
 .v2-kpi-setting-table { min-width: 930px !important; }
 .v2-kpi-setting-table td:nth-child(3) { min-width: 260px; white-space: normal; }
+.v2-kpi-setting-tools { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 13px; }
+.v2-search-field { display: flex; align-items: center; gap: 7px; width: min(300px, 100%); min-height: 32px; padding: 0 10px; border: 1px solid var(--v2-border); border-radius: 8px; color: var(--v2-muted); background: var(--v2-surface); }
+.v2-search-field input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--v2-ink); background: transparent; font: inherit; font-size: 10px; }
+.v2-muted-text { color: var(--v2-muted); font-size: 10px; }
+.v2-kpi-score-card { margin-top: 16px; overflow: hidden; border: 1px solid var(--v2-border); border-radius: 12px; background: var(--v2-surface); }
+.v2-kpi-score-card .v2-card-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 15px; border-bottom: 1px solid var(--v2-border); }
+.v2-kpi-score-card h3 { margin: 0; color: var(--v2-ink); font-size: 12px; }
+.v2-kpi-score-card p { margin: 4px 0 0; color: var(--v2-muted); font-size: 10px; }
+.v2-kpi-score-card .v2-module-table-wrap { margin: 0; border: 0; border-radius: 0; }
+.v2-kpi-score-table { min-width: 1260px !important; }
+.v2-kpi-score-table th, .v2-kpi-score-table td { vertical-align: top; }
+.v2-kpi-score-table th:nth-child(n+3), .v2-kpi-score-table td:nth-child(n+3) { min-width: 165px; }
+.v2-kpi-score-table td:first-child { min-width: 250px; white-space: normal; }
+.v2-score-editor { display: grid; gap: 5px; min-width: 145px; }
+.v2-score-range { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 3px; }
+.v2-score-range span { color: var(--v2-muted); font-size: 10px; }
+.v2-score-range input { width: 100%; min-width: 0; min-height: 27px; padding: 0 4px; border: 1px solid var(--v2-border); border-radius: 6px; outline: 0; color: var(--v2-ink); background: var(--v2-surface); font-size: 9px; text-align: center; }
+.v2-score-range input:focus { border-color: var(--v2-teal); box-shadow: 0 0 0 2px var(--v2-focus); }
+.v2-score-save { display: inline-grid; place-items: center; justify-self: center; min-width: 29px; min-height: 23px; padding: 0 8px; border: 0; border-radius: 6px; color: #fff; background: var(--v2-accent); cursor: pointer; }
+.v2-score-save:hover { filter: brightness(1.08); }
+.v2-score-save:disabled { opacity: .55; cursor: wait; }
 .v2-rbb-aba-table { min-width: 1700px !important; }
 .v2-rbb-aba-table td { white-space: nowrap; }
 .v2-rbb-aba-table .v2-aba-bank { min-width: 210px; }
@@ -348,7 +369,9 @@ html[data-v2-theme="dark"] .v2-collection-table .v2-total-row td { color: var(--
 .v2-aba-tabs { margin-bottom: 12px; }
 html[data-v2-theme="dark"] .v2-module-callout { background: var(--v2-surface-soft); }
 html[data-v2-theme="dark"] .v2-delete-button { color: #ffb1bb; border-color: #87434d; background: #3b2026; }
+html[data-v2-theme="dark"] .v2-search-field, html[data-v2-theme="dark"] .v2-score-range input { background: var(--v2-surface-soft); }
 @media (max-width: 780px) { .v2-module-toolbar { display: grid; gap: 10px; } .v2-module-toolbar > div:first-child { min-width: 0; } .v2-module-tabs { width: 100%; overflow-x: auto; flex-wrap: nowrap; } .v2-module-tabs .v2-tab { flex: 1 0 auto; } .v2-module-callout { align-items: flex-start; flex-direction: column; } .v2-module-callout .v2-actions { width: 100%; } .v2-module-callout .v2-button { flex: 1; } .v2-module-table-wrap { max-height: calc(100vh - 275px); } }
+@media (max-width: 560px) { .v2-kpi-setting-tools { align-items: stretch; flex-direction: column; } .v2-search-field { width: 100%; } .v2-kpi-score-card .v2-card-heading { align-items: flex-start; flex-direction: column; } }
 
 /* MONBIS launcher */
 .v2-nav-group.is-open .v2-nav-sub { max-height: 360px; overflow-y: auto; }
