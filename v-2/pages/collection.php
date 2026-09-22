@@ -1,4 +1,4 @@
-<section class="v2-page-heading"><div><p class="v2-eyebrow">COLLECTION</p><h1>Collection Monitoring</h1><p>Template report untuk membaca kolektibilitas kredit dan perubahan NPL secara konsisten.</p></div><div class="v2-page-status"><?= v2_badge('Live data', 'success') ?></div></section>
+<section class="v2-page-heading"><div><p class="v2-eyebrow">COLLECTION / REPORT NPL</p><h1>Report NPL</h1><p>Monitoring kolektibilitas kredit dan perubahan NPL secara konsisten.</p></div><div class="v2-page-status"><?= v2_badge('Live data', 'success') ?></div></section>
 
 <?= v2_filter_bar([
     ['name'=>'closing', 'id'=>'collectionClosing', 'label'=>'Closing (M-1)', 'type'=>'date', 'value'=>date('Y-m-d', strtotime('last day of previous month'))],

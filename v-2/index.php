@@ -20,7 +20,7 @@ if (!in_array($page, $allowedPages, true)) {
     $page = 'components';
 }
 
-$pageTitles = ['components' => 'FE Component Library', 'collection' => 'Collection Monitoring', 'templates' => 'Page Templates', 'settings' => 'Workspace Settings'];
+$pageTitles = ['components' => 'FE Component Library', 'collection' => 'Collection / Report NPL', 'templates' => 'Page Templates', 'settings' => 'Workspace Settings'];
 v2_render_start('FE Workspace - ' . $pageTitles[$page], $page);
 v2_render_sidebar($page, $baseUrl);
 ?>

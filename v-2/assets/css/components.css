@@ -78,6 +78,7 @@ body { font-size: calc(14px * var(--v2-scale)); }
 .v2-nav-item, .v2-nav-group-title { min-height: 44px; color: #bdd0da; border-radius: 9px; font-size: 13px; font-weight: 500; }
 .v2-nav-item svg, .v2-nav-group-title svg { color: #8eafbf; }
 .v2-nav-item:hover, .v2-nav-group-title:hover, .v2-nav-item.is-active { color: #fff; background: rgba(197, 225, 230, .17); }
+.v2-nav-group:has(.v2-nav-sub-item.is-active) .v2-nav-group-title { color: #fff; background: rgba(197, 225, 230, .12); }
 .v2-nav-item.is-active { box-shadow: inset 0 0 0 1px rgba(196, 225, 230, .13); }
 .v2-nav-sub { padding-left: 39px; }
 .v2-nav-sub-item { color: #9fb9c7; }
