@@ -1,5 +1,5 @@
 <?php
-$kpiBase = rtrim($legacyBase, '/') . '/';
+$kpiBase = rtrim($baseUrl, '/') . '/';
 $kpiLinks = [
     ['label' => 'Setting KPI Jabatan', 'route' => 'setting_kpi_jabatan'],
     ['label' => 'Nilai KPI AO', 'route' => 'hitung_kpi_ao'],
@@ -29,7 +29,7 @@ $rbbLinks = [
   <div class="v2-launcher-hero-copy">
     <p class="v2-eyebrow">QUICK ACCESS</p>
     <h2>Mulai dari modul yang kamu butuhkan.</h2>
-    <p>KPI Bisnis dan Input RBB memakai halaman Monbis yang sudah ada, jadi alur lama tetap aman dan tidak berubah.</p>
+    <p>KPI Bisnis dan Input RBB sekarang memakai FE V2 dengan backend/API Monbis yang sudah ada, jadi alur lama tetap aman dan tidak berubah.</p>
   </div>
   <div class="v2-launcher-hero-meta"><strong>MONBIS</strong><span>Launcher v2</span></div>
 </section>
@@ -40,7 +40,7 @@ $rbbLinks = [
     <span class="v2-section-code">KPI · RBB · COLLECTION</span>
   </div>
   <div class="v2-launcher-grid">
-    <a class="v2-module-card v2-module-card--kpi" href="<?= v2_e($kpiBase . 'rekap_kpi_ao') ?>" data-v2-launcher-access="kpi">
+    <a class="v2-module-card v2-module-card--kpi" href="<?= v2_e($kpiBase . 'kpi/?tab=summary') ?>" data-v2-launcher-access="kpi">
       <div class="v2-module-card-top"><span class="v2-module-icon"><?= v2_icon('chart', 24) ?></span><?= v2_badge('KPI', 'success') ?></div>
       <h3>KPI Bisnis</h3>
       <p>Kelola parameter, hitung, generate, dan lihat rekap kinerja KPI AO.</p>
@@ -48,7 +48,7 @@ $rbbLinks = [
       <span class="v2-module-card-link">Buka KPI Bisnis <?= v2_icon('arrow', 16) ?></span>
     </a>
 
-    <a class="v2-module-card v2-module-card--rbb" href="<?= v2_e($kpiBase . 'input_rbb') ?>" data-v2-launcher-access="rbb">
+    <a class="v2-module-card v2-module-card--rbb" href="<?= v2_e($kpiBase . 'rbb/?tab=projection') ?>" data-v2-launcher-access="rbb">
       <div class="v2-module-card-top"><span class="v2-module-icon"><?= v2_icon('file', 24) ?></span><?= v2_badge('RBB', 'warning') ?></div>
       <h3>Input RBB</h3>
       <p>Siapkan proyeksi dan input detail RBB untuk seluruh bagian bisnis terkait.</p>

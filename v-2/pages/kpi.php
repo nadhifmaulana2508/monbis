@@ -1,0 +1,120 @@
+<?php
+$tab = strtolower((string)($_GET['tab'] ?? 'summary'));
+if (!in_array($tab, ['summary', 'calculate', 'setting'], true)) $tab = 'summary';
+$tabUrl = static fn(string $name): string => $baseUrl . '/kpi/?tab=' . rawurlencode($name);
+?>
+<section class="v2-page-heading v2-module-heading">
+  <div><p class="v2-eyebrow">MONBIS / KPI BISNIS</p><h1>KPI Bisnis</h1><p>Kelola parameter, proses penilaian, dan rekap KPI menggunakan FE V2.</p></div>
+  <div class="v2-page-status"><?= v2_badge('API KPI aktif', 'success') ?></div>
+</section>
+
+<?= v2_filter_drawer([
+    ['name'=>'year', 'id'=>'v2KpiYear', 'label'=>'Tahun', 'type'=>'number', 'value'=>date('Y'), 'attrs'=>['min'=>'2020','max'=>'2100','step'=>'1']],
+    ['name'=>'jabatan', 'id'=>'v2KpiJabatan', 'label'=>'Jabatan', 'type'=>'select', 'value'=>'AO_KREDIT', 'options'=>['AO_KREDIT'=>'AO Kredit']],
+    ['name'=>'kantor', 'id'=>'v2KpiKantor', 'label'=>'Kantor', 'type'=>'select', 'value'=>'', 'options'=>[''=>'Semua kantor']],
+    ['name'=>'ao', 'id'=>'v2KpiAo', 'label'=>'AO', 'type'=>'select', 'value'=>'', 'options'=>[''=>'Semua AO']],
+    ['name'=>'closing', 'id'=>'v2KpiClosing', 'label'=>'Closing KPI', 'type'=>'date', 'value'=>''],
+], 'v2KpiFilters') ?>
+
+<section class="v2-card v2-module-shell">
+  <div class="v2-card-heading v2-module-toolbar">
+    <div><h2><?= $tab === 'summary' ? 'Rekap KPI AO' : ($tab === 'calculate' ? 'Hitung dan Generate KPI' : 'Setting KPI Jabatan') ?></h2><p>Backend KPI lama tetap dipakai; tampilan dan interaksi sudah dirakit ulang dengan component V2.</p></div>
+    <nav class="v2-tabs v2-module-tabs" aria-label="Menu KPI Bisnis">
+      <a class="v2-tab<?= $tab === 'summary' ? ' is-active' : '' ?>" href="<?= v2_e($tabUrl('summary')) ?>">Rekap AO</a>
+      <a class="v2-tab<?= $tab === 'calculate' ? ' is-active' : '' ?>" href="<?= v2_e($tabUrl('calculate')) ?>">Hitung KPI</a>
+      <a class="v2-tab<?= $tab === 'setting' ? ' is-active' : '' ?>" href="<?= v2_e($tabUrl('setting')) ?>">Setting</a>
+    </nav>
+  </div>
+  <div class="v2-card-body v2-module-body">
+<?php if ($tab === 'summary'): ?>
+    <div class="v2-grid v2-grid--4 v2-module-stats">
+      <article class="v2-stat"><span class="v2-stat-label">AO DITAMPILKAN</span><strong id="v2KpiCount">-</strong><small id="v2KpiCountMeta">Memuat data...</small></article>
+      <article class="v2-stat"><span class="v2-stat-label">PERIODE TERISI</span><strong id="v2KpiPeriod">-</strong><small>Periode yang sudah digenerate</small></article>
+      <article class="v2-stat"><span class="v2-stat-label">RATA-RATA NILAI</span><strong id="v2KpiAverage">-</strong><small>Nilai berbobot / 100</small></article>
+      <article class="v2-stat"><span class="v2-stat-label">MODE REKAP</span><strong id="v2KpiMode">-</strong><small id="v2KpiModeMeta">Filter kantor</small></article>
+    </div>
+    <div class="v2-table-wrap v2-module-table-wrap" id="v2KpiSummaryWrap"><table class="v2-table v2-kpi-summary-table"><thead><tr><th>KANTOR</th><th>AO / ID PEG</th><?php foreach (['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'] as $month): ?><th><?= $month ?></th><?php endforeach; ?><th>RATA-RATA</th><th>SKOR</th><th>TUKIN</th><th>BULAN</th></tr></thead><tbody id="v2KpiSummaryBody"><tr><td colspan="18" class="v2-empty">Memuat rekap KPI...</td></tr></tbody></table></div>
+<?php elseif ($tab === 'calculate'): ?>
+    <div class="v2-module-callout"><div><strong>Generate penilaian KPI</strong><p>Pilih AO. Jika closing dikosongkan, seluruh closing date yang tersedia untuk tahun tersebut akan diproses.</p></div><button type="button" class="v2-button v2-button--primary" id="v2KpiRun"><?= v2_icon('check', 16) ?><span>Hitung / Generate</span></button></div>
+    <div class="v2-module-progress" id="v2KpiRunStatus" hidden></div>
+    <div class="v2-table-wrap v2-module-table-wrap"><table class="v2-table v2-kpi-generated-table"><thead><tr><th>AO</th><th>KANTOR</th><th>CLOSING</th><th>STATUS</th><th>NILAI AKHIR</th><th>KETERANGAN</th></tr></thead><tbody id="v2KpiGeneratedBody"><tr><td colspan="6" class="v2-empty">Memuat periode KPI...</td></tr></tbody></table></div>
+<?php else: ?>
+    <div class="v2-module-callout"><div><strong>Parameter KPI</strong><p>Ubah bobot dan target default. Perubahan langsung disimpan ke master KPI yang dipakai proses generate.</p></div><button type="button" class="v2-button v2-button--success" id="v2KpiSave"><?= v2_icon('check', 16) ?><span>Simpan perubahan</span></button></div>
+    <div class="v2-table-wrap v2-module-table-wrap"><table class="v2-table v2-kpi-setting-table"><thead><tr><th>JABATAN</th><th>KELOMPOK</th><th>INDIKATOR</th><th>BOBOT %</th><th>TARGET</th><th>ARAH</th><th>UNIT</th><th>STATUS</th></tr></thead><tbody id="v2KpiSettingBody"><tr><td colspan="8" class="v2-empty">Memuat setting KPI...</td></tr></tbody></table></div>
+<?php endif; ?>
+  </div>
+</section>
+
+<script>
+(() => {
+  const TAB = <?= json_encode($tab) ?>;
+  const API = <?= json_encode($legacyBase . '/api/index.php?request=kpi') ?>;
+  const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+  const state = { directory: null, setting: null };
+  const el = (id) => document.getElementById(id);
+  const field = (name) => document.querySelector(`[data-v2-filter-field="${name}"]`);
+  const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+  const num = (value) => Number(value || 0);
+  const fmt = (value, digits = 2) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: digits }).format(num(value));
+  const pct = (value) => `${fmt(value, 2)}%`;
+  const post = async (body) => {
+    const response = await fetch(API, { method: 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const json = await response.json().catch(() => ({}));
+    if (!response.ok || Number(json.status) !== 200) throw new Error(json.message || `Request KPI gagal (${response.status})`);
+    return json.data || {};
+  };
+  const filters = () => ({ year: field('year')?.value || new Date().getFullYear(), jabatan_kode: field('jabatan')?.value || 'AO_KREDIT', kode_kantor: field('kantor')?.value || '', kode_ao: field('ao')?.value || '', closing_date: field('closing')?.value || '' });
+  const showError = (id, message, colspan) => { const node = el(id); if (node) node.innerHTML = `<tr><td colspan="${colspan}" class="v2-empty v2-negative">${esc(message)}</td></tr>`; };
+  const toast = (message) => window.V2Toast?.show(message) || window.alert(message);
+
+  function fillDirectory(data) {
+    state.directory = data;
+    const jabatan = el('v2KpiJabatan');
+    const currentJob = data.jabatan_terpilih?.kode || jabatan?.value || 'AO_KREDIT';
+    if (jabatan) { jabatan.innerHTML = (data.jabatan || []).map(item => `<option value="${esc(item.kode)}">${esc(item.nama)}</option>`).join(''); jabatan.value = currentJob; }
+    const kantor = el('v2KpiKantor');
+    if (kantor) kantor.innerHTML = '<option value="">Semua kantor</option>' + (data.kantor || []).map(item => `<option value="${esc(item.kode_kantor)}">${esc(item.kode_kantor)} · ${esc(item.nama_kantor)}</option>`).join('');
+    fillAo();
+    const closing = el('v2KpiClosing');
+    if (closing && data.closing_dates?.length && !closing.value) closing.value = data.closing_dates[data.closing_dates.length - 1];
+  }
+  function fillAo() {
+    const select = el('v2KpiAo'); if (!select) return;
+    const branch = field('kantor')?.value || '';
+    const current = select.value;
+    const rows = (state.directory?.ao || []).filter(item => !branch || String(item.kode_kantor) === String(branch));
+    select.innerHTML = '<option value="">Semua AO</option>' + rows.map(item => `<option value="${esc(item.kode_ao)}" data-id-peg="${esc(item.id_peg || '')}" data-kantor="${esc(item.kode_kantor || '')}">${esc(item.kode_ao)} · ${esc(item.nama_ao)}</option>`).join('');
+    if (rows.some(item => String(item.kode_ao) === current)) select.value = current;
+  }
+  function renderSummary(data) {
+    const rows = data.ao || [], values = rows.filter(row => row.nilai_akhir !== null).map(row => num(row.nilai_akhir));
+    const monthsFilled = (data.months || []).filter(item => num(item.terisi) > 0);
+    el('v2KpiCount').textContent = fmt(rows.length, 0);
+    el('v2KpiCountMeta').textContent = data.is_konsolidasi && num(data.total_ao) > rows.length ? `Top ${rows.length} dari ${fmt(data.total_ao, 0)} AO` : (rows.length ? 'AO dengan penilaian' : 'Belum ada penilaian');
+    el('v2KpiPeriod').textContent = monthsFilled.length ? `${months[monthsFilled[0].bulan - 1]} - ${months[monthsFilled[monthsFilled.length - 1].bulan - 1]}` : '-';
+    el('v2KpiAverage').textContent = values.length ? `${fmt(values.reduce((a, b) => a + b, 0) / values.length)} / 100` : '-';
+    const branch = field('kantor')?.value || ''; el('v2KpiMode').textContent = branch ? (el('v2KpiKantor')?.selectedOptions[0]?.textContent || branch) : 'Konsolidasi';
+    const moneyCell = (item, month) => { const value = item.monthly?.[month]; return value ? `<td class="v2-num"><strong>${fmt(value.nilai_akhir)}</strong><small>${pct(value.tukin_persen)} tukin</small></td>` : '<td class="v2-num v2-muted-cell">-</td>'; };
+    el('v2KpiSummaryBody').innerHTML = rows.length ? rows.map(item => `<tr><td>${esc(item.kode_kantor || '-')}</td><td><strong>${esc(item.nama_ao || '-')}</strong><small>${esc(item.id_peg || item.kode_ao || '-')}</small></td>${months.map((_, index) => moneyCell(item, index + 1)).join('')}<td class="v2-num"><strong>${item.nilai_akhir === null ? '-' : fmt(item.nilai_akhir)}</strong></td><td class="v2-num">${item.skor_final === null ? '-' : fmt(item.skor_final)} / 5</td><td class="v2-num v2-positive">${item.tukin_persen === null ? '-' : pct(item.tukin_persen)}</td><td class="v2-num">${fmt(item.bulan_terisi, 0)} / 12</td></tr>`).join('') : '<tr><td colspan="18" class="v2-empty">Belum ada penilaian KPI pada filter ini.</td></tr>';
+  }
+  function renderGenerated(data) {
+    const rows = data.generated || [];
+    el('v2KpiGeneratedBody').innerHTML = rows.length ? rows.map(item => `<tr><td>${esc(item.nama_ao || item.kode_ao || '-')}<small>${esc(item.id_peg || '-')}</small></td><td>${esc(item.kode_kantor || '-')}</td><td>${esc(item.closing_date || '-')}</td><td>${esc(item.status || '-')}</td><td class="v2-num">${fmt(item.nilai_akhir)}</td><td>${esc(item.keterangan || '-')}</td></tr>`).join('') : '<tr><td colspan="6" class="v2-empty">Belum ada periode KPI yang digenerate.</td></tr>';
+  }
+  function renderSetting() {
+    const job = field('jabatan')?.value || 'AO_KREDIT';
+    const rows = (state.setting?.indikator || []).filter(item => item.jabatan_kode === job && item.status !== 'NONAKTIF');
+    el('v2KpiSettingBody').innerHTML = rows.length ? rows.map(item => `<tr data-kpi-id="${num(item.id)}"><td>${esc(item.jabatan_nama)}</td><td>${esc(item.kelompok || '-')}</td><td><strong>${esc(item.nama)}</strong><small>${esc(item.definisi || '-')}</small></td><td><input class="v2-inline-input" data-kpi-field="bobot" value="${fmt(num(item.bobot) * 100)}" inputmode="decimal"></td><td><input class="v2-inline-input" data-kpi-field="target" value="${fmt(item.target_default)}" inputmode="decimal"></td><td>${esc(item.arah || '-')}</td><td>${esc(item.unit || '-')}</td><td><select class="v2-inline-input" data-kpi-field="status"><option value="AKTIF"${item.status === 'AKTIF' ? ' selected' : ''}>AKTIF</option><option value="PILOT"${item.status === 'PILOT' ? ' selected' : ''}>PILOT</option></select></td></tr>`).join('') : '<tr><td colspan="8" class="v2-empty">Tidak ada indikator aktif untuk jabatan ini.</td></tr>';
+  }
+  async function loadSummary() { try { renderSummary(await post({type:'annual', ...filters()})); } catch (error) { showError('v2KpiSummaryBody', error.message, 18); } }
+  async function loadDirectory() { try { fillDirectory(await post({type:'directory', year:field('year')?.value || new Date().getFullYear(), jabatan_kode:field('jabatan')?.value || 'AO_KREDIT', include_all_ao:true, include_generated:true})); if (TAB === 'summary') await loadSummary(); if (TAB === 'calculate') renderGenerated(state.directory); } catch (error) { const target = TAB === 'summary' ? 'v2KpiSummaryBody' : (TAB === 'calculate' ? 'v2KpiGeneratedBody' : 'v2KpiSettingBody'); showError(target, error.message, TAB === 'summary' ? 18 : TAB === 'calculate' ? 6 : 8); } }
+  async function loadSetting() { try { state.setting = await post({type:'setting'}); const job = el('v2KpiJabatan'); if (job) { job.innerHTML = (state.setting.jabatan || []).map(item => `<option value="${esc(item.kode)}">${esc(item.nama)}</option>`).join(''); job.value = job.value || 'AO_KREDIT'; } renderSetting(); } catch (error) { showError('v2KpiSettingBody', error.message, 8); } }
+  el('v2KpiKantor')?.addEventListener('change', () => { fillAo(); if (TAB === 'summary') loadSummary(); });
+  el('v2KpiAo')?.addEventListener('change', () => { if (TAB === 'summary') loadSummary(); });
+  el('v2KpiYear')?.addEventListener('change', loadDirectory);
+  el('v2KpiJabatan')?.addEventListener('change', async () => { if (TAB === 'setting') { await loadSetting(); } else await loadDirectory(); });
+  el('v2KpiRun')?.addEventListener('click', async () => { const option = el('v2KpiAo')?.selectedOptions[0], code = el('v2KpiAo')?.value; if (!code || !option?.dataset.idPeg) return toast('Pilih AO terlebih dahulu.'); const status = el('v2KpiRunStatus'); status.hidden = false; status.textContent = 'Memproses penilaian KPI...'; try { const result = await post({type:'calculate', year:field('year').value, jabatan_kode:field('jabatan').value, kode_ao:code, id_peg:option.dataset.idPeg, kode_kantor:option.dataset.kantor, closing_date:field('closing')?.value || '', skip_existing:true}); status.textContent = `${(result.data || []).length} periode berhasil diproses.`; toast('KPI berhasil digenerate.'); await loadDirectory(); } catch (error) { status.textContent = error.message; toast(error.message); } });
+  el('v2KpiSave')?.addEventListener('click', async () => { const rows = [...document.querySelectorAll('#v2KpiSettingBody tr[data-kpi-id]')]; if (!rows.length) return; const button = el('v2KpiSave'); button.disabled = true; try { await Promise.all(rows.map(row => post({type:'save_indicator', id:Number(row.dataset.kpiId), bobot:num(row.querySelector('[data-kpi-field="bobot"]')?.value) / 100, target:num(row.querySelector('[data-kpi-field="target"]')?.value), status:row.querySelector('[data-kpi-field="status"]')?.value || 'AKTIF'}))); toast('Setting KPI berhasil disimpan.'); await loadSetting(); } catch (error) { toast(error.message); } finally { button.disabled = false; } });
+  if (TAB === 'setting') loadSetting(); else loadDirectory();
+})();
+</script>
