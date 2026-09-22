@@ -1,16 +1,15 @@
-<section class="v2-page-heading"><div><p class="v2-eyebrow">COLLECTION / REPORT NPL</p><h1>Report NPL</h1><p>Monitoring kolektibilitas kredit dan perubahan NPL secara konsisten.</p></div><div class="v2-page-status"><?= v2_badge('Live data', 'success') ?></div></section>
+<section class="v2-page-heading v2-collection-heading"><div><p class="v2-eyebrow">COLLECTION / REPORT NPL</p><h1>Report NPL</h1><p>Monitoring kolektibilitas kredit dan perubahan NPL secara konsisten.</p></div><div class="v2-page-status"><?= v2_badge('Live data', 'success') ?></div></section>
 
 <?= v2_filter_drawer([
     ['name'=>'closing', 'id'=>'collectionClosing', 'label'=>'Closing (M-1)', 'type'=>'date', 'value'=>date('Y-m-d', strtotime('last day of previous month'))],
     ['name'=>'actual', 'id'=>'collectionActual', 'label'=>'Actual (Harian)', 'type'=>'date', 'value'=>date('Y-m-d')],
     ['name'=>'saldo', 'id'=>'collectionSaldo', 'label'=>'Tipe Saldo', 'type'=>'select', 'value'=>'baki_debet', 'options'=>['baki_debet'=>'Baki Debet', 'saldo_bank'=>'Saldo Bank']],
     ['name'=>'area', 'id'=>'collectionArea', 'label'=>'Area / Cabang', 'type'=>'select', 'value'=>'ALL', 'options'=>['ALL'=>'Konsolidasi']],
-    ['name'=>'search', 'id'=>'collectionSearch', 'label'=>'Pencarian', 'type'=>'search', 'placeholder'=>'Cari kode atau kantor...'],
 ], 'collectionFilters') ?>
 
 <section class="v2-card v2-collection-card">
 <div class="v2-card-body v2-collection-card-body">
-  <div class="v2-collection-toolbar"><div><span class="v2-eyebrow">REPORT NPL</span><strong class="v2-collection-view-label" id="collectionViewLabel">Kolektibilitas</strong></div><div class="v2-actions"><?= v2_icon_button('swap', 'Ganti report', 'default', ['data-collection-view-switch'=>'']) ?><?= v2_icon_button('download', 'Export Excel', 'primary', ['data-collection-export'=>'']) ?></div></div>
+  <div class="v2-collection-toolbar"><div><span class="v2-eyebrow">REPORT NPL</span><strong class="v2-collection-view-label" id="collectionViewLabel">Kolektibilitas</strong></div><div class="v2-collection-toolbar-actions"><label class="v2-collection-search"><span><?= v2_icon('search', 15) ?></span><input type="search" id="collectionSearch" placeholder="Cari kode atau kantor..." aria-label="Cari kode atau kantor"></label><div class="v2-actions"><?= v2_icon_button('swap', 'Ganti report', 'default', ['data-collection-view-switch'=>'']) ?><?= v2_icon_button('download', 'Export Excel', 'primary', ['data-collection-export'=>'']) ?></div></div></div>
   <div class="v2-collection-loading" id="collectionLoading"><?= v2_spinner('Memuat data collection...') ?></div>
   <div class="v2-empty-state" id="collectionMessage" hidden></div>
   <div class="v2-table-wrap" id="collectionTableWrap" hidden><table class="v2-table v2-collection-table" id="collectionTable"><thead id="collectionHead"></thead><tbody id="collectionBody"></tbody></table></div>
@@ -65,6 +64,10 @@
       return result * direction;
     });
   };
+  const applySearch = () => {
+    const query = ($('#collectionSearch')?.value || '').toLowerCase();
+    document.querySelectorAll('#collectionBody tr:not(.v2-total-row)').forEach((row) => { row.hidden = query && !row.textContent.toLowerCase().includes(query); });
+  };
   function renderSummary() {}
   function renderKolek() {
     $('#collectionHead').innerHTML = `<tr>${[['Kode','kode_unit'],['Kantor','nama_unit'],['Lancar','bd_L'],['DPK','bd_DP'],['KL','bd_KL'],['D','bd_D'],['M','bd_M'],['Total NPL','bd_npl'],['Portfolio','total_bd'],['% NPL','persentase_npl']].map(([label, key]) => sortableHeader(label, key)).join('')}</tr>`;
@@ -80,7 +83,7 @@
     const rows = state.rows.map((row) => `<tr><td>${esc(String(row.kode_unit || '').padStart(3, '0'))}</td><td><strong>${esc(row.nama_unit || '-')}</strong></td><td>${fmt(row.npl_closing)}</td><td>${fmt2(row.npl_closing_persen)}%</td><td>${fmt(row.npl_harian)}</td><td>${fmt2(row.npl_harian_persen)}%</td><td>${signed(row.selisih_npl)}</td><td>${signed(row.selisih_npl_persen)}%</td><td>${status(row.selisih_npl)}</td></tr>`).join('');
     $('#collectionBody').innerHTML = total + rows;
   }
-  function render() { renderSummary(); state.view === 'kolek' ? renderKolek() : renderNpl(); }
+  function render() { renderSummary(); state.view === 'kolek' ? renderKolek() : renderNpl(); applySearch(); }
   function areaPayload() {
     const value = selected('area');
     return { kode_kantor: value.startsWith('CAB-') ? value.replace('CAB-', '') : '', korwil: value.startsWith('KOR-') ? value.replace('KOR-', '') : '' };
@@ -130,7 +133,7 @@
       render();
     });
     $('[data-collection-view-switch]')?.addEventListener('click', () => { state.view = state.view === 'kolek' ? 'npl' : 'kolek'; state.sort = { key: '', direction: 1 }; $('#collectionViewLabel').textContent = state.view === 'kolek' ? 'Kolektibilitas' : 'Perbandingan NPL'; toggleClosingFilter(); fetchData(); });
-    $('[data-v2-filter-field="search"]')?.addEventListener('input', (event) => { const q = event.target.value.toLowerCase(); document.querySelectorAll('#collectionBody tr').forEach((row) => { row.hidden = q && !row.textContent.toLowerCase().includes(q); }); });
+    $('#collectionSearch')?.addEventListener('input', applySearch);
     try {
       const [dateResponse, kodeResponse] = await Promise.all([fetch(API.date).then((response) => response.json()), postJson(API.kode, {type:'kode_kantor'})]);
       if (dateResponse.data?.last_created) field('actual').value = dateResponse.data.last_created;

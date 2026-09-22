@@ -118,6 +118,9 @@ body { font-size: calc(14px * var(--v2-scale)); }
 .v2-notification i { position: absolute; top: 8px; right: 8px; width: 5px; height: 5px; border-radius: 50%; background: #d68753; }
 .v2-content { width: 100%; max-width: none; padding: 43px 55px 70px; background: var(--v2-shell-bg); }
 .v2-page-heading { align-items: flex-end; margin-bottom: 29px; }
+.v2-collection-heading { margin-bottom: 18px; }
+.v2-collection-heading h1 { font-size: 26px; }
+.v2-collection-heading p:not(.v2-eyebrow) { margin-top: 4px; font-size: 11px; }
 .v2-eyebrow { color: #3d7086; font-size: 10px; letter-spacing: .17em; }
 .v2-page-heading h1 { color: var(--v2-heading); font-size: clamp(27px, 3vw, 34px); letter-spacing: -.045em; }
 .v2-page-heading p { max-width: 700px; color: var(--v2-shell-muted); font-size: 13px; line-height: 1.55; }
@@ -160,6 +163,11 @@ body { font-size: calc(14px * var(--v2-scale)); }
 .v2-collection-summary { margin: 16px 0; }
 .v2-collection-card-body { padding-top: 15px; }
 .v2-collection-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 15px; }
+.v2-collection-toolbar-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0; }
+.v2-collection-search { display: flex; align-items: center; gap: 7px; width: min(240px, 100%); min-height: 34px; padding: 0 10px; border: 1px solid var(--v2-shell-border); border-radius: 9px; color: var(--v2-shell-muted); background: var(--v2-shell-surface); }
+.v2-collection-search:focus-within { border-color: var(--v2-teal); box-shadow: 0 0 0 3px rgba(141,188,199,.18); }
+.v2-collection-search input { width: 100%; min-width: 0; border: 0; outline: 0; color: var(--v2-ink); background: transparent; font-size: 10px; }
+.v2-collection-search input::placeholder { color: var(--v2-shell-muted); }
 .v2-sidebar-collapsed .v2-main { width: calc(100% - 82px); margin-left: 82px; }
 .v2-table { width: 100%; min-width: 0; table-layout: fixed; }
 .v2-table-wrap { overflow: visible; }
@@ -238,6 +246,8 @@ html[data-v2-theme="dark"] .v2-button--secondary { color: #17324D; background: v
   .v2-filter-actions { width: 100%; margin-left: 0; }
   .v2-filter-actions .v2-button { flex: 1; }
   .v2-collection-toolbar { align-items: flex-start; flex-direction: column; }
+  .v2-collection-toolbar-actions { width: 100%; justify-content: space-between; }
+  .v2-collection-search { flex: 1; width: auto; }
   .v2-collection-table thead th { top: 112px; }
   .v2-collection-table .v2-total-row td { top: 142px; }
   .v2-collection-table th, .v2-collection-table td { padding: 8px 4px; font-size: 8px; }
