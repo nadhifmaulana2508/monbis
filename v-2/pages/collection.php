@@ -1,31 +1,21 @@
 <section class="v2-page-heading"><div><p class="v2-eyebrow">COLLECTION / REPORT NPL</p><h1>Report NPL</h1><p>Monitoring kolektibilitas kredit dan perubahan NPL secara konsisten.</p></div><div class="v2-page-status"><?= v2_badge('Live data', 'success') ?></div></section>
 
-<?= v2_filter_bar([
+<?= v2_filter_drawer([
     ['name'=>'closing', 'id'=>'collectionClosing', 'label'=>'Closing (M-1)', 'type'=>'date', 'value'=>date('Y-m-d', strtotime('last day of previous month'))],
     ['name'=>'actual', 'id'=>'collectionActual', 'label'=>'Actual (Harian)', 'type'=>'date', 'value'=>date('Y-m-d')],
     ['name'=>'saldo', 'id'=>'collectionSaldo', 'label'=>'Tipe Saldo', 'type'=>'select', 'value'=>'baki_debet', 'options'=>['baki_debet'=>'Baki Debet', 'saldo_bank'=>'Saldo Bank']],
     ['name'=>'area', 'id'=>'collectionArea', 'label'=>'Area / Cabang', 'type'=>'select', 'value'=>'ALL', 'options'=>['ALL'=>'Konsolidasi']],
     ['name'=>'search', 'id'=>'collectionSearch', 'label'=>'Pencarian', 'type'=>'search', 'placeholder'=>'Cari kode atau kantor...'],
-], [
-    ['label'=>'Terapkan', 'tone'=>'primary', 'icon'=>'filter', 'attrs'=>['data-collection-apply'=>'']],
-    ['label'=>'Reset', 'tone'=>'soft', 'icon'=>'refresh', 'attrs'=>['data-collection-reset'=>'']],
 ], 'collectionFilters') ?>
 
-<div class="v2-grid v2-grid--4 v2-collection-summary">
-  <article class="v2-stat"><span class="v2-stat-label">Portfolio</span><strong id="collectionPortfolio">-</strong><small id="collectionPortfolioNoa">- NOA</small></article>
-  <article class="v2-stat"><span class="v2-stat-label">Total NPL</span><strong id="collectionNpl">-</strong><small id="collectionNplNoa">- NOA</small></article>
-  <article class="v2-stat"><span class="v2-stat-label">% NPL</span><strong id="collectionNplPct">-</strong><small>Actual position</small></article>
-  <article class="v2-stat"><span class="v2-stat-label">Last refresh</span><strong id="collectionLastDate">-</strong><small>Based on selected filter</small></article>
-</div>
-
-<?= v2_card_open('Collection report', 'Gunakan tab untuk berganti antara komposisi kolektibilitas dan perbandingan NPL.') ?>
+<section class="v2-card">
 <div class="v2-card-body v2-collection-card-body">
-  <div class="v2-collection-toolbar"><div class="v2-tabs" role="tablist" aria-label="Collection report view"><button type="button" class="v2-tab is-active" data-collection-view="kolek">Kolektibilitas</button><button type="button" class="v2-tab" data-collection-view="npl">Perbandingan NPL</button></div><div class="v2-actions"><?= v2_button('Export', 'soft', 'download', ['data-collection-export'=>'']) ?></div></div>
+  <div class="v2-collection-toolbar"><div><span class="v2-eyebrow">REPORT NPL</span><strong class="v2-collection-view-label" id="collectionViewLabel">Kolektibilitas</strong></div><div class="v2-actions"><?= v2_icon_button('swap', 'Ganti report', 'default', ['data-collection-view-switch'=>'']) ?><?= v2_icon_button('download', 'Export Excel', 'primary', ['data-collection-export'=>'']) ?></div></div>
   <div class="v2-collection-loading" id="collectionLoading"><?= v2_spinner('Memuat data collection...') ?></div>
   <div class="v2-empty-state" id="collectionMessage" hidden></div>
   <div class="v2-table-wrap" id="collectionTableWrap" hidden><table class="v2-table v2-collection-table" id="collectionTable"><thead id="collectionHead"></thead><tbody id="collectionBody"></tbody></table></div>
 </div>
-<?= v2_card_close() ?>
+</section>
 
 <script>
 (() => {
@@ -59,20 +49,7 @@
   const money = (value, noa) => `<strong>${fmt(value)}</strong><small>${fmt(noa)} NOA</small>`;
   const status = (value) => num(value) > 0 ? 'Naik' : (num(value) < 0 ? 'Turun' : 'Tetap');
   const signed = (value) => num(value) > 0 ? '+' + fmt(value) : num(value) < 0 ? '-' + fmt(Math.abs(num(value))) : fmt(0);
-  function renderSummary() {
-    const total = state.total || {};
-    const portfolio = state.view === 'kolek' ? total.total_bd : total.npl_harian;
-    const portfolioNoa = state.view === 'kolek' ? total.total_noa : '-';
-    const npl = state.view === 'kolek' ? total.bd_npl : total.npl_harian;
-    const nplNoa = state.view === 'kolek' ? total.noa_npl : '-';
-    const pct = state.view === 'kolek' ? total.persentase_npl : total.npl_harian_persen;
-    $('#collectionPortfolio').textContent = portfolio === undefined ? '-' : fmt(portfolio);
-    $('#collectionPortfolioNoa').textContent = `${portfolioNoa === '-' ? '-' : fmt(portfolioNoa)} NOA`;
-    $('#collectionNpl').textContent = npl === undefined ? '-' : fmt(npl);
-    $('#collectionNplNoa').textContent = `${nplNoa === '-' ? '-' : fmt(nplNoa)} NOA`;
-    $('#collectionNplPct').textContent = pct === undefined ? '-' : `${fmt2(pct)}%`;
-    $('#collectionLastDate').textContent = selected('actual') || '-';
-  }
+  function renderSummary() {}
   function renderKolek() {
     $('#collectionHead').innerHTML = '<tr><th>Kode</th><th>Kantor</th><th>Lancar</th><th>DPK</th><th>KL</th><th>D</th><th>M</th><th>Total NPL</th><th>Portfolio</th><th>% NPL</th></tr>';
     const total = state.total ? `<tr class="v2-total-row"><td>ALL</td><td><strong>GRAND TOTAL</strong></td><td>${money(state.total.bd_L, state.total.noa_L)}</td><td>${money(state.total.bd_DP, state.total.noa_DP)}</td><td>${money(state.total.bd_KL, state.total.noa_KL)}</td><td>${money(state.total.bd_D, state.total.noa_D)}</td><td>${money(state.total.bd_M, state.total.noa_M)}</td><td>${money(state.total.bd_npl, state.total.noa_npl)}</td><td>${money(state.total.total_bd, state.total.total_noa)}</td><td><strong>${fmt2(state.total.persentase_npl)}%</strong></td></tr>` : '';
@@ -125,11 +102,10 @@
     const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `collection_${selected('actual') || 'actual'}.xls`; link.click(); URL.revokeObjectURL(link.href);
   }
   document.addEventListener('DOMContentLoaded', async () => {
-    $('[data-collection-apply]')?.addEventListener('click', fetchData);
-    $('[data-collection-reset]')?.addEventListener('click', () => { $('#collectionFilters').reset(); fetchData(); });
+    document.querySelectorAll('[data-v2-filter-field]').forEach((control) => { if (control.dataset.v2FilterField !== 'search') control.addEventListener('change', fetchData); });
     $('[data-collection-export]')?.addEventListener('click', exportData);
+    $('[data-collection-view-switch]')?.addEventListener('click', () => { state.view = state.view === 'kolek' ? 'npl' : 'kolek'; $('#collectionViewLabel').textContent = state.view === 'kolek' ? 'Kolektibilitas' : 'Perbandingan NPL'; toggleClosingFilter(); fetchData(); });
     $('[data-v2-filter-field="search"]')?.addEventListener('input', (event) => { const q = event.target.value.toLowerCase(); document.querySelectorAll('#collectionBody tr').forEach((row) => { row.hidden = q && !row.textContent.toLowerCase().includes(q); }); });
-    document.querySelectorAll('[data-collection-view]').forEach((button) => button.addEventListener('click', () => { state.view = button.dataset.collectionView; document.querySelectorAll('[data-collection-view]').forEach((item) => item.classList.toggle('is-active', item === button)); toggleClosingFilter(); fetchData(); }));
     try {
       const [dateResponse, kodeResponse] = await Promise.all([fetch(API.date).then((response) => response.json()), postJson(API.kode, {type:'kode_kantor'})]);
       if (dateResponse.data?.last_created) field('actual').value = dateResponse.data.last_created;

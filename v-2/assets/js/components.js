@@ -37,6 +37,25 @@
   document.querySelectorAll('[data-v2-sidebar-setting]').forEach((button) => button.addEventListener('click', () => save('sidebar', settings.sidebar === 'collapsed' ? 'expanded' : 'collapsed')));
   document.querySelectorAll('[data-v2-toast]').forEach((button) => button.addEventListener('click', () => window.V2Toast?.show(button.dataset.v2Toast || 'Aksi berhasil.')));
   document.querySelectorAll('[data-v2-alert-close]').forEach((button) => button.addEventListener('click', () => button.closest('.v2-alert')?.remove()));
+  const filterPanel = document.querySelector('[data-v2-filter-panel]');
+  const filterToggle = document.querySelector('[data-v2-filter-toggle]');
+  const filterCount = document.querySelector('[data-v2-filter-count]');
+  const updateFilterCount = () => {
+    if (!filterCount || !filterPanel) return;
+    const active = [...filterPanel.querySelectorAll('[data-v2-filter-field]')].filter((control) => control.value && control.value !== 'ALL').length;
+    filterCount.textContent = String(active);
+    filterCount.hidden = active === 0;
+  };
+  if (filterToggle) {
+    filterToggle.hidden = !filterPanel;
+    filterToggle.addEventListener('click', () => { if (!filterPanel) return; filterPanel.hidden = !filterPanel.hidden; filterToggle.classList.toggle('is-active', !filterPanel.hidden); });
+  }
+  filterPanel?.querySelectorAll('[data-v2-filter-field]').forEach((control) => control.addEventListener('input', updateFilterCount));
+  filterPanel?.querySelectorAll('[data-v2-filter-field]').forEach((control) => control.addEventListener('change', updateFilterCount));
+  filterPanel?.querySelector('[data-v2-filter-close]')?.addEventListener('click', () => { filterPanel.hidden = true; filterToggle?.classList.remove('is-active'); });
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && filterPanel && !filterPanel.hidden) { filterPanel.hidden = true; filterToggle?.classList.remove('is-active'); } });
+  document.addEventListener('click', (event) => { if (filterPanel && !filterPanel.hidden && !filterPanel.contains(event.target) && !filterToggle?.contains(event.target)) { filterPanel.hidden = true; filterToggle?.classList.remove('is-active'); } });
+  updateFilterCount();
   document.querySelectorAll('[data-v2-tab]').forEach((tab) => tab.addEventListener('click', () => {
     const group = tab.closest('.v2-tabs');
     group?.querySelectorAll('[data-v2-tab]').forEach((item) => item.classList.toggle('is-active', item === tab));

@@ -34,7 +34,7 @@ function v2_select(string $id, string $label, array $options, string $selected =
 
 function v2_card_open(string $title, string $subtitle = ''): string
 {
-    return '<section class="v2-card"><div class="v2-card-heading"><div><h2>' . v2_e($title) . '</h2>' . ($subtitle ? '<p>' . v2_e($subtitle) . '</p>' : '') . '</div>';
+    return '<section class="v2-card"><div class="v2-card-heading"><div><h2>' . v2_e($title) . '</h2>' . ($subtitle ? '<p>' . v2_e($subtitle) . '</p>' : '') . '</div></div>';
 }
 
 function v2_card_close(): string
@@ -104,6 +104,11 @@ function v2_filter_bar(array $fields, array $actions = [], string $id = 'v2Filte
         $html .= '</div>';
     }
     return $html . '</form>';
+}
+
+function v2_filter_drawer(array $fields, string $id = 'v2FilterDrawer'): string
+{
+    return '<div class="v2-filter-drawer" id="' . v2_e($id) . '" data-v2-filter-panel hidden><div class="v2-filter-drawer-heading"><div><span class="v2-eyebrow">FILTER</span><strong>Atur filter halaman</strong></div><button type="button" class="v2-icon-button" data-v2-filter-close aria-label="Tutup filter">' . v2_icon('close', 17) . '</button></div>' . v2_filter_bar($fields, [], $id . 'Form') . '</div>';
 }
 
 function v2_spinner(string $label = 'Memuat data...'): string
