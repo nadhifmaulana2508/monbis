@@ -1,0 +1,4 @@
+<section class="v2-page-heading"><div><p class="v2-eyebrow">Perencanaan</p><h1>RBB 2027</h1><p>Entry point v2 untuk input dan approval RBB. Modul lama tetap tersedia.</p></div><div class="v2-actions"><a class="v2-button v2-button--secondary" href="../input_rbb">Buka RBB lama <?= v2_icon('arrow', 15) ?></a></div></section>
+<?= v2_card_open('Struktur RBB', 'Akan dipecah menjadi komponen input yang konsisten.') ?>
+<div class="v2-card-body"><table class="v2-table"><thead><tr><th>Bagian</th><th>Status</th><th>Catatan</th></tr></thead><tbody><tr><td>ABA</td><td><span class="v2-badge">Draft tersedia</span></td><td>Input penempatan, CKPN otomatis, pendapatan bunga.</td></tr><tr><td>Kredit</td><td><span class="v2-badge">Planned</span></td><td>Produksi, run off, PH, AYDA, total OS.</td></tr><tr><td>DAMAS & Beban</td><td><span class="v2-badge">Planned</span></td><td>Menunggu mapping COA final.</td></tr></tbody></table></div>
+<?= v2_card_close() ?>

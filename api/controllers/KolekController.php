@@ -1406,6 +1406,7 @@ class KolekController {
       $page     = max(1, (int)($b['page'] ?? 1));
       $per_page = max(1, min(100, (int)($b['per_page'] ?? 20)));
       $export_all = !empty($b['export_all']);
+      $summary_only = !empty($b['summary_only']);
 
       // Proyeksi mode
       $is_proj = (bool)($b['is_proyeksi'] ?? false);
@@ -1419,26 +1420,27 @@ class KolekController {
       // REALISASI
       if ($fb === 'REALISASI') {
         $tbFilter = ($tb !== '' && in_array($tb, $VALID, true)) ? $tb : null;
-        return $this->getMigrasiBucketDetailRealisasi($closing, $harian, $kc, $tbFilter, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField, $korwil);
+        return $this->getMigrasiBucketDetailRealisasi($closing, $harian, $kc, $tbFilter, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField, $korwil, $summary_only);
       }
 
       // O_LUNAS — wajib from_bucket (A..N)
       if ($tb === 'O' || $tb === 'O_LUNAS') {
         if (!in_array($fb, $VALID, true)) return sendResponse(400, "O_LUNAS: from_bucket wajib A..N.");
-        return $this->getMigrasiBucketDetailOLunas($closing, $harian, $kc, $fb, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField, $korwil);
+        return $this->getMigrasiBucketDetailOLunas($closing, $harian, $kc, $fb, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField, $korwil, $summary_only);
       }
 
       // ACTUAL — A..N → A..N
       if (!in_array($fb, $VALID, true) || !in_array($tb, $VALID, true))
         return sendResponse(400, "Actual: from_bucket & to_bucket wajib A..N.");
 
-      return $this->getMigrasiBucketDetailActual($closing, $harian, $kc, $fb, $tb, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField, $korwil);
+      return $this->getMigrasiBucketDetailActual($closing, $harian, $kc, $fb, $tb, $kankas, $ao, $search, $page, $per_page, $targetTable, $export_all, $nominalField, $korwil, $summary_only);
     }
 
 
     /*********************** REALISASI (akun baru) ***********************/
-    public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, ?string $kc, ?string $tbFilter = null, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet', ?string $korwil = null)
+    public function getMigrasiBucketDetailRealisasi(string $closing, string $harian, ?string $kc, ?string $tbFilter = null, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet', ?string $korwil = null, bool $summaryOnly = false)
     {
+      $export_all = $export_all || $summaryOnly;
       $nominalField = $this->normalizeMigrasiNominalField($nominalField);
       $korwilBounds = $this->getMigrasiKorwilBounds($korwil);
       [$dsH, $deH] = $this->dayRange($harian);
@@ -1458,7 +1460,7 @@ class KolekController {
 
       // COUNT query for pagination
       $countSql = "
-        SELECT COUNT(*) AS total
+        SELECT COUNT(DISTINCT nh.no_rekening) AS total
         FROM $targetTable nh
         JOIN ref_dpd_bucket rb2
           ON nh.hari_menunggak >= rb2.min_day
@@ -1529,7 +1531,11 @@ class KolekController {
         JOIN ref_dpd_bucket rb2
           ON nh.hari_menunggak >= rb2.min_day
         AND (rb2.max_day IS NULL OR nh.hari_menunggak <= rb2.max_day)
-        LEFT JOIN kankas kks ON kks.kode_group1 = nh.kode_group1
+        LEFT JOIN (
+          SELECT kode_group1, MAX(deskripsi_group1) AS deskripsi_group1
+          FROM kankas
+          GROUP BY kode_group1
+        ) kks ON kks.kode_group1 = nh.kode_group1
         LEFT JOIN ao_kredit aok ON aok.kode_group2 = nh.kode_group2
         WHERE nh.created >= :dsH1 AND nh.created < :deH1
           $kcCondition
@@ -1563,13 +1569,14 @@ class KolekController {
       $st->execute();
       $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
-      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'realisasi', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $export_all ? $totalCount : $per_page]);
+      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'realisasi', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $export_all ? $totalCount : $per_page, 'summary_only' => $summaryOnly]);
     }
 
 
     /*********************** ACTUAL A..N → A..N (FAST + BUCKET INFO) ***********************/
-    public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet', ?string $korwil = null)
+    public function getMigrasiBucketDetailActual(string $closing, string $harian, ?string $kc, string $fb, string $tb, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet', ?string $korwil = null, bool $summaryOnly = false)
     {
+      $export_all = $export_all || $summaryOnly;
       $nominalField = $this->normalizeMigrasiNominalField($nominalField);
       $korwilBounds = $this->getMigrasiKorwilBounds($korwil);
       if ($kc !== null) $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
@@ -1595,7 +1602,7 @@ class KolekController {
 
       // COUNT query for pagination
       $countSql = "
-        SELECT COUNT(*) AS total
+        SELECT COUNT(DISTINCT h.no_rekening) AS total
         FROM nominatif c
         JOIN $targetTable h
           ON h.no_rekening = c.no_rekening
@@ -1691,7 +1698,11 @@ class KolekController {
           ON h.hari_menunggak >= rbt.min_day
         AND (rbt.max_day IS NULL OR h.hari_menunggak <= rbt.max_day)
         AND rbt.dpd_code = :tb
-        LEFT JOIN kankas kks ON kks.kode_group1 = h.kode_group1
+        LEFT JOIN (
+          SELECT kode_group1, MAX(deskripsi_group1) AS deskripsi_group1
+          FROM kankas
+          GROUP BY kode_group1
+        ) kks ON kks.kode_group1 = h.kode_group1
         LEFT JOIN ao_kredit aok ON aok.kode_group2 = h.kode_group2
         WHERE c.created >= :dsC AND c.created < :deC
           $kcCondC
@@ -1724,13 +1735,14 @@ class KolekController {
       $st->execute();
       $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
-      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'actual', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $export_all ? $totalCount : $per_page]);
+      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'actual', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $export_all ? $totalCount : $per_page, 'summary_only' => $summaryOnly]);
     }
 
 
     /*********************** O_LUNAS (M-1 → O) — FAST + BUCKET INFO ***********************/
-    public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet', ?string $korwil = null)
+    public function getMigrasiBucketDetailOLunas(string $closing, string $harian, ?string $kc, string $fromBucket, ?string $kankas = null, ?string $ao = null, ?string $search = null, int $page = 1, int $per_page = 20, string $targetTable = 'nominatif', bool $export_all = false, string $nominalField = 'baki_debet', ?string $korwil = null, bool $summaryOnly = false)
     {
+      $export_all = $export_all || $summaryOnly;
       $nominalField = $this->normalizeMigrasiNominalField($nominalField);
       $korwilBounds = $this->getMigrasiKorwilBounds($korwil);
       if ($kc !== null) $kc = str_pad($kc, 3, '0', STR_PAD_LEFT);
@@ -1757,7 +1769,7 @@ class KolekController {
 
       // COUNT query for pagination
       $countSql = "
-        SELECT COUNT(*) AS total
+        SELECT COUNT(DISTINCT c.no_rekening) AS total
         FROM nominatif c
         LEFT JOIN $targetTable h
           ON h.no_rekening = c.no_rekening
@@ -1845,7 +1857,11 @@ class KolekController {
           ON c.hari_menunggak >= rbf.min_day
         AND (rbf.max_day IS NULL OR c.hari_menunggak <= rbf.max_day)
         AND rbf.dpd_code = :fb
-        LEFT JOIN kankas kks ON kks.kode_group1 = c.kode_group1
+        LEFT JOIN (
+          SELECT kode_group1, MAX(deskripsi_group1) AS deskripsi_group1
+          FROM kankas
+          GROUP BY kode_group1
+        ) kks ON kks.kode_group1 = c.kode_group1
         LEFT JOIN ao_kredit aok ON aok.kode_group2 = c.kode_group2
         WHERE c.created >= :dsC AND c.created < :deC
           $kcCondC
@@ -1878,7 +1894,58 @@ class KolekController {
       $st->execute();
       $rows = $st->fetchAll(PDO::FETCH_ASSOC);
 
-      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'o_lunas', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $export_all ? $totalCount : $per_page]);
+      return $this->attachCkpnAndCast($rows, $harian, $closing, $kc, 'o_lunas', ['total_count' => $totalCount, 'page' => $page, 'per_page' => $export_all ? $totalCount : $per_page, 'summary_only' => $summaryOnly]);
+    }
+
+    private function summarizeMigrasiDetailRows(array $rows): array
+    {
+      $seen = [];
+      $summary = [
+        'noa' => 0,
+        'os_m1' => 0,
+        'ckpn_m1' => 0,
+        'os_curr' => 0,
+        'saldo_bank_actual' => 0,
+        'baki_debet_actual' => 0,
+        'ckpn_actual' => 0,
+        'pemulihan' => 0,
+        'angs_p' => 0,
+        'angs_b' => 0,
+        'tung_p' => 0,
+        'tung_b' => 0,
+      ];
+      $fields = [
+        'os_m1', 'ckpn_m1', 'os_curr', 'saldo_bank_actual',
+        'baki_debet_actual', 'ckpn_actual', 'pemulihan_pembentukan',
+        'angsuran_pokok', 'angsuran_bunga', 'tunggakan_pokok', 'tunggakan_bunga',
+      ];
+      $map = [
+        'os_m1' => 'os_m1',
+        'ckpn_m1' => 'ckpn_m1',
+        'os_curr' => 'os_curr',
+        'saldo_bank_actual' => 'saldo_bank_actual',
+        'baki_debet_actual' => 'baki_debet_actual',
+        'ckpn_actual' => 'ckpn_actual',
+        'pemulihan_pembentukan' => 'pemulihan',
+        'angsuran_pokok' => 'angs_p',
+        'angsuran_bunga' => 'angs_b',
+        'tunggakan_pokok' => 'tung_p',
+        'tunggakan_bunga' => 'tung_b',
+      ];
+
+      foreach ($rows as $row) {
+        $account = trim((string)($row['no_rekening'] ?? ''));
+        if ($account !== '') {
+          if (isset($seen[$account])) continue;
+          $seen[$account] = true;
+        }
+        $summary['noa']++;
+        foreach ($fields as $field) {
+          $summary[$map[$field]] += (float)($row[$field] ?? 0);
+        }
+      }
+
+      return $summary;
     }
 
     /*********************** ATTACH CKPN & CAST ***********************/
@@ -1943,6 +2010,14 @@ class KolekController {
       ];
       foreach ($rows as &$r){ foreach ($num as $f){ if (array_key_exists($f,$r) && $r[$f]!==null && $r[$f]!=='') $r[$f]=0+$r[$f]; } }
       unset($r);
+
+      if (!empty($meta['summary_only'])) {
+        $summary = $this->summarizeMigrasiDetailRows($rows);
+        return sendResponse(200,"OK ($mode detail summary)", [
+          'summary' => $summary,
+          'total_count' => $summary['noa'],
+        ]);
+      }
 
       if (!empty($meta)) {
         return sendResponse(200,"OK ($mode detail)", ['rows' => $rows, 'total_count' => $meta['total_count'] ?? 0, 'page' => $meta['page'] ?? 1, 'per_page' => $meta['per_page'] ?? 20]);

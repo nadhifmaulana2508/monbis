@@ -330,6 +330,11 @@ class RbbController
         return $year;
     }
 
+    private function calendarMonthLabels(): array
+    {
+        return ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+    }
+
     private function planningCategory($value): string
     {
         $category = strtoupper(trim((string)($value ?: 'ASET')));
@@ -402,12 +407,16 @@ class RbbController
         }
 
         $column = '`' . $branch . '`';
+        $historyYear = $year - 1;
         $history = [];
         try {
             $stmt = $this->pdo->prepare("SELECT kode_monbis, MONTH(periode) AS bulan, MAX(COALESCE({$column}, 0)) AS nilai
-                FROM rbb WHERE YEAR(periode) = ? GROUP BY kode_monbis, MONTH(periode)");
-            $stmt->execute([$year - 1]);
-            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $value) $history[(string)$value['kode_monbis']][(int)$value['bulan']] = (float)$value['nilai'];
+                FROM rbb WHERE YEAR(periode) = ? GROUP BY kode_monbis, YEAR(periode), MONTH(periode)");
+            $stmt->execute([$historyYear]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $value) {
+                $month = (int)$value['bulan'];
+                if ($month >= 1 && $month <= 12) $history[(string)$value['kode_monbis']][$month] = (float)$value['nilai'];
+            }
         } catch (Throwable $e) {
             error_log('RBB planning history unavailable: ' . $e->getMessage());
         }
@@ -417,14 +426,17 @@ class RbbController
             $stmt = $this->pdo->prepare("SELECT ah.kode_perk, MONTH(ah.tanggal) AS bulan, ah.saldo_akhir AS nilai
                 FROM acc_history ah
                 INNER JOIN (
-                    SELECT kode_perk, MAX(tanggal) AS tanggal
+                    SELECT kode_perk, MONTH(tanggal) AS bulan, MAX(tanggal) AS tanggal
                     FROM acc_history
                     WHERE kode_kantor = ? AND YEAR(tanggal) = ?
-                    GROUP BY kode_perk, MONTH(tanggal)
-                ) latest ON latest.kode_perk = ah.kode_perk AND latest.tanggal = ah.tanggal
+                    GROUP BY kode_perk, YEAR(tanggal), MONTH(tanggal)
+                ) latest ON latest.kode_perk = ah.kode_perk AND latest.bulan = MONTH(ah.tanggal) AND latest.tanggal = ah.tanggal
                 WHERE ah.kode_kantor = ? AND YEAR(ah.tanggal) = ?");
-            $stmt->execute([$branch, $year - 1, $branch, $year - 1]);
-            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $value) $accHistory[(string)$value['kode_perk']][(int)$value['bulan']] = (float)$value['nilai'];
+            $stmt->execute([$branch, $historyYear, $branch, $historyYear]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $value) {
+                $month = (int)$value['bulan'];
+                if ($month >= 1 && $month <= 12) $accHistory[(string)$value['kode_perk']][$month] = (float)$value['nilai'];
+            }
         } catch (Throwable $e) {
             error_log('RBB acc_history unavailable: ' . $e->getMessage());
         }
@@ -479,7 +491,7 @@ class RbbController
         sendResponse(200, 'Data RBB planning berhasil dimuat.', [
             'tahun' => $year, 'kode_kantor' => $branch, 'kategori' => $category,
             'plan' => $plan ? ['id' => (int)$plan['id'], 'status' => $plan['status'], 'catatan' => $plan['catatan']] : null,
-            'months' => ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'],
+            'months' => $this->calendarMonthLabels(),
             'offices' => $offices, 'rows' => $rows,
             'permissions' => ['can_edit' => !$plan || in_array($plan['status'], ['DRAFT', 'REJECTED'], true), 'user' => $user['full_name'] ?? ''],
         ]);
@@ -524,7 +536,7 @@ class RbbController
             for($month=1;$month<=12;$month++){ $current[$month]=(float)($values[$code][$month]??0); $total+=$current[$month]; }
             $rows[]=['id_ref'=>(int)$row['id_ref'],'kode_monbis'=>$code,'kode_perkiraan'=>$row['kode_perkiraan'],'sandi_lbbpr'=>$row['sandi_lbbpr'],'kategori'=>$row['kategori'],'keterangan'=>$row['keterangan'],'input_mode'=>'AUTO','values'=>$current,'total'=>$total,'source'=>in_array($code,['61','62','166'],true)?'INPUT ABA':'INPUT COA'];
         }
-        sendResponse(200,'Proyeksi RBB berhasil dimuat.',['tahun'=>$year,'kode_kantor'=>$branch,'plan'=>$plan?['id'=>(int)$plan['id'],'status'=>$plan['status']]:null,'months'=>['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'],'rows'=>$rows,'aba_summary'=>$aba,'aba_ckpn_rate'=>0.005]);
+        sendResponse(200,'Proyeksi RBB berhasil dimuat.',['tahun'=>$year,'kode_kantor'=>$branch,'plan'=>$plan?['id'=>(int)$plan['id'],'status'=>$plan['status']]:null,'months'=>$this->calendarMonthLabels(),'rows'=>$rows,'aba_summary'=>$aba,'aba_ckpn_rate'=>0.005]);
     }
 
     public function getRbbAbaData(array $input, array $auth): void

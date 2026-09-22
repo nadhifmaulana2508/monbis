@@ -7,7 +7,7 @@ $map = ['kredit'=>['KREDIT','Kredit'], 'damas'=>['DAMAS','DAMAS'], 'pendapatan'=
 $tabs = '<div class="mb-segmented">'.'<a class="mb-segmented__btn" href="input_rbb">'.mb_svg('chart').'<span class="mb-icon-button__label">Proyeksi</span></a><span class="mb-segmented__btn is-active">'.mb_svg('edit').'<span class="mb-icon-button__label">Input '.$label.'</span></span></div>';
 mb_render_report_page([
   'id'=>'inputRbbDetailPage','class'=>'mb-report-rbb-detail',
-  'header'=>['id'=>'inputRbbDetailHeader','title'=>'Input RBB '.$label,'subtitle'=>'Input detail bulanan yang menjadi sumber Proyeksi RBB.','icon'=>mb_svg('edit'),'info_modal_id'=>'inputRbbDetailInfo','filters'=>[
+  'header'=>['id'=>'inputRbbDetailHeader','title'=>'Input RBB '.$label,'subtitle'=>'Input detail Januari–Desember yang menjadi sumber Proyeksi RBB.','icon'=>mb_svg('edit'),'info_modal_id'=>'inputRbbDetailInfo','filters'=>[
     ['id'=>'inputRbbDetailTahun','label'=>'Tahun RBB','type'=>'number','width'=>'115px','value'=>'2027','attrs'=>['min'=>'2020','max'=>'2100','step'=>'1']],
     ['id'=>'inputRbbDetailCabang','label'=>'Kantor / Cabang','type'=>'select','width'=>'230px','options'=>[''=>'Memuat kantor...']],
   ]],

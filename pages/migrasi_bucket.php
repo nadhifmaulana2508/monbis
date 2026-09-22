@@ -343,6 +343,7 @@
   let currentDetailPage = 1;
   let currentDetailTotal = 0;
   let currentDetailPerPage = 20;
+  let currentDetailSummary = null;
   let _filterTimer = null;
   let _isInitialDetailLoad = false;
   let kantorList = [];
@@ -834,6 +835,7 @@
     currentDetailPage = pg;
     if (!isPaginating) {
       currentDetailTotal = 0;
+      currentDetailSummary = null;
       MB_renderPagination();
     }
     const closing = elClosing.value, harian = elHarian.value;
@@ -897,6 +899,25 @@
         currentDetailData = Array.isArray(j?.data) ? j.data : [];
         currentDetailTotal = currentDetailData.length;
       }
+
+      // Kartu total harus memakai seluruh hasil filter, bukan hanya 20 baris
+      // pada halaman aktif. Endpoint summary tidak mengembalikan baris detail.
+      if (currentDetailTotal > currentDetailData.length) {
+        try {
+          const summaryPayload = { ...payload, page: 1, per_page: 1, summary_only: true };
+          const summaryResponse = await f('./api/kolek/', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(summaryPayload),
+            signal:ABORT_DETAIL.signal
+          });
+          const summaryJson = await summaryResponse.json();
+          currentDetailSummary = summaryJson?.data?.summary || null;
+        } catch (summaryError) {
+          if (summaryError?.name === 'AbortError') throw summaryError;
+          currentDetailSummary = null;
+        }
+      }
       
       if(!currentDetailData.length) {
         elModTbody.innerHTML = `<tr><td class="px-4 py-8 text-center text-slate-400">Tidak ada debitur pada kriteria ini.</td></tr>`;
@@ -937,7 +958,7 @@
         }
       }
 
-      renderDetailTable(currentDetailData);
+      renderDetailTable(currentDetailData, currentDetailSummary);
       MB_renderPagination();
     }catch(e){
       if(e.name!=='AbortError') elModTbody.innerHTML = `<tr><td class="px-4 py-8 text-center text-red-500 font-bold">Gagal menarik data.</td></tr>`;
@@ -969,11 +990,11 @@
     MB_openDetail(currentFromRaw, currentToRaw, p);
   };
 
-  function renderDetailTable(list) {
+  function renderDetailTable(list, overallSummary = null) {
       const nf = new Intl.NumberFormat('id-ID');
       const sum = k => list.reduce((s,d)=> s + getNum(d?.[k]), 0);
       
-      const total = {
+      const pageTotal = {
         noa: list.length,
         os_m1: sum('os_m1'),
         os_curr: sum('os_curr'),
@@ -987,6 +1008,20 @@
         tung_p: sum('tunggakan_pokok'),
         tung_b: sum('tunggakan_bunga')
       };
+      const total = overallSummary ? {
+        noa: getNum(overallSummary.noa),
+        os_m1: getNum(overallSummary.os_m1),
+        os_curr: getNum(overallSummary.os_curr),
+        saldo_bank_actual: getNum(overallSummary.saldo_bank_actual),
+        baki_debet_actual: getNum(overallSummary.baki_debet_actual),
+        ckpn_m1: getNum(overallSummary.ckpn_m1),
+        ckpn_actual: getNum(overallSummary.ckpn_actual),
+        pemulihan: getNum(overallSummary.pemulihan),
+        angs_p: getNum(overallSummary.angs_p),
+        angs_b: getNum(overallSummary.angs_b),
+        tung_p: getNum(overallSummary.tung_p),
+        tung_b: getNum(overallSummary.tung_b)
+      } : pageTotal;
 
       elModTotals.innerHTML = `
         <div class="px-2 py-1 bg-blue-50 text-blue-900 border border-blue-100 rounded min-w-[70px]"><span class="block text-[8px] uppercase font-bold text-blue-600">Total NOA</span><b class="text-[10px]">${nf.format(total.noa)}</b></div>

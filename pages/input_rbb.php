@@ -14,7 +14,7 @@ mb_render_report_page([
     'id'=>'inputRbbPage', 'class'=>'mb-report-rbb-projection',
     'header'=>[
         'id'=>'inputRbbHeader', 'title'=>'Proyeksi RBB',
-        'subtitle'=>'Rekap hasil input detail RBB cabang per COA dan bulan. Data RBB 2026 tetap aman.',
+        'subtitle'=>'Rekap hasil input detail RBB cabang per COA untuk Januari–Desember.',
         'icon'=>mb_svg('chart'), 'info_modal_id'=>'inputRbbInfo',
         'filters'=>[
             ['id'=>'inputRbbTahun','label'=>'Tahun RBB','type'=>'number','width'=>'115px','value'=>'2027','attrs'=>['min'=>'2020','max'=>'2100','step'=>'1']],
