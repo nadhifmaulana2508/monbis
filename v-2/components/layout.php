@@ -9,7 +9,7 @@ function v2_render_sidebar(string $active, string $baseUrl): void
     $link = static fn(string $page): string => $baseUrl . '/' . rawurlencode($page);
     $is = static fn(string $page): string => $active === $page ? ' is-active' : '';
     $logoUrl = rtrim(str_replace('\\', '/', dirname($baseUrl)), '/') . '/img/monbis-icon.webp';
-    echo '<aside class="v2-sidebar" id="v2Sidebar"><div class="v2-brand"><a class="v2-brand-link" href="' . v2_e($link('report_npl')) . '" title="MONBIS"><img class="v2-brand-logo" src="' . v2_e($logoUrl) . '" alt="MONBIS"><div><strong>MONBIS</strong><small>Monitoring Bisnis</small></div></a><button type="button" class="v2-icon-button v2-sidebar-close" data-v2-sidebar-close aria-label="Tutup menu">' . v2_icon('close', 18) . '</button></div>';
+    echo '<aside class="v2-sidebar" id="v2Sidebar"><div class="v2-brand"><a class="v2-brand-link" href="' . v2_e($link('report_npl')) . '" title="MONBIS"><img class="v2-brand-logo" src="' . v2_e($logoUrl) . '" alt="MONBIS"><div><strong>MONBIS</strong><small>Monitoring Bisnis</small></div></a></div>';
     echo '<nav class="v2-nav" aria-label="Navigasi v2">';
     echo '<p class="v2-nav-label">MAIN MENU</p>';
     echo '<a class="v2-nav-item' . $is('components') . '" href="' . v2_e($link('components')) . '" title="Komponen UI">' . v2_icon('settings') . '<span>Komponen UI</span></a>';

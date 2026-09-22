@@ -7,8 +7,13 @@
     sidebar?.classList.toggle('is-open', open);
     overlay?.classList.toggle('is-visible', open);
     document.body.classList.toggle('v2-drawer-open', open && mobileQuery.matches);
+    document.querySelectorAll('[data-v2-sidebar-toggle]').forEach((button) => {
+      button.classList.toggle('is-open', open);
+      button.setAttribute('aria-label', open ? 'Tutup menu' : 'Buka menu');
+      button.title = open ? 'Tutup menu' : 'Buka menu';
+    });
   };
-  document.querySelectorAll('[data-v2-sidebar-toggle]').forEach((button) => button.addEventListener('click', () => toggleSidebar(true)));
+  document.querySelectorAll('[data-v2-sidebar-toggle]').forEach((button) => button.addEventListener('click', () => toggleSidebar(!sidebar?.classList.contains('is-open'))));
   document.querySelectorAll('[data-v2-sidebar-close]').forEach((button) => button.addEventListener('click', () => toggleSidebar(false)));
   document.querySelectorAll('[data-v2-nav-group]').forEach((button) => {
     button.addEventListener('click', () => button.closest('.v2-nav-group')?.classList.toggle('is-open'));
