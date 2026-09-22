@@ -366,12 +366,27 @@ async function loadIkhtisarOffice() {
   if (userKode !== '000') { select.value = userKode; select.disabled = true; }
 }
 
-function ikScopePayload(type) {
+function ikScopePayload(type, dateOverride = null) {
   const office = document.getElementById('ikhtisarOffice').value;
-  const payload = {type, harian_date:document.getElementById('ikhtisarDate').value};
+  const payload = {type, harian_date:dateOverride || document.getElementById('ikhtisarDate').value};
   if (['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'].includes(office)) payload.korwil = office;
   else payload.kode_kantor = office;
   return payload;
+}
+
+function ikShiftDate(value, days) {
+  const date = new Date(String(value).slice(0, 10) + 'T00:00:00');
+  if (Number.isNaN(date.getTime())) return value;
+  date.setDate(date.getDate() - days);
+  return date.toISOString().slice(0, 10);
+}
+
+function ikActualHasData(data) {
+  const makro = data?.makro || {};
+  return ['aset', 'dpk', 'pendapatan', 'biaya', 'laba_rugi'].some(key => {
+    const value = ikNum(makro[key]?.nominal_aktual);
+    return value !== null && Math.abs(value) > 0.000001;
+  });
 }
 
 function buildIkhtisarActual(data) {
@@ -452,13 +467,38 @@ async function fetchIkhtisar() {
   const status = document.getElementById('ikhtisarStatus');
   loader.classList.remove('hidden'); status.classList.remove('error'); status.textContent = 'Memuat...';
   try {
-    const [rbbRes, actualRes] = await Promise.all([
-      ikhtisarFetch(IKHTISAR_RBB_API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ikScopePayload('ikhtisar_rbb'))}),
-      ikhtisarFetch(IKHTISAR_LAPKEU_API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ikScopePayload('tv_makro_summary'))})
+    const requestedDate = document.getElementById('ikhtisarDate').value;
+    let actualDate = requestedDate;
+    let [rbbRes, actualRes] = await Promise.all([
+      ikhtisarFetch(IKHTISAR_RBB_API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ikScopePayload('ikhtisar_rbb', requestedDate))}),
+      ikhtisarFetch(IKHTISAR_LAPKEU_API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ikScopePayload('tv_makro_summary', requestedDate))})
     ]);
-    const rbbJson = await ikhtisarJson(rbbRes, 'API RBB'); const actualJson = await ikhtisarJson(actualRes, 'API Lapkeu');
+    let rbbJson = await ikhtisarJson(rbbRes, 'API RBB'); let actualJson = await ikhtisarJson(actualRes, 'API Lapkeu');
     if (!rbbRes.ok || rbbJson.status === false) throw new Error(rbbJson.message || 'Gagal memuat target RBB');
     if (!actualRes.ok || actualJson.status === false) throw new Error(actualJson.message || 'Gagal memuat realisasi');
+
+    // Snapshot nominatif/lapkeu bisa terlambat satu hari dari tanggal terakhir.
+    // Gunakan snapshot aktual terakhir agar tabel tidak kosong hanya karena tanggal.
+    if (!ikActualHasData(actualJson.data || {})) {
+      for (let offset = 1; offset <= 7; offset += 1) {
+        const candidateDate = ikShiftDate(requestedDate, offset);
+        try {
+          const candidateRes = await ikhtisarFetch(IKHTISAR_LAPKEU_API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ikScopePayload('tv_makro_summary', candidateDate))});
+          const candidateJson = await ikhtisarJson(candidateRes, 'API Lapkeu');
+          if (!candidateRes.ok || candidateJson.status === false || !ikActualHasData(candidateJson.data || {})) continue;
+          actualJson = candidateJson;
+          actualDate = candidateDate;
+
+          // Detail nominatif mengikuti tanggal aktual yang berhasil ditemukan.
+          try {
+            const fallbackRbbRes = await ikhtisarFetch(IKHTISAR_RBB_API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ikScopePayload('ikhtisar_rbb', candidateDate))});
+            const fallbackRbbJson = await ikhtisarJson(fallbackRbbRes, 'API RBB');
+            if (fallbackRbbRes.ok && fallbackRbbJson.status !== false) rbbJson = fallbackRbbJson;
+          } catch (fallbackError) {}
+          break;
+        } catch (candidateError) {}
+      }
+    }
     const rbbData = rbbJson.data || {}; const actualData = actualJson.data || {};
     ikhtisarRows = Array.isArray(rbbData.data) ? rbbData.data : [];
     ikhtisarRbbSources = rbbData.rbb_sources || {periode:{}, year_end:{}};
@@ -473,7 +513,7 @@ async function fetchIkhtisar() {
     document.getElementById('ikhtisarYearAchievementTitle').textContent = yearAchievementLabel;
     document.getElementById('ikhtisarDetailYearAchievementTitle').textContent = yearAchievementLabel;
     document.getElementById('ikhtisarScope').textContent = meta.scope || ikScopeLabel();
-    document.getElementById('ikhtisarLoadedAt').textContent = `Posisi actual: ${ikFormatDate(document.getElementById('ikhtisarDate').value)}`;
+    document.getElementById('ikhtisarLoadedAt').textContent = `Posisi actual: ${ikFormatDate(actualDate)}${actualDate !== requestedDate ? ' (snapshot terakhir)' : ''}`;
     renderIkhtisar();
     renderIkhtisarDetail();
     status.textContent = `${ikhtisarRows.length} mapping aktif`;
