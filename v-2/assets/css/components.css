@@ -175,8 +175,8 @@ body { font-size: calc(14px * var(--v2-scale)); }
 .v2-table-wrap { overflow: visible; }
 .v2-collection-card { overflow: visible; }
 .v2-collection-table { width: 100%; min-width: 0; }
-.v2-collection-table thead th { position: sticky; z-index: 20; top: 94px; background: var(--v2-shell-surface); box-shadow: 0 1px 0 var(--v2-shell-border); }
-.v2-collection-table .v2-total-row td { position: sticky; z-index: 15; top: 128px; background: color-mix(in srgb, var(--v2-accent-soft) 92%, var(--v2-surface)); box-shadow: 0 1px 0 var(--v2-shell-border); }
+.v2-collection-table thead th { position: sticky; z-index: 20; top: 73px; background: var(--v2-shell-surface); box-shadow: 0 1px 0 var(--v2-shell-border); }
+.v2-collection-table .v2-total-row td { position: sticky; z-index: 15; top: 107px; background: color-mix(in srgb, var(--v2-accent-soft) 92%, var(--v2-surface)); box-shadow: 0 1px 0 var(--v2-shell-border); }
 .v2-collection-table th, .v2-collection-table td { padding: 10px 7px; overflow-wrap: anywhere; }
 .v2-collection-table td { font-size: 10px; }
 .v2-collection-table td small { font-size: 8px; }
