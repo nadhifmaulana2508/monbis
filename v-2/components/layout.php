@@ -8,16 +8,16 @@ function v2_render_sidebar(string $active, string $baseUrl): void
 {
     $link = static fn(string $page): string => $baseUrl . '/' . rawurlencode($page);
     $is = static fn(string $page): string => $active === $page ? ' is-active' : '';
-    echo '<aside class="v2-sidebar" id="v2Sidebar"><div class="v2-brand"><span class="v2-brand-mark">F</span><div><strong>FE WORKSPACE</strong><small>Component System</small></div><button type="button" class="v2-icon-button v2-sidebar-collapse" data-v2-sidebar-setting aria-label="Ringkas sidebar" title="Ringkas sidebar">' . v2_icon('arrow-left', 17) . '</button><button type="button" class="v2-icon-button v2-sidebar-close" data-v2-sidebar-close aria-label="Tutup menu">' . v2_icon('close', 18) . '</button></div>';
+    $logoUrl = rtrim(str_replace('\\', '/', dirname($baseUrl)), '/') . '/img/monbis-icon.webp';
+    echo '<aside class="v2-sidebar" id="v2Sidebar"><div class="v2-brand"><a class="v2-brand-link" href="' . v2_e($link('report_npl')) . '" title="MONBIS"><img class="v2-brand-logo" src="' . v2_e($logoUrl) . '" alt="MONBIS"><div><strong>MONBIS</strong><small>Monitoring Bisnis</small></div></a><button type="button" class="v2-icon-button v2-sidebar-collapse" data-v2-sidebar-setting aria-label="Ringkas sidebar" title="Ringkas sidebar">' . v2_icon('arrow-left', 17) . '</button><button type="button" class="v2-icon-button v2-sidebar-close" data-v2-sidebar-close aria-label="Tutup menu">' . v2_icon('close', 18) . '</button></div>';
     echo '<nav class="v2-nav" aria-label="Navigasi v2">';
     echo '<p class="v2-nav-label">MAIN MENU</p>';
-    echo '<a class="v2-nav-item' . $is('components') . '" href="' . v2_e($link('components')) . '">' . v2_icon('settings') . '<span>Component Library</span></a>';
-    echo '<div class="v2-nav-group"><button type="button" class="v2-nav-group-title" data-v2-nav-group><span>' . v2_icon('users') . '<span>Collection</span></span>' . v2_icon('chevron', 15) . '</button><div class="v2-nav-sub"><a class="v2-nav-sub-item' . $is('collection') . '" href="' . v2_e($link('report_npl')) . '">Report NPL</a></div></div>';
-    echo '<a class="v2-nav-item' . $is('templates') . '" href="' . v2_e($link('templates')) . '">' . v2_icon('file') . '<span>Page Templates</span></a>';
+    echo '<a class="v2-nav-item' . $is('components') . '" href="' . v2_e($link('components')) . '" title="Komponen UI">' . v2_icon('settings') . '<span>Komponen UI</span></a>';
+    echo '<div class="v2-nav-group"><button type="button" class="v2-nav-group-title" data-v2-nav-group title="Collection"><span>' . v2_icon('users') . '<span>Collection</span></span>' . v2_icon('chevron', 15) . '</button><div class="v2-nav-sub"><a class="v2-nav-sub-item' . $is('collection') . '" href="' . v2_e($link('report_npl')) . '" title="Report NPL">Report NPL</a></div></div>';
     echo '<p class="v2-nav-label v2-nav-label--system">SYSTEM</p>';
-    echo '<a class="v2-nav-item' . $is('settings') . '" href="' . v2_e($link('settings')) . '">' . v2_icon('settings') . '<span>Pengaturan</span></a>';
-    echo '<a class="v2-nav-item" href="' . v2_e($link('components')) . '#assets">' . v2_icon('database') . '<span>Tokens &amp; Assets</span></a>';
-    echo '</nav><div class="v2-sidebar-account"><span class="v2-avatar">FE</span><div><strong>FE Workspace</strong><small>Component authoring</small></div>' . v2_icon('chevron', 15) . '</div><div class="v2-sidebar-footer"><span>FE Workspace v0.1</span></div></aside>';
+    echo '<a class="v2-nav-item' . $is('settings') . '" href="' . v2_e($link('settings')) . '" title="Pengaturan">' . v2_icon('settings') . '<span>Pengaturan</span></a>';
+    echo '<a class="v2-nav-item" href="' . v2_e($link('components')) . '#assets" title="Asset UI">' . v2_icon('database') . '<span>Asset UI</span></a>';
+    echo '</nav><div class="v2-sidebar-account"><span class="v2-avatar">FE</span><div><strong>MONBIS</strong><small>Workspace</small></div>' . v2_icon('chevron', 15) . '</div><div class="v2-sidebar-footer"><span>MONBIS v2</span></div></aside>';
 }
 
 function v2_render_end(): void

@@ -2,9 +2,11 @@
   'use strict';
   const sidebar = document.getElementById('v2Sidebar');
   const overlay = document.querySelector('[data-v2-sidebar-close]');
+  const mobileQuery = window.matchMedia('(max-width: 780px)');
   const toggleSidebar = (open) => {
     sidebar?.classList.toggle('is-open', open);
     overlay?.classList.toggle('is-visible', open);
+    document.body.classList.toggle('v2-drawer-open', open && mobileQuery.matches);
   };
   document.querySelectorAll('[data-v2-sidebar-toggle]').forEach((button) => button.addEventListener('click', () => toggleSidebar(true)));
   document.querySelectorAll('[data-v2-sidebar-close]').forEach((button) => button.addEventListener('click', () => toggleSidebar(false)));
@@ -12,6 +14,15 @@
     button.addEventListener('click', () => button.closest('.v2-nav-group')?.classList.toggle('is-open'));
   });
   document.querySelectorAll('.v2-nav-sub-item.is-active').forEach((item) => item.closest('.v2-nav-group')?.classList.add('is-open'));
+  document.querySelectorAll('.v2-nav a').forEach((link) => link.addEventListener('click', () => {
+    if (mobileQuery.matches) toggleSidebar(false);
+  }));
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && sidebar?.classList.contains('is-open')) toggleSidebar(false);
+  });
+  const closeOnDesktop = (event) => { if (!event.matches) toggleSidebar(false); };
+  if (mobileQuery.addEventListener) mobileQuery.addEventListener('change', closeOnDesktop);
+  else mobileQuery.addListener(closeOnDesktop);
 
   const user = (() => { try { return JSON.parse(localStorage.getItem('dpk_user') || 'null') || {}; } catch { return {}; } })();
   const name = user.full_name || user.nama || user.employee_id || 'Pengguna';
