@@ -16,7 +16,7 @@ require_once __DIR__ . '/components/bootstrap.php';
 $baseUrl = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/report-dpk/v-2')), '/');
 $baseRoot = preg_replace('#/v-2$#', '', $baseUrl) ?: '/report-dpk';
 $page = strtolower(trim((string)($_GET['page'] ?? 'dashboard')));
-$allowedPages = ['dashboard', 'kpi', 'rbb', 'reports'];
+$allowedPages = ['dashboard', 'kpi', 'rbb', 'reports', 'components', 'settings'];
 if (!in_array($page, $allowedPages, true)) {
     $page = 'dashboard';
 }
