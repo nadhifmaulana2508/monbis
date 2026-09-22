@@ -1717,6 +1717,8 @@ class RbbController
                 'year_end' => $loadRbbTargetMap($periodeRbbYearEnd),
             ];
 
+            $detailActual = $this->getIkhtisarDetailActual($harianDate, $b);
+
             return sendResponse(200, 'Berhasil memuat mapping RBB Ikhtisar', [
                 'meta' => [
                     'harian_date' => $harianDate,
@@ -1727,12 +1729,191 @@ class RbbController
                     'korwil' => $scope['korwil'],
                 ],
                 'rbb_sources' => $rbbSources,
+                'detail_actual' => $detailActual,
                 'data' => $rows,
             ]);
         } catch (PDOException $e) {
             error_log('PDO Error Ikhtisar RBB: ' . $e->getMessage());
             return sendResponse(500, 'Database Query Error: ' . $e->getMessage(), null);
         }
+    }
+
+    /**
+     * Actual untuk tab Damas & Kredit pada Ikhtisar.
+     * Sumbernya sengaja mengikuti DashboardController:
+     * - Kredit: nominatif.saldo_bank per kolektibilitas.
+     * - Deposito: nominatif_deposito.saldo_akhir.
+     * - Tabungan: nominatif_tabungan.saldo.
+     */
+    private function getIkhtisarDetailActual(string $harianDate, array $input): array
+    {
+        $creditScope = $this->buildIkhtisarNominatifScope($input, 'n', 'kode_cabang');
+        $depositScope = $this->buildIkhtisarNominatifScope($input, 'd', 'kode_kantor');
+        $savingScope = $this->buildIkhtisarNominatifScope($input, 't', 'kode_kantor');
+
+        $creditSql = "
+            SELECT
+                COALESCE(SUM(CASE WHEN n.kolektibilitas = 'L' THEN COALESCE(n.saldo_bank, 0) ELSE 0 END), 0) AS lancar_rupiah,
+                COALESCE(SUM(CASE WHEN n.kolektibilitas = 'L' THEN 1 ELSE 0 END), 0) AS lancar_noa,
+                COALESCE(SUM(CASE WHEN n.kolektibilitas = 'DP' THEN COALESCE(n.saldo_bank, 0) ELSE 0 END), 0) AS dp_rupiah,
+                COALESCE(SUM(CASE WHEN n.kolektibilitas = 'DP' THEN 1 ELSE 0 END), 0) AS dp_noa,
+                COALESCE(SUM(CASE WHEN n.kolektibilitas = 'KL' THEN COALESCE(n.saldo_bank, 0) ELSE 0 END), 0) AS kl_rupiah,
+                COALESCE(SUM(CASE WHEN n.kolektibilitas = 'KL' THEN 1 ELSE 0 END), 0) AS kl_noa,
+                COALESCE(SUM(CASE WHEN n.kolektibilitas = 'D' THEN COALESCE(n.saldo_bank, 0) ELSE 0 END), 0) AS diragukan_rupiah,
+                COALESCE(SUM(CASE WHEN n.kolektibilitas = 'D' THEN 1 ELSE 0 END), 0) AS diragukan_noa,
+                COALESCE(SUM(CASE WHEN n.kolektibilitas = 'M' THEN COALESCE(n.saldo_bank, 0) ELSE 0 END), 0) AS macet_rupiah,
+                COALESCE(SUM(CASE WHEN n.kolektibilitas = 'M' THEN 1 ELSE 0 END), 0) AS macet_noa
+            FROM nominatif n FORCE INDEX (idx_nominatif_filter)
+            WHERE n.created = :ikhtisar_credit_date
+            {$creditScope['sql']}
+        ";
+
+        $depositSql = "
+            SELECT
+                COALESCE(SUM(COALESCE(d.saldo_akhir, 0)), 0) AS rupiah,
+                COUNT(*) AS noa
+            FROM nominatif_deposito d FORCE INDEX (idx_perf_rekap_kankas)
+            WHERE d.created = :ikhtisar_deposit_date
+            {$depositScope['sql']}
+        ";
+
+        $savingSql = "
+            SELECT
+                COALESCE(SUM(COALESCE(t.saldo, 0)), 0) AS rupiah,
+                COUNT(*) AS noa
+            FROM nominatif_tabungan t FORCE INDEX (idx_perf_tabungan_main)
+            WHERE t.created = :ikhtisar_saving_date
+            {$savingScope['sql']}
+        ";
+
+        $creditStmt = $this->pdo->prepare($creditSql);
+        $creditStmt->bindValue(':ikhtisar_credit_date', $harianDate, PDO::PARAM_STR);
+        foreach ($creditScope['params'] as $key => $value) $creditStmt->bindValue($key, $value, PDO::PARAM_STR);
+        $creditStmt->execute();
+        $credit = $creditStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        $depositStmt = $this->pdo->prepare($depositSql);
+        $depositStmt->bindValue(':ikhtisar_deposit_date', $harianDate, PDO::PARAM_STR);
+        foreach ($depositScope['params'] as $key => $value) $depositStmt->bindValue($key, $value, PDO::PARAM_STR);
+        $depositStmt->execute();
+        $deposit = $depositStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        $savingStmt = $this->pdo->prepare($savingSql);
+        $savingStmt->bindValue(':ikhtisar_saving_date', $harianDate, PDO::PARAM_STR);
+        foreach ($savingScope['params'] as $key => $value) $savingStmt->bindValue($key, $value, PDO::PARAM_STR);
+        $savingStmt->execute();
+        $saving = $savingStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        // Snapshot DPK tidak selalu ter-upload pada tanggal yang sama dengan
+        // nominatif kredit. Jika tanggal pilihan kosong, gunakan snapshot
+        // terakhir yang masih berada sebelum/sama dengan tanggal pilihan.
+        $loadSnapshotDate = function (string $table, string $alias, array $tableScope) use ($harianDate): ?string {
+            $indexHint = match ($table) {
+                'nominatif_tabungan' => ' FORCE INDEX (idx_perf_tabungan_main)',
+                'nominatif_deposito' => ' FORCE INDEX (idx_perf_rekap_kankas)',
+                default => '',
+            };
+            $dateSql = "SELECT MAX({$alias}.created) FROM {$table} {$alias}{$indexHint} WHERE {$alias}.created <= :ikhtisar_snapshot_date {$tableScope['sql']}";
+            $dateStmt = $this->pdo->prepare($dateSql);
+            $dateStmt->bindValue(':ikhtisar_snapshot_date', $harianDate, PDO::PARAM_STR);
+            foreach ($tableScope['params'] as $key => $value) $dateStmt->bindValue($key, $value, PDO::PARAM_STR);
+            $dateStmt->execute();
+            $date = $dateStmt->fetchColumn();
+            return $date === false || $date === null ? null : (string)$date;
+        };
+
+        if (abs((float)($deposit['saldo_akhir'] ?? $deposit['rupiah'] ?? 0)) < 0.000001 && (int)($deposit['noa'] ?? 0) === 0) {
+            $snapshotDate = $loadSnapshotDate('nominatif_deposito', 'd', $depositScope);
+            if ($snapshotDate && $snapshotDate !== $harianDate) {
+                $snapshotStmt = $this->pdo->prepare(str_replace(':ikhtisar_deposit_date', ':ikhtisar_deposit_snapshot_date', $depositSql));
+                $snapshotStmt->bindValue(':ikhtisar_deposit_snapshot_date', $snapshotDate, PDO::PARAM_STR);
+                foreach ($depositScope['params'] as $key => $value) $snapshotStmt->bindValue($key, $value, PDO::PARAM_STR);
+                $snapshotStmt->execute();
+                $deposit = $snapshotStmt->fetch(PDO::FETCH_ASSOC) ?: $deposit;
+            }
+        }
+
+        if (abs((float)($saving['saldo'] ?? $saving['rupiah'] ?? 0)) < 0.000001 && (int)($saving['noa'] ?? 0) === 0) {
+            $snapshotDate = $loadSnapshotDate('nominatif_tabungan', 't', $savingScope);
+            if ($snapshotDate && $snapshotDate !== $harianDate) {
+                $snapshotStmt = $this->pdo->prepare(str_replace(':ikhtisar_saving_date', ':ikhtisar_saving_snapshot_date', $savingSql));
+                $snapshotStmt->bindValue(':ikhtisar_saving_snapshot_date', $snapshotDate, PDO::PARAM_STR);
+                foreach ($savingScope['params'] as $key => $value) $snapshotStmt->bindValue($key, $value, PDO::PARAM_STR);
+                $snapshotStmt->execute();
+                $saving = $snapshotStmt->fetch(PDO::FETCH_ASSOC) ?: $saving;
+            }
+        }
+
+        $number = static function ($value): float {
+            return (float)($value ?? 0);
+        };
+        $metric = static function ($rupiah, $noa) use ($number): array {
+            return ['rupiah' => $number($rupiah), 'noa' => (int)$number($noa)];
+        };
+
+        $tabungan = $metric($saving['rupiah'] ?? 0, $saving['noa'] ?? 0);
+        $deposito = $metric($deposit['rupiah'] ?? 0, $deposit['noa'] ?? 0);
+        $statuses = [
+            'L'  => $metric($credit['lancar_rupiah'] ?? 0, $credit['lancar_noa'] ?? 0),
+            'DP' => $metric($credit['dp_rupiah'] ?? 0, $credit['dp_noa'] ?? 0),
+            'KL' => $metric($credit['kl_rupiah'] ?? 0, $credit['kl_noa'] ?? 0),
+            'D'  => $metric($credit['diragukan_rupiah'] ?? 0, $credit['diragukan_noa'] ?? 0),
+            'M'  => $metric($credit['macet_rupiah'] ?? 0, $credit['macet_noa'] ?? 0),
+        ];
+
+        $sumMetric = static function (array $items): array {
+            return [
+                'rupiah' => array_sum(array_column($items, 'rupiah')),
+                'noa' => array_sum(array_column($items, 'noa')),
+            ];
+        };
+
+        return [
+            'damas' => [
+                'total' => $sumMetric([$tabungan, $deposito]),
+                'tabungan' => $tabungan,
+                'deposito' => $deposito,
+            ],
+            'credit' => [
+                'total' => $sumMetric($statuses),
+                'statuses' => $statuses,
+            ],
+        ];
+    }
+
+    private function buildIkhtisarNominatifScope(array $input, string $alias, string $column): array
+    {
+        $branchColumns = ['001','002','003','004','005','006','007','008','009','010','011','012','013','014','015','016','017','018','019','020','021','022','023','024','025','026','027','028'];
+        $kodeKantor = trim((string)($input['kode_kantor'] ?? ''));
+        if ($kodeKantor !== '' && $kodeKantor !== '000' && strtolower($kodeKantor) !== 'konsolidasi') {
+            $kodeKantor = str_pad($kodeKantor, 3, '0', STR_PAD_LEFT);
+            if (in_array($kodeKantor, $branchColumns, true)) {
+                return [
+                    'sql' => " AND {$alias}.{$column} = :ikhtisar_scope_branch",
+                    'params' => [':ikhtisar_scope_branch' => $kodeKantor],
+                ];
+            }
+        }
+
+        $korwil = strtoupper(trim((string)($input['korwil'] ?? '')));
+        $ranges = [
+            'SEMARANG' => ['001', '007'],
+            'SOLO' => ['008', '014'],
+            'BANYUMAS' => ['015', '021'],
+            'PEKALONGAN' => ['022', '028'],
+        ];
+        if (isset($ranges[$korwil])) {
+            return [
+                // Nilainya berasal dari daftar korwil statis di atas, jadi
+                // literal ini membantu MySQL memakai indeks range secara konsisten.
+                'sql' => " AND {$alias}.{$column} BETWEEN '{$ranges[$korwil][0]}' AND '{$ranges[$korwil][1]}'",
+                'params' => [],
+            ];
+        }
+
+        // DashboardController tidak memberi filter kode saat konsolidasi;
+        // ikuti perilaku itu agar kode kantor kosong/non-standar tidak hilang.
+        return ['sql' => '', 'params' => []];
     }
 
     public function getLapkeuRbbVsRealisasi($input = null)

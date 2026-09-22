@@ -33,9 +33,13 @@
   </section>
 
   <section class="ikhtisar-workspace">
+    <div class="ikhtisar-tabs" role="tablist" aria-label="Jenis Ikhtisar">
+      <button type="button" class="ikhtisar-tab active" id="ikhtisarTabSummaryButton" role="tab" aria-selected="true" aria-controls="ikhtisarTabSummary" data-ikhtisar-tab="summary">Ikhtisar</button>
+      <button type="button" class="ikhtisar-tab" id="ikhtisarTabDetailButton" role="tab" aria-selected="false" aria-controls="ikhtisarTabDetail" data-ikhtisar-tab="detail">Damas &amp; Kredit</button>
+    </div>
     <div class="ikhtisar-toolbar">
       <div>
-        <div class="ikhtisar-toolbar-title">Perkembangan Ikhtisar</div>
+        <div class="ikhtisar-toolbar-title" id="ikhtisarToolbarTitle">Perkembangan Ikhtisar</div>
         <div class="ikhtisar-toolbar-note">Sumber target: <b>ref_rbb · kategori IKHTISAR</b></div>
       </div>
       <div class="ikhtisar-meta">
@@ -49,6 +53,7 @@
       <span>Memuat ikhtisar...</span>
     </div>
 
+    <div id="ikhtisarTabSummary" class="ikhtisar-tab-panel active" role="tabpanel" aria-labelledby="ikhtisarTabSummaryButton">
     <div class="ikhtisar-table-shell">
       <table id="ikhtisarTable">
         <colgroup>
@@ -75,6 +80,37 @@
         </thead>
         <tbody id="ikhtisarBody"></tbody>
       </table>
+    </div>
+    </div>
+
+    <div id="ikhtisarTabDetail" class="ikhtisar-tab-panel" role="tabpanel" aria-labelledby="ikhtisarTabDetailButton" hidden>
+      <div class="ikhtisar-table-shell">
+        <table id="ikhtisarDetailTable">
+          <colgroup>
+            <col class="ikhtisar-col-name">
+            <col class="ikhtisar-col-money"><col class="ikhtisar-col-money">
+            <col class="ikhtisar-col-money"><col class="ikhtisar-col-percent"><col class="ikhtisar-col-percent">
+          </colgroup>
+          <thead>
+            <tr>
+              <th rowspan="2">PERKEMBANGAN</th>
+              <th colspan="2" id="ikhtisarDetailPeriodTitle">PERIODE</th>
+              <th rowspan="1" id="ikhtisarDetailYearTitle">DESEMBER</th>
+              <th rowspan="2">%</th>
+              <th rowspan="2">%</th>
+            </tr>
+            <tr>
+              <th>RBB</th>
+              <th>REALISASI</th>
+              <th>RBB</th>
+            </tr>
+            <tr class="ikhtisar-formula-row">
+              <th></th><th>4</th><th>5</th><th>6</th><th>6 = 5 : 4</th><th>7 = 5 : 6</th>
+            </tr>
+          </thead>
+          <tbody id="ikhtisarDetailBody"></tbody>
+        </table>
+      </div>
     </div>
 
     <div class="ikhtisar-footnote">
@@ -103,6 +139,7 @@
   .ikhtisar-table-shell{width:100%;overflow:auto}.ikhtisar-table-shell::-webkit-scrollbar{height:10px}.ikhtisar-table-shell::-webkit-scrollbar-thumb{background:#b7cbd6;border-radius:999px}.ikhtisar-table-shell::-webkit-scrollbar-track{background:#f4f8fa}#ikhtisarTable{width:100%;min-width:900px;border-collapse:separate;border-spacing:0;table-layout:fixed;color:#17344e}#ikhtisarTable .ikhtisar-col-name{width:31%}#ikhtisarTable .ikhtisar-col-money{width:15%}#ikhtisarTable .ikhtisar-col-percent{width:12%}#ikhtisarTable th,#ikhtisarTable td{border-right:1px solid #d3dfe6;border-bottom:1px solid #d3dfe6}#ikhtisarTable thead th{height:27px;padding:4px 8px;background:#3099ae;color:#fff;font-size:10px;line-height:1.1;font-weight:950;text-align:center;white-space:nowrap}#ikhtisarTable thead tr:nth-child(2) th{background:#dff2f4;color:#1c6177}#ikhtisarTable thead tr:nth-child(3) th{height:21px;padding:3px;background:#e7e8e9;color:#314b5e;font-size:9px;font-weight:800}#ikhtisarTable thead th:first-child{border-left:1px solid #d3dfe6}#ikhtisarTable tbody td{height:27px;padding:4px 10px;background:#fff;font-size:11px;line-height:1.05;vertical-align:middle}#ikhtisarTable tbody tr:nth-child(even) td{background:#fbfcfd}#ikhtisarTable tbody td:first-child{border-left:1px solid #d3dfe6}#ikhtisarTable tbody tr:hover td{background:#f1f8fa}.ikhtisar-name{font-weight:750;text-align:left}.ikhtisar-name.main{font-weight:950;color:#132b42}.ikhtisar-name.ratio{padding-left:24px;font-weight:650}.ikhtisar-name.subheading{font-weight:950;color:#1a2e40}.ikhtisar-code{display:inline-block;min-width:24px;margin-right:4px;color:#628096;font-size:9px;font-weight:900}.ikhtisar-value{text-align:right;font-variant-numeric:tabular-nums;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px!important;font-weight:750}.ikhtisar-value.actual{color:#173f5a;font-weight:900}.ikhtisar-value.ratio{color:#1c6177}.ikhtisar-value.empty{color:#9cafbb}.ikhtisar-percent{text-align:right;font-variant-numeric:tabular-nums;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px!important}.ikhtisar-total td{background:#eef8fa!important;font-weight:950;border-top:1px solid #acd7df}.ikhtisar-section td{background:#f7fafb!important;color:#17344e}.ikhtisar-section .ikhtisar-name{font-weight:950}.ikhtisar-footnote{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;color:#7890a0;font-size:9px}.ikhtisar-footnote b{color:#42657b}.ikhtisar-footnote span:last-child{white-space:nowrap}
   @media(max-width:900px){#ikhtisarPage{padding:10px}.ikhtisar-header{align-items:flex-start;flex-direction:column}.ikhtisar-filter{width:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px}.ikhtisar-filter label{min-width:0}.ikhtisar-toolbar{align-items:flex-start;flex-direction:column}.ikhtisar-meta{justify-content:flex-start}.ikhtisar-loading{inset:99px 0 0}}
   @media(max-width:560px){.ikhtisar-heading h1{font-size:19px}.ikhtisar-heading p{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ikhtisar-filter{grid-template-columns:1fr 40px}.ikhtisar-office-field{grid-column:1/-1;grid-row:1}.ikhtisar-filter label:first-child{grid-column:1}.ikhtisar-export{grid-column:2;grid-row:2}.ikhtisar-toolbar{padding:11px}.ikhtisar-footnote{align-items:flex-start;flex-direction:column;gap:4px}}
+  .ikhtisar-tabs{display:flex;gap:5px;padding:8px 12px 0;border-bottom:1px solid #dce7ee;background:#fbfdfe}.ikhtisar-tab{padding:8px 13px;border:1px solid transparent;border-radius:9px 9px 0 0;background:transparent;color:#6d8798;font-size:10px;font-weight:950;cursor:pointer}.ikhtisar-tab:hover{color:#1f6b86;background:#f0f8fa}.ikhtisar-tab.active{border-color:#cfe1e8;border-bottom-color:#fff;background:#fff;color:#0f3c5b}.ikhtisar-tab-panel[hidden]{display:none}.ikhtisar-tab-panel .ikhtisar-table-shell{border-top:0}#ikhtisarDetailTable{width:100%;min-width:900px;border-collapse:separate;border-spacing:0;table-layout:fixed;color:#17344e}#ikhtisarDetailTable .ikhtisar-col-name{width:31%}#ikhtisarDetailTable .ikhtisar-col-money{width:15%}#ikhtisarDetailTable .ikhtisar-col-percent{width:12%}#ikhtisarDetailTable th,#ikhtisarDetailTable td{border-right:1px solid #d3dfe6;border-bottom:1px solid #d3dfe6}#ikhtisarDetailTable thead th{height:27px;padding:4px 8px;background:#3099ae;color:#fff;font-size:10px;line-height:1.1;font-weight:950;text-align:center;white-space:nowrap}#ikhtisarDetailTable thead tr:nth-child(2) th{background:#dff2f4;color:#1c6177}#ikhtisarDetailTable thead tr:nth-child(3) th{height:21px;padding:3px;background:#e7e8e9;color:#314b5e;font-size:9px;font-weight:800}#ikhtisarDetailTable thead th:first-child,#ikhtisarDetailTable tbody td:first-child{border-left:1px solid #d3dfe6}#ikhtisarDetailTable tbody td{height:27px;padding:4px 10px;background:#fff;font-size:11px;line-height:1.05;vertical-align:middle}#ikhtisarDetailTable tbody tr:nth-child(even) td{background:#fbfcfd}#ikhtisarDetailTable tbody tr:hover td{background:#f1f8fa}.ikhtisar-detail-group td{background:#eef8fa!important;font-weight:950;border-top:1px solid #acd7df}.ikhtisar-detail-category td{background:#f7fafb!important;color:#17344e}.ikhtisar-detail-category .ikhtisar-name{font-weight:950}.ikhtisar-detail-child .ikhtisar-name{padding-left:24px}.ikhtisar-noa{color:#1c6177;font-size:10px!important;font-weight:800}
 </style>
 
 <script>
@@ -117,6 +154,8 @@ const ikhtisarRbbCodeMap = {'1':'95','2':'105','5':'63','6':'196','7':'258','8':
 let ikhtisarRows = [];
 let ikhtisarActual = {};
 let ikhtisarRbbSources = {periode:{}, year_end:{}};
+let ikhtisarDetailActual = {damas:{}, credit:{}};
+let ikhtisarActiveTab = 'summary';
 
 function ikhtisarFetch(url, options = {}) { return window.apiFetch ? window.apiFetch(url, options) : fetch(url, options); }
 function ikEsc(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
@@ -128,6 +167,88 @@ function ikIsRatio(code) { return ikhtisarRatioCodes.has(String(code)); }
 function ikFormat(value, ratio = false) { const n = ikNum(value); if (n === null) return '<span class="ikhtisar-value empty">-</span>'; return `<span class="ikhtisar-value${ratio ? ' ratio' : ''}">${ratio ? ikhtisarDecimal.format(n) + '%' : ikhtisarMoney.format(Math.round(n))}</span>`; }
 function ikPercent(value) { const n = ikNum(value); return n === null ? '<span class="ikhtisar-value empty">-</span>' : `<span class="ikhtisar-percent">${ikhtisarDecimal.format(n)}%</span>`; }
 function ikScopeLabel() { return document.getElementById('ikhtisarOffice')?.selectedOptions?.[0]?.textContent?.trim() || 'KONSOLIDASI'; }
+
+function ikTargetValue(source, code) {
+  if (!source || !Object.prototype.hasOwnProperty.call(source, String(code))) return null;
+  return ikNum(source[String(code)]);
+}
+
+function ikDetailValue(path) { return ikPath(ikhtisarDetailActual, path, null); }
+
+function ikDetailFormat(value, kind = 'money') {
+  const n = ikNum(value);
+  if (n === null) return '<span class="ikhtisar-value empty">-</span>';
+  if (kind === 'noa') return `<span class="ikhtisar-value ikhtisar-noa">${ikhtisarMoney.format(Math.round(n))}</span>`;
+  return ikFormat(n);
+}
+
+function ikhtisarDetailRows() {
+  return [
+    {label:'DAMAS', className:'ikhtisar-detail-group', targetCode:'25', path:'damas.total.rupiah', kind:'money'},
+    {label:'a. Tabungan', className:'ikhtisar-detail-category'},
+    {label:'(1) Rupiah', className:'ikhtisar-detail-child', targetCode:'27', path:'damas.tabungan.rupiah', kind:'money'},
+    {label:'(2) Nasabah', className:'ikhtisar-detail-child', targetCode:'28', path:'damas.tabungan.noa', kind:'noa'},
+    {label:'b. Deposito', className:'ikhtisar-detail-category'},
+    {label:'(1) Rupiah', className:'ikhtisar-detail-child', targetCode:'29', path:'damas.deposito.rupiah', kind:'money'},
+    {label:'(2) Nasabah', className:'ikhtisar-detail-child', targetCode:'30', path:'damas.deposito.noa', kind:'noa'},
+    {label:'K R E D I T', className:'ikhtisar-detail-group', targetCode:'44', path:'credit.total.rupiah', kind:'money'},
+    {label:'a. Lancar', className:'ikhtisar-detail-category'},
+    {label:'(1) Rupiah', className:'ikhtisar-detail-child', targetCode:'46', path:'credit.statuses.L.rupiah', kind:'money'},
+    {label:'(2) Nasabah', className:'ikhtisar-detail-child', targetCode:'47', path:'credit.statuses.L.noa', kind:'noa'},
+    {label:'b. Dalam Perhatian', className:'ikhtisar-detail-category'},
+    {label:'(1) Rupiah', className:'ikhtisar-detail-child', targetCode:'48', path:'credit.statuses.DP.rupiah', kind:'money'},
+    {label:'(2) Nasabah', className:'ikhtisar-detail-child', targetCode:'49', path:'credit.statuses.DP.noa', kind:'noa'},
+    {label:'c. Kurang Lancar', className:'ikhtisar-detail-category'},
+    {label:'(1) Rupiah', className:'ikhtisar-detail-child', targetCode:'50', path:'credit.statuses.KL.rupiah', kind:'money'},
+    {label:'(2) Nasabah', className:'ikhtisar-detail-child', targetCode:'51', path:'credit.statuses.KL.noa', kind:'noa'},
+    {label:'d. Diragukan', className:'ikhtisar-detail-category'},
+    {label:'(1) Rupiah', className:'ikhtisar-detail-child', targetCode:'52', path:'credit.statuses.D.rupiah', kind:'money'},
+    {label:'(2) Nasabah', className:'ikhtisar-detail-child', targetCode:'53', path:'credit.statuses.D.noa', kind:'noa'},
+    {label:'e. Macet', className:'ikhtisar-detail-category'},
+    {label:'(1) Rupiah', className:'ikhtisar-detail-child', targetCode:'54', path:'credit.statuses.M.rupiah', kind:'money'},
+    {label:'(2) Nasabah', className:'ikhtisar-detail-child', targetCode:'55', path:'credit.statuses.M.noa', kind:'noa'}
+  ];
+}
+
+function renderIkhtisarDetail() {
+  const body = document.getElementById('ikhtisarDetailBody');
+  if (!body) return;
+  const rows = ikhtisarDetailRows();
+  const periodSource = ikhtisarRbbSources.periode || {};
+  const yearSource = ikhtisarRbbSources.year_end || {};
+  body.innerHTML = rows.map(row => {
+    const target = row.targetCode ? ikTargetValue(periodSource, row.targetCode) : null;
+    const yearEnd = row.targetCode ? ikTargetValue(yearSource, row.targetCode) : null;
+    const actual = row.path ? ikDetailValue(row.path) : null;
+    const periodAchievement = target !== null && target !== 0 && ikNum(actual) !== null ? ikNum(actual) / target * 100 : null;
+    const yearAchievement = yearEnd !== null && yearEnd !== 0 && ikNum(actual) !== null ? ikNum(actual) / yearEnd * 100 : null;
+    const labelClass = row.className.includes('child') ? 'ratio' : (row.className.includes('category') ? 'subheading' : 'main');
+    return `<tr class="${row.className}">
+      <td class="ikhtisar-name ${labelClass}">${ikEsc(row.label)}</td>
+      <td class="ikhtisar-value">${row.targetCode ? ikDetailFormat(target, row.kind) : ''}</td>
+      <td class="ikhtisar-value actual">${row.path ? ikDetailFormat(actual, row.kind) : ''}</td>
+      <td class="ikhtisar-value">${row.targetCode ? ikDetailFormat(yearEnd, row.kind) : ''}</td>
+      <td class="ikhtisar-percent">${row.targetCode ? ikPercent(periodAchievement) : ''}</td>
+      <td class="ikhtisar-percent">${row.targetCode ? ikPercent(yearAchievement) : ''}</td>
+    </tr>`;
+  }).join('');
+}
+
+function setIkhtisarTab(tab) {
+  ikhtisarActiveTab = tab === 'detail' ? 'detail' : 'summary';
+  const isDetail = ikhtisarActiveTab === 'detail';
+  document.querySelectorAll('[data-ikhtisar-tab]').forEach(button => {
+    const active = button.dataset.ikhtisarTab === ikhtisarActiveTab;
+    button.classList.toggle('active', active);
+    button.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  const summary = document.getElementById('ikhtisarTabSummary');
+  const detail = document.getElementById('ikhtisarTabDetail');
+  if (summary) { summary.classList.toggle('active', !isDetail); summary.hidden = isDetail; }
+  if (detail) { detail.classList.toggle('active', isDetail); detail.hidden = !isDetail; }
+  const title = document.getElementById('ikhtisarToolbarTitle');
+  if (title) title.textContent = isDetail ? 'Damas, Kredit & Progress Report PH Kredit' : 'Perkembangan Ikhtisar';
+}
 
 function ikSource(source, code) {
   const value = ikNum(source?.[String(code)]);
@@ -311,30 +432,36 @@ async function fetchIkhtisar() {
     const rbbData = rbbJson.data || {}; const actualData = actualJson.data || {};
     ikhtisarRows = Array.isArray(rbbData.data) ? rbbData.data : [];
     ikhtisarRbbSources = rbbData.rbb_sources || {periode:{}, year_end:{}};
+    ikhtisarDetailActual = rbbData.detail_actual || {damas:{}, credit:{}};
     ikhtisarActual = buildIkhtisarActual(actualData);
     const meta = rbbData.meta || {};
     document.getElementById('ikhtisarPeriodTitle').textContent = ikMonthLabel(meta.periode_rbb || document.getElementById('ikhtisarDate').value);
     document.getElementById('ikhtisarYearTitle').textContent = ikMonthLabel(meta.periode_rbb_year_end || `${String(document.getElementById('ikhtisarDate').value).slice(0,4)}-12`);
+    document.getElementById('ikhtisarDetailPeriodTitle').textContent = ikMonthLabel(meta.periode_rbb || document.getElementById('ikhtisarDate').value);
+    document.getElementById('ikhtisarDetailYearTitle').textContent = ikMonthLabel(meta.periode_rbb_year_end || `${String(document.getElementById('ikhtisarDate').value).slice(0,4)}-12`);
     document.getElementById('ikhtisarScope').textContent = meta.scope || ikScopeLabel();
     document.getElementById('ikhtisarLoadedAt').textContent = `Posisi actual: ${ikFormatDate(document.getElementById('ikhtisarDate').value)}`;
     renderIkhtisar();
+    renderIkhtisarDetail();
     status.textContent = `${ikhtisarRows.length} mapping aktif`;
   } catch (error) {
     document.getElementById('ikhtisarBody').innerHTML = `<tr><td colspan="6" class="ikhtisar-empty">${ikEsc(error.message || 'Data belum dapat dimuat.')}</td></tr>`;
+    document.getElementById('ikhtisarDetailBody').innerHTML = `<tr><td colspan="6" class="ikhtisar-empty">${ikEsc(error.message || 'Data belum dapat dimuat.')}</td></tr>`;
     status.classList.add('error'); status.textContent = 'Gagal memuat';
   } finally { loader.classList.add('hidden'); }
 }
 
 function exportIkhtisarCsv() {
-  const table = document.getElementById('ikhtisarTable');
+  const table = document.getElementById(ikhtisarActiveTab === 'detail' ? 'ikhtisarDetailTable' : 'ikhtisarTable');
   const rows = [...table.querySelectorAll('tr')].map(row => [...row.children].map(cell => `"${String(cell.textContent || '').replace(/"/g,'""').trim()}"`).join(','));
   const blob = new Blob(["\ufeff" + rows.join('\n')], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob); const link = document.createElement('a');
-  link.href = url; link.download = `ikhtisar-rbb-${document.getElementById('ikhtisarDate').value || 'export'}.csv`; link.click(); URL.revokeObjectURL(url);
+  link.href = url; link.download = `ikhtisar-${ikhtisarActiveTab}-${document.getElementById('ikhtisarDate').value || 'export'}.csv`; link.click(); URL.revokeObjectURL(url);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
   await Promise.all([loadIkhtisarDate(), loadIkhtisarOffice()]);
+  document.querySelectorAll('[data-ikhtisar-tab]').forEach(button => button.addEventListener('click', () => setIkhtisarTab(button.dataset.ikhtisarTab)));
   document.getElementById('ikhtisarDate')?.addEventListener('change', fetchIkhtisar);
   document.getElementById('ikhtisarOffice')?.addEventListener('change', fetchIkhtisar);
   fetchIkhtisar();
