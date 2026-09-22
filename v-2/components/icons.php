@@ -5,6 +5,7 @@ function v2_icon(string $name, int $size = 18): string
     $paths = [
         'menu' => '<path d="M4 6h16M4 12h16M4 18h16"/>',
         'close' => '<path d="m6 6 12 12M18 6 6 18"/>',
+        'arrow-left' => '<path d="m15 18-6-6 6-6"/><path d="M9 12h11"/>',
         'sun' => '<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41m11.32-11.32 1.41-1.41"/>',
         'home' => '<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M9 21v-6h6v6"/>',
         'chart' => '<path d="M4 19V5m0 14h16"/><path d="m7 15 3-4 3 2 5-7"/>',
@@ -18,8 +19,12 @@ function v2_icon(string $name, int $size = 18): string
         'plus' => '<path d="M12 5v14M5 12h14"/>',
         'download' => '<path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/>',
         'search' => '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',
+        'bell' => '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>',
+        'user' => '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+        'database' => '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7"/>',
         'logout' => '<path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-6"/>',
         'check' => '<path d="m5 12 4 4L19 6"/>',
+        'alert' => '<path d="M10.3 3.8 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 4h.01"/>',
     ];
     return '<svg ' . $common . '>' . ($paths[$name] ?? $paths['file']) . '</svg>';
 }

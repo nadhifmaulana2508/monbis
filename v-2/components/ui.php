@@ -49,7 +49,9 @@ function v2_modal(string $id, string $title, string $bodyHtml = ''): string
 
 function v2_alert(string $message, string $tone = 'info', string $title = ''): string
 {
-    return '<div class="v2-alert v2-alert--' . v2_e($tone) . '">' . ($title ? '<strong>' . v2_e($title) . '</strong>' : '') . '<span>' . v2_e($message) . '</span></div>';
+    $icons = ['success' => 'check', 'warning' => 'alert', 'danger' => 'close', 'info' => 'file'];
+    $icon = $icons[$tone] ?? 'file';
+    return '<div class="v2-alert v2-alert--' . v2_e($tone) . '"><span class="v2-alert-icon">' . v2_icon($icon, 17) . '</span><div>' . ($title ? '<strong>' . v2_e($title) . '</strong>' : '') . '<span>' . v2_e($message) . '</span></div><button type="button" class="v2-alert-close" data-v2-alert-close aria-label="Tutup">' . v2_icon('close', 15) . '</button></div>';
 }
 
 function v2_progress(int $value, string $label = ''): string

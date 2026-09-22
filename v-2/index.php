@@ -26,19 +26,9 @@ v2_render_sidebar($page, $baseUrl, $baseRoot);
 ?>
 <div class="v2-main" id="v2Main">
   <header class="v2-topbar">
-    <button type="button" class="v2-icon-button v2-mobile-menu" data-v2-sidebar-toggle aria-label="Buka menu">
-      <?= v2_icon('menu', 20) ?>
-    </button>
-    <div class="v2-breadcrumb">
-      <span>MONBIS</span><span class="v2-breadcrumb-separator">/</span><strong><?= v2_e(ucfirst($page)) ?></strong>
-    </div>
-    <div class="v2-topbar-actions">
-      <button type="button" class="v2-icon-button" data-v2-theme-toggle title="Mode tampilan" aria-label="Mode tampilan"><?= v2_icon('sun', 18) ?></button>
-      <div class="v2-user-chip">
-        <span class="v2-avatar" data-v2-user-initials>MB</span>
-        <span class="v2-user-copy"><strong data-v2-user-name>Pengguna</strong><small>MONBIS v2</small></span>
-      </div>
-    </div>
+    <div class="v2-topbar-left"><button type="button" class="v2-icon-button v2-mobile-menu" data-v2-sidebar-toggle aria-label="Buka menu"><?= v2_icon('menu', 20) ?></button><button type="button" class="v2-icon-button v2-desktop-menu" data-v2-sidebar-setting aria-label="Ringkas sidebar" title="Ringkas sidebar"><?= v2_icon('menu', 18) ?></button><button type="button" class="v2-icon-button v2-back-button" onclick="history.back()" aria-label="Kembali"><?= v2_icon('arrow-left', 18) ?></button><div class="v2-breadcrumb"><span>Workspace</span><span class="v2-breadcrumb-separator">›</span><strong><?= v2_e($page === 'components' ? 'FE Component Library' : ucfirst($page)) ?></strong></div></div>
+    <div class="v2-topbar-center"><label class="v2-global-search"><span><?= v2_icon('search', 16) ?></span><input type="search" placeholder="Cari apa saja..." aria-label="Cari apa saja"></label></div>
+    <div class="v2-topbar-actions"><button type="button" class="v2-icon-button" data-v2-theme-toggle title="Mode tampilan" aria-label="Mode tampilan"><?= v2_icon('sun', 18) ?></button><button type="button" class="v2-icon-button v2-notification" aria-label="Notifikasi"><?= v2_icon('bell', 18) ?><i></i></button><div class="v2-user-chip"><span class="v2-avatar" data-v2-user-initials>MB</span><span class="v2-user-copy"><strong data-v2-user-name>Admin</strong><small>Administrator</small></span><?= v2_icon('chevron', 14) ?></div></div>
   </header>
   <main class="v2-content">
     <?php include __DIR__ . '/pages/' . $page . '.php'; ?>

@@ -25,6 +25,7 @@
   document.querySelector('[data-v2-settings-reset]')?.addEventListener('click', () => { window.V2Settings.reset(); window.V2Toast?.show('Pengaturan dikembalikan ke default.'); });
   document.querySelector('[data-v2-sidebar-setting]')?.addEventListener('click', () => save('sidebar', settings.sidebar === 'collapsed' ? 'expanded' : 'collapsed'));
   document.querySelectorAll('[data-v2-toast]').forEach((button) => button.addEventListener('click', () => window.V2Toast?.show(button.dataset.v2Toast || 'Aksi berhasil.')));
+  document.querySelectorAll('[data-v2-alert-close]').forEach((button) => button.addEventListener('click', () => button.closest('.v2-alert')?.remove()));
   document.querySelectorAll('[data-v2-tab]').forEach((tab) => tab.addEventListener('click', () => {
     const group = tab.closest('.v2-tabs');
     group?.querySelectorAll('[data-v2-tab]').forEach((item) => item.classList.toggle('is-active', item === tab));
