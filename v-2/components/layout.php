@@ -12,7 +12,7 @@ function v2_render_sidebar(string $active, string $baseUrl): void
     echo '<nav class="v2-nav" aria-label="Navigasi v2">';
     echo '<p class="v2-nav-label">MAIN MENU</p>';
     echo '<a class="v2-nav-item' . $is('components') . '" href="' . v2_e($link('components')) . '">' . v2_icon('settings') . '<span>Component Library</span></a>';
-    echo '<div class="v2-nav-group"><button type="button" class="v2-nav-group-title" data-v2-nav-group><span>' . v2_icon('users') . '<span>Collection</span></span>' . v2_icon('chevron', 15) . '</button><div class="v2-nav-sub"><a class="v2-nav-sub-item' . $is('collection') . '" href="' . v2_e($link('collection')) . '">Report NPL</a></div></div>';
+    echo '<div class="v2-nav-group"><button type="button" class="v2-nav-group-title" data-v2-nav-group><span>' . v2_icon('users') . '<span>Collection</span></span>' . v2_icon('chevron', 15) . '</button><div class="v2-nav-sub"><a class="v2-nav-sub-item' . $is('collection') . '" href="' . v2_e($link('report_npl')) . '">Report NPL</a></div></div>';
     echo '<a class="v2-nav-item' . $is('templates') . '" href="' . v2_e($link('templates')) . '">' . v2_icon('file') . '<span>Page Templates</span></a>';
     echo '<p class="v2-nav-label v2-nav-label--system">SYSTEM</p>';
     echo '<a class="v2-nav-item' . $is('settings') . '" href="' . v2_e($link('settings')) . '">' . v2_icon('settings') . '<span>Pengaturan</span></a>';

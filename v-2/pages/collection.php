@@ -12,7 +12,7 @@
   <div class="v2-collection-toolbar"><div><span class="v2-eyebrow">REPORT NPL</span><strong class="v2-collection-view-label" id="collectionViewLabel">Kolektibilitas</strong></div><div class="v2-collection-toolbar-actions"><label class="v2-collection-search"><span><?= v2_icon('search', 15) ?></span><input type="search" id="collectionSearch" placeholder="Cari kode atau kantor..." aria-label="Cari kode atau kantor"></label><div class="v2-actions"><?= v2_icon_button('swap', 'Ganti report', 'default', ['data-collection-view-switch'=>'']) ?><?= v2_icon_button('download', 'Export Excel', 'primary', ['data-collection-export'=>'']) ?></div></div></div>
   <div class="v2-collection-loading" id="collectionLoading"><?= v2_spinner('Memuat data collection...') ?></div>
   <div class="v2-empty-state" id="collectionMessage" hidden></div>
-  <div class="v2-table-wrap" id="collectionTableWrap" hidden><table class="v2-table v2-collection-table" id="collectionTable"><thead id="collectionHead"></thead><tbody id="collectionBody"></tbody></table></div>
+  <div class="v2-table-wrap v2-collection-table-wrap" id="collectionTableWrap" hidden><table class="v2-table v2-collection-table" id="collectionTable"><thead id="collectionHead"></thead><tbody id="collectionBody"></tbody></table></div>
 </div>
 </section>
 
