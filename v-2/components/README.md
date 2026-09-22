@@ -4,7 +4,7 @@ Folder ini adalah sumber komponen bersama untuk page baru di `v-2/pages`.
 
 - `bootstrap.php` memuat seluruh helper.
 - `layout.php` menyediakan shell, sidebar, topbar, dan asset global.
-- `ui.php` menyediakan button, input, select, card, modal, alert, progress, tabs, badge, dan icon button.
+- `ui.php` menyediakan button, input, select, filter bar, card, modal, alert, progress, tabs, badge, loading, empty state, pagination, switch, dan icon button.
 - `icons.php` menyimpan icon SVG inline agar tidak bergantung pada asset eksternal.
 
 Asset visual dan interaksi berada di `v-2/assets`:

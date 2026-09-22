@@ -20,9 +20,9 @@ function v2_button(string $label, string $tone = 'primary', string $icon = '', a
         . ($icon ? v2_icon($icon, 16) : '') . '<span>' . v2_e($label) . '</span></button>';
 }
 
-function v2_input(string $id, string $label, string $value = '', string $placeholder = '', string $type = 'text'): string
+function v2_input(string $id, string $label, string $value = '', string $placeholder = '', string $type = 'text', array $attrs = []): string
 {
-    return '<label class="v2-field" for="' . v2_e($id) . '"><span>' . v2_e($label) . '</span><input id="' . v2_e($id) . '" name="' . v2_e($id) . '" type="' . v2_e($type) . '" value="' . v2_e($value) . '" placeholder="' . v2_e($placeholder) . '"></label>';
+    return '<label class="v2-field" for="' . v2_e($id) . '"><span>' . v2_e($label) . '</span><input id="' . v2_e($id) . '" name="' . v2_e($id) . '" type="' . v2_e($type) . '" value="' . v2_e($value) . '" placeholder="' . v2_e($placeholder) . '"' . v2_attributes($attrs) . '></label>';
 }
 
 function v2_select(string $id, string $label, array $options, string $selected = '', array $attrs = []): string
@@ -79,6 +79,31 @@ function v2_icon_button(string $icon, string $label, string $tone = 'default', a
     $attrs['aria-label'] = $attrs['aria-label'] ?? $label;
     $attrs['title'] = $attrs['title'] ?? $label;
     return '<button type="button" class="v2-icon-button v2-icon-button--' . v2_e($tone) . '"' . v2_attributes($attrs) . '>' . v2_icon($icon, 18) . '</button>';
+}
+
+function v2_filter_bar(array $fields, array $actions = [], string $id = 'v2FilterBar'): string
+{
+    $html = '<form class="v2-filter-bar" id="' . v2_e($id) . '" data-v2-filter-bar>';
+    foreach ($fields as $field) {
+        $name = (string)($field['name'] ?? $field['id'] ?? 'filter');
+        $fieldId = (string)($field['id'] ?? 'v2Filter' . ucfirst($name));
+        $label = (string)($field['label'] ?? ucfirst($name));
+        $type = (string)($field['type'] ?? 'text');
+        $attrs = array_merge(['data-v2-filter-field' => $name], $field['attrs'] ?? []);
+        if ($type === 'select') {
+            $html .= v2_select($fieldId, $label, $field['options'] ?? [], (string)($field['value'] ?? ''), $attrs);
+        } else {
+            $html .= v2_input($fieldId, $label, (string)($field['value'] ?? ''), (string)($field['placeholder'] ?? ''), $type, $attrs);
+        }
+    }
+    if ($actions) {
+        $html .= '<div class="v2-filter-actions">';
+        foreach ($actions as $action) {
+            $html .= v2_button((string)($action['label'] ?? 'Apply'), (string)($action['tone'] ?? 'primary'), (string)($action['icon'] ?? ''), $action['attrs'] ?? []);
+        }
+        $html .= '</div>';
+    }
+    return $html . '</form>';
 }
 
 function v2_spinner(string $label = 'Memuat data...'): string
