@@ -113,6 +113,7 @@ const ikhtisarDecimal = new Intl.NumberFormat('id-ID', {minimumFractionDigits:2,
 const ikhtisarRatioCodes = new Set(['10','11','12','13','15','16','17','18','19','20','21','22','23','24']);
 const ikhtisarSectionCodes = new Set(['9','14']);
 const ikhtisarMainCodes = ['1','2','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24'];
+const ikhtisarRbbCodeMap = {'1':'95','2':'105','5':'63','6':'196','7':'258','8':'261'};
 let ikhtisarRows = [];
 let ikhtisarActual = {};
 let ikhtisarRbbSources = {periode:{}, year_end:{}};
@@ -133,14 +134,22 @@ function ikSource(source, code) {
   return value === null ? 0 : value;
 }
 
+function ikMappedSource(source, ikhtisarCode) {
+  const mappedCode = ikhtisarRbbCodeMap[String(ikhtisarCode)];
+  if (mappedCode && source && Object.prototype.hasOwnProperty.call(source, mappedCode)) return ikSource(source, mappedCode);
+  return ikSource(source, ikhtisarCode);
+}
+
 function ikDerivedRbbTargets(source, monthNumber) {
-  const asset = ikSource(source, 1);
-  const dpk = ikSource(source, 25) || ikSource(source, 2);
-  const credit = ikSource(source, 44) || ikSource(source, 5);
+  const asset = ikMappedSource(source, 1);
+  const dpk = ikSource(source, 105) || ikSource(source, 25) || ikMappedSource(source, 2);
+  const credit = ikSource(source, 63) || ikSource(source, 44) || ikMappedSource(source, 5);
   const npl = ikSource(source, 56);
   const ckpnCredit = Math.abs(ikSource(source, 70));
   const asetProduktif = ikSource(source, 61) + ikSource(source, 64) + ikSource(source, 65);
-  const laba = ikSource(source, 8) || (ikSource(source, 6) - ikSource(source, 7));
+  const income = ikMappedSource(source, 6);
+  const expense = ikMappedSource(source, 7);
+  const laba = ikMappedSource(source, 8) || (income - expense);
   const pendapatanBunga = ikSource(source, 163);
   const bebanBunga = ikSource(source, 198);
   const currentMonth = Math.max(1, Number(monthNumber) || 1);
@@ -153,7 +162,7 @@ function ikDerivedRbbTargets(source, monthNumber) {
   };
 
   // Nominal turunan.
-  if (ikSource(source, 8) === 0 && (ikSource(source, 6) !== 0 || ikSource(source, 7) !== 0)) derived['8'] = ikSource(source, 6) - ikSource(source, 7);
+  if (ikMappedSource(source, 8) === 0 && (income !== 0 || expense !== 0)) derived['8'] = income - expense;
 
   // Rasio yang dapat diturunkan dari nilai RBB detail.
   setRatio('12', npl, credit);
@@ -163,18 +172,21 @@ function ikDerivedRbbTargets(source, monthNumber) {
   setRatio('17', credit, asetProduktif);
   setRatio('18', laba, asset, true);
   setRatio('19', pendapatanBunga - bebanBunga, asetProduktif, true);
-  setRatio('20', ikSource(source, 7), ikSource(source, 6));
+  setRatio('20', expense, income);
   setRatio('21', ikSource(source, 57) + ikSource(source, 61), ikSource(source, 96) + dpk + ikSource(source, 120) + ikSource(source, 110) + ikSource(source, 117));
   setRatio('22', credit, dpk);
   setRatio('23', ikSource(source, 31), credit);
-  setRatio('24', ikSource(source, 27) || ikSource(source, 106), dpk);
+  setRatio('24', ikSource(source, 106) || ikSource(source, 27), dpk);
   return derived;
 }
 
 function ikEffectiveTarget(row, source, monthNumber) {
-  const direct = row.has_target ? ikNum(row.target_rbb) : null;
+  const code = String(row.kode_monbis);
+  const mappedCode = ikhtisarRbbCodeMap[code] || code;
+  const sourceHasCode = source && Object.prototype.hasOwnProperty.call(source, mappedCode);
+  const direct = sourceHasCode ? ikNum(source[mappedCode]) : (row.has_target ? ikNum(row.target_rbb) : null);
   if (direct !== null && Math.abs(direct) > 0.000001) return {value:direct, calculated:false};
-  const derived = ikDerivedRbbTargets(source, monthNumber)[String(row.kode_monbis)];
+  const derived = ikDerivedRbbTargets(source, monthNumber)[code];
   return {value:ikNum(derived), calculated:derived !== undefined};
 }
 
@@ -247,7 +259,16 @@ function buildIkhtisarActual(data) {
 function renderIkhtisar() {
   const map = Object.fromEntries(ikhtisarRows.map(row => [String(row.kode_monbis), row]));
   const body = document.getElementById('ikhtisarBody');
-  const rows = ikhtisarMainCodes.map(code => map[code]).filter(Boolean);
+  const candidates = ikhtisarMainCodes.map(code => map[code]).filter(Boolean);
+  const visibleCodes = new Set(candidates.filter(row => {
+    const code = String(row.kode_monbis);
+    if (ikhtisarSectionCodes.has(code)) return false;
+    const actual = ikNum(ikhtisarActual[code]);
+    return actual !== null && Math.abs(actual) > 0.000001;
+  }).map(row => String(row.kode_monbis)));
+  if (candidates.some(row => visibleCodes.has(String(row.kode_monbis)) && ['10','11','12','13','15','16','17','18','19','20','21','22','23','24'].includes(String(row.kode_monbis)))) visibleCodes.add('9');
+  if (candidates.some(row => visibleCodes.has(String(row.kode_monbis)) && ['15','16'].includes(String(row.kode_monbis)))) visibleCodes.add('14');
+  const rows = candidates.filter(row => visibleCodes.has(String(row.kode_monbis)));
   if (!rows.length) { body.innerHTML = '<tr><td colspan="6" class="ikhtisar-empty">Data Ikhtisar belum tersedia.</td></tr>'; return; }
   body.innerHTML = rows.map(row => {
     const code = String(row.kode_monbis);
