@@ -144,8 +144,20 @@
 </style>
 
 <script>
-const IKHTISAR_RBB_API = './api/rbb/';
-const IKHTISAR_LAPKEU_API = './api/lapkeu/';
+const IKHTISAR_CONFIGURED_BASE = <?= json_encode(defined('BASE_APP') ? BASE_APP : '') ?>;
+function ikhtisarResolveBase() {
+  const configured = String(IKHTISAR_CONFIGURED_BASE || '').replace(/\/+$/, '');
+  if (configured) return configured;
+  const origin = window.location.origin;
+  const pathname = window.location.pathname.replace(/\/+$/, '');
+  const routeMatch = pathname.match(/^(.*)\/ikhtisar(?:\/index\.php)?$/i);
+  if (routeMatch) return origin + routeMatch[1];
+  if (/\/index\.php$/i.test(pathname)) return origin + pathname.replace(/\/index\.php$/i, '');
+  return origin;
+}
+const IKHTISAR_API_BASE = ikhtisarResolveBase();
+const IKHTISAR_RBB_API = `${IKHTISAR_API_BASE}/api/rbb/`;
+const IKHTISAR_LAPKEU_API = `${IKHTISAR_API_BASE}/api/lapkeu/`;
 const ikhtisarMoney = new Intl.NumberFormat('id-ID', {maximumFractionDigits:0});
 const ikhtisarDecimal = new Intl.NumberFormat('id-ID', {minimumFractionDigits:2, maximumFractionDigits:2});
 const ikhtisarRatioCodes = new Set(['10','11','12','13','15','16','17','18','19','20','21','22','23','24']);
@@ -159,6 +171,14 @@ let ikhtisarDetailActual = {damas:{}, credit:{}};
 let ikhtisarActiveTab = 'summary';
 
 function ikhtisarFetch(url, options = {}) { return window.apiFetch ? window.apiFetch(url, options) : fetch(url, options); }
+async function ikhtisarJson(response, label) {
+  const raw = await response.text();
+  try { return JSON.parse(raw); }
+  catch (error) {
+    const preview = raw.replace(/\s+/g, ' ').trim().slice(0, 180);
+    throw new Error(`${label} tidak mengembalikan JSON. Periksa route API/server rewrite. ${preview}`);
+  }
+}
 function ikEsc(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
 function ikNum(value) { const n = Number(value); return Number.isFinite(n) ? n : null; }
 function ikPath(obj, path, fallback = null) { return path.split('.').reduce((value, key) => value && value[key] !== undefined ? value[key] : null, obj) ?? fallback; }
@@ -429,7 +449,7 @@ async function fetchIkhtisar() {
       ikhtisarFetch(IKHTISAR_RBB_API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ikScopePayload('ikhtisar_rbb'))}),
       ikhtisarFetch(IKHTISAR_LAPKEU_API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ikScopePayload('tv_makro_summary'))})
     ]);
-    const rbbJson = await rbbRes.json(); const actualJson = await actualRes.json();
+    const rbbJson = await ikhtisarJson(rbbRes, 'API RBB'); const actualJson = await ikhtisarJson(actualRes, 'API Lapkeu');
     if (!rbbRes.ok || rbbJson.status === false) throw new Error(rbbJson.message || 'Gagal memuat target RBB');
     if (!actualRes.ok || actualJson.status === false) throw new Error(actualJson.message || 'Gagal memuat realisasi');
     const rbbData = rbbJson.data || {}; const actualData = actualJson.data || {};

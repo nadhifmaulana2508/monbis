@@ -1808,11 +1808,12 @@ class RbbController
         // nominatif kredit. Jika tanggal pilihan kosong, gunakan snapshot
         // terakhir yang masih berada sebelum/sama dengan tanggal pilihan.
         $loadSnapshotDate = function (string $table, string $alias, array $tableScope) use ($harianDate): ?string {
-            $indexHint = match ($table) {
-                'nominatif_tabungan' => ' FORCE INDEX (idx_perf_tabungan_main)',
-                'nominatif_deposito' => ' FORCE INDEX (idx_perf_rekap_kankas)',
-                default => '',
-            };
+            $indexHint = '';
+            if ($table === 'nominatif_tabungan') {
+                $indexHint = ' FORCE INDEX (idx_perf_tabungan_main)';
+            } elseif ($table === 'nominatif_deposito') {
+                $indexHint = ' FORCE INDEX (idx_perf_rekap_kankas)';
+            }
             $dateSql = "SELECT MAX({$alias}.created) FROM {$table} {$alias}{$indexHint} WHERE {$alias}.created <= :ikhtisar_snapshot_date {$tableScope['sql']}";
             $dateStmt = $this->pdo->prepare($dateSql);
             $dateStmt->bindValue(':ikhtisar_snapshot_date', $harianDate, PDO::PARAM_STR);
