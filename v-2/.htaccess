@@ -1,0 +1,5 @@
+RewriteEngine On
+RewriteBase /report-dpk/v-2/
+
+RewriteRule ^$ index.php?page=components [QSA,L]
+RewriteRule ^(components|collection|templates|settings)/?$ index.php?page=$1 [QSA,L]
