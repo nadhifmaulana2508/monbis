@@ -1698,6 +1698,25 @@ class RbbController
             }
             unset($row);
 
+            // Ikhtisar memiliki beberapa rasio yang bersumber dari baris RBB detail.
+            // Kirim seluruh nilai RBB per kode agar FE dapat menghitung fallback
+            // ketika kode rasio belum diisi langsung pada kategori IKHTISAR.
+            $loadRbbTargetMap = function (string $period) use ($targetExpression): array {
+                $sourceStmt = $this->pdo->prepare("\n                    SELECT r.kode_monbis, MAX({$targetExpression}) AS nilai\n                    FROM rbb r\n                    WHERE r.periode = :periode\n                    GROUP BY r.kode_monbis\n                ");
+                $sourceStmt->bindValue(':periode', $period, PDO::PARAM_STR);
+                $sourceStmt->execute();
+                $map = [];
+                foreach ($sourceStmt->fetchAll(PDO::FETCH_ASSOC) as $sourceRow) {
+                    $map[(string)$sourceRow['kode_monbis']] = (float)($sourceRow['nilai'] ?? 0);
+                }
+                return $map;
+            };
+
+            $rbbSources = [
+                'periode' => $loadRbbTargetMap($periodeRbb),
+                'year_end' => $loadRbbTargetMap($periodeRbbYearEnd),
+            ];
+
             return sendResponse(200, 'Berhasil memuat mapping RBB Ikhtisar', [
                 'meta' => [
                     'harian_date' => $harianDate,
@@ -1707,6 +1726,7 @@ class RbbController
                     'kode_kantor' => $scope['kode_kantor'],
                     'korwil' => $scope['korwil'],
                 ],
+                'rbb_sources' => $rbbSources,
                 'data' => $rows,
             ]);
         } catch (PDOException $e) {
