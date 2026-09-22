@@ -1,6 +1,7 @@
 <section class="v2-page-heading"><div><p class="v2-eyebrow">COLLECTION</p><h1>Collection Monitoring</h1><p>Template report untuk membaca kolektibilitas kredit dan perubahan NPL secara konsisten.</p></div><div class="v2-page-status"><?= v2_badge('Live data', 'success') ?></div></section>
 
 <?= v2_filter_bar([
+    ['name'=>'closing', 'id'=>'collectionClosing', 'label'=>'Closing (M-1)', 'type'=>'date', 'value'=>date('Y-m-d', strtotime('last day of previous month'))],
     ['name'=>'actual', 'id'=>'collectionActual', 'label'=>'Actual (Harian)', 'type'=>'date', 'value'=>date('Y-m-d')],
     ['name'=>'saldo', 'id'=>'collectionSaldo', 'label'=>'Tipe Saldo', 'type'=>'select', 'value'=>'baki_debet', 'options'=>['baki_debet'=>'Baki Debet', 'saldo_bank'=>'Saldo Bank']],
     ['name'=>'area', 'id'=>'collectionArea', 'label'=>'Area / Cabang', 'type'=>'select', 'value'=>'ALL', 'options'=>['ALL'=>'Konsolidasi']],
@@ -48,6 +49,7 @@
     $('#collectionTableWrap').hidden = loading;
     if (loading) $('#collectionMessage').hidden = true;
   };
+  const toggleClosingFilter = () => field('closing')?.closest('.v2-field')?.classList.toggle('is-hidden', state.view !== 'npl');
   const showMessage = (title, message) => {
     const node = $('#collectionMessage');
     node.innerHTML = `<span class="v2-empty-icon"><?= v2_icon('file', 22) ?></span><strong>${esc(title)}</strong><p>${esc(message)}</p>`;
@@ -105,7 +107,7 @@
       const common = { harian_date: selected('actual'), hitung_berdasarkan: selected('saldo') || 'baki_debet', ...area };
       const json = state.view === 'kolek'
         ? await postJson(API.kolek, { type: 'kolektibilitas', ...common }, state.abort.signal)
-        : await postJson(API.npl, { type: 'NPL', closing_date: state.closing || selected('actual'), ...common }, state.abort.signal);
+        : await postJson(API.npl, { type: 'NPL', closing_date: selected('closing') || state.closing || selected('actual'), ...common }, state.abort.signal);
       state.rows = Array.isArray(json.data?.data) ? json.data.data : [];
       state.total = json.data?.grand_total || null;
       render();
@@ -127,14 +129,16 @@
     $('[data-collection-reset]')?.addEventListener('click', () => { $('#collectionFilters').reset(); fetchData(); });
     $('[data-collection-export]')?.addEventListener('click', exportData);
     $('[data-v2-filter-field="search"]')?.addEventListener('input', (event) => { const q = event.target.value.toLowerCase(); document.querySelectorAll('#collectionBody tr').forEach((row) => { row.hidden = q && !row.textContent.toLowerCase().includes(q); }); });
-    document.querySelectorAll('[data-collection-view]').forEach((button) => button.addEventListener('click', () => { state.view = button.dataset.collectionView; document.querySelectorAll('[data-collection-view]').forEach((item) => item.classList.toggle('is-active', item === button)); fetchData(); }));
+    document.querySelectorAll('[data-collection-view]').forEach((button) => button.addEventListener('click', () => { state.view = button.dataset.collectionView; document.querySelectorAll('[data-collection-view]').forEach((item) => item.classList.toggle('is-active', item === button)); toggleClosingFilter(); fetchData(); }));
     try {
       const [dateResponse, kodeResponse] = await Promise.all([fetch(API.date).then((response) => response.json()), postJson(API.kode, {type:'kode_kantor'})]);
       if (dateResponse.data?.last_created) field('actual').value = dateResponse.data.last_created;
       state.closing = dateResponse.data?.last_closing || '';
+      if (dateResponse.data?.last_closing) field('closing').value = dateResponse.data.last_closing;
       state.kantor = Array.isArray(kodeResponse.data) ? kodeResponse.data : [];
       buildAreaOptions();
     } catch (error) { buildAreaOptions(); }
+    toggleClosingFilter();
     fetchData();
   });
 })();
