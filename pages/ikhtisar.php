@@ -68,7 +68,7 @@
             <th colspan="2" id="ikhtisarPeriodTitle">PERIODE</th>
             <th rowspan="1" id="ikhtisarYearTitle">DESEMBER</th>
             <th rowspan="2">%</th>
-            <th rowspan="2" id="ikhtisarYearAchievementTitle">DES 2026</th>
+            <th rowspan="2" id="ikhtisarYearAchievementTitle">% DES 2026</th>
           </tr>
           <tr>
             <th>RBB</th>
@@ -98,7 +98,7 @@
               <th colspan="2" id="ikhtisarDetailPeriodTitle">PERIODE</th>
               <th rowspan="1" id="ikhtisarDetailYearTitle">DESEMBER</th>
               <th rowspan="2">%</th>
-              <th rowspan="2" id="ikhtisarDetailYearAchievementTitle">DES 2026</th>
+              <th rowspan="2" id="ikhtisarDetailYearAchievementTitle">% DES 2026</th>
             </tr>
             <tr>
               <th>RBB</th>
@@ -469,7 +469,7 @@ async function fetchIkhtisar() {
     document.getElementById('ikhtisarYearTitle').textContent = ikMonthLabel(meta.periode_rbb_year_end || `${String(document.getElementById('ikhtisarDate').value).slice(0,4)}-12`);
     document.getElementById('ikhtisarDetailPeriodTitle').textContent = ikMonthLabel(meta.periode_rbb || document.getElementById('ikhtisarDate').value);
     document.getElementById('ikhtisarDetailYearTitle').textContent = ikMonthLabel(meta.periode_rbb_year_end || `${String(document.getElementById('ikhtisarDate').value).slice(0,4)}-12`);
-    const yearAchievementLabel = `DES ${String(meta.periode_rbb_year_end || document.getElementById('ikhtisarDate').value).slice(0,4)}`;
+    const yearAchievementLabel = `% DES ${String(meta.periode_rbb_year_end || document.getElementById('ikhtisarDate').value).slice(0,4)}`;
     document.getElementById('ikhtisarYearAchievementTitle').textContent = yearAchievementLabel;
     document.getElementById('ikhtisarDetailYearAchievementTitle').textContent = yearAchievementLabel;
     document.getElementById('ikhtisarScope').textContent = meta.scope || ikScopeLabel();
