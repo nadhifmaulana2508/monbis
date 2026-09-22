@@ -1,7 +1,9 @@
 <?php
 function v2_render_start(string $title, string $active): void
 {
-    echo '<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#8DBCC7"><title>' . v2_e($title) . '</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"><link rel="stylesheet" href="assets/css/app.css?v=2"><link rel="stylesheet" href="assets/css/tokens.css?v=1"><link rel="stylesheet" href="assets/css/components.css?v=1"></head><body class="v2-body" data-v2-page="' . v2_e($active) . '">';
+    $baseUrl = rtrim(str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/report-dpk/v-2/index.php'))), '/');
+    if ($baseUrl === '' || $baseUrl === '.') $baseUrl = '/report-dpk/v-2';
+    echo '<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#8DBCC7"><title>' . v2_e($title) . '</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"><link rel="stylesheet" href="' . v2_e($baseUrl) . '/assets/css/app.css?v=2"><link rel="stylesheet" href="' . v2_e($baseUrl) . '/assets/css/tokens.css?v=2"><link rel="stylesheet" href="' . v2_e($baseUrl) . '/assets/css/components.css?v=2"></head><body class="v2-body" data-v2-page="' . v2_e($active) . '">';
 }
 
 function v2_render_sidebar(string $active, string $baseUrl): void
@@ -22,5 +24,7 @@ function v2_render_sidebar(string $active, string $baseUrl): void
 
 function v2_render_end(): void
 {
-    echo '<script src="assets/js/components.js?v=1" defer></script><script src="assets/js/app.js?v=2" defer></script></body></html>';
+    $baseUrl = rtrim(str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/report-dpk/v-2/index.php'))), '/');
+    if ($baseUrl === '' || $baseUrl === '.') $baseUrl = '/report-dpk/v-2';
+    echo '<script src="' . v2_e($baseUrl) . '/assets/js/components.js?v=2" defer></script><script src="' . v2_e($baseUrl) . '/assets/js/app.js?v=3" defer></script></body></html>';
 }
