@@ -21,7 +21,7 @@
 (() => {
   const API = { date: '../api/date/', kode: '../api/kode/', kolek: '../api/kredit/', npl: '../api/npl/' };
   const $ = (selector) => document.querySelector(selector);
-  const state = { view: 'kolek', rows: [], total: null, abort: null, kantor: [], closing: '' };
+  const state = { view: 'kolek', rows: [], total: null, abort: null, kantor: [], closing: '', sort: { key: '', direction: 1 } };
   const num = (value) => Number(value || 0);
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
   const fmt = (value) => new Intl.NumberFormat('id-ID').format(num(value));
@@ -49,15 +49,33 @@
   const money = (value, noa) => `<strong>${fmt(value)}</strong><small>${fmt(noa)} NOA</small>`;
   const status = (value) => num(value) > 0 ? 'Naik' : (num(value) < 0 ? 'Turun' : 'Tetap');
   const signed = (value) => num(value) > 0 ? '+' + fmt(value) : num(value) < 0 ? '-' + fmt(Math.abs(num(value))) : fmt(0);
+  const sortableHeader = (label, key) => `<th><button type="button" class="v2-sort-button" data-sort-key="${key}" aria-label="Urutkan ${label}">${label}<span class="v2-sort-indicator">${state.sort.key === key ? (state.sort.direction === 1 ? '&uarr;' : '&darr;') : '&harr;'}</span></button></th>`;
+  const sortRows = () => {
+    if (!state.sort.key) return;
+    const {key, direction} = state.sort;
+    state.rows.sort((first, second) => {
+      const firstValue = key === 'status' ? status(first.selisih_npl) : (first[key] ?? '');
+      const secondValue = key === 'status' ? status(second.selisih_npl) : (second[key] ?? '');
+      const firstNumber = Number(firstValue);
+      const secondNumber = Number(secondValue);
+      const bothNumbers = firstValue !== '' && secondValue !== '' && Number.isFinite(firstNumber) && Number.isFinite(secondNumber);
+      const result = bothNumbers
+        ? firstNumber - secondNumber
+        : String(firstValue).localeCompare(String(secondValue), 'id', {numeric: true, sensitivity: 'base'});
+      return result * direction;
+    });
+  };
   function renderSummary() {}
   function renderKolek() {
-    $('#collectionHead').innerHTML = '<tr><th>Kode</th><th>Kantor</th><th>Lancar</th><th>DPK</th><th>KL</th><th>D</th><th>M</th><th>Total NPL</th><th>Portfolio</th><th>% NPL</th></tr>';
+    $('#collectionHead').innerHTML = `<tr>${[['Kode','kode_unit'],['Kantor','nama_unit'],['Lancar','bd_L'],['DPK','bd_DP'],['KL','bd_KL'],['D','bd_D'],['M','bd_M'],['Total NPL','bd_npl'],['Portfolio','total_bd'],['% NPL','persentase_npl']].map(([label, key]) => sortableHeader(label, key)).join('')}</tr>`;
+    sortRows();
     const total = state.total ? `<tr class="v2-total-row"><td>ALL</td><td><strong>GRAND TOTAL</strong></td><td>${money(state.total.bd_L, state.total.noa_L)}</td><td>${money(state.total.bd_DP, state.total.noa_DP)}</td><td>${money(state.total.bd_KL, state.total.noa_KL)}</td><td>${money(state.total.bd_D, state.total.noa_D)}</td><td>${money(state.total.bd_M, state.total.noa_M)}</td><td>${money(state.total.bd_npl, state.total.noa_npl)}</td><td>${money(state.total.total_bd, state.total.total_noa)}</td><td><strong>${fmt2(state.total.persentase_npl)}%</strong></td></tr>` : '';
     const rows = state.rows.map((row) => `<tr><td>${esc(String(row.kode_unit || '').padStart(3, '0'))}</td><td><strong>${esc(row.nama_unit || '-')}</strong></td><td>${money(row.bd_L, row.noa_L)}</td><td>${money(row.bd_DP, row.noa_DP)}</td><td>${money(row.bd_KL, row.noa_KL)}</td><td>${money(row.bd_D, row.noa_D)}</td><td>${money(row.bd_M, row.noa_M)}</td><td>${money(row.bd_npl, row.noa_npl)}</td><td>${money(row.total_bd, row.total_noa)}</td><td>${fmt2(row.persentase_npl)}%</td></tr>`).join('');
     $('#collectionBody').innerHTML = total + rows;
   }
   function renderNpl() {
-    $('#collectionHead').innerHTML = '<tr><th>Kode</th><th>Kantor</th><th>Closing</th><th>Closing %</th><th>Actual</th><th>Actual %</th><th>Delta</th><th>Delta %</th><th>Status</th></tr>';
+    $('#collectionHead').innerHTML = `<tr>${[['Kode','kode_unit'],['Kantor','nama_unit'],['Closing','npl_closing'],['Closing %','npl_closing_persen'],['Actual','npl_harian'],['Actual %','npl_harian_persen'],['Delta','selisih_npl'],['Delta %','selisih_npl_persen'],['Status','status']].map(([label, key]) => sortableHeader(label, key)).join('')}</tr>`;
+    sortRows();
     const total = state.total ? `<tr class="v2-total-row"><td>ALL</td><td><strong>GRAND TOTAL</strong></td><td>${fmt(state.total.npl_closing)}</td><td>${fmt2(state.total.npl_closing_persen)}%</td><td>${fmt(state.total.npl_harian)}</td><td>${fmt2(state.total.npl_harian_persen)}%</td><td>${signed(state.total.selisih_npl)}</td><td>${signed(state.total.selisih_npl_persen)}%</td><td>${status(state.total.selisih_npl)}</td></tr>` : '';
     const rows = state.rows.map((row) => `<tr><td>${esc(String(row.kode_unit || '').padStart(3, '0'))}</td><td><strong>${esc(row.nama_unit || '-')}</strong></td><td>${fmt(row.npl_closing)}</td><td>${fmt2(row.npl_closing_persen)}%</td><td>${fmt(row.npl_harian)}</td><td>${fmt2(row.npl_harian_persen)}%</td><td>${signed(row.selisih_npl)}</td><td>${signed(row.selisih_npl_persen)}%</td><td>${status(row.selisih_npl)}</td></tr>`).join('');
     $('#collectionBody').innerHTML = total + rows;
@@ -104,7 +122,14 @@
   document.addEventListener('DOMContentLoaded', async () => {
     document.querySelectorAll('[data-v2-filter-field]').forEach((control) => { if (control.dataset.v2FilterField !== 'search') control.addEventListener('change', fetchData); });
     $('[data-collection-export]')?.addEventListener('click', exportData);
-    $('[data-collection-view-switch]')?.addEventListener('click', () => { state.view = state.view === 'kolek' ? 'npl' : 'kolek'; $('#collectionViewLabel').textContent = state.view === 'kolek' ? 'Kolektibilitas' : 'Perbandingan NPL'; toggleClosingFilter(); fetchData(); });
+    $('#collectionHead')?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-sort-key]');
+      if (!button) return;
+      const key = button.dataset.sortKey;
+      state.sort = { key, direction: state.sort.key === key ? state.sort.direction * -1 : 1 };
+      render();
+    });
+    $('[data-collection-view-switch]')?.addEventListener('click', () => { state.view = state.view === 'kolek' ? 'npl' : 'kolek'; state.sort = { key: '', direction: 1 }; $('#collectionViewLabel').textContent = state.view === 'kolek' ? 'Kolektibilitas' : 'Perbandingan NPL'; toggleClosingFilter(); fetchData(); });
     $('[data-v2-filter-field="search"]')?.addEventListener('input', (event) => { const q = event.target.value.toLowerCase(); document.querySelectorAll('#collectionBody tr').forEach((row) => { row.hidden = q && !row.textContent.toLowerCase().includes(q); }); });
     try {
       const [dateResponse, kodeResponse] = await Promise.all([fetch(API.date).then((response) => response.json()), postJson(API.kode, {type:'kode_kantor'})]);
