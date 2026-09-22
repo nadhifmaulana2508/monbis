@@ -881,7 +881,9 @@ class LaporanKeuanganController
             $typeReport = $input['type'] ?? ''; 
             $kodeKantor = $input['kode_kantor'] ?? 'konsolidasi';
 
-            $prefixes = (strpos($typeReport, 'neraca') !== false) ? ['1', '2', '3'] : ['4', '5'];
+            $isNeraca = strpos($typeReport, 'neraca') !== false;
+            $isConsolidated = strtolower(trim((string) $kodeKantor)) === 'konsolidasi';
+            $prefixes = $isNeraca ? ['1', '2', '3'] : ['4', '5'];
             $sqlKodePerk = $this->getKodePerkRangeWhere($prefixes);
 
             $sqlFilter = "";
@@ -897,6 +899,31 @@ class LaporanKeuanganController
             } else {
                 $params[':kode_kantor'] = str_pad($kodeKantor, 3, '0', STR_PAD_LEFT);
                 $sqlFilter = " AND kode_kantor = :kode_kantor ";
+            }
+
+            // Jika tanggal actual belum memiliki snapshot, gunakan posisi H-7.
+            // Closing tetap memakai tanggal yang dipilih user agar perbandingan
+            // actual vs closing tidak bergeser ke periode lain.
+            $dateCheckParams = [':tanggal_check' => $tanggal];
+            if (isset($params[':kode_kantor'])) {
+                $dateCheckParams[':kode_kantor'] = $params[':kode_kantor'];
+            }
+            $dateCheckSql = "
+                SELECT 1
+                FROM acc_history
+                WHERE tanggal = :tanggal_check
+                {$sqlFilter}
+                AND ({$sqlKodePerk})
+                LIMIT 1
+            ";
+            $dateCheckStmt = $this->pdo->prepare($dateCheckSql);
+            $dateCheckStmt->execute($dateCheckParams);
+            if (!$dateCheckStmt->fetchColumn()) {
+                $h7Date = new DateTime($tanggal);
+                $h7Date->modify('-7 days');
+                $tanggal = $h7Date->format('Y-m-d');
+                $params[':tanggal_actual'] = $tanggal;
+                $params[':tanggal_filter'] = $tanggal;
             }
 
             // Catatan performa: query ini sengaja hanya membaca dua tanggal dan satu
@@ -926,12 +953,38 @@ class LaporanKeuanganController
             $stmt->execute($params);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+            // Pada konsolidasi, saldo akun 210 merupakan eliminasi antar-unit.
+            // Terapkan koreksi yang sama ke breakdown seperti yang sudah dipakai
+            // pada kartu summary: aset dan kewajiban bersih, baris 210 menjadi 0.
+            $eliminasi210Actual = 0.0;
+            $eliminasi210Closing = 0.0;
+            if ($isNeraca && $isConsolidated) {
+                foreach ($results as $result) {
+                    if ((string) ($result['kode_perk'] ?? '') === '210') {
+                        $eliminasi210Actual = (float) ($result['total_saldo'] ?? 0);
+                        $eliminasi210Closing = (float) ($result['closing_saldo'] ?? 0);
+                        break;
+                    }
+                }
+            }
+
             $mappedData = [];
 
             foreach ($results as $row) {
                 $kode = $row['kode_perk'];
                 $saldo = (float)$row['total_saldo'];
                 $closingSaldo = (float)($row['closing_saldo'] ?? 0);
+
+                if ($isNeraca && $isConsolidated) {
+                    if ($kode === '1' || $kode === '2') {
+                        $saldo -= $eliminasi210Actual;
+                        $closingSaldo -= $eliminasi210Closing;
+                    } elseif ($kode === '210') {
+                        $saldo = 0.0;
+                        $closingSaldo = 0.0;
+                    }
+                }
+
                 $namaPerk = trim((string) ($row['nama_perk'] ?? ''));
                 $panjangKode = strlen($kode);
                 $selisih = $saldo - $closingSaldo;

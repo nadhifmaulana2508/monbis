@@ -679,6 +679,44 @@
   .financial-toolbar-title { font-size:12px; line-height:1.15; font-weight:900; color:#0f172a; }
   .financial-toolbar-meta { margin-top:2px; font-size:8px; line-height:1.2; font-weight:750; color:#94a3b8; }
   .financial-toolbar-actions { display:flex; align-items:center; justify-content:flex-end; gap:5px; min-width:0; }
+  .financial-level-control {
+    height:31px;
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:0 5px 0 8px;
+    border:1px solid #dbe3ee;
+    border-radius:8px;
+    background:#fff;
+    color:#64748b;
+    white-space:nowrap;
+  }
+  .financial-level-control > span {
+    font-size:7px;
+    font-weight:900;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+  }
+  .financial-level-control select {
+    width:48px;
+    height:25px;
+    padding:0 17px 0 5px;
+    border:0;
+    outline:0;
+    appearance:none;
+    -webkit-appearance:none;
+    border-radius:6px;
+    background-color:#f8fafc;
+    background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 10 5 5 5-5'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 4px center;
+    background-size:10px 10px;
+    color:#1e40af;
+    font-size:8px;
+    font-weight:900;
+    cursor:pointer;
+  }
+  .financial-level-control:focus-within { border-color:#93c5fd; box-shadow:0 0 0 3px rgba(37,99,235,.08); }
   .financial-search-wrap { position:relative; width:min(230px,30vw); }
   .financial-search-wrap svg {
     position:absolute; left:9px; top:50%; transform:translateY(-50%);
@@ -927,6 +965,9 @@
     .financial-toolbar-title { font-size:10px; }
     .financial-toolbar-meta { font-size:7px; }
     .financial-toolbar-actions { gap:4px; }
+    .financial-level-control { height:29px; padding:0 4px 0 6px; gap:3px; border-radius:7px; }
+    .financial-level-control > span { display:none; }
+    .financial-level-control select { width:44px; height:23px; padding-left:4px; font-size:7px; }
     .financial-search-wrap { width:min(150px,43vw); }
     .financial-search { height:29px; font-size:9px; }
     .financial-tool-btn { width:29px; min-width:29px; height:29px; padding:0; }
@@ -2995,6 +3036,21 @@
       gap:3px !important;
     }
 
+    .financial-level-control {
+      height:28px !important;
+      padding:0 3px 0 5px !important;
+      gap:2px !important;
+      border-radius:7px !important;
+    }
+    .financial-level-control > span { display:none !important; }
+    .financial-level-control select {
+      width:40px !important;
+      height:22px !important;
+      padding-left:3px !important;
+      padding-right:14px !important;
+      font-size:7px !important;
+    }
+
     .financial-search-wrap {
       width:min(128px,38vw) !important;
       min-width:86px;
@@ -3347,6 +3403,15 @@
             </div>
           </div>
           <div class="financial-toolbar-actions">
+            <label class="financial-level-control" title="Batasi level kode perk yang terbuka otomatis">
+              <span>Level</span>
+              <select id="financialLevel" aria-label="Batasi level kode perk">
+                <option value="3">3</option>
+                <option value="5" selected>5</option>
+                <option value="7">7</option>
+                <option value="all">All</option>
+              </select>
+            </label>
             <div class="financial-search-wrap">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m1.35-5.65a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/></svg>
               <input id="financialSearch" type="search" class="financial-search" placeholder="Cari akun..." oninput="filterFinancialRows()">
@@ -3555,6 +3620,16 @@
           document.getElementById('closing_date').dataset.userChanged = '1';
           scheduleFetchRekap(350);
       });
+      const financialLevel = document.getElementById('financialLevel');
+      if (financialLevel) {
+          financialLevelMode = financialLevel.value || '5';
+          financialLevel.addEventListener('change', () => {
+              financialLevelMode = financialLevel.value || '5';
+              if (getReportViewKey(document.getElementById('type_report')?.value || '') === 'financial') {
+                  renderTable(rawDataResult);
+              }
+          });
+      }
       ['opt_kantor_rec'].forEach(id => {
           document.getElementById(id)?.addEventListener('change', () => scheduleFetchRekap(350));
       });
@@ -3642,6 +3717,20 @@
           if (payloadKey !== latestPayloadKey) return;
           rawDataResult = json.data || [];
 
+          // API dapat memakai snapshot H-7 jika tanggal actual yang dipilih
+          // belum tersedia. Simpan tanggal efektif agar mudah diaudit dari UI.
+          if (Array.isArray(rawDataResult) && rawDataResult.length) {
+              const effectiveDate = rawDataResult.find(row => row?.harian_date)?.harian_date || '';
+              const actualInput = document.getElementById('harian_date');
+              if (effectiveDate && effectiveDate !== payload.harian_date && actualInput) {
+                  actualInput.title = `Snapshot actual kosong, memakai H-7: ${effectiveDate}`;
+                  actualInput.dataset.effectiveDate = effectiveDate;
+              } else if (actualInput) {
+                  actualInput.title = 'Tanggal actual laporan';
+                  delete actualInput.dataset.effectiveDate;
+              }
+          }
+
           if (payload.type === 'tv_makro_summary') {
               renderMakroSummary(rawDataResult);
           } else if (payload.type === 'tren_makro_mingguan') {
@@ -3662,6 +3751,18 @@
   /* === HIERARKI AKUN: parent terdekat + pre-order === */
   const financialCodeCollator = new Intl.Collator('id-ID', { numeric:true, sensitivity:'base' });
   let financialHierarchyMeta = new Map();
+  let financialLevelMode = '5';
+
+  function financialLevelLimit() {
+    return financialLevelMode === 'all' ? Infinity : Number(financialLevelMode || 5);
+  }
+
+  function financialDefaultExpanded(meta) {
+    if (!meta?.hasChildren) return false;
+    if (financialLevelMode === 'all') return true;
+    const limit = financialLevelLimit();
+    return (meta.children || []).some(childCode => String(childCode).length <= limit);
+  }
 
   function compareFinancialCode(a, b) {
     const aa = String(a ?? '').trim();
@@ -3813,8 +3914,9 @@
     const toolbarMeta = document.getElementById('financialToolbarMeta');
     const search = document.getElementById('financialSearch');
     if (toolbarTitle) toolbarTitle.textContent = title;
-    if (toolbarMeta) toolbarMeta.innerHTML = `${currentFinancialRows.length} akun · Klik kelompok untuk membuka breakdown <span class="financial-tree-hint">Parent → Sub Akun</span>`;
     if (search) search.value = '';
+    const levelLabel = financialLevelMode === 'all' ? 'All' : `<= ${financialLevelMode} digit`;
+    if (toolbarMeta) toolbarMeta.textContent = `${currentFinancialRows.length} akun · Level ${levelLabel} · Klik kelompok untuk membuka breakdown`;
 
     tbody.innerHTML = currentFinancialRows.map((d, index) => {
       const kode = String(d?.kode_perk ?? '').trim();
@@ -3825,10 +3927,11 @@
       };
       const depth = Math.max(0, Number(meta.depth || 0));
       const parent = Boolean(meta.hasChildren);
+      const parentOpen = financialDefaultExpanded(meta);
       const levelClass = depth === 0
         ? 'financial-level-1'
         : (depth === 1 ? 'financial-level-2' : (depth === 2 ? 'financial-level-3' : 'financial-level-detail'));
-      const hiddenClass = ''; // Default OPEN: seluruh breakdown langsung tampil
+      const hiddenClass = ''; // Visibilitas aktual disinkronkan dari level dan state parent.
       const indent = Math.min(64, depth * (window.innerWidth < 768 ? 10 : 14));
       const total = Number(d?.total_saldo || 0);
       const closing = Number(d?.closing_saldo || 0);
@@ -3841,6 +3944,7 @@
       const parentIcon = parent
         ? '<span class="caret rotate" aria-hidden="true">▶</span>'
         : '<span class="caret" aria-hidden="true" style="visibility:hidden">▶</span>';
+      const resolvedParentIcon = parentOpen ? parentIcon : parentIcon.replace('caret rotate', 'caret');
       const parentBadge = parent ? '<span class="financial-parent-badge">Kelompok</span>' : '';
       const treePath = (meta.path || [kode]).join('>');
       const rowCode = kode || `__row_${index}`;
@@ -3858,7 +3962,7 @@
           <td class="lap-code-col financial-code">${safeText(kode)}</td>
           <td>
             <div class="financial-name-wrap" style="padding-left:${indent}px">
-              ${parentIcon}
+              ${resolvedParentIcon}
               <span class="financial-mobile-code">${safeText(kode)}</span>
               <span class="financial-name" title="${nama}">${nama}</span>
               ${parentBadge}
@@ -3882,6 +3986,11 @@
         </tr>
       `;
     }).join('');
+
+    tbody.querySelectorAll('tr.financial-row[data-parent="1"]').forEach(row => {
+      const icon = row.querySelector('.caret');
+      row.setAttribute('aria-expanded', icon?.classList.contains('rotate') ? 'true' : 'false');
+    });
 
     const empty = document.getElementById('financialEmptyState');
     if (!currentFinancialRows.length) {
