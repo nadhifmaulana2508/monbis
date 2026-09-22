@@ -1631,6 +1631,90 @@ class RbbController
         }
     }
 
+    public function getIkhtisarRbb($input = null)
+    {
+        set_time_limit(90);
+
+        $b = is_array($input) ? $input : [];
+        $harianDate = !empty($b['harian_date']) ? (string)$b['harian_date'] : date('Y-m-d');
+        $time = strtotime($harianDate);
+        if (!$time) {
+            return sendResponse(400, 'Format harian_date tidak valid.');
+        }
+
+        $periodeRbb = date('Y-m-01', $time);
+        $periodeRbbYearEnd = date('Y-12-01', $time);
+        $scope = $this->buildLapkeuRbbScope($b);
+        $targetExpression = $scope['target_expression'];
+
+        try {
+            $sql = "
+                WITH ref_data AS (
+                    SELECT id_ref, kode_monbis, kode_perkiraan, sandi_lbbpr, kategori, keterangan
+                    FROM ref_rbb
+                    WHERE is_active = 1
+                      AND UPPER(TRIM(kategori)) = 'IKHTISAR'
+                ),
+                target_rbb AS (
+                    SELECT r.kode_monbis, MAX({$targetExpression}) AS target_rbb
+                    FROM rbb r
+                    WHERE r.periode = :periode_rbb
+                    GROUP BY r.kode_monbis
+                ),
+                target_rbb_year_end AS (
+                    SELECT r.kode_monbis, MAX({$targetExpression}) AS target_rbb_year_end
+                    FROM rbb r
+                    WHERE r.periode = :periode_rbb_year_end
+                    GROUP BY r.kode_monbis
+                )
+                SELECT
+                    ref.id_ref,
+                    ref.kode_monbis,
+                    ref.kode_perkiraan,
+                    ref.sandi_lbbpr,
+                    ref.kategori,
+                    ref.keterangan,
+                    trg.target_rbb,
+                    trgYe.target_rbb_year_end,
+                    CASE WHEN trg.kode_monbis IS NULL THEN 0 ELSE 1 END AS has_target,
+                    CASE WHEN trgYe.kode_monbis IS NULL THEN 0 ELSE 1 END AS has_year_end_target
+                FROM ref_data ref
+                LEFT JOIN target_rbb trg ON trg.kode_monbis = ref.kode_monbis
+                LEFT JOIN target_rbb_year_end trgYe ON trgYe.kode_monbis = ref.kode_monbis
+                ORDER BY ref.id_ref ASC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->bindValue(':periode_rbb', $periodeRbb, PDO::PARAM_STR);
+            $stmt->bindValue(':periode_rbb_year_end', $periodeRbbYearEnd, PDO::PARAM_STR);
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($rows as &$row) {
+                $row['target_rbb'] = $row['target_rbb'] === null ? null : (float)$row['target_rbb'];
+                $row['target_rbb_year_end'] = $row['target_rbb_year_end'] === null ? null : (float)$row['target_rbb_year_end'];
+                $row['has_target'] = (int)$row['has_target'];
+                $row['has_year_end_target'] = (int)$row['has_year_end_target'];
+            }
+            unset($row);
+
+            return sendResponse(200, 'Berhasil memuat mapping RBB Ikhtisar', [
+                'meta' => [
+                    'harian_date' => $harianDate,
+                    'periode_rbb' => $periodeRbb,
+                    'periode_rbb_year_end' => $periodeRbbYearEnd,
+                    'scope' => $scope['label'],
+                    'kode_kantor' => $scope['kode_kantor'],
+                    'korwil' => $scope['korwil'],
+                ],
+                'data' => $rows,
+            ]);
+        } catch (PDOException $e) {
+            error_log('PDO Error Ikhtisar RBB: ' . $e->getMessage());
+            return sendResponse(500, 'Database Query Error: ' . $e->getMessage(), null);
+        }
+    }
+
     public function getLapkeuRbbVsRealisasi($input = null)
     {
         set_time_limit(120);
