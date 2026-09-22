@@ -8,7 +8,7 @@
     ['name'=>'search', 'id'=>'collectionSearch', 'label'=>'Pencarian', 'type'=>'search', 'placeholder'=>'Cari kode atau kantor...'],
 ], 'collectionFilters') ?>
 
-<section class="v2-card">
+<section class="v2-card v2-collection-card">
 <div class="v2-card-body v2-collection-card-body">
   <div class="v2-collection-toolbar"><div><span class="v2-eyebrow">REPORT NPL</span><strong class="v2-collection-view-label" id="collectionViewLabel">Kolektibilitas</strong></div><div class="v2-actions"><?= v2_icon_button('swap', 'Ganti report', 'default', ['data-collection-view-switch'=>'']) ?><?= v2_icon_button('download', 'Export Excel', 'primary', ['data-collection-export'=>'']) ?></div></div>
   <div class="v2-collection-loading" id="collectionLoading"><?= v2_spinner('Memuat data collection...') ?></div>
