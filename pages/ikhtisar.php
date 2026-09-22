@@ -161,6 +161,7 @@ const IKHTISAR_LAPKEU_API = `${IKHTISAR_API_BASE}/api/lapkeu/`;
 const ikhtisarMoney = new Intl.NumberFormat('id-ID', {maximumFractionDigits:0});
 const ikhtisarDecimal = new Intl.NumberFormat('id-ID', {minimumFractionDigits:2, maximumFractionDigits:2});
 const ikhtisarRatioCodes = new Set(['10','11','12','13','15','16','17','18','19','20','21','22','23','24']);
+const ikhtisarInverseAchievementCodes = new Set(['15','16']);
 const ikhtisarSectionCodes = new Set(['9','14']);
 const ikhtisarMainCodes = ['1','2','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24'];
 const ikhtisarRbbCodeMap = {'1':'95','2':'105','5':'63','6':'196','7':'258','8':'261'};
@@ -188,6 +189,11 @@ function ikIsRatio(code) { return ikhtisarRatioCodes.has(String(code)); }
 function ikFormat(value, ratio = false) { const n = ikNum(value); if (n === null) return '<span class="ikhtisar-value empty">-</span>'; return `<span class="ikhtisar-value${ratio ? ' ratio' : ''}">${ratio ? ikhtisarDecimal.format(n) + '%' : ikhtisarMoney.format(Math.round(n))}</span>`; }
 function ikPercent(value) { const n = ikNum(value); return n === null ? '<span class="ikhtisar-value empty">-</span>' : `<span class="ikhtisar-percent">${ikhtisarDecimal.format(n)}%</span>`; }
 function ikScopeLabel() { return document.getElementById('ikhtisarOffice')?.selectedOptions?.[0]?.textContent?.trim() || 'KONSOLIDASI'; }
+function ikAchievement(actual, target, inverse = false) {
+  const actualValue = ikNum(actual); const targetValue = ikNum(target);
+  if (actualValue === null || targetValue === null || (inverse ? actualValue === 0 : targetValue === 0)) return null;
+  return inverse ? targetValue / actualValue * 100 : actualValue / targetValue * 100;
+}
 
 function ikTargetValue(source, code) {
   if (!source || !Object.prototype.hasOwnProperty.call(source, String(code))) return null;
@@ -425,8 +431,9 @@ function renderIkhtisar() {
     const target = targetInfo.value;
     const actual = ikNum(ikhtisarActual[code]);
     const yearEnd = yearTargetInfo.value;
-    const periodAchievement = target !== null && target !== 0 && actual !== null ? actual / target * 100 : null;
-    const yearAchievement = yearEnd !== null && yearEnd !== 0 && actual !== null ? actual / yearEnd * 100 : null;
+    const inverseAchievement = ikhtisarInverseAchievementCodes.has(code);
+    const periodAchievement = ikAchievement(actual, target, inverseAchievement);
+    const yearAchievement = ikAchievement(actual, yearEnd, inverseAchievement);
     const className = section ? 'ikhtisar-section' : (['1','2','5','6','7','8'].includes(code) ? 'ikhtisar-total' : '');
     const labelClass = section ? 'subheading' : (ratio ? 'ratio' : 'main');
     return `<tr class="${className}">
