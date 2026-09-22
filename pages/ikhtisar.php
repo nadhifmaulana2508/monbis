@@ -35,7 +35,8 @@
   <section class="ikhtisar-workspace">
     <div class="ikhtisar-tabs" role="tablist" aria-label="Jenis Ikhtisar">
       <button type="button" class="ikhtisar-tab active" id="ikhtisarTabSummaryButton" role="tab" aria-selected="true" aria-controls="ikhtisarTabSummary" data-ikhtisar-tab="summary">Ikhtisar</button>
-      <button type="button" class="ikhtisar-tab" id="ikhtisarTabDetailButton" role="tab" aria-selected="false" aria-controls="ikhtisarTabDetail" data-ikhtisar-tab="detail">Damas &amp; Kredit</button>
+      <button type="button" class="ikhtisar-tab" id="ikhtisarTabDamasButton" role="tab" aria-selected="false" aria-controls="ikhtisarTabDetail" data-ikhtisar-tab="damas">Damas</button>
+      <button type="button" class="ikhtisar-tab" id="ikhtisarTabKreditButton" role="tab" aria-selected="false" aria-controls="ikhtisarTabDetail" data-ikhtisar-tab="credit">Kredit</button>
     </div>
     <div class="ikhtisar-toolbar">
       <div>
@@ -83,7 +84,7 @@
     </div>
     </div>
 
-    <div id="ikhtisarTabDetail" class="ikhtisar-tab-panel" role="tabpanel" aria-labelledby="ikhtisarTabDetailButton" hidden>
+    <div id="ikhtisarTabDetail" class="ikhtisar-tab-panel" role="tabpanel" aria-labelledby="ikhtisarTabDamasButton" hidden>
       <div class="ikhtisar-table-shell">
         <table id="ikhtisarDetailTable">
           <colgroup>
@@ -213,7 +214,8 @@ function ikhtisarDetailRows() {
 function renderIkhtisarDetail() {
   const body = document.getElementById('ikhtisarDetailBody');
   if (!body) return;
-  const rows = ikhtisarDetailRows();
+  const allRows = ikhtisarDetailRows();
+  const rows = ikhtisarActiveTab === 'damas' ? allRows.slice(0, 7) : (ikhtisarActiveTab === 'credit' ? allRows.slice(7) : allRows);
   const periodSource = ikhtisarRbbSources.periode || {};
   const yearSource = ikhtisarRbbSources.year_end || {};
   body.innerHTML = rows.map(row => {
@@ -235,8 +237,8 @@ function renderIkhtisarDetail() {
 }
 
 function setIkhtisarTab(tab) {
-  ikhtisarActiveTab = tab === 'detail' ? 'detail' : 'summary';
-  const isDetail = ikhtisarActiveTab === 'detail';
+  ikhtisarActiveTab = ['damas', 'credit'].includes(tab) ? tab : 'summary';
+  const isSummary = ikhtisarActiveTab === 'summary';
   document.querySelectorAll('[data-ikhtisar-tab]').forEach(button => {
     const active = button.dataset.ikhtisarTab === ikhtisarActiveTab;
     button.classList.toggle('active', active);
@@ -244,10 +246,11 @@ function setIkhtisarTab(tab) {
   });
   const summary = document.getElementById('ikhtisarTabSummary');
   const detail = document.getElementById('ikhtisarTabDetail');
-  if (summary) { summary.classList.toggle('active', !isDetail); summary.hidden = isDetail; }
-  if (detail) { detail.classList.toggle('active', isDetail); detail.hidden = !isDetail; }
+  if (summary) { summary.classList.toggle('active', isSummary); summary.hidden = !isSummary; }
+  if (detail) { detail.classList.toggle('active', !isSummary); detail.hidden = isSummary; }
   const title = document.getElementById('ikhtisarToolbarTitle');
-  if (title) title.textContent = isDetail ? 'Damas, Kredit & Progress Report PH Kredit' : 'Perkembangan Ikhtisar';
+  if (title) title.textContent = isSummary ? 'Perkembangan Ikhtisar' : (ikhtisarActiveTab === 'damas' ? 'Damas & Perkembangan DPK' : 'Kredit & Kolektibilitas');
+  if (!isSummary) renderIkhtisarDetail();
 }
 
 function ikSource(source, code) {
@@ -455,7 +458,7 @@ async function fetchIkhtisar() {
 }
 
 function exportIkhtisarCsv() {
-  const table = document.getElementById(ikhtisarActiveTab === 'detail' ? 'ikhtisarDetailTable' : 'ikhtisarTable');
+  const table = document.getElementById(ikhtisarActiveTab === 'summary' ? 'ikhtisarTable' : 'ikhtisarDetailTable');
   const rows = [...table.querySelectorAll('tr')].map(row => [...row.children].map(cell => `"${String(cell.textContent || '').replace(/"/g,'""').trim()}"`).join(','));
   const blob = new Blob(["\ufeff" + rows.join('\n')], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob); const link = document.createElement('a');
