@@ -34,6 +34,16 @@
   const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'MB';
   document.querySelector('[data-v2-user-name]')?.replaceChildren(document.createTextNode(name));
   document.querySelector('[data-v2-user-initials]')?.replaceChildren(document.createTextNode(initials));
+  if (Object.keys(user).length) {
+    const fields = ['job_position', 'unit_kerja', 'role'].map((key) => String(user[key] || '').toLowerCase());
+    const isDev = fields.some((value) => value.includes('divisi operasional') || value === 'dev');
+    const kpiAllowed = isDev || fields[1].includes('divisi sdm dan umum');
+    const rbbAllowed = ['id_peg', 'idPeg', 'id_pegawai', 'idPegawai', 'employee_id'].some((key) => String(user[key] || '').trim() === '102-119');
+    document.querySelectorAll('[data-v2-access]').forEach((item) => {
+      const allowed = item.dataset.v2Access === 'kpi' ? kpiAllowed : rbbAllowed;
+      if (!allowed) item.hidden = true;
+    });
+  }
 
   document.querySelectorAll('[data-v2-theme-toggle]').forEach((button) => button.addEventListener('click', () => {
     const current = window.V2Settings?.get()?.theme || document.documentElement.dataset.v2Theme || 'light';
