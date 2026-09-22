@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   const root = document.documentElement;
-  const key = 'monbis_v2_settings_v2';
+  const key = 'fe_workspace_settings_v1';
   const defaults = { theme: 'light', scale: 'normal', density: 'comfortable', accent: 'teal', sidebar: 'expanded' };
   const read = () => { try { return { ...defaults, ...(JSON.parse(localStorage.getItem(key) || '{}')) }; } catch { return { ...defaults }; } };
   let settings = read();

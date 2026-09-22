@@ -1,4 +1,4 @@
-<section class="v2-page-heading"><div><p class="v2-eyebrow">System preferences</p><h1>Pengaturan Tampilan</h1><p>Atur pengalaman kerja MONBIS v2 tanpa mengubah konfigurasi page lama.</p></div><div class="v2-actions"><?= v2_button('Reset default', 'soft', 'refresh', ['data-v2-settings-reset'=>'']) ?></div></section>
+<section class="v2-page-heading"><div><p class="v2-eyebrow">SYSTEM PREFERENCES</p><h1>Workspace Settings</h1><p>Atur token visual dan perilaku shell untuk seluruh page template FE.</p></div><div class="v2-actions"><?= v2_button('Reset default', 'soft', 'refresh', ['data-v2-settings-reset'=>'']) ?></div></section>
 <?= v2_alert('Pengaturan disimpan otomatis di browser ini. User lain tidak ikut berubah.', 'info', 'Personal workspace') ?>
 <div class="v2-component-grid" style="margin-top:16px">
   <?= v2_card_open('Tema dan tipografi', 'Token visual global untuk seluruh page v2.') ?>
@@ -15,6 +15,6 @@
   </div>
   <?= v2_card_close() ?>
 </div>
-<?= v2_card_open('Palette MONBIS', 'Warna dasar yang disediakan untuk component v2.') ?>
+<?= v2_card_open('Palette FE', 'Warna dasar yang disediakan untuk component library.') ?>
 <div class="v2-card-body"><div class="v2-palette-grid"><div style="--swatch:#EBFFD8"><span></span><strong>Mint</strong><small>#EBFFD8</small></div><div style="--swatch:#C4E1E6"><span></span><strong>Sky</strong><small>#C4E1E6</small></div><div style="--swatch:#A4CCD9"><span></span><strong>Blue</strong><small>#A4CCD9</small></div><div style="--swatch:#8DBCC7"><span></span><strong>Teal</strong><small>#8DBCC7</small></div></div></div>
 <?= v2_card_close() ?>

@@ -1,4 +1,4 @@
-# MONBIS FE v2 components
+# FE Workspace components
 
 Folder ini adalah sumber komponen bersama untuk page baru di `v-2/pages`.
 
@@ -13,6 +13,6 @@ Asset visual dan interaksi berada di `v-2/assets`:
 - `css/app.css` berisi layout dasar.
 - `css/components.css` berisi styling component bersama.
 - `js/components.js` mengatur setting, toast, tabs, dan state component.
-- `js/app.js` mengatur shell, sidebar, modal, dan identitas user.
+- `js/app.js` mengatur shell, sidebar, modal, dan identitas workspace.
 
 Page baru cukup memanggil `components/bootstrap.php`, lalu menggunakan helper `v2_*`.
