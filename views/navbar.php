@@ -649,16 +649,6 @@
       return office === '000' && group === 'PE';
     }
 
-    function canAccessMappingAo(user) {
-      const job = String(user?.job_position || '').toLowerCase();
-      const unit = String(user?.unit_kerja || '').toLowerCase();
-      return job.includes('kepala cabang')
-        || job.includes('kepala bidang pemasaran')
-        || job.includes('kepala sub bidang remedial')
-        || unit.includes('divisi operasional')
-        || unit.includes('divisi penyelesaian kredit');
-    }
-
     function resolvePegId(user) {
       const keys = ['id_peg', 'idPeg', 'id_pegawai', 'idPegawai', 'employee_id'];
       for (const key of keys) {
@@ -689,11 +679,9 @@
         });
       }
       if (menu) {
-        const mappingAccess = !!user && canAccessMappingAo(user);
-        menu.style.display = operational || mappingAccess ? 'block' : 'none';
+        menu.style.display = operational ? 'block' : 'none';
         menu.querySelectorAll('a').forEach(link => {
-          const mappingLink = link.getAttribute('href') === 'maping_ao_remedial';
-          link.style.display = operational || mappingLink ? '' : 'none';
+          link.style.display = operational ? '' : 'none';
         });
       }
       if (menuInputRbb) {
