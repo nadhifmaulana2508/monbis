@@ -2168,6 +2168,7 @@ class LaporanKeuanganController
     {
         try {
             $baseDate = $input['harian_date'] ?? date('Y-m-d');
+            $useH7Fallback = filter_var($input['h7_fallback'] ?? false, FILTER_VALIDATE_BOOLEAN);
             $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
             $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
             $korwilRange = $this->getKorwilRange($korwilReq);
@@ -2201,6 +2202,39 @@ class LaporanKeuanganController
                 $sqlKantorAcc = "AND kode_kantor = :kode_kantor";
                 $sqlKantorNom = "AND kode_cabang = :kode_kantor";
                 $params[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
+            }
+
+            // Ikhtisar memakai aturan laporan utama: bila snapshot acc_history
+            // pada tanggal pilihan belum ada, gunakan H-7. Cek satu baris
+            // terlebih dahulu agar tidak perlu menjalankan rangkaian request
+            // tanggal dari browser.
+            if ($useH7Fallback) {
+                $dateCheckParams = [':snapshot_check_date' => $dateCurrent];
+                if ($korwilRange) {
+                    $dateCheckParams[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
+                    $dateCheckParams[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
+                } elseif (!$isConsolidated) {
+                    $dateCheckParams[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
+                }
+
+                $dateCheckStmt = $this->pdo->prepare("SELECT 1 FROM acc_history WHERE tanggal = :snapshot_check_date {$sqlKantorAcc} AND kode_perk IN ('101','104','10601','10606','20401','20402','4','5') LIMIT 1");
+                $dateCheckStmt->execute($dateCheckParams);
+                if (!$dateCheckStmt->fetchColumn()) {
+                    $h7DateObj = clone $baseDateObj;
+                    $h7DateObj->modify('-7 days');
+                    $dateCurrent = $h7DateObj->format('Y-m-d');
+
+                    $dateLastMonthObj = clone $h7DateObj;
+                    $dateLastMonthObj->modify('last day of previous month');
+                    $dateLastMonth = $dateLastMonthObj->format('Y-m-d');
+                    $dateLastYearObj = clone $h7DateObj;
+                    $dateLastYearObj->modify('-1 year');
+                    $dateLastYear = $dateLastYearObj->format('Y') . '-12-31';
+                }
+
+                $params[':date_current'] = $dateCurrent;
+                $params[':date_last_month'] = $dateLastMonth;
+                $params[':date_last_year'] = $dateLastYear;
             }
 
             $asetCodes = [
@@ -2550,6 +2584,7 @@ class LaporanKeuanganController
             sendResponse(200, "Berhasil memuat TV Makro Summary (" . $scopeLabel . ")", [
                 'info_kantor' => $scopeLabel,
                 'info_tanggal' => [
+                    'diminta' => $baseDate,
                     'aktual' => $dateCurrent,
                     'bulan_lalu' => $dateLastMonth,
                     'tahun_lalu' => $dateLastYear,

@@ -1805,8 +1805,10 @@ class RbbController
         $saving = $savingStmt->fetch(PDO::FETCH_ASSOC) ?: [];
 
         // Snapshot DPK tidak selalu ter-upload pada tanggal yang sama dengan
-        // nominatif kredit. Jika tanggal pilihan kosong, gunakan snapshot
-        // terakhir yang masih berada sebelum/sama dengan tanggal pilihan.
+        // nominatif kredit. Ikuti aturan laporan utama: jika tanggal pilihan
+        // kosong, cek snapshot H-7 secara langsung. Hindari MAX(created) <=
+        // tanggal pilihan karena pada tabel nominatif_tabungan yang besar
+        // query tersebut dapat memindai jutaan baris.
         $loadSnapshotDate = function (string $table, string $alias, array $tableScope) use ($harianDate): ?string {
             $indexHint = '';
             if ($table === 'nominatif_tabungan') {
@@ -1814,13 +1816,16 @@ class RbbController
             } elseif ($table === 'nominatif_deposito') {
                 $indexHint = ' FORCE INDEX (idx_perf_rekap_kankas)';
             }
-            $dateSql = "SELECT MAX({$alias}.created) FROM {$table} {$alias}{$indexHint} WHERE {$alias}.created <= :ikhtisar_snapshot_date {$tableScope['sql']}";
+
+            $h7DateObj = new DateTime($harianDate);
+            $h7DateObj->modify('-7 days');
+            $h7Date = $h7DateObj->format('Y-m-d');
+            $dateSql = "SELECT 1 FROM {$table} {$alias}{$indexHint} WHERE {$alias}.created = :ikhtisar_snapshot_date {$tableScope['sql']} LIMIT 1";
             $dateStmt = $this->pdo->prepare($dateSql);
-            $dateStmt->bindValue(':ikhtisar_snapshot_date', $harianDate, PDO::PARAM_STR);
+            $dateStmt->bindValue(':ikhtisar_snapshot_date', $h7Date, PDO::PARAM_STR);
             foreach ($tableScope['params'] as $key => $value) $dateStmt->bindValue($key, $value, PDO::PARAM_STR);
             $dateStmt->execute();
-            $date = $dateStmt->fetchColumn();
-            return $date === false || $date === null ? null : (string)$date;
+            return $dateStmt->fetchColumn() ? $h7Date : null;
         };
 
         if (abs((float)($deposit['saldo_akhir'] ?? $deposit['rupiah'] ?? 0)) < 0.000001 && (int)($deposit['noa'] ?? 0) === 0) {

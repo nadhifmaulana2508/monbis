@@ -136,7 +136,7 @@
   }
   .ikhtisar-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 15px;border:1px solid #d7e2ec;border-radius:16px;background:#fff;box-shadow:0 4px 16px rgba(15,60,91,.06)}
   .ikhtisar-heading{display:flex;align-items:center;gap:12px;min-width:0}.ikhtisar-icon{display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;border-radius:11px;background:#2563eb;color:#fff;box-shadow:0 7px 15px rgba(37,99,235,.18)}.ikhtisar-icon svg{width:22px;height:22px}.ikhtisar-kicker{margin-bottom:2px;color:#2e7f9c;font-size:9px;font-weight:950;letter-spacing:.13em}.ikhtisar-heading h1{margin:0;color:#102f4b;font-size:21px;line-height:1.15;font-weight:950;letter-spacing:-.03em}.ikhtisar-heading p{margin:3px 0 0;color:#708397;font-size:10px;font-weight:650}.ikhtisar-filter{display:flex;align-items:end;gap:8px;flex:0 0 auto}.ikhtisar-filter label{display:flex;flex-direction:column;gap:4px;min-width:145px}.ikhtisar-filter label span{padding-left:2px;color:#49637a;font-size:8px;font-weight:950;letter-spacing:.07em;text-transform:uppercase}.ikhtisar-filter input,.ikhtisar-filter select{width:100%;height:36px;padding:0 10px;border:1px solid #c7d8e6;border-radius:9px;outline:0;background:#fff;color:#153956;font-size:10px;font-weight:850}.ikhtisar-filter input:focus,.ikhtisar-filter select:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}.ikhtisar-export{display:grid;place-items:center;width:40px;height:36px;border:0;border-radius:9px;background:#079669;color:#fff;cursor:pointer;box-shadow:0 5px 12px rgba(5,150,105,.18)}.ikhtisar-export:hover{background:#047857;transform:translateY(-1px)}.ikhtisar-export svg{width:18px;height:18px}
-  .ikhtisar-workspace{position:relative;margin-top:12px;overflow:hidden;border:1px solid #d7e2ec;border-radius:16px;background:#fff;box-shadow:0 4px 16px rgba(15,60,91,.05)}.ikhtisar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 16px;border-bottom:1px solid #dce7ee;background:#fbfdfe}.ikhtisar-toolbar-title{color:#123c5b;font-size:13px;font-weight:950}.ikhtisar-toolbar-note{margin-top:2px;color:#7790a1;font-size:9px}.ikhtisar-toolbar-note b{color:#397d93}.ikhtisar-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}.ikhtisar-meta>span{display:inline-flex;align-items:center;min-height:23px;padding:3px 8px;border:1px solid #dbe5ec;border-radius:999px;color:#587287;font-size:8px;font-weight:900;white-space:nowrap}.ikhtisar-status{background:#ecfdf5;border-color:#b7ead7!important;color:#047857!important}.ikhtisar-status.error{background:#fff1f2;border-color:#fecdd3!important;color:#be123c!important}.ikhtisar-loading{position:absolute;inset:54px 0 0;z-index:5;display:flex;align-items:center;justify-content:center;gap:9px;background:rgba(255,255,255,.86);color:#236681;font-size:10px;font-weight:900}.ikhtisar-loading.hidden{display:none}.ikhtisar-spinner{width:22px;height:22px;border:3px solid #c8e5eb;border-top-color:#1d7891;border-radius:50%;animation:ikSpin .75s linear infinite}@keyframes ikSpin{to{transform:rotate(360deg)}}
+  .ikhtisar-workspace{position:relative;margin-top:12px;overflow:hidden;border:1px solid #d7e2ec;border-radius:16px;background:#fff;box-shadow:0 4px 16px rgba(15,60,91,.05)}.ikhtisar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 16px;border-bottom:1px solid #dce7ee;background:#fbfdfe}.ikhtisar-toolbar-title{color:#123c5b;font-size:13px;font-weight:950}.ikhtisar-toolbar-note{margin-top:2px;color:#7790a1;font-size:9px}.ikhtisar-toolbar-note b{color:#397d93}.ikhtisar-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}.ikhtisar-meta>span{display:inline-flex;align-items:center;min-height:23px;padding:3px 8px;border:1px solid #dbe5ec;border-radius:999px;color:#587287;font-size:8px;font-weight:900;white-space:nowrap}.ikhtisar-status{background:#ecfdf5;border-color:#b7ead7!important;color:#047857!important}.ikhtisar-status.error{background:#fff1f2;border-color:#fecdd3!important;color:#be123c!important}.ikhtisar-loading{position:absolute;inset:54px 0 0;z-index:5;display:flex;align-items:center;justify-content:center;gap:9px;background:rgba(255,255,255,.62);backdrop-filter:blur(1px);pointer-events:none;color:#236681;font-size:10px;font-weight:900}.ikhtisar-loading.hidden{display:none}.ikhtisar-spinner{width:22px;height:22px;border:3px solid #c8e5eb;border-top-color:#1d7891;border-radius:50%;animation:ikSpin .75s linear infinite}@keyframes ikSpin{to{transform:rotate(360deg)}}
   .ikhtisar-table-shell{width:100%;overflow:auto}.ikhtisar-table-shell::-webkit-scrollbar{height:10px}.ikhtisar-table-shell::-webkit-scrollbar-thumb{background:#b7cbd6;border-radius:999px}.ikhtisar-table-shell::-webkit-scrollbar-track{background:#f4f8fa}.ikhtisar-formula-row{display:none!important}#ikhtisarTable{width:100%;min-width:900px;border-collapse:separate;border-spacing:0;table-layout:fixed;color:#17344e}#ikhtisarTable .ikhtisar-col-name{width:31%}#ikhtisarTable .ikhtisar-col-money{width:15%}#ikhtisarTable .ikhtisar-col-percent{width:12%}#ikhtisarTable th,#ikhtisarTable td{border-right:1px solid #d3dfe6;border-bottom:1px solid #d3dfe6}#ikhtisarTable thead th{height:27px;padding:4px 8px;background:#3099ae;color:#fff;font-size:10px;line-height:1.1;font-weight:950;text-align:center;white-space:nowrap}#ikhtisarTable thead tr:nth-child(2) th{background:#dff2f4;color:#1c6177}#ikhtisarTable thead tr:nth-child(3) th{height:21px;padding:3px;background:#e7e8e9;color:#314b5e;font-size:9px;font-weight:800}#ikhtisarTable thead th:first-child{border-left:1px solid #d3dfe6}#ikhtisarTable tbody td{height:27px;padding:4px 10px;background:#fff;font-size:11px;line-height:1.05;vertical-align:middle}#ikhtisarTable tbody tr:nth-child(even) td{background:#fbfcfd}#ikhtisarTable tbody td:first-child{border-left:1px solid #d3dfe6}#ikhtisarTable tbody tr:hover td{background:#f1f8fa}.ikhtisar-name{font-weight:750;text-align:left}.ikhtisar-name.main{font-weight:950;color:#132b42}.ikhtisar-name.ratio{padding-left:24px;font-weight:650}.ikhtisar-name.subheading{font-weight:950;color:#1a2e40}.ikhtisar-code{display:inline-block;min-width:24px;margin-right:4px;color:#628096;font-size:9px;font-weight:900}.ikhtisar-value{text-align:right;font-variant-numeric:tabular-nums;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px!important;font-weight:750}.ikhtisar-value.actual{color:#173f5a;font-weight:900}.ikhtisar-value.ratio{color:#1c6177}.ikhtisar-value.empty{color:#9cafbb}.ikhtisar-percent{text-align:right;font-variant-numeric:tabular-nums;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px!important}.ikhtisar-total td{background:#eef8fa!important;font-weight:950;border-top:1px solid #acd7df}.ikhtisar-section td{background:#f7fafb!important;color:#17344e}.ikhtisar-section .ikhtisar-name{font-weight:950}.ikhtisar-footnote{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;color:#7890a0;font-size:9px}.ikhtisar-footnote b{color:#42657b}.ikhtisar-footnote span:last-child{white-space:nowrap}
   @media(max-width:900px){#ikhtisarPage{padding:10px}.ikhtisar-header{align-items:flex-start;flex-direction:column}.ikhtisar-filter{width:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px}.ikhtisar-filter label{min-width:0}.ikhtisar-toolbar{align-items:flex-start;flex-direction:column}.ikhtisar-meta{justify-content:flex-start}.ikhtisar-loading{inset:99px 0 0}}
   @media(max-width:560px){.ikhtisar-heading h1{font-size:19px}.ikhtisar-heading p{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ikhtisar-filter{grid-template-columns:1fr 40px}.ikhtisar-office-field{grid-column:1/-1;grid-row:1}.ikhtisar-filter label:first-child{grid-column:1}.ikhtisar-export{grid-column:2;grid-row:2}.ikhtisar-toolbar{padding:11px}.ikhtisar-footnote{align-items:flex-start;flex-direction:column;gap:4px}}
@@ -170,6 +170,11 @@ let ikhtisarActual = {};
 let ikhtisarRbbSources = {periode:{}, year_end:{}};
 let ikhtisarDetailActual = {damas:{}, credit:{}};
 let ikhtisarActiveTab = 'summary';
+let ikhtisarAbortController = null;
+let ikhtisarRequestId = 0;
+let ikhtisarHasRenderedData = false;
+const ikhtisarResponseCache = new Map();
+const IKHTISAR_CACHE_LIMIT = 12;
 
 function ikhtisarFetch(url, options = {}) { return window.apiFetch ? window.apiFetch(url, options) : fetch(url, options); }
 async function ikhtisarJson(response, label) {
@@ -179,6 +184,22 @@ async function ikhtisarJson(response, label) {
     const preview = raw.replace(/\s+/g, ' ').trim().slice(0, 180);
     throw new Error(`${label} tidak mengembalikan JSON. Periksa route API/server rewrite. ${preview}`);
   }
+}
+function ikhtisarCacheKey(url, payload) { return `${url}|${JSON.stringify(payload)}`; }
+async function ikhtisarPost(url, payload, signal, label) {
+  const key = ikhtisarCacheKey(url, payload);
+  if (ikhtisarResponseCache.has(key)) return ikhtisarResponseCache.get(key);
+  const response = await ikhtisarFetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload),
+    signal
+  });
+  const json = await ikhtisarJson(response, label);
+  if (!response.ok || json.status === false) throw new Error(json.message || `Gagal memuat ${label}`);
+  if (ikhtisarResponseCache.size >= IKHTISAR_CACHE_LIMIT) ikhtisarResponseCache.delete(ikhtisarResponseCache.keys().next().value);
+  ikhtisarResponseCache.set(key, json);
+  return json;
 }
 function ikEsc(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c])); }
 function ikNum(value) { const n = Number(value); return Number.isFinite(n) ? n : null; }
@@ -374,21 +395,6 @@ function ikScopePayload(type, dateOverride = null) {
   return payload;
 }
 
-function ikShiftDate(value, days) {
-  const date = new Date(String(value).slice(0, 10) + 'T00:00:00');
-  if (Number.isNaN(date.getTime())) return value;
-  date.setDate(date.getDate() - days);
-  return date.toISOString().slice(0, 10);
-}
-
-function ikActualHasData(data) {
-  const makro = data?.makro || {};
-  return ['aset', 'dpk', 'pendapatan', 'biaya', 'laba_rugi'].some(key => {
-    const value = ikNum(makro[key]?.nominal_aktual);
-    return value !== null && Math.abs(value) > 0.000001;
-  });
-}
-
 function buildIkhtisarActual(data) {
   const detail = data.ringkasan_detail || {};
   const makro = data.makro || {};
@@ -465,41 +471,22 @@ function renderIkhtisar() {
 async function fetchIkhtisar() {
   const loader = document.getElementById('ikhtisarLoading');
   const status = document.getElementById('ikhtisarStatus');
+  const requestId = ++ikhtisarRequestId;
+  if (ikhtisarAbortController) ikhtisarAbortController.abort();
+  ikhtisarAbortController = new AbortController();
+  const {signal} = ikhtisarAbortController;
   loader.classList.remove('hidden'); status.classList.remove('error'); status.textContent = 'Memuat...';
   try {
     const requestedDate = document.getElementById('ikhtisarDate').value;
-    let actualDate = requestedDate;
-    let [rbbRes, actualRes] = await Promise.all([
-      ikhtisarFetch(IKHTISAR_RBB_API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ikScopePayload('ikhtisar_rbb', requestedDate))}),
-      ikhtisarFetch(IKHTISAR_LAPKEU_API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ikScopePayload('tv_makro_summary', requestedDate))})
+    const rbbPayload = ikScopePayload('ikhtisar_rbb', requestedDate);
+    const actualPayload = {...ikScopePayload('tv_makro_summary', requestedDate), h7_fallback:true};
+    const [rbbJson, actualJson] = await Promise.all([
+      ikhtisarPost(IKHTISAR_RBB_API, rbbPayload, signal, 'API RBB'),
+      ikhtisarPost(IKHTISAR_LAPKEU_API, actualPayload, signal, 'API Lapkeu')
     ]);
-    let rbbJson = await ikhtisarJson(rbbRes, 'API RBB'); let actualJson = await ikhtisarJson(actualRes, 'API Lapkeu');
-    if (!rbbRes.ok || rbbJson.status === false) throw new Error(rbbJson.message || 'Gagal memuat target RBB');
-    if (!actualRes.ok || actualJson.status === false) throw new Error(actualJson.message || 'Gagal memuat realisasi');
-
-    // Snapshot nominatif/lapkeu bisa terlambat satu hari dari tanggal terakhir.
-    // Gunakan snapshot aktual terakhir agar tabel tidak kosong hanya karena tanggal.
-    if (!ikActualHasData(actualJson.data || {})) {
-      for (let offset = 1; offset <= 7; offset += 1) {
-        const candidateDate = ikShiftDate(requestedDate, offset);
-        try {
-          const candidateRes = await ikhtisarFetch(IKHTISAR_LAPKEU_API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ikScopePayload('tv_makro_summary', candidateDate))});
-          const candidateJson = await ikhtisarJson(candidateRes, 'API Lapkeu');
-          if (!candidateRes.ok || candidateJson.status === false || !ikActualHasData(candidateJson.data || {})) continue;
-          actualJson = candidateJson;
-          actualDate = candidateDate;
-
-          // Detail nominatif mengikuti tanggal aktual yang berhasil ditemukan.
-          try {
-            const fallbackRbbRes = await ikhtisarFetch(IKHTISAR_RBB_API, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(ikScopePayload('ikhtisar_rbb', candidateDate))});
-            const fallbackRbbJson = await ikhtisarJson(fallbackRbbRes, 'API RBB');
-            if (fallbackRbbRes.ok && fallbackRbbJson.status !== false) rbbJson = fallbackRbbJson;
-          } catch (fallbackError) {}
-          break;
-        } catch (candidateError) {}
-      }
-    }
+    if (requestId !== ikhtisarRequestId) return;
     const rbbData = rbbJson.data || {}; const actualData = actualJson.data || {};
+    const actualDate = actualData.info_tanggal?.aktual || requestedDate;
     ikhtisarRows = Array.isArray(rbbData.data) ? rbbData.data : [];
     ikhtisarRbbSources = rbbData.rbb_sources || {periode:{}, year_end:{}};
     ikhtisarDetailActual = rbbData.detail_actual || {damas:{}, credit:{}};
@@ -517,11 +504,20 @@ async function fetchIkhtisar() {
     renderIkhtisar();
     renderIkhtisarDetail();
     status.textContent = `${ikhtisarRows.length} mapping aktif`;
+    ikhtisarHasRenderedData = true;
   } catch (error) {
-    document.getElementById('ikhtisarBody').innerHTML = `<tr><td colspan="6" class="ikhtisar-empty">${ikEsc(error.message || 'Data belum dapat dimuat.')}</td></tr>`;
-    document.getElementById('ikhtisarDetailBody').innerHTML = `<tr><td colspan="6" class="ikhtisar-empty">${ikEsc(error.message || 'Data belum dapat dimuat.')}</td></tr>`;
-    status.classList.add('error'); status.textContent = 'Gagal memuat';
-  } finally { loader.classList.add('hidden'); }
+    if (error?.name === 'AbortError' || requestId !== ikhtisarRequestId) return;
+    if (!ikhtisarHasRenderedData) {
+      document.getElementById('ikhtisarBody').innerHTML = `<tr><td colspan="6" class="ikhtisar-empty">${ikEsc(error.message || 'Data belum dapat dimuat.')}</td></tr>`;
+      document.getElementById('ikhtisarDetailBody').innerHTML = `<tr><td colspan="6" class="ikhtisar-empty">${ikEsc(error.message || 'Data belum dapat dimuat.')}</td></tr>`;
+    }
+    status.classList.add('error'); status.textContent = ikhtisarHasRenderedData ? 'Gagal, data sebelumnya dipertahankan' : 'Gagal memuat';
+  } finally {
+    if (requestId === ikhtisarRequestId) {
+      loader.classList.add('hidden');
+      ikhtisarAbortController = null;
+    }
+  }
 }
 
 function exportIkhtisarCsv() {
