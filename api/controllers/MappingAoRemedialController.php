@@ -29,7 +29,9 @@ class MappingAoRemedialController
     private function closingDate(?string $requested = null): string
     {
         if ($requested && preg_match('/^\d{4}-\d{2}-\d{2}$/', $requested)) {
-            $stmt = $this->pdo->prepare('SELECT MAX(created) FROM nominatif WHERE created=? AND created=LAST_DAY(created)');
+            // Hindari LAST_DAY(created) pada kolom agar index created tetap
+            // dapat dipakai di server dengan data nominatif yang besar.
+            $stmt = $this->pdo->prepare('SELECT created FROM nominatif WHERE created=? LIMIT 1');
             $stmt->execute([$requested]);
             if ($date = $stmt->fetchColumn()) return (string)$date;
             sendResponse(422, 'Data closing akhir bulan yang dipilih tidak tersedia.');
@@ -38,18 +40,22 @@ class MappingAoRemedialController
         // sebelum snapshot actual terbaru, bukan snapshot terbaru itu sendiri.
         // Jika actual kebetulan jatuh pada akhir bulan, memakai MAX(month-end)
         // akan membandingkan tanggal yang sama dan seluruh migrasi menjadi STAY.
-        $date = $this->pdo->query("SELECT MAX(created)
-            FROM nominatif
-            WHERE created=LAST_DAY(created)
-              AND created < DATE_FORMAT((SELECT MAX(created) FROM nominatif),'%Y-%m-01')")->fetchColumn();
+        $latest = $this->pdo->query('SELECT MAX(created) FROM nominatif')->fetchColumn();
+        if (!$latest) sendResponse(404, 'Data closing nominatif belum tersedia.');
+        $monthStart = (new DateTimeImmutable((string)$latest))->modify('first day of this month')->format('Y-m-d');
+        $stmt = $this->pdo->prepare('SELECT MAX(created) FROM nominatif WHERE created < ?');
+        $stmt->execute([$monthStart]);
+        $date = $stmt->fetchColumn();
         if (!$date) sendResponse(404, 'Data closing nominatif belum tersedia.');
         return (string)$date;
     }
 
     private function previousClosing(string $closing): ?string
     {
-        $stmt = $this->pdo->prepare('SELECT MAX(created) FROM nominatif WHERE created<? AND created=LAST_DAY(created)');
-        $stmt->execute([$closing]);
+        $monthStart = (new DateTimeImmutable($closing))->modify('first day of this month');
+        $previousMonthStart = $monthStart->modify('-1 month')->format('Y-m-d');
+        $stmt = $this->pdo->prepare('SELECT MAX(created) FROM nominatif WHERE created>=? AND created<?');
+        $stmt->execute([$previousMonthStart, $monthStart->format('Y-m-d')]);
         return $stmt->fetchColumn() ?: null;
     }
 
