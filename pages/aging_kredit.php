@@ -100,6 +100,88 @@ mb_ui_assets('.');
       #agingKreditPage .mb-table td:not(:first-child) { text-align:right; }
       #agingKreditPage .prog-sub { font-size:5.6px; white-space:normal; }
   }
+
+  /* Layout responsif khusus aging: tabel multi-kolom tetap terbaca melalui
+     scroll horizontal, bukan dipaksa mengecil sampai angka bertumpuk. */
+  #agingKreditPage .mb-page-header,
+  #agingKreditPage .mb-report-card--grow { flex:0 0 auto; min-width:0; }
+  #agingKreditPage .mb-report-card--grow { flex:1 1 auto; }
+  #agingKreditPage .mb-table-region,
+  #agingKreditPage #progScroller { min-width:0; min-height:0; }
+  #agingKreditPage #progScroller { overflow:auto; overscroll-behavior:contain; }
+  #agingKreditPage .mb-table {
+      width:max-content;
+      min-width:900px;
+      table-layout:fixed;
+  }
+  #agingKreditPage .mb-table th,
+  #agingKreditPage .mb-table td { white-space:nowrap; }
+  #agingKreditPage .mb-table th:nth-child(1),
+  #agingKreditPage .mb-table td:nth-child(1) { width:150px; }
+  #agingKreditPage .mb-table th:nth-child(2),
+  #agingKreditPage .mb-table td:nth-child(2) { width:120px; }
+  #agingKreditPage .mb-table th:nth-child(3),
+  #agingKreditPage .mb-table td:nth-child(3) { width:110px; }
+  #agingKreditPage .mb-table th:nth-child(n+4),
+  #agingKreditPage .mb-table td:nth-child(n+4) { width:82px; }
+  #agingKreditPage .mb-table td:not(:first-child) { text-align:right; }
+  #agingKreditPage .mb-report-toolbar { min-width:0; }
+  #agingKreditPage .mb-report-toolbar__title { min-width:0; }
+  #agingKreditPage .mb-report-toolbar__tools { flex:0 0 auto; }
+
+  /* Detail modal: header/footer tetap rapih, isi dapat digeser horizontal. */
+  #modalDetailProg > .relative { width:min(1600px,100%); min-width:0; }
+  #modalDetailProg .overflow-auto { min-width:0; min-height:0; overflow:auto; overscroll-behavior:contain; }
+  #modalDetailProg #tableDetailProg { width:max-content; min-width:1180px; table-layout:fixed; }
+  #modalDetailProg .mod-freeze-nas,
+  #modalDetailProg .mod-td-nas { width:190px; min-width:190px; max-width:190px; }
+
+  @media (max-width:767px) {
+      body:has(#agingKreditPage) { overflow:auto; }
+      #agingKreditPage { height:auto; min-height:calc(100dvh - 58px); overflow:visible; }
+      #agingKreditPage .mb-report-toolbar {
+          display:flex;
+          flex-direction:row;
+          align-items:center;
+          gap:5px;
+          padding:6px;
+      }
+      #agingKreditPage .mb-report-toolbar__tools {
+          display:flex;
+          width:auto;
+          flex-wrap:nowrap;
+          justify-content:flex-end;
+          gap:4px;
+      }
+      #agingKreditPage .mb-report-toolbar__title { font-size:10.5px; }
+      #agingKreditPage .mb-table { min-width:900px; font-size:8px; }
+      #agingKreditPage .mb-table th,
+      #agingKreditPage .mb-table td { padding:5px 6px; }
+      #agingKreditPage .mb-table th:nth-child(1),
+      #agingKreditPage .mb-table td:nth-child(1) { width:145px; }
+      #agingKreditPage .mb-table th:nth-child(2),
+      #agingKreditPage .mb-table td:nth-child(2) { width:115px; }
+      #agingKreditPage .mb-table th:nth-child(3),
+      #agingKreditPage .mb-table td:nth-child(3) { width:105px; }
+      #agingKreditPage .mb-table th:nth-child(n+4),
+      #agingKreditPage .mb-table td:nth-child(n+4) { width:80px; }
+      #agingKreditPage .mb-table .prog-sub { font-size:6.5px; }
+      #modalDetailProg > .relative {
+          height:calc(100dvh - 12px);
+          max-height:calc(100dvh - 12px);
+          border-radius:16px 16px 0 0;
+      }
+      #modalDetailProg .mod-freeze-nas,
+      #modalDetailProg .mod-td-nas { width:175px; min-width:175px; max-width:175px; }
+  }
+
+  @media (max-width:420px) {
+      #agingKreditPage .mb-filter-row { grid-template-columns:1fr; }
+      #agingKreditPage .mb-filter-row .mb-field { grid-column:1; }
+      #agingKreditPage .mb-report-toolbar__title { font-size:10px; }
+      #modalDetailProg .mod-freeze-nas,
+      #modalDetailProg .mod-td-nas { width:155px; min-width:155px; max-width:155px; }
+  }
 </style>
 
 <?php
