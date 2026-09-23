@@ -27,7 +27,7 @@ $rrbShortNominal = static function ($value): string {
         return $text;
     }
 
-    $negative = str_starts_with($text, '(') && str_ends_with($text, ')');
+    $negative = substr($text, 0, 1) === '(' && substr($text, -1) === ')';
     $digits = preg_replace('/[^0-9]/', '', $text) ?: '0';
     $shortDigits = strlen($digits) > 3 ? substr($digits, 0, -3) : '0';
     $short = number_format((int) $shortDigits, 0, ',', '.');
