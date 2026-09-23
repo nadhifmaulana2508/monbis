@@ -643,6 +643,12 @@
       return fields.some(value => value.includes('divisi operasional')) || fields.includes('dev');
     }
 
+    function isHeadOfficePe(user) {
+      const office = String(user?.kode_kantor ?? user?.kode ?? '').trim().padStart(3, '0');
+      const group = String(user?.group_jabatan ?? user?.groupJabatan ?? '').trim().toUpperCase();
+      return office === '000' && group === 'PE';
+    }
+
     function canAccessMappingAo(user) {
       const job = String(user?.job_position || '').toLowerCase();
       const unit = String(user?.unit_kerja || '').toLowerCase();
@@ -674,10 +680,12 @@
       const adminMenu = document.getElementById('menuEventAdmin');
       const user = readUser();
       const operational = !!user && isOperasional(user);
+      const headOfficePe = !!user && isHeadOfficePe(user);
       if (reportMenu) {
-        reportMenu.style.display = operational ? 'block' : 'none';
+        reportMenu.style.display = headOfficePe || operational ? 'block' : 'none';
         reportMenu.querySelectorAll('a').forEach(link => {
-          link.style.display = operational ? '' : 'none';
+          const neracaLink = link.getAttribute('href') === 'lap_neraca';
+          link.style.display = neracaLink && !operational ? 'none' : '';
         });
       }
       if (menu) {
