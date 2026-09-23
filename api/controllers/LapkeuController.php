@@ -954,16 +954,15 @@ class LaporanKeuanganController
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // Pada konsolidasi, saldo akun 210 merupakan eliminasi antar-unit.
-            // Terapkan koreksi yang sama ke breakdown seperti yang sudah dipakai
-            // pada kartu summary: aset dan kewajiban bersih, baris 210 menjadi 0.
+            // Root aset memakai saldo induk 1 dikurangi akun 210.
             $eliminasi210Actual = 0.0;
             $eliminasi210Closing = 0.0;
             if ($isNeraca && $isConsolidated) {
                 foreach ($results as $result) {
-                    if ((string) ($result['kode_perk'] ?? '') === '210') {
+                    $resultKode = (string) ($result['kode_perk'] ?? '');
+                    if ($resultKode === '210') {
                         $eliminasi210Actual = (float) ($result['total_saldo'] ?? 0);
                         $eliminasi210Closing = (float) ($result['closing_saldo'] ?? 0);
-                        break;
                     }
                 }
             }
@@ -971,7 +970,7 @@ class LaporanKeuanganController
             $mappedData = [];
 
             foreach ($results as $row) {
-                $kode = $row['kode_perk'];
+                $kode = (string) $row['kode_perk'];
                 $saldo = (float)$row['total_saldo'];
                 $closingSaldo = (float)($row['closing_saldo'] ?? 0);
 

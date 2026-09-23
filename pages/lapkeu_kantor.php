@@ -5444,9 +5444,13 @@
     const rows = Array.isArray(data) ? data : [];
     const getVal = code => Math.round(Number(rows.find(item => String(item?.kode_perk || '') === code)?.total_saldo || 0));
     const getAsetGabungan = () => {
-      const totalAset = asetGabunganCodes.reduce((sum, code) => sum + getVal(code), 0);
       const kantor = String(document.getElementById('opt_kantor_rec')?.value || '').trim().toLowerCase();
       const isConsolidated = kantor === 'konsolidasi' || kantor === '000';
+      // Pada konsolidasi, endpoint sudah menyajikan induk aset bersih:
+      // kode perkiraan 1 dikurangi eliminasi antar-unit kode 210.
+      // Pakai nilai induk ini agar kartu summary sama dengan uraian akun 1.
+      if (isConsolidated && rows.some(item => String(item?.kode_perk || '') === '1')) return getVal('1');
+      const totalAset = asetGabunganCodes.reduce((sum, code) => sum + getVal(code), 0);
       return totalAset - (isConsolidated ? getVal('210') : 0);
     };
 
