@@ -174,7 +174,7 @@ $rrbRenderMetricCard = static function (array $card, callable $escape, bool $sho
       <?php endforeach; ?>
     </nav>
 
-    <div class="rrb26-note"><span><b>Posisi:</b> Agustus 2026</span><span><b>Satuan:</b> Pusat jutaan rupiah · regional rupiah</span><span class="rrb26-note-hint">Hover nominal pusat untuk angka asli</span></div>
+    <div class="rrb26-note"><span><b>Posisi:</b> Agustus 2026</span><span><b>Satuan tampilan:</b> jutaan rupiah</span><span class="rrb26-note-hint">Hover nominal untuk angka asli</span></div>
 
     <section id="rrb26-panel-kinerja_pusat" class="rrb26-panel<?= $rrbView === 'kinerja_pusat' ? ' active' : '' ?>" role="tabpanel" data-rrb26-panel="kinerja_pusat"<?= $rrbView === 'kinerja_pusat' ? '' : ' hidden' ?> >
       <div class="rrb26-panel-heading"><div><h2>Kinerja Pusat</h2><p>Perbandingan target RBB dengan realisasi bulan berjalan dan target akhir tahun.</p></div><span class="rrb26-scope-pill">PT BPR BKK JATENG</span></div>
@@ -189,11 +189,11 @@ $rrbRenderMetricCard = static function (array $card, callable $escape, bool $sho
     <?php foreach ($rrbRegionalCards as $key => $region): ?>
       <section id="rrb26-panel-<?= $rrbEscape($key) ?>" class="rrb26-panel<?= $rrbView === $key ? ' active' : '' ?>" role="tabpanel" data-rrb26-panel="<?= $rrbEscape($key) ?>"<?= $rrbView === $key ? '' : ' hidden' ?> >
         <div class="rrb26-panel-heading"><div><h2><?= $rrbEscape($region['title']) ?></h2><p><?= $rrbEscape($region['subtitle']) ?>.</p></div><span class="rrb26-scope-pill">AGUSTUS 2026</span></div>
-        <div class="rrb26-card-grid rrb26-regional-grid"><?php foreach ($region['cards'] as $card): echo $rrbRenderMetricCard($card, $rrbEscape, false); endforeach; ?></div>
+        <div class="rrb26-card-grid rrb26-regional-grid"><?php foreach ($region['cards'] as $card): echo $rrbRenderMetricCard($card, $rrbEscape, true); endforeach; ?></div>
       </section>
     <?php endforeach; ?>
 
-    <footer class="rrb26-footnote"><span><b>Catatan:</b> angka di halaman ini adalah snapshot sementara berdasarkan file/gambar yang diunggah.</span><span>RBB Ags = target bulan berjalan · RBB Des = target akhir tahun</span></footer>
+    <footer class="rrb26-footnote"><span>RBB Ags = target bulan berjalan · RBB Des = target akhir tahun</span></footer>
   </section>
 </div>
 
