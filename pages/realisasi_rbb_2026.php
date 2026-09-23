@@ -20,8 +20,7 @@ $rrbEscape = static function ($value): string {
 };
 
 // Nominal snapshot disimpan dalam ribuan rupiah. Untuk tampilan, pangkas
-// tiga digit terakhir agar kartu lebih ringkas; nilai asli tetap tersedia
-// pada tooltip setiap nominal.
+// tiga digit terakhir agar kartu lebih ringkas tanpa mengubah data snapshot.
 $rrbShortNominal = static function ($value): string {
     $text = trim((string) $value);
     if ($text === '' || !preg_match('/^\(?[0-9]+(?:\.[0-9]+)*\)?$/', $text)) {
@@ -152,7 +151,10 @@ $rrbRenderMetricCard = static function (array $card, callable $escape, bool $sho
 };
 ?>
 
-<div id="realisasiRbb2026" class="rrb26-page">
+<div id="realisasiRbb2026" class="rrb26-page is-loading" aria-busy="true">
+  <div class="rrb26-loading-state" aria-hidden="true">
+    <div class="rrb26-loading-card"><span class="rrb26-loading-spinner"></span><span>Memuat laporan...</span></div>
+  </div>
   <section class="rrb26-header">
     <div class="rrb26-heading">
       <div class="rrb26-heading-icon" aria-hidden="true">
@@ -206,12 +208,29 @@ $rrbRenderMetricCard = static function (array $card, callable $escape, bool $sho
   @media(max-width:850px){#realisasiRbb2026{padding:10px}.rrb26-header{align-items:flex-start;flex-direction:column}.rrb26-central-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rrb26-regional-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rrb26-panel{padding:12px}.rrb26-panel-heading{flex-direction:column}.rrb26-scope-pill{align-self:flex-start}}
   @media(max-width:540px){.rrb26-heading h1{font-size:19px}.rrb26-heading p{max-width:245px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rrb26-central-grid,.rrb26-regional-grid{grid-template-columns:1fr}.rrb26-values strong{font-size:10px}.rrb26-card-head h3{font-size:15px}.rrb26-footnote{align-items:flex-start;flex-direction:column;gap:4px}.rrb26-note{padding:9px 10px}}
   @media(max-width:540px){#realisasiRbb2026{min-height:calc(100dvh - 56px);padding:7px;overflow-x:hidden}.rrb26-header{padding:11px;border-radius:13px}.rrb26-heading{width:100%;align-items:flex-start;gap:9px}.rrb26-heading-icon{width:38px;height:38px;border-radius:10px}.rrb26-heading-icon svg{width:20px;height:20px}.rrb26-heading h1{font-size:18px}.rrb26-heading p{max-width:none;font-size:8px;white-space:normal;line-height:1.35}.rrb26-workspace{margin-top:7px;border-radius:13px}.rrb26-tabs{gap:2px;padding:6px 6px 0;scrollbar-width:none}.rrb26-tabs::-webkit-scrollbar{display:none}.rrb26-tab{padding:8px 10px;font-size:8px}.rrb26-note{gap:5px;padding:8px 9px;font-size:8px}.rrb26-note>span{padding:4px 6px}.rrb26-panel{padding:10px}.rrb26-panel-heading{gap:8px;margin-bottom:10px}.rrb26-panel-heading h2{font-size:14px}.rrb26-panel-heading p{font-size:8px}.rrb26-scope-pill{padding:4px 7px;font-size:7px}.rrb26-card-grid{gap:8px}.rrb26-card{padding:10px;border-radius:11px}.rrb26-card-head{gap:7px;margin-bottom:8px}.rrb26-card-icon{width:30px;height:30px}.rrb26-card-icon svg{width:16px;height:16px}.rrb26-card-head h3{font-size:14px}.rrb26-card-head span{font-size:8px}.rrb26-values>div{padding:7px 3px}.rrb26-values small,.rrb26-achievements small{font-size:6.5px}.rrb26-values strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:10px}.rrb26-card.is-ratio .rrb26-values strong{font-size:14px}.rrb26-achievements{gap:5px;margin-top:6px}.rrb26-achievements>div{padding:6px 3px}.rrb26-achievements b{font-size:15px}.rrb26-card footer{font-size:7px}.rrb26-footnote{padding:8px 10px;font-size:8px}.rrb26-table{min-width:700px}.rrb26-table th,.rrb26-table td{padding:8px 7px;font-size:8px}.rrb26-table thead th{font-size:7px}}
+  #realisasiRbb2026{position:relative}.rrb26-loading-state{position:absolute;inset:0;z-index:10;display:grid;place-items:center;pointer-events:none;opacity:1;visibility:visible;transition:opacity .25s ease,visibility .25s ease}.rrb26-loading-card{display:flex;align-items:center;gap:9px;padding:10px 14px;border:1px solid rgba(172,205,224,.8);border-radius:999px;background:rgba(255,255,255,.9);box-shadow:0 10px 25px rgba(12,69,117,.14);backdrop-filter:blur(10px);color:#1d5e7a;font-size:10px;font-weight:850}.rrb26-loading-spinner{width:16px;height:16px;border:2px solid #d8e8f1;border-top-color:#2563eb;border-radius:50%;animation:rrb26Spin .8s linear infinite}#realisasiRbb2026.is-loading>.rrb26-header,#realisasiRbb2026.is-loading>.rrb26-workspace{opacity:.48;filter:blur(5px);pointer-events:none;transform:translateY(3px);transition:opacity .25s ease,filter .25s ease,transform .25s ease}#realisasiRbb2026:not(.is-loading) .rrb26-loading-state{opacity:0;visibility:hidden}@keyframes rrb26Spin{to{transform:rotate(360deg)}}
 </style>
 
 <script>
 (function () {
   const root = document.getElementById('realisasiRbb2026');
   if (!root) return;
+  let loadingHidden = false;
+  const hideLoading = () => {
+    if (loadingHidden) return;
+    loadingHidden = true;
+    window.requestAnimationFrame(() => {
+      root.classList.remove('is-loading');
+      root.setAttribute('aria-busy', 'false');
+    });
+  };
+  const scheduleLoadingHide = () => window.setTimeout(hideLoading, 220);
+  if (document.readyState === 'complete') {
+    scheduleLoadingHide();
+  } else {
+    window.addEventListener('load', scheduleLoadingHide, { once: true });
+  }
+  window.setTimeout(hideLoading, 1200);
   const tabs = Array.from(root.querySelectorAll('[data-rrb26-tab]'));
   const panels = Array.from(root.querySelectorAll('[data-rrb26-panel]'));
   root.querySelectorAll('.rrb26-card').forEach((card, index) => {
