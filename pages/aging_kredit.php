@@ -110,20 +110,20 @@ mb_ui_assets('.');
   #agingKreditPage #progScroller { min-width:0; min-height:0; }
   #agingKreditPage #progScroller { overflow:auto; overscroll-behavior:contain; }
   #agingKreditPage .mb-table {
-      width:max-content;
-      min-width:900px;
+      width:100%;
+      min-width:0;
       table-layout:fixed;
   }
   #agingKreditPage .mb-table th,
   #agingKreditPage .mb-table td { white-space:nowrap; }
   #agingKreditPage .mb-table th:nth-child(1),
-  #agingKreditPage .mb-table td:nth-child(1) { width:150px; }
+  #agingKreditPage .mb-table td:nth-child(1) { width:16%; }
   #agingKreditPage .mb-table th:nth-child(2),
-  #agingKreditPage .mb-table td:nth-child(2) { width:120px; }
+  #agingKreditPage .mb-table td:nth-child(2) { width:13%; }
   #agingKreditPage .mb-table th:nth-child(3),
-  #agingKreditPage .mb-table td:nth-child(3) { width:110px; }
+  #agingKreditPage .mb-table td:nth-child(3) { width:12%; }
   #agingKreditPage .mb-table th:nth-child(n+4),
-  #agingKreditPage .mb-table td:nth-child(n+4) { width:82px; }
+  #agingKreditPage .mb-table td:nth-child(n+4) { width:9.83%; }
   #agingKreditPage .mb-table td:not(:first-child) { text-align:right; }
   #agingKreditPage .mb-report-toolbar { min-width:0; }
   #agingKreditPage .mb-report-toolbar__title { min-width:0; }
@@ -154,7 +154,7 @@ mb_ui_assets('.');
           gap:4px;
       }
       #agingKreditPage .mb-report-toolbar__title { font-size:10.5px; }
-      #agingKreditPage .mb-table { min-width:900px; font-size:8px; }
+      #agingKreditPage .mb-table { width:max-content; min-width:900px; font-size:8px; }
       #agingKreditPage .mb-table th,
       #agingKreditPage .mb-table td { padding:5px 6px; }
       #agingKreditPage .mb-table th:nth-child(1),
