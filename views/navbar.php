@@ -643,6 +643,12 @@
       return fields.some(value => value.includes('divisi operasional')) || fields.includes('dev');
     }
 
+    function isHeadOfficePe(user) {
+      const office = String(user?.kode_kantor ?? user?.kode ?? '').trim().padStart(3, '0');
+      const group = String(user?.group_jabatan ?? user?.groupJabatan ?? '').trim().toUpperCase();
+      return office === '000' && group === 'PE';
+    }
+
     function canAccessMappingAo(user) {
       const job = String(user?.job_position || '').toLowerCase();
       const unit = String(user?.unit_kerja || '').toLowerCase();
@@ -669,9 +675,12 @@
 
     function applyDevMenuVisibility() {
       const menu = document.getElementById('menuDevReport');
+      const reportMenu = document.getElementById('menuMonevDev');
       const menuInputRbb = document.getElementById('menuInputRbb');
       const adminMenu = document.getElementById('menuEventAdmin');
       const user = readUser();
+      const headOfficePe = !!user && isHeadOfficePe(user);
+      if (reportMenu) reportMenu.style.display = headOfficePe ? 'block' : 'none';
       if (menu) {
         const operational = !!user && isOperasional(user);
         const mappingAccess = !!user && canAccessMappingAo(user);
