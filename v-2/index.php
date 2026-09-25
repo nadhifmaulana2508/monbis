@@ -14,6 +14,38 @@ $legacyBase = $v2Runtime['backend_base_url'];
 $apiBase = $v2Runtime['api_base_url'];
 $rbbRouteBase = $v2Runtime['module'] === 'rbb' ? $baseUrl : $baseUrl . '/rbb';
 
+function v2_route_from_request(string $baseUrl): array
+{
+    $requestPath = (string)(parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: '');
+    $basePath = (string)(parse_url($baseUrl, PHP_URL_PATH) ?: $baseUrl);
+    $basePath = rtrim(str_replace('\\', '/', $basePath), '/');
+    $routePath = $basePath !== '' && strpos($requestPath, $basePath) === 0
+        ? substr($requestPath, strlen($basePath))
+        : $requestPath;
+    $routePath = trim((string)$routePath, '/');
+    if ($routePath === '') return ['page' => 'launcher'];
+
+    $segments = array_values(array_filter(explode('/', $routePath), static fn($segment) => $segment !== ''));
+    if (isset($segments[0]) && in_array(strtolower($segments[0]), ['v-2', 'rbb', 'gorbb', 'kpi', 'simpeg'], true)) {
+        array_shift($segments);
+    }
+    $route = strtolower((string)($segments[0] ?? 'launcher'));
+    $argument = (string)($segments[1] ?? '');
+
+    return match ($route) {
+        'projection' => ['page' => 'rbb', 'tab' => 'projection'],
+        'aba' => ['page' => 'rbb', 'tab' => 'aba'],
+        'detail' => ['page' => 'rbb', 'tab' => 'detail', 'category' => $argument],
+        'print' => ['page' => 'rbb_print'],
+        'summary' => ['page' => 'kpi', 'tab' => 'summary'],
+        'calculate' => ['page' => 'kpi', 'tab' => 'calculate'],
+        'setting' => ['page' => 'kpi', 'tab' => 'setting'],
+        'report_npl' => ['page' => 'collection'],
+        'components', 'collection', 'templates', 'settings', 'launcher', 'rbb', 'kpi' => ['page' => $route],
+        default => ['page' => 'launcher'],
+    };
+}
+
 // Preview hanya boleh dipakai di localhost; produksi tetap wajib login.
 $previewRequested = isset($_GET['preview']) && $v2Runtime['allow_preview'];
 if ($v2Runtime['page_auth'] && empty($_COOKIE['sso_token']) && !$previewRequested) {
@@ -22,7 +54,13 @@ if ($v2Runtime['page_auth'] && empty($_COOKIE['sso_token']) && !$previewRequeste
     exit;
 }
 
-$page = strtolower(trim((string)($_GET['page'] ?? 'launcher')));
+$requestRoute = v2_route_from_request($baseUrl);
+$page = strtolower(trim((string)($_GET['page'] ?? $requestRoute['page'] ?? 'launcher')));
+if (!isset($_GET['page']) || $page === 'launcher') {
+    if (($requestRoute['page'] ?? '') !== '') $page = $requestRoute['page'];
+    if (!isset($_GET['tab']) && isset($requestRoute['tab'])) $_GET['tab'] = $requestRoute['tab'];
+    if (!isset($_GET['category']) && isset($requestRoute['category'])) $_GET['category'] = $requestRoute['category'];
+}
 $allowedPages = ['launcher', 'kpi', 'rbb', 'rbb_print', 'components', 'collection', 'templates', 'settings'];
 if (!in_array($page, $allowedPages, true)) {
     $page = 'launcher';
