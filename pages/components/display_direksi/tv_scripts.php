@@ -7,6 +7,7 @@
     let currentSlide = 0;
     let slideIntervalId = null;
     let totalSlides = 0;
+    const TV_SLIDE_INTERVAL_MS = 30 * 1000;
     let isSlideshowPaused = localStorage.getItem('tv_slideshow_paused') === '1';
 
     async function checkTvLogin() {
@@ -78,7 +79,7 @@
         if(slideIntervalId) clearInterval(slideIntervalId);
         slideIntervalId = null;
         if(isSlideshowPaused) return;
-        slideIntervalId = setInterval(nextTvSlide, 30000); // 30 detik
+        slideIntervalId = setInterval(nextTvSlide, TV_SLIDE_INTERVAL_MS);
     }
 
     function syncTvSlideshowButton() {

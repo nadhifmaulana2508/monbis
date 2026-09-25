@@ -15,15 +15,16 @@ require_once __DIR__ . '/components/bootstrap.php';
 
 $baseUrl = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/report-dpk/v-2')), '/');
 $page = strtolower(trim((string)($_GET['page'] ?? 'launcher')));
-$allowedPages = ['launcher', 'kpi', 'rbb', 'components', 'collection', 'templates', 'settings'];
+$allowedPages = ['launcher', 'kpi', 'rbb', 'rbb_print', 'components', 'collection', 'templates', 'settings'];
 if (!in_array($page, $allowedPages, true)) {
     $page = 'launcher';
 }
 
 $legacyBase = rtrim(str_replace('\\', '/', dirname($baseUrl)), '/');
-$pageTitles = ['launcher' => 'MONBIS Workspace', 'kpi' => 'KPI Bisnis', 'rbb' => 'Input RBB', 'components' => 'FE Component Library', 'collection' => 'Report NPL', 'templates' => 'Page Templates', 'settings' => 'Workspace Settings'];
+$pageTitles = ['launcher' => 'MONBIS Workspace', 'kpi' => 'KPI Bisnis', 'rbb' => 'Input RBB', 'rbb_print' => 'Cetak RBB', 'components' => 'FE Component Library', 'collection' => 'Report NPL', 'templates' => 'Page Templates', 'settings' => 'Workspace Settings'];
 v2_render_start('MONBIS · ' . $pageTitles[$page], $page);
-v2_render_sidebar($page, $baseUrl, $legacyBase);
+$sidebarPage = $page === 'rbb_print' ? 'rbb' : $page;
+v2_render_sidebar($sidebarPage, $baseUrl, $legacyBase);
 ?>
 <div class="v2-main" id="v2Main">
   <header class="v2-topbar">

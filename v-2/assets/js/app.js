@@ -15,10 +15,36 @@
   };
   document.querySelectorAll('[data-v2-sidebar-toggle]').forEach((button) => button.addEventListener('click', () => toggleSidebar(!sidebar?.classList.contains('is-open'))));
   document.querySelectorAll('[data-v2-sidebar-close]').forEach((button) => button.addEventListener('click', () => toggleSidebar(false)));
-  document.querySelectorAll('[data-v2-nav-group]').forEach((button) => {
-    button.addEventListener('click', () => button.closest('.v2-nav-group')?.classList.toggle('is-open'));
+  const navGroups = [...document.querySelectorAll('.v2-nav-group')];
+  const setNavGroupState = (group, open) => {
+    const button = group?.querySelector('[data-v2-nav-group]');
+    if (!button) return;
+    group.classList.toggle('is-open', open);
+    button.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+  const closeNavGroups = (except = null) => navGroups.forEach((group) => {
+    if (group !== except) setNavGroupState(group, false);
+  });
+  navGroups.forEach((group, index) => {
+    const button = group.querySelector('[data-v2-nav-group]');
+    const submenu = group.querySelector('.v2-nav-sub');
+    if (!button) return;
+    button.setAttribute('aria-expanded', group.classList.contains('is-open') ? 'true' : 'false');
+    if (submenu) {
+      submenu.id = submenu.id || `v2-nav-sub-${index}`;
+      button.setAttribute('aria-controls', submenu.id);
+    }
+    button.addEventListener('click', () => {
+      const open = group.classList.contains('is-open');
+      closeNavGroups();
+      if (!open) setNavGroupState(group, true);
+    });
   });
   document.querySelectorAll('.v2-nav-sub-item.is-active').forEach((item) => item.closest('.v2-nav-group')?.classList.add('is-open'));
+  document.querySelectorAll('.v2-nav-group.is-open').forEach((group) => setNavGroupState(group, true));
+  sidebar?.addEventListener('mouseleave', () => {
+    if (window.matchMedia('(min-width: 781px) and (hover: hover)').matches) closeNavGroups();
+  });
   document.querySelectorAll('.v2-nav a').forEach((link) => link.addEventListener('click', () => {
     if (mobileQuery.matches) toggleSidebar(false);
   }));

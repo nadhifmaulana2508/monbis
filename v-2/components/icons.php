@@ -20,6 +20,7 @@ function v2_icon(string $name, int $size = 18): string
         'refresh' => '<path d="M20 11a8 8 0 1 0 1 5"/><path d="M20 4v7h-7"/>',
         'plus' => '<path d="M12 5v14M5 12h14"/>',
         'download' => '<path d="M12 3v12m0 0 4-4m-4 4-4-4M5 21h14"/>',
+        'printer' => '<path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/><path d="M18 12h.01"/>',
         'edit' => '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z"/>',
         'save' => '<path d="M5 3h12l3 3v15H4V3Z"/><path d="M8 3v5h8V3M8 21v-5h8v5"/>',
         'search' => '<circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>',

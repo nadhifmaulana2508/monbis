@@ -217,7 +217,7 @@ class RbbController
 
     /**
      * RBB Planning memakai tabel terpisah dari rbb lama. Tabel lama tetap menjadi
-     * sumber report historis, sedangkan rbb_plan menyimpan draft dan approval 2027.
+     * sumber report historis, sedangkan rbb_plan menyimpan draft dan approval per tahun.
      */
     private function ensureRbbPlanningSchema(): void
     {
@@ -260,12 +260,17 @@ class RbbController
             to_status VARCHAR(32) NOT NULL,
             actor_id VARCHAR(50) NULL,
             actor_name VARCHAR(150) NULL,
+            actor_role VARCHAR(150) NULL,
             note TEXT NULL,
             created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (id),
             KEY idx_rbb_plan_approval_plan (plan_id),
             CONSTRAINT fk_rbb_plan_approval_plan FOREIGN KEY (plan_id) REFERENCES rbb_plan(id) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $approvalColumns = $this->pdo->query('SHOW COLUMNS FROM rbb_plan_approval')->fetchAll(PDO::FETCH_COLUMN, 0);
+        if (!in_array('actor_role', $approvalColumns, true)) {
+            $this->pdo->exec('ALTER TABLE rbb_plan_approval ADD COLUMN actor_role VARCHAR(150) NULL AFTER actor_name');
+        }
 
         $this->pdo->exec("CREATE TABLE IF NOT EXISTS rbb_plan_aba (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -330,6 +335,43 @@ class RbbController
         return $year;
     }
 
+    private function planningMonth($value): int
+    {
+        $month = (int)$value;
+        if ($month < 1 || $month > 12) sendResponse(422, 'Bulan mulai RBB tidak valid.');
+        return $month;
+    }
+
+    private function previousActualDate(int $year, int $month): string
+    {
+        return (new DateTimeImmutable(sprintf('%04d-%02d-01', $year, $month)))->modify('-1 day')->format('Y-m-d');
+    }
+
+    private function previousActualValues(string $branch, string $date): array
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT ah.kode_perk, SUM(ah.saldo_akhir) AS nilai
+                FROM acc_history ah
+                INNER JOIN (
+                    SELECT kode_perk, MAX(tanggal) AS tanggal
+                    FROM acc_history
+                    WHERE kode_kantor = ? AND tanggal <= ?
+                    GROUP BY kode_perk
+                ) latest ON latest.kode_perk = ah.kode_perk AND latest.tanggal = ah.tanggal
+                WHERE ah.kode_kantor = ?
+                GROUP BY ah.kode_perk");
+            $stmt->execute([$branch, $date, $branch]);
+            $values = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $values[(string)$row['kode_perk']] = (float)$row['nilai'];
+            }
+            return $values;
+        } catch (Throwable $e) {
+            error_log('RBB previous actual unavailable: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     private function calendarMonthLabels(): array
     {
         return ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
@@ -338,9 +380,20 @@ class RbbController
     private function planningCategory($value): string
     {
         $category = strtoupper(trim((string)($value ?: 'ASET')));
-        $allowed = ['ASET', 'DAMAS', 'KREDIT', 'PRODUKSI KREDIT', 'RUN OFF KREDIT', 'KREDIT SALDO BANK', 'PENDAPATAN', 'BEBAN', 'LIABILITAS', 'EKUITAS', 'IKHTISAR', 'LAINNYA', 'ALL'];
+        $allowed = ['NERACA', 'LABA_RUGI', 'ASET', 'DAMAS', 'KREDIT', 'PRODUKSI KREDIT', 'RUN OFF KREDIT', 'KREDIT SALDO BANK', 'PENDAPATAN', 'BEBAN', 'LIABILITAS', 'EKUITAS', 'IKHTISAR', 'LAINNYA', 'ALL'];
         if (!in_array($category, $allowed, true)) sendResponse(422, 'Kategori RBB tidak valid.');
         return $category;
+    }
+
+    private function planningCategoryWhere(string $category): string
+    {
+        return match ($category) {
+            'NERACA' => "UPPER(TRIM(kategori)) IN ('ASET', 'LIABILITAS', 'EKUITAS')",
+            'LABA_RUGI' => "UPPER(TRIM(kategori)) IN ('PENDAPATAN', 'BEBAN')",
+            'KREDIT' => "UPPER(TRIM(kategori)) IN ('PRODUKSI KREDIT', 'RUN OFF KREDIT', 'KREDIT SALDO BANK')",
+            'ALL' => '1=1',
+            default => 'UPPER(TRIM(kategori)) = :kategori',
+        };
     }
 
     private function planningCode($value): string
@@ -374,6 +427,13 @@ class RbbController
         return $plan ?: null;
     }
 
+    private function planningApprovals(int $planId): array
+    {
+        $stmt = $this->pdo->prepare('SELECT id, action, from_status, to_status, actor_id, actor_name, actor_role, note, created_at FROM rbb_plan_approval WHERE plan_id = ? ORDER BY created_at ASC, id ASC');
+        $stmt->execute([$planId]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     public function getRbbPlanningData(array $input, array $auth): void
     {
         $user = $this->requireOperational($auth);
@@ -381,17 +441,19 @@ class RbbController
         $year = $this->planningYear($input['tahun'] ?? date('Y'));
         $branch = $this->planningCode($input['kode_kantor'] ?? '001');
         $category = $this->planningCategory($input['kategori'] ?? 'ASET');
+        $startYear = $this->planningYear($input['tahun_mulai'] ?? $year);
+        $startMonth = $this->planningMonth($input['bulan_mulai'] ?? 1);
+        $actualPreviousDate = $this->previousActualDate($startYear, $startMonth);
+        $actualPrevious = $year === $startYear ? $this->previousActualValues($branch, $actualPreviousDate) : [];
         $plan = $this->planningPlan($year, $branch);
 
         $offices = $this->pdo->query("SELECT LPAD(CAST(kode_kantor AS CHAR), 3, '0') AS kode_kantor, nama_kantor
             FROM kode_kantor WHERE LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN '001' AND '028' ORDER BY kode_kantor")->fetchAll(PDO::FETCH_ASSOC);
 
-        $where = $category === 'ALL' ? '1=1' : ($category === 'KREDIT'
-            ? "UPPER(TRIM(kategori)) IN ('PRODUKSI KREDIT', 'RUN OFF KREDIT', 'KREDIT SALDO BANK')"
-            : 'UPPER(TRIM(kategori)) = :kategori');
+        $where = $this->planningCategoryWhere($category);
         $coaStmt = $this->pdo->prepare("SELECT id AS id_ref, kode_monbis, kode_perk AS kode_perkiraan, sandi_lbbpr, kategori, keterangan
             FROM rbb_coa WHERE is_active = 1 AND {$where} ORDER BY sort_order, id");
-        if ($category === 'ALL' || $category === 'KREDIT') $coaStmt->execute(); else $coaStmt->execute([':kategori' => $category]);
+        if (in_array($category, ['ALL', 'NERACA', 'LABA_RUGI', 'KREDIT'], true)) $coaStmt->execute(); else $coaStmt->execute([':kategori' => $category]);
         $coaRows = $coaStmt->fetchAll(PDO::FETCH_ASSOC);
         if ($category === 'KREDIT') {
             $coaRows[] = ['id_ref'=>0, 'kode_monbis'=>'RBB_PH', 'kode_perkiraan'=>'rencana.ph', 'sandi_lbbpr'=>null, 'kategori'=>'KREDIT', 'keterangan'=>'Rencana PH'];
@@ -484,14 +546,15 @@ class RbbController
                 'kategori' => $row['kategori'], 'keterangan' => $row['keterangan'],
                 'input_mode' => $mode, 'values' => $current, 'history' => $previous,
                 'acc_history' => $accHistory[(string)($row['kode_perkiraan'] ?? '')] ?? [],
+                'actual_previous' => $actualPrevious[(string)($row['kode_perkiraan'] ?? '')] ?? null,
                 'total' => $total, 'history_total' => $historyTotal,
             ];
         }
 
         sendResponse(200, 'Data RBB planning berhasil dimuat.', [
             'tahun' => $year, 'kode_kantor' => $branch, 'kategori' => $category,
-            'plan' => $plan ? ['id' => (int)$plan['id'], 'status' => $plan['status'], 'catatan' => $plan['catatan']] : null,
-            'months' => $this->calendarMonthLabels(),
+            'plan' => $plan ? ['id' => (int)$plan['id'], 'status' => $plan['status'], 'catatan' => $plan['catatan'], 'approvals' => $this->planningApprovals((int)$plan['id'])] : null,
+            'months' => $this->calendarMonthLabels(), 'actual_previous_date' => $actualPreviousDate,
             'offices' => $offices, 'rows' => $rows,
             'permissions' => ['can_edit' => !$plan || in_array($plan['status'], ['DRAFT', 'REJECTED'], true), 'user' => $user['full_name'] ?? ''],
         ]);
@@ -503,9 +566,15 @@ class RbbController
         $this->ensureRbbPlanningSchema();
         $year = $this->planningYear($input['tahun'] ?? date('Y'));
         $branch = $this->planningCode($input['kode_kantor'] ?? '001');
+        $category = $this->planningCategory($input['kategori'] ?? 'NERACA');
+        $startYear = $this->planningYear($input['tahun_mulai'] ?? $year);
+        $startMonth = $this->planningMonth($input['bulan_mulai'] ?? 1);
+        $actualPreviousDate = $this->previousActualDate($startYear, $startMonth);
+        $actualPrevious = $year === $startYear ? $this->previousActualValues($branch, $actualPreviousDate) : [];
         $plan = $this->planningPlan($year, $branch);
-        $stmt = $this->pdo->prepare('SELECT id AS id_ref, kode_monbis, kode_perk AS kode_perkiraan, sandi_lbbpr, kategori, keterangan FROM rbb_coa WHERE is_active = 1 ORDER BY sort_order, id');
-        $stmt->execute();
+        $where = $this->planningCategoryWhere($category);
+        $stmt = $this->pdo->prepare("SELECT id AS id_ref, kode_monbis, kode_perk AS kode_perkiraan, sandi_lbbpr, kategori, keterangan FROM rbb_coa WHERE is_active = 1 AND {$where} ORDER BY sort_order, id");
+        if (in_array($category, ['ALL', 'NERACA', 'LABA_RUGI', 'KREDIT'], true)) $stmt->execute(); else $stmt->execute([':kategori' => $category]);
         $coaRows = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $values = [];
         if ($plan) {
@@ -534,9 +603,9 @@ class RbbController
         foreach ($coaRows as $row) {
             $code=(string)$row['kode_monbis']; $current=[]; $total=0.0;
             for($month=1;$month<=12;$month++){ $current[$month]=(float)($values[$code][$month]??0); $total+=$current[$month]; }
-            $rows[]=['id_ref'=>(int)$row['id_ref'],'kode_monbis'=>$code,'kode_perkiraan'=>$row['kode_perkiraan'],'sandi_lbbpr'=>$row['sandi_lbbpr'],'kategori'=>$row['kategori'],'keterangan'=>$row['keterangan'],'input_mode'=>'AUTO','values'=>$current,'total'=>$total,'source'=>in_array($code,['61','62','166'],true)?'INPUT ABA':'INPUT COA'];
+            $rows[]=['id_ref'=>(int)$row['id_ref'],'kode_monbis'=>$code,'kode_perkiraan'=>$row['kode_perkiraan'],'sandi_lbbpr'=>$row['sandi_lbbpr'],'kategori'=>$row['kategori'],'keterangan'=>$row['keterangan'],'input_mode'=>'AUTO','values'=>$current,'actual_previous'=>$actualPrevious[(string)($row['kode_perkiraan'] ?? '')] ?? null,'total'=>$total,'source'=>in_array($code,['61','62','166'],true)?'INPUT ABA':'INPUT COA'];
         }
-        sendResponse(200,'Proyeksi RBB berhasil dimuat.',['tahun'=>$year,'kode_kantor'=>$branch,'plan'=>$plan?['id'=>(int)$plan['id'],'status'=>$plan['status']]:null,'months'=>$this->calendarMonthLabels(),'rows'=>$rows,'aba_summary'=>$aba,'aba_ckpn_rate'=>0.005]);
+        sendResponse(200,'Proyeksi RBB berhasil dimuat.',['tahun'=>$year,'kode_kantor'=>$branch,'plan'=>$plan?['id'=>(int)$plan['id'],'status'=>$plan['status']]:null,'months'=>$this->calendarMonthLabels(),'actual_previous_date'=>$actualPreviousDate,'rows'=>$rows,'aba_summary'=>$aba,'aba_ckpn_rate'=>0.005]);
     }
 
     public function getRbbAbaData(array $input, array $auth): void
@@ -635,6 +704,16 @@ class RbbController
         $this->transitionRbbPlanning($plan, 'SUBMIT_KANWIL', 'SUBMITTED_KANWIL', $user, $input['catatan'] ?? null);
     }
 
+    public function reopenRbbPlanning(array $input, array $auth): void
+    {
+        $user = $this->requireOperational($auth);
+        $this->ensureRbbPlanningSchema();
+        $plan = $this->planningPlan($this->planningYear($input['tahun'] ?? ''), $this->planningCode($input['kode_kantor'] ?? ''));
+        if (!$plan) sendResponse(404, 'Rencana RBB belum dibuat.');
+        if (in_array($plan['status'], ['DRAFT', 'REJECTED'], true)) sendResponse(422, 'RBB sudah dalam status yang dapat diedit.');
+        $this->transitionRbbPlanning($plan, 'REOPEN', 'DRAFT', $user, $input['catatan'] ?? 'Dibuka kembali untuk revisi.');
+    }
+
     public function approveRbbPlanning(array $input, array $auth): void
     {
         $user = $this->requireOperational($auth);
@@ -659,8 +738,8 @@ class RbbController
         try {
             $update = $this->pdo->prepare('UPDATE rbb_plan SET status = ?, catatan = ?, updated_by = ? WHERE id = ?');
             $update->execute([$toStatus, $note, $user['employee_id'] ?? null, (int)$plan['id']]);
-            $log = $this->pdo->prepare('INSERT INTO rbb_plan_approval (plan_id, action, from_status, to_status, actor_id, actor_name, note) VALUES (?, ?, ?, ?, ?, ?, ?)');
-            $log->execute([(int)$plan['id'], $action, $plan['status'], $toStatus, $user['employee_id'] ?? null, $user['full_name'] ?? null, $note]);
+            $log = $this->pdo->prepare('INSERT INTO rbb_plan_approval (plan_id, action, from_status, to_status, actor_id, actor_name, actor_role, note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+            $log->execute([(int)$plan['id'], $action, $plan['status'], $toStatus, $user['employee_id'] ?? null, $user['full_name'] ?? null, $user['job_position'] ?? null, $note]);
             $this->pdo->commit();
             sendResponse(200, 'Status RBB berhasil diperbarui.', ['status' => $toStatus]);
         } catch (Throwable $e) {
@@ -1949,14 +2028,27 @@ class RbbController
             }
         }
 
+        $requestedHarianDate = $harianDate;
         $scope = $this->buildLapkeuRbbScope($b);
         $targetExpression = $scope['target_expression'];
         $actualWhere = $scope['actual_where'];
         $scopeLabel = $scope['label'];
+        $useH7Fallback = filter_var($b['h7_fallback'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $usedH7Fallback = false;
+        if ($useH7Fallback) {
+            $dateCheck = $this->pdo->prepare("SELECT 1 FROM acc_history ah WHERE ah.tanggal = :actual_date_check AND {$actualWhere} LIMIT 1");
+            $dateCheck->execute([':actual_date_check' => $harianDate]);
+            if (!$dateCheck->fetchColumn()) {
+                $h7Date = new DateTimeImmutable($harianDate);
+                $harianDate = $h7Date->modify('-7 days')->format('Y-m-d');
+                $usedH7Fallback = true;
+            }
+        }
+        $includeMissing = filter_var($b['include_missing'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $sql = $jenis === 'laba_rugi'
-            ? $this->buildLapkeuRbbLabaRugiSql($targetExpression, $actualWhere)
-            : $this->buildLapkeuRbbNeracaSql($targetExpression, $actualWhere, (bool)($scope['is_konsolidasi'] ?? false));
+            ? $this->buildLapkeuRbbLabaRugiSql($targetExpression, $actualWhere, $includeMissing)
+            : $this->buildLapkeuRbbNeracaSql($targetExpression, $actualWhere, (bool)($scope['is_konsolidasi'] ?? false), $includeMissing);
 
         try {
             $stmt = $this->pdo->prepare($sql);
@@ -2005,6 +2097,9 @@ class RbbController
                     'periode_rbb' => $periodeRbb,
                     'periode_rbb_year_end' => $periodeRbbYearEnd,
                     'use_year_end' => $useYearEnd,
+                    'requested_harian_date' => $requestedHarianDate,
+                    'h7_fallback' => $usedH7Fallback,
+                    'include_missing' => $includeMissing,
                     'scope' => $scopeLabel,
                     'kode_kantor' => $scope['kode_kantor'],
                     'korwil' => $scope['korwil']
@@ -2163,7 +2258,7 @@ class RbbController
         ];
     }
 
-    private function buildLapkeuRbbNeracaSql(string $targetExpression, string $actualWhere, bool $isKonsolidasi): string
+    private function buildLapkeuRbbNeracaSql(string $targetExpression, string $actualWhere, bool $isKonsolidasi, bool $includeMissing = false): string
     {
         $saldoAkun210Sql = $isKonsolidasi
             ? "SELECT SUM(COALESCE(ah.saldo_akhir,0)) AS saldo_210
@@ -2173,6 +2268,7 @@ class RbbController
                   AND ah.kode_perk = '210'"
             : "SELECT 0 AS saldo_210";
 
+        $statusWhere = $includeMissing ? '' : "WHERE status_crosscheck = 'OK'";
         return "
             WITH ref_data AS (
                 SELECT
@@ -2286,13 +2382,14 @@ class RbbController
                 ROUND(CASE WHEN COALESCE(target_rbb_year_end,0) = 0 THEN 0 ELSE realisasi_actual / target_rbb_year_end * 100 END, 2) AS pencapaian_year_end_persen,
                 status_crosscheck
             FROM hasil
-            WHERE status_crosscheck = 'OK'
+            {$statusWhere}
             ORDER BY urutan_kelompok ASC, id_ref ASC
         ";
     }
 
-    private function buildLapkeuRbbLabaRugiSql(string $targetExpression, string $actualWhere): string
+    private function buildLapkeuRbbLabaRugiSql(string $targetExpression, string $actualWhere, bool $includeMissing = false): string
     {
+        $statusWhere = $includeMissing ? '' : "WHERE status_crosscheck = 'OK'";
         return "
             WITH ref_data AS (
                 SELECT
@@ -2397,7 +2494,7 @@ class RbbController
                 ROUND(CASE WHEN COALESCE(target_rbb_year_end,0) = 0 THEN 0 ELSE realisasi_actual / target_rbb_year_end * 100 END, 2) AS pencapaian_year_end_persen,
                 status_crosscheck
             FROM hasil
-            WHERE status_crosscheck = 'OK'
+            {$statusWhere}
             ORDER BY
                 CASE
                     WHEN UPPER(TRIM(kategori)) = 'PENDAPATAN' THEN 1

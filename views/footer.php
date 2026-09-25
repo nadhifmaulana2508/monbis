@@ -84,10 +84,35 @@
 
     // --- 3. SCRIPT MENU SIDEBAR DESKTOP & MOBILE ---
     document.addEventListener('DOMContentLoaded', () => {
-      const accordions = document.querySelectorAll('.accordion-btn');
+      const accordions = Array.from(document.querySelectorAll('#sidebar .accordion-btn'));
       const sidebar = document.getElementById('sidebar');
       const overlay = document.getElementById('sidebarOverlay');
       const btnToggle = document.getElementById('btnToggleSidebar');
+      const groups = accordions
+        .map(button => button.closest('.accordion-group'))
+        .filter(Boolean);
+
+      function getContent(group) {
+        return group?.querySelector(':scope > .accordion-content');
+      }
+
+      function setGroupState(group, open) {
+        const button = group?.querySelector(':scope > .accordion-btn');
+        const content = getContent(group);
+        const caret = button?.querySelector('.caret');
+        if (!button || !content) return;
+
+        content.classList.toggle('hidden', !open);
+        button.classList.toggle('is-open', open);
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (caret) caret.classList.toggle('rotate-180', open);
+      }
+
+      function closeAllAccordions(except = null) {
+        groups.forEach(group => {
+          if (group !== except) setGroupState(group, false);
+        });
+      }
 
       function markActiveSidebarMenu() {
         const current = (window.location.pathname.split('/').pop() || 'dashboard').replace(/\/+$/, '');
@@ -110,28 +135,32 @@
       markActiveSidebarMenu();
 
       accordions.forEach(btn => {
+        const group = btn.closest('.accordion-group');
+        const content = getContent(group);
+        btn.type = 'button';
+        btn.setAttribute('aria-expanded', 'false');
+        if (content) {
+          const contentId = `sidebar-menu-${accordions.indexOf(btn)}`;
+          content.id = content.id || contentId;
+          btn.setAttribute('aria-controls', content.id);
+        }
+
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
-          const content = btn.nextElementSibling;
-          const caret = btn.querySelector('.caret');
-          
-          document.querySelectorAll('.accordion-content').forEach(otherContent => {
-            if (otherContent !== content && !otherContent.classList.contains('hidden')) {
-              otherContent.classList.add('hidden');
-              otherContent.previousElementSibling.querySelector('.caret').classList.remove('rotate-180');
-            }
-          });
-          
-          content.classList.toggle('hidden');
-          caret.classList.toggle('rotate-180');
+          const isOpen = content && !content.classList.contains('hidden');
+          closeAllAccordions();
+          if (!isOpen) setGroupState(group, true);
         });
       });
 
       if(sidebar) {
+          sidebar.addEventListener('mouseenter', () => {
+              sidebar.classList.remove('is-idle');
+          });
           sidebar.addEventListener('mouseleave', () => {
               if (window.innerWidth >= 768) { 
-                  document.querySelectorAll('.accordion-content').forEach(content => { content.classList.add('hidden'); });
-                  document.querySelectorAll('.caret').forEach(caret => { caret.classList.remove('rotate-180'); });
+                  closeAllAccordions();
+                  sidebar.classList.add('is-idle');
               }
           });
       }

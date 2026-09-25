@@ -9,10 +9,10 @@ $kpiLinks = [
 $rbbLinks = [
     ['label' => 'Proyeksi RBB', 'route' => 'input_rbb'],
     ['label' => 'Input RBB ABA', 'route' => 'input_rbb_aba'],
-    ['label' => 'Input RBB Kredit', 'route' => 'input_rbb_detail?bagian=kredit'],
-    ['label' => 'Input RBB DAMAS', 'route' => 'input_rbb_detail?bagian=damas'],
-    ['label' => 'Input RBB Pendapatan', 'route' => 'input_rbb_detail?bagian=pendapatan'],
-    ['label' => 'Input RBB Beban', 'route' => 'input_rbb_detail?bagian=beban'],
+    ['label' => 'Input RBB Kredit', 'route' => 'rbb/detail/kredit'],
+    ['label' => 'Input RBB DAMAS', 'route' => 'rbb/detail/damas'],
+    ['label' => 'Input RBB Pendapatan', 'route' => 'rbb/detail/pendapatan'],
+    ['label' => 'Input RBB Beban', 'route' => 'rbb/detail/beban'],
 ];
 ?>
 <section class="v2-page-heading v2-launcher-heading">
@@ -40,7 +40,7 @@ $rbbLinks = [
     <span class="v2-section-code">KPI · RBB · COLLECTION</span>
   </div>
   <div class="v2-launcher-grid">
-    <a class="v2-module-card v2-module-card--kpi" href="<?= v2_e($kpiBase . 'kpi/?tab=summary') ?>" data-v2-launcher-access="kpi">
+    <a class="v2-module-card v2-module-card--kpi" href="<?= v2_e($kpiBase . 'kpi/summary') ?>" data-v2-launcher-access="kpi">
       <div class="v2-module-card-top"><span class="v2-module-icon"><?= v2_icon('chart', 24) ?></span><?= v2_badge('KPI', 'success') ?></div>
       <h3>KPI Bisnis</h3>
       <p>Kelola parameter, hitung, generate, dan lihat rekap kinerja KPI AO.</p>
@@ -48,7 +48,7 @@ $rbbLinks = [
       <span class="v2-module-card-link">Buka KPI Bisnis <?= v2_icon('arrow', 16) ?></span>
     </a>
 
-    <a class="v2-module-card v2-module-card--rbb" href="<?= v2_e($kpiBase . 'rbb/?tab=projection') ?>" data-v2-launcher-access="rbb">
+    <a class="v2-module-card v2-module-card--rbb" href="<?= v2_e($kpiBase . 'rbb/projection') ?>" data-v2-launcher-access="rbb">
       <div class="v2-module-card-top"><span class="v2-module-icon"><?= v2_icon('file', 24) ?></span><?= v2_badge('RBB', 'warning') ?></div>
       <h3>Input RBB</h3>
       <p>Siapkan proyeksi dan input detail RBB untuk seluruh bagian bisnis terkait.</p>

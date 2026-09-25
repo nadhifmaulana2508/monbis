@@ -73,6 +73,10 @@ switch ($method) {
             require_once __DIR__ . '/../helpers/sso_guard.php';
             $controller->submitRbbPlanning($input, requireAppAuth());
 
+        } elseif ($type === 'rbb_planning_reopen') {
+            require_once __DIR__ . '/../helpers/sso_guard.php';
+            $controller->reopenRbbPlanning($input, requireAppAuth());
+
         } elseif ($type === 'rbb_planning_approve') {
             require_once __DIR__ . '/../helpers/sso_guard.php';
             $controller->approveRbbPlanning($input, requireAppAuth());

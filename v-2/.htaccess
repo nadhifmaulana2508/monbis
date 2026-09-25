@@ -1,6 +1,15 @@
 RewriteEngine On
 RewriteBase /report-dpk/v-2/
 
+# Canonical URL: migrate old query-tab links to path-based routes.
+RewriteCond %{THE_REQUEST} \s/+report-dpk/v-2/rbb/?\?tab=detail&category=([^&\s]+) [NC]
+RewriteRule ^rbb/?$ rbb/detail/%1 [R=302,L,NE,QSD]
+RewriteCond %{THE_REQUEST} \s/+report-dpk/v-2/(kpi|rbb)/?\?tab=([^&\s]+) [NC]
+RewriteRule ^(kpi|rbb)/?$ %1/%2 [R=302,L,NE,QSD]
+
 RewriteRule ^$ index.php?page=launcher [QSA,L]
 RewriteRule ^report_npl/?$ index.php?page=collection [QSA,L]
+RewriteRule ^rbb/print/?$ index.php?page=rbb_print [QSA,L]
+RewriteRule ^rbb/detail/([^/]+)/?$ index.php?page=rbb&tab=detail&category=$1 [QSA,L]
+RewriteRule ^(kpi|rbb)/([^/]+)/?$ index.php?page=$1&tab=$2 [QSA,L]
 RewriteRule ^(launcher|kpi|rbb|components|collection|templates|settings)/?$ index.php?page=$1 [QSA,L]

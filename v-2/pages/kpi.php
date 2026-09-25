@@ -27,7 +27,7 @@ if (!in_array($tab, ['summary', 'calculate', 'setting'], true)) $tab = 'summary'
 <?php endif; ?>
 
 <section class="v2-card v2-module-shell<?= $tab === 'setting' ? ' v2-kpi-setting-shell' : '' ?>">
-  <div class="v2-card-heading v2-module-toolbar">
+  <div class="v2-card-heading v2-module-toolbar v2-kpi-card-heading">
     <div><h2><?= $tab === 'summary' ? 'Rekap KPI AO' : ($tab === 'calculate' ? 'Hitung dan Generate KPI' : 'Master Indikator KPI') ?></h2><?php if ($tab !== 'setting'): ?><p>Backend KPI lama tetap dipakai; tampilan dan interaksi sudah dirakit ulang dengan component V2.</p><?php endif; ?></div>
 <?php if ($tab === 'setting'): ?>
     <div class="v2-kpi-setting-actions"><label class="v2-search-field"><?= v2_icon('search', 14) ?><input id="v2KpiSettingSearch" type="search" placeholder="Cari indikator..."></label><button type="button" class="v2-button v2-button--success" id="v2KpiSave" title="Simpan semua perubahan"><?= v2_icon('save', 16) ?><span>Simpan</span></button></div>

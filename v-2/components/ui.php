@@ -81,6 +81,12 @@ function v2_icon_button(string $icon, string $label, string $tone = 'default', a
     return '<button type="button" class="v2-icon-button v2-icon-button--' . v2_e($tone) . '"' . v2_attributes($attrs) . '>' . v2_icon($icon, 18) . '</button>';
 }
 
+function v2_tooltip(string $text, string $contentHtml, string $class = ''): string
+{
+    $classes = trim('v2-tooltip-host ' . $class);
+    return '<span class="' . v2_e($classes) . '" data-v2-tooltip="' . v2_e($text) . '" tabindex="0">' . $contentHtml . '</span>';
+}
+
 function v2_filter_bar(array $fields, array $actions = [], string $id = 'v2FilterBar'): string
 {
     $html = '<form class="v2-filter-bar" id="' . v2_e($id) . '" data-v2-filter-bar>';
