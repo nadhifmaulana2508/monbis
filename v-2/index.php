@@ -32,18 +32,24 @@ function v2_route_from_request(string $baseUrl): array
     $route = strtolower((string)($segments[0] ?? 'launcher'));
     $argument = (string)($segments[1] ?? '');
 
-    return match ($route) {
-        'projection' => ['page' => 'rbb', 'tab' => 'projection'],
-        'aba' => ['page' => 'rbb', 'tab' => 'aba'],
-        'detail' => ['page' => 'rbb', 'tab' => 'detail', 'category' => $argument],
-        'print' => ['page' => 'rbb_print'],
-        'summary' => ['page' => 'kpi', 'tab' => 'summary'],
-        'calculate' => ['page' => 'kpi', 'tab' => 'calculate'],
-        'setting' => ['page' => 'kpi', 'tab' => 'setting'],
-        'report_npl' => ['page' => 'collection'],
-        'components', 'collection', 'templates', 'settings', 'launcher', 'rbb', 'kpi' => ['page' => $route],
-        default => ['page' => 'launcher'],
-    };
+    switch ($route) {
+        case 'projection': return ['page' => 'rbb', 'tab' => 'projection'];
+        case 'aba': return ['page' => 'rbb', 'tab' => 'aba'];
+        case 'detail': return ['page' => 'rbb', 'tab' => 'detail', 'category' => $argument];
+        case 'print': return ['page' => 'rbb_print'];
+        case 'summary': return ['page' => 'kpi', 'tab' => 'summary'];
+        case 'calculate': return ['page' => 'kpi', 'tab' => 'calculate'];
+        case 'setting': return ['page' => 'kpi', 'tab' => 'setting'];
+        case 'report_npl': return ['page' => 'collection'];
+        case 'components':
+        case 'collection':
+        case 'templates':
+        case 'settings':
+        case 'launcher':
+        case 'rbb':
+        case 'kpi': return ['page' => $route];
+        default: return ['page' => 'launcher'];
+    }
 }
 
 // Preview hanya boleh dipakai di localhost; produksi tetap wajib login.

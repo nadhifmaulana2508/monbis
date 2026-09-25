@@ -26,7 +26,7 @@
         <span>Area / Cabang</span>
         <select id="ikhtisarOffice"><option value="000">Konsolidasi</option></select>
       </label>
-      <button class="ikhtisar-export" type="button" onclick="exportIkhtisarCsv()" title="Export Ikhtisar ke Excel" aria-label="Export Ikhtisar ke Excel">
+      <button class="ikhtisar-export" type="button" onclick="exportIkhtisarExcel()" title="Export Ikhtisar ke Excel" aria-label="Export Ikhtisar ke Excel">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
       </button>
     </form>
@@ -520,12 +520,22 @@ async function fetchIkhtisar() {
   }
 }
 
-function exportIkhtisarCsv() {
+function exportIkhtisarExcel() {
   const table = document.getElementById(ikhtisarActiveTab === 'summary' ? 'ikhtisarTable' : 'ikhtisarDetailTable');
-  const rows = [...table.querySelectorAll('tr')].map(row => [...row.children].map(cell => `"${String(cell.textContent || '').replace(/"/g,'""').trim()}"`).join(','));
-  const blob = new Blob(["\ufeff" + rows.join('\n')], {type:'text/csv;charset=utf-8;'});
+  if (!table) return;
+  const copy = table.cloneNode(true);
+  copy.querySelectorAll('.ikhtisar-formula-row').forEach(row => row.remove());
+  const date = document.getElementById('ikhtisarDate').value || 'export';
+  const office = document.getElementById('ikhtisarOffice');
+  const officeLabel = office?.options?.[office.selectedIndex]?.textContent?.trim() || 'Konsolidasi';
+  const title = ikhtisarActiveTab === 'summary' ? 'Ikhtisar RBB' : (ikhtisarActiveTab === 'damas' ? 'Damas & Perkembangan DPK' : 'Kredit & Kolektibilitas');
+  const workbook = `<!doctype html><html><head><meta charset="UTF-8"><style>
+    body{font-family:Arial,sans-serif;color:#17344e}h2{margin:0 0 6px;font-size:16px}p{margin:2px 0 10px;color:#607d8b;font-size:11px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #b8cbd5;padding:6px 8px;font-size:10px}th{background:#3099ae;color:#fff;font-weight:700;text-align:center}td{text-align:right}td:first-child{text-align:left;font-weight:600}.ikhtisar-formula-row{display:none}
+  </style></head><body><h2>${title}</h2><p>Periode: ${date} &nbsp; | &nbsp; Area / Cabang: ${officeLabel}</p>${copy.outerHTML}</body></html>`;
+  const blob = new Blob(["\ufeff", workbook], {type:'application/vnd.ms-excel;charset=utf-8;'});
   const url = URL.createObjectURL(blob); const link = document.createElement('a');
-  link.href = url; link.download = `ikhtisar-${ikhtisarActiveTab}-${document.getElementById('ikhtisarDate').value || 'export'}.csv`; link.click(); URL.revokeObjectURL(url);
+  link.href = url; link.download = `ikhtisar-${ikhtisarActiveTab}-${date}.xls`; document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

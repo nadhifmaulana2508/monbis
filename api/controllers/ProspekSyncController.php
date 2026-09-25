@@ -373,36 +373,40 @@ class ProspekSyncController
             return $type;
         }
 
-        return match (strtolower((string)$product)) {
-            'kredit' => 'KREDIT',
-            'tabungan' => 'TABUNGAN',
-            'deposito' => 'DEPOSITO',
-            'aset' => 'PEMBELI_ASET',
-            default => ''
-        };
+        switch (strtolower((string)$product)) {
+            case 'kredit': return 'KREDIT';
+            case 'tabungan': return 'TABUNGAN';
+            case 'deposito': return 'DEPOSITO';
+            case 'aset': return 'PEMBELI_ASET';
+            default: return '';
+        }
     }
 
     private function normalProduct($product)
     {
         $product = strtolower(trim((string)$product));
-        return match ($product) {
-            'tabungan' => 'Tabungan',
-            'deposito' => 'Deposito',
-            'aset', 'asset' => 'Aset',
-            default => 'Kredit'
-        };
+        switch ($product) {
+            case 'tabungan': return 'Tabungan';
+            case 'deposito': return 'Deposito';
+            case 'aset':
+            case 'asset': return 'Aset';
+            default: return 'Kredit';
+        }
     }
 
     private function normalStatus($status)
     {
         $status = strtoupper(str_replace([' ', '-'], '_', trim((string)$status)));
-        return match ($status) {
-            'FOLLOWUP', 'FOLLOW_UP' => 'FOLLOW_UP',
-            'REJECTED', 'REJECT' => 'REJECT',
-            'CLOSED', 'CLOSING' => 'CLOSING',
-            'SLA' => 'SLA',
-            default => 'OPEN'
-        };
+        switch ($status) {
+            case 'FOLLOWUP':
+            case 'FOLLOW_UP': return 'FOLLOW_UP';
+            case 'REJECTED':
+            case 'REJECT': return 'REJECT';
+            case 'CLOSED':
+            case 'CLOSING': return 'CLOSING';
+            case 'SLA': return 'SLA';
+            default: return 'OPEN';
+        }
     }
 
     private function normalKodeKantor($kode)

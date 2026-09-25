@@ -387,13 +387,13 @@ class RbbController
 
     private function planningCategoryWhere(string $category): string
     {
-        return match ($category) {
-            'NERACA' => "UPPER(TRIM(kategori)) IN ('ASET', 'LIABILITAS', 'EKUITAS')",
-            'LABA_RUGI' => "UPPER(TRIM(kategori)) IN ('PENDAPATAN', 'BEBAN')",
-            'KREDIT' => "UPPER(TRIM(kategori)) IN ('PRODUKSI KREDIT', 'RUN OFF KREDIT', 'KREDIT SALDO BANK')",
-            'ALL' => '1=1',
-            default => 'UPPER(TRIM(kategori)) = :kategori',
-        };
+        switch ($category) {
+            case 'NERACA': return "UPPER(TRIM(kategori)) IN ('ASET', 'LIABILITAS', 'EKUITAS')";
+            case 'LABA_RUGI': return "UPPER(TRIM(kategori)) IN ('PENDAPATAN', 'BEBAN')";
+            case 'KREDIT': return "UPPER(TRIM(kategori)) IN ('PRODUKSI KREDIT', 'RUN OFF KREDIT', 'KREDIT SALDO BANK')";
+            case 'ALL': return '1=1';
+            default: return 'UPPER(TRIM(kategori)) = :kategori';
+        }
     }
 
     private function planningCode($value): string
