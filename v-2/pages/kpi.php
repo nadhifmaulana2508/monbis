@@ -55,7 +55,7 @@ if (!in_array($tab, ['summary', 'calculate', 'setting'], true)) $tab = 'summary'
 <script>
 (() => {
   const TAB = <?= json_encode($tab) ?>;
-  const API = <?= json_encode($legacyBase . '/api/index.php?request=kpi') ?>;
+  const API = <?= json_encode($apiBase . '/index.php?request=kpi') ?>;
   const scoreIcon = <?= json_encode(v2_icon('check', 12)) ?>;
   const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
   const state = { directory: null, setting: null };
@@ -66,7 +66,7 @@ if (!in_array($tab, ['summary', 'calculate', 'setting'], true)) $tab = 'summary'
   const fmt = (value, digits = 2) => new Intl.NumberFormat('id-ID', { maximumFractionDigits: digits }).format(num(value));
   const pct = (value) => `${fmt(value, 2)}%`;
   const post = async (body) => {
-    const response = await fetch(API, { method: 'POST', credentials: 'same-origin', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    const response = await fetch(API, { method: 'POST', credentials: 'include', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
     const json = await response.json().catch(() => ({}));
     if (!response.ok || Number(json.status) !== 200) throw new Error(json.message || `Request KPI gagal (${response.status})`);
     return json.data || {};

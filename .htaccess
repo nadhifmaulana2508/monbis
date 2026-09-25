@@ -1,8 +1,9 @@
 RewriteEngine On
-RewriteBase /report-dpk/
-
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_URI} !^/report-dpk/v-2(?:/|$)
+# FE modules have their own router. Keep both the local subfolder path
+# (/report-dpk/v-2) and aaPanel production paths (/v-2, /rbb, /kpi)
+# out of the legacy Monbis router.
+RewriteCond %{REQUEST_URI} !^/(?:[^/]+/)?(?:v-2|rbb|kpi|goRbb|simpeg)(?:/|$) [NC]
 
 RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]

@@ -18,7 +18,8 @@
 
 <script>
 (() => {
-  const API = { date: '../api/date/', kode: '../api/kode/', kolek: '../api/kredit/', npl: '../api/npl/' };
+  const API_BASE = <?= json_encode($apiBase) ?>;
+  const API = { date: `${API_BASE}/date/`, kode: `${API_BASE}/kode/`, kolek: `${API_BASE}/kredit/`, npl: `${API_BASE}/npl/` };
   const $ = (selector) => document.querySelector(selector);
   const state = { view: 'kolek', rows: [], total: null, abort: null, kantor: [], closing: '', sort: { key: '', direction: 1 } };
   const num = (value) => Number(value || 0);
@@ -28,7 +29,7 @@
   const field = (name) => $(`[data-v2-filter-field="${name}"]`);
   const selected = (name) => field(name)?.value || '';
   const postJson = async (url, payload, signal) => {
-    const response = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload), signal });
+    const response = await fetch(url, { method: 'POST', credentials:'include', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload), signal });
     const json = await response.json();
     if (!response.ok || json.status >= 400) throw new Error(json.message || 'Request failed');
     return json;

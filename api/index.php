@@ -1,6 +1,8 @@
 <?php
 
 require_once __DIR__ . '/helpers/response.php';
+require_once __DIR__ . '/helpers/cors.php';
+applyApiCors();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $request = $_GET['request'] ?? '';

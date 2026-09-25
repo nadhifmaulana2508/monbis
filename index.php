@@ -10,10 +10,22 @@ if (session_status() === PHP_SESSION_NONE) {
  * Local   : http://localhost/report-dpk
  * Server  : https://domain.com
  */
-define('BASE_APP',
-    (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' .
-    $_SERVER['HTTP_HOST'] .
-    (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false ? '/report-dpk' : '')
+$requestIsHttps = !empty($_SERVER['HTTPS'])
+    && strtolower((string) $_SERVER['HTTPS']) !== 'off';
+$scheme = $requestIsHttps || (int) ($_SERVER['SERVER_PORT'] ?? 80) === 443
+    ? 'https'
+    : 'http';
+$scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+$appBasePath = str_replace('\\', '/', dirname($scriptName));
+if ($appBasePath === '/' || $appBasePath === '.') {
+    $appBasePath = '';
+} else {
+    $appBasePath = rtrim($appBasePath, '/');
+}
+
+define(
+    'BASE_APP',
+    $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $appBasePath
 );
 
 // =========================

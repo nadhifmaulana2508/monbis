@@ -539,6 +539,12 @@
     color:#93c5fd !important;
   }
   @media (max-width:767px) {
+    #sidebar {
+      position:absolute;
+      top:0;
+      left:0;
+      bottom:0;
+    }
     #mainNavbar {
       min-height:56px;
       height:56px !important;

@@ -1,5 +1,10 @@
 <?php
 $rbbPrintRoute = $baseUrl . '/rbb/print';
+$logoPath = dirname(__DIR__, 2) . '/img/logo.png';
+$logoUrl = rtrim($legacyBase, '/') . '/img/logo.png';
+if (is_file($logoPath)) {
+    $logoUrl = 'data:image/png;base64,' . base64_encode((string) file_get_contents($logoPath));
+}
 $printInput = [
     'kode_kantor' => preg_replace('/[^0-9]/', '', (string)($_POST['kode_kantor'] ?? '')),
     'tahun_mulai' => max(0, min(2100, (int)($_POST['tahun_mulai'] ?? 0))),
@@ -19,11 +24,11 @@ $printInput = [
     <article class="v2-rbb-print-sheet">
     <header class="v2-rbb-print-header">
       <div class="v2-rbb-print-brand">
-        <div class="v2-rbb-print-mark"><?= v2_icon('file', 23) ?></div>
+        <div class="v2-rbb-print-mark"><img src="<?= v2_e($logoUrl) ?>" alt="Logo BKK Jawa Tengah"></div>
         <div>
           <p class="v2-rbb-print-kicker">LAPORAN RENCANA BISNIS BANK</p>
-          <h2>Ringkasan Proyeksi RBB</h2>
-          <p>Ringkasan indikator utama berdasarkan periode kwartal.</p>
+          <h2 id="v2RbbPrintTitle">Proyeksi RBB Kantor Cabang Utama Tahun 2027</h2>
+          <p>Target indikator utama berdasarkan periode kwartal.</p>
         </div>
       </div>
       <div class="v2-rbb-print-meta">
@@ -66,8 +71,8 @@ $printInput = [
 <script src="<?= v2_e($baseUrl . '/assets/vendor/html2pdf.bundle.min.js?v=1') ?>"></script>
 <script>
 (() => {
-  const API = <?= json_encode($legacyBase . '/api/rbb/') ?>;
-  const LOGO_URL = <?= json_encode($legacyBase . '/img/logo.png') ?>;
+  const API = <?= json_encode($apiBase . '/rbb/') ?>;
+  const LOGO_URL = <?= json_encode($logoUrl, JSON_UNESCAPED_SLASHES) ?>;
   const printInput = <?= json_encode($printInput, JSON_UNESCAPED_SLASHES) ?>;
   const branch = String(printInput.kode_kantor || '').padStart(3, '0');
   const startYear = Number(printInput.tahun_mulai || new Date().getFullYear());
@@ -94,8 +99,100 @@ $printInput = [
   const num = (value) => Number(value || 0);
   const fmt = (value) => { const number = num(value); const displayValue = Math.abs(number) >= 1000000 ? Math.trunc(number) : number; return new Intl.NumberFormat('id-ID', {maximumFractionDigits:2}).format(displayValue); };
   const el = (id) => document.getElementById(id);
+  let printLocationPromise = null;
+  function printDateText() { return new Intl.DateTimeFormat('id-ID', {dateStyle:'long', timeStyle:'short'}).format(new Date()); }
+  function cityFromAddress(address = {}) {
+    const raw = address.city || address.town || address.municipality || address.county || address.state_district || '';
+    const city = String(raw).trim();
+    if (!city) return '';
+    if (/^kabupaten\s+/i.test(city)) return `Kabupaten ${city.replace(/^kabupaten\s+/i, '')}`;
+    if (/^kab\.\s+/i.test(city)) return `Kabupaten ${city.replace(/^kab\.\s+/i, '')}`;
+    if (/^kota\s+/i.test(city)) return `Kota ${city.replace(/^kota\s+/i, '')}`;
+    return `Kota ${city}`;
+  }
+  async function reversePrintCity(lat, lng) {
+    try {
+      const nominatim = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&zoom=10&addressdetails=1&accept-language=id`;
+      const response = await fetch(nominatim, {headers:{'Accept':'application/json'}});
+      if (response.ok) {
+        const data = await response.json();
+        const city = cityFromAddress(data.address || {});
+        if (city) return city;
+      }
+    } catch {}
+    try {
+      const bigData = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lng)}&localityLanguage=id`;
+      const response = await fetch(bigData);
+      if (response.ok) {
+        const data = await response.json();
+        return cityFromAddress({city:data.city, town:data.locality});
+      }
+    } catch {}
+    return '';
+  }
+  function setPrintGeneratedAt(city = '', locationState = 'ready') {
+    const locationText = city || (locationState === 'denied' ? 'Lokasi tidak diizinkan' : locationState === 'unsupported' ? 'Lokasi tidak tersedia' : 'Lokasi tidak ditemukan');
+    el('v2RbbPrintGeneratedAt').textContent = `${locationText}, ${printDateText()}`;
+  }
+  function requestPrintLocation() {
+    if (printLocationPromise) return printLocationPromise;
+    el('v2RbbPrintGeneratedAt').textContent = 'Meminta izin lokasi...';
+    printLocationPromise = new Promise((resolve) => {
+      if (!navigator.geolocation) return resolve({city:'', state:'unsupported'});
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        const city = await reversePrintCity(position.coords.latitude, position.coords.longitude);
+        resolve({city, state:city ? 'ready' : 'not-found'});
+      }, () => resolve({city:'', state:'denied'}), {enableHighAccuracy:true, timeout:12000, maximumAge:300000});
+    }).then((result) => { setPrintGeneratedAt(result.city, result.state); return result; });
+    return printLocationPromise;
+  }
+  const pdfCss = `
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #fff; color: #163b57; font-family: Arial, sans-serif; }
+    .v2-rbb-print-sheet { width: 100%; padding: 0; border: 0; background: #fff; page-break-inside: avoid; break-inside: avoid; }
+    .v2-rbb-print-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; padding-bottom: 10px; border-bottom: 1px solid #c9dbe3; }
+    .v2-rbb-print-brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
+    .v2-rbb-print-mark { display: grid; place-items: center; width: 34px; height: 34px; flex: 0 0 auto; overflow: hidden; border: 1px solid #acd2dc; border-radius: 9px; background: #fff; }
+    .v2-rbb-print-mark img { display: block; width: 30px; height: 30px; object-fit: contain; }
+    .v2-rbb-print-kicker, .v2-eyebrow { margin: 0 0 3px; color: #678397; font-size: 7px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .v2-rbb-print-brand h2 { margin: 0; color: #0b3b5c; font-size: 15px; line-height: 1.15; }
+    .v2-rbb-print-brand p:last-child { margin: 3px 0 0; color: #718b9b; font-size: 8px; }
+    .v2-rbb-print-meta { display: grid; grid-template-columns: auto minmax(120px, auto); gap: 2px 7px; min-width: 210px; color: #678397; font-size: 8px; text-align: right; }
+    .v2-rbb-print-meta strong { color: #163b57; font-size: 8px; }
+    .v2-rbb-print-status { margin: 8px 0 10px; padding: 5px 8px; border: 1px solid #c9dbe3; border-radius: 7px; color: #237188; background: #f2fafb; font-size: 8px; font-weight: 700; }
+    .v2-rbb-print-section { margin-top: 10px; page-break-inside: avoid; break-inside: avoid; }
+    .v2-rbb-print-section-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 5px; }
+    .v2-rbb-print-section-heading .v2-eyebrow { margin-bottom: 2px; }
+    .v2-rbb-print-section-heading h3 { margin: 0; color: #0b3b5c; font-size: 10px; }
+    .v2-rbb-print-section-heading > span { color: #678397; font-size: 7px; }
+    .v2-rbb-print-table-wrap { overflow: hidden; border: 1px solid #c9dbe3; border-radius: 6px; }
+    .v2-rbb-print-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .v2-rbb-print-table th, .v2-rbb-print-table td { padding: 5px 6px; border-bottom: 1px solid #d8e6eb; color: #163b57; font-size: 7px; text-align: right; vertical-align: middle; }
+    .v2-rbb-print-table th { color: #678397; background: #f1f8fa; font-size: 6px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+    .v2-rbb-print-table th:first-child, .v2-rbb-print-table td:first-child { width: 34%; text-align: left; }
+    .v2-rbb-print-table td:first-child { color: #0b3b5c; font-weight: 800; }
+    .v2-rbb-print-table td:first-child small { display: none; }
+    .v2-rbb-print-table tr.main td { background: #f5fafc; font-weight: 800; }
+    .v2-rbb-print-table tr.child td:first-child { padding-left: 16px; font-weight: 600; }
+    .v2-rbb-print-table tr:last-child td { border-bottom: 0; }
+    .v2-rbb-approval-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; }
+    .v2-rbb-approval-card:nth-child(-n+3) { grid-column: span 2; }
+    .v2-rbb-approval-card:nth-child(n+4) { grid-column: span 3; }
+    .v2-rbb-approval-card { min-width: 0; min-height: 86px; padding: 7px; border: 1px solid #c9dbe3; border-radius: 6px; background: #fff; }
+    .v2-rbb-approval-card.is-recorded { border-color: #82c8af; background: #f2fbf7; }
+    .v2-rbb-approval-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 4px; }
+    .v2-rbb-approval-card-head strong { color: #0b3b5c; font-size: 7px; line-height: 1.2; }
+    .v2-rbb-approval-card-head span { flex: 0 0 auto; color: #678397; font-size: 6px; text-align: right; }
+    .v2-rbb-approval-person { min-height: 19px; margin-top: 5px; color: #163b57; font-size: 7px; line-height: 1.25; }
+    .v2-rbb-approval-person strong, .v2-rbb-approval-person small { display: block; }
+    .v2-rbb-approval-person small { margin-top: 1px; color: #718b9b; font-size: 6px; }
+    .v2-rbb-approval-code { display: flex; justify-content: center; margin-top: 4px; color: #163b57; text-align: center; }
+    .v2-rbb-qr { display: block; width: 90px; height: 90px; padding: 2px; border: 1px solid #c9dbe3; border-radius: 4px; background: #fff; shape-rendering: crispEdges; }
+    .v2-rbb-approval-empty { display: block; padding-top: 10px; color: #718b9b; font-size: 6px; text-align: center; }
+    .v2-rbb-print-footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; padding-top: 5px; border-top: 1px solid #c9dbe3; color: #718b9b; font-size: 6px; }
+  `;
   async function post(body) {
-    const response = await fetch(API, {method:'POST', credentials:'same-origin', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const response = await fetch(API, {method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
     const json = await response.json().catch(() => ({}));
     if (!response.ok || Number(json.status) !== 200) throw new Error(json.message || `Request gagal (${response.status})`);
     return json.data || {};
@@ -158,11 +255,13 @@ $printInput = [
   }
   async function load() {
     if (!branch || !Number.isFinite(startYear)) throw new Error('Cabang atau periode cetak belum dipilih.');
+    const locationPromise = requestPrintLocation();
     const responses = await Promise.all([startYear, nextYear].map((year) => post({type:'rbb_planning_data', tahun:year, tahun_mulai:startYear, bulan_mulai:startMonth, kode_kantor:branch, kategori:'ALL'})));
     const office = responses.flatMap((response) => response.offices || []).find((item) => String(item.kode_kantor).padStart(3, '0') === branch);
+    el('v2RbbPrintTitle').textContent = `Proyeksi RBB Kantor Cabang Utama Tahun ${nextYear}`;
     el('v2RbbPrintBranch').textContent = `${branch} · ${office?.nama_kantor || 'Cabang'}`;
     el('v2RbbPrintPeriod').textContent = `${columns[0].label} – ${columns[columns.length - 1].label}`;
-    el('v2RbbPrintGeneratedAt').textContent = `Dicetak ${new Intl.DateTimeFormat('id-ID', {dateStyle:'long', timeStyle:'short'}).format(new Date())}`;
+    await locationPromise;
     renderTable(responses); renderApprovals(responses);
     el('v2RbbPrintStatus').textContent = 'Data berhasil dimuat dari RBB planning.';
   }
@@ -181,13 +280,35 @@ $printInput = [
     button.disabled = true;
     button.querySelector('span')?.replaceChildren(document.createTextNode('Menyiapkan PDF...'));
     try {
+      await requestPrintLocation();
       await window.html2pdf().set({
         margin: 5,
         filename,
         image: {type: 'jpeg', quality: .98},
-        html2canvas: {scale: 2, useCORS: true, backgroundColor: '#fff', windowWidth: 1400, scrollY: 0},
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#fff',
+          windowWidth: 1400,
+          scrollY: 0,
+          onclone: (clonedDocument) => {
+            clonedDocument.querySelectorAll('link[rel="stylesheet"], style').forEach((node) => node.remove());
+            const style = clonedDocument.createElement('style');
+            style.textContent = pdfCss;
+            clonedDocument.head.appendChild(style);
+            clonedDocument.body.style.margin = '0';
+            clonedDocument.body.style.padding = '0';
+            clonedDocument.body.style.background = '#fff';
+            const clonedSheet = clonedDocument.querySelector('.v2-rbb-print-sheet');
+            if (clonedSheet) {
+              clonedSheet.style.width = '100%';
+              clonedSheet.style.maxWidth = 'none';
+              clonedSheet.style.padding = '0';
+            }
+          },
+        },
         jsPDF: {unit: 'mm', format: size, orientation: 'landscape'},
-        pagebreak: {mode: ['avoid-all']},
+        pagebreak: {mode: ['css']},
       }).from(sheet).save();
       el('v2RbbPrintStatus').textContent = 'PDF berhasil diunduh.';
       el('v2RbbPrintStatus').classList.remove('is-error');

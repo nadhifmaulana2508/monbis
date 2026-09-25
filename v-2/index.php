@@ -5,26 +5,36 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Preview dapat dibuka tanpa cookie saat fondasi FE sedang dikerjakan.
-if (empty($_COOKIE['sso_token']) && !isset($_GET['preview'])) {
-    header('Location: ../login');
-    exit;
-}
-
 require_once __DIR__ . '/components/bootstrap.php';
 
 $baseUrl = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/report-dpk/v-2')), '/');
+if ($baseUrl === '' || $baseUrl === '.') $baseUrl = '/report-dpk/v-2';
+$v2Runtime = v2_runtime_config($baseUrl);
+$legacyBase = $v2Runtime['backend_base_url'];
+$apiBase = $v2Runtime['api_base_url'];
+$rbbRouteBase = $v2Runtime['module'] === 'rbb' ? $baseUrl : $baseUrl . '/rbb';
+
+// Preview hanya boleh dipakai di localhost; produksi tetap wajib login.
+$previewRequested = isset($_GET['preview']) && $v2Runtime['allow_preview'];
+if ($v2Runtime['page_auth'] && empty($_COOKIE['sso_token']) && !$previewRequested) {
+    $loginBase = $v2Runtime['auth_base_url'] !== '' ? $v2Runtime['auth_base_url'] : $legacyBase;
+    header('Location: ' . $loginBase . '/login');
+    exit;
+}
+
 $page = strtolower(trim((string)($_GET['page'] ?? 'launcher')));
 $allowedPages = ['launcher', 'kpi', 'rbb', 'rbb_print', 'components', 'collection', 'templates', 'settings'];
 if (!in_array($page, $allowedPages, true)) {
     $page = 'launcher';
 }
+if ($page === 'launcher' && in_array($v2Runtime['module'], ['rbb', 'kpi'], true)) {
+    $page = $v2Runtime['module'];
+}
 
-$legacyBase = rtrim(str_replace('\\', '/', dirname($baseUrl)), '/');
 $pageTitles = ['launcher' => 'MONBIS Workspace', 'kpi' => 'KPI Bisnis', 'rbb' => 'Input RBB', 'rbb_print' => 'Cetak RBB', 'components' => 'FE Component Library', 'collection' => 'Report NPL', 'templates' => 'Page Templates', 'settings' => 'Workspace Settings'];
 v2_render_start('MONBIS · ' . $pageTitles[$page], $page);
 $sidebarPage = $page === 'rbb_print' ? 'rbb' : $page;
-v2_render_sidebar($sidebarPage, $baseUrl, $legacyBase);
+v2_render_sidebar($sidebarPage, $baseUrl, $legacyBase, $v2Runtime['module']);
 ?>
 <div class="v2-main" id="v2Main">
   <header class="v2-topbar">
