@@ -72,6 +72,7 @@ $printInput = [
 <script>
 (() => {
   const API = <?= json_encode($apiBase . '/rbb/') ?>;
+  const authHeaders = (extra = {}) => { let token = ''; try { token = String(localStorage.getItem('dpk_token') || '').trim(); } catch (error) {} if (!token) { const match = document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/); if (match) { try { token = decodeURIComponent(match[1]); } catch (error) { token = match[1]; } } } const headers = Object.assign({'Content-Type':'application/json'}, extra); if (token) headers.Authorization = /^Bearer\s/i.test(token) ? token : `Bearer ${token}`; return headers; };
   const LOGO_URL = <?= json_encode($logoUrl, JSON_UNESCAPED_SLASHES) ?>;
   const printInput = <?= json_encode($printInput, JSON_UNESCAPED_SLASHES) ?>;
   const branch = String(printInput.kode_kantor || '').padStart(3, '0');
@@ -192,7 +193,7 @@ $printInput = [
     .v2-rbb-print-footer { display: flex; justify-content: space-between; gap: 8px; margin-top: 6px; padding-top: 5px; border-top: 1px solid #c9dbe3; color: #718b9b; font-size: 6px; }
   `;
   async function post(body) {
-    const response = await fetch(API, {method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    const response = await fetch(API, {method:'POST', credentials:'include', headers:authHeaders(), body:JSON.stringify(body)});
     const json = await response.json().catch(() => ({}));
     if (!response.ok || Number(json.status) !== 200) throw new Error(json.message || `Request gagal (${response.status})`);
     return json.data || {};
