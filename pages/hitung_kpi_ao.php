@@ -77,7 +77,7 @@ html[data-monbis-theme="dark"] .mb-kpi-generate-confirm__copy strong{color:#e5e7
 @media(max-width:900px){.mb-kpi-calc-page #hitungKpiRun.mb-kpi-run--labeled{width:29px;min-width:29px;padding:0}}
 </style>
 <script>
-window.MonbisKpiHeaders=window.MonbisKpiHeaders||function(){return {'Content-Type':'application/json'}};
+window.MonbisKpiHeaders=window.MonbisKpiHeaders||function(extra={}){let token='';try{token=String(window.AUTH_TOKEN||localStorage.getItem('dpk_token')||'').trim()}catch(error){}if(!token){const match=document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/);if(match)try{token=decodeURIComponent(match[1])}catch(error){token=match[1]}}const headers=Object.assign({'Content-Type':'application/json'},extra);if(token)headers.Authorization=/^Bearer\s/i.test(token)?token:`Bearer ${token}`;return headers};
 (()=>{
   const API='./api/index.php?request=kpi', el=id=>document.getElementById(id), ui=()=>window.MonbisUI||{};
   const esc=v=>ui().escape?ui().escape(v):String(v??''), num=v=>Number(v||0);

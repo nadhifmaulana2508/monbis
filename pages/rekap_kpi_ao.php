@@ -108,6 +108,7 @@ mb_render_report_page([
 </style>
 <script>
 (() => {
+    const kpiHeaders=(extra={})=>{let token='';try{token=String(window.AUTH_TOKEN||localStorage.getItem('dpk_token')||'').trim()}catch(error){}if(!token){const match=document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/);if(match)try{token=decodeURIComponent(match[1])}catch(error){token=match[1]}}const headers=Object.assign({'Content-Type':'application/json'},extra);if(token)headers.Authorization=/^Bearer\s/i.test(token)?token:`Bearer ${token}`;return headers};
     const API='./api/index.php?request=kpi';
     const state={boot:null};
     const months=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
@@ -116,7 +117,7 @@ mb_render_report_page([
     const fmt=value=>new Intl.NumberFormat('id-ID',{maximumFractionDigits:2}).format(Number(value??0));
     const pct=value=>fmt(Number(value??0)*100)+'%';
     const money=value=>'Rp '+new Intl.NumberFormat('id-ID',{maximumFractionDigits:0}).format(Number(value??0));
-    const post=async body=>{const response=await fetch(API,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const json=await response.json();if(!response.ok||json.status!==200)throw Error(json.message||'Gagal memuat data');return json.data||{}};
+    const post=async body=>{const response=await fetch(API,{method:'POST',credentials:'same-origin',headers:kpiHeaders(),body:JSON.stringify(body)});const json=await response.json();if(!response.ok||json.status!==200)throw Error(json.message||'Gagal memuat data');return json.data||{}};
 
     function fillAo(){
         const branch=el('rekapKpiKantor').value;
