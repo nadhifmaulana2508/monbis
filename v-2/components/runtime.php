@@ -8,6 +8,26 @@ function v2_normalize_base_url(string $value): string
     return rtrim($value, '/');
 }
 
+function v2_use_query_routes(): bool
+{
+    $configured = getenv('V2_QUERY_ROUTES');
+    if ($configured !== false && trim((string)$configured) !== '') {
+        $value = filter_var($configured, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        if ($value !== null) return $value;
+    }
+
+    return false;
+}
+
+function v2_route_url(string $baseUrl, string $route = ''): string
+{
+    $baseUrl = rtrim($baseUrl, '/');
+    $route = trim(str_replace('\\', '/', $route), '/');
+    if ($route === '') return $baseUrl;
+    if (v2_use_query_routes()) return $baseUrl . '/index.php?v2_route=' . rawurlencode($route);
+    return $baseUrl . '/' . $route;
+}
+
 function v2_detect_module(string $configured, string $baseUrl): string
 {
     $aliases = [

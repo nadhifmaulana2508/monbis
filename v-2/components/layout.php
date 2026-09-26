@@ -9,8 +9,9 @@ function v2_render_start(string $title, string $active): void
 function v2_render_sidebar(string $active, string $baseUrl, string $legacyBase = '', string $module = 'workspace'): void
 {
     $standalone = in_array($module, ['rbb', 'kpi'], true);
-    $link = static fn(string $page): string => $standalone && $page === $module ? $baseUrl : $baseUrl . '/' . rawurlencode($page);
-    $moduleLink = static fn(string $page, string $tab): string => ($standalone && $page === $module ? $baseUrl : $link($page)) . '/' . rawurlencode($tab);
+    $link = static fn(string $page): string => $standalone && $page === $module ? $baseUrl : v2_route_url($baseUrl, $page);
+    $moduleLink = static fn(string $page, string $tab): string => v2_route_url($baseUrl, $standalone && $page === $module ? $tab : $page . '/' . $tab);
+    $detailLink = static fn(string $page, string $detail): string => v2_route_url($baseUrl, $standalone && $page === $module ? $detail : $page . '/' . $detail);
     $legacyLink = static fn(string $route): string => rtrim($legacyBase ?: dirname($baseUrl), '/') . '/' . ltrim($route, '/');
     $is = static fn(string $page): string => $active === $page ? ' is-active' : '';
     $kpiOpen = $active === 'kpi' ? ' is-open' : '';
@@ -33,10 +34,10 @@ function v2_render_sidebar(string $active, string $baseUrl, string $legacyBase =
         echo '<div class="v2-nav-group' . $rbbOpen . '" data-v2-access="rbb"><button type="button" class="v2-nav-group-title" data-v2-nav-group title="Input RBB"><span>' . v2_icon('file') . '<span>Input RBB</span></span>' . v2_icon('chevron', 15) . '</button><div class="v2-nav-sub">';
         echo '<a class="v2-nav-sub-item" href="' . v2_e($moduleLink('rbb', 'projection')) . '" title="Proyeksi RBB">Proyeksi RBB</a>';
         echo '<a class="v2-nav-sub-item" href="' . v2_e($moduleLink('rbb', 'aba')) . '" title="Input RBB ABA">Input RBB ABA</a>';
-        echo '<a class="v2-nav-sub-item" href="' . v2_e($link('rbb') . '/detail/kredit') . '" title="Input RBB Kredit">Input RBB Kredit</a>';
-        echo '<a class="v2-nav-sub-item" href="' . v2_e($link('rbb') . '/detail/damas') . '" title="Input RBB DAMAS">Input RBB DAMAS</a>';
-        echo '<a class="v2-nav-sub-item" href="' . v2_e($link('rbb') . '/detail/pendapatan') . '" title="Input RBB Pendapatan">Input RBB Pendapatan</a>';
-        echo '<a class="v2-nav-sub-item" href="' . v2_e($link('rbb') . '/detail/beban') . '" title="Input RBB Beban">Input RBB Beban</a>';
+        echo '<a class="v2-nav-sub-item" href="' . v2_e($detailLink('rbb', 'detail/kredit')) . '" title="Input RBB Kredit">Input RBB Kredit</a>';
+        echo '<a class="v2-nav-sub-item" href="' . v2_e($detailLink('rbb', 'detail/damas')) . '" title="Input RBB DAMAS">Input RBB DAMAS</a>';
+        echo '<a class="v2-nav-sub-item" href="' . v2_e($detailLink('rbb', 'detail/pendapatan')) . '" title="Input RBB Pendapatan">Input RBB Pendapatan</a>';
+        echo '<a class="v2-nav-sub-item" href="' . v2_e($detailLink('rbb', 'detail/beban')) . '" title="Input RBB Beban">Input RBB Beban</a>';
         echo '</div></div>';
     }
     if (!$standalone) {

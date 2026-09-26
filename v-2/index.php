@@ -16,13 +16,18 @@ $rbbRouteBase = $v2Runtime['module'] === 'rbb' ? $baseUrl : $baseUrl . '/rbb';
 
 function v2_route_from_request(string $baseUrl): array
 {
-    $requestPath = (string)(parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: '');
-    $basePath = (string)(parse_url($baseUrl, PHP_URL_PATH) ?: $baseUrl);
-    $basePath = rtrim(str_replace('\\', '/', $basePath), '/');
-    $routePath = $basePath !== '' && strpos($requestPath, $basePath) === 0
-        ? substr($requestPath, strlen($basePath))
-        : $requestPath;
-    $routePath = trim((string)$routePath, '/');
+    $queryRoute = trim(str_replace('\\', '/', (string)($_GET['v2_route'] ?? '')), '/');
+    if ($queryRoute !== '') {
+        $routePath = $queryRoute;
+    } else {
+        $requestPath = (string)(parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: '');
+        $basePath = (string)(parse_url($baseUrl, PHP_URL_PATH) ?: $baseUrl);
+        $basePath = rtrim(str_replace('\\', '/', $basePath), '/');
+        $routePath = $basePath !== '' && strpos($requestPath, $basePath) === 0
+            ? substr($requestPath, strlen($basePath))
+            : $requestPath;
+        $routePath = trim((string)$routePath, '/');
+    }
     if ($routePath === '') return ['page' => 'launcher'];
 
     $segments = array_values(array_filter(explode('/', $routePath), static fn($segment) => $segment !== ''));

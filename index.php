@@ -52,6 +52,24 @@ if (strpos($url, 'api/') === 0) {
     exit;
 }
 
+// V2 memakai router sendiri, tetapi pada beberapa deployment aaPanel
+// URL bersih tetap diteruskan ke router legacy ini. Teruskan prefix /v-2
+// sebelum layout v1 sempat dirender agar URL tetap bersih di browser.
+if (preg_match('#^v-2(?:/(.*))?$#i', $url, $v2Match)) {
+    $v2Route = trim((string)($v2Match[1] ?? ''), '/');
+    $requestPath = (string)(parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: '');
+    $v2Marker = '/v-2';
+    $v2Position = stripos($requestPath, $v2Marker);
+    $v2Base = $v2Position === false
+        ? '/v-2'
+        : substr($requestPath, 0, $v2Position + strlen($v2Marker));
+    $v2Base = rtrim(str_replace('\\', '/', $v2Base), '/');
+    $_SERVER['SCRIPT_NAME'] = $v2Base . '/index.php';
+    $_GET['v2_route'] = $v2Route;
+    require __DIR__ . '/v-2/index.php';
+    exit;
+}
+
 // =========================
 // CEK STATUS LOGIN (VIA COOKIE SSO)
 // =========================

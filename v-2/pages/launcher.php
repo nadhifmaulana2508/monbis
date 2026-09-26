@@ -1,5 +1,4 @@
 <?php
-$kpiBase = rtrim($baseUrl, '/') . '/';
 $kpiLinks = [
     ['label' => 'Setting KPI Jabatan', 'route' => 'setting_kpi_jabatan'],
     ['label' => 'Nilai KPI AO', 'route' => 'hitung_kpi_ao'],
@@ -40,7 +39,7 @@ $rbbLinks = [
     <span class="v2-section-code">KPI · RBB · COLLECTION</span>
   </div>
   <div class="v2-launcher-grid">
-    <a class="v2-module-card v2-module-card--kpi" href="<?= v2_e($kpiBase . 'kpi/summary') ?>" data-v2-launcher-access="kpi">
+    <a class="v2-module-card v2-module-card--kpi" href="<?= v2_e(v2_route_url($baseUrl, 'kpi/summary')) ?>" data-v2-launcher-access="kpi">
       <div class="v2-module-card-top"><span class="v2-module-icon"><?= v2_icon('chart', 24) ?></span><?= v2_badge('KPI', 'success') ?></div>
       <h3>KPI Bisnis</h3>
       <p>Kelola parameter, hitung, generate, dan lihat rekap kinerja KPI AO.</p>
@@ -48,7 +47,7 @@ $rbbLinks = [
       <span class="v2-module-card-link">Buka KPI Bisnis <?= v2_icon('arrow', 16) ?></span>
     </a>
 
-    <a class="v2-module-card v2-module-card--rbb" href="<?= v2_e($kpiBase . 'rbb/projection') ?>" data-v2-launcher-access="rbb">
+    <a class="v2-module-card v2-module-card--rbb" href="<?= v2_e(v2_route_url($baseUrl, 'rbb/projection')) ?>" data-v2-launcher-access="rbb">
       <div class="v2-module-card-top"><span class="v2-module-icon"><?= v2_icon('file', 24) ?></span><?= v2_badge('RBB', 'warning') ?></div>
       <h3>Input RBB</h3>
       <p>Siapkan proyeksi dan input detail RBB untuk seluruh bagian bisnis terkait.</p>
@@ -56,7 +55,7 @@ $rbbLinks = [
       <span class="v2-module-card-link">Buka Input RBB <?= v2_icon('arrow', 16) ?></span>
     </a>
 
-    <a class="v2-module-card v2-module-card--collection" href="<?= v2_e($baseUrl . '/report_npl') ?>">
+    <a class="v2-module-card v2-module-card--collection" href="<?= v2_e(v2_route_url($baseUrl, 'report_npl')) ?>">
       <div class="v2-module-card-top"><span class="v2-module-icon"><?= v2_icon('users', 24) ?></span><?= v2_badge('REPORT', 'default') ?></div>
       <h3>Collection</h3>
       <p>Pantau Report NPL dan kolektibilitas melalui tampilan report yang konsisten.</p>
