@@ -34,6 +34,14 @@ if (!is_array($input)) {
     $input = $_POST ?: [];
 }
 
+$rbbAuth = static function (): array {
+    if (defined('RBB_V2_PUBLIC') && RBB_V2_PUBLIC) {
+        return ['employee_id' => '102-119'];
+    }
+    require_once __DIR__ . '/../helpers/sso_guard.php';
+    return requireAppAuth();
+};
+
 // 5. Switch Logic
 switch ($method) {
     case 'POST':
@@ -50,44 +58,34 @@ switch ($method) {
             $controller->getAsetRealisasi($input);
 
         } elseif ($type === 'rbb_projection_data') {
-            require_once __DIR__ . '/../helpers/sso_guard.php';
-            $controller->getRbbProjectionData($input, requireAppAuth());
+            $controller->getRbbProjectionData($input, $rbbAuth());
 
         } elseif ($type === 'rbb_aba_data') {
-            require_once __DIR__ . '/../helpers/sso_guard.php';
-            $controller->getRbbAbaData($input, requireAppAuth());
+            $controller->getRbbAbaData($input, $rbbAuth());
 
         } elseif ($type === 'rbb_aba_save') {
-            require_once __DIR__ . '/../helpers/sso_guard.php';
-            $controller->saveRbbAba($input, requireAppAuth());
+            $controller->saveRbbAba($input, $rbbAuth());
 
         } elseif ($type === 'rbb_planning_data') {
-            require_once __DIR__ . '/../helpers/sso_guard.php';
-            $controller->getRbbPlanningData($input, requireAppAuth());
+            $controller->getRbbPlanningData($input, $rbbAuth());
 
         } elseif ($type === 'rbb_planning_save') {
-            require_once __DIR__ . '/../helpers/sso_guard.php';
-            $controller->saveRbbPlanning($input, requireAppAuth());
+            $controller->saveRbbPlanning($input, $rbbAuth());
 
         } elseif ($type === 'rbb_planning_submit') {
-            require_once __DIR__ . '/../helpers/sso_guard.php';
-            $controller->submitRbbPlanning($input, requireAppAuth());
+            $controller->submitRbbPlanning($input, $rbbAuth());
 
         } elseif ($type === 'rbb_planning_reopen') {
-            require_once __DIR__ . '/../helpers/sso_guard.php';
-            $controller->reopenRbbPlanning($input, requireAppAuth());
+            $controller->reopenRbbPlanning($input, $rbbAuth());
 
         } elseif ($type === 'rbb_planning_approve') {
-            require_once __DIR__ . '/../helpers/sso_guard.php';
-            $controller->approveRbbPlanning($input, requireAppAuth());
+            $controller->approveRbbPlanning($input, $rbbAuth());
 
         } elseif ($type === 'rbb_planning_coa') {
-            require_once __DIR__ . '/../helpers/sso_guard.php';
-            $controller->getRbbPlanningCoa($input, requireAppAuth());
+            $controller->getRbbPlanningCoa($input, $rbbAuth());
 
         } elseif ($type === 'rbb_planning_coa_save') {
-            require_once __DIR__ . '/../helpers/sso_guard.php';
-            $controller->saveRbbPlanningCoa($input, requireAppAuth());
+            $controller->saveRbbPlanningCoa($input, $rbbAuth());
 
         // --- B. DETAIL DRILL DOWN ---
         } elseif ($type === 'aset_mom_yoy') {

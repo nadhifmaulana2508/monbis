@@ -90,7 +90,7 @@ $rbbFilterFields = [
 <script>
 (() => {
   const TAB = <?= json_encode($tab) ?>;
-  const API = <?= json_encode($apiBase . '/rbb/') ?>;
+  const API = <?= json_encode($apiBase . '/rbb_v2/') ?>;
   const API_LAPKEU = <?= json_encode($apiBase . '/lapkeu/') ?>;
   const API_KODE = <?= json_encode($apiBase . '/kode/') ?>;
   const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];

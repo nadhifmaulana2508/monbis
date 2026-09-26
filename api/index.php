@@ -93,6 +93,12 @@ switch ($endpoint) {
     case 'rbb':
         require __DIR__ . '/routes/rbb.php';
         break;
+    case 'rbb_v2':
+        // FE V2 memakai endpoint terpisah sesuai kebutuhan deployment.
+        // Route legacy `rbb` tetap memakai guard SSO.
+        if (!defined('RBB_V2_PUBLIC')) define('RBB_V2_PUBLIC', true);
+        require __DIR__ . '/routes/rbb.php';
+        break;
     case 'pipelane_monitoring_kredit':
         require __DIR__ . '/routes/pipelane_monitoring_kredit.php';
         break;

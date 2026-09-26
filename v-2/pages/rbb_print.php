@@ -71,7 +71,7 @@ $printInput = [
 <script src="<?= v2_e($baseUrl . '/assets/vendor/html2pdf.bundle.min.js?v=1') ?>"></script>
 <script>
 (() => {
-  const API = <?= json_encode($apiBase . '/rbb/') ?>;
+  const API = <?= json_encode($apiBase . '/rbb_v2/') ?>;
   const authHeaders = (extra = {}) => { let token = ''; try { token = String(localStorage.getItem('dpk_token') || '').trim(); } catch (error) {} if (!token) { const match = document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/); if (match) { try { token = decodeURIComponent(match[1]); } catch (error) { token = match[1]; } } } const headers = Object.assign({'Content-Type':'application/json'}, extra); if (token) headers.Authorization = /^Bearer\s/i.test(token) ? token : `Bearer ${token}`; return headers; };
   const LOGO_URL = <?= json_encode($logoUrl, JSON_UNESCAPED_SLASHES) ?>;
   const printInput = <?= json_encode($printInput, JSON_UNESCAPED_SLASHES) ?>;
