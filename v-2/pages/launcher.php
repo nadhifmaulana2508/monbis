@@ -13,6 +13,7 @@ $rbbLinks = [
     ['label' => 'Input RBB Pendapatan', 'route' => 'rbb/detail/pendapatan'],
     ['label' => 'Input RBB Beban', 'route' => 'rbb/detail/beban'],
 ];
+$showCollection = false; // Sembunyikan sementara dari launcher; route lama tetap tersedia.
 ?>
 <section class="v2-page-heading v2-launcher-heading">
   <div>
@@ -36,7 +37,7 @@ $rbbLinks = [
 <section class="v2-launcher-section">
   <div class="v2-section-heading">
     <div><p class="v2-eyebrow">MAIN MODULES</p><h2>Pilih workspace</h2></div>
-    <span class="v2-section-code">KPI · RBB · COLLECTION</span>
+    <span class="v2-section-code">KPI · RBB</span>
   </div>
   <div class="v2-launcher-grid">
     <a class="v2-module-card v2-module-card--kpi" href="<?= v2_e(v2_route_url($baseUrl, 'kpi/summary')) ?>" data-v2-launcher-access="kpi">
@@ -55,6 +56,7 @@ $rbbLinks = [
       <span class="v2-module-card-link">Buka Input RBB <?= v2_icon('arrow', 16) ?></span>
     </a>
 
+<?php if ($showCollection): ?>
     <a class="v2-module-card v2-module-card--collection" href="<?= v2_e(v2_route_url($baseUrl, 'report_npl')) ?>">
       <div class="v2-module-card-top"><span class="v2-module-icon"><?= v2_icon('users', 24) ?></span><?= v2_badge('REPORT', 'default') ?></div>
       <h3>Collection</h3>
@@ -62,6 +64,7 @@ $rbbLinks = [
       <ul><li><span><?= v2_icon('check', 13) ?></span>Report NPL</li><li><span><?= v2_icon('check', 13) ?></span>Filter dan perbandingan</li><li><span><?= v2_icon('check', 13) ?></span>Export report</li></ul>
       <span class="v2-module-card-link">Buka Collection <?= v2_icon('arrow', 16) ?></span>
     </a>
+<?php endif; ?>
   </div>
 </section>
 

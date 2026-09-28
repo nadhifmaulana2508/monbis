@@ -726,6 +726,7 @@
       const reportMenu = document.getElementById('menuMonevDev');
       const menuInputRbb = document.getElementById('menuInputRbb');
       const adminMenu = document.getElementById('menuEventAdmin');
+      const paparanRbbMenu = document.getElementById('menuPaparanRbb');
       const user = readUser();
       const operational = !!user && isOperasional(user);
       const headOfficePe = !!user && isHeadOfficePe(user);
@@ -744,6 +745,9 @@
       }
       if (menuInputRbb) {
         menuInputRbb.style.display = canAccessInputRbb(user) ? 'block' : 'none';
+      }
+      if (paparanRbbMenu) {
+        paparanRbbMenu.style.display = operational ? '' : 'none';
       }
       if (adminMenu) adminMenu.style.setProperty('display', user && resolvePegId(user) === '102-119' ? 'block' : 'none', 'important');
       return !!user;
@@ -883,6 +887,7 @@
           <a href="rbb_vs_realisasi" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">RBB vs Realisasi</a>
           <a href="ikhtisar" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Ikhtisar</a>
           <a href="realisasi_rbb_2026" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Realisasi RBB 2026</a>
+          <a id="menuPaparanRbb" href="paparan_rbb_realisasi" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Paparan RBB Direksi</a>
           <!-- <a href="realisasi_rbb" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Produksi vs RBB</a> -->
 
           <a href="aging_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Rekap Aging Kredit</a>

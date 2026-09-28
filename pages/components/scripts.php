@@ -515,7 +515,7 @@
     const pTopReal      = fetchWidgetData('test top realisasi');
     const pTopNpl       = fetchWidgetData('test top bottom npl');
     const pDeltaNpl     = fetchWidgetData('test delta npl');
-    const pDeposito     = fetchWidgetData('test perkembangan deposito');
+    const pDeposito     = fetchWidgetData('test perkembangan deposito', true);
     const pTabungan     = fetchWidgetData('test perkembangan tabungan', true);
 
     pSaldoBank.then(sb => {
@@ -544,7 +544,7 @@
       let osPrev = 0;
       if(tNpl && tNpl.length > 0) {
         const last = tNpl[tNpl.length - 1]; const prev = tNpl.length > 1 ? tNpl[tNpl.length - 2] : last; 
-        osPrev = prev.total_kredit || prev.osc_total || 0; 
+        osPrev = prev.total_baki_debet || prev.osc_total || 0; 
         
         document.getElementById('kpi_npl').textContent = `Rp ${fmtB(last.npl_amt || last.osc_npl)}`;
         document.getElementById('kpi_npl_pill').innerHTML = `

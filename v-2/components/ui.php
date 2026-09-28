@@ -81,6 +81,16 @@ function v2_icon_button(string $icon, string $label, string $tone = 'default', a
     return '<button type="button" class="v2-icon-button v2-icon-button--' . v2_e($tone) . '"' . v2_attributes($attrs) . '>' . v2_icon($icon, 18) . '</button>';
 }
 
+function v2_collapsible_search(string $id, string $placeholder = 'Cari...', array $attrs = []): string
+{
+    $inputAttrs = array_merge([
+        'autocomplete' => 'off',
+        'aria-label' => $placeholder,
+        'data-v2-collapsible-search-input' => '',
+    ], $attrs);
+    return '<div class="v2-collapsible-search" data-v2-collapsible-search><button type="button" class="v2-icon-button v2-collapsible-search-toggle" data-v2-collapsible-search-toggle aria-controls="' . v2_e($id) . '" aria-expanded="false" aria-label="Buka pencarian" title="Buka pencarian">' . v2_icon('search', 16) . '</button><label class="v2-collapsible-search-field" for="' . v2_e($id) . '"><input id="' . v2_e($id) . '" type="search" placeholder="' . v2_e($placeholder) . '"' . v2_attributes($inputAttrs) . '></label></div>';
+}
+
 function v2_tooltip(string $text, string $contentHtml, string $class = ''): string
 {
     $classes = trim('v2-tooltip-host ' . $class);

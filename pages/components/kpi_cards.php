@@ -13,7 +13,7 @@
   </div>
   <div class="bg-white p-3.5 md:p-4 rounded-xl md:rounded-2xl shadow-sm border border-gray-100 relative overflow-hidden col-span-1">
     <div class="absolute top-0 left-0 w-1.5 h-full bg-red-500 rounded-l-2xl"></div>
-    <p class="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5 md:mb-1 truncate">Total OSC NPL</p>
+    <p class="text-[9px] md:text-[10px] text-gray-500 font-bold uppercase tracking-wider mb-0.5 md:mb-1 truncate">Total NPL (Saldo Bank)</p>
     <h3 id="kpi_npl" class="text-lg md:text-xl xl:text-2xl font-black text-red-600 tracking-tight whitespace-nowrap mb-1.5 md:mb-2.5">Rp 0</h3>
     <div id="kpi_npl_pill"></div>
   </div>

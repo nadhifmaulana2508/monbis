@@ -2114,6 +2114,252 @@ class RbbController
         }
     }
 
+    /**
+     * History realisasi untuk kartu RBB statis.
+     *
+     * Nominal memakai closing bulanan dari acc_history. Pendapatan dan biaya
+     * mengikuti pola TV: Januari dari posisi awal, bulan berikutnya adalah
+     * closing bulan berjalan dikurangi closing bulan sebelumnya. Laba kotor
+     * adalah net pendapatan dikurangi net beban. NPL memakai saldo_bank.
+     */
+    public function getRealisasiHistory($input = null)
+    {
+        $b = is_array($input) ? $input : [];
+        $metric = strtolower(trim((string)($b['metric'] ?? 'aset')));
+        if ($metric === 'laba_kotor') {
+            $metric = 'laba';
+        }
+        $year = (int)($b['year'] ?? date('Y'));
+
+        if ($year < 2000 || $year > 2100) {
+            return sendResponse(400, 'Tahun history tidak valid.');
+        }
+
+        $metricLabels = [
+            'aset' => 'Aset Gabungan',
+            'tabungan' => 'Tabungan',
+            'deposito' => 'Deposito',
+            'damas' => 'Damas',
+            'kredit' => 'Kredit / Saldo Bank',
+            'pendapatan' => 'Pendapatan',
+            'biaya' => 'Beban',
+            'laba' => 'Laba Kotor',
+            'npl' => 'NPL',
+        ];
+        if (!isset($metricLabels[$metric])) {
+            return sendResponse(400, 'Metric history tidak didukung.');
+        }
+
+        $scope = $this->buildLapkeuRbbScope($b);
+        $isConsolidated = (bool)($scope['is_konsolidasi'] ?? false);
+        $closingDates = [];
+        for ($month = 1; $month <= 12; $month++) {
+            $closingDates[] = (new DateTimeImmutable(sprintf('%04d-%02d-01', $year, $month)))
+                ->modify('last day of this month')
+                ->format('Y-m-d');
+        }
+
+        if ($metric === 'npl') {
+            $closingPlaceholders = [];
+            foreach ($closingDates as $index => $date) {
+                $closingPlaceholders[] = ':history_date_' . $index;
+            }
+
+            // Scope acc_history memakai alias ah; untuk nominatif cukup
+            // mengganti alias tersebut agar cabang/korwil tetap konsisten.
+            $nominatifWhere = str_replace('ah.kode_kantor', 'n.kode_cabang', $scope['actual_where']);
+            try {
+                $sql = "
+                    SELECT
+                        n.created AS tanggal,
+                        SUM(CASE WHEN n.kolektibilitas IN ('KL','D','M') THEN COALESCE(n.saldo_bank,0) ELSE 0 END) AS npl_saldo_bank,
+                        SUM(COALESCE(n.saldo_bank,0)) AS total_saldo_bank
+                    FROM nominatif n
+                    WHERE n.created IN (" . implode(',', $closingPlaceholders) . ")
+                      AND {$nominatifWhere}
+                    GROUP BY n.created
+                    ORDER BY n.created ASC
+                ";
+                $stmt = $this->pdo->prepare($sql);
+                foreach ($closingDates as $index => $date) {
+                    $stmt->bindValue(':history_date_' . $index, $date, PDO::PARAM_STR);
+                }
+                $stmt->execute();
+
+                $history = [];
+                foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                    $tanggal = (string)($row['tanggal'] ?? '');
+                    if ($tanggal === '') continue;
+                    $nplSaldoBank = (float)($row['npl_saldo_bank'] ?? 0);
+                    $totalSaldoBank = (float)($row['total_saldo_bank'] ?? 0);
+                    $nplPersen = $totalSaldoBank == 0.0 ? 0.0 : round(($nplSaldoBank / $totalSaldoBank) * 100, 2);
+                    $history[] = [
+                        'tanggal' => $tanggal,
+                        'label' => date('M Y', strtotime($tanggal)),
+                        'nilai' => $nplPersen,
+                        'npl_saldo_bank' => $nplSaldoBank,
+                        'saldo_bank' => $totalSaldoBank,
+                    ];
+                }
+
+                return sendResponse(200, 'Berhasil memuat history realisasi', [
+                    'meta' => [
+                        'metric' => $metric,
+                        'label' => $metricLabels[$metric],
+                        'year' => $year,
+                        'scope' => $scope['label'],
+                        'kode_kantor' => $scope['kode_kantor'],
+                        'korwil' => $scope['korwil'],
+                        'formula' => 'NPL saldo_bank ÷ total saldo_bank × 100%',
+                        'unit' => 'Persentase',
+                        'basis' => 'saldo_bank',
+                    ],
+                    'history' => $history,
+                ]);
+            } catch (PDOException $e) {
+                error_log('PDO Error History NPL Realisasi: ' . $e->getMessage());
+                return sendResponse(500, 'Database Query Error: ' . $e->getMessage(), null);
+            }
+        }
+
+        $actualWhere = $scope['actual_where'];
+        $isMonthlyNet = in_array($metric, ['pendapatan', 'biaya', 'laba'], true);
+        $expressions = [
+            'aset' => $isConsolidated
+                ? "SUM(CASE WHEN ah.kode_perk = '1' THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END) - SUM(CASE WHEN ah.kode_perk = '210' THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END)"
+                : "SUM(CASE WHEN ah.kode_perk = '1' THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END)",
+            'tabungan' => "SUM(CASE WHEN ah.kode_perk = '20401' THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END)",
+            'deposito' => "SUM(CASE WHEN ah.kode_perk = '20402' THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END)",
+            'damas' => "SUM(CASE WHEN ah.kode_perk IN ('20401','20402') THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END)",
+            'kredit' => "SUM(CASE WHEN ah.kode_perk IN ('10601','10606') THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END)",
+            'pendapatan' => "SUM(CASE WHEN ah.kode_perk = '4' THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END)",
+            'biaya' => "SUM(CASE WHEN ah.kode_perk = '5' THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END)",
+            'laba' => "SUM(CASE WHEN ah.kode_perk = '4' THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END) - SUM(CASE WHEN ah.kode_perk = '5' THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END)",
+        ];
+        $formula = [
+            'aset' => $isConsolidated ? 'Akun 1 - akun 210' : 'Akun 1 pada setiap closing',
+            'tabungan' => 'Akun 20401',
+            'deposito' => 'Akun 20402',
+            'damas' => 'Akun 20401 + 20402',
+            'kredit' => 'Akun 10601 + 10606',
+            'pendapatan' => 'Net akun 4 per bulan seperti TV',
+            'biaya' => 'Net akun 5 per bulan seperti TV',
+            'laba' => 'Net pendapatan - net beban per bulan',
+        ][$metric];
+        $trackedCodes = $isMonthlyNet
+            ? ['4', '5']
+            : [
+                'aset' => ['1', '210'],
+                'tabungan' => ['20401'],
+                'deposito' => ['20402'],
+                'damas' => ['20401', '20402'],
+                'kredit' => ['10601', '10606'],
+            ][$metric];
+        $trackedIn = implode(',', array_map([$this->pdo, 'quote'], $trackedCodes));
+        $queryDates = $closingDates;
+        $closingPlaceholders = [];
+        foreach ($queryDates as $index => $date) {
+            $closingPlaceholders[] = ':history_date_' . $index;
+        }
+
+        try {
+            $selects = [
+                'ah.tanggal',
+                $expressions[$metric] . ' AS nilai',
+            ];
+            if ($isMonthlyNet) {
+                $selects[] = "SUM(CASE WHEN ah.kode_perk = '4' THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END) AS pendapatan_saldo";
+                $selects[] = "SUM(CASE WHEN ah.kode_perk = '5' THEN COALESCE(ah.saldo_akhir,0) ELSE 0 END) AS biaya_saldo";
+            }
+            $sql = "
+                SELECT " . implode(",\n                    ", $selects) . "
+                FROM acc_history ah
+                WHERE ah.tanggal IN (" . implode(',', $closingPlaceholders) . ")
+                  AND {$actualWhere}
+                  AND ah.kode_perk IN ({$trackedIn})
+                GROUP BY ah.tanggal
+                ORDER BY ah.tanggal ASC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($queryDates as $index => $date) {
+                $stmt->bindValue(':history_date_' . $index, $date, PDO::PARAM_STR);
+            }
+            $stmt->execute();
+
+            $rawByDate = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $tanggal = (string)($row['tanggal'] ?? '');
+                if ($tanggal === '') continue;
+                $rawByDate[$tanggal] = [
+                    'nilai' => (float)($row['nilai'] ?? 0),
+                    'pendapatan' => (float)($row['pendapatan_saldo'] ?? 0),
+                    'biaya' => (float)($row['biaya_saldo'] ?? 0),
+                ];
+            }
+
+            $history = [];
+            $totals = $isMonthlyNet ? ['pendapatan' => 0.0, 'biaya' => 0.0, 'laba' => 0.0] : null;
+            if ($isMonthlyNet) {
+                // Sama seperti TV: Januari dihitung dari posisi awal 0,
+                // lalu bulan berikutnya dikurangi closing bulan sebelumnya.
+                $previous = ['pendapatan' => 0.0, 'biaya' => 0.0];
+                foreach ($closingDates as $date) {
+                    if (!isset($rawByDate[$date])) continue;
+                    $current = $rawByDate[$date];
+                    $monthly = [
+                        'pendapatan' => $current['pendapatan'] - $previous['pendapatan'],
+                        'biaya' => $current['biaya'] - $previous['biaya'],
+                    ];
+                    $monthly['laba'] = $monthly['pendapatan'] - $monthly['biaya'];
+                    $history[] = [
+                        'tanggal' => $date,
+                        'label' => date('M Y', strtotime($date)),
+                        'nilai' => $monthly[$metric],
+                        'pendapatan' => $monthly['pendapatan'],
+                        'biaya' => $monthly['biaya'],
+                        'laba' => $monthly['laba'],
+                    ];
+                    foreach ($totals as $key => $_unused) {
+                        $totals[$key] += $monthly[$key];
+                    }
+                    $previous = [
+                        'pendapatan' => $current['pendapatan'],
+                        'biaya' => $current['biaya'],
+                    ];
+                }
+            } else {
+                foreach ($closingDates as $date) {
+                    if (!isset($rawByDate[$date])) continue;
+                    $history[] = [
+                        'tanggal' => $date,
+                        'label' => date('M Y', strtotime($date)),
+                        'nilai' => $rawByDate[$date]['nilai'],
+                    ];
+                }
+            }
+
+            return sendResponse(200, 'Berhasil memuat history realisasi', [
+                'meta' => [
+                    'metric' => $metric,
+                    'label' => $metricLabels[$metric],
+                    'year' => $year,
+                    'scope' => $scope['label'],
+                    'kode_kantor' => $scope['kode_kantor'],
+                    'korwil' => $scope['korwil'],
+                    'formula' => $formula,
+                    'calculation' => $isMonthlyNet ? 'Closing bulan berjalan - closing bulan sebelumnya, mengikuti pola TV' : 'Saldo closing',
+                    'unit' => 'Rupiah dari acc_history',
+                    'totals' => $totals,
+                ],
+                'history' => $history,
+            ]);
+        } catch (PDOException $e) {
+            error_log('PDO Error History Realisasi: ' . $e->getMessage());
+            return sendResponse(500, 'Database Query Error: ' . $e->getMessage(), null);
+        }
+    }
+
     private function buildLapkeuRbbCategorySummary(array $rows, string $jenis): array
     {
         $byCode = [];

@@ -3,12 +3,13 @@ function v2_render_start(string $title, string $active): void
 {
     $baseUrl = rtrim(str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/report-dpk/v-2/index.php'))), '/');
     if ($baseUrl === '' || $baseUrl === '.') $baseUrl = '/report-dpk/v-2';
-    echo '<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#8DBCC7"><title>' . v2_e($title) . '</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"><link rel="stylesheet" href="' . v2_e($baseUrl) . '/assets/css/app.css?v=3"><link rel="stylesheet" href="' . v2_e($baseUrl) . '/assets/css/tokens.css?v=2"><link rel="stylesheet" href="' . v2_e($baseUrl) . '/assets/css/components.css?v=28"></head><body class="v2-body v2-sidebar-auto" data-v2-page="' . v2_e($active) . '">';
+    echo '<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#8DBCC7"><title>' . v2_e($title) . '</title><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"><link rel="stylesheet" href="' . v2_e($baseUrl) . '/assets/css/app.css?v=3"><link rel="stylesheet" href="' . v2_e($baseUrl) . '/assets/css/tokens.css?v=2"><link rel="stylesheet" href="' . v2_e($baseUrl) . '/assets/css/components.css?v=45"></head><body class="v2-body v2-sidebar-auto" data-v2-page="' . v2_e($active) . '">';
 }
 
 function v2_render_sidebar(string $active, string $baseUrl, string $legacyBase = '', string $module = 'workspace'): void
 {
     $standalone = in_array($module, ['rbb', 'kpi'], true);
+    $showCollection = false; // Sembunyikan sementara; aktifkan kembali saat modul siap dipakai.
     $link = static fn(string $page): string => $standalone && $page === $module ? $baseUrl : v2_route_url($baseUrl, $page);
     $moduleLink = static fn(string $page, string $tab): string => v2_route_url($baseUrl, $standalone && $page === $module ? $tab : $page . '/' . $tab);
     $detailLink = static fn(string $page, string $detail): string => v2_route_url($baseUrl, $standalone && $page === $module ? $detail : $page . '/' . $detail);
@@ -26,7 +27,7 @@ function v2_render_sidebar(string $active, string $baseUrl, string $legacyBase =
         echo '<div class="v2-nav-group' . $kpiOpen . '" data-v2-access="kpi"><button type="button" class="v2-nav-group-title" data-v2-nav-group title="KPI Bisnis"><span>' . v2_icon('chart') . '<span>KPI Bisnis</span></span>' . v2_icon('chevron', 15) . '</button><div class="v2-nav-sub">';
         echo '<a class="v2-nav-sub-item" href="' . v2_e($moduleLink('kpi', 'setting')) . '" title="Setting KPI Jabatan">Setting KPI Jabatan</a>';
         echo '<a class="v2-nav-sub-item" href="' . v2_e($moduleLink('kpi', 'calculate')) . '" title="Nilai KPI AO">Nilai KPI AO</a>';
-        echo '<a class="v2-nav-sub-item" href="' . v2_e($moduleLink('kpi', 'calculate')) . '" title="Generate KPI AO">Generate KPI AO</a>';
+        echo '<a class="v2-nav-sub-item" href="' . v2_e($moduleLink('kpi', 'generate')) . '" title="Generate KPI AO">Generate KPI AO</a>';
         echo '<a class="v2-nav-sub-item" href="' . v2_e($moduleLink('kpi', 'summary')) . '" title="Rekap KPI AO">Rekap KPI AO</a>';
         echo '</div></div>';
     }
@@ -40,7 +41,7 @@ function v2_render_sidebar(string $active, string $baseUrl, string $legacyBase =
         echo '<a class="v2-nav-sub-item" href="' . v2_e($detailLink('rbb', 'detail/beban')) . '" title="Input RBB Beban">Input RBB Beban</a>';
         echo '</div></div>';
     }
-    if (!$standalone) {
+    if ($showCollection && !$standalone) {
         echo '<div class="v2-nav-group"><button type="button" class="v2-nav-group-title" data-v2-nav-group title="Collection"><span>' . v2_icon('users') . '<span>Collection</span></span>' . v2_icon('chevron', 15) . '</button><div class="v2-nav-sub"><a class="v2-nav-sub-item' . $is('collection') . '" href="' . v2_e($link('report_npl')) . '" title="Report NPL">Report NPL</a></div></div>';
     }
     echo '<p class="v2-nav-label v2-nav-label--system">SYSTEM</p>';
@@ -52,5 +53,5 @@ function v2_render_end(): void
 {
     $baseUrl = rtrim(str_replace('\\', '/', dirname((string)($_SERVER['SCRIPT_NAME'] ?? '/report-dpk/v-2/index.php'))), '/');
     if ($baseUrl === '' || $baseUrl === '.') $baseUrl = '/report-dpk/v-2';
-    echo '<script src="' . v2_e($baseUrl) . '/assets/js/components.js?v=4" defer></script><script src="' . v2_e($baseUrl) . '/assets/js/app.js?v=4" defer></script></body></html>';
+    echo '<script src="' . v2_e($baseUrl) . '/assets/js/components.js?v=5" defer></script><script src="' . v2_e($baseUrl) . '/assets/js/app.js?v=4" defer></script></body></html>';
 }

@@ -44,6 +44,12 @@ function v2_route_from_request(string $baseUrl): array
         case 'print': return ['page' => 'rbb_print'];
         case 'summary': return ['page' => 'kpi', 'tab' => 'summary'];
         case 'calculate': return ['page' => 'kpi', 'tab' => 'calculate'];
+        case 'generate': return ['page' => 'kpi', 'tab' => 'generate'];
+        case 'nilai': return ['page' => 'kpi', 'tab' => 'calculate'];
+        case 'setting_kpi_jabatan': return ['page' => 'kpi', 'tab' => 'setting'];
+        case 'hitung_kpi_ao': return ['page' => 'kpi', 'tab' => 'calculate'];
+        case 'generate_kpi_ao': return ['page' => 'kpi', 'tab' => 'generate'];
+        case 'rekap_kpi_ao': return ['page' => 'kpi', 'tab' => 'summary'];
         case 'setting': return ['page' => 'kpi', 'tab' => 'setting'];
         case 'report_npl': return ['page' => 'collection'];
         case 'components':

@@ -45,6 +45,9 @@ switch ($endpoint) {
     case 'kode':
         require __DIR__ . '/routes/kode.php';
         break;
+    case 'anggota':
+        require __DIR__ . '/routes/anggota.php';
+        break;
     case 'bucket':
         require __DIR__ . '/routes/bucket.php';
         break;

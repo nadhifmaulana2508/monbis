@@ -71,8 +71,8 @@ class DashboardController{
                 'saldo_bank'              => $this->getSaldoBank($input),
                 
                 // 3. Metrik DPK (Dana Pihak Ketiga) (🔥 Pakai $inputH1 -> Pasti H-1)
-                'perkembangan_deposito'   => $this->getPerkembanganDeposito($input),
-                'perkembangan_tabungan'   => $this->getPerkembanganTabungan($input),
+                'perkembangan_deposito'   => $this->getPerkembanganDeposito($inputH1),
+                'perkembangan_tabungan'   => $this->getPerkembanganTabungan($inputH1),
                 'tren_portofolio_kredit'  => $this->getTrenPortofolioKredit($input)
             ];
 
@@ -288,9 +288,11 @@ class DashboardController{
         $sql = "
             SELECT 
                 t.created AS tanggal,
-                SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN t.baki_debet ELSE 0 END) AS npl_amt,
-                SUM(t.baki_debet) AS total_kredit,
-                ROUND((SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN t.baki_debet ELSE 0 END) / NULLIF(SUM(t.baki_debet), 0) * 100), 2) AS npl_persen
+                SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS npl_amt,
+                SUM(COALESCE(t.baki_debet,0)) AS total_kredit,
+                SUM(COALESCE(t.saldo_bank,0)) AS total_saldo_bank,
+                SUM(COALESCE(t.baki_debet,0)) AS total_baki_debet,
+                ROUND((SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank,0) ELSE 0 END) / NULLIF(SUM(COALESCE(t.saldo_bank,0)), 0) * 100), 2) AS npl_persen
             FROM nominatif t
             WHERE t.created IN ($inString)
             {$filter['sql']}
@@ -321,6 +323,7 @@ class DashboardController{
             $formattedData = [];
             $lastValidNplAmt = 0;
             $lastValidTotalKredit = 0;
+            $lastValidTotalBakiDebet = 0;
             $lastValidNplPersen = 0;
 
             foreach ($dates as $expectedDate) {
@@ -345,6 +348,7 @@ class DashboardController{
                     
                     $lastValidNplAmt = (float) $dbItem['npl_amt'];
                     $lastValidTotalKredit = (float) $dbItem['total_kredit'];
+                    $lastValidTotalBakiDebet = (float) $dbItem['total_baki_debet'];
                     $lastValidNplPersen = (float) $dbItem['npl_persen'];
 
                     $formattedData[] = [
@@ -352,6 +356,7 @@ class DashboardController{
                         'label'        => $label,
                         'npl_amt'      => $lastValidNplAmt,
                         'total_kredit' => $lastValidTotalKredit,
+                        'total_baki_debet' => $lastValidTotalBakiDebet,
                         'npl_persen'   => $lastValidNplPersen
                     ];
                 } else {
@@ -361,6 +366,7 @@ class DashboardController{
                         'label'        => $label,
                         'npl_amt'      => $lastValidNplAmt,
                         'total_kredit' => $lastValidTotalKredit,
+                        'total_baki_debet' => $lastValidTotalBakiDebet,
                         'npl_persen'   => $lastValidNplPersen
                     ];
                 }
@@ -446,7 +452,8 @@ class DashboardController{
             SELECT 
                 t.created AS tanggal,
                 SUM(t.baki_debet) AS osc_total,
-                SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN t.baki_debet ELSE 0 END) AS osc_npl,
+                SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS osc_npl,
+                SUM(COALESCE(t.saldo_bank,0)) AS saldo_bank_total,
                 SUM(CASE WHEN t.hari_menunggak = 0 AND t.kolektibilitas = 'L' THEN t.baki_debet ELSE 0 END) AS osc_rr
             FROM nominatif t
             WHERE t.created IN ($inString)
@@ -475,6 +482,7 @@ class DashboardController{
             // Variabel penyimpan nilai saat ini
             $last_osc_total = 0;
             $last_osc_npl = 0;
+            $last_saldo_bank_total = 0;
             $last_osc_rr = 0; 
             
             // Variabel penyimpan nilai sebelumnya (untuk hitung gap)
@@ -511,11 +519,12 @@ class DashboardController{
                 if (isset($dbIndexed[$expectedDate])) {
                     $last_osc_total = (float) $dbIndexed[$expectedDate]['osc_total'];
                     $last_osc_npl   = (float) $dbIndexed[$expectedDate]['osc_npl'];
+                    $last_saldo_bank_total = (float) $dbIndexed[$expectedDate]['saldo_bank_total'];
                     $last_osc_rr    = (float) $dbIndexed[$expectedDate]['osc_rr'];
                 }
 
                 // Kalkulasi Persentase (Otomatis RR = osc_rr / osc_total)
-                $npl_persen = $last_osc_total > 0 ? round(($last_osc_npl / $last_osc_total) * 100, 2) : 0;
+                $npl_persen = $last_saldo_bank_total > 0 ? round(($last_osc_npl / $last_saldo_bank_total) * 100, 2) : 0;
                 $rr_persen  = $last_osc_total > 0 ? round(($last_osc_rr / $last_osc_total) * 100, 2) : 0;
 
                 // ==========================================
@@ -537,6 +546,7 @@ class DashboardController{
                     'gap_osc_total'  => $gap_osc_total, // Output Gap Nominal OS
                     
                     'osc_npl'        => $last_osc_npl,
+                    'saldo_bank_total' => $last_saldo_bank_total,
                     'gap_osc_npl'    => $gap_osc_npl, // Output Gap Nominal NPL
                     
                     'npl_persen'     => $npl_persen,
@@ -1132,16 +1142,16 @@ class DashboardController{
                 SELECT 
                     COALESCE(NULLIF(TRIM(t.kode_group1), ''), CONCAT(t.kode_cabang, '000')) AS kode_target,
                     COALESCE(k.deskripsi_group1, CONCAT('KAS ', COALESCE(NULLIF(TRIM(t.kode_group1), ''), CONCAT(t.kode_cabang, '000')))) AS nama_target,
-                    SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN t.baki_debet ELSE 0 END) AS npl_amt,
-                    SUM(t.baki_debet) AS total_kredit,
-                    ROUND((SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN t.baki_debet ELSE 0 END) / NULLIF(SUM(t.baki_debet), 0) * 100), 2) AS npl_persen
+                    SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS npl_amt,
+                    SUM(COALESCE(t.saldo_bank,0)) AS total_kredit,
+                    ROUND((SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank,0) ELSE 0 END) / NULLIF(SUM(COALESCE(t.saldo_bank,0)), 0) * 100), 2) AS npl_persen
                 FROM nominatif t
                 LEFT JOIN kankas k ON k.kode_group1 = COALESCE(NULLIF(TRIM(t.kode_group1), ''), CONCAT(t.kode_cabang, '000'))
                 WHERE t.created = :harian_date
                 {$filterSql_cabang}
                 {$filter['sql']}
                 GROUP BY kode_target, k.deskripsi_group1
-                HAVING SUM(t.baki_debet) > 0 
+                HAVING SUM(COALESCE(t.saldo_bank,0)) > 0 
             ";
         } else {
             // MODE PUSAT: Konsolidasi per Cabang
@@ -1149,15 +1159,15 @@ class DashboardController{
                 SELECT 
                     t.kode_cabang AS kode_target,
                     COALESCE(k.nama_kantor, CONCAT('CABANG ', t.kode_cabang)) AS nama_target,
-                    SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN t.baki_debet ELSE 0 END) AS npl_amt,
-                    SUM(t.baki_debet) AS total_kredit,
-                    ROUND((SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN t.baki_debet ELSE 0 END) / NULLIF(SUM(t.baki_debet), 0) * 100), 2) AS npl_persen
+                    SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS npl_amt,
+                    SUM(COALESCE(t.saldo_bank,0)) AS total_kredit,
+                    ROUND((SUM(CASE WHEN t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank,0) ELSE 0 END) / NULLIF(SUM(COALESCE(t.saldo_bank,0)), 0) * 100), 2) AS npl_persen
                 FROM nominatif t
                 LEFT JOIN kode_kantor k ON t.kode_cabang = k.kode_kantor
                 WHERE t.created = :harian_date
                 {$filter['sql']}
                 GROUP BY t.kode_cabang, k.nama_kantor
-                HAVING SUM(t.baki_debet) > 0 
+                HAVING SUM(COALESCE(t.saldo_bank,0)) > 0 
             ";
         }
 
@@ -1290,12 +1300,12 @@ class DashboardController{
                     COALESCE(k.deskripsi_group1, CONCAT('KAS CABANG ', t.kode_cabang)) AS nama_cabang,
                     
                     -- Data Current (Harian)
-                    SUM(CASE WHEN t.created = :harian_date_1 AND t.kolektibilitas IN ('KL','D','M') THEN t.baki_debet ELSE 0 END) AS npl_curr,
-                    SUM(CASE WHEN t.created = :harian_date_2 THEN t.baki_debet ELSE 0 END) AS baki_curr,
+                    SUM(CASE WHEN t.created = :harian_date_1 AND t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS npl_curr,
+                    SUM(CASE WHEN t.created = :harian_date_2 THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS baki_curr,
                     
                     -- Data Previous (Closing Bulan Lalu)
-                    SUM(CASE WHEN t.created = :closing_date_1 AND t.kolektibilitas IN ('KL','D','M') THEN t.baki_debet ELSE 0 END) AS npl_prev,
-                    SUM(CASE WHEN t.created = :closing_date_2 THEN t.baki_debet ELSE 0 END) AS baki_prev
+                    SUM(CASE WHEN t.created = :closing_date_1 AND t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS npl_prev,
+                    SUM(CASE WHEN t.created = :closing_date_2 THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS baki_prev
                     
                 FROM nominatif t
                 LEFT JOIN kankas k ON k.kode_group1 = COALESCE(NULLIF(TRIM(t.kode_group1), ''), CONCAT(t.kode_cabang, '000'))
@@ -1312,12 +1322,12 @@ class DashboardController{
                     COALESCE(k.nama_kantor, CONCAT('CABANG ', t.kode_cabang)) AS nama_cabang,
                     
                     -- Data Current (Harian)
-                    SUM(CASE WHEN t.created = :harian_date_1 AND t.kolektibilitas IN ('KL','D','M') THEN t.baki_debet ELSE 0 END) AS npl_curr,
-                    SUM(CASE WHEN t.created = :harian_date_2 THEN t.baki_debet ELSE 0 END) AS baki_curr,
+                    SUM(CASE WHEN t.created = :harian_date_1 AND t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS npl_curr,
+                    SUM(CASE WHEN t.created = :harian_date_2 THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS baki_curr,
                     
                     -- Data Previous (Closing Bulan Lalu)
-                    SUM(CASE WHEN t.created = :closing_date_1 AND t.kolektibilitas IN ('KL','D','M') THEN t.baki_debet ELSE 0 END) AS npl_prev,
-                    SUM(CASE WHEN t.created = :closing_date_2 THEN t.baki_debet ELSE 0 END) AS baki_prev
+                    SUM(CASE WHEN t.created = :closing_date_1 AND t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS npl_prev,
+                    SUM(CASE WHEN t.created = :closing_date_2 THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS baki_prev
                     
                 FROM nominatif t
                 LEFT JOIN kode_kantor k ON t.kode_cabang = k.kode_kantor
@@ -2232,14 +2242,14 @@ class DashboardController{
         $cte_base = "
             WITH 
             closing AS (
-                SELECT no_rekening, kode_cabang, kode_group1, kolektibilitas AS kolek_prev, baki_debet AS baki_prev
+                SELECT no_rekening, kode_cabang, kode_group1, kolektibilitas AS kolek_prev, COALESCE(saldo_bank,0) AS baki_prev
                 FROM nominatif
                 WHERE created = :closing_date
                 AND kolektibilitas IN ('L','DP','KL','D','M')
                 {$filterSql_cls}
             ),
             harian AS (
-                SELECT no_rekening, kode_cabang, kode_group1, kolektibilitas AS kolek_curr, baki_debet AS baki_curr
+                SELECT no_rekening, kode_cabang, kode_group1, kolektibilitas AS kolek_curr, COALESCE(saldo_bank,0) AS baki_curr
                 FROM nominatif
                 WHERE created = :harian_date
                 AND kolektibilitas IN ('L','DP','KL','D','M')

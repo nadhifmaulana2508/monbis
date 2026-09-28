@@ -326,6 +326,9 @@ final class KpiController
                 elseif($real===null){$ready=false;$note='Sumber data indikator belum dikonfigurasi';}
                 elseif($target<=0){$ready=false;$note='Target periode belum diisi';}
                 else{if($key==='MOB_6'){$idx=(float)$real;$score=$real<=0.05?5:($real<=0.06?4:($real<=0.07?3:($real<=0.08?2:1)));$note='OS menunggak MOB 1–6 / total OS MOB 1–6';}elseif($key==='EARLY_RUN_OFF'){$idx=(float)$real;$score=$real<=0.01?5:($real<=0.0125?4:($real<=0.015?3:($real<=0.02?2:1)));$note='OS pelunasan murni / OS DPD 0 closing sebelumnya; refinancing/top-up dikecualikan';}elseif($key==='PIPELINE'){$idx=(float)$real;$score=min(5,(int)$real+1);$note='NOA pipeline yang cair/realisasi pada periode berjalan';}else{$idx=strtoupper($i['arah'])==='LOWER'?($real==0?1.5:min($target/$real,1.5)):min($real/$target,1.5);foreach($scoreRows as $s){if($idx>=(float)$s['min_indeks']&&$idx<(float)$s['max_indeks']||((int)$s['skor']===5&&$idx>=(float)$s['min_indeks'])){$score=(int)$s['skor'];break;}}}$weighted=(float)$i['bobot']*$score;$value100=min((float)$i['bobot']*100,$weighted/5*100);}
+                // Repayment Rate pada skema AO Kredit memakai persentase DPD 0
+                // langsung (40%-80%), bukan rasio terhadap target default 65%.
+                if ($key==='REPAYMENT_RATE' && $real!==null) $idx=(float)$real;
                 $isCount=in_array(strtoupper((string)($i['unit']??'')),['NOA','JUMLAH'],true);$isLower=strtoupper((string)($i['arah']??''))==='LOWER';$scoreBasis=$isCount?(float)$real:(float)$idx;$score=$scoreFor((int)$i['id'],$scoreBasis,$scoreByIndicator,$isCount,$isLower);$weighted=(float)$i['bobot']*$score;$value100=min((float)$i['bobot']*100,$weighted/5*100);$details[]=['indikator'=>$i,'target'=>$target,'realisasi'=>$real,'indeks'=>$idx,'skor'=>$score,'nilai_tertimbang'=>$weighted,'nilai_100'=>$value100,'os_mob_menunggak'=>$key==='MOB_6'?(float)($actual['OS_MOB_MENUNGGAK']??0):0,'os_mob_total'=>$key==='MOB_6'?(float)($actual['OS_MOB_TOTAL']??0):0,'os_dpd0'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_DPD0']??0):0,'os_kelolaan'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_KELOLAAN']??0):0,'os_run_off'=>$key==='EARLY_RUN_OFF'?(float)($actual['OS_RUN_OFF']??0):0,'os_dpd0_m1'=>$key==='EARLY_RUN_OFF'?(float)($actual['OS_DPD0_M1']??0):0,'catatan'=>$note];
             }
             $base=$ready?array_sum(array_column($details,'nilai_100')):0;$factor=(float)($risk[$gate]??1);$final=$base*$factor;$partial=(bool)$selectedCodes;$status=$ready&&!$partial&&!$dummyMode?'DISETUJUI':'DRAFT';
@@ -359,6 +362,8 @@ final class KpiController
     public function setting(array $input, array $user): void
     {
         $jabatan = $this->pdo->query("SELECT id,kode,nama,deskripsi,aktif FROM kpi_jabatan ORDER BY nama")->fetchAll(PDO::FETCH_ASSOC);
+        $tukin = $this->pdo->query("SELECT min_skor,max_skor,min_nilai,max_nilai,faktor_persen,label,urutan
+                                    FROM kpi_parameter_tukin WHERE aktif=1 ORDER BY urutan,id")->fetchAll(PDO::FETCH_ASSOC);
         $st=$this->pdo->query("SELECT i.*,j.kode AS jabatan_kode,j.nama AS jabatan_nama,
                                       CASE WHEN i.formula_key='PIPELINE' THEN 'NOA' ELSE i.unit END AS unit,
                                       COALESCE((SELECT t.target FROM kpi_target_bulanan t
@@ -368,7 +373,7 @@ final class KpiController
                                                 ORDER BY t.id DESC LIMIT 1),0) AS target_default
                                FROM kpi_indikator i JOIN kpi_jabatan j ON j.id=i.jabatan_id
                                ORDER BY j.nama,i.urutan,i.id");
-        $this->json(200,'Setting KPI berhasil dimuat',['jabatan'=>$jabatan,'indikator'=>$st->fetchAll(PDO::FETCH_ASSOC),'parameter_skor'=>$this->pdo->query("SELECT s.id,s.jabatan_id,s.indikator_id,s.skor,s.min_indeks,s.max_indeks,s.predikat,s.aktif,j.kode AS jabatan_kode,j.nama AS jabatan_nama,i.unit FROM kpi_parameter_skor_jabatan s JOIN kpi_jabatan j ON j.id=s.jabatan_id JOIN kpi_indikator i ON i.id=s.indikator_id ORDER BY j.nama,s.indikator_id,s.skor")->fetchAll(PDO::FETCH_ASSOC),'can_manage'=>$this->canManage($user)]);
+        $this->json(200,'Setting KPI berhasil dimuat',['jabatan'=>$jabatan,'indikator'=>$st->fetchAll(PDO::FETCH_ASSOC),'parameter_skor'=>$this->pdo->query("SELECT s.id,s.jabatan_id,s.indikator_id,s.skor,s.min_indeks,s.max_indeks,s.predikat,s.aktif,j.kode AS jabatan_kode,j.nama AS jabatan_nama,i.unit FROM kpi_parameter_skor_jabatan s JOIN kpi_jabatan j ON j.id=s.jabatan_id JOIN kpi_indikator i ON i.id=s.indikator_id ORDER BY j.nama,s.indikator_id,s.skor")->fetchAll(PDO::FETCH_ASSOC),'tukin_rules'=>$tukin,'can_manage'=>$this->canManage($user)]);
     }
 
     /** Range skor saja untuk editor inline di halaman setting. */
@@ -493,7 +498,7 @@ final class KpiController
         }
         $breakdownSql="SELECT p.id AS penilaian_id,p.bulan,p.closing_date,p.id_peg,p.nama_ao,
                               LPAD(CAST(ao.kode_kantor AS CHAR),3,'0') AS kode_kantor,
-                              i.kode,i.nama,i.kelompok,i.unit,i.bobot,i.input_pa,
+                              i.kode,i.nama,i.kelompok,i.unit,i.formula_key,i.bobot,i.input_pa,
                               d.target,d.realisasi,d.indeks,d.skor,d.nilai_100,d.catatan
                        FROM kpi_penilaian_detail d
                        JOIN kpi_penilaian p ON p.id=d.penilaian_id

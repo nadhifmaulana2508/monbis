@@ -97,6 +97,9 @@ switch ($method) {
         } elseif ($type === 'lapkeu_rbb_vs_realisasi') {
             $controller->getLapkeuRbbVsRealisasi($input);
 
+        } elseif ($type === 'realisasi_history') {
+            $controller->getRealisasiHistory($input);
+
         } elseif ($type === 'ikhtisar_rbb') {
             $controller->getIkhtisarRbb($input);
 

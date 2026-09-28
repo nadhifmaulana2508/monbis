@@ -66,6 +66,21 @@
   document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && filterPanel && !filterPanel.hidden) { filterPanel.hidden = true; filterToggle?.classList.remove('is-active'); } });
   document.addEventListener('click', (event) => { if (filterPanel && !filterPanel.hidden && !filterPanel.contains(event.target) && !filterToggle?.contains(event.target)) { filterPanel.hidden = true; filterToggle?.classList.remove('is-active'); } });
   updateFilterCount();
+  document.querySelectorAll('[data-v2-collapsible-search]').forEach((component) => {
+    const toggle = component.querySelector('[data-v2-collapsible-search-toggle]');
+    const input = component.querySelector('[data-v2-collapsible-search-input]');
+    if (!toggle || !input) return;
+    const setOpen = (open) => {
+      component.classList.toggle('is-open', open);
+      toggle.setAttribute('aria-expanded', String(open));
+      toggle.setAttribute('aria-label', open ? 'Tutup pencarian' : 'Buka pencarian');
+      toggle.title = open ? 'Tutup pencarian' : 'Buka pencarian';
+      if (open) window.setTimeout(() => input.focus(), 0);
+    };
+    toggle.addEventListener('click', () => setOpen(!component.classList.contains('is-open')));
+    input.addEventListener('keydown', (event) => { if (event.key === 'Escape') { setOpen(false); toggle.focus(); } });
+    document.addEventListener('click', (event) => { if (!component.contains(event.target)) setOpen(false); });
+  });
   document.querySelectorAll('[data-v2-tab]').forEach((tab) => tab.addEventListener('click', () => {
     const group = tab.closest('.v2-tabs');
     group?.querySelectorAll('[data-v2-tab]').forEach((item) => item.classList.toggle('is-active', item === tab));

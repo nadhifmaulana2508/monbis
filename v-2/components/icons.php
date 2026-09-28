@@ -29,6 +29,7 @@ function v2_icon(string $name, int $size = 18): string
         'database' => '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v7c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 12v7c0 1.7 3.6 3 8 3s8-1.3 8-3v-7"/>',
         'logout' => '<path d="M10 17l5-5-5-5M15 12H3M21 19V5a2 2 0 0 0-2-2h-6"/>',
         'check' => '<path d="m5 12 4 4L19 6"/>',
+        'zap' => '<path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z"/>',
         'alert' => '<path d="M10.3 3.8 2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4m0 4h.01"/>',
     ];
     return '<svg ' . $common . '>' . ($paths[$name] ?? $paths['file']) . '</svg>';

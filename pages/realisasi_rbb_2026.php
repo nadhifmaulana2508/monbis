@@ -1,4 +1,9 @@
 <?php
+if (defined('RBB_PAPARAN_MODE') && RBB_PAPARAN_MODE) {
+    require __DIR__ . '/paparan_rbb_realisasi_impl.php';
+    return;
+}
+
 // Snapshot manual capaian RBB Agustus 2026 berdasarkan materi upload.
 // Data sengaja dipisahkan dari API sampai sumber data mentah tiap divisi seragam.
 
@@ -6,8 +11,8 @@ $rrbViews = [
     'kinerja_pusat' => 'Kinerja Pusat',
     'indikator_keuangan_pusat' => 'Indikator Keuangan Pusat',
     'kanwil_banyumas' => 'Kanwil Banyumas',
-    'cabang_banjarnegara' => 'Cabang Banjarnegara',
-    'cabang_banyumas' => 'Cabang Banyumas',
+    'cabang_purworejo' => 'Cabang Purworejo',
+    'cabang_purbalingga' => 'Cabang Purbalingga',
 ];
 
 $rrbView = isset($_GET['view']) ? (string) $_GET['view'] : 'kinerja_pusat';
@@ -83,6 +88,34 @@ $rrbRegionalCards = [
             ['name' => 'LABA (RUGI)', 'caption' => 'Laba Sebelum Pajak', 'icon' => '▥', 'tone' => 'green', 'rbb' => '1.904.884', 'actual' => '(56.860)', 'year' => '1.764.629', 'period' => '-2,98%', 'year_pct' => '(3,22)%'],
         ],
     ],
+    // Nilai nominal realisasi sistem Agustus 2026 ditampilkan dalam satuan PPT:
+    // rupiah dibagi 1.000 sehingga tiga digit rupiah terakhir dihilangkan.
+    'cabang_purworejo' => [
+        'title' => 'Cabang Purworejo',
+        'subtitle' => 'Capaian Kinerja KC Purworejo - Agustus 2026',
+        'cards' => [
+            ['name' => 'ASSET', 'caption' => 'Total Aset', 'icon' => 'A', 'tone' => 'blue', 'rbb' => '30.002.389', 'actual' => '27.448.548', 'year' => '32.430.143', 'period' => '91,49%', 'year_pct' => '84,64%'],
+            ['name' => 'TABUNGAN', 'caption' => 'Dana Pihak Ketiga (Tabungan)', 'icon' => 'T', 'tone' => 'cyan', 'rbb' => '10.638.684', 'actual' => '11.760.110', 'year' => '11.166.841', 'period' => '110,54%', 'year_pct' => '105,31%'],
+            ['name' => 'DEPOSITO', 'caption' => 'Dana Pihak Ketiga (Deposito)', 'icon' => 'D', 'tone' => 'indigo', 'rbb' => '4.799.111', 'actual' => '5.558.050', 'year' => '5.636.784', 'period' => '115,81%', 'year_pct' => '98,60%'],
+            ['name' => 'TOTAL DAMAS', 'caption' => 'Dana Masyarakat', 'icon' => 'D', 'tone' => 'teal', 'rbb' => '15.437.795', 'actual' => '17.318.160', 'year' => '16.803.625', 'period' => '112,18%', 'year_pct' => '103,06%'],
+            ['name' => 'KREDIT', 'caption' => 'Penyaluran Kredit', 'icon' => 'K', 'tone' => 'blue', 'rbb' => '28.879.189', 'actual' => '27.677.410', 'year' => '31.230.460', 'period' => '95,84%', 'year_pct' => '88,62%'],
+            ['name' => 'NPL', 'caption' => 'Rasio Kredit Bermasalah', 'icon' => '!', 'tone' => 'red', 'rbb' => '8,51', 'actual' => '14,67', 'year' => '6,52', 'period' => '58,02%', 'year_pct' => '44,45%', 'ratio' => true],
+            ['name' => 'LABA (RUGI)', 'caption' => 'Laba Sebelum Pajak', 'icon' => 'L', 'tone' => 'green', 'rbb' => '748.766', 'actual' => '388.689', 'year' => '1.095.524', 'period' => '51,91%', 'year_pct' => '35,48%'],
+        ],
+    ],
+    'cabang_purbalingga' => [
+        'title' => 'Cabang Purbalingga',
+        'subtitle' => 'Capaian Kinerja KC Purbalingga - Agustus 2026',
+        'cards' => [
+            ['name' => 'ASSET', 'caption' => 'Total Aset', 'icon' => 'A', 'tone' => 'blue', 'rbb' => '26.502.971', 'actual' => '26.878.096', 'year' => '28.718.167', 'period' => '101,42%', 'year_pct' => '93,59%'],
+            ['name' => 'TABUNGAN', 'caption' => 'Dana Pihak Ketiga (Tabungan)', 'icon' => 'T', 'tone' => 'cyan', 'rbb' => '15.044.018', 'actual' => '13.200.751', 'year' => '15.783.447', 'period' => '87,75%', 'year_pct' => '83,64%'],
+            ['name' => 'DEPOSITO', 'caption' => 'Dana Pihak Ketiga (Deposito)', 'icon' => 'D', 'tone' => 'indigo', 'rbb' => '3.455.213', 'actual' => '3.392.500', 'year' => '3.556.451', 'period' => '98,18%', 'year_pct' => '95,39%'],
+            ['name' => 'TOTAL DAMAS', 'caption' => 'Dana Masyarakat', 'icon' => 'D', 'tone' => 'teal', 'rbb' => '18.499.231', 'actual' => '16.593.253', 'year' => '19.339.898', 'period' => '89,70%', 'year_pct' => '85,80%'],
+            ['name' => 'KREDIT', 'caption' => 'Penyaluran Kredit', 'icon' => 'K', 'tone' => 'blue', 'rbb' => '28.358.031', 'actual' => '28.186.209', 'year' => '29.884.868', 'period' => '99,39%', 'year_pct' => '94,32%'],
+            ['name' => 'NPL', 'caption' => 'Rasio Kredit Bermasalah', 'icon' => '!', 'tone' => 'red', 'rbb' => '21,44', 'actual' => '22,94', 'year' => '21,64', 'period' => '93,43%', 'year_pct' => '94,33%', 'ratio' => true],
+            ['name' => 'LABA (RUGI)', 'caption' => 'Laba Sebelum Pajak', 'icon' => 'L', 'tone' => 'green', 'rbb' => '495.623', 'actual' => '928.208', 'year' => '681.871', 'period' => '187,28%', 'year_pct' => '136,13%'],
+        ],
+    ],
 ];
 
 $rrbRatios = [
@@ -98,6 +131,28 @@ $rrbRatios = [
     ['name' => 'BOPO', 'rbb' => '85,95', 'actual' => '87,95', 'year' => '86,51', 'period' => '102,3%', 'year_pct' => '101,7%'],
     ['name' => 'CASH RATIO', 'rbb' => '19,35', 'actual' => '27,10', 'year' => '21,56', 'period' => '140,0%', 'year_pct' => '125,7%'],
     ['name' => 'LDR', 'rbb' => '87,96', 'actual' => '88,04', 'year' => '85,82', 'period' => '100,1%', 'year_pct' => '102,6%'],
+];
+
+$rrbHistoryMetricByName = [
+    'ASSET' => 'aset',
+    'TABUNGAN' => 'tabungan',
+    'DEPOSITO' => 'deposito',
+    'DAMAS' => 'damas',
+    'TOTAL DAMAS' => 'damas',
+    'KREDIT' => 'kredit',
+    'NPL' => 'npl',
+    'PENDAPATAN' => 'pendapatan',
+    'BIAYA' => 'biaya',
+    'LABA (RUGI)' => 'laba',
+];
+
+$rrbHistoryScopes = [
+    'kinerja_pusat' => ['type' => 'consolidated', 'value' => '000', 'label' => 'Konsolidasi'],
+    'cabang_purworejo' => ['type' => 'branch', 'value' => '016', 'label' => 'Cabang 016 - Purworejo'],
+    'cabang_purbalingga' => ['type' => 'branch', 'value' => '019', 'label' => 'Cabang 019 - Purbalingga'],
+    'kanwil_banyumas' => ['type' => 'korwil', 'value' => 'BANYUMAS', 'label' => 'Korwil Banyumas'],
+    'cabang_banjarnegara' => ['type' => 'branch', 'value' => '018', 'label' => 'Cabang 018 · Banjarnegara'],
+    'cabang_banyumas' => ['type' => 'branch', 'value' => '020', 'label' => 'Cabang 020 · Banyumas'],
 ];
 
 $rrbIconSvg = static function (string $name): string {
@@ -129,9 +184,16 @@ $rrbIconSvg = static function (string $name): string {
     return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>';
 };
 
-$rrbRenderMetricCard = static function (array $card, callable $escape, bool $shortNominal = false) use ($rrbIconSvg, $rrbShortNominal): string {
+$rrbRenderMetricCard = static function (array $card, callable $escape, bool $shortNominal = false, array $historyScope = [], array $historyMetricByName = []) use ($rrbIconSvg, $rrbShortNominal): string {
     $ratioClass = !empty($card['ratio']) ? ' is-ratio' : '';
     $isRatio = !empty($card['ratio']);
+    $metricName = strtoupper(trim((string)($card['name'] ?? '')));
+    $historyMetric = $historyMetricByName[$metricName] ?? '';
+    $historyEnabled = $historyMetric !== '' && !empty($historyScope['type']);
+    $historyClass = $historyEnabled ? ' is-history' : '';
+    $historyAttrs = $historyEnabled
+        ? ' role="button" tabindex="0" aria-label="Lihat history realisasi ' . $escape($card['name']) . '" data-rrb26-history-metric="' . $escape($historyMetric) . '" data-rrb26-history-scope="' . $escape((string)$historyScope['type']) . '" data-rrb26-history-scope-value="' . $escape((string)($historyScope['value'] ?? '')) . '" data-rrb26-history-scope-label="' . $escape((string)($historyScope['label'] ?? '')) . '" data-rrb26-history-year="2026"'
+        : '';
     $caption = isset($card['caption']) ? '<span>' . $escape($card['caption']) . '</span>' : '';
     $periodClass = strpos((string) $card['period'], '-') === 0 ? ' negative' : '';
     $yearClass = strpos((string) $card['year_pct'], '-') === 0 || strpos((string) $card['year_pct'], '(') === 0 ? ' negative' : '';
@@ -142,12 +204,13 @@ $rrbRenderMetricCard = static function (array $card, callable $escape, bool $sho
         }
         return '<strong>' . $escape($display) . '</strong>';
     };
-    $footer = $shortNominal ? 'Dalam jutaan rupiah' : 'Dalam rupiah';
-    return '<article class="rrb26-card rrb26-tone-' . $escape($card['tone']) . $ratioClass . '">' .
+    $footer = $isRatio ? 'Dalam persen' : ($shortNominal ? 'Dalam jutaan rupiah' : 'Dalam rupiah');
+    $footerText = $historyEnabled ? $footer . ' · Klik untuk lihat history' : $footer;
+    return '<article class="rrb26-card rrb26-tone-' . $escape($card['tone']) . $ratioClass . $historyClass . '"' . $historyAttrs . '>' .
         '<div class="rrb26-card-head"><div class="rrb26-card-icon">' . $rrbIconSvg((string) $card['name']) . '</div><div><h3>' . $escape($card['name']) . '</h3>' . $caption . '</div></div>' .
         '<div class="rrb26-values"><div><small>RBB Agustus 2026</small>' . $metricValue($card['rbb']) . '</div><div><small>Realisasi Agustus</small><strong class="rrb26-actual">' . $escape($shortNominal && !$isRatio ? $rrbShortNominal($card['actual']) : trim((string) $card['actual'])) . '</strong></div><div><small>RBB Des 2026</small>' . $metricValue($card['year']) . '</div></div>' .
         '<div class="rrb26-achievements"><div><small>% RBB Agst 2026</small><b class="' . $periodClass . '">' . $escape($card['period']) . '</b></div><div><small>% RBB Des 2026</small><b class="' . $yearClass . '">' . $escape($card['year_pct']) . '</b></div></div>' .
-        '<footer>' . $escape($footer) . '</footer></article>';
+        '<footer>' . $escape($footerText) . '</footer></article>';
 };
 ?>
 
@@ -174,11 +237,11 @@ $rrbRenderMetricCard = static function (array $card, callable $escape, bool $sho
       <?php endforeach; ?>
     </nav>
 
-    <div class="rrb26-note"><span><b>Posisi:</b> Agustus 2026</span><span><b>Satuan tampilan:</b> jutaan rupiah</span></div>
+    <div class="rrb26-note"><span><b>Posisi:</b> Agustus 2026</span><span><b>Satuan tampilan:</b> rupiah ÷ 1.000 (format PPT)</span><span class="rrb26-note-warning"><b>Tip:</b> klik kartu nominal untuk lihat history closing</span></div>
 
     <section id="rrb26-panel-kinerja_pusat" class="rrb26-panel<?= $rrbView === 'kinerja_pusat' ? ' active' : '' ?>" role="tabpanel" data-rrb26-panel="kinerja_pusat"<?= $rrbView === 'kinerja_pusat' ? '' : ' hidden' ?> >
       <div class="rrb26-panel-heading"><div><h2>Kinerja Pusat</h2><p>Perbandingan target RBB dengan realisasi bulan berjalan dan target akhir tahun.</p></div><span class="rrb26-scope-pill">PT BPR BKK JATENG</span></div>
-      <div class="rrb26-card-grid rrb26-central-grid"><?php foreach ($rrbCentralCards as $card): echo $rrbRenderMetricCard($card, $rrbEscape, true); endforeach; ?></div>
+      <div class="rrb26-card-grid rrb26-central-grid"><?php foreach ($rrbCentralCards as $card): echo $rrbRenderMetricCard($card, $rrbEscape, true, $rrbHistoryScopes['kinerja_pusat'], $rrbHistoryMetricByName); endforeach; ?></div>
     </section>
 
     <section id="rrb26-panel-indikator_keuangan_pusat" class="rrb26-panel<?= $rrbView === 'indikator_keuangan_pusat' ? ' active' : '' ?>" role="tabpanel" data-rrb26-panel="indikator_keuangan_pusat"<?= $rrbView === 'indikator_keuangan_pusat' ? '' : ' hidden' ?> >
@@ -189,12 +252,28 @@ $rrbRenderMetricCard = static function (array $card, callable $escape, bool $sho
     <?php foreach ($rrbRegionalCards as $key => $region): ?>
       <section id="rrb26-panel-<?= $rrbEscape($key) ?>" class="rrb26-panel<?= $rrbView === $key ? ' active' : '' ?>" role="tabpanel" data-rrb26-panel="<?= $rrbEscape($key) ?>"<?= $rrbView === $key ? '' : ' hidden' ?> >
         <div class="rrb26-panel-heading"><div><h2><?= $rrbEscape($region['title']) ?></h2><p><?= $rrbEscape($region['subtitle']) ?>.</p></div><span class="rrb26-scope-pill">AGUSTUS 2026</span></div>
-        <div class="rrb26-card-grid rrb26-regional-grid"><?php foreach ($region['cards'] as $card): echo $rrbRenderMetricCard($card, $rrbEscape, true); endforeach; ?></div>
+        <div class="rrb26-card-grid rrb26-regional-grid"><?php foreach ($region['cards'] as $card): echo $rrbRenderMetricCard($card, $rrbEscape, false, $rrbHistoryScopes[$key] ?? [], $rrbHistoryMetricByName); endforeach; ?></div>
       </section>
     <?php endforeach; ?>
 
     <footer class="rrb26-footnote"><span>RBB Ags = target bulan berjalan · RBB Des = target akhir tahun</span></footer>
   </section>
+</div>
+
+<div id="rrb26HistoryModal" class="rrb26-history-modal" hidden role="dialog" aria-modal="true" aria-labelledby="rrb26HistoryTitle">
+  <div class="rrb26-history-card">
+    <div class="rrb26-history-head">
+      <div>
+        <div class="rrb26-history-kicker">HISTORY REALISASI · ACC_HISTORY</div>
+        <h2 id="rrb26HistoryTitle">History Realisasi</h2>
+        <p id="rrb26HistorySubtitle">Snapshot closing per bulan.</p>
+      </div>
+      <button type="button" id="rrb26HistoryClose" class="rrb26-history-close" title="Tutup" aria-label="Tutup">&times;</button>
+    </div>
+    <div id="rrb26HistoryBody" class="rrb26-history-body">
+      <div class="rrb26-history-loading"><span class="rrb26-loading-spinner"></span><span>Memuat history...</span></div>
+    </div>
+  </div>
 </div>
 
 <style>
@@ -209,6 +288,14 @@ $rrbRenderMetricCard = static function (array $card, callable $escape, bool $sho
   @media(max-width:540px){.rrb26-heading h1{font-size:19px}.rrb26-heading p{max-width:245px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.rrb26-central-grid,.rrb26-regional-grid{grid-template-columns:1fr}.rrb26-values strong{font-size:10px}.rrb26-card-head h3{font-size:15px}.rrb26-footnote{align-items:flex-start;flex-direction:column;gap:4px}.rrb26-note{padding:9px 10px}}
   @media(max-width:540px){#realisasiRbb2026{min-height:calc(100dvh - 56px);padding:7px;overflow-x:hidden}.rrb26-header{padding:11px;border-radius:13px}.rrb26-heading{width:100%;align-items:flex-start;gap:9px}.rrb26-heading-icon{width:38px;height:38px;border-radius:10px}.rrb26-heading-icon svg{width:20px;height:20px}.rrb26-heading h1{font-size:18px}.rrb26-heading p{max-width:none;font-size:8px;white-space:normal;line-height:1.35}.rrb26-workspace{margin-top:7px;border-radius:13px}.rrb26-tabs{gap:2px;padding:6px 6px 0;scrollbar-width:none}.rrb26-tabs::-webkit-scrollbar{display:none}.rrb26-tab{padding:8px 10px;font-size:8px}.rrb26-note{gap:5px;padding:8px 9px;font-size:8px}.rrb26-note>span{padding:4px 6px}.rrb26-panel{padding:10px}.rrb26-panel-heading{gap:8px;margin-bottom:10px}.rrb26-panel-heading h2{font-size:14px}.rrb26-panel-heading p{font-size:8px}.rrb26-scope-pill{padding:4px 7px;font-size:7px}.rrb26-card-grid{gap:8px}.rrb26-card{padding:10px;border-radius:11px}.rrb26-card-head{gap:7px;margin-bottom:8px}.rrb26-card-icon{width:30px;height:30px}.rrb26-card-icon svg{width:16px;height:16px}.rrb26-card-head h3{font-size:14px}.rrb26-card-head span{font-size:8px}.rrb26-values>div{padding:7px 3px}.rrb26-values small,.rrb26-achievements small{font-size:6.5px}.rrb26-values strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:10px}.rrb26-card.is-ratio .rrb26-values strong{font-size:14px}.rrb26-achievements{gap:5px;margin-top:6px}.rrb26-achievements>div{padding:6px 3px}.rrb26-achievements b{font-size:15px}.rrb26-card footer{font-size:7px}.rrb26-footnote{padding:8px 10px;font-size:8px}.rrb26-table{min-width:700px}.rrb26-table th,.rrb26-table td{padding:8px 7px;font-size:8px}.rrb26-table thead th{font-size:7px}}
   #realisasiRbb2026{position:relative}.rrb26-loading-state{position:absolute;inset:0;z-index:10;display:grid;place-items:center;pointer-events:none;opacity:1;visibility:visible;transition:opacity .25s ease,visibility .25s ease}.rrb26-loading-card{display:flex;align-items:center;gap:9px;padding:10px 14px;border:1px solid rgba(172,205,224,.8);border-radius:999px;background:rgba(255,255,255,.9);box-shadow:0 10px 25px rgba(12,69,117,.14);backdrop-filter:blur(10px);color:#1d5e7a;font-size:10px;font-weight:850}.rrb26-loading-spinner{width:16px;height:16px;border:2px solid #d8e8f1;border-top-color:#2563eb;border-radius:50%;animation:rrb26Spin .8s linear infinite}#realisasiRbb2026.is-loading>.rrb26-header,#realisasiRbb2026.is-loading>.rrb26-workspace{opacity:.48;filter:blur(5px);pointer-events:none;transform:translateY(3px);transition:opacity .25s ease,filter .25s ease,transform .25s ease}#realisasiRbb2026:not(.is-loading) .rrb26-loading-state{opacity:0;visibility:hidden}@keyframes rrb26Spin{to{transform:rotate(360deg)}}
+</style>
+
+<style>
+  .rrb26-card.is-history{cursor:pointer}.rrb26-card.is-history:after{content:'↗';position:absolute;right:10px;top:9px;display:grid;place-items:center;width:19px;height:19px;border:1px solid #c9e1ee;border-radius:50%;background:#f2faff;color:#19739a;font-size:12px;font-weight:950;transition:transform .2s ease,background .2s ease}.rrb26-card.is-history:hover:after,.rrb26-card.is-history:focus-visible:after{transform:translate(1px,-1px);background:#e2f5ff}.rrb26-card.is-history:focus-visible{outline:3px solid rgba(37,99,235,.22);outline-offset:2px}.rrb26-card.is-history footer{color:#13779b}
+  .rrb26-history-modal{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(7,30,55,.62);backdrop-filter:blur(6px)}
+  .rrb26-history-modal[hidden]{display:none}.rrb26-history-card{width:min(900px,100%);max-height:min(760px,calc(100dvh - 30px));overflow:hidden;border:1px solid #cfe1ec;border-radius:18px;background:#fff;box-shadow:0 22px 70px rgba(7,47,78,.28);animation:rrb26HistoryIn .2s ease both}.rrb26-history-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px;padding:18px 20px 14px;border-bottom:1px solid #e1edf3;background:linear-gradient(135deg,#f8fdff,#fff)}.rrb26-history-kicker{color:#2082a0;font-size:8px;font-weight:950;letter-spacing:.14em}.rrb26-history-head h2{margin:4px 0 0;color:#0d3154;font-size:20px;line-height:1.15;font-weight:950}.rrb26-history-head p{margin:4px 0 0;color:#728b9a;font-size:10px;font-weight:700}.rrb26-history-close{display:grid;place-items:center;width:31px;height:31px;border:1px solid #d2e1e9;border-radius:9px;background:#fff;color:#527083;font-size:22px;line-height:1;cursor:pointer}.rrb26-history-close:hover{background:#eff8fc;color:#0d5a76}.rrb26-history-body{max-height:calc(100dvh - 145px);overflow:auto;padding:16px 20px 20px}.rrb26-history-loading,.rrb26-history-empty{display:flex;align-items:center;justify-content:center;gap:9px;min-height:260px;color:#668393;font-size:11px;font-weight:800}.rrb26-history-loading .rrb26-loading-spinner{width:20px;height:20px}.rrb26-history-meta{display:flex;align-items:stretch;gap:8px;flex-wrap:wrap;margin-bottom:13px}.rrb26-history-stat{min-width:145px;flex:1 1 145px;padding:9px 11px;border:1px solid #dceaf1;border-radius:10px;background:#f8fcfe}.rrb26-history-stat span{display:block;color:#78909e;font-size:8px;font-weight:850;text-transform:uppercase;letter-spacing:.04em}.rrb26-history-stat b{display:block;margin-top:4px;color:#123f5e;font-size:13px;font-weight:950}.rrb26-history-stat small{display:block;margin-top:3px;color:#78909e;font-size:8px;font-weight:700}.rrb26-history-formula{margin:0 0 12px;padding:8px 10px;border-left:3px solid #25a1bb;border-radius:5px;background:#effafc;color:#527383;font-size:9px;font-weight:750}.rrb26-history-formula b{color:#17657e}.rrb26-history-chart{overflow:hidden;padding:10px 8px 4px;border:1px solid #dceaf1;border-radius:13px;background:#fff}.rrb26-history-chart svg{display:block;width:100%;height:auto;min-height:250px}.rrb26-history-axis{fill:#78909e;font-size:10px;font-weight:700}.rrb26-history-grid{stroke:#e5eef3;stroke-width:1}.rrb26-history-area{fill:rgba(37,145,190,.12)}.rrb26-history-line{fill:none;stroke:#1687b1;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.rrb26-history-dot{fill:#fff;stroke:#1687b1;stroke-width:2}.rrb26-history-values{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-top:12px}.rrb26-history-value{padding:7px 9px;border:1px solid #e3edf2;border-radius:8px;background:#fbfdfe}.rrb26-history-value span{display:block;color:#78909e;font-size:8px;font-weight:800}.rrb26-history-value b{display:block;margin-top:3px;color:#254c65;font-size:10px;font-family:'JetBrains Mono',ui-monospace,monospace}
+  @keyframes rrb26HistoryIn{from{opacity:0;transform:translateY(8px) scale(.985)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @media(max-width:540px){.rrb26-history-modal{align-items:flex-end;padding:0}.rrb26-history-card{max-height:calc(100dvh - 9px);border-radius:16px 16px 0 0}.rrb26-history-head{padding:14px 14px 11px}.rrb26-history-head h2{font-size:17px}.rrb26-history-body{max-height:calc(100dvh - 105px);padding:11px 12px 14px}.rrb26-history-chart svg{min-height:220px}.rrb26-history-stat{min-width:125px;padding:8px}.rrb26-history-stat b{font-size:11px}}
 </style>
 
 <script>
@@ -253,6 +340,170 @@ $rrbRenderMetricCard = static function (array $card, callable $escape, bool $sho
       window.history.replaceState({}, '', url.toString());
     }
   };
+
+  const historyModal = document.getElementById('rrb26HistoryModal');
+  const historyBody = document.getElementById('rrb26HistoryBody');
+  const historyTitle = document.getElementById('rrb26HistoryTitle');
+  const historySubtitle = document.getElementById('rrb26HistorySubtitle');
+  const numberFormat = new Intl.NumberFormat('id-ID');
+  const compactFormat = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 });
+  let historyRequestId = 0;
+
+  const escapeHistory = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+  }[char]));
+  const formatHistoryValue = (value, meta = {}) => {
+    const number = Number(value || 0);
+    const isRatio = String(meta.unit || '').toLowerCase().includes('persen') || meta.metric === 'npl';
+    if (isRatio) return `${compactFormat.format(number)}%`;
+    const absolute = Math.abs(number);
+    const sign = number < 0 ? '-' : '';
+    if (absolute >= 1e12) return `${sign}${compactFormat.format(absolute / 1e12)} T`;
+    if (absolute >= 1e9) return `${sign}${compactFormat.format(absolute / 1e9)} M`;
+    if (absolute >= 1e6) return `${sign}${compactFormat.format(absolute / 1e6)} Jt`;
+    return `${sign}${numberFormat.format(Math.round(absolute))}`;
+  };
+  const formatHistoryDate = (value) => {
+    const date = new Date(`${String(value || '').slice(0, 10)}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? String(value || '-') : new Intl.DateTimeFormat('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }).format(date);
+  };
+
+  const renderHistoryChart = (rows, meta = {}) => {
+    const width = 760;
+    const height = 310;
+    const pad = { top: 22, right: 22, bottom: 48, left: 62 };
+    const values = rows.map((row) => Number(row.nilai || 0));
+    let min = Math.min(...values);
+    let max = Math.max(...values);
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return '';
+    if (min === max) {
+      const offset = Math.abs(max || 1) * 0.08;
+      min -= offset;
+      max += offset;
+    } else {
+      const offset = (max - min) * 0.12;
+      min -= offset;
+      max += offset;
+    }
+    const plotWidth = width - pad.left - pad.right;
+    const plotHeight = height - pad.top - pad.bottom;
+    const xAt = (index) => rows.length === 1 ? pad.left + plotWidth / 2 : pad.left + (plotWidth * index / (rows.length - 1));
+    const yAt = (value) => pad.top + ((max - value) / (max - min)) * plotHeight;
+    const points = rows.map((row, index) => `${xAt(index).toFixed(2)},${yAt(Number(row.nilai || 0)).toFixed(2)}`);
+    const area = `${pad.left},${height - pad.bottom} ${points.join(' ')} ${xAt(rows.length - 1).toFixed(2)},${height - pad.bottom}`;
+    const grid = [0, 1, 2, 3, 4].map((index) => {
+      const value = max - ((max - min) * index / 4);
+      const y = pad.top + plotHeight * index / 4;
+      return `<line class="rrb26-history-grid" x1="${pad.left}" y1="${y.toFixed(2)}" x2="${width - pad.right}" y2="${y.toFixed(2)}"></line><text class="rrb26-history-axis" x="${pad.left - 8}" y="${(y + 4).toFixed(2)}" text-anchor="end">${escapeHistory(formatHistoryValue(value, meta))}</text>`;
+    }).join('');
+    const labels = rows.map((row, index) => {
+      const show = rows.length <= 8 || index === 0 || index === rows.length - 1 || index % Math.ceil(rows.length / 6) === 0;
+      return show ? `<text class="rrb26-history-axis" x="${xAt(index).toFixed(2)}" y="${height - 19}" text-anchor="middle">${escapeHistory(row.label || formatHistoryDate(row.tanggal))}</text>` : '';
+    }).join('');
+    const dots = rows.map((row, index) => `<circle class="rrb26-history-dot" cx="${xAt(index).toFixed(2)}" cy="${yAt(Number(row.nilai || 0)).toFixed(2)}" r="4"><title>${escapeHistory(formatHistoryDate(row.tanggal))}: ${escapeHistory(formatHistoryValue(row.nilai, meta))}</title></circle>`).join('');
+    return `<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Grafik history realisasi"><g>${grid}</g><polygon class="rrb26-history-area" points="${area}"></polygon><polyline class="rrb26-history-line" points="${points.join(' ')}"></polyline><g>${dots}</g><g>${labels}</g></svg>`;
+  };
+
+  const renderHistoryLegacy = (payload) => {
+    const meta = payload?.meta || {};
+    const rows = Array.isArray(payload?.history) ? payload.history : [];
+    historyTitle.textContent = `${meta.label || 'History Realisasi'} · ${meta.scope || '-'}`;
+    historySubtitle.textContent = `Tahun ${meta.year || '-'} · ${meta.unit || 'Snapshot closing per bulan'}`;
+    if (!rows.length) {
+      historyBody.innerHTML = '<div class="rrb26-history-empty">Belum ada snapshot closing untuk pilihan ini.</div>';
+      return;
+    }
+    const latest = rows[rows.length - 1];
+    const previous = rows.length > 1 ? rows[rows.length - 2] : null;
+    const growth = previous && Number(previous.nilai) !== 0 ? ((Number(latest.nilai) - Number(previous.nilai)) / Math.abs(Number(previous.nilai))) * 100 : null;
+    const growthText = growth === null ? '-' : `${growth >= 0 ? '+' : ''}${compactFormat.format(growth)}%`;
+    historyBody.innerHTML = `<div class="rrb26-history-meta"><div class="rrb26-history-stat"><span>Closing terbaru</span><b>${escapeHistory(formatHistoryValue(latest.nilai))}</b><small>${escapeHistory(formatHistoryDate(latest.tanggal))}</small></div><div class="rrb26-history-stat"><span>Perubahan vs closing sebelumnya</span><b>${escapeHistory(growthText)}</b><small>${previous ? escapeHistory(formatHistoryDate(previous.tanggal)) : 'Belum ada pembanding'}</small></div><div class="rrb26-history-stat"><span>Jumlah snapshot</span><b>${rows.length} closing</b><small>Data tahunan ${escapeHistory(meta.year || '')}</small></div></div><p class="rrb26-history-formula"><b>Rumus:</b> ${escapeHistory(meta.formula || '-')} · ${escapeHistory(meta.scope || '-')}</p><div class="rrb26-history-chart">${renderHistoryChart(rows)}</div><div class="rrb26-history-values">${rows.map((row) => `<div class="rrb26-history-value"><span>${escapeHistory(row.label || formatHistoryDate(row.tanggal))}</span><b>${escapeHistory(formatHistoryValue(row.nilai))}</b></div>`).join('')}</div>`;
+  };
+
+  const renderHistoryBase = (payload) => {
+    const meta = payload?.meta || {};
+    const rows = Array.isArray(payload?.history) ? payload.history : [];
+    historyTitle.textContent = `${meta.label || 'History Realisasi'} · ${meta.scope || '-'}`;
+    historySubtitle.textContent = `Tahun ${meta.year || '-'} · ${meta.unit || 'Snapshot closing per bulan'}`;
+    if (!rows.length) {
+      historyBody.innerHTML = '<div class="rrb26-history-empty">Belum ada snapshot closing untuk pilihan ini.</div>';
+      return;
+    }
+    const latest = rows[rows.length - 1];
+    const previous = rows.length > 1 ? rows[rows.length - 2] : null;
+    const growth = previous && Number(previous.nilai) !== 0 ? ((Number(latest.nilai) - Number(previous.nilai)) / Math.abs(Number(previous.nilai))) * 100 : null;
+    const growthText = growth === null ? '-' : `${growth >= 0 ? '+' : ''}${compactFormat.format(growth)}%`;
+    const totalLabels = { pendapatan: 'Total Pendapatan', biaya: 'Total Beban', laba: 'Total Laba Kotor' };
+    const totals = meta.totals && typeof meta.totals === 'object' ? Object.entries(totalLabels).map(([key, label]) => {
+      if (meta.totals[key] === undefined) return '';
+      return `<div class="rrb26-history-stat rrb26-history-total"><span>${label}</span><b>${escapeHistory(formatHistoryValue(meta.totals[key], meta))}</b><small>Total tahun berjalan ${escapeHistory(meta.year || '')}</small></div>`;
+    }).join('') : '';
+    const calculation = meta.calculation ? ` · ${escapeHistory(meta.calculation)}` : '';
+    historyBody.innerHTML = `<div class="rrb26-history-meta"><div class="rrb26-history-stat"><span>${meta.metric === 'npl' ? 'NPL terbaru' : 'Closing terbaru'}</span><b>${escapeHistory(formatHistoryValue(latest.nilai, meta))}</b><small>${escapeHistory(formatHistoryDate(latest.tanggal))}</small></div><div class="rrb26-history-stat"><span>Perubahan vs closing sebelumnya</span><b>${escapeHistory(growthText)}</b><small>${previous ? escapeHistory(formatHistoryDate(previous.tanggal)) : 'Belum ada pembanding'}</small></div><div class="rrb26-history-stat"><span>Jumlah snapshot</span><b>${rows.length} closing</b><small>Data tahunan ${escapeHistory(meta.year || '')}</small></div></div>${totals ? `<div class="rrb26-history-meta rrb26-history-total-grid">${totals}</div>` : ''}<p class="rrb26-history-formula"><b>Rumus:</b> ${escapeHistory(meta.formula || '-')} · ${escapeHistory(meta.scope || '')}${calculation}</p><div class="rrb26-history-chart">${renderHistoryChart(rows, meta)}</div><div class="rrb26-history-values">${rows.map((row) => `<div class="rrb26-history-value"><span>${escapeHistory(row.label || formatHistoryDate(row.tanggal))}</span><b>${escapeHistory(formatHistoryValue(row.nilai, meta))}</b></div>`).join('')}</div>`;
+  };
+
+  const renderHistory = (payload) => {
+    renderHistoryBase(payload);
+    const meta = payload?.meta || {};
+    const rows = Array.isArray(payload?.history) ? payload.history : [];
+    const isMonthlyMetric = ['pendapatan', 'biaya', 'laba'].includes(meta.metric);
+    if (!rows.length || !isMonthlyMetric) return;
+    const stats = historyBody.querySelectorAll('.rrb26-history-meta:first-child .rrb26-history-stat');
+    if (stats.length < 3) return;
+    stats[0].querySelector('span').textContent = 'Nominal bulan terakhir';
+    stats[1].querySelector('span').textContent = 'Perubahan vs bulan sebelumnya';
+    stats[2].querySelector('span').textContent = 'Total tahun berjalan';
+    stats[2].querySelector('b').textContent = formatHistoryValue(meta.totals?.[meta.metric] ?? 0, meta);
+    stats[2].querySelector('small').textContent = `Akumulasi tahun ${meta.year || '-'}`;
+    historyBody.querySelectorAll('.rrb26-history-total small').forEach((node) => {
+      node.textContent = `Total tahun berjalan ${meta.year || '-'}`;
+    });
+  };
+
+  const closeHistory = () => {
+    if (!historyModal) return;
+    historyModal.hidden = true;
+    document.body.style.overflow = '';
+  };
+
+  const openHistory = async (card) => {
+    if (!historyModal || !historyBody) return;
+    const requestId = ++historyRequestId;
+    const metric = card.dataset.rrb26HistoryMetric || 'aset';
+    const scope = card.dataset.rrb26HistoryScope || 'consolidated';
+    const scopeValue = card.dataset.rrb26HistoryScopeValue || '000';
+    const year = Number(card.dataset.rrb26HistoryYear || 2026);
+    historyModal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    historyTitle.textContent = `History Realisasi ${card.querySelector('h3')?.textContent || ''}`;
+    historySubtitle.textContent = 'Mengambil snapshot closing dari acc_history...';
+    historyBody.innerHTML = '<div class="rrb26-history-loading"><span class="rrb26-loading-spinner"></span><span>Memuat history...</span></div>';
+    const request = { type: 'realisasi_history', metric, year, kode_kantor: '000' };
+    if (scope === 'korwil') request.korwil = scopeValue;
+    if (scope === 'branch') request.kode_kantor = scopeValue;
+    try {
+      const response = window.apiFetch ? await window.apiFetch('./api/rbb/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), cache: 'no-store' }) : await fetch('./api/rbb/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request), cache: 'no-store' });
+      const json = await response.json();
+      if (!response.ok || Number(json.status) >= 400) throw new Error(json.message || 'History gagal dimuat');
+      if (requestId === historyRequestId) renderHistory(json.data || {});
+    } catch (error) {
+      if (requestId !== historyRequestId) return;
+      historyBody.innerHTML = `<div class="rrb26-history-empty">${escapeHistory(error.message || 'History gagal dimuat.')}</div>`;
+    }
+  };
+
+  root.querySelectorAll('[data-rrb26-history-metric]').forEach((card) => {
+    card.addEventListener('click', () => openHistory(card));
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openHistory(card);
+      }
+    });
+  });
+  document.getElementById('rrb26HistoryClose')?.addEventListener('click', closeHistory);
+  historyModal?.addEventListener('click', (event) => { if (event.target === historyModal) closeHistory(); });
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && historyModal && !historyModal.hidden) closeHistory(); });
   tabs.forEach((tab) => tab.addEventListener('click', () => setActive(tab.dataset.rrb26Tab, true)));
 })();
 </script>
