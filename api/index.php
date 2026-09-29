@@ -108,6 +108,9 @@ switch ($endpoint) {
     case 'kpi':
         require __DIR__ . '/routes/kpi.php';
         break;
+    case 'paparan_settings':
+        require __DIR__ . '/routes/paparan_settings.php';
+        break;
     case 'event_theme':
         require __DIR__ . '/routes/event_theme.php';
         break;

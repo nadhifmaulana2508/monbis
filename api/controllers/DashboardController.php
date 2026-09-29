@@ -803,6 +803,9 @@ class DashboardController{
         } elseif ($periode === 'bulanan') {
             $start_date = date('Y-m-01', strtotime('-5 months', strtotime($harian_date))); 
             $format_group = 'monthly';
+        } elseif ($periode === 'tahun_berjalan') {
+            $start_date = date('Y-01-01', strtotime($harian_date));
+            $format_group = 'monthly';
         } elseif ($periode === 'tahunan') {
             // FIX: Ambil dari awal tahun 2020
             $start_date = '2020-01-01'; 

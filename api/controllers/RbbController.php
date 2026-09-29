@@ -1429,6 +1429,179 @@ class RbbController
         }
     }
 
+    /**
+     * Ringkasan target RBB dan realisasi produksi kredit per bulan untuk satu lingkup.
+     * Endpoint terpisah agar tidak mengubah perilaku laporan realisasi vs RBB yang lama.
+     */
+    public function getRealisasiKreditRbbTahunan($input = null): void
+    {
+        set_time_limit(60);
+        $b = is_array($input) ? $input : [];
+        $closingText = trim((string)($b['harian_date'] ?? ''));
+        $closing = DateTimeImmutable::createFromFormat('!Y-m-d', $closingText);
+        if (!$closing || $closing->format('Y-m-d') !== $closingText) {
+            sendResponse(422, 'Tanggal closing harus berformat YYYY-MM-DD.');
+            return;
+        }
+
+        $korwilRanges = [
+            'SEMARANG' => [1, 7],
+            'SOLO' => [8, 14],
+            'BANYUMAS' => [15, 21],
+            'PEKALONGAN' => [22, 28],
+        ];
+        $korwil = strtoupper(trim((string)($b['korwil'] ?? '')));
+        $office = trim((string)($b['kode_kantor'] ?? '000'));
+        $scopeType = 'consolidated';
+        $scopeLabel = 'Pusat';
+        $startOffice = 1;
+        $endOffice = 28;
+        $branchCode = null;
+
+        if (isset($korwilRanges[$korwil])) {
+            $scopeType = 'korwil';
+            $scopeLabel = 'Korwil ' . ucfirst(strtolower($korwil));
+            [$startOffice, $endOffice] = $korwilRanges[$korwil];
+        } elseif ($office !== '' && $office !== '000' && strtolower($office) !== 'konsolidasi') {
+            $normalized = str_pad($office, 3, '0', STR_PAD_LEFT);
+            if (!preg_match('/^0(?:0[1-9]|1[0-9]|2[0-8])$/', $normalized)) {
+                sendResponse(422, 'Kode kantor harus berada pada rentang 001 sampai 028.');
+                return;
+            }
+            $scopeType = 'branch';
+            $branchCode = $normalized;
+            $startOffice = $endOffice = (int)$normalized;
+            $scopeLabel = 'Kantor ' . $normalized;
+        }
+
+        $officeCodes = array_map(static function (int $number): string {
+            return str_pad((string)$number, 3, '0', STR_PAD_LEFT);
+        }, range($startOffice, $endOffice));
+        $targetParts = array_map(static function (string $code): string {
+            return "COALESCE(r.`{$code}`, 0)";
+        }, $officeCodes);
+        $targetExpression = implode(' + ', $targetParts);
+        $yearStart = $closing->format('Y') . '-01-01';
+        $nextYearStart = ((int)$closing->format('Y') + 1) . '-01-01';
+        $closingNextDay = $closing->modify('+1 day')->format('Y-m-d');
+
+        $actualScopeSql = $branchCode !== null
+            ? ' AND kode_kantor = :actual_office'
+            : " AND kode_kantor BETWEEN '{$officeCodes[0]}' AND '" . end($officeCodes) . "'";
+
+        try {
+            $targetSql = "
+                SELECT r.periode, SUM({$targetExpression}) AS target
+                FROM rbb r
+                WHERE r.periode >= :target_year_start
+                  AND r.periode < :target_next_year
+                  AND EXISTS (
+                      SELECT 1 FROM ref_rbb ref
+                      WHERE ref.kode_monbis = r.kode_monbis
+                        AND ref.kode_perkiraan = 'produksi.total'
+                  )
+                GROUP BY r.periode
+                ORDER BY r.periode
+            ";
+            $targetStmt = $this->pdo->prepare($targetSql);
+            $targetStmt->bindValue(':target_year_start', $yearStart, PDO::PARAM_STR);
+            $targetStmt->bindValue(':target_next_year', $nextYearStart, PDO::PARAM_STR);
+            $targetStmt->execute();
+
+            $targets = [];
+            foreach ($targetStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $month = (int)date('n', strtotime((string)$row['periode']));
+                $targets[$month] = (float)($row['target'] ?? 0);
+            }
+
+            $actualSql = "
+                SELECT DATE_FORMAT(tanggal_realisasi, '%Y-%m-01') AS periode,
+                       SUM(COALESCE(realisasi_pokok, 0)) AS realisasi
+                FROM update_realisasi_kredit
+                WHERE kode_trans = '110'
+                  AND tanggal_realisasi >= :actual_year_start
+                  AND tanggal_realisasi < :actual_closing_end
+                  {$actualScopeSql}
+                GROUP BY DATE_FORMAT(tanggal_realisasi, '%Y-%m-01')
+                ORDER BY periode
+            ";
+            $actualStmt = $this->pdo->prepare($actualSql);
+            $actualStmt->bindValue(':actual_year_start', $yearStart, PDO::PARAM_STR);
+            $actualStmt->bindValue(':actual_closing_end', $closingNextDay, PDO::PARAM_STR);
+            if ($branchCode !== null) {
+                $actualStmt->bindValue(':actual_office', $branchCode, PDO::PARAM_STR);
+            }
+            $actualStmt->execute();
+
+            $actuals = [];
+            foreach ($actualStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $month = (int)date('n', strtotime((string)$row['periode']));
+                $actuals[$month] = (float)($row['realisasi'] ?? 0);
+            }
+
+            $closingMonth = (int)$closing->format('n');
+            $months = [];
+            $targetYear = 0.0;
+            $targetToDate = 0.0;
+            $actualToDate = 0.0;
+            $targetMonths = 0;
+            $targetMonthsToDate = 0;
+            for ($month = 1; $month <= 12; $month++) {
+                $period = sprintf('%04d-%02d-01', (int)$closing->format('Y'), $month);
+                $hasTarget = array_key_exists($month, $targets);
+                $target = $hasTarget ? $targets[$month] : null;
+                $hasActual = $month <= $closingMonth;
+                $actual = $hasActual ? (float)($actuals[$month] ?? 0) : null;
+                $shortfall = $target !== null && $actual !== null ? max(0, $target - $actual) : null;
+                $achievement = $target !== null && $target > 0 && $actual !== null
+                    ? round($actual / $target * 100, 2)
+                    : null;
+
+                if ($target !== null) {
+                    $targetYear += $target;
+                    $targetMonths++;
+                    if ($month <= $closingMonth) {
+                        $targetToDate += $target;
+                        $targetMonthsToDate++;
+                    }
+                }
+                if ($actual !== null) $actualToDate += $actual;
+
+                $months[] = [
+                    'periode' => $period,
+                    'target' => $target,
+                    'realisasi' => $actual,
+                    'kekurangan' => $shortfall,
+                    'pencapaian_persen' => $achievement,
+                ];
+            }
+
+            sendResponse(200, 'Berhasil memuat pencapaian RBB kredit tahunan.', [
+                'meta' => [
+                    'tahun' => (int)$closing->format('Y'),
+                    'harian_date' => $closingText,
+                    'scope_type' => $scopeType,
+                    'scope_label' => $scopeLabel,
+                    'target_rbb_tahunan' => $targetMonths > 0 ? $targetYear : null,
+                    'target_sampai_bulan_ini' => $targetMonthsToDate > 0 ? $targetToDate : null,
+                    'realisasi_sampai_closing' => $actualToDate,
+                    'kekurangan_sampai_bulan_ini' => $targetMonthsToDate > 0 ? max(0, $targetToDate - $actualToDate) : null,
+                    'sisa_target_tahunan' => $targetMonths > 0 ? max(0, $targetYear - $actualToDate) : null,
+                    'pencapaian_tahunan_persen' => $targetYear > 0 ? round($actualToDate / $targetYear * 100, 2) : null,
+                    'bulan_berjalan' => $closingMonth,
+                    'jumlah_bulan_target' => $targetMonths,
+                    'jumlah_bulan_target_sampai_bulan_ini' => $targetMonthsToDate,
+                    'kode_perkiraan' => 'produksi.total',
+                    'basis_realisasi' => "update_realisasi_kredit kode_trans 110",
+                ],
+                'months' => $months,
+            ]);
+        } catch (PDOException $e) {
+            error_log('PDO Error Pencapaian RBB Kredit Tahunan: ' . $e->getMessage());
+            sendResponse(500, 'Data pencapaian RBB kredit tahunan belum dapat dimuat.');
+        }
+    }
+
     private function getRealisasiHistoryComparison($input = null, $fallbackHistory = false)
     {
         $b = is_array($input) ? $input : [];
@@ -1710,6 +1883,99 @@ class RbbController
         }
     }
 
+    private function getIkhtisarCreditComparison(string $closingDate, array $input): array
+    {
+        $closing = DateTimeImmutable::createFromFormat('!Y-m-d', $closingDate);
+        if (!$closing || $closing->format('Y-m-d') !== $closingDate) return [];
+
+        $periods = [
+            'previous_month' => $closing->modify('first day of this month')->modify('-1 day')->format('Y-m-d'),
+            'previous_year_end' => $closing->setDate((int)$closing->format('Y') - 1, 12, 31)->format('Y-m-d'),
+        ];
+        $candidateDates = [];
+        foreach ($periods as $date) {
+            $candidateDates[] = $date;
+            $candidateDates[] = (new DateTimeImmutable($date))->modify('-7 days')->format('Y-m-d');
+        }
+        $candidateDates = array_values(array_unique($candidateDates));
+        $dateParams = [];
+        $datePlaceholders = [];
+        foreach ($candidateDates as $index => $date) {
+            $placeholder = ':credit_comparison_date_' . $index;
+            $datePlaceholders[] = $placeholder;
+            $dateParams[$placeholder] = $date;
+        }
+
+        $scope = $this->buildIkhtisarNominatifScope($input, 'n', 'kode_cabang');
+        $sql = "
+            SELECT n.created AS snapshot_date,
+                   UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) AS kolektibilitas,
+                   COUNT(*) AS record_count,
+                   COALESCE(SUM(COALESCE(n.saldo_bank, 0)), 0) AS saldo_bank
+            FROM nominatif n FORCE INDEX (idx_nominatif_filter)
+            WHERE n.created IN (" . implode(', ', $datePlaceholders) . ")
+            {$scope['sql']}
+            GROUP BY n.created, UPPER(TRIM(CAST(n.kolektibilitas AS CHAR)))
+        ";
+        $stmt = $this->pdo->prepare($sql);
+        foreach ($dateParams as $placeholder => $date) $stmt->bindValue($placeholder, $date, PDO::PARAM_STR);
+        foreach ($scope['params'] as $placeholder => $value) $stmt->bindValue($placeholder, $value, PDO::PARAM_STR);
+        $stmt->execute();
+
+        $byDate = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $date = (string)($row['snapshot_date'] ?? '');
+            $key = strtoupper(trim((string)($row['kolektibilitas'] ?? '')));
+            if (!isset($byDate[$date])) $byDate[$date] = ['records' => 0, 'statuses' => []];
+            $byDate[$date]['records'] += (int)($row['record_count'] ?? 0);
+            if (in_array($key, ['L', 'DP', 'KL', 'D', 'M'], true)) {
+                $byDate[$date]['statuses'][$key] = (float)($row['saldo_bank'] ?? 0);
+            }
+        }
+
+        $result = [];
+        foreach ($periods as $period => $requestedDate) {
+            $fallbackDate = (new DateTimeImmutable($requestedDate))->modify('-7 days')->format('Y-m-d');
+            $snapshotDate = !empty($byDate[$requestedDate]['records'])
+                ? $requestedDate
+                : (!empty($byDate[$fallbackDate]['records']) ? $fallbackDate : null);
+            if ($snapshotDate === null) {
+                $result[$period] = ['requested_date' => $requestedDate, 'closing_date' => null, 'statuses' => [], 'total' => null];
+                continue;
+            }
+
+            $statuses = array_merge(['L' => 0.0, 'DP' => 0.0, 'KL' => 0.0, 'D' => 0.0, 'M' => 0.0], $byDate[$snapshotDate]['statuses'] ?? []);
+            $result[$period] = [
+                'requested_date' => $requestedDate,
+                'closing_date' => $snapshotDate,
+                'statuses' => $statuses,
+                'total' => array_sum($statuses),
+            ];
+        }
+        return $result;
+    }
+
+    public function getIkhtisarCreditComparisonData($input = null): void
+    {
+        set_time_limit(90);
+        $b = is_array($input) ? $input : [];
+        $closingDate = trim((string)($b['harian_date'] ?? ''));
+        $closing = DateTimeImmutable::createFromFormat('!Y-m-d', $closingDate);
+        if (!$closing || $closing->format('Y-m-d') !== $closingDate) {
+            sendResponse(422, 'Tanggal closing harus berformat YYYY-MM-DD.');
+            return;
+        }
+
+        try {
+            sendResponse(200, 'Berhasil memuat pembanding kolektibilitas.', [
+                'credit_comparison' => $this->getIkhtisarCreditComparison($closingDate, $b),
+            ]);
+        } catch (PDOException $e) {
+            error_log('PDO Error Pembanding Kolektibilitas: ' . $e->getMessage());
+            sendResponse(500, 'Data pembanding kolektibilitas belum dapat dimuat.');
+        }
+    }
+
     public function getIkhtisarRbb($input = null)
     {
         set_time_limit(90);
@@ -1786,7 +2052,7 @@ class RbbController
                 $sourceStmt->execute();
                 $map = [];
                 foreach ($sourceStmt->fetchAll(PDO::FETCH_ASSOC) as $sourceRow) {
-                    $map[(string)$sourceRow['kode_monbis']] = (float)($sourceRow['nilai'] ?? 0);
+                    $map[(string)$sourceRow['kode_monbis']] = $sourceRow['nilai'] === null ? null : (float)$sourceRow['nilai'];
                 }
                 return $map;
             };
@@ -1797,6 +2063,9 @@ class RbbController
             ];
 
             $detailActual = $this->getIkhtisarDetailActual($harianDate, $b);
+            $creditComparison = filter_var($b['include_credit_comparison'] ?? false, FILTER_VALIDATE_BOOLEAN)
+                ? $this->getIkhtisarCreditComparison($harianDate, $b)
+                : [];
 
             return sendResponse(200, 'Berhasil memuat mapping RBB Ikhtisar', [
                 'meta' => [
@@ -1809,11 +2078,267 @@ class RbbController
                 ],
                 'rbb_sources' => $rbbSources,
                 'detail_actual' => $detailActual,
+                'credit_comparison' => $creditComparison,
                 'data' => $rows,
             ]);
         } catch (PDOException $e) {
             error_log('PDO Error Ikhtisar RBB: ' . $e->getMessage());
             return sendResponse(500, 'Database Query Error: ' . $e->getMessage(), null);
+        }
+    }
+
+    /**
+     * Rekap kinerja bertingkat untuk dashboard Direksi.
+     * Pusat -> Korwil -> Cabang -> Kankas; nominal mengikuti basis Ikhtisar.
+     */
+    public function getKinerjaKantor(array $input = []): void
+    {
+        set_time_limit(90);
+
+        $requestedDate = trim((string)($input['harian_date'] ?? ''));
+        $closing = DateTimeImmutable::createFromFormat('!Y-m-d', $requestedDate);
+        if (!$closing || $closing->format('Y-m-d') !== $requestedDate) {
+            sendResponse(422, 'Tanggal closing harus berformat YYYY-MM-DD.');
+            return;
+        }
+
+        $korwilRanges = [
+            'SEMARANG' => ['001', '007'],
+            'SOLO' => ['008', '014'],
+            'BANYUMAS' => ['015', '021'],
+            'PEKALONGAN' => ['022', '028'],
+        ];
+        $korwil = strtoupper(trim((string)($input['korwil'] ?? '')));
+        $kodeKantor = trim((string)($input['kode_kantor'] ?? '000'));
+        $scopeType = 'consolidated';
+        $scopeLabel = 'Pusat';
+        $range = ['001', '028'];
+        $branchCode = null;
+
+        if (isset($korwilRanges[$korwil])) {
+            $scopeType = 'korwil';
+            $scopeLabel = 'Korwil ' . ucfirst(strtolower($korwil));
+            $range = $korwilRanges[$korwil];
+        } elseif ($kodeKantor !== '' && $kodeKantor !== '000' && strtolower($kodeKantor) !== 'konsolidasi') {
+            $normalized = str_pad($kodeKantor, 3, '0', STR_PAD_LEFT);
+            if (!preg_match('/^0(?:0[1-9]|1[0-9]|2[0-8])$/', $normalized)) {
+                sendResponse(422, 'Kode kantor harus berada pada rentang 001 sampai 028.');
+                return;
+            }
+            $scopeType = 'branch';
+            $branchCode = $normalized;
+            $range = [$normalized, $normalized];
+        }
+
+        $previousMonth = $closing->modify('first day of this month')->modify('-1 day')->format('Y-m-d');
+        $previousYear = DateTimeImmutable::createFromFormat('!Y-m-d', ((int)$closing->format('Y') - 1) . '-12-31')
+            ->format('Y-m-d');
+        $periods = [
+            'current' => $requestedDate,
+            'previous_month' => $previousMonth,
+            'previous_year' => $previousYear,
+        ];
+
+        $metricSpecs = [
+            'kredit' => ['table' => 'nominatif', 'alias' => 'n', 'office' => 'kode_cabang', 'balance' => 'saldo_bank', 'index' => 'idx_nominatif_filter'],
+            'tabungan' => ['table' => 'nominatif_tabungan', 'alias' => 't', 'office' => 'kode_kantor', 'balance' => 'saldo', 'index' => 'idx_perf_tabungan_main'],
+            'deposito' => ['table' => 'nominatif_deposito', 'alias' => 'd', 'office' => 'kode_kantor', 'balance' => 'saldo_akhir', 'index' => 'idx_perf_rekap_kankas'],
+        ];
+
+        $loadSnapshots = function (array $spec, array $dates) use ($range, $branchCode): array {
+            $alias = $spec['alias'];
+            $office = $spec['office'];
+            $officeExpression = "LPAD(TRIM(CAST({$alias}.{$office} AS CHAR)), 3, '0')";
+            $rawGroupExpression = "TRIM(CAST({$alias}.kode_group1 AS CHAR))";
+            $missingGroupExpression = "{$alias}.kode_group1 IS NULL OR {$rawGroupExpression} = '' OR UPPER({$rawGroupExpression}) = 'NULL'";
+            $groupExpression = "CASE WHEN {$missingGroupExpression} THEN CONCAT({$officeExpression}, '000') ELSE {$rawGroupExpression} END";
+            $hasGroupExpression = "CASE WHEN {$missingGroupExpression} THEN 0 ELSE 1 END";
+            $scopeSql = $branchCode !== null
+                ? " AND {$alias}.{$office} = :office_code"
+                : " AND {$alias}.{$office} BETWEEN '{$range[0]}' AND '{$range[1]}'";
+            $dateParams = [];
+            $datePlaceholders = [];
+            foreach ($dates as $period => $date) {
+                $placeholder = ':snapshot_' . preg_replace('/[^a-z0-9_]/i', '', (string)$period);
+                $datePlaceholders[] = $placeholder;
+                $dateParams[$placeholder] = $date;
+            }
+            $sql = "
+                SELECT {$alias}.created AS snapshot_date,
+                       {$officeExpression} AS office_code,
+                       {$groupExpression} AS group_code,
+                       {$hasGroupExpression} AS has_group_code,
+                       SUM(COALESCE({$alias}.{$spec['balance']}, 0)) AS amount
+                FROM {$spec['table']} {$alias} FORCE INDEX ({$spec['index']})
+                WHERE {$alias}.created IN (" . implode(', ', $datePlaceholders) . ") {$scopeSql}
+                GROUP BY snapshot_date, office_code, group_code, has_group_code
+            ";
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($dateParams as $placeholder => $dateValue) $stmt->bindValue($placeholder, $dateValue, PDO::PARAM_STR);
+            if ($branchCode !== null) $stmt->bindValue(':office_code', $branchCode, PDO::PARAM_STR);
+            $stmt->execute();
+            $periodByDate = array_flip($dates);
+            $unitsByPeriod = array_fill_keys(array_keys($dates), []);
+            $groupCoverageByPeriod = array_fill_keys(array_keys($dates), ['mapped' => false, 'unmapped' => false]);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $period = $periodByDate[(string)($row['snapshot_date'] ?? '')] ?? null;
+                if ($period === null) continue;
+                $officeCode = str_pad(trim((string)($row['office_code'] ?? '')), 3, '0', STR_PAD_LEFT);
+                $groupCode = trim((string)($row['group_code'] ?? ''));
+                if ($officeCode === '' || $groupCode === '') continue;
+                $unitKey = $officeCode . '|' . $groupCode;
+                $unitsByPeriod[$period][$unitKey] = ($unitsByPeriod[$period][$unitKey] ?? 0.0) + (float)($row['amount'] ?? 0);
+                if ((int)($row['has_group_code'] ?? 0) === 1) $groupCoverageByPeriod[$period]['mapped'] = true;
+                else $groupCoverageByPeriod[$period]['unmapped'] = true;
+            }
+            return ['units' => $unitsByPeriod, 'group_coverage' => $groupCoverageByPeriod];
+        };
+
+        try {
+            $snapshots = [];
+            $snapshotDates = [];
+            $groupComparisonAvailable = [];
+            foreach ($metricSpecs as $metric => $spec) {
+                $loadedSnapshots = $loadSnapshots($spec, $periods);
+                $metricSnapshots = $loadedSnapshots['units'];
+                foreach ($periods as $period => $date) {
+                    $units = $metricSnapshots[$period] ?? [];
+                    $coverage = $loadedSnapshots['group_coverage'][$period] ?? ['mapped' => false, 'unmapped' => false];
+                    $usedDate = $date;
+                    $isPriorYearKankas = $scopeType === 'branch' && $period === 'previous_year';
+                    $groupDataIncomplete = $isPriorYearKankas && (!$coverage['mapped'] || $coverage['unmapped']);
+                    if (!$units || $groupDataIncomplete) {
+                        $fallbackDate = (new DateTimeImmutable($date))->modify('-7 days')->format('Y-m-d');
+                        $fallbackLoaded = $loadSnapshots($spec, ['fallback' => $fallbackDate]);
+                        $fallbackUnits = $fallbackLoaded['units']['fallback'] ?? [];
+                        $fallbackCoverage = $fallbackLoaded['group_coverage']['fallback'] ?? ['mapped' => false, 'unmapped' => false];
+                        $fallbackHasCompleteGroups = $fallbackCoverage['mapped'] && !$fallbackCoverage['unmapped'];
+                        if ($fallbackUnits && (!$units || ($isPriorYearKankas && $fallbackHasCompleteGroups))) {
+                            $units = $fallbackUnits;
+                            $coverage = $fallbackCoverage;
+                            $usedDate = $fallbackDate;
+                        }
+                    }
+                    $snapshots[$metric][$period] = $units;
+                    $snapshotDates[$metric][$period] = $units ? $usedDate : null;
+                    $groupComparisonAvailable[$metric][$period] = !$isPriorYearKankas || ($coverage['mapped'] && !$coverage['unmapped']);
+                }
+            }
+
+            $officeStmt = $this->pdo->prepare("SELECT LPAD(TRIM(CAST(kode_kantor AS CHAR)), 3, '0') AS kode_kantor, MAX(nama_kantor) AS nama_kantor FROM kode_kantor WHERE kode_kantor BETWEEN :start_code AND :end_code GROUP BY kode_kantor ORDER BY kode_kantor");
+            $officeStmt->execute([':start_code' => $range[0], ':end_code' => $range[1]]);
+            $officeRows = $officeStmt->fetchAll(PDO::FETCH_ASSOC);
+            $officeNames = [];
+            foreach ($officeRows as $officeRow) {
+                $code = str_pad(trim((string)$officeRow['kode_kantor']), 3, '0', STR_PAD_LEFT);
+                $officeNames[$code] = trim((string)($officeRow['nama_kantor'] ?? '')) ?: ('Kantor ' . $code);
+            }
+            if ($scopeType === 'branch') {
+                $scopeLabel = 'Kantor ' . $branchCode . ' · ' . ($officeNames[$branchCode] ?? '');
+            }
+
+            if ($scopeType === 'consolidated') {
+                $children = [];
+                foreach ($korwilRanges as $name => $childRange) {
+                    $officeCodes = array_map(static fn(int $code): string => str_pad((string)$code, 3, '0', STR_PAD_LEFT), range((int)$childRange[0], (int)$childRange[1]));
+                    $children[] = [
+                        'id' => 'korwil:' . $name,
+                        'label' => 'Korwil ' . ucfirst(strtolower($name)),
+                        'office_codes' => $officeCodes,
+                    ];
+                }
+            } elseif ($scopeType === 'korwil') {
+                $children = [];
+                for ($codeNumber = (int)$range[0]; $codeNumber <= (int)$range[1]; $codeNumber++) {
+                    $code = str_pad((string)$codeNumber, 3, '0', STR_PAD_LEFT);
+                    $children[] = ['id' => 'branch:' . $code, 'label' => $officeNames[$code] ?? ('Cabang ' . $code), 'office_codes' => [$code]];
+                }
+            } else {
+                $kasStmt = $this->pdo->prepare("SELECT TRIM(CAST(kode_group1 AS CHAR)) AS group_code, MAX(deskripsi_group1) AS nama FROM kankas WHERE kode_kantor = :office_code AND kode_group1 IS NOT NULL AND TRIM(CAST(kode_group1 AS CHAR)) <> '' AND UPPER(TRIM(CAST(kode_group1 AS CHAR))) <> 'NULL' GROUP BY kode_group1 ORDER BY kode_group1");
+                $kasStmt->execute([':office_code' => $branchCode]);
+                $children = [];
+                $knownKas = [];
+                foreach ($kasStmt->fetchAll(PDO::FETCH_ASSOC) as $kas) {
+                    $groupCode = trim((string)($kas['group_code'] ?? ''));
+                    if ($groupCode === '' || strtoupper($groupCode) === 'NULL') continue;
+                    $knownKas[$groupCode] = true;
+                    $children[] = ['id' => 'kankas:' . $groupCode, 'label' => trim((string)($kas['nama'] ?? '')) ?: ('Kankas ' . $groupCode), 'office_codes' => [$branchCode], 'group_code' => $groupCode];
+                }
+                foreach ($metricSpecs as $metric => $_spec) {
+                    foreach (['current', 'previous_month', 'previous_year'] as $period) {
+                        if ($period === 'previous_year' && !($groupComparisonAvailable[$metric][$period] ?? true)) continue;
+                        foreach (array_keys($snapshots[$metric][$period] ?? []) as $unitKey) {
+                            [$office, $groupCode] = array_pad(explode('|', $unitKey, 2), 2, '');
+                            if ($office === $branchCode && $groupCode !== '' && !isset($knownKas[$groupCode])) {
+                                $knownKas[$groupCode] = true;
+                                $isBranchBase = $groupCode === str_pad($branchCode, 3, '0', STR_PAD_LEFT) . '000';
+                                $children[] = [
+                                    'id' => ($isBranchBase ? 'branch-base:' : 'kankas:') . $groupCode,
+                                    'label' => $isBranchBase ? ($officeNames[$branchCode] ?? ('Cabang ' . $branchCode)) : ('Kankas ' . $groupCode),
+                                    'office_codes' => [$branchCode],
+                                    'group_code' => $groupCode,
+                                ];
+                            }
+                        }
+                    }
+                }
+                usort($children, static fn(array $a, array $b): int => strcmp((string)$a['id'], (string)$b['id']));
+            }
+
+            $readValue = static function (array $units, array $child): ?float {
+                $total = 0.0;
+                $found = false;
+                foreach ($units as $unitKey => $amount) {
+                    [$office, $groupCode] = array_pad(explode('|', $unitKey, 2), 2, '');
+                    $office = str_pad($office, 3, '0', STR_PAD_LEFT);
+                    if (!in_array($office, $child['office_codes'] ?? [], true)) continue;
+                    if (isset($child['group_code']) && $groupCode !== (string)$child['group_code']) continue;
+                    $total += (float)$amount;
+                    $found = true;
+                }
+                return $found ? $total : null;
+            };
+            $percentChange = static function (?float $current, ?float $baseline): ?float {
+                if ($current === null || $baseline === null) return null;
+                if (abs($baseline) < 0.000001) return abs($current) < 0.000001 ? 0.0 : null;
+                return round(($current - $baseline) / abs($baseline) * 100, 2);
+            };
+
+            $rows = [];
+            foreach ($children as $child) {
+                $row = ['id' => $child['id'], 'nama' => $child['label'], 'metrics' => []];
+                foreach (array_keys($metricSpecs) as $metric) {
+                    $current = $readValue($snapshots[$metric]['current'] ?? [], $child);
+                    $month = $readValue($snapshots[$metric]['previous_month'] ?? [], $child);
+                    $year = !($groupComparisonAvailable[$metric]['previous_year'] ?? true)
+                        ? null
+                        : $readValue($snapshots[$metric]['previous_year'] ?? [], $child);
+                    $row['metrics'][$metric] = [
+                        'current' => $current,
+                        'previous_month' => $month,
+                        'previous_year' => $year,
+                        'change_month_pct' => $percentChange($current, $month),
+                        'change_year_pct' => $percentChange($current, $year),
+                    ];
+                }
+                $rows[] = $row;
+            }
+
+            sendResponse(200, 'Berhasil memuat kinerja kantor bertingkat.', [
+                'meta' => [
+                    'scope_type' => $scopeType,
+                    'scope_label' => $scopeLabel,
+                    'closing' => $requestedDate,
+                    'periods' => $periods,
+                    'snapshot_dates' => $snapshotDates,
+                    'group_comparison_available' => $groupComparisonAvailable,
+                    'basis' => ['kredit' => 'saldo_bank', 'tabungan' => 'saldo', 'deposito' => 'saldo_akhir'],
+                ],
+                'rows' => $rows,
+            ]);
+        } catch (Throwable $error) {
+            error_log('Kinerja kantor dashboard error: ' . $error->getMessage());
+            sendResponse(500, 'Data kinerja kantor belum dapat dimuat untuk periode ini.');
         }
     }
 

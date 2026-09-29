@@ -2294,6 +2294,9 @@ class LaporanKeuanganController
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $availableDates = array_fill_keys(array_map(function ($row) {
+                return (string)($row['tanggal'] ?? '');
+            }, $rows), true);
 
             $sqlPerkiraan = "
                 SELECT kode_perk, MAX(nama_perk) AS nama_perk
@@ -2437,6 +2440,7 @@ class LaporanKeuanganController
 
             $avgProduktifCurr = $getAverageAsetProduktif($dateCurrent);
             $avgProduktifPrevM = $getAverageAsetProduktif($dateLastMonth);
+            $avgProduktifPrevY = $getAverageAsetProduktif($dateLastYear);
 
             $calculateRasio = function ($data, $date, $avgAsetProduktif = 0) {
                 $dpk = $data['tabungan'] + $data['deposito'];
@@ -2501,14 +2505,15 @@ class LaporanKeuanganController
 
             $rasioCurr = $calculateRasio($curr, $dateCurrent, $avgProduktifCurr);
             $rasioPrevM = $calculateRasio($prev, $dateLastMonth, $avgProduktifPrevM);
+            $rasioPrevY = $calculateRasio($dataMap[$dateLastYear], $dateLastYear, $avgProduktifPrevY);
             $rasioData = [];
             foreach (['bopo', 'ldr', 'casa', 'roa', 'roe', 'cash', 'nim', 'aset_likuid'] as $key) {
                 $rasioData[$key] = [
                     'persen_aktual' => round($rasioCurr[$key], 2),
                     'persen_bulan_lalu' => round($rasioPrevM[$key], 2),
-                    'persen_tahun_lalu' => 0,
+                    'persen_tahun_lalu' => round($rasioPrevY[$key], 2),
                     'delta_mom' => round($rasioCurr[$key] - $rasioPrevM[$key], 2),
-                    'delta_yoy' => 0,
+                    'delta_yoy' => round($rasioCurr[$key] - $rasioPrevY[$key], 2),
                 ];
             }
 
@@ -2587,6 +2592,11 @@ class LaporanKeuanganController
                     'aktual' => $dateCurrent,
                     'bulan_lalu' => $dateLastMonth,
                     'tahun_lalu' => $dateLastYear,
+                    'tersedia' => [
+                        'aktual' => isset($availableDates[$dateCurrent]),
+                        'bulan_lalu' => isset($availableDates[$dateLastMonth]),
+                        'tahun_lalu' => isset($availableDates[$dateLastYear]),
+                    ],
                 ],
                 'makro' => $summaryData,
                 'ringkasan_detail' => [

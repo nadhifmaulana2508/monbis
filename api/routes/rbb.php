@@ -94,6 +94,9 @@ switch ($method) {
         } elseif ($type === 'realisasi_rbb_bulan_berjalan') {
             $controller->getRealisasiRbbBulanBerjalan($input);
 
+        } elseif ($type === 'realisasi_kredit_rbb_tahunan') {
+            $controller->getRealisasiKreditRbbTahunan($input);
+
         } elseif ($type === 'lapkeu_rbb_vs_realisasi') {
             $controller->getLapkeuRbbVsRealisasi($input);
 
@@ -102,6 +105,12 @@ switch ($method) {
 
         } elseif ($type === 'ikhtisar_rbb') {
             $controller->getIkhtisarRbb($input);
+
+        } elseif ($type === 'ikhtisar_credit_comparison') {
+            $controller->getIkhtisarCreditComparisonData($input);
+
+        } elseif ($type === 'kinerja_kantor') {
+            $controller->getKinerjaKantor($input);
 
         // --- ERROR: TYPE TIDAK DIKENAL ---
         } else {

@@ -214,7 +214,7 @@ $rrbRenderMetricCard = static function (array $card, callable $escape, bool $sho
 };
 ?>
 
-<div id="realisasiRbb2026" class="rrb26-page is-loading" aria-busy="true">
+<div id="realisasiRbb2026" class="rrb26-page" aria-busy="false">
   <div class="rrb26-loading-state" aria-hidden="true">
     <div class="rrb26-loading-card"><span class="rrb26-loading-spinner"></span><span>Memuat laporan...</span></div>
   </div>
