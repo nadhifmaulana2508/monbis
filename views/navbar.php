@@ -888,6 +888,7 @@
           <a href="ikhtisar" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Ikhtisar</a>
           <a href="realisasi_rbb_2026" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Realisasi RBB 2026</a>
           <a id="menuPaparanRbb" href="paparan_rbb_realisasi" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Paparan RBB Direksi</a>
+          <a href="raport_cabang" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Raport Cabang</a>
           <!-- <a href="realisasi_rbb" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Produksi vs RBB</a> -->
 
           <a href="aging_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Rekap Aging Kredit</a>

@@ -96,6 +96,9 @@ switch ($endpoint) {
     case 'rbb':
         require __DIR__ . '/routes/rbb.php';
         break;
+    case 'kinerja_report':
+        require __DIR__ . '/routes/kinerja_report.php';
+        break;
     case 'rbb_v2':
         // FE V2 memakai endpoint terpisah sesuai kebutuhan deployment.
         // Route legacy `rbb` tetap memakai guard SSO.

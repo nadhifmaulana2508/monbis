@@ -1559,6 +1559,8 @@ class RepaymentRateController {
         $page    = max(1, (int)($b['page'] ?? 1));
         $limit   = max(1, min(500, (int)($b['limit'] ?? 20)));
         $offset  = ($page - 1) * $limit;
+        $skipCount = filter_var($b['skip_count'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $total = 0;
 
         if (!$closing || !$harian) return $this->send(400, "Tanggal wajib diisi.");
 
@@ -1570,11 +1572,25 @@ class RepaymentRateController {
         $saldoCol = $this->getSaldoColumn($b);
         $t1Saldo = "COALESCE(t1.{$saldoCol}, 0)";
         $t2Saldo = "COALESCE(t2.{$saldoCol}, 0)";
-        $mode = $status === 'TOTAL_BAYAR' || $status === 'DELTA' ? 'DELTA' : 'ACTUAL';
+        $mode = $status === 'MIGRASI'
+            ? 'MIGRASI'
+            : (($status === 'TOTAL_BAYAR' || $status === 'DELTA') ? 'DELTA' : 'ACTUAL');
 
         $lancarM1 = "({$t1Saldo} > 0 AND COALESCE(t1.kolektibilitas, '') = 'L' AND COALESCE(t1.hari_menunggak, 0) = 0)";
         $lancarCur = "({$t2Saldo} > 0 AND COALESCE(t2.kolektibilitas, '') = 'L' AND COALESCE(t2.hari_menunggak, 0) = 0)";
-        $migrasiRr = "({$lancarM1} AND {$t2Saldo} > 0 AND COALESCE(t2.kolektibilitas, '') = 'L' AND COALESCE(t2.hari_menunggak, 0) > 0)";
+        // Migrasi RR: rekening yang memenuhi basis lancar pada closing M-1,
+        // lalu pada snapshot actual sudah memiliki hari tunggakan > 0.
+        // Kolektibilitas actual tidak dibatasi ke L karena perubahan kolek
+        // merupakan salah satu bentuk migrasi yang ingin ditampilkan.
+        $migrasiRr = "({$t2Saldo} > 0 AND t2.hari_menunggak > 0 AND EXISTS (
+            SELECT 1
+            FROM nominatif t1_mig
+            WHERE t1_mig.no_rekening = t2.no_rekening
+              AND t1_mig.created BETWEEN :s1 AND :e1
+              AND COALESCE(t1_mig.{$saldoCol}, 0) > 0
+              AND COALESCE(t1_mig.kolektibilitas, '') = 'L'
+              AND COALESCE(t1_mig.hari_menunggak, 0) = 0
+        ))";
         $trxJoin = "LEFT JOIN (
                         SELECT no_rekening,
                                SUM(COALESCE(angsuran_pokok, 0) + COALESCE(angsuran_bunga, 0) - COALESCE(diskon_bunga, 0)) AS trx_bulan_ini,
@@ -1583,15 +1599,6 @@ class RepaymentRateController {
                         WHERE tgl_trans BETWEEN :tx_start AND :tx_end
                         GROUP BY no_rekening
                     ) trx ON trx.no_rekening = t2.no_rekening";
-        $trxJoinOuter = "LEFT JOIN (
-                        SELECT no_rekening,
-                               SUM(COALESCE(angsuran_pokok, 0) + COALESCE(angsuran_bunga, 0) - COALESCE(diskon_bunga, 0)) AS trx_bulan_ini,
-                               MAX(tgl_trans) AS tgl_bayar_ini
-                        FROM transaksi_kredit
-                        WHERE tgl_trans BETWEEN :tx_start_outer AND :tx_end_outer
-                        GROUP BY no_rekening
-                    ) trx ON trx.no_rekening = t2.no_rekening";
-
         $detailExtraWhere = "";
         $needsTrxFilter = $statusBayar !== 'all' || $statusPembayaran !== 'ALL';
         if ($statusBayar === 'sudah_bayar') $detailExtraWhere .= " AND COALESCE(trx.trx_bulan_ini, 0) > 0";
@@ -1649,12 +1656,13 @@ class RepaymentRateController {
                     COALESCE(t2.kode_group1, t1.kode_group1) AS kode_kankas,
                     COALESCE(ao.nama_ao, COALESCE(t2.kode_group2, t1.kode_group2)) AS nama_ao,
                     COALESCE(t2.kode_group2, t1.kode_group2) AS kode_ao,
+                    COALESCE(t2.tgl_realisasi, t1.tgl_realisasi) AS tgl_realisasi,
                     COALESCE(t2.tgl_jatuh_tempo, t1.tgl_jatuh_tempo) AS tgl_jatuh_tempo,
                     COALESCE(t2.jml_pinjaman, t1.jml_pinjaman, 0) AS jml_pinjaman,
                     {$t1Saldo} AS os_m1,
                     {$t2Saldo} AS os_curr,
-                    COALESCE(trx.trx_bulan_ini, 0) AS trx_bulan_ini,
-                    trx.tgl_bayar_ini,
+                    0 AS trx_bulan_ini,
+                    NULL AS tgl_bayar_ini,
                     GREATEST(0, COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) AS totung,
                     COALESCE(t2.hari_menunggak, 0) AS dpd_curr,
                     COALESCE(tb.saldo_akhir, 0) AS tabungan,
@@ -1667,8 +1675,62 @@ class RepaymentRateController {
                     0 AS hari_telat,
                     COALESCE(t2.hari_menunggak, 0) AS hari_menunggak_jt,
                     CASE WHEN (COALESCE(tb.saldo_akhir, 0) * 0.015) > (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) THEN 'Aman' ELSE 'Belum Aman' END AS status_tabungan";
+        if ($mode === 'MIGRASI') {
+            // Detail migrasi hanya memuat rekening yang lancar pada closing M-1,
+            // lalu menjadi menunggak pada actual. Jangan gunakan union basis RR
+            // seperti detail delta karena itu menampilkan semua rekening RR.
+            $filters = "";
+            if ($kc && $kc !== '000') $filters .= " AND t2.kode_cabang = :kc";
+            if ($kankas) $filters .= " AND t2.kode_group1 = :kankas";
+            if ($ao) $filters .= " AND t2.kode_group2 = :ao";
+            if ($search !== '') {
+                $filters .= " AND (t2.no_rekening LIKE :search
+                    OR t2.nama_nasabah LIKE :search2
+                    OR t2.hp LIKE :search3)";
+            }
 
-        if ($mode === 'ACTUAL') {
+            // Jika filter pembayaran tidak aktif, agregasi transaksi tidak perlu
+            // dijalankan untuk seluruh portofolio; cukup untuk baris halaman.
+            $migrasiJoinForFilter = $needsTrxFilter ? $trxJoin : '';
+            $sqlBase = "FROM nominatif t2
+                        {$migrasiJoinForFilter}
+                        WHERE t2.created BETWEEN :s2 AND :e2
+                          AND {$migrasiRr}
+                          {$filters} {$detailExtraWhere}";
+
+            if (!$skipCount) {
+                $stmtCnt = $this->pdo->prepare("SELECT COUNT(DISTINCT t2.no_rekening) {$sqlBase}");
+                $bind($stmtCnt);
+                $stmtCnt->execute();
+                $total = (int)$stmtCnt->fetchColumn();
+            }
+
+            $sqlPick = "SELECT t2.no_rekening,
+                               MAX({$t2Saldo}) AS _rr_sort_saldo,
+                               MAX(t2.nama_nasabah) AS _rr_sort_nama
+                        {$sqlBase}
+                        GROUP BY t2.no_rekening
+                        ORDER BY _rr_sort_saldo DESC, _rr_sort_nama ASC
+                        LIMIT :lim OFFSET :off";
+            $sql = "SELECT {$selectColumns}
+                    FROM ({$sqlPick}) pick
+                    INNER JOIN nominatif t1 ON t1.no_rekening = pick.no_rekening AND t1.created BETWEEN :s1_join AND :e1_join
+                    INNER JOIN nominatif t2 ON t2.no_rekening = pick.no_rekening AND t2.created BETWEEN :s2_join AND :e2_join
+                    LEFT JOIN ao_kredit ao ON COALESCE(t2.kode_group2, t1.kode_group2) = ao.kode_group2
+                    LEFT JOIN kankas kn ON COALESCE(t2.kode_group1, t1.kode_group1) = kn.kode_group1
+                    LEFT JOIN tabungan tb ON COALESCE(t2.norek_tabungan, t1.norek_tabungan) = tb.no_rekening
+                    ORDER BY pick._rr_sort_saldo DESC, pick._rr_sort_nama ASC";
+
+            $stmt = $this->pdo->prepare($sql);
+            $bind($stmt);
+            $stmt->bindValue(':s1_join', $s1);
+            $stmt->bindValue(':e1_join', $e1);
+            $stmt->bindValue(':s2_join', $s2);
+            $stmt->bindValue(':e2_join', $e2);
+            $stmt->bindValue(':lim', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':off', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+        } elseif ($mode === 'ACTUAL') {
             $actualFilters = "";
             if ($kc && $kc !== '000') $actualFilters .= " AND t2.kode_cabang = :kc";
             if ($kankas) $actualFilters .= " AND t2.kode_group1 = :kankas";
@@ -1683,28 +1745,32 @@ class RepaymentRateController {
                             AND COALESCE(t2.hari_menunggak, 0) = 0
                             {$actualFilters}";
 
-            $stmtCnt = $this->pdo->prepare("SELECT COUNT(1) FROM nominatif t2 {$trxJoin} WHERE {$whereActual} {$detailExtraWhere}");
-            $bindActualOnly($stmtCnt);
-            $stmtCnt->execute();
-            $total = (int)$stmtCnt->fetchColumn();
+            $actualJoinForFilter = $needsTrxFilter ? $trxJoin : '';
+            if (!$skipCount) {
+                $stmtCnt = $this->pdo->prepare("SELECT COUNT(1) FROM nominatif t2 {$actualJoinForFilter} WHERE {$whereActual} {$detailExtraWhere}");
+                $bindActualOnly($stmtCnt);
+                $stmtCnt->execute();
+                $total = (int)$stmtCnt->fetchColumn();
+            }
 
             $sql = "SELECT {$selectColumns}
                     FROM (
-                        SELECT t2.no_rekening
+                        SELECT t2.no_rekening,
+                               {$t2Saldo} AS _rr_sort_saldo,
+                               t2.nama_nasabah AS _rr_sort_nama
                         FROM nominatif t2
-                        {$trxJoin}
+                        {$actualJoinForFilter}
                         WHERE {$whereActual}
                           {$detailExtraWhere}
-                        ORDER BY {$t2Saldo} DESC, t2.nama_nasabah ASC
+                        ORDER BY _rr_sort_saldo DESC, _rr_sort_nama ASC
                         LIMIT :lim OFFSET :off
                     ) pick
                     INNER JOIN nominatif t2 ON t2.no_rekening = pick.no_rekening AND t2.created BETWEEN :s2_join AND :e2_join
                     LEFT JOIN nominatif t1 ON t1.no_rekening = pick.no_rekening AND t1.created BETWEEN :s1 AND :e1
-                    {$trxJoinOuter}
                     LEFT JOIN ao_kredit ao ON t2.kode_group2 = ao.kode_group2
                     LEFT JOIN kankas kn ON t2.kode_group1 = kn.kode_group1
                     LEFT JOIN tabungan tb ON t2.norek_tabungan = tb.no_rekening
-                    ORDER BY {$t2Saldo} DESC, t2.nama_nasabah ASC";
+                    ORDER BY pick._rr_sort_saldo DESC, pick._rr_sort_nama ASC";
 
             $stmt = $this->pdo->prepare($sql);
             $bind($stmt);
@@ -1799,28 +1865,31 @@ class RepaymentRateController {
                 $bind($stmt);
             };
 
-            $stmtCnt = $this->pdo->prepare("SELECT COUNT(1) {$sqlBase} WHERE {$deltaWhere}");
-            $bindDelta($stmtCnt);
-            $stmtCnt->execute();
-            $total = (int)$stmtCnt->fetchColumn();
+            if (!$skipCount) {
+                $stmtCnt = $this->pdo->prepare("SELECT COUNT(1) {$sqlBase} WHERE {$deltaWhere}");
+                $bindDelta($stmtCnt);
+                $stmtCnt->execute();
+                $total = (int)$stmtCnt->fetchColumn();
+            }
 
             // Paginate nomor rekening terlebih dahulu. Join transaksi yang
             // relatif berat hanya dilakukan untuk baris yang benar-benar tampil.
-            $sqlPick = "SELECT rr_keys.no_rekening
+            $sqlPick = "SELECT rr_keys.no_rekening,
+                               ABS({$deltaCurOs} - {$deltaM1Os}) AS _rr_sort_delta,
+                               COALESCE(t2.nama_nasabah, t1.nama_nasabah) AS _rr_sort_nama
                         {$sqlBase}
                         WHERE {$deltaWhere}
-                        ORDER BY ABS({$deltaCurOs} - {$deltaM1Os}) DESC,
-                                 COALESCE(t2.nama_nasabah, t1.nama_nasabah) ASC
+                        ORDER BY _rr_sort_delta DESC, _rr_sort_nama ASC
                         LIMIT :lim OFFSET :off";
 
             $sql = "SELECT {$selectColumnsDelta}
                     FROM ({$sqlPick}) pick
                     LEFT JOIN nominatif t1 ON t1.no_rekening = pick.no_rekening AND t1.created BETWEEN :s1_join AND :e1_join
                     LEFT JOIN nominatif t2 ON t2.no_rekening = pick.no_rekening AND t2.created BETWEEN :s2_join AND :e2_join
-                    {$trxJoinOuter}
                     LEFT JOIN ao_kredit ao ON COALESCE(t2.kode_group2, t1.kode_group2) = ao.kode_group2
                     LEFT JOIN kankas kn ON COALESCE(t2.kode_group1, t1.kode_group1) = kn.kode_group1
-                    LEFT JOIN tabungan tb ON COALESCE(t2.norek_tabungan, t1.norek_tabungan) = tb.no_rekening";
+                    LEFT JOIN tabungan tb ON COALESCE(t2.norek_tabungan, t1.norek_tabungan) = tb.no_rekening
+                    ORDER BY pick._rr_sort_delta DESC, pick._rr_sort_nama ASC";
 
             $stmt = $this->pdo->prepare($sql);
             $bindDelta($stmt);
@@ -1830,6 +1899,40 @@ class RepaymentRateController {
         }
 
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $detailAccounts = array_values(array_unique(array_filter(array_map(
+            static fn($row) => trim((string)($row['no_rekening'] ?? '')),
+            $rows
+        ), static fn($account) => $account !== '')));
+        if ($detailAccounts) {
+            $accountParams = [];
+            foreach ($detailAccounts as $index => $account) {
+                $accountParams[] = ':account_' . $index;
+            }
+            $trxPageSql = "SELECT no_rekening,
+                                  SUM(COALESCE(angsuran_pokok, 0) + COALESCE(angsuran_bunga, 0) - COALESCE(diskon_bunga, 0)) AS trx_bulan_ini,
+                                  MAX(tgl_trans) AS tgl_bayar_ini
+                           FROM transaksi_kredit
+                           WHERE tgl_trans BETWEEN :tx_start_page AND :tx_end_page
+                             AND no_rekening IN (" . implode(',', $accountParams) . ")
+                           GROUP BY no_rekening";
+            $stmtTrxPage = $this->pdo->prepare($trxPageSql);
+            $stmtTrxPage->bindValue(':tx_start_page', $txStart);
+            $stmtTrxPage->bindValue(':tx_end_page', $txEnd);
+            foreach ($detailAccounts as $index => $account) {
+                $stmtTrxPage->bindValue(':account_' . $index, $account, PDO::PARAM_STR);
+            }
+            $stmtTrxPage->execute();
+            $trxByAccount = [];
+            foreach ($stmtTrxPage->fetchAll(PDO::FETCH_ASSOC) as $trxRow) {
+                $trxByAccount[(string)$trxRow['no_rekening']] = $trxRow;
+            }
+            foreach ($rows as &$row) {
+                $trxRow = $trxByAccount[(string)$row['no_rekening']] ?? [];
+                $row['trx_bulan_ini'] = (float)($trxRow['trx_bulan_ini'] ?? 0);
+                $row['tgl_bayar_ini'] = $trxRow['tgl_bayar_ini'] ?? null;
+            }
+            unset($row);
+        }
         foreach ($rows as &$row) {
             $paid = (float)($row['trx_bulan_ini'] ?? 0);
             $dpd = (int)($row['dpd_curr'] ?? 0);
@@ -1840,7 +1943,6 @@ class RepaymentRateController {
             $row['hari_menunggak_jt'] = $statusInfo['hari_menunggak'];
         }
         unset($row);
-
         $this->send(200, "Detail Rekap RR", [
             'pagination' => [
                 'current_page' => $page,
@@ -2029,15 +2131,39 @@ class RepaymentRateController {
         }
         $saldoCol = $this->getSaldoColumn($b);
         $saldoExpr = "COALESCE({$saldoCol}, 0)";
+        $t2Saldo = "COALESCE(t2.{$saldoCol}, 0)";
 
         if (!$closing || !$harian) return $this->send(400, "Tanggal wajib diisi.");
 
         [$s1, $e1] = $this->getDayRange($closing);
         [$s2, $e2] = $this->getDayRange($harian);
 
-        // Konsolidasi dan Korwil diringkas per cabang; pilihan cabang diringkas per kankas.
+        // Konsolidasi dan Korwil diringkas per cabang. Pada satu cabang,
+        // breakdown dapat dipilih per Kankas atau AO Kredit. Cabang tanpa
+        // master Kankas otomatis memakai AO agar tabel tidak kosong.
         $isPusat = !$kc;
-        $groupByCol = $isPusat ? 'kode_cabang' : 'kode_group1';
+        $requestedBreakdown = strtoupper(trim((string)($b['breakdown_by'] ?? 'KANKAS')));
+        if (!in_array($requestedBreakdown, ['KANKAS', 'AO'], true)) $requestedBreakdown = 'KANKAS';
+        $hasKankas = false;
+        if ($kc) {
+            $stmtHasKankas = $this->pdo->prepare("SELECT EXISTS(
+                SELECT 1
+                FROM kankas
+                WHERE kode_kantor = :kc_has_kankas
+                  AND kode_group1 <> CONCAT(:kc_main, '000')
+                LIMIT 1
+            )");
+            $stmtHasKankas->bindValue(':kc_has_kankas', $kc);
+            $stmtHasKankas->bindValue(':kc_main', $kc);
+            $stmtHasKankas->execute();
+            $hasKankas = (bool)$stmtHasKankas->fetchColumn();
+        }
+        $effectiveBreakdown = $isPusat
+            ? 'CABANG'
+            : (($requestedBreakdown === 'AO' || !$hasKankas) ? 'AO' : 'KANKAS');
+        $groupByCol = $isPusat
+            ? 'kode_cabang'
+            : ($effectiveBreakdown === 'AO' ? 'kode_group2' : 'kode_group1');
 
         // 1. QUERY M-1 (CLOSING)
         // 🔥 FIX: all_noa diisi dengan jumlah rekening yang masuk kriteria Lancar/RR
@@ -2083,12 +2209,65 @@ class RepaymentRateController {
         $stmt2->execute();
         $dataCur = $stmt2->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
 
+        // Delta nominal/NOA adalah arus rekening yang keluar dari RR:
+        // lancar pada closing M-1 lalu menunggak pada actual. Nominal memakai
+        // saldo actual agar menunjukkan eksposur migrasi yang masih berjalan.
+        $migrationGroupExpr = $isPusat
+            ? 't2.kode_cabang'
+            : ($effectiveBreakdown === 'AO' ? 't2.kode_group2' : 't2.kode_group1');
+        $migrationSql = "SELECT migration.grp,
+                                COUNT(*) AS migrasi_noa,
+                                SUM(migration.migrasi_os) AS migrasi_os
+                         FROM (
+                             SELECT {$migrationGroupExpr} AS grp,
+                                    t2.no_rekening,
+                                    MAX({$t2Saldo}) AS migrasi_os
+                             FROM nominatif t2
+                             WHERE t2.created BETWEEN :sm2 AND :em2
+                               AND {$t2Saldo} > 0
+                               AND t2.hari_menunggak > 0
+                               AND EXISTS (
+                                   SELECT 1
+                                   FROM nominatif t1_mig
+                                   WHERE t1_mig.no_rekening = t2.no_rekening
+                                     AND t1_mig.created BETWEEN :sm1 AND :em1
+                                     AND COALESCE(t1_mig.{$saldoCol}, 0) > 0
+                                     AND COALESCE(t1_mig.kolektibilitas, '') = 'L'
+                                     AND COALESCE(t1_mig.hari_menunggak, 0) = 0
+                               )";
+
+        if ($kc) $migrationSql .= " AND t2.kode_cabang = :kc_mig";
+        elseif ($kwStart && $kwEnd) $migrationSql .= " AND t2.kode_cabang BETWEEN :kw_start_mig AND :kw_end_mig";
+        $migrationSql .= " GROUP BY t2.no_rekening, {$migrationGroupExpr}
+                         ) migration
+                         GROUP BY migration.grp";
+
+        $stmtMigration = $this->pdo->prepare($migrationSql);
+        $stmtMigration->bindValue(':sm1', $s1);
+        $stmtMigration->bindValue(':em1', $e1);
+        $stmtMigration->bindValue(':sm2', $s2);
+        $stmtMigration->bindValue(':em2', $e2);
+        if ($kc) $stmtMigration->bindValue(':kc_mig', $kc);
+        elseif ($kwStart && $kwEnd) {
+            $stmtMigration->bindValue(':kw_start_mig', $kwStart);
+            $stmtMigration->bindValue(':kw_end_mig', $kwEnd);
+        }
+        $stmtMigration->execute();
+        $dataMigrasi = $stmtMigration->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
+
         // 3. FETCH MASTER NAMA
         $namaMap = [];
         if ($isPusat) {
             try {
                 $stmtN = $this->pdo->query("SELECT kode_kantor, nama_kantor FROM kode_kantor");
                 while ($r = $stmtN->fetch(PDO::FETCH_ASSOC)) $namaMap[$r['kode_kantor']] = $r['nama_kantor'];
+            } catch (Exception $e) {}
+        } elseif ($effectiveBreakdown === 'AO') {
+            try {
+                $stmtN = $this->pdo->prepare("SELECT kode_group2, nama_ao FROM ao_kredit WHERE kode_kantor = :kc ORDER BY nama_ao");
+                $stmtN->bindValue(':kc', $kc);
+                $stmtN->execute();
+                while ($r = $stmtN->fetch(PDO::FETCH_ASSOC)) $namaMap[$r['kode_group2']] = $r['nama_ao'];
             } catch (Exception $e) {}
         } else {
             try {
@@ -2100,29 +2279,35 @@ class RepaymentRateController {
 
         // 4. MENGGABUNGKAN DATA M-1 DAN ACTUAL
         $finalData = [];
-        $allKeys = array_unique(array_merge(array_keys($dataM1), array_keys($dataCur)));
+        $allKeys = array_unique(array_merge(array_keys($dataM1), array_keys($dataCur), array_keys($dataMigrasi)));
 
         $grandTotal = [
             'm1_all_noa' => 0, 'm1_all_os' => 0, 'm1_lancar_os' => 0,
             'cur_all_noa' => 0, 'cur_all_os' => 0, 'cur_lancar_os' => 0,
             'delta_noa' => 0, 'delta_os' => 0, 'delta_os_lancar' => 0,
+            'migrasi_noa' => 0, 'migrasi_os' => 0,
             'm1_pct' => 0, 'cur_pct' => 0, 'delta_pct' => 0
         ];
 
         foreach ($allKeys as $grpId) {
             if (!$grpId) continue; 
 
-            $nama = $namaMap[$grpId] ?? ($isPusat ? "Kc. $grpId" : "Kas $grpId");
+            $nama = $namaMap[$grpId] ?? ($isPusat
+                ? "Kc. $grpId"
+                : ($effectiveBreakdown === 'AO' ? "AO $grpId" : "Kas $grpId"));
             
             $m1  = $dataM1[$grpId] ?? ['all_noa'=>0, 'all_os'=>0, 'lancar_os'=>0];
             $cur = $dataCur[$grpId] ?? ['all_noa'=>0, 'all_os'=>0, 'lancar_os'=>0];
+            $migration = $dataMigrasi[$grpId] ?? ['migrasi_noa'=>0, 'migrasi_os'=>0];
             $m1AllOs = (float)$m1['all_os'];
             $curAllOs = (float)$cur['all_os'];
 
             $m1LancarOs = (float)$m1['lancar_os'];
             $curLancarOs = (float)$cur['lancar_os'];
-            $deltaNoa = (int)$cur['all_noa'] - (int)$m1['all_noa'];
-            $deltaOsLancar = $curLancarOs - $m1LancarOs;
+            $migrasiNoa = (int)$migration['migrasi_noa'];
+            $migrasiOs = (float)$migration['migrasi_os'];
+            $deltaNoa = -$migrasiNoa;
+            $deltaOsLancar = -$migrasiOs;
 
             // Kalkulasi persentase RR per Cabang/Kankas
             $m1Pct  = $m1AllOs > 0 ? ($m1LancarOs / $m1AllOs) * 100 : 0;
@@ -2145,6 +2330,8 @@ class RepaymentRateController {
                 'delta_noa'       => $deltaNoa,
                 'delta_os'        => $curAllOs - $m1AllOs,
                 'delta_os_lancar' => $deltaOsLancar,
+                'migrasi_noa'     => $migrasiNoa,
+                'migrasi_os'      => $migrasiOs,
                 'delta_pct'       => round($curPct - $m1Pct, 2)
             ];
 
@@ -2159,6 +2346,8 @@ class RepaymentRateController {
 
             $grandTotal['delta_noa']       += $deltaNoa;
             $grandTotal['delta_os_lancar'] += $deltaOsLancar;
+            $grandTotal['migrasi_noa']     += $migrasiNoa;
+            $grandTotal['migrasi_os']      += $migrasiOs;
         }
 
         // Urutkan ASC by Kode
@@ -2176,8 +2365,11 @@ class RepaymentRateController {
         $this->send(200, "Sukses", [
             'meta' => [
                 'level'      => $isPusat ? 'PUSAT' : 'CABANG',
-                'label_kode' => $isPusat ? 'KODE CABANG' : 'KODE KANKAS',
-                'label_nama' => $isPusat ? 'NAMA CABANG' : 'NAMA KANKAS',
+                'label_kode' => $isPusat ? 'KODE CABANG' : ($effectiveBreakdown === 'AO' ? 'KODE AO' : 'KODE KANKAS'),
+                'label_nama' => $isPusat ? 'NAMA CABANG' : ($effectiveBreakdown === 'AO' ? 'NAMA AO KREDIT' : 'NAMA KANKAS'),
+                'breakdown_by' => $effectiveBreakdown,
+                'requested_breakdown' => $requestedBreakdown,
+                'has_kankas' => $hasKankas,
                 'hitung_berdasarkan' => $saldoCol
             ],
             'grand_total' => $grandTotal,
