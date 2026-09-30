@@ -369,7 +369,7 @@ mb_ui_assets('.');
   }
   .rr-detail-summary {
     display:grid;
-    grid-template-columns:repeat(4,minmax(0,1fr));
+    grid-template-columns:repeat(5,minmax(0,1fr));
     gap:6px;
   }
   .rr-detail-summary-card {
@@ -423,7 +423,7 @@ mb_ui_assets('.');
       width:calc(100vw - 24px) !important;
       height:88dvh !important;
     }
-    .rr-detail-summary { grid-template-columns:repeat(4,minmax(0,1fr)); }
+    .rr-detail-summary { grid-template-columns:repeat(5,minmax(0,1fr)); }
   }
 
   @media (max-width:767px) {
@@ -1125,7 +1125,7 @@ $rrInfoBody = <<<'HTML'
       <div class="rr-action-card rr-action-danger"><span class="rr-action-num">1</span><div><b>Belum Bayar</b><p>Prioritaskan rekening yang sudah melewati jatuh tempo dan belum membayar.</p></div></div>
       <div class="rr-action-card rr-action-warn"><span class="rr-action-num">2</span><div><b>Telat Bayar</b><p>Pantau rekening yang membayar setelah jatuh tempo agar keterlambatan tidak berulang.</p></div></div>
       <div class="rr-action-card rr-action-info"><span class="rr-action-num">3</span><div><b>Belum Jatuh Tempo</b><p>Pastikan sumber pembayaran tersedia sebelum tanggal jatuh tempo.</p></div></div>
-      <div class="rr-action-card rr-action-neutral"><span class="rr-action-num">4</span><div><b>Tunggakan &amp; Tabungan</b><p>Gunakan detail rekening untuk menentukan prioritas tindak lanjut.</p></div></div>
+      <div class="rr-action-card rr-action-neutral"><span class="rr-action-num">4</span><div><b>Tunggakan</b><p>Gunakan detail rekening untuk menentukan prioritas tindak lanjut.</p></div></div>
     </div>
   </section>
   <section class="rr-insight-section">
@@ -1311,7 +1311,7 @@ mb_render_info_modal([
               </div>
               <div class="rr-action-card rr-action-neutral">
                 <span class="rr-action-num">4</span>
-                <div><b>Tunggakan & Tabungan</b><p>Gunakan filter <b>Tunggakan &gt; 0</b> dan status tabungan untuk menentukan rekening yang perlu follow-up lebih dulu atau memiliki sumber pembayaran yang dapat dipantau.</p></div>
+                <div><b>Tunggakan</b><p>Gunakan filter <b>Tunggakan &gt; 0</b> untuk menentukan rekening yang perlu follow-up lebih dulu.</p></div>
               </div>
             </div>
           </section>
@@ -1334,6 +1334,7 @@ mb_render_info_modal([
               <div><b>Actual</b><span>Posisi harian pada tanggal yang dipilih.</span></div>
               <div><b>Delta</b><span>Selisih langsung Actual dikurangi M-1. Klik angka Delta untuk melihat perubahannya per rekening.</span></div>
               <div><b>OTP</b><span>Pembayaran dilakukan tepat waktu.</span></div>
+              <div><b>Masih Tunggakan</b><span>Sudah ada pembayaran tepat waktu, tetapi saldo tunggakan masih tersisa.</span></div>
               <div><b>Belum Bayar</b><span>Sudah melewati jatuh tempo dan pembayaran belum diterima.</span></div>
             </div>
           </section>
@@ -1406,6 +1407,7 @@ mb_render_info_modal([
                             <option value="ALL">Semua Status</option>
                             <option value="OTP">OTP</option>
                             <option value="TELAT">Telat</option>
+                            <option value="TUNGGAKAN">Masih Tunggakan</option>
                             <option value="BELUM_JATUH_TEMPO">Belum Jatuh Tempo</option>
                             <option value="BELUM_BAYAR">Belum Bayar</option>
                         </select>
@@ -1442,6 +1444,10 @@ mb_render_info_modal([
             <div class="rr-detail-summary-card is-red">
               <div id="rrSummaryLabel4" class="label">Tunggakan</div>
               <div id="rrSummaryValue4" class="value">0</div>
+            </div>
+            <div id="rrSummaryCard5" class="rr-detail-summary-card">
+              <div id="rrSummaryLabel5" class="label">Tabungan</div>
+              <div id="rrSummaryValue5" class="value">0</div>
             </div>
           </div>
         </div>
@@ -1483,6 +1489,7 @@ $rrDetailSummaryHtml = <<<'HTML'
         <div class="rr-detail-summary-card is-green"><div id="rrSummaryLabel2" class="label">Bayar</div><div id="rrSummaryValue2" class="value">0</div></div>
         <div class="rr-detail-summary-card is-blue"><div id="rrSummaryLabel3" class="label">Actual</div><div id="rrSummaryValue3" class="value">0</div></div>
         <div class="rr-detail-summary-card is-red"><div id="rrSummaryLabel4" class="label">Tunggakan</div><div id="rrSummaryValue4" class="value">0</div></div>
+        <div id="rrSummaryCard5" class="rr-detail-summary-card"><div id="rrSummaryLabel5" class="label">Tabungan</div><div id="rrSummaryValue5" class="value">0</div></div>
       </div>
     </div>
 HTML;
@@ -1522,7 +1529,7 @@ mb_render_detail_modal([
         ['id' => 'opt_kankas_modal', 'label' => 'Kankas', 'type' => 'select', 'options' => ['' => 'Semua Kankas'], 'attrs' => ['onchange' => 'handleModalKankasChangeRR()']],
         ['id' => 'opt_ao_modal', 'label' => 'AO', 'type' => 'select', 'options' => ['' => 'Semua AO'], 'attrs' => ['onchange' => 'loadDetailPage(1)']],
         ['id' => 'status_pembayaran_modal', 'label' => 'Status Pembayaran', 'type' => 'select', 'options' => [
-            'ALL' => 'Semua Status', 'OTP' => 'OTP', 'TELAT' => 'Telat',
+            'ALL' => 'Semua Status', 'OTP' => 'OTP', 'TELAT' => 'Telat', 'TUNGGAKAN' => 'Masih Tunggakan',
             'BELUM_JATUH_TEMPO' => 'Belum Jatuh Tempo', 'BELUM_BAYAR' => 'Belum Bayar',
         ], 'attrs' => ['onchange' => 'loadDetailPage(1)']],
     ],
@@ -1959,10 +1966,10 @@ mb_render_detail_modal([
             </th>
 
             <th class="rr-col-nominal px-2 md:px-4 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('delta_os_lancar', 'number')">
-                <div class="flex items-center justify-end">NOMINAL MIGRASI ${getSortIcon('delta_os_lancar', sortCol, sortAsc)}</div>
+                <div class="flex items-center justify-end">NOMINAL ${getSortIcon('delta_os_lancar', sortCol, sortAsc)}</div>
             </th>
             <th class="rr-col-noa px-2 py-1.5 md:py-2 border-r border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('delta_noa', 'number')">
-                <div class="flex items-center justify-center">NOA MIGRASI ${getSortIcon('delta_noa', sortCol, sortAsc)}</div>
+                <div class="flex items-center justify-center">NOA ${getSortIcon('delta_noa', sortCol, sortAsc)}</div>
             </th>
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-slate-200 bg-[#eef2f6]" onclick="sortData('delta_pct', 'number')">
                 <div class="flex items-center justify-center">DELTA RR % ${getSortIcon('delta_pct', sortCol, sortAsc)}</div>
@@ -2075,7 +2082,9 @@ mb_render_detail_modal([
           const json = await apiCall(API_URL, payload, abortRekap.signal);
           if(json.status !== 200) throw new Error(json.message);
 
-          rekapDataCache = (json.data?.data || []).map(row => recalcRRDisplayDelta({ ...row }));
+          rekapDataCache = (json.data?.data || [])
+              .map(row => recalcRRDisplayDelta({ ...row }))
+              .filter(rrHasNominalActivity);
           rekapGtCache = recalcRRDisplayDelta({ ...(json.data?.grand_total || {}) });
           rekapMetaCache = { ...(json.data?.meta || {}) };
           const breakdownSelect = document.getElementById('rr_breakdown_by');
@@ -2214,6 +2223,12 @@ mb_render_detail_modal([
       }
   }
 
+  function rrHasNominalActivity(row) {
+      const m1 = Number(row?.m1_lancar_os || 0);
+      const actual = Number(row?.cur_lancar_os || 0);
+      return Math.abs(m1) > 0.000001 || Math.abs(actual) > 0.000001;
+  }
+
   window.exportExcelRekap = function() {
       if(!rekapDataCache || rekapDataCache.length === 0) return alert("Tidak ada data rekap untuk didownload.");
 
@@ -2221,9 +2236,9 @@ mb_render_detail_modal([
       const nameLabel = rekapMetaCache?.label_nama || (userKodeGlobal === '000' ? 'NAMA KANTOR' : 'NAMA KANKAS');
       const codeLabel = rekapMetaCache?.label_kode || 'KODE';
       if (userKodeGlobal === '000') {
-          csv = `${codeLabel}\t${nameLabel}\tM-1 NOMINAL\tM-1 NOA\tM-1 %\tActual NOMINAL\tActual NOA\tActual %\tNominal Migrasi\tNOA Migrasi\tDelta RR %\n`;
+          csv = `${codeLabel}\t${nameLabel}\tM-1 NOMINAL\tM-1 NOA\tM-1 %\tActual NOMINAL\tActual NOA\tActual %\tNominal\tNOA\tDelta RR %\n`;
       } else {
-          csv = `${nameLabel}\tM-1 NOMINAL\tM-1 NOA\tM-1 %\tActual NOMINAL\tActual NOA\tActual %\tNominal Migrasi\tNOA Migrasi\tDelta RR %\n`;
+          csv = `${nameLabel}\tM-1 NOMINAL\tM-1 NOA\tM-1 %\tActual NOMINAL\tActual NOA\tActual %\tNominal\tNOA\tDelta RR %\n`;
       }
       
       rekapDataCache.forEach(r => {
@@ -2267,6 +2282,11 @@ mb_render_detail_modal([
       if (valueEl) valueEl.textContent = value;
   }
 
+  function setRRDetailSummaryCardVisible(index, visible) {
+      const card = document.getElementById(`rrSummaryCard${index}`);
+      if (card) card.style.display = visible ? '' : 'none';
+  }
+
   function renderRRDetailSummary(rows = [], totalRecords = 0, summary = null, page = 1) {
       const list = Array.isArray(rows) ? rows : [];
       const hasServerSummary = !!(summary && typeof summary === 'object' && Object.keys(summary).length);
@@ -2285,13 +2305,16 @@ mb_render_detail_modal([
           setRRDetailSummaryCard(2,'OS M-1',fmt(osM1));
           setRRDetailSummaryCard(3,'Plafond Baru',fmt(plafonBaru));
           setRRDetailSummaryCard(4,'Refinancing',fmt(refinancing));
+          setRRDetailSummaryCardVisible(5, false);
       } else {
           const bayarPage = list.reduce((a,r) => a + Number(r.trx_bulan_ini || 0), 0);
           const actualPage = list.reduce((a,r) => a + Number(r.os_curr || 0), 0);
           const tunggakanPage = list.reduce((a,r) => a + Number(r.totung || 0), 0);
+          const tabunganPage = list.reduce((a,r) => a + Number(r.tabungan || 0), 0);
           const bayar = hasServerSummary ? rrSummaryNumber(summary,['trx_bulan_ini','total_trx_bulan_ini','total_bayar','bayar'],bayarPage) : bayarPage;
           const actual = hasServerSummary ? rrSummaryNumber(summary,['os_curr','total_os_curr','actual','total_actual'],actualPage) : actualPage;
           const tunggakan = hasServerSummary ? rrSummaryNumber(summary,['totung','total_totung','total_tunggakan','tunggakan'],tunggakanPage) : tunggakanPage;
+          const tabungan = hasServerSummary ? rrSummaryNumber(summary,['tabungan','total_tabungan','saldo_tabungan'],tabunganPage) : tabunganPage;
           if (title) title.textContent = currentDetailParams.status === 'MIGRASI'
               ? 'Ringkasan Migrasi RR'
               : 'Ringkasan Detail RR';
@@ -2299,6 +2322,8 @@ mb_render_detail_modal([
           setRRDetailSummaryCard(2,'Total Bayar',fmt(bayar));
           setRRDetailSummaryCard(3,'Actual',fmt(actual));
           setRRDetailSummaryCard(4,'Tunggakan',fmt(tunggakan));
+          setRRDetailSummaryCard(5,'Tabungan',fmt(tabungan));
+          setRRDetailSummaryCardVisible(5, true);
       }
 
       if (scope) scope.textContent = hasServerSummary ? 'Total sesuai filter aktif' : `Nominal halaman ${page} • debitur seluruh filter`;
@@ -2334,17 +2359,11 @@ mb_render_detail_modal([
                   <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[70px] md:w-[100px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('tgl_jatuh_tempo', 'string')">
                       <div class="flex items-center justify-center">TGL JT ${getSortIcon('tgl_jatuh_tempo', sortDetailCol, sortDetailAsc)}</div>
                   </th>
-                  <th class="rr-col-date-pay px-2 md:px-3 border-b border-r border-slate-300 text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('tgl_bayar_ini', 'string')">
-                      <div class="flex items-center justify-center">TGL BYR ${getSortIcon('tgl_bayar_ini', sortDetailCol, sortDetailAsc)}</div>
-                  </th>
                   <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[110px] md:w-[150px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('status_pembayaran_code', 'string')">
                       <div class="flex items-center justify-center">STATUS BAYAR ${getSortIcon('status_pembayaran_code', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-4 border-b border-r border-slate-300 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('trx_bulan_ini', 'number')">
-                      <div class="flex items-center justify-end">BAYAR ${getSortIcon('trx_bulan_ini', sortDetailCol, sortDetailAsc)}</div>
-                  </th>
-                  <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[70px] md:w-[95px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('hari_menunggak_jt', 'number')">
-                      <div class="flex items-center justify-center">HARI ${getSortIcon('hari_menunggak_jt', sortDetailCol, sortDetailAsc)}</div>
+                      <div class="flex items-center justify-end">ANGSURAN ${getSortIcon('trx_bulan_ini', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-4 border-b border-r border-slate-300 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('jml_pinjaman', 'number')">
                       <div class="flex items-center justify-end">PLAFOND ${getSortIcon('jml_pinjaman', sortDetailCol, sortDetailAsc)}</div>
@@ -2358,14 +2377,11 @@ mb_render_detail_modal([
                   <th class="px-2 md:px-4 bg-red-50 text-red-700 border-b border-r border-red-200 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-red-100 transition select-none" onclick="sortDetailRR('totung', 'number')">
                       <div class="flex items-center justify-end">TUNGGAKAN ${getSortIcon('totung', sortDetailCol, sortDetailAsc)}</div>
                   </th>
-                  <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[50px] md:w-[70px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('dpd_curr', 'number')">
-                      <div class="flex items-center justify-center">DPD ${getSortIcon('dpd_curr', sortDetailCol, sortDetailAsc)}</div>
-                  </th>
-                  <th class="px-2 md:px-4 border-b border-r border-slate-300 w-[100px] md:w-[140px] text-right cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('tabungan', 'number')">
+                  <th class="px-2 md:px-4 bg-cyan-50 text-cyan-700 border-b border-r border-cyan-100 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-cyan-100 transition select-none" onclick="sortDetailRR('tabungan', 'number')">
                       <div class="flex items-center justify-end">TABUNGAN ${getSortIcon('tabungan', sortDetailCol, sortDetailAsc)}</div>
                   </th>
-                  <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[70px] md:w-[100px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('status_tabungan', 'string')">
-                      <div class="flex items-center justify-center">STAT TAB ${getSortIcon('status_tabungan', sortDetailCol, sortDetailAsc)}</div>
+                  <th class="px-2 md:px-3 border-b border-r border-slate-300 w-[50px] md:w-[70px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('dpd_curr', 'number')">
+                      <div class="flex items-center justify-center">DPD ${getSortIcon('dpd_curr', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-4 border-b border-slate-300 w-[100px] md:w-[120px] text-center cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('status_ket', 'string')">
                       <div class="flex items-center justify-center">DLL ${getSortIcon('status_ket', sortDetailCol, sortDetailAsc)}</div>
@@ -2457,7 +2473,7 @@ mb_render_detail_modal([
       window.MonbisUI?.openModal?.('modalDetailRR');
       if (window.MonbisUI?.showLoading) window.MonbisUI.showLoading('loadingModalRR', true);
       else loading?.classList.remove('hidden', 'is-hidden');
-      if (body) body.innerHTML = `<tr><td colspan="20" class="py-20 text-center text-slate-400 font-bold">Menyiapkan detail...</td></tr>`;
+      if (body) body.innerHTML = `<tr><td colspan="17" class="py-20 text-center text-slate-400 font-bold">Menyiapkan detail...</td></tr>`;
 
       const titleArea = namaArea ? ` - ${namaArea}` : '';
       const title = document.getElementById('modalTitleRR');
@@ -2611,7 +2627,7 @@ mb_render_detail_modal([
       let requestTimeout = null;
 
       l?.classList.remove('hidden', 'is-hidden');
-      tb.innerHTML = `<tr><td colspan="20" class="py-20 text-center text-slate-400 font-bold">Memuat detail...</td></tr>`;
+      tb.innerHTML = `<tr><td colspan="17" class="py-20 text-center text-slate-400 font-bold">Memuat detail...</td></tr>`;
 
       try {
           const kankasModal = document.getElementById('opt_kankas_modal');
@@ -2659,7 +2675,7 @@ mb_render_detail_modal([
           renderRRDetailSummary(rows, totalRecords, detailSummary, currentDetailPage);
 
           if (!rows.length) {
-              const colspan = currentMode === 'NORMAL' ? 20 : 10;
+              const colspan = currentMode === 'NORMAL' ? 16 : 10;
               tb.innerHTML = `<tr><td colspan="${colspan}" class="py-20 px-4 text-center text-slate-500 italic text-xs md:text-sm">Tidak ada data detail untuk filter yang dipilih.</td></tr>`;
               if (info) info.innerText = `0 Data`;
           } else {
@@ -2674,7 +2690,7 @@ mb_render_detail_modal([
       } catch (err) {
           if (requestId !== detailPageRequestId) return;
           console.error('RR detail error:', err, currentDetailParams);
-          const colspan = currentMode === 'NORMAL' ? 20 : 10;
+              const colspan = currentMode === 'NORMAL' ? 16 : 10;
           const message = err?.name === 'AbortError'
               ? 'Permintaan terlalu lama (45 detik). Coba ulangi atau kurangi filter.'
               : (err?.message || 'Unknown error');
@@ -2697,6 +2713,7 @@ mb_render_detail_modal([
       const extra = code === 'TELAT' ? ` ${fmt(r.hari_telat)} hr` : (code === 'BELUM_BAYAR' ? ` ${fmt(r.hari_menunggak_jt)} hr` : '');
       if (code === 'OTP') return `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200 font-black">OTP</span>`;
       if (code === 'TELAT') return `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-orange-100 text-orange-700 border border-orange-200 font-black">Telat${extra}</span>`;
+      if (code === 'TUNGGAKAN') return `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200 font-black">Masih Tunggakan</span>`;
       if (code === 'BELUM_JATUH_TEMPO') return `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200 font-black">Belum JT</span>`;
       if (code === 'BELUM_BAYAR') return `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-200 font-black">Belum Bayar${extra}</span>`;
       return `<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-black">-</span>`;
@@ -2714,11 +2731,7 @@ mb_render_detail_modal([
               if(r.status_ket==='LANCAR') badge = `<span class="inline-flex items-center px-1.5 md:px-2.5 py-0.5 md:py-1 rounded text-[9px] md:text-xs font-bold bg-green-100 text-green-700 border border-green-200">LANCAR</span>`;
               else if(r.status_ket==='MENUNGGAK') badge = `<span class="inline-flex items-center px-1.5 md:px-2.5 py-0.5 md:py-1 rounded text-[9px] md:text-xs font-bold bg-red-100 text-red-700 border border-red-200">MENUNGGAK</span>`;
               
-              let statTabungan = `<span class="text-red-500 font-bold text-[10px] md:text-xs">Belum Aman</span>`;
-              if(r.status_tabungan === 'Aman') statTabungan = `<span class="text-green-600 font-bold text-[10px] md:text-xs">Aman</span>`;
-
               const paymentBadge = getPaymentBadgeRR(r);
-              const hariFollowUp = r.status_pembayaran_code === 'TELAT' ? (r.hari_telat || 0) : (r.hari_menunggak_jt || 0);
 
               // 🔥 ALAMAT FULL TANPA HARDCODE 25 CHAR 🔥
               const alamatLengkap = r.alamat || '-';
@@ -2732,17 +2745,17 @@ mb_render_detail_modal([
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-center font-bold text-[9.5px] md:text-sm text-blue-700 truncate">${aoName}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-mono text-[9.5px] md:text-sm text-slate-500">${r.tgl_realisasi||'-'}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-mono text-[9.5px] md:text-sm text-slate-500">${r.tgl_jatuh_tempo||'-'}</td>
-                    <td class="rr-col-date-pay px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-mono text-[9px] md:text-xs text-slate-600">${getTglBayarRR(r)}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center text-[9px] md:text-xs">${paymentBadge}</td>
-                    <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-right font-bold text-blue-700 bg-blue-50/20 text-[9.5px] md:text-sm">${fmt(r.trx_bulan_ini)}</td>
-                    <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-black text-[9.5px] md:text-sm ${hariFollowUp > 0 ? 'text-rose-600' : 'text-slate-500'}">${fmt(hariFollowUp)}</td>
+                    <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-right font-bold text-blue-700 bg-blue-50/20 text-[9.5px] md:text-sm">
+                        <div>${fmt(r.trx_bulan_ini)}</div>
+                        <div class="mt-0.5 text-[8px] md:text-[10px] font-medium text-slate-400">${getTglBayarRR(r)}</div>
+                    </td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-right font-medium text-slate-600 text-[9.5px] md:text-sm">${fmt(r.jml_pinjaman)}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-blue-100 text-right font-bold text-blue-700 bg-blue-50/30 text-[9.5px] md:text-sm">${fmt(r.os_m1)}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-green-100 text-right font-bold text-green-700 bg-green-50/30 text-[9.5px] md:text-sm">${fmt(r.os_curr)}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-red-100 text-right font-bold text-red-600 bg-red-50/30 text-[9.5px] md:text-sm">${fmt(r.totung)}</td>
+                    <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-cyan-100 text-right font-bold text-cyan-700 bg-cyan-50/30 text-[9.5px] md:text-sm">${fmt(r.tabungan)}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center font-bold text-slate-700 text-[9.5px] md:text-sm">${r.dpd_curr}</td>
-                    <td class="px-2 md:px-4 py-1.5 md:py-2 border-r border-slate-100 text-right font-bold text-emerald-600 bg-emerald-50/10 text-[9.5px] md:text-sm">${fmt(r.tabungan)}</td>
-                    <td class="px-2 md:px-3 py-1.5 md:py-2 border-r border-slate-100 text-center">${statTabungan}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 text-center">${badge}</td>
                 </tr>`;
           } else {
@@ -2831,15 +2844,14 @@ mb_render_detail_modal([
           const cleanCell = (value) => String(value ?? '').replace(/[\t\r\n]+/g, ' ');
           const lines = [];
           if(currentMode === 'NORMAL') {
-              lines.push(`No Rekening\tNama Nasabah\tAlamat\tNo HP\tKankas\tNama AO\tTgl Realisasi\tTgl JT\tTgl Bayar\tStatus Pembayaran\tBayar Bulan Ini\tHari Telat\tHari Menunggak\tPlafond\tTarget (M-1)\tActual (Curr)\tTot Tunggakan\tDPD\tSaldo Tabungan\tStatus Tabungan\tStatus Tagih`);
+              lines.push(`No Rekening\tNama Nasabah\tAlamat\tNo HP\tKankas\tNama AO\tTgl Realisasi\tTgl JT\tStatus Pembayaran\tAngsuran\tTgl Bayar\tPlafond\tTarget (M-1)\tActual (Curr)\tTot Tunggakan\tTabungan\tDPD\tStatus Tagih`);
               rows.forEach(r => {
                   lines.push([
                       `'${r.no_rekening || ''}`, r.nama_nasabah, r.alamat, `'${r.no_hp || ''}`,
-                      r.kankas, r.nama_ao, r.tgl_realisasi, r.tgl_jatuh_tempo, getTglBayarRR(r), r.status_pembayaran,
-                      Math.round(Number(r.trx_bulan_ini) || 0), r.hari_telat || 0, r.hari_menunggak_jt || 0,
+                      r.kankas, r.nama_ao, r.tgl_realisasi, r.tgl_jatuh_tempo, r.status_pembayaran,
+                      Math.round(Number(r.trx_bulan_ini) || 0), getTglBayarRR(r),
                       Math.round(Number(r.jml_pinjaman) || 0), Math.round(Number(r.os_m1) || 0),
-                      Math.round(Number(r.os_curr) || 0), Math.round(Number(r.totung) || 0), r.dpd_curr,
-                      Math.round(Number(r.tabungan) || 0), r.status_tabungan, r.status_ket
+                      Math.round(Number(r.os_curr) || 0), Math.round(Number(r.totung) || 0), Math.round(Number(r.tabungan) || 0), r.dpd_curr, r.status_ket
                   ].map(cleanCell).join('\t'));
               });
           } else {

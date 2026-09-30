@@ -119,7 +119,7 @@ class RepaymentRateController {
         return sprintf('%04d-%02d-%02d', $year, $month, $mappedDay);
     }
 
-    private function buildPaymentStatus(string $harian, ?string $dueDate, ?string $paidDate, float $paidAmount, int $fallbackDpd = 0): array {
+    private function buildPaymentStatus(string $harian, ?string $dueDate, ?string $paidDate, float $paidAmount, int $fallbackDpd = 0, float $remainingArrears = 0): array {
         $mappedDueDate = $this->getMappedDueDateForHarian($harian, $dueDate);
         $dueTs = $mappedDueDate ? strtotime($mappedDueDate) : false;
         $harianTs = strtotime(substr($harian, 0, 10));
@@ -128,6 +128,9 @@ class RepaymentRateController {
         if ($paidAmount > 0 && $paidTs && $dueTs) {
             $lateDays = max(0, (int)floor(($paidTs - $dueTs) / 86400));
             if ($lateDays === 0) {
+                if ($remainingArrears > 0) {
+                    return ['status_code' => 'TUNGGAKAN', 'label' => 'Masih Tunggakan', 'hari_telat' => 0, 'hari_menunggak' => 0];
+                }
                 return ['status_code' => 'OTP', 'label' => 'OTP', 'hari_telat' => 0, 'hari_menunggak' => 0];
             }
             return ['status_code' => 'TELAT', 'label' => 'Telat', 'hari_telat' => $lateDays, 'hari_menunggak' => 0];
@@ -991,7 +994,7 @@ class RepaymentRateController {
         $statusPembayaran = strtoupper(trim((string)($b['status_pembayaran'] ?? 'ALL')));
         if (!in_array($statusBayar, ['all', 'sudah_bayar', 'belum_bayar'], true)) $statusBayar = 'all';
         if (!in_array($statusTunggakan, ['all', 'nol', 'lebih'], true)) $statusTunggakan = 'all';
-        if (!in_array($statusPembayaran, ['ALL', 'OTP', 'TELAT', 'BELUM_JATUH_TEMPO', 'BELUM_BAYAR'], true)) $statusPembayaran = 'ALL';
+        if (!in_array($statusPembayaran, ['ALL', 'OTP', 'TELAT', 'TUNGGAKAN', 'BELUM_JATUH_TEMPO', 'BELUM_BAYAR'], true)) $statusPembayaran = 'ALL';
         
         $tglTagih = $b['tgl_tagih'] ?? 'ALL'; 
         $status  = strtoupper($b['status'] ?? 'ALL');
@@ -1284,7 +1287,7 @@ class RepaymentRateController {
                 $tglBayarIni = $trx['tgl_bayar_ini'] ?? null;
                 $trxBulanIni = (float)($trx['trx_bulan_ini'] ?? 0);
                 $dueDate = $rowFast['tgl_jatuh_tempo'] ?? null;
-                $statusInfo = $this->buildPaymentStatus($harian, $dueDate, $tglBayarIni, $trxBulanIni, $dpd);
+                $statusInfo = $this->buildPaymentStatus($harian, $dueDate, $tglBayarIni, $trxBulanIni, $dpd, $totung);
 
                 if ($statusBayar === 'sudah_bayar' && $trxBulanIni <= 0) continue;
                 if ($statusBayar === 'belum_bayar' && $trxBulanIni > 0) continue;
@@ -1419,8 +1422,9 @@ class RepaymentRateController {
         elseif ($statusBayar === 'belum_bayar') $baseQuery .= " AND COALESCE(trx.trx_bulan_ini, 0) <= 0";
         if ($statusTunggakan === 'nol') $baseQuery .= " AND (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) = 0";
         elseif ($statusTunggakan === 'lebih') $baseQuery .= " AND (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) > 0";
-        if ($statusPembayaran === 'OTP') $baseQuery .= " AND COALESCE(trx.trx_bulan_ini, 0) > 0 AND DAY(trx.tgl_bayar_ini) <= ({$detailDayMapCase})";
+        if ($statusPembayaran === 'OTP') $baseQuery .= " AND COALESCE(trx.trx_bulan_ini, 0) > 0 AND DAY(trx.tgl_bayar_ini) <= ({$detailDayMapCase}) AND (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) <= 0";
         elseif ($statusPembayaran === 'TELAT') $baseQuery .= " AND COALESCE(trx.trx_bulan_ini, 0) > 0 AND DAY(trx.tgl_bayar_ini) > ({$detailDayMapCase})";
+        elseif ($statusPembayaran === 'TUNGGAKAN') $baseQuery .= " AND COALESCE(trx.trx_bulan_ini, 0) > 0 AND DAY(trx.tgl_bayar_ini) <= ({$detailDayMapCase}) AND (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) > 0";
         elseif ($statusPembayaran === 'BELUM_JATUH_TEMPO') $baseQuery .= " AND COALESCE(trx.trx_bulan_ini, 0) <= 0 AND DAY(:harian_status) <= ({$detailDayMapCase})";
         elseif ($statusPembayaran === 'BELUM_BAYAR') $baseQuery .= " AND COALESCE(trx.trx_bulan_ini, 0) <= 0 AND DAY(:harian_status) > ({$detailDayMapCase})";
 
@@ -1516,7 +1520,7 @@ class RepaymentRateController {
             $r['trx_bulan_ini'] = (float)($r['trx_bulan_ini'] ?? 0);
             $r['tgl_bayar_lalu'] = $r['tgl_bayar_lalu'] ?? null;
             $r['tgl_bayar_ini'] = $r['tgl_bayar_ini'] ?? null;
-            $statusInfo = $this->buildPaymentStatus($harian, $r['tgl_jatuh_tempo'] ?? null, $r['tgl_bayar_ini'], $r['trx_bulan_ini'], $dpd);
+            $statusInfo = $this->buildPaymentStatus($harian, $r['tgl_jatuh_tempo'] ?? null, $r['tgl_bayar_ini'], $r['trx_bulan_ini'], $dpd, (float)($r['totung'] ?? 0));
             $r['status_pembayaran'] = $statusInfo['label'];
             $r['status_pembayaran_code'] = $statusInfo['status_code'];
             $r['hari_telat'] = $statusInfo['hari_telat'];
@@ -1606,8 +1610,9 @@ class RepaymentRateController {
         if ($statusTunggakan === 'nol') $detailExtraWhere .= " AND (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) = 0";
         if ($statusTunggakan === 'lebih') $detailExtraWhere .= " AND (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) > 0";
         $dueDaySql = "LEAST(DAY(t2.tgl_jatuh_tempo), DAY(LAST_DAY(:harian_status_rr_due)))";
-        if ($statusPembayaran === 'OTP') $detailExtraWhere .= " AND COALESCE(trx.trx_bulan_ini, 0) > 0 AND DAY(trx.tgl_bayar_ini) <= {$dueDaySql}";
+        if ($statusPembayaran === 'OTP') $detailExtraWhere .= " AND COALESCE(trx.trx_bulan_ini, 0) > 0 AND DAY(trx.tgl_bayar_ini) <= {$dueDaySql} AND (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) <= 0";
         if ($statusPembayaran === 'TELAT') $detailExtraWhere .= " AND COALESCE(trx.trx_bulan_ini, 0) > 0 AND DAY(trx.tgl_bayar_ini) > {$dueDaySql}";
+        if ($statusPembayaran === 'TUNGGAKAN') $detailExtraWhere .= " AND COALESCE(trx.trx_bulan_ini, 0) > 0 AND DAY(trx.tgl_bayar_ini) <= {$dueDaySql} AND (COALESCE(t2.tunggakan_pokok, 0) + COALESCE(t2.tunggakan_bunga, 0)) > 0";
         if ($statusPembayaran === 'BELUM_JATUH_TEMPO') $detailExtraWhere .= " AND COALESCE(trx.trx_bulan_ini, 0) <= 0 AND DAY(:harian_status_rr) <= {$dueDaySql}";
         if ($statusPembayaran === 'BELUM_BAYAR') $detailExtraWhere .= " AND COALESCE(trx.trx_bulan_ini, 0) <= 0 AND DAY(:harian_status_rr) > {$dueDaySql}";
 
@@ -1936,7 +1941,7 @@ class RepaymentRateController {
         foreach ($rows as &$row) {
             $paid = (float)($row['trx_bulan_ini'] ?? 0);
             $dpd = (int)($row['dpd_curr'] ?? 0);
-            $statusInfo = $this->buildPaymentStatus($harian, $row['tgl_jatuh_tempo'] ?? null, $row['tgl_bayar_ini'] ?? null, $paid, $dpd);
+            $statusInfo = $this->buildPaymentStatus($harian, $row['tgl_jatuh_tempo'] ?? null, $row['tgl_bayar_ini'] ?? null, $paid, $dpd, (float)($row['totung'] ?? 0));
             $row['status_pembayaran_code'] = $statusInfo['status_code'];
             $row['status_pembayaran'] = $statusInfo['label'];
             $row['hari_telat'] = $statusInfo['hari_telat'];

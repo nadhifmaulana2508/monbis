@@ -888,7 +888,6 @@
           <a href="ikhtisar" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Ikhtisar</a>
           <a href="realisasi_rbb_2026" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Realisasi RBB 2026</a>
           <a id="menuPaparanRbb" href="paparan_rbb_realisasi" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Paparan RBB Direksi</a>
-          <a href="raport_cabang" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Raport Cabang</a>
           <!-- <a href="realisasi_rbb" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Produksi vs RBB</a> -->
 
           <a href="aging_kredit" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Rekap Aging Kredit</a>
@@ -954,7 +953,7 @@
         </div>
       </div>
 
-      <!-- Parent KPI Bisnis (mengikuti akses menu Laporan) -->
+      <!-- Parent KPI Bisnis (termasuk evaluasi Raport Cabang) -->
       <div id="menuKpiBisnis" class="accordion-group" style="display: none;">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
@@ -968,6 +967,7 @@
            <a href="hitung_kpi_ao" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Nilai KPI AO</a>
            <a href="generate_kpi_ao" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Generate KPI AO</a>
            <a href="rekap_kpi_ao" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Rekap KPI AO</a>
+           <a href="raport_cabang" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Raport Cabang</a>
         </div>
       </div>
 
