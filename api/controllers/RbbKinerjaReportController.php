@@ -104,12 +104,27 @@ class RbbKinerjaReportController
             $monthlyNplBank = $this->metricFromCredit($credit, $monthDates, $closingMonth, 'npl_saldo_bank');
             $monthlyNplBaki = $this->metricFromCredit($credit, $monthDates, $closingMonth, 'npl_baki_debet');
             $monthlyCkpn = $this->metricFromLedger($ledger, $monthDates, $closingMonth, 'ckpn');
+            $percentageValue = static function ($numerator, $denominator): ?float {
+                if ($numerator === null || $denominator === null || abs((float)$denominator) < 0.000001) return null;
+                return ((float)$numerator / (float)$denominator) * 100;
+            };
+            $percentageSeries = static function (array $numerator, array $denominator) use ($percentageValue): array {
+                $result = array_fill(1, 12, null);
+                for ($month = 1; $month <= 12; $month++) {
+                    $result[$month] = $percentageValue($numerator[$month] ?? null, $denominator[$month] ?? null);
+                }
+                return $result;
+            };
             $monthlyDpd = [];
             foreach (['dpd0_saldo_bank','dpd1_30_saldo_bank','dpd31_60_saldo_bank','dpd61_90_saldo_bank','kl_saldo_bank','d_saldo_bank','m_saldo_bank',
                          'dpd0_baki_debet','dpd1_30_baki_debet','dpd31_60_baki_debet','dpd61_90_baki_debet','kl_baki_debet','d_baki_debet','m_baki_debet',
                          'dpd0_rr_saldo_bank','dpd0_rr_baki_debet'] as $key) {
                 $monthlyDpd[$key] = $this->metricFromCredit($credit, $monthDates, $closingMonth, $key);
             }
+            $monthlyNplPctSaldoBank = $percentageSeries($monthlyNplBank, $monthlySaldoBank);
+            $monthlyNplPctBakiDebet = $percentageSeries($monthlyNplBaki, $monthlyBakiDebet);
+            $monthlyRrPctSaldoBank = $percentageSeries($monthlyDpd['dpd0_rr_saldo_bank'], $monthlySaldoBank);
+            $monthlyRrPctBakiDebet = $percentageSeries($monthlyDpd['dpd0_rr_baki_debet'], $monthlyBakiDebet);
 
             $monthlyCreditProduction = $this->fillMonthlyMap($production, $closingMonth);
             $monthlyRecovery = $this->fillMonthlyMap($recovery, $closingMonth);
@@ -121,6 +136,12 @@ class RbbKinerjaReportController
             $yearEndTarget = function (string $code) use ($targets): ?float {
                 return isset($targets[$code][12]) ? (float)$targets[$code][12] : null;
             };
+            $ckpnTargetSeries = array_fill(1, 12, null);
+            foreach (($targets['70'] ?? []) as $month => $value) {
+                $month = (int)$month;
+                if ($month >= 1 && $month <= 12 && $value !== null) $ckpnTargetSeries[$month] = abs((float)$value);
+            }
+            $ckpnYearTarget = $ckpnTargetSeries[12] ?? null;
 
             $rows = [];
             $add = function (string $section, string $key, string $label, string $format, array $monthly, ?float $previous,
@@ -128,7 +149,12 @@ class RbbKinerjaReportController
                 ?array $monthlyTargetOverride = null, bool $comparison = true) use (&$rows, $latestMonth, $targets, $monthActualAvailable): void {
                 $monthlyTargets = $monthlyTargetOverride ?? ($targetCode !== null ? ($targets[$targetCode] ?? []) : []);
                 $currentActual = $latestMonth > 0 ? ($monthly[$latestMonth] ?? null) : null;
-                $currentTarget = $latestMonth > 0 ? ($monthlyTargets[$latestMonth] ?? null) : null;
+                // Perubahan bulan berjalan untuk metrik posisi dibandingkan
+                // dengan closing Desember tahun sebelumnya. Metrik tanpa
+                // baseline tetap menggunakan target bulan berjalan.
+                $currentTarget = $latestMonth > 0
+                    ? ($previous !== null ? $previous : ($monthlyTargets[$latestMonth] ?? null))
+                    : null;
                 $yearActual = null;
                 if ($annualBasis === 'sum') {
                     $availableValues = [];
@@ -202,11 +228,20 @@ class RbbKinerjaReportController
 
             $add('NPL', 'npl_saldo_bank', 'Kredit NPL (Saldo Bank)', 'nominal', $monthlyNplBank, $credit[$previousYearEnd]['npl_saldo_bank'] ?? null, null, null);
             $add('NPL', 'npl_osc', 'Kredit NPL (OSC)', 'nominal', $monthlyNplBaki, $credit[$previousYearEnd]['npl_baki_debet'] ?? null, null, null);
-            $add('NPL', 'ckpn', 'CKPN Kredit', 'nominal', $monthlyCkpn, $this->ledgerMetric($ledger[$previousYearEnd] ?? null, 'ckpn'), $yearEndTarget('70'), '70');
+            $add('NPL', 'npl_pct_saldo_bank', '% NPL (Saldo Bank)', 'ratio', $monthlyNplPctSaldoBank,
+                $percentageValue($credit[$previousYearEnd]['npl_saldo_bank'] ?? null, $credit[$previousYearEnd]['saldo_bank'] ?? null), null, null, 'latest', false, null, false);
+            $add('NPL', 'npl_pct_baki_debet', '% NPL (Baki Debet)', 'ratio', $monthlyNplPctBakiDebet,
+                $percentageValue($credit[$previousYearEnd]['npl_baki_debet'] ?? null, $credit[$previousYearEnd]['baki_debet'] ?? null), null, null, 'latest', false, null, false);
+            $add('NPL', 'ckpn', 'CKPN Kredit', 'nominal', $monthlyCkpn, $this->ledgerMetric($ledger[$previousYearEnd] ?? null, 'ckpn'), $ckpnYearTarget, null, 'latest', false, $ckpnTargetSeries);
             $add('NPL', 'recovery_ph', 'Recovery PH (Pokok)', 'nominal', $monthlyRecovery, null, null, null, 'sum');
 
             $add('Repayment Rate (RR)', 'rr_saldo_bank', 'RR – DPD 0 Saldo Bank', 'nominal', $monthlyDpd['dpd0_rr_saldo_bank'], $credit[$previousYearEnd]['dpd0_rr_saldo_bank'] ?? null, null, null);
             $add('Repayment Rate (RR)', 'rr_baki_debet', 'RR – DPD 0 Baki Debet', 'nominal', $monthlyDpd['dpd0_rr_baki_debet'], $credit[$previousYearEnd]['dpd0_rr_baki_debet'] ?? null, null, null);
+
+            $add('Repayment Rate (RR)', 'rr_pct_saldo_bank', '% RR (Saldo Bank)', 'ratio', $monthlyRrPctSaldoBank,
+                $percentageValue($credit[$previousYearEnd]['dpd0_rr_saldo_bank'] ?? null, $credit[$previousYearEnd]['saldo_bank'] ?? null), null, null, 'latest', false, null, false);
+            $add('Repayment Rate (RR)', 'rr_pct_baki_debet', '% RR (Baki Debet)', 'ratio', $monthlyRrPctBakiDebet,
+                $percentageValue($credit[$previousYearEnd]['dpd0_rr_baki_debet'] ?? null, $credit[$previousYearEnd]['baki_debet'] ?? null), null, null, 'latest', false, null, false);
 
             $ratioDefinitions = [
                 ['kap','a. KAP','kap',false], ['ppap','b. PPAP terhadap PPAPWD','ppap',false], ['rr','c. RR','rr',false],
@@ -404,25 +439,15 @@ class RbbKinerjaReportController
 
     private function loadDpkSnapshots(array $dates, array $scope): array
     {
-        [$savingDatePlaceholders, $savingParams] = $this->datePlaceholders($dates, 'saving_date_');
-        [$depositDatePlaceholders, $depositParams] = $this->datePlaceholders($dates, 'deposit_date_');
-        $params = array_merge($savingParams, $depositParams);
-        $savingsOffice = $this->officeFilter('kode_kantor', $scope);
-        $depositOffice = $this->officeFilter('kode_kantor', $scope);
+        [$datePlaceholders, $params] = $this->datePlaceholders($dates, 'dpk_date_');
+        $officeFilter = $this->officeFilter('kode_kantor', $scope, true);
         $sql = "SELECT tanggal,
-                    SUM(tabungan) AS tabungan,
-                    SUM(deposito) AS deposito
-                FROM (
-                    SELECT created AS tanggal, SUM(COALESCE(saldo,0)) AS tabungan, 0 AS deposito
-                    FROM nominatif_tabungan
-                    WHERE created IN (" . implode(',', $savingDatePlaceholders) . ") AND {$savingsOffice}
-                    GROUP BY created
-                    UNION ALL
-                    SELECT created AS tanggal, 0 AS tabungan, SUM(COALESCE(saldo_akhir,0)) AS deposito
-                    FROM nominatif_deposito
-                    WHERE created IN (" . implode(',', $depositDatePlaceholders) . ") AND {$depositOffice}
-                    GROUP BY created
-                ) dpk_source
+                    SUM(CASE WHEN kode_perk = '20401' THEN COALESCE(saldo_akhir,0) ELSE 0 END) AS tabungan,
+                    SUM(CASE WHEN kode_perk = '20402' THEN COALESCE(saldo_akhir,0) ELSE 0 END) AS deposito
+                FROM acc_history
+                WHERE tanggal IN (" . implode(',', $datePlaceholders) . ")
+                  AND {$officeFilter}
+                  AND kode_perk IN ('20401','20402')
                 GROUP BY tanggal";
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute($params);
