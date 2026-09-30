@@ -61,8 +61,8 @@ function rcEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&
 function rcNumber(value){if(value===null||value===undefined||value==='')return null;const n=Number(value);return Number.isFinite(n)?n:null;}
 function rcFormat(value,format){const n=rcNumber(value);if(n===null)return '–';if(format==='ratio')return rcRatioFormat.format(n)+'%';if(format==='count')return rcMoneyFormat.format(n);return rcMoneyFormat.format(n);}
 function rcFormatDelta(value,format){const n=rcNumber(value);if(n===null)return '–';return (n>0?'+':'')+rcFormat(n,format);}
-function rcAuthHeaders(extra={}){const headers=Object.assign({},extra);let token='';try{token=String(window.NavAuth?.getToken?.()||localStorage.getItem('dpk_token')||'').trim();}catch(e){}if(!token){try{const match=document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/);if(match)token=decodeURIComponent(match[1]);}catch(e){}}if(token)headers.Authorization=/^Bearer\s/i.test(token)?token:`Bearer ${token}`;return headers;}
-function rcFetch(url,options={}){return fetch(url,Object.assign({},options,{headers:rcAuthHeaders(options.headers||{})}));}
+function rcAuthHeaders(extra={}){return Object.assign({},extra);}
+function rcFetch(url,options={}){return fetch(url,Object.assign({credentials:'include'},options,{headers:rcAuthHeaders(options.headers||{})}));}
 function rcApiJson(response,label){return response.text().then(raw=>{let json;try{json=JSON.parse(raw)}catch(e){throw new Error(`${label}: respons server bukan JSON.`)}if(!response.ok||Number(json.status)>=400)throw new Error(json.message||`Gagal memuat ${label}`);return json;});}
 function rcUserOffice(){const user=(window.getUser&&window.getUser())||{};const raw=user.kode||user.kode_kantor||user.kode_cabang||user.branch_code||'000';const code=String(raw).replace(/\D/g,'').padStart(3,'0').slice(-3);return code==='099'?'000':code;}
 function rcSetStatus(text,state=''){const el=document.getElementById('rcStatus');el.textContent=text;el.dataset.state=state;}
