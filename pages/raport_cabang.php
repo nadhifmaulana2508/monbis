@@ -17,9 +17,9 @@
     <form class="rc-filters" onsubmit="event.preventDefault(); loadRaportCabang();">
       <label><span>Periode</span><input id="rcDate" type="date" onchange="loadRaportCabang()"></label>
       <label class="rc-office-field"><span>Kantor / Korwil</span><select id="rcOffice" onchange="loadRaportCabang()"><option value="000">Konsolidasi</option></select></label>
-      <button id="rcExport" class="rc-export" type="button" onclick="exportRaportCabang()" disabled title="Ekspor report ke Excel">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg><span>Excel</span>
-      </button>
+      <div class="rc-export-menu-wrap"><button id="rcExport" class="rc-export" type="button" onclick="rcToggleExportMenu(event)" disabled title="Pilih jenis export Excel" aria-haspopup="menu" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></svg><span>Excel</span><span class="rc-export-chevron">⌄</span>
+      </button><div id="rcExportMenu" class="rc-export-menu" role="menu" hidden><button type="button" data-rc-export-mode="summary" onclick="rcChooseExport('summary')"><strong>Export tampilan saat ini</strong><small>Konsolidasi atau kantor yang dipilih</small></button><button type="button" data-rc-export-mode="all_branches" onclick="rcChooseExport('all_branches')"><strong>Semua cabang (1 file)</strong><small>Gabungan 001–028 dengan kode kantor</small></button></div></div>
     </form>
   </section>
 
@@ -44,12 +44,12 @@
   .rc-header,.rc-report-card{border:1px solid var(--rc-line);border-radius:15px;background:#fff;box-shadow:0 5px 18px rgba(19,54,79,.055)}
   .rc-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 16px}
   .rc-title-wrap{display:flex;align-items:center;gap:12px;min-width:0}.rc-title-icon{display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;border-radius:12px;background:linear-gradient(145deg,#0b8797,#155e91);color:#fff}.rc-title-icon svg{width:22px;height:22px}.rc-eyebrow{margin-bottom:3px;color:#21849a;font-size:8px;font-weight:950;letter-spacing:.15em}.rc-title-wrap h1{margin:0;font-size:20px;line-height:1.2;font-weight:950;letter-spacing:-.025em}.rc-title-wrap p{margin:4px 0 0;color:var(--rc-muted);font-size:10px;font-weight:650}
-  .rc-filters{display:flex;align-items:end;gap:8px;flex:0 0 auto}.rc-filters label{display:flex;flex-direction:column;gap:4px;min-width:145px}.rc-filters label span{padding-left:2px;color:#60768a;font-size:8px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.rc-filters input,.rc-filters select{height:36px;width:100%;border:1px solid #cddbe5;border-radius:9px;padding:0 10px;background:#fff;color:#193c58;font:800 10px Roboto,"Segoe UI",sans-serif;outline:0}.rc-filters input:focus,.rc-filters select:focus{border-color:#2588a0;box-shadow:0 0 0 3px rgba(37,136,160,.11)}.rc-export{display:flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 12px;border:0;border-radius:9px;background:#07966b;color:#fff;font-size:10px;font-weight:900;cursor:pointer;box-shadow:0 5px 12px rgba(5,150,105,.16)}.rc-export:hover:not(:disabled){background:#047857;transform:translateY(-1px)}.rc-export:disabled{opacity:.5;cursor:not-allowed}.rc-export svg{width:17px;height:17px}
+  .rc-filters{display:flex;align-items:end;gap:8px;flex:0 0 auto}.rc-filters label{display:flex;flex-direction:column;gap:4px;min-width:145px}.rc-filters label span{padding-left:2px;color:#60768a;font-size:8px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.rc-filters input,.rc-filters select{height:36px;width:100%;border:1px solid #cddbe5;border-radius:9px;padding:0 10px;background:#fff;color:#193c58;font:800 10px Roboto,"Segoe UI",sans-serif;outline:0}.rc-filters input:focus,.rc-filters select:focus{border-color:#2588a0;box-shadow:0 0 0 3px rgba(37,136,160,.11)}.rc-export-menu-wrap{position:relative;flex:0 0 auto}.rc-export{display:flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 10px;border:0;border-radius:9px;background:#07966b;color:#fff;font-size:10px;font-weight:900;cursor:pointer;box-shadow:0 5px 12px rgba(5,150,105,.16)}.rc-export:hover:not(:disabled){background:#047857;transform:translateY(-1px)}.rc-export:disabled{opacity:.5;cursor:not-allowed}.rc-export svg{width:17px;height:17px}.rc-export-chevron{font-size:14px;line-height:1;opacity:.85}.rc-export-menu{position:absolute;top:calc(100% + 6px);right:0;z-index:30;display:grid;min-width:245px;padding:5px;border:1px solid #cddbe5;border-radius:10px;background:#fff;box-shadow:0 12px 28px rgba(19,54,79,.16)}.rc-export-menu[hidden]{display:none}.rc-export-menu button{display:flex;flex-direction:column;gap:3px;width:100%;padding:9px 10px;border:0;border-radius:7px;background:#fff;color:#193c58;text-align:left;cursor:pointer}.rc-export-menu button:hover{background:#eff7f9}.rc-export-menu strong{font-size:10px}.rc-export-menu small{color:#74899d;font-size:8px;font-weight:600}
   .rc-report-card{margin-top:12px;overflow:hidden}.rc-report-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 15px 10px}.rc-report-head h2{margin:0;font-size:13px;font-weight:950}.rc-report-head p{margin:4px 0 0;color:var(--rc-muted);font-size:9px;font-weight:650}.rc-report-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}.rc-report-meta span{padding:5px 9px;border:1px solid #dce7ed;border-radius:999px;background:#f8fbfc;color:#547086;font-size:8px;font-weight:900;white-space:nowrap}.rc-report-meta #rcStatus[data-state="loading"]{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}.rc-report-meta #rcStatus[data-state="error"]{background:#fff1f2;color:#be123c;border-color:#fecdd3}.rc-report-meta #rcStatus[data-state="success"]{background:#ecfdf5;color:#047857;border-color:#bbf7d0}
   .rc-note{margin:0 15px 9px;color:#617c90;font-size:9px}.rc-table-scroll{max-height:min(72vh,860px);min-height:250px;overflow:auto;border-top:1px solid var(--rc-line);border-bottom:1px solid var(--rc-line);scrollbar-color:#afc1cc #f1f5f7;scrollbar-width:thin}.rc-table-scroll::-webkit-scrollbar{width:7px;height:7px}.rc-table-scroll::-webkit-scrollbar-thumb{border-radius:99px;background:#afc1cc}.rc-table-scroll::-webkit-scrollbar-track{background:#f1f5f7}
   #rcTable{width:100%;min-width:2060px;border-collapse:separate;border-spacing:0;table-layout:fixed;font-variant-numeric:tabular-nums}#rcTable th,#rcTable td{border-right:1px solid #d7e1e7;border-bottom:1px solid #d7e1e7}#rcTable thead{position:sticky;top:0;z-index:5}#rcTable thead th{height:30px;padding:5px 7px;background:#07858d;color:white;text-align:center;font-size:9px;line-height:1.15;font-weight:950;white-space:nowrap}#rcTable thead tr:nth-child(2) th{height:26px;background:#e7f3f5;color:#245a70;font-size:8px}#rcTable thead th:first-child{border-left:1px solid #d7e1e7}#rcTable .rc-col-label{width:230px}#rcTable .rc-col-baseline{width:125px}#rcTable .rc-col-year{width:125px}#rcTable .rc-col-month{width:104px}#rcTable .rc-col-summary{width:120px}#rcTable thead .rc-sticky-label{position:sticky;left:0;z-index:8}#rcTable tbody td{height:27px;padding:5px 8px;background:#fff;font-size:9px;line-height:1.15;white-space:nowrap}#rcTable tbody tr:nth-child(even):not(.rc-section) td{background:#fbfdfe}#rcTable tbody td:first-child{position:sticky;left:0;z-index:2;border-left:1px solid #d7e1e7;background:#fff;text-align:left;font-weight:780;box-shadow:5px 0 8px -8px rgba(18,48,71,.7)}#rcTable tbody tr:nth-child(even):not(.rc-section) td:first-child{background:#fbfdfe}#rcTable tbody td:not(:first-child){text-align:right}#rcTable tbody tr:hover:not(.rc-section) td{background:#f2f9fa}#rcTable tbody tr:hover:not(.rc-section) td:first-child{background:#f2f9fa}.rc-section td{position:static!important;height:25px!important;padding:6px 9px!important;background:#eaf4f6!important;color:#14566b;font-size:9px!important;font-weight:950!important;letter-spacing:.045em;text-transform:uppercase;text-align:left!important}.rc-value{font-family:Roboto,"Segoe UI",Arial,sans-serif;font-weight:750}.rc-empty{height:180px!important;text-align:center!important;color:#7d91a1!important;font-size:11px!important}.rc-current-month{background:#f0f8ff!important}.rc-delta-positive{color:#05815d}.rc-delta-negative{color:#d63a47}.rc-delta-neutral{color:#8495a4}.rc-current-month-head{background:#d9edf9!important;color:#164e73!important}.rc-footnote{display:flex;justify-content:space-between;gap:12px;padding:8px 14px;color:#74899d;font-size:8px;line-height:1.4}.rc-footnote span:last-child{text-align:right}
   @media(max-width:900px){#raportCabangPage{padding:8px}.rc-header{align-items:stretch;flex-direction:column}.rc-filters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) auto}.rc-filters label{min-width:0}.rc-report-head{align-items:flex-start;flex-direction:column}.rc-report-meta{justify-content:flex-start}.rc-footnote{align-items:flex-start;flex-direction:column}.rc-footnote span:last-child{text-align:left}}
-  @media(max-width:560px){.rc-title-wrap h1{font-size:18px}.rc-filters{grid-template-columns:1fr auto}.rc-office-field{grid-column:1/-1;grid-row:1}.rc-filters label:first-child{grid-column:1;grid-row:2}.rc-export{grid-column:2;grid-row:2}.rc-report-head{padding:11px}.rc-note{margin:0 11px 8px}}
+  @media(max-width:560px){.rc-title-wrap h1{font-size:18px}.rc-filters{grid-template-columns:1fr auto}.rc-office-field{grid-column:1/-1;grid-row:1}.rc-filters label:first-child{grid-column:1;grid-row:2}.rc-export-menu-wrap{grid-column:2;grid-row:2}.rc-report-head{padding:11px}.rc-note{margin:0 11px 8px}}
 </style>
 
 <script>
@@ -78,4 +78,107 @@ async function loadRaportCabang(){const date=document.getElementById('rcDate').v
 function rcExcelCell(value,format='nominal',signed=false){const n=rcNumber(value);if(n===null)return '<td></td>';const raw=String(n);const numberFormat=format==='ratio'?(signed?'+0.00"%";[Red]-0.00"%"':'0.00"%"'):(signed?'+#,##0.00;[Red]-#,##0.00':'#,##0.00;[Red]-#,##0.00');return `<td x:num="${raw}" style="mso-number-format:'${numberFormat}';text-align:right;">${raw}</td>`;}
 function exportRaportCabang(){if(!rcState.rows.length||!rcState.meta)return;const meta=rcState.meta;const months=meta.months||[];const current=Number(meta.latest_actual_month||0);let html=`<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:10pt}th,td{border:1px solid #7d8b91;padding:5px}th{background:#087f8c;color:#fff;font-weight:bold}.section{background:#eaf4f6;font-weight:bold;color:#14566b}.title{font-size:15pt;font-weight:bold;border:0}.sub{border:0}</style></head><body><table><tr><td class="title" colspan="19">RAPORT CABANG · ${rcEscape(meta.scope_label||'')}</td></tr><tr><td class="sub" colspan="19">Periode ${rcEscape(meta.harian_date||'')} · Closing terakhir ${rcEscape(meta.latest_actual_date||'—')} · Nominal Rupiah</td></tr><tr><th rowspan="2">Indikator Kinerja</th><th rowspan="2">Desember ${Number(meta.year)-1}</th><th rowspan="2">RBB ${rcEscape(meta.year)}</th><th colspan="12">Realisasi ${rcEscape(meta.year)}</th><th colspan="2">Pencapaian RBB Bulan Berjalan (${rcEscape(months[current-1]?.label||'—')})</th><th colspan="2">Pencapaian RBB ${rcEscape(meta.year)}</th></tr><tr>${months.map(month=>`<th>${rcEscape(month.label)}</th>`).join('')}<th>Target (+/-)</th><th>%</th><th>Target (+/-)</th><th>%</th></tr>`;let section='';for(const row of rcState.rows){if(row.section!==section){section=row.section;html+=`<tr class="section"><td colspan="19">${rcEscape(section)}</td></tr>`;}html+=`<tr><td>${rcEscape(row.label)}</td>${rcExcelCell(row.previous,row.format)}${rcExcelCell(row.year_target,row.format)}${(row.monthly||[]).map(value=>rcExcelCell(value,row.format)).join('')}${rcExcelCell(row.current_delta,row.format,true)}${rcExcelCell(row.current_achievement,'ratio')}${rcExcelCell(row.year_delta,row.format,true)}${rcExcelCell(row.year_achievement,'ratio')}</tr>`;}html+=`<tr><td colspan="19">SDM menggunakan roster pegawai aktif terkini; histori headcount per bulan tidak tersedia.</td></tr></table></body></html>`;const blob=new Blob(['\ufeff'+html],{type:'application/vnd.ms-excel;charset=utf-8'});const link=document.createElement('a');link.href=URL.createObjectURL(blob);link.download=`Raport_Cabang_${String(document.getElementById('rcOffice').value).replace(/[^a-z0-9_-]/gi,'_')}_${document.getElementById('rcDate').value}.xls`;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(link.href),1000);}
 (async()=>{await Promise.all([rcLoadDate(),rcLoadOffices()]);await loadRaportCabang();})();
+async function rcFetchBranchReportForExport(code, date) {
+  const response = await rcFetch('./api/kinerja_report/', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ type:'annual_report', harian_date:date, kode_kantor:code }) });
+  const json = await rcApiJson(response, `Raport cabang ${code}`);
+  const data = json.data || {};
+  let employeeCount = null;
+  try {
+    const employeeResponse = await rcFetch('./api/anggota/', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ type:'rekap_anggota', as_of:data.meta?.latest_actual_date || date, summary_only:true, kode_kantor:code }) });
+    const employeeJson = await rcApiJson(employeeResponse, `Rekap SDM ${code}`);
+    employeeCount = rcNumber(employeeJson.data?.meta?.total);
+  } catch (error) {
+    if (error.name === 'AbortError') throw error;
+  }
+  return { code, data, rows:rcAddSdmRows(data, employeeCount) };
+}
+
+async function rcFetchAllBranchesForExport(date) {
+  const codes = Array.from({length:28}, (_, index) => String(index + 1).padStart(3, '0'));
+  const results = new Array(codes.length);
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < codes.length) {
+      const index = cursor++;
+      results[index] = await rcFetchBranchReportForExport(codes[index], date);
+    }
+  };
+  await Promise.all(Array.from({length:4}, worker));
+  return results;
+}
+
+async function rcExportConsolidated() {
+  const button = document.getElementById('rcExport');
+  const date = document.getElementById('rcDate').value;
+  try {
+    if (button) button.disabled = true;
+    rcSetStatus('Menyiapkan Excel semua cabang...', 'loading');
+    const branches = await rcFetchAllBranchesForExport(date);
+    const meta = rcState.meta || branches[0]?.data?.meta || {};
+    const months = meta.months || [];
+    const current = Number(meta.latest_actual_month || 0);
+    let html = `<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Arial,sans-serif;font-size:10pt}th,td{border:1px solid #7d8b91;padding:5px}th{background:#087f8c;color:#fff;font-weight:bold}.section{background:#eaf4f6;font-weight:bold;color:#14566b}.title{font-size:15pt;font-weight:bold;border:0}.sub{border:0}.code{font-weight:bold;text-align:center}</style></head><body><table><tr><td class="title" colspan="20">RAPORT CABANG - KONSOLIDASI SEMUA CABANG</td></tr><tr><td class="sub" colspan="20">Periode ${rcEscape(date)} - Closing terakhir ${rcEscape(meta.latest_actual_date || '-')} - Nominal Rupiah</td></tr><tr><th rowspan="2">Kode Kantor</th><th rowspan="2">Indikator Kinerja</th><th rowspan="2">Desember ${Number(meta.year)-1}</th><th rowspan="2">RBB ${rcEscape(meta.year || '')}</th><th colspan="12">Realisasi ${rcEscape(meta.year || '')}</th><th colspan="2">Pencapaian RBB Bulan Berjalan (${rcEscape(months[current-1]?.label || '-')})</th><th colspan="2">Pencapaian RBB ${rcEscape(meta.year || '')}</th></tr><tr>${months.map(month=>`<th>${rcEscape(month.label)}</th>`).join('')}<th>Target (+/-)</th><th>%</th><th>Target (+/-)</th><th>%</th></tr>`;
+    for (const branch of branches) {
+      let section = '';
+      for (const row of branch.rows) {
+        if (row.section !== section) {
+          section = row.section;
+          html += `<tr class="section"><td class="code">${rcEscape(branch.code)}</td><td colspan="19">${rcEscape(section)}</td></tr>`;
+        }
+        html += `<tr><td class="code">${rcEscape(branch.code)}</td><td>${rcEscape(row.label)}</td>${rcExcelCell(row.previous,row.format)}${rcExcelCell(row.year_target,row.format)}${(row.monthly||[]).map(value=>rcExcelCell(value,row.format)).join('')}${rcExcelCell(row.current_delta,row.format,true)}${rcExcelCell(row.current_achievement,'ratio')}${rcExcelCell(row.year_delta,row.format,true)}${rcExcelCell(row.year_achievement,'ratio')}</tr>`;
+      }
+    }
+    html += `<tr><td colspan="20">SDM menggunakan roster pegawai aktif terkini per cabang; histori headcount per bulan tidak tersedia.</td></tr></table></body></html>`;
+    const blob = new Blob(['\ufeff' + html], {type:'application/vnd.ms-excel;charset=utf-8'});
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `Raport_Cabang_Konsolidasi_${date}.xls`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+    rcSetStatus(`Excel ${branches.length} cabang siap`, 'success');
+  } catch (error) {
+    rcSetStatus('Export gagal', 'error');
+    window.alert(error.message || 'Gagal menyiapkan Excel semua cabang.');
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+function rcCloseExportMenu() {
+  const menu = document.getElementById('rcExportMenu');
+  const button = document.getElementById('rcExport');
+  if (menu) menu.hidden = true;
+  if (button) button.setAttribute('aria-expanded', 'false');
+}
+
+function rcToggleExportMenu(event) {
+  event?.stopPropagation();
+  const menu = document.getElementById('rcExportMenu');
+  const button = document.getElementById('rcExport');
+  if (!menu || button?.disabled) return;
+  if (String(document.getElementById('rcOffice')?.value || '000') !== '000') {
+    return window.exportRaportCabang('summary');
+  }
+  const allBranches = menu.querySelector('[data-rc-export-mode="all_branches"]');
+  if (allBranches) allBranches.hidden = String(document.getElementById('rcOffice')?.value || '000') !== '000';
+  menu.hidden = !menu.hidden;
+  button.setAttribute('aria-expanded', menu.hidden ? 'false' : 'true');
+}
+
+function rcChooseExport(mode) {
+  rcCloseExportMenu();
+  return window.exportRaportCabang(mode);
+}
+
+document.addEventListener('click', (event) => {
+  if (!event.target.closest('.rc-export-menu-wrap')) rcCloseExportMenu();
+});
+
+const rcExportRaportSingle = window.exportRaportCabang;
+window.exportRaportCabang = function(mode = 'summary') {
+  if (String(document.getElementById('rcOffice')?.value || '000') === '000' && mode === 'all_branches') return rcExportConsolidated();
+  return rcExportRaportSingle();
+};
 </script>
