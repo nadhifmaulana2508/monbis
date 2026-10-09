@@ -25,6 +25,12 @@
   .field { display:flex; flex-direction:column; min-width:0; }
   .btn-icon { display:inline-flex; align-items:center; justify-content:center; border:none; cursor:pointer; transition:transform 0.2s; height:32px; border-radius:6px; }
   .btn-icon:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 4px 6px -1px rgba(0,0,0,0.1); }
+  .fp-page-actions { display:flex; align-items:center; justify-content:flex-end; gap:8px; flex:0 0 auto; }
+  .fp-page-actions .btn-icon { width:42px; background:#059669; color:#fff; box-shadow:0 2px 5px rgba(5,150,105,.18); }
+  @media (max-width:1279px) {
+      #flowParHeader > div:first-child { padding-right:58px; }
+      #flowParHeader .fp-page-actions { position:absolute; top:8px; right:10px; }
+  }
   @media (min-width: 768px) {
       .lbl { font-size:10px; }
       .inp { border-radius:8px; padding:0 10px; font-size:12px; height:36px; }
@@ -693,6 +699,8 @@
       #opt_kantor_rec, #closing_date, #harian_date {
           font-size:12px; padding:0 8px; text-align:left; width:100%;
       }
+      #fpNominalMode { font-size:12px; padding:0 8px; text-align:left; width:100%; }
+      #filterForm .fp-area-field { min-width:0; }
 
       #fpScroller {
           --col1: 0px;
@@ -1007,6 +1015,8 @@
           padding:6px 7px;
           border-radius:8px;
       }
+      #flowParHeader > div:first-child { padding-right:58px; }
+      #flowParHeader .fp-page-actions { top:6px; right:7px; }
       .fp-page-title-icon {
           width:30px;
           height:30px;
@@ -1199,6 +1209,238 @@
       line-height:1.4;
   }
 
+  /* === FLOW PAR SHARED THEME / RESPONSIVE POLISH === */
+  #flowParPage,
+  #modalInfoFlowPar,
+  #modalDebiturFlowPar,
+  #modalPeringatan {
+      --fp-surface:#ffffff;
+      --fp-surface-soft:#f8fafc;
+      --fp-surface-muted:#f1f5f9;
+      --fp-ink:#0f172a;
+      --fp-text:#334155;
+      --fp-muted:#64748b;
+      --fp-line:#e2e8f0;
+      --fp-line-soft:#eef2f7;
+      --fp-head:#f8fafc;
+      --fp-head-strong:#eef2f7;
+      --fp-sticky:#ffffff;
+      --fp-total:#eef5ff;
+      --fp-link:#334155;
+      --fp-link-hover:#f1f5f9;
+      --fp-accent:#2563eb;
+      --fp-shadow:0 8px 22px rgba(15,23,42,.06);
+  }
+
+  :root[data-monbis-theme="dark"] #flowParPage,
+  :root[data-monbis-theme="dark"] #modalInfoFlowPar,
+  :root[data-monbis-theme="dark"] #modalDebiturFlowPar,
+  :root[data-monbis-theme="dark"] #modalPeringatan {
+      --fp-surface:#111827;
+      --fp-surface-soft:#0f172a;
+      --fp-surface-muted:#1e293b;
+      --fp-ink:#f8fafc;
+      --fp-text:#e2e8f0;
+      --fp-muted:#94a3b8;
+      --fp-line:#334155;
+      --fp-line-soft:#263449;
+      --fp-head:#1e293b;
+      --fp-head-strong:#243247;
+      --fp-sticky:#111827;
+      --fp-total:#172554;
+      --fp-link:#dbeafe;
+      --fp-link-hover:#1e293b;
+      --fp-accent:#93c5fd;
+      --fp-shadow:0 16px 36px rgba(0,0,0,.28);
+  }
+
+  #flowParPage,
+  #flowParPage *,
+  #modalInfoFlowPar,
+  #modalInfoFlowPar *,
+  #modalDebiturFlowPar,
+  #modalDebiturFlowPar *,
+  #modalPeringatan,
+  #modalPeringatan * {
+      font-family:'Roboto',Arial,system-ui,sans-serif;
+  }
+
+  #flowParPage {
+      color:var(--fp-text);
+      background:linear-gradient(180deg,var(--fp-surface-soft) 0%,var(--fp-surface-muted) 100%);
+      min-width:0;
+  }
+  #flowParHeader,
+  #fpReportCard {
+      border-color:var(--fp-line) !important;
+      background:linear-gradient(135deg,var(--fp-surface) 0%,var(--fp-surface-soft) 100%) !important;
+      box-shadow:var(--fp-shadow) !important;
+  }
+  #flowParHeader .fp-page-title-copy h1,
+  #flowParPage .text-slate-800,
+  #flowParPage .text-slate-700 { color:var(--fp-ink) !important; }
+  #flowParHeader .fp-page-subtitle,
+  #flowParPage .lbl { color:var(--fp-muted) !important; }
+  #filterPanel { min-width:0; }
+  #filterForm { min-width:0; }
+  #filterForm .inp,
+  #modalDebiturFlowPar .inp {
+      border-color:var(--fp-line);
+      background:var(--fp-surface);
+      color:var(--fp-ink);
+  }
+  #filterForm .inp:focus,
+  #modalDebiturFlowPar .inp:focus {
+      border-color:var(--fp-accent);
+      box-shadow:0 0 0 3px rgba(96,165,250,.16);
+  }
+  :root[data-monbis-theme="dark"] select.inp {
+      filter:brightness(.9);
+  }
+  #fpScroller,
+  #fpScroller table {
+      background:var(--fp-surface);
+  }
+  #fpScroller::-webkit-scrollbar,
+  #modalScroll::-webkit-scrollbar { width:5px; height:5px; }
+  #fpScroller::-webkit-scrollbar-track,
+  #modalScroll::-webkit-scrollbar-track { background:var(--fp-surface-soft); }
+  #fpScroller::-webkit-scrollbar-thumb,
+  #modalScroll::-webkit-scrollbar-thumb { background:#94a3b8; border-radius:999px; }
+  #fpScroller,
+  #modalScroll { scrollbar-color:#94a3b8 var(--fp-surface-soft); scrollbar-width:thin; }
+
+  /* Satu palet netral untuk seluruh kategori Flow PAR. */
+  #tabelFlowPar thead th,
+  #tabelFlowPar .fp-head-1 th,
+  #tabelFlowPar .fp-head-2 th,
+  #tabelFlowPar .head-jt,
+  #tabelFlowPar .head-pokok,
+  #tabelFlowPar .head-bunga,
+  #tabelFlowPar .head-pokok-bunga,
+  #tabelFlowPar .head-total {
+      background:var(--fp-head) !important;
+      color:var(--fp-muted) !important;
+      border-color:var(--fp-line) !important;
+  }
+  #tabelFlowPar .fp-head-1 th { background:var(--fp-head-strong) !important; color:var(--fp-ink) !important; }
+  #tabelFlowPar thead th.sticky-left-1,
+  #tabelFlowPar thead th.sticky-left-2 { background:var(--fp-head-strong) !important; color:var(--fp-ink) !important; }
+  #fpBody td,
+  #fpTotalRow td { border-color:var(--fp-line-soft) !important; color:var(--fp-text); }
+  #fpBody td,
+  #fpBody tr:nth-child(even) td,
+  #fpBody .sticky-left-1,
+  #fpBody .sticky-left-2 { background:var(--fp-surface) !important; }
+  #fpBody tr:hover td,
+  #fpBody tr:hover .sticky-left-1,
+  #fpBody tr:hover .sticky-left-2 { background:var(--fp-link-hover) !important; }
+  #fpTotalRow td,
+  #fpTotalRow td.sticky-left-1,
+  #fpTotalRow td.sticky-left-2 { background:var(--fp-total) !important; color:var(--fp-ink) !important; border-color:var(--fp-line) !important; }
+  #tabelFlowPar .fp-cell-link,
+  #tabelFlowPar .fp-cell-link[class*="text-"] { color:var(--fp-link) !important; }
+  #tabelFlowPar .fp-cell-link:hover { background:var(--fp-link-hover) !important; color:var(--fp-ink) !important; }
+  #tabelFlowPar .fp-cell-empty,
+  #tabelFlowPar .metric-noa,
+  #tabelFlowPar .fp-mobile-noa { color:var(--fp-muted) !important; }
+  #tabelFlowPar [class~="bg-blue-50/10"],
+  #tabelFlowPar [class~="bg-purple-50/10"],
+  #tabelFlowPar [class~="bg-amber-50/10"],
+  #tabelFlowPar [class~="bg-rose-50/10"],
+  #tabelFlowPar [class~="bg-cyan-50/10"],
+  #tabelFlowPar [class~="bg-blue-100/30"],
+  #tabelFlowPar [class~="bg-purple-100/30"],
+  #tabelFlowPar [class~="bg-amber-100/30"],
+  #tabelFlowPar [class~="bg-rose-100/30"],
+  #tabelFlowPar [class~="bg-cyan-100/40"] { background:var(--fp-surface) !important; }
+
+  /* Modal detail juga memakai surface dan border yang sama. */
+  #modalInfoFlowPar,
+  #modalDebiturFlowPar { color:var(--fp-text); }
+  #modalCardFP,
+  .fp-info-card,
+  #modalPeringatan > div { border-color:var(--fp-line) !important; background:var(--fp-surface) !important; box-shadow:var(--fp-shadow); }
+  .fp-modal-header,
+  .fp-info-header { border-color:var(--fp-line) !important; background:linear-gradient(180deg,var(--fp-surface) 0%,var(--fp-surface-soft) 100%) !important; }
+  #modalTitleFlowPar,
+  .fp-info-title,
+  .fp-guide-label,
+  #modalPeringatan h3 { color:var(--fp-ink) !important; }
+  #modalSubtitleFP,
+  .fp-info-subtitle,
+  .fp-info-body,
+  .fp-guide-text,
+  .fp-projection-label,
+  .fp-projection-note,
+  .fp-mobile-label,
+  .fp-mobile-commit { color:var(--fp-muted) !important; }
+  #modalProjectionSummary,
+  #modalScroll { border-color:var(--fp-line) !important; background:var(--fp-surface-soft) !important; }
+  .fp-projection-card,
+  .fp-mobile-card,
+  .fp-mobile-metric { border-color:var(--fp-line) !important; background:var(--fp-surface) !important; }
+  .fp-projection-value.blue,
+  .fp-projection-value.green,
+  .fp-projection-value.orange { color:var(--fp-ink) !important; }
+  #modalTableFP th { background:var(--fp-head) !important; color:var(--fp-muted) !important; border-color:var(--fp-line) !important; }
+  #modalTableFP td,
+  #modalTableFP tbody tr:nth-child(even) td,
+  #modalTableFP .modal-freeze-1,
+  #modalTableFP .modal-freeze-2 { background:var(--fp-surface) !important; color:var(--fp-text); border-color:var(--fp-line-soft) !important; }
+  #modalTableFP tbody tr:hover td { background:var(--fp-link-hover) !important; }
+  #modalTableFP .modal-total-row td { background:var(--fp-total) !important; color:var(--fp-ink) !important; border-color:var(--fp-line) !important; }
+  .fp-mobile-card-head,
+  .fp-mobile-address,
+  .fp-mobile-commit { border-color:var(--fp-line) !important; background:var(--fp-surface-soft) !important; }
+  .fp-mobile-name,
+  .fp-mobile-value { color:var(--fp-ink) !important; }
+  .fp-guide-item,
+  .fp-info-intro,
+  .fp-info-note { border-color:var(--fp-line) !important; background:var(--fp-surface-soft) !important; color:var(--fp-text) !important; }
+  .fp-guide-item.jt,
+  .fp-guide-item.one,
+  .fp-guide-item.pokok,
+  .fp-guide-item.bunga,
+  .fp-guide-item.gabungan { border-left-color:var(--fp-line) !important; }
+  .fp-guide-badge { background:var(--fp-head-strong) !important; color:var(--fp-muted) !important; }
+  .fp-info-close,
+  .fp-modal-action.filter { border-color:var(--fp-line) !important; background:var(--fp-surface) !important; color:var(--fp-text) !important; }
+  .fp-modal-title-icon,
+  .fp-info-heading-icon { border-color:var(--fp-line) !important; background:var(--fp-head) !important; color:var(--fp-accent) !important; }
+
+  @media (max-width:1279px) {
+      #flowParPage { height:auto; min-height:calc(100dvh - 60px); overflow:visible; }
+      #fpReportCard { min-height:0; height:min(78dvh,760px); }
+      #filterPanel:not(.hidden) { display:flex !important; flex-direction:column; padding-top:10px; margin-top:7px; border-color:var(--fp-line) !important; }
+      #filterForm { align-items:stretch; }
+  }
+
+  @media (max-width:767px) {
+      #flowParPage { min-height:calc(100dvh - 54px); height:calc(100dvh - 54px); overflow:hidden; }
+      #flowParHeader { align-items:stretch; }
+      #filterForm { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+      #filterForm > .flex { display:contents; }
+      #filterForm .field { width:auto !important; min-width:0; }
+      #filterForm .field.fp-area-field { min-width:0; }
+      #filterForm .inp { height:34px; }
+      #fpReportCard { height:auto; flex:1 1 auto; min-height:0; }
+      #fpScroller { border-radius:8px; }
+      #tabelFlowPar.mobile-view { min-width:calc(var(--col2) + (var(--colMobileMetric) * 4) + var(--colMobileTotal)); }
+  }
+
+  @media (max-width:374px) {
+      #filterForm { gap:5px; }
+      #filterForm .lbl { font-size:8px; }
+      #filterForm .inp { font-size:11px; padding-left:7px; padding-right:24px; }
+  }
+
+  :root[data-monbis-theme="dark"] #loadingFP { background:rgba(15,23,42,.84) !important; color:#bfdbfe !important; }
+  :root[data-monbis-theme="dark"] #modalPeringatan .bg-red-50,
+  :root[data-monbis-theme="dark"] #modalPeringatan .bg-slate-50 { background:#1e293b !important; border-color:#334155 !important; }
+  :root[data-monbis-theme="dark"] #modalPeringatan .text-red-800,
+  :root[data-monbis-theme="dark"] #modalPeringatan .text-slate-600 { color:#e2e8f0 !important; }
+
   @media (max-width:767px) {
       .fp-info-btn { width:19px; height:19px; flex-basis:19px; }
       .fp-info-btn svg { width:12px; height:12px; }
@@ -1245,46 +1487,14 @@
             <button type="button" id="btnInfoFlowPar" class="fp-info-btn" title="Panduan tindak lanjut Flow PAR" aria-label="Buka panduan tindak lanjut Flow PAR">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path></svg>
             </button>
-            <span id="badgeUnit" class="hidden"></span>
         </h1>
         <p class="fp-page-subtitle">Posisi closing dibanding actual harian berdasarkan penyebab flow.</p>
       </div>
-      
-      <button id="btnToggleFilter" class="xl:hidden h-[30px] px-3 bg-white border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm transition font-bold text-[10px] whitespace-nowrap ml-2 shrink-0">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-          Filter
-      </button>
     </div>
-
-    <div id="filterPanel" class="hidden xl:flex w-full xl:w-auto flex-1 min-w-0 justify-end transition-all duration-300 shrink-0 border-t xl:border-none pt-3 xl:pt-0 mt-2 xl:mt-0">
-      <form id="filterForm" class="flex flex-row flex-wrap xl:flex-nowrap items-end gap-2 md:gap-2.5 w-full xl:w-auto">
-        
-        <div class="flex gap-2 w-full xl:w-auto shrink-0">
-            <div class="field w-1/2 xl:w-[120px]">
-                <label class="lbl">CLOSING (M-1)</label>
-                <input type="date" id="closing_date" class="inp font-bold text-slate-700 cursor-pointer" required onclick="this.showPicker && this.showPicker()">
-            </div>
-            
-            <div class="field w-1/2 xl:w-[120px]">
-                <label class="lbl">HARIAN (ACTUAL)</label>
-                <input type="date" id="harian_date" class="inp font-bold text-slate-700 cursor-pointer" required onclick="this.showPicker && this.showPicker()">
-            </div>
-        </div>
-
-        <div class="flex gap-2 w-full xl:w-auto xl:flex-1 items-end">
-            <div class="field flex-1 min-w-[180px] xl:w-[260px]">
-                <label class="lbl">AREA/CABANG</label>
-                <select id="opt_kantor_rec" class="inp font-bold text-slate-700 truncate"><option value="ALL">Konsolidasi</option></select>
-            </div>
-            
-            <div class="flex items-center gap-2 shrink-0 ml-auto xl:ml-0 mt-2 xl:mt-0">
-              <button type="button" onclick="exportFlowParExcel()" class="btn-icon w-[32px] md:w-[42px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shrink-0" title="Download Excel">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-              </button>
-            </div>
-        </div>
-
-      </form>
+    <div class="fp-page-actions">
+      <button type="button" onclick="exportFlowParExcel()" class="btn-icon" title="Download Excel" aria-label="Download Excel">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      </button>
     </div>
   </div>
   <!-- Ringkasan KPI dihilangkan: setelah header langsung masuk ke tabel utama. -->
@@ -1302,7 +1512,7 @@
             <th class="sticky-left-1 text-center">KODE</th>
             <th class="sticky-left-2 text-left" id="thNamaFP">NAMA KANTOR</th>
             <th class="text-center w-[120px] cursor-pointer hover:bg-slate-200 transition" id="sortNoa" title="Urutkan">NOA FLOW ⬍</th>
-            <th class="text-right w-[180px] cursor-pointer hover:bg-slate-200 transition" id="sortBaki" title="Urutkan">BAKI DEBET FLOW ⬍</th>
+            <th class="text-right w-[180px] cursor-pointer hover:bg-slate-200 transition" id="sortBaki" title="Urutkan">SALDO BANK FLOW</th>
             <th class="text-center w-[120px]" title="Jatuh tempo, lainnya, atau one obligor">JT / Lain</th>
             <th class="text-center w-[120px]" title="KL karena hari menunggak pokok > 90 hari">Pokok &gt; 90</th>
             <th class="text-center w-[120px]" title="KL karena hari menunggak bunga > 90 hari">Bunga &gt; 90</th>
@@ -1492,7 +1702,7 @@
             <th class="modal-freeze-2 text-left">Nama Nasabah</th>
             <th class="text-center">Kolek</th>
             <th class="text-left">Alamat</th>
-            <th class="text-right">Baki Debet</th>
+            <th class="text-right fp-nominal-detail-label">Saldo Bank</th>
             <th class="text-right">Tungg. Pokok</th>
             <th class="text-right">Tungg. Bunga</th>
             <th class="text-right">Tot. Tunggakan</th>
@@ -1572,6 +1782,14 @@
   const num = v => Number(v||0);
   const kodeNum = v => Number(String(v??'').replace(/\D/g,'')||0);
   const formatDate = (s) => { if(!s) return '-'; const d=new Date(s); return isNaN(d)?'-': `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; };
+  function selectedFpNominal(){ return document.getElementById('fpNominalMode')?.value === 'baki_debet' ? 'baki_debet' : 'saldo_bank'; }
+  function fpNominalLabel(){ return selectedFpNominal() === 'baki_debet' ? 'BAKI DEBET' : 'SALDO BANK'; }
+  function updateFpNominalLabels(){
+      const label = fpNominalLabel();
+      const mainHeader = document.getElementById('sortBaki');
+      if (mainHeader && !isMobileFlowPar()) mainHeader.textContent = `${label} FLOW`;
+      document.querySelectorAll('.fp-nominal-detail-label').forEach(node => { node.textContent = label === 'SALDO BANK' ? 'Saldo Bank' : 'Baki Debet'; });
+  }
   
   function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
   function endOfMonth(dateLike){ const d = new Date(dateLike); if (isNaN(d)) return null; return startOfDay(new Date(d.getFullYear(), d.getMonth()+1, 0)); }
@@ -1584,7 +1802,7 @@
   let detailDataRaw = [];
   let detailDataView = []; 
   let sortState = { column: null, direction: 1 };
-  let currentFilter = { closing:'', harian:'' };
+  let currentFilter = { closing:'', harian:'', nominal:'saldo_bank' };
   let currentDetailKode = ''; 
   let currentDetailKorwil = '';
   let currentDetailKlasifikasi = '';
@@ -1604,15 +1822,8 @@
   }
 
   function flowLinkClass(noa, color = 'blue') {
-      if (num(noa) <= 0) return 'text-slate-300 pointer-events-none';
-      const colors = {
-          blue: 'text-blue-800 hover:bg-blue-100 hover:text-blue-900',
-          slate: 'text-blue-700 hover:bg-blue-100 hover:text-blue-900',
-          orange: 'text-purple-700 hover:bg-purple-100 hover:text-purple-900',
-          amber: 'text-amber-700 hover:bg-amber-100 hover:text-amber-900',
-          red: 'text-rose-700 hover:bg-rose-100 hover:text-rose-900'
-      };
-      return `${colors[color] || colors.blue} font-mono font-bold px-1.5 py-1 rounded transition cursor-pointer`;
+      if (num(noa) <= 0) return 'fp-flow-link fp-flow-link--disabled pointer-events-none';
+      return 'fp-flow-link font-mono font-bold px-1.5 py-1 rounded transition cursor-pointer';
   }
 
   function flowCellNoa(noa, kode, klasifikasi = '', color = 'blue') {
@@ -1757,18 +1968,24 @@
       const sortBaki = document.getElementById('sortBaki');
       if (sortNoa) sortNoa.onclick = () => doSort('noa');
       if (sortBaki) sortBaki.onclick = () => doSort('baki');
+      updateFpNominalLabels();
       setTimeout(updateFpStickyHeader, 20);
   }
 
-  // TOGGLE FILTER MOBILE LOGIC (Main Page)
-  document.getElementById('btnToggleFilter').addEventListener('click', function() {
-      const panel = document.getElementById('filterPanel');
-      const isOpening = panel.classList.contains('hidden');
-      panel.classList.toggle('hidden');
-      this.setAttribute('aria-expanded', isOpening ? 'true' : 'false');
-      const textNode = Array.from(this.childNodes).find(node => node.nodeType === Node.TEXT_NODE && node.textContent.trim());
-      if (textNode) textNode.textContent = isOpening ? ' Tutup' : ' Filter';
+  // FILTER GLOBAL DI NAVBAR
+  function setFlowParNavbarFilter(open) {
+      const panel = document.getElementById('flowParNavbarFilterForm');
+      const toggle = document.getElementById('flowParNavbarFilterToggle');
+      if (!panel) return;
+      panel.classList.toggle('hidden', !open);
+      toggle?.classList.toggle('is-active', open);
+      toggle?.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  document.getElementById('flowParNavbarFilterToggle')?.addEventListener('click', function() {
+      const panel = document.getElementById('flowParNavbarFilterForm');
+      setFlowParNavbarFilter(panel?.classList.contains('hidden'));
   });
+  document.getElementById('flowParNavbarFilterClose')?.addEventListener('click', () => setFlowParNavbarFilter(false));
 
   // TOGGLE FILTER MOBILE LOGIC (Modal)
   document.getElementById('btnToggleModalFilter').addEventListener('click', function() {
@@ -1804,14 +2021,16 @@
         if(j?.data){
             document.getElementById('closing_date').value = j.data.last_closing;
             document.getElementById('harian_date').value  = j.data.last_created;
-            currentFilter = { closing: j.data.last_closing, harian: j.data.last_created };
+            currentFilter = { closing: j.data.last_closing, harian: j.data.last_created, nominal: selectedFpNominal() };
+            updateFpNominalLabels();
             fetchFlowPar();
         }
     } catch(e) { 
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('closing_date').value = today;
         document.getElementById('harian_date').value = today;
-        currentFilter = { closing: today, harian: today };
+        currentFilter = { closing: today, harian: today, nominal: selectedFpNominal() };
+        updateFpNominalLabels();
         fetchFlowPar();
     }
   });
@@ -1853,22 +2072,22 @@
   }
 
   // --- FILTER SUBMIT ---
-  document.getElementById('filterForm').addEventListener('submit', e => {
+  document.getElementById('flowParNavbarFilterForm')?.addEventListener('submit', e => {
     e.preventDefault();
     applyFlowParFilter();
   });
 
-  ['closing_date', 'harian_date', 'opt_kantor_rec'].forEach(id => {
+  ['closing_date', 'harian_date', 'opt_kantor_rec', 'fpNominalMode'].forEach(id => {
       document.getElementById(id)?.addEventListener('change', applyFlowParFilter);
   });
 
   function applyFlowParFilter() {
       currentFilter.closing = document.getElementById('closing_date').value;
       currentFilter.harian  = document.getElementById('harian_date').value;
+      currentFilter.nominal = selectedFpNominal();
+      updateFpNominalLabels();
       sortState = { column:null, direction:1 };
-      if(window.innerWidth < 1280) {
-          document.getElementById('filterPanel').classList.add('hidden');
-      }
+      if(window.innerWidth < 1280) setFlowParNavbarFilter(false);
       fetchFlowPar();
   }
 
@@ -1891,7 +2110,8 @@
         const payload = { 
             type: 'Flow Par', 
             closing_date: currentFilter.closing, 
-            harian_date: currentFilter.harian
+            harian_date: currentFilter.harian,
+            hitung_berdasarkan: currentFilter.nominal || selectedFpNominal()
         };
         if(kantor.startsWith('KOR-')) {
             payload.korwil = kantor.replace('KOR-', '');
@@ -2048,7 +2268,7 @@
           return (num(a[key]) - num(b[key])) * sortState.direction;
       });
       document.getElementById('sortNoa').innerText = `NOA ${col==='noa' ? (sortState.direction>0?'ASC':'DESC') : ''}`;
-      document.getElementById('sortBaki').innerText = `NOM ${col==='baki' ? (sortState.direction>0?'ASC':'DESC') : ''}`;
+      document.getElementById('sortBaki').innerText = `${isMobileFlowPar() ? 'TOTAL FLOW' : fpNominalLabel() + ' FLOW'} ${col==='baki' ? (sortState.direction>0?'ASC':'DESC') : ''}`.trim();
       renderRows(sorted);
   };
 
@@ -2064,15 +2284,15 @@
                   <th style="background-color:#eff6ff;">KODE</th>
                   <th style="background-color:#eff6ff;">NAMA KANTOR</th>
                   <th style="background-color:#eff6ff;">NOA FLOW</th>
-                  <th style="background-color:#eff6ff;">NOM FLOW</th>
+                  <th style="background-color:#eff6ff;">${fpNominalLabel()} FLOW</th>
                   <th style="background-color:#eff6ff;">NOA JT / LAIN / ONE OBLIGOR</th>
-                  <th style="background-color:#eff6ff;">NOM JT / LAIN / ONE OBLIGOR</th>
+                  <th style="background-color:#eff6ff;">${fpNominalLabel()} JT / LAIN / ONE OBLIGOR</th>
                   <th style="background-color:#eff6ff;">NOA POKOK > 90</th>
-                  <th style="background-color:#eff6ff;">NOM POKOK > 90</th>
+                  <th style="background-color:#eff6ff;">${fpNominalLabel()} POKOK > 90</th>
                   <th style="background-color:#eff6ff;">NOA BUNGA > 90</th>
-                  <th style="background-color:#eff6ff;">NOM BUNGA > 90</th>
+                  <th style="background-color:#eff6ff;">${fpNominalLabel()} BUNGA > 90</th>
                   <th style="background-color:#eff6ff;">NOA POKOK + BUNGA > 90</th>
-                  <th style="background-color:#eff6ff;">NOM POKOK + BUNGA > 90</th>
+                  <th style="background-color:#eff6ff;">${fpNominalLabel()} POKOK + BUNGA > 90</th>
               </tr>
           </thead>
           <tbody>`;
@@ -2279,7 +2499,7 @@
               </div>
               <div class="fp-mobile-address">${fpEscape(item.alamat || 'Alamat belum tersedia')}</div>
               <div class="fp-mobile-metrics">
-                <div class="fp-mobile-metric"><div class="fp-mobile-label">Baki Debet</div><div class="fp-mobile-value">Rp ${fmtNom(item.baki_debet)}</div></div>
+                <div class="fp-mobile-metric"><div class="fp-mobile-label fp-nominal-detail-label">${fpNominalLabel()}</div><div class="fp-mobile-value">Rp ${fmtNom(item.baki_debet)}</div></div>
                 <div class="fp-mobile-metric"><div class="fp-mobile-label">Total Tunggakan</div><div class="fp-mobile-value red">Rp ${fmtNom(totalTunggakan)}</div></div>
                 <div class="fp-mobile-metric"><div class="fp-mobile-label">Saldo Tabungan</div><div class="fp-mobile-value green">Rp ${fmtNom(item.saldo_akhir)}</div></div>
                 <div class="fp-mobile-metric"><div class="fp-mobile-label">DPD / TP / TB</div><div class="fp-mobile-value">${fmtInt(hari)} / ${fmtInt(item.hari_menunggak_pokok)} / ${fmtInt(item.hari_menunggak_bunga)}</div></div>
@@ -2405,6 +2625,7 @@
               kode_kankas:kankas,
               closing_date:currentFilter.closing,
               harian_date:currentFilter.harian,
+              hitung_berdasarkan:currentFilter.nominal || selectedFpNominal(),
               klasifikasi_flow:currentDetailKlasifikasi
           };
 
@@ -2441,7 +2662,7 @@
           <th style="background-color:#dbeafe;">NAMA NASABAH</th>
           <th style="background-color:#dbeafe;">KOLEKTIBILITAS</th>
           <th style="background-color:#dbeafe;">ALAMAT</th>
-          <th style="background-color:#dbeafe;">BAKI DEBET</th>
+          <th style="background-color:#dbeafe;">${fpNominalLabel()}</th>
           <th style="background-color:#dbeafe;">TUNGG. POKOK</th>
           <th style="background-color:#dbeafe;">TUNGG. BUNGA</th>
           <th style="background-color:#fee2e2;">TOTAL TUNGGAKAN</th>

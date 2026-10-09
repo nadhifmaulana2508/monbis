@@ -3,7 +3,7 @@
 
 <style>
   :root { --primary: #0284c7; --bg: #f8fafc; --text: #334155; }
-  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+  body, .font-sans { font-family: 'Roboto', Arial, sans-serif !important; background: var(--bg); color: var(--text); overflow-x: hidden; }
   
   .inp { 
       box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0 0.5rem; 
@@ -45,7 +45,7 @@
   .korwil-card.is-top { border-color: #fbbf24; box-shadow: 0 0 0 2px #fef3c7 inset; }
 
   /* ====== Info Modal ====== */
-  #ldInfoModal { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; padding: 1rem; }
+  #ldInfoModal { position: fixed; inset: 0; z-index: 20000; display: none; align-items: center; justify-content: center; padding: 1rem; }
   #ldInfoModal.is-open { display: flex; }
   #ldInfoModal .ld-backdrop { position: absolute; inset: 0; background: rgba(15,23,42,.55); backdrop-filter: blur(2px); }
   #ldInfoModal .ld-dialog { position: relative; background: #fff; width: 100%; max-width: 480px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,.35); border: 1px solid #e2e8f0; overflow: hidden; transform: scale(.96); opacity: 0; transition: transform .22s ease, opacity .22s ease; }
@@ -54,8 +54,8 @@
   #ldInfoModal.is-open .ld-progress { animation: ldShrink 6s linear forwards; }
   @keyframes ldShrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
-  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; color: #64748b; background: #f1f5f9; transition: all .15s; border: 1px solid transparent; }
-  .info-btn:hover { color: #0284c7; background: #e0f2fe; border-color: #bae6fd; }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 21px; height: 21px; flex: 0 0 21px; border-radius: 999px; color: #2563eb; background: #eff6ff; transition: all .15s; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 950; cursor: pointer; }
+  .info-btn:hover { color: #1d4ed8; background: #dbeafe; border-color: #93c5fd; transform: translateY(-1px); }
 
   /* ====== Slider Navigation ====== */
   .slider-nav-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; color: #64748b; background: #f1f5f9; border: 1px solid #e2e8f0; transition: all .15s; cursor: pointer; }
@@ -86,30 +86,30 @@
                 <div class="flex items-center gap-1.5">
                     <h1 class="text-lg sm:text-xl font-bold text-slate-800 truncate">Layanan Digital</h1>
                     <button type="button" onclick="openLdInfoModal()" class="info-btn shrink-0" title="Informasi Dashboard" aria-label="Informasi Dashboard">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        i
                     </button>
                 </div>
                 <p class="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
             </div>
             <!-- Mobile: toggle filter -->
-            <button type="button" id="btnToggleFilter" class="xl:hidden shrink-0 w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 ml-auto" aria-label="Toggle Filter">
+            <button type="button" id="btnToggleFilter" class="hidden" aria-label="Toggle Filter">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
             </button>
         </div>
 
         <!-- Right: Filters (1 baris di desktop) -->
-        <div id="filterPanel" class="hidden xl:flex flex-wrap sm:flex-nowrap items-end gap-2 sm:gap-3">
+        <div id="legacyLayananDigitalFilterPanel" class="hidden">
             <div class="flex flex-col w-[calc(50%-4px)] sm:w-auto">
                 <label class="text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-0.5 tracking-wider">CLOSING M-1</label>
-                <input type="date" id="closing_date" class="inp text-slate-700 shadow-sm w-full sm:w-[130px]">
+                <input type="date" id="legacy_ld_closing_date" class="inp text-slate-700 shadow-sm w-full sm:w-[130px]">
             </div>
             <div class="flex flex-col w-[calc(50%-4px)] sm:w-auto">
                 <label class="text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-0.5 tracking-wider">HARIAN / ACTUAL</label>
-                <input type="date" id="harian_date" class="inp text-slate-700 shadow-sm w-full sm:w-[130px]">
+                <input type="date" id="legacy_ld_harian_date" class="inp text-slate-700 shadow-sm w-full sm:w-[130px]">
             </div>
             <div class="flex flex-col w-full sm:w-auto">
                 <label class="text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-0.5 tracking-wider">AREA / CABANG</label>
-                <select id="opt_area" class="inp text-blue-700 shadow-sm w-full sm:w-[180px]">
+                <select id="legacy_ld_opt_area" class="inp text-blue-700 shadow-sm w-full sm:w-[180px]">
                     <option value="KONSOLIDASI" class="font-bold">Konsolidasi</option>
                     <optgroup label="Berdasarkan Korwil" class="text-slate-400">
                         <option value="KORWIL_SEMARANG" class="text-slate-700">Korwil Semarang</option>
@@ -117,7 +117,7 @@
                         <option value="KORWIL_BANYUMAS" class="text-slate-700">Korwil Banyumas</option>
                         <option value="KORWIL_PEKALONGAN" class="text-slate-700">Korwil Pekalongan</option>
                     </optgroup>
-                    <optgroup label="Berdasarkan Cabang" id="opt_cabang_list" class="text-slate-400"></optgroup>
+                    <optgroup label="Berdasarkan Cabang" id="legacy_ld_opt_cabang_list" class="text-slate-400"></optgroup>
                 </select>
             </div>
         </div>
@@ -214,7 +214,7 @@
       
       <!-- MASTER TABS CHANNEL -->
       <div class="flex justify-center md:justify-start">
-          <div class="flex gap-2 bg-slate-100 border border-slate-200 p-1.5 rounded-xl overflow-x-auto custom-scrollbar">
+          <div class="hidden gap-2 bg-slate-100 border border-slate-200 p-1.5 rounded-xl overflow-x-auto custom-scrollbar">
               <button onclick="changeChannel('VA')" id="tab_VA" class="tab-btn active">Virtual Account (VA)</button>
               <button onclick="changeChannel('BRANCHLESS')" id="tab_BRANCHLESS" class="tab-btn">Branchless</button>
               <button onclick="changeChannel('QRIS')" id="tab_QRIS" class="tab-btn">QRIS Merchant</button>
@@ -319,7 +319,7 @@
         <div class="flex justify-between items-start px-5 py-4 border-b bg-slate-50">
             <div class="flex items-start gap-3">
                 <span class="bg-blue-100 text-blue-600 p-2 rounded-lg shrink-0">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path></svg>
                 </span>
                 <div>
                     <h3 id="ldInfoTitle" class="text-base font-extrabold text-slate-800 leading-tight">Tentang Dashboard Layanan Digital</h3>
@@ -442,14 +442,23 @@
   document.getElementById('harian_date').addEventListener('change', () => runFullSync());
   document.getElementById('opt_area').addEventListener('change', () => runFullSync());
 
-  // Mobile filter toggle
-  document.getElementById('btnToggleFilter').addEventListener('click', () => {
-      const panel = document.getElementById('filterPanel');
-      panel.classList.toggle('hidden');
-  });
+  function bindLayananDigitalNavbarControls() {
+      const panel = document.getElementById('layananDigitalNavbarFilterPanel');
+      const toggle = document.getElementById('layananDigitalNavbarFilterToggle');
+      const close = document.getElementById('layananDigitalNavbarFilterClose');
+      if (!panel || !toggle) return;
+      const setOpen = open => { panel.classList.toggle('hidden', !open); panel.classList.toggle('flex', open); toggle.classList.toggle('is-active', open); toggle.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+      toggle.addEventListener('click', event => { event.stopPropagation(); setOpen(panel.classList.contains('hidden')); });
+      close?.addEventListener('click', () => setOpen(false));
+      document.addEventListener('click', event => { if (panel.classList.contains('flex') && !panel.contains(event.target) && !toggle.contains(event.target)) setOpen(false); });
+      document.getElementById('ldChannelSelect')?.addEventListener('change', event => changeChannel(event.target.value));
+  }
+  bindLayananDigitalNavbarControls();
 
   function changeChannel(ch) {
       currentActiveChannel = ch;
+      const select = document.getElementById('ldChannelSelect');
+      if (select) select.value = ch;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('tab_' + ch).classList.add('active');
 
@@ -612,7 +621,7 @@
               }
           }, 
           dataLabels: { enabled: false }, 
-          legend: { show: true, position: 'bottom', fontSize: '9.5px', fontFamily: 'Inter', offsetY: -5, markers: { width: 8, height: 8, radius: 2 }, itemMargin: { horizontal: 5, vertical: 2 } },
+          legend: { show: true, position: 'bottom', fontSize: '9.5px', fontFamily: 'Roboto', offsetY: -5, markers: { width: 8, height: 8, radius: 2 }, itemMargin: { horizontal: 5, vertical: 2 } },
           tooltip: {
               custom: function({series, seriesIndex, dataPointIndex, w}) {
                   const val = series[seriesIndex];
@@ -946,8 +955,7 @@
           type: "detail_breakdown_transaksi",
           harian_date: document.getElementById('harian_date').value,
           closing_date: document.getElementById('closing_date').value,
-          kode_kantor: "",
-          korwil: "",
+          ...parseAreaValue(),
           channel: ch
       };
       try {
@@ -1039,6 +1047,7 @@
           type: "top_bottom_cabang",
           harian_date: document.getElementById('harian_date').value,
           closing_date: document.getElementById('closing_date').value,
+          ...parseAreaValue(),
           channel: ch
       };
       try {

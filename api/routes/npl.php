@@ -36,6 +36,8 @@ switch ($method) {
             $controller->getPotensiNplRekap($input);
         } elseif ($input['type'] === 'Debitur Potensi NPL') {
             $controller->getDetailPotensiNpl($input);
+        } elseif ($input['type'] === 'Potensi NPL Dashboard Detail') {
+            $controller->getDetailPotensiNpl($input);
         } elseif ($input['type'] === 'Backet') {
             $controller->getBucket($input = []);
         

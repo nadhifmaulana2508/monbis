@@ -36,12 +36,93 @@
     return `<span class="${color} font-black ${sizeClass}">${icon} ${displayVal}</span>`;
   };
 
+  const KPI_YEAR_END_DATE = '2025-12-31';
+  const KPI_YEAR_END_LABEL = 'Yearly';
+
+  function renderKpiYearEndComparison(value, current, isPercent = false, invertGoodBad = false) {
+    if (value === null || value === undefined || !Number.isFinite(Number(value))) return '';
+    const shownValue = isPercent ? pct(value) : `Rp ${fmtB(value)}`;
+    const delta = Number(current || 0) - Number(value || 0);
+    return `
+      <div class="kpi-compare-row kpi-compare-row--year" title="Pembanding 31 Desember 2025">
+        <div class="kpi-compare-badge kpi-compare-badge--year">${KPI_YEAR_END_LABEL} <span>${shownValue}</span></div>
+        <div class="whitespace-nowrap">${getDeltaHTML(delta, isPercent, invertGoodBad, true)}</div>
+      </div>`;
+  }
+
+  function getTrendRows(raw) {
+    return Array.isArray(raw) ? raw : (raw?.tren_npl || raw?.tren_portofolio || []);
+  }
+
   let chartTrenInstance = null;
   let chartRunoffInstance = null; 
   let initialHarianDate = null; 
   let trenPortoDataGlobal = [];
 
+  function getDashboardChartTheme() {
+    const dark = document.documentElement.getAttribute('data-monbis-theme') === 'dark';
+    return {
+      text: dark ? '#cbd5e1' : '#475569',
+      grid: dark ? 'rgba(148,163,184,.18)' : '#f3f4f6'
+    };
+  }
+
+  function refreshDashboardChartTheme() {
+    const theme = getDashboardChartTheme();
+    [chartTrenInstance, chartRunoffInstance].forEach(chart => {
+      if (!chart) return;
+      chart.options.plugins.legend.labels.color = theme.text;
+      chart.options.scales.x.ticks.color = theme.text;
+      chart.options.scales.y.ticks.color = theme.text;
+      chart.options.scales.y.grid.color = theme.grid;
+      chart.update('none');
+    });
+  }
+
   const apiCall = (url, opt={}) => (window.apiFetch ? window.apiFetch(url, opt) : fetch(url, opt));
+  const DASHBOARD_CHART_FONT = "'Roboto', Arial, sans-serif";
+  if (typeof Chart !== 'undefined' && Chart.defaults?.font) {
+    Chart.defaults.font.family = DASHBOARD_CHART_FONT;
+  }
+
+  function getDashboardNominalMode() {
+    const mode = document.getElementById('filter_nominal')?.value;
+    return mode === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+  }
+
+  function updateDashboardNominalLabels() {
+    const label = getDashboardNominalMode() === 'baki_debet' ? 'Baki Debet' : 'Saldo Bank';
+    const saldoLabel = document.querySelector('.kpi-card--saldo p');
+    const nplLabel = document.querySelector('.kpi-card--npl p');
+    if (saldoLabel) saldoLabel.textContent = label;
+    if (nplLabel) nplLabel.textContent = `Total NPL (${label})`;
+  }
+
+  function syncDashboardRunoffPeriodFilter() {
+    const select = document.getElementById('filter_tren_runoff');
+    if (!select) return;
+
+    if (getDashboardNominalMode() === 'saldo_bank') {
+      select.innerHTML = '<option value="6_bulan" selected>6 Bulan Terakhir</option>';
+      select.value = '6_bulan';
+      select.disabled = true;
+      select.title = 'Saldo Bank memakai enam snapshot nominatif bulanan terakhir';
+      select.classList.add('opacity-70', 'cursor-not-allowed');
+      return;
+    }
+
+    select.innerHTML = `
+      <option value="tahunan">Periode Tahunan</option>
+      <option value="bulanan" selected>Periode Bulanan</option>
+      <option value="mingguan">Periode Mingguan</option>
+      <option value="30_hari">30 Hari Terakhir</option>
+      <option value="14_hari">14 Hari Terakhir</option>
+      <option value="7_hari">7 Hari Terakhir</option>`;
+    select.value = 'bulanan';
+    select.disabled = false;
+    select.title = '';
+    select.classList.remove('opacity-70', 'cursor-not-allowed');
+  }
 
   // ==========================================
   // EVENT LISTENER
@@ -50,6 +131,17 @@
       const filterForm = document.getElementById('formFilterMaster');
       filterForm.classList.toggle('hidden');
       filterForm.classList.toggle('flex');
+      this.classList.toggle('is-active', !filterForm.classList.contains('hidden'));
+      this.setAttribute('aria-expanded', String(!filterForm.classList.contains('hidden')));
+  });
+
+  document.getElementById('btnCloseFilter')?.addEventListener('click', function() {
+      const filterForm = document.getElementById('formFilterMaster');
+      const filterToggle = document.getElementById('btnToggleFilter');
+      filterForm.classList.add('hidden');
+      filterForm.classList.remove('flex');
+      filterToggle?.classList.remove('is-active');
+      filterToggle?.setAttribute('aria-expanded', 'false');
   });
 
   async function getLastHarianData() {
@@ -73,6 +165,8 @@
   }
 
   window.addEventListener('DOMContentLoaded', async () => {
+    updateDashboardNominalLabels();
+    syncDashboardRunoffPeriodFilter();
     const user = (window.getUser && window.getUser()) || null;
     const uKode = (user?.kode ? String(user.kode).padStart(3,'0') : null);
     await populateKantorOptions(uKode);
@@ -94,17 +188,38 @@
 
   document.getElementById('formFilterMaster').addEventListener('submit', e => {
     e.preventDefault();
+    updateDashboardNominalLabels();
     fetchDashboardUtama();
     Promise.all([fetchTrenPortofolio(), fetchTrenRunoff()]);
-    if(window.innerWidth < 768) {
+    if(window.innerWidth < 1024) {
         document.getElementById('formFilterMaster').classList.add('hidden');
         document.getElementById('formFilterMaster').classList.remove('flex');
+        document.getElementById('btnToggleFilter')?.classList.remove('is-active');
+        document.getElementById('btnToggleFilter')?.setAttribute('aria-expanded', 'false');
     }
+  });
+
+  let dashboardFilterTimer = null;
+  function scheduleDashboardFilter() {
+    clearTimeout(dashboardFilterTimer);
+    dashboardFilterTimer = setTimeout(() => {
+      document.getElementById('formFilterMaster')?.requestSubmit();
+    }, 180);
+  }
+
+  document.getElementById('filter_nominal')?.addEventListener('change', () => {
+    updateDashboardNominalLabels();
+    syncDashboardRunoffPeriodFilter();
+    scheduleDashboardFilter();
+  });
+  ['filter_closing','filter_harian','filter_kantor'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', scheduleDashboardFilter);
   });
 
   document.getElementById('filter_tren').addEventListener('change', () => { fetchTrenPortofolio(); });
   document.getElementById('filter_tren_tipe').addEventListener('change', () => { renderChartPortofolio(); });
   document.getElementById('filter_tren_runoff').addEventListener('change', () => { fetchTrenRunoff(); });
+  document.addEventListener('monbis-theme-change', refreshDashboardChartTheme);
 
 
   // ==========================================
@@ -118,7 +233,8 @@
     const payload = { 
         type: 'tren_portofolio_kredit', 
         harian_date: document.getElementById('filter_harian').value, 
-        periode: document.getElementById('filter_tren').value 
+        periode: document.getElementById('filter_tren').value,
+        hitung_berdasarkan: getDashboardNominalMode()
     };
     
     if(kantor !== '000') { 
@@ -144,11 +260,12 @@
   function renderChartPortofolio() {
     const canvas = document.getElementById('canvasTrenPortofolio'); 
     const ctx = canvas.getContext('2d');
+    const chartTheme = getDashboardChartTheme();
     if(chartTrenInstance) chartTrenInstance.destroy();
     
     if(!trenPortoDataGlobal || trenPortoDataGlobal.length === 0) {
       ctx.clearRect(0, 0, canvas.width, canvas.height); 
-      ctx.font = "14px Arial"; ctx.fillStyle = "#9ca3af"; ctx.textAlign = "center";
+      ctx.font = "14px Roboto, Arial, sans-serif"; ctx.fillStyle = "#9ca3af"; ctx.textAlign = "center";
       ctx.fillText("Data tren tidak tersedia untuk periode ini", canvas.width/2, canvas.height/2); 
       return;
     }
@@ -204,7 +321,7 @@
 
             const { ctx, data } = chart;
             ctx.save();
-            ctx.font = window.innerWidth < 768 ? 'bold 9px sans-serif' : 'bold 11px sans-serif';
+            ctx.font = window.innerWidth < 768 ? 'bold 9px Roboto' : 'bold 11px Roboto';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
@@ -249,7 +366,7 @@
           layout: { padding: { top: 30, bottom: 10, left: window.innerWidth < 768 ? -5 : 10, right: 10 } },
           responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
           plugins: { 
-              legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, font: {family: 'sans-serif', size: window.innerWidth < 768 ? 9 : 11, weight: 'bold'} } }, 
+              legend: { position: 'top', labels: { color: chartTheme.text, usePointStyle: true, boxWidth: 10, font: {family: DASHBOARD_CHART_FONT, size: window.innerWidth < 768 ? 9 : 11, weight: 'bold'} } }, 
               tooltip: { 
                   backgroundColor: 'rgba(17, 24, 39, 0.95)', padding: 10, usePointStyle: true,
                   callbacks: { 
@@ -296,8 +413,8 @@
               } 
           }, 
           scales: { 
-              x: { grid: { display: false }, ticks: {font: {size: window.innerWidth < 768 ? 8 : 10}} }, 
-              y: { beginAtZero: false, grid: { borderDash: [4, 4], color: '#f3f4f6' }, ticks: { font: {size: window.innerWidth < 768 ? 8 : 10}, callback: yAxisCallback } } 
+              x: { grid: { display: false }, ticks: { color: chartTheme.text, font: {size: window.innerWidth < 768 ? 8 : 10}} }, 
+              y: { beginAtZero: false, grid: { borderDash: [4, 4], color: chartTheme.grid }, ticks: { color: chartTheme.text, font: {size: window.innerWidth < 768 ? 8 : 10}, callback: yAxisCallback } } 
           } 
       },
       plugins: [labelPlugin] 
@@ -322,7 +439,8 @@
     const payload = { 
       type: 'tren_runoff_realisasi', 
       harian_date: baseDate,
-      periode: document.getElementById('filter_tren_runoff').value 
+      periode: document.getElementById('filter_tren_runoff').value,
+      hitung_berdasarkan: getDashboardNominalMode()
     };
 
     if(kantor !== '000') { 
@@ -349,10 +467,11 @@
 
   function renderChartRunoff(dataArray) {
     const canvas = document.getElementById('canvasTrenRunoff'); if(!canvas) return; const ctx = canvas.getContext('2d');
+    const chartTheme = getDashboardChartTheme();
     if(chartRunoffInstance) chartRunoffInstance.destroy();
     
     if(!dataArray || dataArray.length === 0) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.font = "14px Arial"; ctx.fillStyle = "#9ca3af"; ctx.textAlign = "center";
+      ctx.clearRect(0, 0, canvas.width, canvas.height); ctx.font = "14px Roboto, Arial, sans-serif"; ctx.fillStyle = "#9ca3af"; ctx.textAlign = "center";
       ctx.fillText("Data tidak tersedia", canvas.width/2, canvas.height/2); return;
     }
 
@@ -378,7 +497,7 @@
 
             const { ctx, data } = chart;
             ctx.save();
-            ctx.font = window.innerWidth < 768 ? 'bold 9px sans-serif' : 'bold 11px sans-serif';
+            ctx.font = window.innerWidth < 768 ? 'bold 9px Roboto' : 'bold 11px Roboto';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
@@ -426,12 +545,12 @@
         ]
       },
       options: {
-        layout: { padding: { top: 30, bottom: 15, left: window.innerWidth < 768 ? -5 : 10, right: 10 } },
+        layout: { padding: { top: 18, bottom: 4, left: window.innerWidth < 768 ? -5 : 10, right: 10 } },
         responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 10, font: {family: 'sans-serif', size: window.innerWidth < 768 ? 9 : 12, weight: 'bold'} } },
+          legend: { position: 'bottom', labels: { color: chartTheme.text, usePointStyle: true, boxWidth: 10, padding: 5, font: {family: DASHBOARD_CHART_FONT, size: window.innerWidth < 768 ? 9 : 12, weight: 'bold'} } },
           tooltip: {
-            backgroundColor: 'rgba(17, 24, 39, 0.95)', padding: 12, titleFont: { size: 13, family: 'sans-serif' }, bodyFont: { size: 12, family: 'sans-serif' },
+            backgroundColor: 'rgba(17, 24, 39, 0.95)', padding: 12, titleFont: { size: 13, family: DASHBOARD_CHART_FONT }, bodyFont: { size: 12, family: DASHBOARD_CHART_FONT },
             usePointStyle: true,
             callbacks: {
               labelColor: function(context) { return { borderColor: context.dataset.borderColor, backgroundColor: context.dataset.borderColor }; },
@@ -463,8 +582,8 @@
           }
         },
         scales: { 
-            x: { grid: { display: false }, ticks: {font: {size: window.innerWidth < 768 ? 8 : 10}} }, 
-            y: { grid: { borderDash: [4,4], color: '#f3f4f6' }, ticks: { font: {size: window.innerWidth < 768 ? 8 : 10}, callback: function(val) { return fmtB(val); } } } 
+            x: { grid: { display: false }, ticks: { color: chartTheme.text, font: {size: window.innerWidth < 768 ? 8 : 10}} }, 
+            y: { grid: { borderDash: [4,4], color: chartTheme.grid }, ticks: { color: chartTheme.text, font: {size: window.innerWidth < 768 ? 8 : 10}, callback: function(val) { return fmtB(val); } } } 
         }
       },
       plugins: [labelPluginRunoff]
@@ -474,19 +593,21 @@
   // ==========================================
   // FETCH API MODULAR (WIDGET-BASED)
   // ==========================================
-  async function fetchWidgetData(type, isH1 = false) {
+  async function fetchWidgetData(type, isH1 = false, options = {}) {
     let kantor = document.getElementById('filter_kantor').value;
-    let currDate = document.getElementById('filter_harian').value;
+    let currDate = options.harian_date || document.getElementById('filter_harian').value;
     
-    if (isH1 && currDate === initialHarianDate) currDate = getH1Date(currDate);
+    if (isH1 && !options.harian_date && currDate === initialHarianDate) currDate = getH1Date(currDate);
     let targetRealisasiDate = (currDate === initialHarianDate) ? getTodayRealtime() : currDate;
 
     const payload = { 
       type: type, 
-      closing_date: document.getElementById('filter_closing').value, 
+      closing_date: options.closing_date || document.getElementById('filter_closing').value, 
       harian_date: currDate,
-      harian_date_realisasi: targetRealisasiDate
+      harian_date_realisasi: targetRealisasiDate,
+      hitung_berdasarkan: getDashboardNominalMode()
     };
+    if (options.periode) payload.periode = options.periode;
     
     if(kantor !== '000') { 
         if(['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'].includes(kantor)) payload.korwil = kantor; 
@@ -517,15 +638,24 @@
     const pDeltaNpl     = fetchWidgetData('test delta npl');
     const pDeposito     = fetchWidgetData('test perkembangan deposito', true);
     const pTabungan     = fetchWidgetData('test perkembangan tabungan', true);
+    // Snapshot pembanding tetap memakai response endpoint yang sama.
+    const pYearEndTrend = fetchWidgetData('test tren npl', false, { periode: 'tahunan' });
+    const pYearEndRr = fetchWidgetData('test rr cabang', false, { closing_date: KPI_YEAR_END_DATE });
+    const pDepositoYearEnd = fetchWidgetData('test perkembangan deposito', false, { closing_date: KPI_YEAR_END_DATE });
+    const pTabunganYearEnd = fetchWidgetData('test perkembangan tabungan', false, { closing_date: KPI_YEAR_END_DATE });
 
-    pSaldoBank.then(sb => {
+    const yearEndTrendPromise = pYearEndTrend.then(getTrendRows).then(rows => rows.find(row => row?.tanggal === KPI_YEAR_END_DATE) || null);
+    const yearEndRrPromise = pYearEndRr.then(raw => (raw?.repayment_rate || raw || {}).grand_total || null);
+
+    Promise.all([pSaldoBank, yearEndTrendPromise]).then(([sb, yearEndTrend]) => {
       if(!sb) return;
       document.getElementById('kpi_saldobank').textContent = `Rp ${fmtB(sb.actual)}`;
       document.getElementById('kpi_saldobank_pill').innerHTML = `
-        <div class="flex items-center gap-1.5 md:gap-2">
-            <div class="bg-gray-100 px-1.5 md:px-2 py-0.5 rounded font-bold text-[9px] md:text-[11px] text-gray-600 whitespace-nowrap">Closing: <span class="text-gray-900">Rp ${fmtB(sb.closing)}</span></div>
+        <div class="kpi-compare-row kpi-compare-row--month">
+            <div class="kpi-compare-badge kpi-compare-badge--month" title="Pembanding closing bulan sebelumnya">Monthly <span>Rp ${fmtB(sb.closing)}</span></div>
             <div class="whitespace-nowrap">${getDeltaHTML(sb.delta, false, false, true)}</div>
-        </div>`;
+        </div>
+        ${renderKpiYearEndComparison(yearEndTrend?.total_kredit ?? yearEndTrend?.total_baki_debet, sb.actual, false, false)}`;
     });
 
     pRealProduk.then(rpRaw => {
@@ -537,8 +667,8 @@
       renderUniversalList('box_realisasi_produk', prods, 'nama_produk', 'total_realisasi', 'noa_realisasi', 'bg-indigo-400', false, 'NOA');
     });
 
-    Promise.all([pTrenNpl, pRrCabang]).then(([tNplRaw, rrRaw]) => {
-      let tNpl = Array.isArray(tNplRaw) ? tNplRaw : (tNplRaw?.tren_npl || tNplRaw?.tren_portofolio || []);
+    Promise.all([pTrenNpl, pRrCabang, yearEndTrendPromise, yearEndRrPromise]).then(([tNplRaw, rrRaw, yearEndTrend, yearEndRr]) => {
+      let tNpl = getTrendRows(tNplRaw);
       let rrData = rrRaw?.repayment_rate || rrRaw || {};
       
       let osPrev = 0;
@@ -548,11 +678,12 @@
         
         document.getElementById('kpi_npl').textContent = `Rp ${fmtB(last.npl_amt || last.osc_npl)}`;
         document.getElementById('kpi_npl_pill').innerHTML = `
-            <div class="flex items-center gap-1 md:gap-2 mb-1.5">
-                <div class="bg-gray-100 px-1.5 md:px-2 py-0.5 rounded font-bold text-[9px] md:text-[11px] text-gray-600 whitespace-nowrap">Closing: <span class="text-gray-900">${pct(prev.npl_persen)}</span></div>
-                <div class="bg-red-50 text-red-700 border border-red-100 px-1.5 md:px-2 py-0.5 rounded font-bold text-[9px] md:text-[11px] whitespace-nowrap">Act: ${pct(last.npl_persen)}</div>
+            <div class="kpi-compare-row kpi-compare-row--month">
+                <div class="kpi-compare-badge kpi-compare-badge--month" title="Pembanding closing bulan sebelumnya">Monthly <span>${pct(prev.npl_persen)}</span></div>
+                <div class="whitespace-nowrap">${getDeltaHTML(last.npl_persen - prev.npl_persen, true, true, true)}</div>
+                <div class="kpi-status-badge kpi-status-badge--negative kpi-status-badge--right">Act <span>${pct(last.npl_persen)}</span></div>
             </div>
-            <div class="whitespace-nowrap">${getDeltaHTML(last.npl_persen - prev.npl_persen, true, true, true)}</div>`;
+            ${renderKpiYearEndComparison(yearEndTrend?.npl_persen, last.npl_persen, true, true)}`;
       }
 
       if(rrData && rrData.grand_total) {
@@ -561,31 +692,39 @@
         document.getElementById('kpi_os').textContent = `Rp ${fmtB(osCurr)}`;
         document.getElementById('kpi_os_pill').innerHTML = `
           <div class="flex items-center gap-1.5 md:gap-2">
-              <div class="bg-gray-100 px-1.5 md:px-2 py-0.5 rounded font-bold text-[9px] md:text-[11px] text-gray-600 whitespace-nowrap">Closing: <span class="text-gray-900">Rp ${fmtB(osPrev)}</span></div>
+              <div class="kpi-compare-badge kpi-compare-badge--month" title="Pembanding closing bulan sebelumnya">Monthly <span>Rp ${fmtB(osPrev)}</span></div>
               <div class="whitespace-nowrap">${getDeltaHTML(osCurr - osPrev, false, false, true)}</div>
           </div>`;
 
         document.getElementById('kpi_rr').textContent = `Rp ${fmtB(rrG.os_lancar)}`;
         document.getElementById('kpi_rr_pill').innerHTML = `
-          <div class="flex items-center gap-1 md:gap-2 mb-1.5">
-              <div class="bg-gray-100 px-1.5 md:px-2 py-0.5 rounded font-bold text-[9px] md:text-[11px] text-gray-600 whitespace-nowrap">Closing: <span class="text-gray-900">${pct(rrG.rr_persen_prev)}</span></div>
-              <div class="bg-green-50 text-green-700 border border-green-100 px-1.5 md:px-2 py-0.5 rounded font-bold text-[9px] md:text-[11px] whitespace-nowrap">Act: ${pct(rrG.rr_persen_curr)}</div>
+          <div class="kpi-compare-row kpi-compare-row--month">
+              <div class="kpi-compare-badge kpi-compare-badge--month" title="Pembanding closing bulan sebelumnya">Monthly <span>${pct(rrG.rr_persen_prev)}</span></div>
+              <div class="whitespace-nowrap">${getDeltaHTML(rrG.delta_rr, true, false, true)}</div>
+              <div class="kpi-status-badge kpi-status-badge--positive kpi-status-badge--right">Act <span>${pct(rrG.rr_persen_curr)}</span></div>
           </div>
-          <div class="whitespace-nowrap">${getDeltaHTML(rrG.delta_rr, true, false, true)}</div>`;
+          ${renderKpiYearEndComparison(yearEndRr?.rr_persen_prev, rrG.rr_persen_curr, true, false)}`;
       }
     });
 
     Promise.all([pRunoffKorwil, pFlowKorwil]).then(([roRaw, flowRaw]) => {
       let ro = roRaw?.runoff_vs_realisasi || roRaw || null;
       let flow = flowRaw?.flow_vs_recovery_npl || flowRaw || null;
-      let isKorwilFilter = ['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'].includes(kantorMode);
-      let hideGrandTotal = (kantorMode !== '000' && !isKorwilFilter);
+      let isSpecificBranch = (kantorMode !== '000' && !['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'].includes(kantorMode));
+
+      // Pada mode cabang, total hanya ditampilkan jika tersedia minimal
+      // dua kode_group1/kankas. Cabang tanpa kantor kas (kode_group1 < 2)
+      // cukup menampilkan satu baris datanya saja.
+      const shouldShowGrandTotal = rows => !isSpecificBranch
+        || (Array.isArray(rows) && rows.length >= 2);
+      // Baris agregat dibuat konsisten untuk semua mode filter.
+      const totalLabel = 'TOTAL';
 
       if(ro && ro.detail_korwil) {
         let runoffData = [...ro.detail_korwil];
-        if(ro.grand_total && !hideGrandTotal) {
+        if(ro.grand_total && shouldShowGrandTotal(ro.detail_korwil)) {
             let totalData = {...ro.grand_total};
-            totalData.nama_korwil = isKorwilFilter ? `TOTAL KORWIL ${kantorMode}` : `TOTAL CABANG`;
+            totalData.nama_korwil = totalLabel;
             runoffData.unshift(totalData); // Pindah total ke paling atas
         }
         renderKorwilCompare('box_runoff_realisasi', runoffData, 'realisasi', 'total_runoff', 'bg-green-400', 'bg-red-400');
@@ -593,9 +732,9 @@
 
       if(flow && flow.detail_korwil) {
         let flowData = [...flow.detail_korwil];
-        if(flow.grand_total && !hideGrandTotal) {
+        if(flow.grand_total && shouldShowGrandTotal(flow.detail_korwil)) {
              let totalData = {...flow.grand_total};
-             totalData.nama_korwil = isKorwilFilter ? `TOTAL KORWIL ${kantorMode}` : `TOTAL CABANG`;
+             totalData.nama_korwil = totalLabel;
              flowData.unshift(totalData); // Pindah total ke paling atas
         }
         renderKorwilCompare('box_flow_recovery', flowData, 'flow_npl', 'total_recovery', 'bg-red-400', 'bg-green-400');
@@ -654,20 +793,25 @@
       document.getElementById('dynamic_insights').innerHTML = html;
     });
 
-    Promise.all([pDeposito, pTabungan]).then(([depRaw, tabRaw]) => {
+    Promise.all([pDeposito, pTabungan, pDepositoYearEnd, pTabunganYearEnd]).then(([depRaw, tabRaw, depYearRaw, tabYearRaw]) => {
       let dep = depRaw?.perkembangan_deposito || depRaw || {};
       let tab = tabRaw?.perkembangan_tabungan || tabRaw || {};
+      let depYear = depYearRaw?.perkembangan_deposito || depYearRaw || {};
+      let tabYear = tabYearRaw?.perkembangan_tabungan || tabYearRaw || {};
 
       const depG = dep.grand_total || {}; const tabG = tab.grand_total || {};
       const dpkCurr = (depG.saldo_curr||0) + (tabG.saldo_curr||0); 
       const dpkPrev = (depG.saldo_prev||0) + (tabG.saldo_prev||0);
+      const depYearG = depYear.grand_total || {}; const tabYearG = tabYear.grand_total || {};
+      const dpkYearEnd = (depYearG.saldo_prev||0) + (tabYearG.saldo_prev||0);
       
       document.getElementById('kpi_dpk').textContent = `Rp ${fmtB(dpkCurr)}`;
       document.getElementById('kpi_dpk_pill').innerHTML = `
-        <div class="flex items-center gap-1.5 md:gap-2">
-            <div class="bg-gray-100 px-1.5 md:px-2 py-0.5 rounded font-bold text-[9px] md:text-[11px] text-gray-600 whitespace-nowrap">Closing: <span class="text-gray-900">Rp ${fmtB(dpkPrev)}</span></div>
+        <div class="kpi-compare-row kpi-compare-row--month">
+            <div class="kpi-compare-badge kpi-compare-badge--month" title="Pembanding closing bulan sebelumnya">Monthly <span>Rp ${fmtB(dpkPrev)}</span></div>
             <div class="whitespace-nowrap">${getDeltaHTML(dpkCurr - dpkPrev, false, false, true)}</div>
-        </div>`;
+        </div>
+        ${renderKpiYearEndComparison(dpkYearEnd, dpkCurr, false, false)}`;
 
       if(Object.keys(dep).length > 0) {
         renderUniversalList('list_dep_saldo_top', dep.top_saldo, 'nama_cabang', 'saldo_curr', 'noa_curr', 'bg-yellow-500', false, 'Rek');
@@ -689,12 +833,28 @@
   // HELPER RENDERING UI
   // ==========================================
   function renderKorwilCompare(elId, dataArray, keyA, keyB, colorA, colorB) {
-    const box = document.getElementById(elId); box.innerHTML = ''; if(!dataArray || !dataArray.length) return;
+    const box = document.getElementById(elId);
+    box.innerHTML = '';
+    // Jangan bawa posisi scroll dari filter sebelumnya.
+    box.scrollTop = 0;
+    box.scrollLeft = 0;
+
+    // Lima baris (total + empat korwil) dibuat tampil penuh tanpa scrollbar.
+    // Scrollbar tipis hanya dipakai jika data benar-benar lebih banyak.
+    const hasOverflow = Array.isArray(dataArray) && dataArray.length > 5;
+    // Tinggi box mengikuti ruang card. Saat data lebih banyak, hanya box
+    // yang scroll; tinggi card tetap mengikuti tinggi chart di sebelahnya.
+    box.style.maxHeight = 'none';
+    box.style.overflowY = hasOverflow ? 'auto' : 'hidden';
+    box.style.overflowX = 'hidden';
+    box.style.overscrollBehavior = 'contain';
+
+    if(!dataArray || !dataArray.length) return;
     let maxVal = Math.max(...dataArray.flatMap(o => [Number(o[keyA]), Number(o[keyB])])); if(maxVal === 0) maxVal = 1;
     dataArray.forEach(k => {
       let vA = Number(k[keyA]); let vB = Number(k[keyB]); let pctA = (vA / maxVal) * 100; let pctB = (vB / maxVal) * 100;
       let titleClass = k.nama_korwil.includes("KONSOLIDASI") || k.nama_korwil.includes("TOTAL") ? "text-gray-900 font-black border-b border-dashed border-gray-300 pb-1" : "text-gray-700 font-bold";
-      box.innerHTML += `<div class="mb-2 md:mb-3"><div class="flex justify-between text-[10px] md:text-[11px] ${titleClass} mb-1.5"><span>${k.nama_korwil}</span></div><div class="flex flex-col gap-1 md:gap-0.5 relative"><div class="w-full bg-gray-100 h-1.5 md:h-2 rounded-r-full flex relative"><div class="${colorA} h-1.5 md:h-2 rounded-r-full bar-fill z-10" style="width: ${pctA}%"></div><span class="absolute right-0 -top-3.5 md:-top-4 text-[9px] md:text-[10px] text-gray-500 font-medium">${fmtB(vA)}</span></div><div class="w-full bg-gray-100 h-1.5 md:h-2 rounded-r-full flex relative"><div class="${colorB} h-1.5 md:h-2 rounded-r-full bar-fill z-10" style="width: ${pctB}%"></div><span class="absolute right-0 -bottom-3.5 md:-bottom-4 text-[9px] md:text-[10px] text-gray-500 font-medium">${fmtB(vB)}</span></div></div></div>`;
+      box.innerHTML += `<div class="mb-2 min-w-0"><div class="flex justify-between min-w-0 overflow-hidden text-[10px] md:text-[11px] leading-tight ${titleClass} mb-1.5"><span class="min-w-0 truncate">${k.nama_korwil}</span></div><div class="flex flex-col gap-1 md:gap-0.5 relative"><div class="w-full bg-gray-100 h-1.5 md:h-2 rounded-r-full flex relative"><div class="${colorA} h-1.5 md:h-2 rounded-r-full bar-fill z-10" style="width: ${pctA}%"></div><span class="absolute right-0 -top-3.5 md:-top-4 text-[9px] md:text-[10px] text-gray-500 font-medium">${fmtB(vA)}</span></div><div class="w-full bg-gray-100 h-1.5 md:h-2 rounded-r-full flex relative"><div class="${colorB} h-1.5 md:h-2 rounded-r-full bar-fill z-10" style="width: ${pctB}%"></div><span class="absolute right-0 -bottom-3.5 md:-bottom-4 text-[9px] md:text-[10px] text-gray-500 font-medium">${fmtB(vB)}</span></div></div></div>`;
     });
   }
 

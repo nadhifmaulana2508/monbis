@@ -162,24 +162,57 @@ class KreditController {
         $closing_date = $b['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian_date  = $b['harian_date']  ?? date('Y-m-d');
         $kode_kantor  = $b['kode_kantor']  ?? null;
+        $nominalField = strtolower(trim((string)($b['nominal_field'] ?? 'saldo_bank')));
+        $nominalColumn = $nominalField === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
 
-        // 2. Panggil Helper Filter (Gunakan prefix 't')
-        $filterData = buildBankFilters($b, 't');
-        $filterSql  = $filterData['sql'];
-        
-        // Penyesuaian nama kolom khusus tabel summary_kredit_harian_update
-        $filterSql = str_replace('t.kode_cabang', 't.kode_kantor', $filterSql);
-        $filterSql = str_replace('t.kode_group1', 't.kode_group_1', $filterSql);
-        
-        $paramsBind = $filterData['params'];
+        // 2. Siapkan filter terpisah untuk sumber flow dan snapshot saldo bank.
+        // Placeholder harus unik karena satu query memakai dua tabel berbeda.
+        $flowFilterData = buildBankFilters($b, 't');
+        $flowFilterSql  = str_replace('t.kode_cabang', 't.kode_kantor', $flowFilterData['sql']);
+        $flowFilterSql  = str_replace('t.kode_group1', 't.kode_group_1', $flowFilterSql);
+
         if (!empty($b['pusat_only']) && (string)$kode_kantor === '000') {
-            $filterSql .= " AND t.kode_kantor = :kode_kantor_pusat";
-            $paramsBind[':kode_kantor_pusat'] = '000';
+            $flowFilterSql .= " AND t.kode_kantor = :kode_kantor_pusat";
+            $flowFilterData['params'][':kode_kantor_pusat'] = '000';
         }
 
-        // Masukkan tanggal ke binding parameter
-        $paramsBind[':closing_date'] = $closing_date;
-        $paramsBind[':harian_date']  = $harian_date;
+        $portfolioFilterData = buildBankFilters($b, 'n');
+        if (!empty($b['pusat_only']) && (string)$kode_kantor === '000') {
+            $portfolioFilterData['sql'] .= " AND n.kode_cabang = :kode_kantor_pusat";
+            $portfolioFilterData['params'][':kode_kantor_pusat'] = '000';
+        }
+        $renamePlaceholders = static function (string $sql, array $params, string $prefix): array {
+            $renamedSql = preg_replace_callback(
+                '/:([a-zA-Z_][a-zA-Z0-9_]*)/',
+                static fn(array $match): string => ':' . $prefix . $match[1],
+                $sql
+            );
+            $renamedParams = [];
+            foreach ($params as $key => $value) {
+                $renamedParams[':' . $prefix . ltrim((string)$key, ':')] = $value;
+            }
+            return [$renamedSql, $renamedParams];
+        };
+
+        [$flowFilterSql, $flowParams] = $renamePlaceholders(
+            $flowFilterSql,
+            $flowFilterData['params'],
+            'flow_'
+        );
+        [$portfolioFilterSql, $portfolioParams] = $renamePlaceholders(
+            $portfolioFilterData['sql'],
+            $portfolioFilterData['params'],
+            'porto_'
+        );
+
+        $paramsBind = array_merge($flowParams, $portfolioParams, [
+            ':flow_closing_date' => $closing_date,
+            ':flow_harian_date' => $harian_date,
+            ':porto_closing_date' => $closing_date,
+            ':porto_harian_date' => $harian_date,
+            ':porto_closing_value' => $closing_date,
+            ':porto_harian_value' => $harian_date,
+        ]);
 
         // 3. Tentukan Mode Tampilan (Konsolidasi vs Breakdown Kankas)
         $displayMode = 'KONSOLIDASI';
@@ -190,92 +223,118 @@ class KreditController {
         // 4. Bangun Query Utama Secara Dinamis
         if ($displayMode === 'BREAKDOWN_KANKAS') {
             // --- MODE CABANG: Breakdown Data per Kankas ---
+            // Snapshot saldo bank menjadi sumber unit utama, sehingga kankas
+            // tanpa transaksi pada periode tetap muncul dengan posisi benar.
             $sql = "
                 SELECT
-                    COALESCE(NULLIF(t.kode_group_1, ''), CONCAT(t.kode_kantor, '000')) AS kode_kantor,
-                    COALESCE(k.deskripsi_group1, CONCAT('KAS ', COALESCE(NULLIF(t.kode_group_1, ''), CONCAT(t.kode_kantor, '000')))) AS nama_kantor,
-                    
-                    SUM(COALESCE(t.noa_realisasi, 0)) AS noa_realisasi,
-                    SUM(COALESCE(t.realisasi, 0)) AS total_realisasi,
-                    
-                    SUM(COALESCE(t.noa_restrukturisasi, 0)) AS noa_restruck,
-                    SUM(COALESCE(t.restrukturisasi, 0)) AS total_restruck,
-                    
-                    SUM(COALESCE(t.pelunasan, 0)) AS total_pelunasan,
-                    SUM(COALESCE(t.angsuran, 0) - COALESCE(t.pelunasan, 0)) AS angsuran_murni,
-                    SUM(COALESCE(t.angsuran, 0)) AS total_run_off,
-                    
-                    (SUM(COALESCE(t.realisasi, 0)) + SUM(COALESCE(t.restrukturisasi, 0)) - SUM(COALESCE(t.angsuran, 0))) AS growth,
-                    COALESCE(pc.portofolio_closing, 0) AS portofolio_closing,
-                    COALESCE(ph.portofolio_harian, 0) AS portofolio_harian
-                FROM summary_kredit_harian_update t
-                LEFT JOIN kankas k ON k.kode_group1 = COALESCE(NULLIF(t.kode_group_1, ''), CONCAT(t.kode_kantor, '000'))
-                LEFT JOIN (
-                    SELECT kode_group1, SUM(COALESCE(baki_debet, 0)) AS portofolio_closing
-                    FROM nominatif
-                    WHERE created = :closing_date_porto
-                      AND kode_cabang = :kode_kantor_porto_c
-                    GROUP BY kode_group1
-                ) pc ON pc.kode_group1 = COALESCE(NULLIF(t.kode_group_1, ''), CONCAT(t.kode_kantor, '000'))
-                LEFT JOIN (
-                    SELECT kode_group1, SUM(COALESCE(baki_debet, 0)) AS portofolio_harian
-                    FROM nominatif
-                    WHERE created = :harian_date_porto
-                      AND kode_cabang = :kode_kantor_porto_h
-                    GROUP BY kode_group1
-                ) ph ON ph.kode_group1 = COALESCE(NULLIF(t.kode_group_1, ''), CONCAT(t.kode_kantor, '000'))
-                WHERE t.created > :closing_date 
-                  AND t.created <= :harian_date
-                  {$filterSql}
-                GROUP BY 1, 2, pc.portofolio_closing, ph.portofolio_harian
-                ORDER BY 1 ASC
+                    movement_source.unit_key AS kode_kantor,
+                    COALESCE(k.deskripsi_group1, CONCAT('KAS ', movement_source.unit_key)) AS nama_kantor,
+                    SUM(movement_source.noa_realisasi) AS noa_realisasi,
+                    SUM(movement_source.total_realisasi) AS total_realisasi,
+                    SUM(movement_source.noa_restruck) AS noa_restruck,
+                    SUM(movement_source.total_restruck) AS total_restruck,
+                    SUM(movement_source.noa_pelunasan) AS noa_pelunasan,
+                    SUM(movement_source.total_pelunasan) AS total_pelunasan,
+                    SUM(movement_source.noa_angsuran_murni) AS noa_angsuran_murni,
+                    SUM(movement_source.angsuran_murni) AS angsuran_murni,
+                    SUM(movement_source.noa_run_off) AS noa_run_off,
+                    SUM(movement_source.total_run_off) AS total_run_off,
+                    SUM(movement_source.growth) AS growth,
+                    SUM(movement_source.saldo_bank_closing) AS saldo_bank_closing,
+                    SUM(movement_source.saldo_bank_actual) AS saldo_bank_actual
+                FROM (
+                    SELECT
+                        COALESCE(NULLIF(TRIM(t.kode_group_1), ''), CONCAT(t.kode_kantor, '000')) AS unit_key,
+                        COALESCE(t.noa_realisasi, 0) AS noa_realisasi,
+                        COALESCE(t.realisasi, 0) AS total_realisasi,
+                        COALESCE(t.noa_restrukturisasi, 0) AS noa_restruck,
+                        COALESCE(t.restrukturisasi, 0) AS total_restruck,
+                        COALESCE(t.noa_pelunasan, 0) AS noa_pelunasan,
+                        COALESCE(t.pelunasan, 0) AS total_pelunasan,
+                        COALESCE(t.noa_angsuran, 0) - COALESCE(t.noa_pelunasan, 0) AS noa_angsuran_murni,
+                        COALESCE(t.angsuran, 0) - COALESCE(t.pelunasan, 0) AS angsuran_murni,
+                        COALESCE(t.noa_angsuran, 0) AS noa_run_off,
+                        COALESCE(t.angsuran, 0) AS total_run_off,
+                        COALESCE(t.realisasi, 0) + COALESCE(t.restrukturisasi, 0) - COALESCE(t.angsuran, 0) AS growth,
+                        0 AS saldo_bank_closing,
+                        0 AS saldo_bank_actual
+                    FROM summary_kredit_harian_update t
+                    WHERE t.created > :flow_closing_date
+                      AND t.created <= :flow_harian_date
+                      {$flowFilterSql}
+
+                    UNION ALL
+
+                    SELECT
+                        COALESCE(NULLIF(TRIM(n.kode_group1), ''), CONCAT(n.kode_cabang, '000')) AS unit_key,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        CASE WHEN n.created = :porto_closing_value THEN COALESCE(n.{$nominalColumn}, 0) ELSE 0 END,
+                        CASE WHEN n.created = :porto_harian_value THEN COALESCE(n.{$nominalColumn}, 0) ELSE 0 END
+                    FROM nominatif n
+                    WHERE n.created IN (:porto_closing_date, :porto_harian_date)
+                      {$portfolioFilterSql}
+                ) AS movement_source
+                LEFT JOIN kankas k ON k.kode_group1 = movement_source.unit_key
+                GROUP BY movement_source.unit_key, k.deskripsi_group1
+                ORDER BY movement_source.unit_key ASC
             ";
-            $paramsBind[':closing_date_porto'] = $closing_date;
-            $paramsBind[':harian_date_porto'] = $harian_date;
-            $paramsBind[':kode_kantor_porto_c'] = str_pad((string)$kode_kantor, 3, '0', STR_PAD_LEFT);
-            $paramsBind[':kode_kantor_porto_h'] = str_pad((string)$kode_kantor, 3, '0', STR_PAD_LEFT);
         } else {
             // --- MODE KONSOLIDASI: Breakdown Data per Cabang ---
+            // Jangan mulai dari tabel flow saja; jika sebuah cabang tidak
+            // punya transaksi, saldo bank-nya tetap wajib masuk rekap.
             $sql = "
                 SELECT
-                    t.kode_kantor,
-                    COALESCE(k.nama_kantor, CONCAT('CABANG ', t.kode_kantor)) AS nama_kantor,
-                    
-                    SUM(COALESCE(t.noa_realisasi, 0)) AS noa_realisasi,
-                    SUM(COALESCE(t.realisasi, 0)) AS total_realisasi,
-                    
-                    SUM(COALESCE(t.noa_restrukturisasi, 0)) AS noa_restruck,
-                    SUM(COALESCE(t.restrukturisasi, 0)) AS total_restruck,
-                    
-                    SUM(COALESCE(t.pelunasan, 0)) AS total_pelunasan,
-                    SUM(COALESCE(t.angsuran, 0) - COALESCE(t.pelunasan, 0)) AS angsuran_murni,
-                    SUM(COALESCE(t.angsuran, 0)) AS total_run_off,
-                    
-                    (SUM(COALESCE(t.realisasi, 0)) + SUM(COALESCE(t.restrukturisasi, 0)) - SUM(COALESCE(t.angsuran, 0))) AS growth,
-                    COALESCE(pc.portofolio_closing, 0) AS portofolio_closing,
-                    COALESCE(ph.portofolio_harian, 0) AS portofolio_harian
-                FROM summary_kredit_harian_update t
-                LEFT JOIN kode_kantor k ON t.kode_kantor = k.kode_kantor
-                LEFT JOIN (
-                    SELECT kode_cabang, SUM(COALESCE(baki_debet, 0)) AS portofolio_closing
-                    FROM nominatif
-                    WHERE created = :closing_date_porto
-                    GROUP BY kode_cabang
-                ) pc ON pc.kode_cabang = t.kode_kantor
-                LEFT JOIN (
-                    SELECT kode_cabang, SUM(COALESCE(baki_debet, 0)) AS portofolio_harian
-                    FROM nominatif
-                    WHERE created = :harian_date_porto
-                    GROUP BY kode_cabang
-                ) ph ON ph.kode_cabang = t.kode_kantor
-                WHERE t.created > :closing_date 
-                  AND t.created <= :harian_date
-                  {$filterSql}
-                GROUP BY t.kode_kantor, k.nama_kantor, pc.portofolio_closing, ph.portofolio_harian
-                ORDER BY t.kode_kantor ASC
+                    movement_source.unit_key AS kode_kantor,
+                    COALESCE(k.nama_kantor, CONCAT('CABANG ', movement_source.unit_key)) AS nama_kantor,
+                    SUM(movement_source.noa_realisasi) AS noa_realisasi,
+                    SUM(movement_source.total_realisasi) AS total_realisasi,
+                    SUM(movement_source.noa_restruck) AS noa_restruck,
+                    SUM(movement_source.total_restruck) AS total_restruck,
+                    SUM(movement_source.noa_pelunasan) AS noa_pelunasan,
+                    SUM(movement_source.total_pelunasan) AS total_pelunasan,
+                    SUM(movement_source.noa_angsuran_murni) AS noa_angsuran_murni,
+                    SUM(movement_source.angsuran_murni) AS angsuran_murni,
+                    SUM(movement_source.noa_run_off) AS noa_run_off,
+                    SUM(movement_source.total_run_off) AS total_run_off,
+                    SUM(movement_source.growth) AS growth,
+                    SUM(movement_source.saldo_bank_closing) AS saldo_bank_closing,
+                    SUM(movement_source.saldo_bank_actual) AS saldo_bank_actual
+                FROM (
+                    SELECT
+                        t.kode_kantor AS unit_key,
+                        COALESCE(t.noa_realisasi, 0) AS noa_realisasi,
+                        COALESCE(t.realisasi, 0) AS total_realisasi,
+                        COALESCE(t.noa_restrukturisasi, 0) AS noa_restruck,
+                        COALESCE(t.restrukturisasi, 0) AS total_restruck,
+                        COALESCE(t.noa_pelunasan, 0) AS noa_pelunasan,
+                        COALESCE(t.pelunasan, 0) AS total_pelunasan,
+                        COALESCE(t.noa_angsuran, 0) - COALESCE(t.noa_pelunasan, 0) AS noa_angsuran_murni,
+                        COALESCE(t.angsuran, 0) - COALESCE(t.pelunasan, 0) AS angsuran_murni,
+                        COALESCE(t.noa_angsuran, 0) AS noa_run_off,
+                        COALESCE(t.angsuran, 0) AS total_run_off,
+                        COALESCE(t.realisasi, 0) + COALESCE(t.restrukturisasi, 0) - COALESCE(t.angsuran, 0) AS growth,
+                        0 AS saldo_bank_closing,
+                        0 AS saldo_bank_actual
+                    FROM summary_kredit_harian_update t
+                    WHERE t.created > :flow_closing_date
+                      AND t.created <= :flow_harian_date
+                      {$flowFilterSql}
+
+                    UNION ALL
+
+                    SELECT
+                        n.kode_cabang AS unit_key,
+                        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                        CASE WHEN n.created = :porto_closing_value THEN COALESCE(n.{$nominalColumn}, 0) ELSE 0 END,
+                        CASE WHEN n.created = :porto_harian_value THEN COALESCE(n.{$nominalColumn}, 0) ELSE 0 END
+                    FROM nominatif n
+                    WHERE n.created IN (:porto_closing_date, :porto_harian_date)
+                      {$portfolioFilterSql}
+                ) AS movement_source
+                LEFT JOIN kode_kantor k ON k.kode_kantor = movement_source.unit_key
+                GROUP BY movement_source.unit_key, k.nama_kantor
+                ORDER BY movement_source.unit_key ASC
             ";
-            $paramsBind[':closing_date_porto'] = $closing_date;
-            $paramsBind[':harian_date_porto'] = $harian_date;
         }
 
         try {
@@ -296,12 +355,17 @@ class KreditController {
                 'total_realisasi' => 0,
                 'noa_restruck'    => 0,
                 'total_restruck'  => 0,
+                'noa_pelunasan'   => 0,
                 'pelunasan'       => 0,
+                'noa_angsuran_murni' => 0,
                 'angsuran_murni'  => 0,
+                'noa_run_off'     => 0,
                 'total_run_off'   => 0, 
                 'growth'          => 0,
-                'portofolio_closing' => 0,
-                'portofolio_harian'  => 0
+                'saldo_bank_closing' => 0,
+                'saldo_bank_actual'  => 0,
+                'nominal_closing' => 0,
+                'nominal_actual'  => 0
             ];
 
             $cleanedRows = [];
@@ -311,45 +375,68 @@ class KreditController {
                 $tot_real       = (float) $row['total_realisasi'];
                 $noa_res        = (int) $row['noa_restruck'];
                 $tot_res        = (float) $row['total_restruck'];
+                $noa_lunas      = (int) $row['noa_pelunasan'];
                 $pelunasan      = (float) $row['total_pelunasan']; 
+                $noa_angsuran   = max(0, (int) $row['noa_angsuran_murni']);
                 $angsuran_murni = (float) $row['angsuran_murni']; 
+                $noa_run_off    = (int) $row['noa_run_off'];
                 $tot_run        = (float) $row['total_run_off'];
-                $growth         = (float) $row['growth'];
-                $portoClosing   = (float) $row['portofolio_closing'];
-                $portoHarian    = (float) $row['portofolio_harian'];
+                $saldoClosing   = (float) $row['saldo_bank_closing'];
+                $saldoActual    = (float) $row['saldo_bank_actual'];
+                // Saldo Bank mengikuti growth portofolio snapshot seperti menu
+                // Migrasi Kolektibilitas: posisi actual dikurangi posisi closing.
+                // Baki Debet tetap mempertahankan growth berbasis summary flow.
+                $growth         = $nominalField === 'saldo_bank'
+                    ? $saldoActual - $saldoClosing
+                    : (float) $row['growth'];
 
                 $cleanedRows[] = [
                     'kode_kantor'     => $row['kode_kantor'],
+                    'kode_kankas'     => $displayMode === 'BREAKDOWN_KANKAS' ? (string)$row['kode_kantor'] : null,
                     'nama_kantor'     => str_replace('Kc. ', '', $row['nama_kantor']),
                     'noa_realisasi'   => $noa_real,
                     'total_realisasi' => $tot_real,
                     'noa_restruck'    => $noa_res,
                     'total_restruck'  => $tot_res,
+                    'noa_pelunasan'   => $noa_lunas,
                     'pelunasan'       => $pelunasan,
+                    'noa_angsuran_murni' => $noa_angsuran,
                     'angsuran_murni'  => $angsuran_murni,
+                    'noa_run_off'     => $noa_run_off,
                     'total_run_off'   => $tot_run,
                     'growth'          => $growth,
-                    'portofolio_closing' => $portoClosing,
-                    'portofolio_harian'  => $portoHarian
+                    'saldo_bank_closing' => $saldoClosing,
+                    'saldo_bank_actual'  => $saldoActual,
+                    'nominal_closing' => $saldoClosing,
+                    'nominal_actual'  => $saldoActual,
+                    // Alias lama agar consumer lain tidak langsung rusak.
+                    'portofolio_closing' => $saldoClosing,
+                    'portofolio_harian'  => $saldoActual
                 ];
 
                 $grandTotal['noa_realisasi']   += $noa_real;
                 $grandTotal['total_realisasi'] += $tot_real;
                 $grandTotal['noa_restruck']    += $noa_res;
                 $grandTotal['total_restruck']  += $tot_res;
+                $grandTotal['noa_pelunasan']   += $noa_lunas;
                 $grandTotal['pelunasan']       += $pelunasan;
+                $grandTotal['noa_angsuran_murni'] += $noa_angsuran;
                 $grandTotal['angsuran_murni']  += $angsuran_murni;
+                $grandTotal['noa_run_off']     += $noa_run_off;
                 $grandTotal['total_run_off']   += $tot_run;
                 $grandTotal['growth']          += $growth;
-                $grandTotal['portofolio_closing'] += $portoClosing;
-                $grandTotal['portofolio_harian']  += $portoHarian;
+                $grandTotal['saldo_bank_closing'] += $saldoClosing;
+                $grandTotal['saldo_bank_actual']  += $saldoActual;
+                $grandTotal['nominal_closing'] += $saldoClosing;
+                $grandTotal['nominal_actual']  += $saldoActual;
             }
 
             sendResponse(200, "Sukses Realisasi & Growth ($displayMode)", [
                 'meta' => [
                     'mode'    => $displayMode,
                     'closing' => $closing_date,
-                    'harian'  => $harian_date
+                    'harian'  => $harian_date,
+                    'nominal_field' => $nominalField
                 ],
                 'data'        => $cleanedRows,
                 'grand_total' => $grandTotal
@@ -380,6 +467,13 @@ class KreditController {
         
         // Penyesuaian nama kolom khusus tabel update_realisasi_kredit
         $filterSql  = str_replace('t1.kode_cabang', 't1.kode_kantor', $filterSql);
+        // Samakan dengan grouping rekap: kankas kosong memakai kode fallback
+        // {kode_cabang}000 sehingga detail tetap menemukan transaksinya.
+        $filterSql  = str_replace(
+            't1.kode_group1 = :kankas',
+            "COALESCE(NULLIF(TRIM(t1.kode_group1), ''), CONCAT(t1.kode_kantor, '000')) = :kankas",
+            $filterSql
+        );
         $paramsBind = $filterData['params'];
         if (!empty($b['pusat_only']) && (string)($b['kode_kantor'] ?? '') === '000') {
             $filterSql .= " AND t1.kode_kantor = :kode_kantor_pusat";
@@ -1031,7 +1125,7 @@ class KreditController {
         $korwil      = strtoupper(trim($input['korwil'] ?? ''));
         
         // --- LOGIK TAMBAHAN: Pilih Kolom Nominal ---
-        $modeHitung = $input['hitung_berdasarkan'] ?? 'baki_debet';
+        $modeHitung = $input['hitung_berdasarkan'] ?? 'saldo_bank';
         $colValue   = ($modeHitung === 'saldo_bank') ? 'saldo_bank' : 'baki_debet';
 
         // Normalisasi: '000' dianggap null (Pusat)
@@ -1860,7 +1954,7 @@ class KreditController {
         // --- 1. SETUP & REQUEST BODY ---
         $b = is_array($input) ? $input : (json_decode(file_get_contents('php://input'), true) ?: []);
         $harian_date = $b['harian_date'] ?? date('Y-m-d'); 
-        $modeHitung = strtolower(trim((string)($b['hitung_berdasarkan'] ?? $b['tipe_saldo'] ?? 'baki_debet')));
+        $modeHitung = strtolower(trim((string)($b['hitung_berdasarkan'] ?? $b['tipe_saldo'] ?? 'saldo_bank')));
         $colValue = ($modeHitung === 'saldo_bank') ? 'saldo_bank' : 'baki_debet';
         
         // Fitur dinamis grouping: 'bulan', 'ao', atau 'kankas'
@@ -1870,6 +1964,15 @@ class KreditController {
         $filterData = buildBankFilters($b, 'n');
         $filterSql  = $filterData['sql'];
         $paramsBind = $filterData['params'];
+        $statusJatuhTempo = strtoupper(trim((string)($b['status_jatuh_tempo'] ?? 'ALL')));
+        $jatuhTempoSql = '';
+        if ($statusJatuhTempo === 'SUDAH_LEWAT') {
+            $jatuhTempoSql = ' AND n.tgl_jatuh_tempo IS NOT NULL AND DAY(n.tgl_jatuh_tempo) <= DAY(:mob_due_date)';
+        } elseif ($statusJatuhTempo === 'BELUM_LEWAT') {
+            $jatuhTempoSql = ' AND n.tgl_jatuh_tempo IS NOT NULL AND DAY(n.tgl_jatuh_tempo) > DAY(:mob_due_date)';
+        } else {
+            $statusJatuhTempo = 'ALL';
+        }
 
         // --- 2. TENTUKAN RANGE REALISASI ---
         $tgl_data_obj = new DateTime($harian_date);
@@ -1899,6 +2002,7 @@ class KreditController {
                 LEFT JOIN kankas kk ON n.kode_group1 = kk.kode_group1 AND n.kode_cabang = kk.kode_kantor
                 WHERE DATE(n.created) = :harian_date
                 AND n.tgl_realisasi BETWEEN :start_date AND :end_date
+                {$jatuhTempoSql}
                 {$filterSql}"; 
 
         try {
@@ -1906,6 +2010,9 @@ class KreditController {
             $stmt->bindValue(':harian_date', $harian_date);
             $stmt->bindValue(':start_date', $start_date_realisasi);
             $stmt->bindValue(':end_date', $end_date_realisasi);
+            if ($jatuhTempoSql !== '') {
+                $stmt->bindValue(':mob_due_date', $harian_date);
+            }
             
             // Eksekusi Parameter Dinamis
             foreach ($paramsBind as $key => $val) {
@@ -1993,6 +2100,7 @@ class KreditController {
                     'kode_kantor' => $b['kode_kantor'] ?? 'ALL',
                     'kode_kankas' => $b['kode_kankas'] ?? 'ALL',
                     'kode_ao'     => $b['kode_ao'] ?? 'ALL',
+                    'status_jatuh_tempo' => $statusJatuhTempo,
                     'hitung_berdasarkan' => $colValue
                 ],
                 'dropdown_lists'  => $dropdownData, 
@@ -2013,17 +2121,19 @@ class KreditController {
         // korwil, kode_kantor, kode_kankas, kode_ao
 
         $harian_date   = $b['harian_date'] ?? date('Y-m-d');
-        $modeHitung = strtolower(trim((string)($b['hitung_berdasarkan'] ?? $b['tipe_saldo'] ?? 'baki_debet')));
+        $modeHitung = strtolower(trim((string)($b['hitung_berdasarkan'] ?? $b['tipe_saldo'] ?? 'saldo_bank')));
         $colValue = ($modeHitung === 'saldo_bank') ? 'saldo_bank' : 'baki_debet';
         $bln_realisasi = $b['bulan_realisasi'] ?? null; 
         $bucket_label  = isset($b['bucket_label']) ? (string)$b['bucket_label'] : null;
-        $isAllExport   = !empty($b['export_all']) || strtoupper((string)$bln_realisasi) === 'ALL' || strtoupper((string)$bucket_label) === 'ALL';
+        $migrationState = strtoupper(trim((string)($b['migration_state'] ?? '')));
+        $isMigrationState = in_array($migrationState, ['MIGRATED', 'NOT_MIGRATED'], true);
+        $isAllExport   = !$isMigrationState && (!empty($b['export_all']) || strtoupper((string)$bln_realisasi) === 'ALL' || strtoupper((string)$bucket_label) === 'ALL');
         
         $page   = isset($b['page']) ? (int)$b['page'] : 1;
         $limit  = isset($b['limit']) ? max(1, min((int)$b['limit'], 50000)) : 10; 
         $offset = ($page - 1) * $limit;
 
-        if (!$isAllExport && (!$bln_realisasi || $bucket_label === null || $bucket_label === '')) {
+        if (!$isAllExport && (!$bln_realisasi || (($bucket_label === null || $bucket_label === '') && !$isMigrationState))) {
             return sendResponse(400, "Parameter 'bulan_realisasi' dan 'bucket_label' wajib diisi.");
         }
 
@@ -2031,10 +2141,21 @@ class KreditController {
         $filterData = buildBankFilters($b, 'n');
         $filterSql  = $filterData['sql'];
         $paramsBind = $filterData['params'];
+        $statusJatuhTempo = strtoupper(trim((string)($b['status_jatuh_tempo'] ?? 'ALL')));
+        $jatuhTempoSql = '';
+        if ($statusJatuhTempo === 'SUDAH_LEWAT') {
+            $jatuhTempoSql = 'AND n.tgl_jatuh_tempo IS NOT NULL AND DAY(n.tgl_jatuh_tempo) <= DAY(:mob_due_date)';
+        } elseif ($statusJatuhTempo === 'BELUM_LEWAT') {
+            $jatuhTempoSql = 'AND n.tgl_jatuh_tempo IS NOT NULL AND DAY(n.tgl_jatuh_tempo) > DAY(:mob_due_date)';
+        } else {
+            $statusJatuhTempo = 'ALL';
+        }
 
         // 2. Mapping Bucket DPD
         $dpd_min = 0; $dpd_max = 99999;
         if ($isAllExport)                    { $dpd_min = null; $dpd_max = null; }
+        elseif ($migrationState === 'NOT_MIGRATED') { $dpd_min = 0;  $dpd_max = 0; }
+        elseif ($migrationState === 'MIGRATED')     { $dpd_min = 1;  $dpd_max = 99999; }
         elseif ($bucket_label === '0')       { $dpd_min = 0;  $dpd_max = 0; }
         elseif ($bucket_label === '1 - 7')   { $dpd_min = 1;  $dpd_max = 7; }
         elseif ($bucket_label === '8 - 14')  { $dpd_min = 8;  $dpd_max = 14; }
@@ -2072,6 +2193,7 @@ class KreditController {
                 WHERE DATE(n.created) = :harian_date
                 AND n.tgl_realisasi BETWEEN :start AND :end
                 {$dpdSql}
+                {$jatuhTempoSql}
                 {$filterSql}
             ";
 
@@ -2079,6 +2201,9 @@ class KreditController {
             $stmtCount->bindValue(':harian_date', $harian_date);
             $stmtCount->bindValue(':start', $tgl_awal_bulan);
             $stmtCount->bindValue(':end', $tgl_akhir_bulan);
+            if ($jatuhTempoSql !== '') {
+                $stmtCount->bindValue(':mob_due_date', $harian_date);
+            }
             if (!$isAllExport) {
                 $stmtCount->bindValue(':dpd_min', $dpd_min);
                 $stmtCount->bindValue(':dpd_max', $dpd_max);
@@ -2106,17 +2231,22 @@ class KreditController {
                     
                     COALESCE(tb.saldo_akhir, 0) as tabungan,
                     n.tgl_realisasi, 
+                    n.tgl_jatuh_tempo,
                     n.jml_pinjaman as plafond, 
                     n.{$colValue} as os, 
                     n.hari_menunggak,
                     COALESCE(n.hari_menunggak_pokok, 0) as hari_menunggak_pokok,
                     COALESCE(n.hari_menunggak_bunga, 0) as hari_menunggak_bunga,
+                    COALESCE(n.tunggakan_pokok, 0) as tunggakan_pokok,
+                    COALESCE(n.tunggakan_bunga, 0) as tunggakan_bunga,
                     GREATEST((COALESCE(n.tunggakan_pokok, 0) + COALESCE(n.tunggakan_bunga, 0)), 0) as totung,
                     n.kolektibilitas,
                     n.kode_cabang,
                     DATE_FORMAT(n.tgl_realisasi, '%Y-%m') as bulan_realisasi,
                     t.tgl_trans,
-                    COALESCE(t.total_bayar, 0) as transaksi
+                    COALESCE(t.total_bayar, 0) as transaksi,
+                    COALESCE(t.total_pokok, 0) as total_pokok,
+                    COALESCE(t.total_bunga, 0) as total_bunga
                 FROM nominatif n
                 
                 -- JOIN ke tabel master
@@ -2127,7 +2257,9 @@ class KreditController {
                     SELECT 
                         no_rekening,
                         MAX(tgl_trans) as tgl_trans,
-                        SUM(COALESCE(angsuran_pokok, 0) + COALESCE(angsuran_bunga, 0)) as total_bayar
+                        SUM(COALESCE(angsuran_pokok, 0) + COALESCE(angsuran_bunga, 0)) as total_bayar,
+                        SUM(COALESCE(angsuran_pokok, 0)) as total_pokok,
+                        SUM(COALESCE(angsuran_bunga, 0)) as total_bunga
                     FROM transaksi_kredit 
                     WHERE MONTH(tgl_trans) = MONTH(:trans_date_1) 
                       AND YEAR(tgl_trans) = YEAR(:trans_date_2)
@@ -2139,6 +2271,7 @@ class KreditController {
                 WHERE DATE(n.created) = :harian_date
                 AND n.tgl_realisasi BETWEEN :start AND :end
                 {$dpdSql}
+                {$jatuhTempoSql}
                 {$filterSql}
                 ORDER BY n.{$colValue} DESC LIMIT :limit OFFSET :offset
             ";
@@ -2150,6 +2283,9 @@ class KreditController {
             $stmt->bindValue(':trans_date_2', $harian_date); 
             $stmt->bindValue(':start', $tgl_awal_bulan);
             $stmt->bindValue(':end', $tgl_akhir_bulan);
+            if ($jatuhTempoSql !== '') {
+                $stmt->bindValue(':mob_due_date', $harian_date);
+            }
             if (!$isAllExport) {
                 $stmt->bindValue(':dpd_min', $dpd_min);
                 $stmt->bindValue(':dpd_max', $dpd_max);
@@ -2171,8 +2307,12 @@ class KreditController {
                 $row['transaksi'] = (float)$row['transaksi']; 
                 $row['plafond']   = (float)$row['plafond'];
                 $row['os']        = (float)$row['os'];
+                $row['tunggakan_pokok'] = (float)$row['tunggakan_pokok'];
+                $row['tunggakan_bunga'] = (float)$row['tunggakan_bunga'];
                 $row['totung']    = (float)$row['totung'];
                 $row['tabungan']  = (float)$row['tabungan'];
+                $row['total_pokok'] = (float)$row['total_pokok'];
+                $row['total_bunga'] = (float)$row['total_bunga'];
                 
                 $row['hari_menunggak']       = (int)$row['hari_menunggak'];
                 $row['hari_menunggak_pokok'] = (int)$row['hari_menunggak_pokok'];
@@ -2200,6 +2340,7 @@ class KreditController {
                 'total_records' => $total_records,
                 'total_pages'   => ceil($total_records / $limit),
                 'current_page'  => $page,
+                'migration_state' => $migrationState ?: 'ALL',
                 'data'          => $data
             ]);
 
@@ -2861,6 +3002,270 @@ class KreditController {
                 'data' => $rows
             ]);
         } catch (PDOException $e) { return sendResponse(500, "PDO Error: " . $e->getMessage(), null); }
+    }
+
+    /** Rekap NPL berdasarkan tahun, produk, tenor angsuran, atau kelompok plafond. */
+    public function getNplBreakdown($input = null) {
+        $b = is_array($input) ? $input : [];
+        $harian = $b['harian_date'] ?? date('Y-m-d');
+        $dimension = strtoupper(trim((string)($b['dimension'] ?? 'TAHUN')));
+        if (!in_array($dimension, ['TAHUN', 'PRODUK', 'ANGSURAN', 'PLAFOND'], true)) $dimension = 'TAHUN';
+
+        $nominalField = strtolower(trim((string)($b['nominal_field'] ?? $b['hitung_berdasarkan'] ?? 'saldo_bank')));
+        $nominalColumn = $nominalField === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+        $kodeKantor = !empty($b['kode_kantor']) ? str_pad((string)$b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+        $korwil = !empty($b['korwil']) ? strtoupper(trim((string)$b['korwil'])) : null;
+        $kankas = !empty($b['kode_kankas']) ? trim((string)$b['kode_kankas']) : null;
+
+        if (!$harian) return sendResponse(400, 'Tanggal Actual (Harian) wajib diisi.', null);
+
+        $scopeSql = '';
+        $params = [':harian_npl_breakdown' => $harian];
+        if ($kodeKantor && $kodeKantor !== '000') {
+            $scopeSql .= ' AND n.kode_cabang = :npl_breakdown_kantor';
+            $params[':npl_breakdown_kantor'] = $kodeKantor;
+        } elseif ($korwil) {
+            $ranges = [
+                'SEMARANG' => ['001', '007'],
+                'SOLO' => ['008', '014'],
+                'BANYUMAS' => ['015', '021'],
+                'PEKALONGAN' => ['022', '028'],
+            ];
+            if (isset($ranges[$korwil])) {
+                $scopeSql .= ' AND n.kode_cabang BETWEEN :npl_breakdown_kw_start AND :npl_breakdown_kw_end';
+                $params[':npl_breakdown_kw_start'] = $ranges[$korwil][0];
+                $params[':npl_breakdown_kw_end'] = $ranges[$korwil][1];
+            }
+        }
+        if ($kankas) {
+            $scopeSql .= " AND COALESCE(NULLIF(TRIM(n.kode_group1), ''), CONCAT(n.kode_cabang, '000')) = :npl_breakdown_kankas";
+            $params[':npl_breakdown_kankas'] = $kankas;
+        }
+
+        $productCodeExpr = "CASE WHEN n.created >= '2026-06-01'
+                                THEN COALESCE(NULLIF(TRIM(CAST(pk.kode_baru AS CHAR)), ''), CAST(n.kode_produk AS CHAR))
+                                ELSE CAST(n.kode_produk AS CHAR) END";
+        $base = "(
+            SELECT n.*,
+                   {$productCodeExpr} AS kode_produk_laporan
+            FROM nominatif n
+            LEFT JOIN produk_kredit pk ON CAST(pk.kode_produk AS CHAR) = CAST(n.kode_produk AS CHAR)
+            WHERE n.created = :harian_npl_breakdown
+              AND COALESCE(n.{$nominalColumn}, 0) > 0
+              {$scopeSql}
+        ) x";
+
+        $productLabelExpr = "COALESCE(NULLIF(TRIM(p.nama_produk), ''), CONCAT('PRODUK ', COALESCE(x.kode_produk_laporan, '-')))";
+        switch ($dimension) {
+            case 'PRODUK':
+                $groupKeyExpr = 'x.kode_produk_laporan';
+                $groupLabelExpr = $productLabelExpr;
+                $groupBy = "x.kode_produk_laporan, p.nama_produk";
+                $orderBy = 'npl_os DESC, group_label ASC';
+                break;
+            case 'ANGSURAN':
+                $groupKeyExpr = "CASE
+                    WHEN x.jml_angsuran IS NULL OR x.jml_angsuran <= 0 THEN 'UNKNOWN'
+                    WHEN x.jml_angsuran <= 12 THEN '1'
+                    WHEN x.jml_angsuran <= 36 THEN '2'
+                    WHEN x.jml_angsuran <= 60 THEN '3'
+                    ELSE '4' END";
+                $groupLabelExpr = "CASE
+                    WHEN x.jml_angsuran IS NULL OR x.jml_angsuran <= 0 THEN 'Tidak diketahui'
+                    WHEN x.jml_angsuran <= 12 THEN '<= 1 tahun'
+                    WHEN x.jml_angsuran <= 36 THEN '2 - 3 tahun'
+                    WHEN x.jml_angsuran <= 60 THEN '> 3 - <= 5 tahun'
+                    ELSE '> 5 tahun' END";
+                $groupBy = $groupKeyExpr;
+                $orderBy = "CASE WHEN group_key = 'UNKNOWN' THEN 1 ELSE 0 END, CAST(NULLIF(group_key, 'UNKNOWN') AS UNSIGNED) ASC";
+                break;
+            case 'PLAFOND':
+                $groupKeyExpr = "CASE
+                    WHEN COALESCE(x.jml_pinjaman, x.plafond, 0) <= 10000000 THEN '1'
+                    WHEN COALESCE(x.jml_pinjaman, x.plafond, 0) <= 100000000 THEN '2'
+                    WHEN COALESCE(x.jml_pinjaman, x.plafond, 0) <= 500000000 THEN '3'
+                    ELSE '4' END";
+                $groupLabelExpr = "CASE
+                    WHEN COALESCE(x.jml_pinjaman, x.plafond, 0) <= 10000000 THEN '<= 10 Juta'
+                    WHEN COALESCE(x.jml_pinjaman, x.plafond, 0) <= 100000000 THEN '> 10 - 100 Juta'
+                    WHEN COALESCE(x.jml_pinjaman, x.plafond, 0) <= 500000000 THEN '> 100 - 500 Juta'
+                    ELSE '> 500 Juta' END";
+                $groupBy = $groupKeyExpr;
+                $orderBy = 'CAST(group_key AS UNSIGNED) ASC';
+                break;
+            case 'TAHUN':
+            default:
+                $groupKeyExpr = "CASE
+                    WHEN x.tgl_realisasi IS NULL OR YEAR(x.tgl_realisasi) < 1900 THEN 'UNKNOWN'
+                    WHEN YEAR(x.tgl_realisasi) <= 2019 THEN '<= 2019'
+                    ELSE CAST(YEAR(x.tgl_realisasi) AS CHAR) END";
+                $groupLabelExpr = $groupKeyExpr;
+                $groupBy = $groupKeyExpr;
+                $orderBy = "CASE WHEN group_key = 'UNKNOWN' THEN 2 WHEN group_key = '<= 2019' THEN 0 ELSE 1 END, CAST(NULLIF(group_key, '<= 2019') AS UNSIGNED) ASC";
+                break;
+        }
+
+        $nplCondition = "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) IN ('KL', 'D', 'M')";
+        $nominalExpr = "COALESCE(x.{$nominalColumn}, 0)";
+        $sql = "
+            SELECT
+                {$groupKeyExpr} AS group_key,
+                {$groupLabelExpr} AS group_label,
+                COUNT(x.no_rekening) AS total_noa,
+                SUM({$nominalExpr}) AS total_os,
+                SUM(CASE WHEN {$nplCondition} THEN 1 ELSE 0 END) AS npl_noa,
+                SUM(CASE WHEN {$nplCondition} THEN {$nominalExpr} ELSE 0 END) AS npl_os
+            FROM {$base}
+            LEFT JOIN produk_kredit p ON CAST(p.kode_produk AS CHAR) = CAST(x.kode_produk_laporan AS CHAR)
+            GROUP BY {$groupBy}
+            ORDER BY {$orderBy}
+        ";
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => $value) $stmt->bindValue($key, $value);
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $grand = ['total_noa' => 0, 'total_os' => 0.0, 'npl_noa' => 0, 'npl_os' => 0.0];
+            foreach ($rows as &$row) {
+                $row['total_noa'] = (int)$row['total_noa'];
+                $row['total_os'] = (float)$row['total_os'];
+                $row['npl_noa'] = (int)$row['npl_noa'];
+                $row['npl_os'] = (float)$row['npl_os'];
+                $row['npl_pct'] = $row['total_os'] > 0 ? round($row['npl_os'] * 100 / $row['total_os'], 2) : 0;
+                $grand['total_noa'] += $row['total_noa'];
+                $grand['total_os'] += $row['total_os'];
+                $grand['npl_noa'] += $row['npl_noa'];
+                $grand['npl_os'] += $row['npl_os'];
+            }
+            unset($row);
+            $grand['npl_pct'] = $grand['total_os'] > 0 ? round($grand['npl_os'] * 100 / $grand['total_os'], 2) : 0;
+
+            return sendResponse(200, 'Berhasil ambil breakdown NPL', [
+                'meta' => [
+                    'dimension' => $dimension,
+                    'nominal_field' => $nominalColumn,
+                    'tanggal' => $harian,
+                    'aturan_tahun' => '<= 2019 digabung, lalu 2020 dan seterusnya.',
+                ],
+                'dimension' => $dimension,
+                'nominal_field' => $nominalColumn,
+                'grand_total' => $grand,
+                'data' => $rows,
+            ]);
+        } catch (PDOException $e) {
+            error_log('Error getNplBreakdown: ' . $e->getMessage());
+            return sendResponse(500, 'PDO Error: ' . $e->getMessage(), null);
+        }
+    }
+
+    /** Detail debitur untuk irisan NPL pada card breakdown dashboard. */
+    public function getNplBreakdownDetail($input = null) {
+        $b = is_array($input) ? $input : [];
+        $harian = $b['harian_date'] ?? date('Y-m-d');
+        $dimension = strtoupper(trim((string)($b['dimension'] ?? 'TAHUN')));
+        if (!in_array($dimension, ['TAHUN', 'PRODUK', 'ANGSURAN', 'PLAFOND'], true)) $dimension = 'TAHUN';
+        $groupKey = trim((string)($b['group_key'] ?? ''));
+        $nominalField = strtolower(trim((string)($b['nominal_field'] ?? $b['hitung_berdasarkan'] ?? 'saldo_bank')));
+        $nominalColumn = $nominalField === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+        $kodeKantor = !empty($b['kode_kantor']) ? str_pad((string)$b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+        $korwil = !empty($b['korwil']) ? strtoupper(trim((string)$b['korwil'])) : null;
+        $kankas = !empty($b['kode_kankas']) ? trim((string)$b['kode_kankas']) : null;
+        if (!$harian) return sendResponse(400, 'Tanggal Actual (Harian) wajib diisi.', null);
+
+        $scopeSql = '';
+        $params = [':harian_npl_detail' => $harian];
+        if ($kodeKantor && $kodeKantor !== '000') {
+            $scopeSql .= ' AND x.kode_cabang = :npl_detail_kantor';
+            $params[':npl_detail_kantor'] = $kodeKantor;
+        } elseif ($korwil) {
+            $ranges = ['SEMARANG'=>['001','007'],'SOLO'=>['008','014'],'BANYUMAS'=>['015','021'],'PEKALONGAN'=>['022','028']];
+            if (isset($ranges[$korwil])) {
+                $scopeSql .= ' AND x.kode_cabang BETWEEN :npl_detail_kw_start AND :npl_detail_kw_end';
+                $params[':npl_detail_kw_start'] = $ranges[$korwil][0];
+                $params[':npl_detail_kw_end'] = $ranges[$korwil][1];
+            }
+        }
+        if ($kankas) {
+            $scopeSql .= " AND COALESCE(NULLIF(TRIM(x.kode_group1), ''), CONCAT(x.kode_cabang, '000')) = :npl_detail_kankas";
+            $params[':npl_detail_kankas'] = $kankas;
+        }
+
+        $productCodeExpr = "CASE WHEN x.created >= '2026-06-01'
+                                THEN COALESCE(NULLIF(TRIM(CAST(pk.kode_baru AS CHAR)), ''), CAST(x.kode_produk AS CHAR))
+                                ELSE CAST(x.kode_produk AS CHAR) END";
+        $productLabelExpr = "COALESCE(NULLIF(TRIM(p.nama_produk), ''), CONCAT('PRODUK ', COALESCE({$productCodeExpr}, '-')))";
+        switch ($dimension) {
+            case 'PRODUK':
+                $groupExpr = $productCodeExpr;
+                break;
+            case 'ANGSURAN':
+                $groupExpr = "CASE
+                    WHEN x.jml_angsuran IS NULL OR x.jml_angsuran <= 0 THEN 'UNKNOWN'
+                    WHEN x.jml_angsuran <= 12 THEN '1'
+                    WHEN x.jml_angsuran <= 36 THEN '2'
+                    WHEN x.jml_angsuran <= 60 THEN '3'
+                    ELSE '4' END";
+                break;
+            case 'PLAFOND':
+                $groupExpr = "CASE
+                    WHEN COALESCE(x.jml_pinjaman, x.plafond, 0) <= 10000000 THEN '1'
+                    WHEN COALESCE(x.jml_pinjaman, x.plafond, 0) <= 100000000 THEN '2'
+                    WHEN COALESCE(x.jml_pinjaman, x.plafond, 0) <= 500000000 THEN '3'
+                    ELSE '4' END";
+                break;
+            case 'TAHUN':
+            default:
+                $groupExpr = "CASE
+                    WHEN x.tgl_realisasi IS NULL OR YEAR(x.tgl_realisasi) < 1900 THEN 'UNKNOWN'
+                    WHEN YEAR(x.tgl_realisasi) <= 2019 THEN '<= 2019'
+                    ELSE CAST(YEAR(x.tgl_realisasi) AS CHAR) END";
+                break;
+        }
+        $groupFilter = $groupKey !== '' ? " AND ({$groupExpr}) = :npl_detail_group_key" : '';
+        if ($groupKey !== '') $params[':npl_detail_group_key'] = $groupKey;
+        $nplCondition = "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) IN ('KL', 'D', 'M')";
+
+        $sql = "
+            SELECT x.no_rekening, x.nama_nasabah, x.kode_cabang, x.kode_group1,
+                   {$productLabelExpr} AS nama_produk,
+                   x.kolektibilitas, x.tgl_realisasi, x.jml_angsuran,
+                   COALESCE(x.jml_pinjaman, x.plafond, 0) AS jml_pinjaman,
+                   COALESCE(x.{$nominalColumn}, 0) AS nominal_npl,
+                   COALESCE(x.hari_menunggak, 0) AS hari_menunggak,
+                   COALESCE(x.tunggakan_pokok, 0) AS tunggakan_pokok,
+                   COALESCE(x.tunggakan_bunga, 0) AS tunggakan_bunga,
+                   COALESCE(x.tunggakan_pokok, 0) + COALESCE(x.tunggakan_bunga, 0) AS total_tunggakan
+            FROM nominatif x
+            LEFT JOIN produk_kredit pk ON CAST(pk.kode_produk AS CHAR) = CAST(x.kode_produk AS CHAR)
+            LEFT JOIN produk_kredit p ON CAST(p.kode_produk AS CHAR) = CAST({$productCodeExpr} AS CHAR)
+            WHERE x.created = :harian_npl_detail
+              AND COALESCE(x.{$nominalColumn}, 0) > 0
+              AND {$nplCondition}{$scopeSql}{$groupFilter}
+            ORDER BY nominal_npl DESC, x.no_rekening ASC
+            LIMIT 5000
+        ";
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            foreach ($params as $key => $value) $stmt->bindValue($key, $value);
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as &$row) {
+                foreach (['jml_pinjaman','nominal_npl','hari_menunggak','tunggakan_pokok','tunggakan_bunga','total_tunggakan'] as $key) $row[$key] = (float)($row[$key] ?? 0);
+                $row['jml_angsuran'] = (int)($row['jml_angsuran'] ?? 0);
+                $row['hari_menunggak'] = (int)$row['hari_menunggak'];
+            }
+            unset($row);
+            return sendResponse(200, 'Berhasil ambil detail NPL', [
+                'dimension' => $dimension,
+                'group_key' => $groupKey,
+                'nominal_field' => $nominalColumn,
+                'data' => $rows,
+            ]);
+        } catch (PDOException $e) {
+            error_log('Error getNplBreakdownDetail: ' . $e->getMessage());
+            return sendResponse(500, 'PDO Error: ' . $e->getMessage(), null);
+        }
     }
 
     /**

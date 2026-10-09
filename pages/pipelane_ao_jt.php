@@ -36,7 +36,7 @@
   .sticky-left-1 { position: sticky; left: 0; z-index: 20; background: white; box-shadow: inset -1px 0 0 #e2e8f0; }
   .sticky-left-2 { position: sticky; left: 0; z-index: 20; background: white; box-shadow: inset -1px 0 0 #e2e8f0; }
   
-  @media (min-width: 640px) { .sticky-left-2 { left: 70px; } } 
+  @media (min-width: 640px) { .sticky-left-2 { left: 82px; } } 
 
   /* Z-Index Header Freeze Kiri Rekap */
   #tabelPipeline thead tr:nth-child(1) th.sticky-left-1 { z-index: 50; box-shadow: inset -1px -1px 0 #cbd5e1; background-color: #f1f5f9; }
@@ -74,52 +74,327 @@
   .field { display:flex; flex-direction:column; }
   .btn-icon { display:inline-flex; align-items:center; justify-content:center; border:none; cursor:pointer; transition: transform 0.2s;}
   .btn-icon:hover { transform:translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+
+  /* Layout konsisten dengan Jatuh Tempo Kredit */
+  #recomPipelanePage,
+  #recomPipelanePage * { box-sizing:border-box; font-family:'Roboto',Arial,system-ui,sans-serif; }
+  #recomPipelanePage { height:calc(100dvh - 64px); min-height:430px; padding:8px; gap:7px; background:#f8fafc; }
+  #recomPipelaneHeader { position:relative; margin:0 !important; padding:9px 11px; gap:12px; border:1px solid #dbe3ee; border-radius:12px; background:#fff; box-shadow:0 1px 3px rgba(15,23,42,.05); }
+  #recomPipelaneHeader h1 { color:#172033; letter-spacing:-.015em; }
+  #recomPipelaneHeader .recom-title-copy { min-width:0; }
+  #recomPipelaneHeader .recom-title-subtitle { margin:2px 0 0; color:#64748b; font-size:9px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .recom-info-btn { display:inline-flex; align-items:center; justify-content:center; width:20px; min-width:20px; height:20px; padding:0; border:1px solid #bfdbfe; border-radius:999px; background:#eff6ff; color:#2563eb; font-size:11px; font-weight:900; line-height:1; cursor:pointer; transition:.16s ease; }
+  .recom-info-btn:hover { background:#2563eb; color:#fff; border-color:#2563eb; }
+  #recomPipelanePage > #recomPipelaneTableCard { flex:1; min-height:0; margin:0; border:1px solid #e2e8f0; border-radius:9px; background:#fff; box-shadow:0 1px 2px rgba(15,23,42,.04); }
+  #recomPipelaneTableScroll { height:100%; overflow:auto; -webkit-overflow-scrolling:touch; }
+  #tabelPipeline { min-width:1180px; font-size:10px; font-variant-numeric:tabular-nums; }
+  #tabelPipeline th { color:#1e3a5f !important; font-weight:900 !important; letter-spacing:.025em; background:#f4f7fb !important; border-color:#d7dee8 !important; }
+  #tabelPipeline thead tr:first-child th { background:#eaf4ff !important; }
+  #tabelPipeline thead tr:nth-child(2) th { background:#eff6ff !important; }
+  #tabelPipeline tbody td { border-color:#edf2f7 !important; background-clip:padding-box; }
+  #tabelPipeline tbody tr:nth-child(even) td { background:#fbfdff; }
+  #tabelPipeline tbody tr:hover td { background:#f0f7ff !important; }
+  #rowTotalPipelineAtas th { background:#eff6ff !important; color:#1e40af !important; }
+  #recomPipelanePage .custom-scrollbar { scrollbar-width:thin; scrollbar-color:#cbd5e1 #f8fafc; }
+  #recomPipelanePage .custom-scrollbar::-webkit-scrollbar { height:4px; width:4px; }
+  #recomPipelanePage .custom-scrollbar::-webkit-scrollbar-track { background:#f8fafc; border-radius:999px; }
+  #recomPipelanePage .custom-scrollbar::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:999px; }
+  #modalDetail { padding:12px; background:rgba(15,23,42,.68); backdrop-filter:blur(7px); }
+  #modalDetail > .relative { width:min(1760px,calc(100vw - 24px)); height:min(94dvh,920px); max-width:none; border:1px solid #dbe3ee; border-radius:16px; }
+  #tableExportModal { width:max-content; min-width:1560px; table-layout:fixed; }
+  #tableExportModal th { height:36px !important; padding:5px 7px !important; background:#f8fafc !important; color:#64748b !important; font-size:8px !important; }
+  #tableExportModal td { height:36px; padding:5px 7px; font-size:9px; }
+  #tableExportModal thead { position:relative; z-index:80; }
+  #tableExportModal thead tr:first-child th { top:0 !important; z-index:80 !important; }
+  #tableExportModal thead tr:nth-child(2) th { top:36px !important; z-index:79 !important; }
+  #tableExportModal thead tr:first-child th.mod-sticky-1,
+  #tableExportModal thead tr:first-child th.mod-sticky-2,
+  #tableExportModal thead tr:first-child th.pipeline-mobile-identity { z-index:100 !important; }
+  #tableExportModal thead tr:nth-child(2) th.mod-sticky-1,
+  #tableExportModal thead tr:nth-child(2) th.mod-sticky-2,
+  #tableExportModal thead tr:nth-child(2) th.pipeline-mobile-identity { z-index:99 !important; }
+  #tableExportModal tbody td { position:relative; z-index:1; background:#fff; }
+  #tableExportModal tbody td.mod-sticky-1,
+  #tableExportModal tbody td.mod-sticky-2 { position:sticky; z-index:20; }
+  .pipeline-mobile-identity { display:none; }
+  @media (max-width:767px) {
+      #recomPipelanePage { height:calc(100dvh - 54px); min-height:0; padding:4px; gap:4px; }
+      #recomPipelaneHeader { padding:7px 8px; border-radius:9px; }
+      #recomPipelaneHeader h1 { font-size:13px; }
+      #recomPipelaneHeader .recom-title-subtitle { max-width:230px; font-size:8px; }
+      #recomPipelaneHeader .recom-info-btn { width:18px; min-width:18px; height:18px; font-size:10px; }
+      #tabelPipeline { width:1180px; min-width:1180px; }
+      #tabelPipeline th,#tabelPipeline td { height:34px; padding:5px 6px; font-size:9px; }
+      #tabelPipeline thead th { font-size:7px !important; }
+      #tabelPipeline .sticky-left-1 { display:none !important; }
+      #tabelPipeline .sticky-left-2 { left:0 !important; width:135px; min-width:135px; max-width:135px; white-space:normal; line-height:1.1; }
+      #tabelPipeline thead tr:nth-child(1) th.sticky-left-2 { z-index:70; }
+      #tabelPipeline thead tr:nth-child(3) th.sticky-left-2 { z-index:69; }
+      #modalDetail { padding:0; align-items:flex-end; }
+      #modalDetail > .relative { width:100%; height:96dvh; max-height:96dvh; border-radius:16px 16px 0 0; }
+      #tableExportModal { min-width:0; }
+      #tableExportModal .pipeline-desktop-identity { display:none !important; }
+      #tableExportModal .pipeline-mobile-identity {
+          display:table-cell !important;
+          position:sticky;
+          left:0;
+          z-index:20;
+          width:145px;
+          min-width:145px;
+          max-width:145px;
+          background:#fff;
+          box-shadow:inset -1px 0 0 #e2e8f0;
+      }
+      #tableExportModal thead tr:first-child th.pipeline-mobile-identity { z-index:50; background:#e2e8f0 !important; }
+      #tableExportModal thead tr:nth-child(2) th.pipeline-mobile-identity { z-index:48; background:#bfdbfe !important; }
+      #tableExportModal .pipeline-mobile-account,
+      #tableExportModal .pipeline-mobile-name { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1.15; }
+      #tableExportModal .pipeline-mobile-account { color:#64748b; font:700 8px/1.15 ui-monospace,SFMono-Regular,Menlo,monospace; }
+      #tableExportModal .pipeline-mobile-name { margin-top:2px; color:#334155; font-size:9px; font-weight:800; }
+  }
+
+  /* Pipeline mengikuti shell visual Jatuh Tempo Kredit */
+  #recomPipelanePage { min-height:0; padding-top:10px; padding-bottom:12px; }
+  #recomPipelaneHeader {
+      position:relative;
+      padding:10px 12px;
+      margin:0 0 12px !important;
+      background:#fff;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      box-shadow:0 1px 3px rgba(15,23,42,.05);
+  }
+  #recomPipelaneHeader h1 { color:#172033; letter-spacing:-.015em; }
+  #recomPipelaneHeader .recom-title-copy { min-width:0; }
+  #recomPipelaneHeader .recom-title-subtitle { margin:2px 0 0; color:#64748b; font-style:normal; font-size:9px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #recomPipelaneHeader .recom-info-btn { box-shadow:none; }
+  #recomPipelaneHeader .btn-icon,
+  #recomPipelaneHeader .jt-breakdown-toggle,
+  #recomPipelaneHeader .pipeline-kolek-toggle { transition:transform .16s ease, box-shadow .16s ease, background-color .16s ease; }
+  #recomPipelaneHeader .btn-icon:hover,
+  #recomPipelaneHeader .jt-breakdown-toggle:hover,
+  #recomPipelaneHeader .pipeline-kolek-toggle:hover { transform:translateY(-1px); box-shadow:0 6px 14px rgba(15,23,42,.12); }
+  #recomPipelaneHeader .jt-breakdown-toggle,
+  #recomPipelaneHeader .pipeline-kolek-toggle {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      width:34px;
+      height:34px;
+      padding:0;
+      border:1px solid #bfdbfe;
+      border-radius:8px;
+      background:#eff6ff;
+      color:#1d4ed8;
+      cursor:pointer;
+  }
+  #recomPipelaneHeader .pipeline-kolek-toggle {
+      border-color:#bbf7d0;
+      background:#f0fdf4;
+      color:#047857;
+  }
+  #recomPipelaneHeader .jt-breakdown-toggle svg,
+  #recomPipelaneHeader .pipeline-kolek-toggle svg { width:15px; height:15px; flex:0 0 auto; }
+  #recomPipelaneHeader .pipeline-kolek-wrap { position:relative; }
+  #recomPipelaneHeader .pipeline-kolek-menu {
+      position:absolute;
+      z-index:120;
+      top:calc(100% + 8px);
+      right:0;
+      width:172px;
+      padding:9px;
+      border:1px solid #dbe3ee;
+      border-radius:10px;
+      background:#fff;
+      box-shadow:0 12px 28px rgba(15,23,42,.16);
+  }
+  #recomPipelaneHeader .pipeline-kolek-menu.hidden { display:none !important; }
+  #recomPipelaneHeader .pipeline-kolek-menu__title { margin-bottom:6px; color:#1e3a5f; font-size:9px; font-weight:900; letter-spacing:.05em; text-transform:uppercase; }
+  #recomPipelaneHeader .pipeline-kolek-menu__option { display:flex; align-items:center; gap:7px; min-height:28px; padding:4px 5px; border-radius:6px; color:#334155; font-size:11px; font-weight:700; cursor:pointer; }
+  #recomPipelaneHeader .pipeline-kolek-menu__option:hover { background:#f8fafc; }
+  #recomPipelaneHeader .pipeline-kolek-menu__option input { width:14px; height:14px; margin:0; accent-color:#059669; }
+  #recomPipelaneHeader .pipeline-kolek-menu__option input:disabled { opacity:.75; cursor:not-allowed; }
+  #recomPipelanePage > #recomPipelaneTableCard {
+      flex:1;
+      min-height:0;
+      border:1px solid #e2e8f0;
+      border-radius:12px;
+      background:#fff;
+      box-shadow:0 1px 2px rgba(15,23,42,.04);
+  }
+  #recomPipelaneTableScroll { height:100%; overflow:auto; -webkit-overflow-scrolling:touch; }
+  #tabelPipeline {
+      width:100%;
+      min-width:0;
+      table-layout:fixed;
+      border-collapse:separate;
+      border-spacing:0;
+      font-size:11px;
+      font-variant-numeric:tabular-nums;
+  }
+  #tabelPipeline th,
+  #tabelPipeline td { height:38px; padding:6px 8px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; vertical-align:middle; font-size:11px; }
+  #tabelPipeline thead th { background:#f1f5f9 !important; color:#475569 !important; font-size:9px !important; font-weight:900 !important; letter-spacing:.035em; text-transform:uppercase; border-right:1px solid #dbe3ee !important; border-bottom:1px solid #cbd5e1 !important; }
+  #tabelPipeline thead tr:first-child th { top:0; height:30px; background:#f1f5f9 !important; }
+  #tabelPipeline thead tr:nth-child(2) th { top:30px; height:30px; background:#eff6ff !important; }
+  #tabelPipeline thead tr:nth-child(3) th { top:60px; height:30px; z-index:38; background:#eff6ff !important; }
+  #tabelPipeline thead tr:nth-child(4) th { top:90px; height:38px; z-index:38; background:#eff6ff !important; }
+  #tabelPipeline tbody td { border-right:1px solid #f1f5f9; border-bottom:1px solid #f1f5f9; color:#334155; background-clip:padding-box; }
+  #tabelPipeline tbody tr:nth-child(even) td { background:#fbfdff; }
+  #tabelPipeline tbody tr:hover td,
+  #tabelPipeline tbody tr:hover td.sticky-left-1,
+  #tabelPipeline tbody tr:hover td.sticky-left-2 { background:#eff6ff !important; }
+  #tabelPipeline .sticky-left-1 { width:82px; min-width:82px; max-width:82px; }
+  #tabelPipeline .sticky-left-2 { width:180px; min-width:180px; max-width:180px; }
+  #tabelPipeline .sticky-left-2 { left:68px; }
+  #rowTotalPipelineAtas th { top:90px; height:38px; background:#eff6ff !important; color:#1e40af !important; border-bottom:1px solid #bfdbfe !important; }
+  #rowTotalPipelineAtas th:not(.sticky-left-1):not(.sticky-left-2) { font-weight:500 !important; }
+  #rowTotalPipelineAtas th.sticky-left-1,
+  #rowTotalPipelineAtas th.sticky-left-2 { z-index:59; background:#eff6ff !important; }
+  #rowTotalPipelineAtas.pipeline-total-clickable { cursor:pointer; }
+  #rowTotalPipelineAtas.pipeline-total-clickable:hover th { filter:brightness(.98); }
+  #rowTotalPipelineAtas .pipeline-total-detail-clickable { cursor:pointer; }
+  #rowTotalPipelineAtas .pipeline-total-detail-clickable:hover { text-decoration:underline; text-underline-offset:2px; filter:brightness(.96); }
+  #tabelPipeline thead tr:first-child th.sticky-left-1,
+  #tabelPipeline thead tr:first-child th.sticky-left-2 { z-index:70; background:#f1f5f9 !important; }
+  #tabelPipeline thead tr:nth-child(2) th.sticky-left-1,
+  #tabelPipeline thead tr:nth-child(2) th.sticky-left-2 { z-index:69; background:#eff6ff !important; }
+  #tabelPipeline thead th.pipeline-head-potensi { background:#eff6ff !important; color:#1d4ed8 !important; }
+  #tabelPipeline thead th.pipeline-head-refi { background:#ecfdf5 !important; color:#047857 !important; }
+  #tabelPipeline thead th.pipeline-head-percent { background:#f8fafc !important; color:#475569 !important; width:90px; min-width:90px; }
+  #tabelPipeline thead th.pipeline-head-lunas { background:#f0f9ff !important; color:#0369a1 !important; }
+  #tabelPipeline thead th.pipeline-head-belum { background:#fff7ed !important; color:#c2410c !important; }
+  #tabelPipeline thead th.pipeline-head-rekom { background:#eaf4ff !important; color:#1e3a5f !important; }
+  #tabelPipeline thead th.pipeline-head-top { background:#f5f3ff !important; color:#6d28a9 !important; }
+  #tabelPipeline thead th.pipeline-head-ret { background:#fff7ed !important; color:#c2410c !important; }
+  #tabelPipeline thead th.pipeline-head-drop { background:#fff1f2 !important; color:#be123c !important; }
+  #tabelPipeline .pipeline-noa-col {
+      width:32px;
+      min-width:32px;
+      max-width:32px;
+      padding-left:2px !important;
+      padding-right:2px !important;
+  }
+  #tabelPipeline .pipeline-amount-col {
+      width:100px;
+      min-width:100px;
+      max-width:100px;
+  }
+  #tabelPipeline .pipeline-percent-col {
+      width:60px;
+      min-width:60px;
+      max-width:60px;
+  }
+  #tabelPipeline .pipeline-noa-col,
+  #tabelPipeline .pipeline-amount-col,
+  #tabelPipeline .pipeline-percent-col {
+      text-align:center !important;
+  }
+  #tabelPipeline .pipeline-cell-potensi { color:#1e3a5f; background:#fff !important; }
+  #tabelPipeline .pipeline-cell-refi { color:#047857; background:#ecfdf5 !important; }
+  #tabelPipeline .pipeline-cell-percent { color:#c2410c; background:#fff !important; }
+  #tabelPipeline .pipeline-cell-lunas { color:#0369a1; background:#f0f9ff !important; }
+  #tabelPipeline .pipeline-cell-belum { color:#c2410c; background:#fff7ed !important; }
+  #tabelPipeline .pipeline-cell-top,
+  #tabelPipeline .pipeline-total-top { color:#6d28d9 !important; background:#f5f3ff !important; }
+  #tabelPipeline .pipeline-cell-ret,
+  #tabelPipeline .pipeline-total-ret { color:#c2410c !important; background:#fff7ed !important; }
+  #tabelPipeline .pipeline-cell-drop,
+  #tabelPipeline .pipeline-total-drop { color:#be123c !important; background:#fff1f2 !important; }
+  #tabelPipeline .pipeline-total-potensi { color:#1e40af !important; background:#eff6ff !important; }
+  #tabelPipeline .pipeline-total-refi { color:#047857 !important; background:#ecfdf5 !important; }
+  #tabelPipeline .pipeline-total-percent { color:#c2410c !important; background:#eff6ff !important; }
+  #tabelPipeline .pipeline-total-lunas { color:#0369a1 !important; background:#f0f9ff !important; }
+  #tabelPipeline .pipeline-total-belum { color:#c2410c !important; background:#fff7ed !important; }
+  #modalDetail { padding:12px; background:rgba(15,23,42,.68); backdrop-filter:blur(7px); }
+  #modalDetail > .relative { width:min(1760px,calc(100vw - 24px)); height:min(94dvh,920px); max-width:none; border:1px solid #dbe3ee; border-radius:16px; }
+  #pipelineModalHeader { background:#fff; border-color:#e2e8f0; }
+  #pipelineModalHeader .btn-icon { transition:transform .16s ease, box-shadow .16s ease, background-color .16s ease; }
+  #pipelineModalHeader .btn-icon:hover { transform:translateY(-1px); box-shadow:0 6px 14px rgba(15,23,42,.12); }
+  #pipelineModalContent { background:#fff; padding:0 !important; isolation:isolate; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; }
+  @media (min-width:1024px) { #tabelPipeline { width:max-content; min-width:100%; } }
+  @media (max-width:1023px) {
+      #recomPipelaneTableScroll { overflow:auto; }
+      #tabelPipeline { width:max-content; min-width:100%; }
+  }
+  @media (max-width:1279px) {
+      #recomPipelaneHeader { align-items:stretch; flex-direction:column; }
+      #recomPipelaneHeader > div:last-child { width:100%; justify-content:flex-end; }
+      #tabelPipeline { width:max-content; min-width:100%; }
+  }
+  @media (max-width:767px) {
+      #recomPipelanePage { height:calc(100dvh - 54px); min-height:0; padding:4px; gap:4px; }
+      #recomPipelaneHeader { gap:7px; padding:7px 8px; margin-bottom:4px !important; border-radius:9px; }
+      #recomPipelaneHeader > div:first-child { width:100%; }
+      #recomPipelaneHeader > div:last-child { width:auto; align-self:flex-end; margin-top:-38px; }
+      #recomPipelaneHeader h1 { font-size:13px; }
+      #recomPipelaneHeader .recom-title-subtitle { max-width:220px; font-size:8px; }
+      #recomPipelaneHeader .bg-blue-600 { width:31px; height:31px; padding:6px; border-radius:8px; }
+      #recomPipelaneHeader .btn-icon,
+      #recomPipelaneHeader .jt-breakdown-toggle,
+      #recomPipelaneHeader .pipeline-kolek-toggle { width:34px; height:32px; border-radius:7px; }
+      #tabelPipeline .sticky-left-1 { display:none !important; }
+      #tabelPipeline .sticky-left-2 { left:0 !important; width:135px; min-width:135px; max-width:135px; white-space:normal; line-height:1.1; }
+      #tabelPipeline thead tr:first-child th.sticky-left-2 { z-index:70; }
+      #tabelPipeline thead tr:nth-child(2) th.sticky-left-2 { z-index:69; }
+      #modalDetail { padding:0; align-items:flex-end; }
+      #modalDetail > .relative { width:100%; height:96dvh; max-height:96dvh; border-radius:16px 16px 0 0; }
+      #pipelineModalHeader { padding:8px; }
+      #pipelineModalHeader > div:first-child { width:100%; min-width:0; }
+      #pipelineModalHeader > div:last-child { width:100%; margin-top:0; display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) 34px 34px; gap:5px; overflow:visible; }
+      #pipelineModalHeader > div:last-child select { width:100%; min-width:0; }
+      #pipelineModalHeader h3 { font-size:12px; }
+      #pipelineModalHeader #detailSubTitle { font-size:9px; margin-left:0; }
+  }
+  #tabelPipeline .sticky-left-1.jt-office-name {
+      width:180px;
+      min-width:180px;
+      max-width:180px;
+  }
+  #tabelPipeline .sticky-left-1:not(.jt-office-name) {
+      width:68px;
+      min-width:68px;
+      max-width:68px;
+  }
+  @media (max-width:767px) {
+      #tabelPipeline .sticky-left-1.jt-office-name {
+          display:table-cell !important;
+          left:0 !important;
+          width:135px;
+          min-width:135px;
+          max-width:135px;
+      }
+  }
 </style>
 
-<div class="max-w-[1920px] mx-auto px-2 md:px-4 py-3 md:py-5 h-[calc(100vh-80px)] flex flex-col bg-slate-50 font-sans text-slate-800 overflow-hidden">
+<div id="recomPipelanePage" class="pipeline-page jt-page max-w-[1920px] mx-auto px-2 md:px-4 py-3 md:py-6 h-[calc(100vh-80px)] flex flex-col bg-slate-50 font-sans text-slate-800 overflow-hidden">
   
-  <div class="flex-none mb-4 flex flex-col xl:flex-row justify-between xl:items-start gap-4 w-full">
+  <div id="recomPipelaneHeader" class="pipeline-header-card jt-header-card flex-none mb-3 md:mb-4 flex flex-col xl:flex-row justify-between xl:items-center gap-3 md:gap-4 w-full">
       
-      <div class="flex flex-col gap-3 shrink-0">
-          <h1 class="text-xl md:text-2xl font-bold text-slate-800 flex items-center gap-2">
+      <div class="recom-title-copy jt-title-copy flex flex-col gap-1 shrink-0">
+          <h1 class="text-lg md:text-2xl font-bold text-slate-800 flex items-center gap-2 mb-0.5">
               <span class="p-1.5 md:p-2 bg-blue-600 rounded-lg text-white shadow-sm">
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08-.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                  <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
               </span>
-              Rekomendasi Pipeline Kredit
-              <button onclick="openInfoModal()" class="text-slate-400 hover:text-blue-600 transition rounded-full p-1 focus:outline-none focus:ring-2 focus:ring-blue-200" title="Informasi Status">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span>Pipelane Kredit</span>
+              <button type="button" onclick="openInfoModal()" class="recom-info-btn jt-info-btn" title="Informasi Status" aria-label="Buka informasi status pipeline">i
               </button>
           </h1>
+          <p class="recom-title-subtitle jt-title-subtitle">Rekomendasi kredit jatuh tempo, refinancing, dan potensi penyelesaian berdasarkan periode terpilih.</p>
           
-          <div id="summaryPills" class="hidden flex-wrap items-center gap-2">
-              <div class="flex flex-col bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg shadow-sm min-w-[130px]">
-                  <span class="text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-0.5">Sudah Ambil</span>
-                  <div class="flex items-end gap-1.5">
-                      <span class="text-sm md:text-base font-bold text-emerald-800" id="sum_sudah">0</span>
-                      <span class="text-[11px] md:text-xs font-mono text-emerald-600 mb-0.5" id="sum_sudah_nom">0</span>
-                  </div>
-              </div>
-              <div class="flex flex-col bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-lg shadow-sm min-w-[130px]">
-                  <span class="text-[10px] font-bold text-blue-700 uppercase tracking-widest mb-0.5">Potensi Siap</span>
-                  <div class="flex items-end gap-1.5">
-                      <span class="text-sm md:text-base font-bold text-blue-800" id="sum_potensi">0</span>
-                      <span class="text-[11px] md:text-xs font-mono text-blue-600 mb-0.5" id="sum_potensi_nom">0</span>
-                  </div>
-              </div>
-          </div>
       </div>
 
-      <form id="formFilter" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-wrap md:flex-nowrap items-end gap-2 md:gap-3 w-full xl:w-auto shrink-0 xl:ml-auto overflow-x-auto no-scrollbar" onsubmit="event.preventDefault(); fetchRekap();">
+      <form id="legacyPipelineFilter" hidden class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-wrap md:flex-nowrap items-end gap-2 md:gap-3 w-full xl:w-auto shrink-0 xl:ml-auto overflow-x-auto no-scrollbar" onsubmit="event.preventDefault(); fetchRekap();">
           <input type="hidden" id="closing_date" disabled>
           
           <div class="field shrink-0 w-[130px] md:w-[150px]">
               <label class="lbl">POSISI (ACTUAL)</label>
-              <input type="date" id="harian_date" class="inp text-sm font-semibold h-[38px] text-slate-700 bg-slate-50 cursor-not-allowed" readonly required>
+              <input type="date" id="legacy_harian_date" class="inp text-sm font-semibold h-[38px] text-slate-700 bg-slate-50 cursor-not-allowed" readonly required>
           </div>
           
           <div class="field shrink-0 w-[100px] md:w-[120px]">
               <label class="lbl">TAHUN JT</label>
-              <input type="number" id="tahun_jt" class="inp text-sm font-semibold h-[38px] text-slate-700" value="2026" required>
+              <input type="number" id="legacy_tahun_jt" class="inp text-sm font-semibold h-[38px] text-slate-700" value="<?= (int) date('Y') ?>" required>
           </div>
           
           <div class="flex items-center gap-1.5 shrink-0 h-[38px] mb-px">
@@ -132,16 +407,35 @@
               </button>
           </div>
       </form>
+      <div class="flex items-center gap-2 shrink-0 xl:ml-auto">
+          <button type="button" id="recomPipelaneBreakdownToggle" onclick="togglePipelineBreakdown()" class="btn-icon jt-breakdown-toggle hidden" title="Ganti tampilan breakdown" aria-label="Ganti tampilan breakdown">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11"></path><path d="m14 3 4 4-4 4"></path><path d="M17 17H6"></path><path d="m10 13-4 4 4 4"></path></svg>
+          </button>
+          <div class="pipeline-kolek-wrap">
+              <button type="button" id="recomPipelaneKolekToggle" class="btn-icon pipeline-kolek-toggle" onclick="togglePipelineKolekMenu(event)" title="Filter kolektibilitas" aria-label="Filter kolektibilitas" aria-expanded="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 6 1.5 1.5L8 5"></path><path d="M11 6h9"></path><path d="m4 12 1.5 1.5L8 11"></path><path d="M11 12h9"></path><path d="m4 18 1.5 1.5L8 17"></path><path d="M11 18h9"></path></svg>
+              </button>
+              <div id="recomPipelaneKolekMenu" class="pipeline-kolek-menu hidden" role="group" aria-label="Filter kolektibilitas">
+                  <div class="pipeline-kolek-menu__title">Kolektibilitas</div>
+                  <label class="pipeline-kolek-menu__option"><input type="checkbox" value="L" checked disabled> <span>L (wajib)</span></label>
+                  <label class="pipeline-kolek-menu__option"><input type="checkbox" id="recomPipelaneKolekDP" value="DP" onchange="handlePipelineKolekChange()"> <span>DP</span></label>
+              </div>
+          </div>
+          <button type="button" onclick="exportExcelRekapPipeline()" class="btn-icon jt-download-btn bg-emerald-600 hover:bg-emerald-700 text-white h-[34px] md:h-[38px] w-[34px] md:w-[38px] rounded-lg shadow-sm" title="Download Excel" aria-label="Download Excel">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          </button>
+      </div>
   </div>
 
-  <div class="flex-1 overflow-hidden bg-white rounded-xl shadow-sm border border-slate-200 relative">
+  <div id="recomPipelaneTableCard" class="pipeline-table-wrapper jt-table-wrapper flex-1 min-h-0 relative">
     <div id="loadingRekap" class="hidden absolute inset-0 bg-white/80 z-[100] flex flex-col items-center justify-center text-blue-600 backdrop-blur-sm">
         <div class="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent mb-3"></div>
         <span class="text-sm font-bold uppercase tracking-widest">Menyiapkan Pipeline...</span>
     </div>
     
-    <div class="h-full overflow-auto custom-scrollbar relative">
-      <table class="w-max min-w-full text-center border-separate border-spacing-0 text-slate-700 table-fixed" id="tabelPipeline">
+    <div id="recomPipelaneTableScroll" class="h-full overflow-auto custom-scrollbar relative">
+       <table class="w-max min-w-full text-center border-separate border-spacing-0 text-slate-700 table-fixed" id="tabelPipeline">
+         <colgroup id="pipelineColGroup"></colgroup>
         <thead class="tracking-wider bg-slate-50 text-slate-800 font-bold text-xs md:text-sm" id="headPipeline">
             </thead>
         <tbody id="bodyRekap" class="divide-y divide-slate-100 bg-white"></tbody>
@@ -186,20 +480,20 @@
   
   <div class="relative bg-white w-full h-[95vh] md:h-[92vh] max-w-[1700px] rounded-t-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
     
-    <div class="flex justify-between items-center px-4 py-4 md:px-6 border-b bg-slate-50 shrink-0 flex-wrap gap-3">
+    <div id="pipelineModalHeader" class="pipeline-modal-header jt-modal-header flex justify-between items-center px-3 py-3 md:px-5 md:py-4 border-b bg-slate-50 shrink-0 flex-wrap gap-2">
         <div class="flex-1 min-w-[250px]">
-            <h3 class="font-bold text-slate-800 flex items-center gap-2 text-base md:text-xl">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm md:text-base">
                 <span class="w-2 h-6 bg-blue-600 rounded-full hidden md:block"></span> 
                 Detail Nasabah Pipeline 
             </h3>
-            <p class="text-xs md:text-sm text-slate-500 mt-1 md:ml-4 font-mono font-medium" id="detailSubTitle">...</p>
+            <p class="text-[10px] md:text-xs text-slate-500 mt-0.5 ml-1 md:ml-8 font-mono" id="detailSubTitle">...</p>
         </div>
         
-        <div class="flex items-center gap-2 md:gap-3 ml-auto shrink-0 w-full sm:w-auto mt-2 sm:mt-0 overflow-x-auto no-scrollbar">
-            <select id="filter_kankas_modal" class="inp px-3 h-10 w-[120px] md:w-[150px] text-xs md:text-sm font-bold text-blue-800 bg-blue-50 outline-none shrink-0" onchange="changeFilter()">
+        <div class="flex flex-wrap items-center gap-1.5 ml-auto shrink-0 w-full sm:w-auto mt-2 sm:mt-0 overflow-x-auto no-scrollbar">
+            <select id="filter_kankas_modal" class="inp px-2 md:px-3 h-[34px] md:h-10 flex-1 sm:w-[160px] text-xs md:text-sm font-bold text-blue-800 bg-blue-50 outline-none shrink-0 cursor-pointer" onchange="changeFilter()">
                 <option value="">Semua Kankas</option>
             </select>
-            <select id="filter_status_modal" class="inp px-3 h-10 w-[130px] md:w-[160px] text-xs md:text-sm font-bold text-blue-800 bg-blue-50 outline-none shrink-0" onchange="changeFilter()">
+            <select id="filter_status_modal" class="inp px-2 md:px-3 h-[34px] md:h-10 flex-1 sm:w-[160px] text-xs md:text-sm font-bold text-blue-800 bg-blue-50 outline-none shrink-0 cursor-pointer" onchange="changeFilter()">
                 <option value="">Semua Status</option>
                 <option value="sudah">✅ Sudah Ambil</option>
                 <option value="lunas">🔵 Lunas</option>
@@ -207,21 +501,20 @@
                 <option value="retensi">🟠 BD > 50%</option>
                 <option value="drop">⛔ Drop</option>
             </select>
-            <select id="filter_ao_modal" class="inp px-3 h-10 w-[120px] md:w-[160px] text-xs md:text-sm font-bold text-slate-700 bg-white outline-none shrink-0" onchange="changeFilter()">
+            <select id="filter_ao_modal" class="inp px-2 md:px-3 h-[34px] md:h-10 flex-1 sm:w-[160px] text-xs md:text-sm font-bold text-slate-700 bg-white outline-none shrink-0 cursor-pointer" onchange="changeFilter()">
                 <option value="">Semua AO</option>
             </select>
 
-            <button onclick="downloadExcelDetail()" class="btn-icon bg-emerald-600 hover:bg-emerald-700 text-white px-3 md:px-4 h-10 rounded-lg shadow-sm text-xs md:text-sm font-bold uppercase tracking-wider shrink-0">
+            <button onclick="downloadExcelDetail(event)" class="btn-icon bg-emerald-600 hover:bg-emerald-700 text-white w-[34px] md:w-10 h-[34px] md:h-10 rounded-lg shadow-sm shrink-0" title="Download Excel" aria-label="Download Excel">
                 <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                <span class="hidden sm:inline ml-1.5">Excel</span>
             </button>
-            <button onclick="closeModal()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-slate-200 hover:bg-red-500 hover:text-white text-slate-600 transition font-bold text-2xl leading-none shrink-0">&times;</button>
+            <button onclick="closeModal()" class="w-[34px] md:w-10 h-[34px] md:h-10 flex items-center justify-center rounded-xl bg-slate-200 hover:bg-red-500 hover:text-white text-slate-600 transition font-bold text-xl md:text-2xl leading-none shrink-0">&times;</button>
         </div>
     </div>
 
     <div id="modalStats" class="bg-slate-100 border-b border-slate-200 px-4 py-3 text-xs md:text-sm font-mono font-medium text-slate-600 overflow-x-auto no-scrollbar whitespace-nowrap shrink-0"></div>
 
-    <div class="flex-1 overflow-auto bg-slate-50 relative custom-scrollbar p-0 md:p-3">
+    <div id="pipelineModalContent" class="pipeline-modal-content jt-modal-content flex-1 overflow-auto bg-slate-50 relative custom-scrollbar p-0 md:p-3">
         <div id="loadingDetail" class="hidden absolute inset-0 bg-white/90 z-40 flex flex-col items-center justify-center text-blue-600 backdrop-blur-sm">
             <div class="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent mb-3"></div>
             <span class="text-sm font-bold uppercase tracking-widest">Memuat Detail...</span>
@@ -230,8 +523,10 @@
         <table class="w-max min-w-full text-sm text-left text-slate-700 border border-slate-200 md:rounded-xl shadow-sm bg-white table-fixed" id="tableExportModal">
             <thead class="text-slate-600 font-bold uppercase tracking-wider text-[10px] md:text-xs">
                 <tr>
-                    <th class="px-3 py-4 border-b border-r border-slate-300 w-[120px] mod-sticky-1 rounded-tl-xl text-blue-900 bg-[#f1f5f9]">REKENING</th>
-                    <th class="px-4 py-4 border-b border-r border-slate-300 w-[220px] md:w-[280px] mod-sticky-2 text-blue-900 bg-[#f1f5f9]">NAMA NASABAH</th>
+                    <th class="pipeline-desktop-identity px-3 py-4 border-b border-r border-slate-300 w-[120px] mod-sticky-1 rounded-tl-xl text-blue-900 bg-[#f1f5f9]">REKENING</th>
+                    <th class="pipeline-desktop-identity px-4 py-4 border-b border-r border-slate-300 w-[220px] md:w-[280px] mod-sticky-2 text-blue-900 bg-[#f1f5f9]">NAMA NASABAH</th>
+                    <th class="pipeline-mobile-identity px-2 py-3 border-b border-r border-slate-300 rounded-tl-xl text-blue-900 bg-[#f1f5f9]">REKENING / NAMA NASABAH</th>
+                    <th class="px-4 py-4 border-b border-r border-slate-300 w-[160px] md:w-[190px] text-blue-800">NAMA PRODUK</th>
                     <th class="px-4 py-4 border-b border-r border-slate-300 w-[200px] md:w-[250px]">ALAMAT</th>
                     <th class="px-3 py-4 border-b border-r border-slate-300 w-[120px] text-center">NO HP</th>
                     <th class="px-3 py-4 border-b border-r border-slate-300 w-[120px] text-center">KANKAS</th>
@@ -267,24 +562,185 @@
   const nf = new Intl.NumberFormat('id-ID');
   const fmt = n => nf.format(Math.round(Number(n||0)));
 
-  let state = { cabang:'', kankas:'', ao:'', status:'', page:1, limit:20, totalPages:1 };
+  let state = { cabang:'', kankas:'', ao:'', status:'', breakdown:'CABANG', kolektibilitas:['L'], page:1, limit:20, totalPages:1 };
   let abortRekap;
   let rekapDataCache = null; 
   let userKodeGlobal = '000'; 
+
+  function pipelineAreaValue() {
+      return String(document.getElementById('recomPipelaneKantorFilter')?.value || 'ALL').trim();
+  }
+
+  function normalizePipelineOffice(value) {
+      const raw = String(value || '').trim().toUpperCase();
+      if (!raw || raw === 'ALL' || raw === '000') return null;
+      const code = raw.replace(/^CAB(?:ANG)?(?:-|:)/, '');
+      return /^\d{1,3}$/.test(code) ? code.padStart(3, '0') : null;
+  }
+
+  function selectedPipelineKorwil() {
+      const raw = pipelineAreaValue().toUpperCase();
+      return raw.startsWith('KOR-') ? raw.slice(4) : null;
+  }
+
+  function selectedPipelineOffice() {
+      const fromFilter = normalizePipelineOffice(pipelineAreaValue());
+      if (fromFilter) return fromFilter;
+      return userKodeGlobal !== '000' ? userKodeGlobal : null;
+  }
+
+  function isBranchPipelineScope() {
+      return !!selectedPipelineOffice();
+  }
+
+  function getPipelineBreakdown() {
+      if (!isBranchPipelineScope()) return 'CABANG';
+      return state.breakdown === 'AO' ? 'AO' : 'KANKAS';
+  }
+
+  function updatePipelineBreakdownControl() {
+      const button = document.getElementById('recomPipelaneBreakdownToggle');
+      if (!button) return;
+      const visible = isBranchPipelineScope();
+      const current = getPipelineBreakdown();
+      const next = current === 'KANKAS' ? 'AO' : 'KANKAS';
+      button.classList.toggle('hidden', !visible);
+      button.title = `Tampilan ${current === 'KANKAS' ? 'Per Kankas' : 'Per AO Kredit'} · klik untuk ${next === 'KANKAS' ? 'Per Kankas' : 'Per AO Kredit'}`;
+      button.setAttribute('aria-label', button.title);
+  }
+
+  function updatePipelineKolekControl() {
+      const button = document.getElementById('recomPipelaneKolekToggle');
+      const includeDP = state.kolektibilitas.includes('DP');
+      if (!button) return;
+      const title = includeDP ? 'Kolektibilitas: L + DP' : 'Kolektibilitas: L';
+      button.title = title;
+      button.setAttribute('aria-label', title);
+      button.setAttribute('aria-expanded', document.getElementById('recomPipelaneKolekMenu')?.classList.contains('hidden') ? 'false' : 'true');
+      const dp = document.getElementById('recomPipelaneKolekDP');
+      if (dp) dp.checked = includeDP;
+  }
+
+  window.togglePipelineKolekMenu = function(event) {
+      event?.stopPropagation();
+      const menu = document.getElementById('recomPipelaneKolekMenu');
+      const button = document.getElementById('recomPipelaneKolekToggle');
+      if (!menu || !button) return;
+      const open = menu.classList.toggle('hidden') === false;
+      button.setAttribute('aria-expanded', open ? 'true' : 'false');
+  };
+
+  window.handlePipelineKolekChange = function() {
+      const includeDP = !!document.getElementById('recomPipelaneKolekDP')?.checked;
+      state.kolektibilitas = includeDP ? ['L', 'DP'] : ['L'];
+      updatePipelineKolekControl();
+      fetchRekap();
+  };
+
+  window.togglePipelineBreakdown = function() {
+      if (!isBranchPipelineScope()) return;
+      state.breakdown = getPipelineBreakdown() === 'KANKAS' ? 'AO' : 'KANKAS';
+      updatePipelineBreakdownControl();
+      setupHeaderPipeline(userKodeGlobal);
+      fetchRekap();
+  };
+
+  async function populatePipelineAreaOptions(userKode) {
+      const select = document.getElementById('recomPipelaneKantorFilter');
+      if (!select) return;
+      const code = String(userKode || '000').padStart(3, '0');
+      if (code !== '000') {
+          select.innerHTML = `<option value="CAB-${code}">${code}</option>`;
+          select.value = `CAB-${code}`;
+          select.disabled = true;
+          return;
+      }
+
+      try {
+          const json = await apiCall(API_KODE, { type: 'kode_kantor' });
+          const list = Array.isArray(json.data) ? json.data : [];
+          let html = '<option value="ALL">Konsolidasi</option>';
+          ['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'].forEach(korwil => {
+              html += `<option value="KOR-${korwil}">Korwil ${korwil[0]}${korwil.slice(1).toLowerCase()}</option>`;
+          });
+          list.filter(item => String(item.kode_kantor || '') !== '000')
+              .sort((a, b) => String(a.kode_kantor).localeCompare(String(b.kode_kantor)))
+              .forEach(item => {
+                  const codeItem = String(item.kode_kantor).padStart(3, '0');
+                  html += `<option value="CAB-${codeItem}">${codeItem} - ${item.nama_kantor || `Cabang ${codeItem}`}</option>`;
+              });
+          select.innerHTML = html;
+          select.disabled = false;
+          window.MonbisGlobalAreaFilter?.restore?.();
+      } catch (error) {
+          select.innerHTML = '<option value="ALL">Konsolidasi</option>';
+      }
+  }
+
+  window.handleRecomPipelaneAreaChange = function() {
+      state.breakdown = selectedPipelineOffice() ? 'KANKAS' : 'CABANG';
+      updatePipelineBreakdownControl();
+      setupHeaderPipeline(userKodeGlobal);
+      if (document.getElementById('harian_date')?.value) fetchRekap();
+      if (window.innerWidth < 768) setTimeout(() => toggleRecomPipelaneNavbarFilter(false), 180);
+  };
+
+  function toggleRecomPipelaneNavbarFilter(open) {
+      const panel = document.getElementById('recomPipelaneNavbarFilterPanel');
+      const toggle = document.getElementById('recomPipelaneNavbarFilterToggle');
+      if (!panel) return;
+      const shouldOpen = typeof open === 'boolean' ? open : panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !shouldOpen);
+      panel.classList.toggle('flex', shouldOpen);
+      toggle?.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+  }
+
+  function bindRecomPipelaneNavbarFilter() {
+      const panel = document.getElementById('recomPipelaneNavbarFilterPanel');
+      const toggle = document.getElementById('recomPipelaneNavbarFilterToggle');
+      const close = document.getElementById('recomPipelaneNavbarFilterClose');
+      if (!panel || !toggle || toggle.dataset.bound === '1') return;
+      toggle.addEventListener('click', event => { event.stopPropagation(); toggleRecomPipelaneNavbarFilter(); });
+      close?.addEventListener('click', () => toggleRecomPipelaneNavbarFilter(false));
+      document.addEventListener('click', event => {
+          if (!panel.contains(event.target) && !toggle.contains(event.target)) toggleRecomPipelaneNavbarFilter(false);
+      });
+      toggle.dataset.bound = '1';
+  }
 
   // --- INIT ---
   window.addEventListener('DOMContentLoaded', async () => {
       const user = (window.getUser && window.getUser()) || null;
       userKodeGlobal = (user?.kode ? String(user.kode).padStart(3,'0') : '000');
 
+      bindRecomPipelaneNavbarFilter();
+      await populatePipelineAreaOptions(userKodeGlobal);
+      state.breakdown = selectedPipelineOffice() ? 'KANKAS' : 'CABANG';
+      updatePipelineBreakdownControl();
+      updatePipelineKolekControl();
+      document.addEventListener('click', event => {
+          const wrap = document.querySelector('#recomPipelaneHeader .pipeline-kolek-wrap');
+          const menu = document.getElementById('recomPipelaneKolekMenu');
+          const button = document.getElementById('recomPipelaneKolekToggle');
+          if (wrap && menu && button && !wrap.contains(event.target)) {
+              menu.classList.add('hidden');
+              button.setAttribute('aria-expanded', 'false');
+          }
+      });
       setupHeaderPipeline(userKodeGlobal);
 
       const now = new Date();
-      document.getElementById('closing_date').value = `${now.getFullYear() - 1}-12-31`;
+      const yearField = document.getElementById('tahun_jt');
+      if (yearField && !yearField.value) yearField.value = String(now.getFullYear());
       try {
           const r = await fetch(API_DATE); const j = await r.json();
-          document.getElementById('harian_date').value = (j && j.data && j.data.last_created) ? j.data.last_created : now.toISOString().split('T')[0];
-      } catch(e) { document.getElementById('harian_date').value = now.toISOString().split('T')[0]; }
+          const lastData = j && j.data ? j.data : {};
+          document.getElementById('closing_date').value = lastData.last_closing || `${now.getFullYear() - 1}-12-31`;
+          document.getElementById('harian_date').value = lastData.last_created || now.toISOString().split('T')[0];
+      } catch(e) {
+          document.getElementById('closing_date').value = `${now.getFullYear() - 1}-12-31`;
+          document.getElementById('harian_date').value = now.toISOString().split('T')[0];
+      }
 
       fetchRekap();
   });
@@ -296,59 +752,53 @@
       return await res.json();
   }
 
-  // --- SETUP HEADER REKAP UTAMA (Disesuaikan Sesuai Permintaan) ---
+  // --- SETUP HEADER REKAP UTAMA: mengikuti tabel Jatuh Tempo Kredit ---
   function setupHeaderPipeline(userKode) {
       const th = document.getElementById('headPipeline');
-      let thHtml = '';
-
-      // Lapis 1
-      thHtml += `<tr>`;
-      if (userKode === '000') {
-          thHtml += `
-            <th rowspan="2" class="sticky-left-1 w-[70px] bg-slate-100 text-slate-800 border-r border-b border-slate-200 align-middle uppercase hidden sm:table-cell text-center text-sm">Kode</th>
-            <th rowspan="2" class="sticky-left-2 min-w-[160px] md:min-w-[200px] bg-slate-100 text-slate-800 border-r border-b border-slate-200 align-middle text-left uppercase pl-5 text-sm">Nama Kantor</th>
-          `;
-      } else {
-          thHtml += `
-            <th rowspan="2" class="sticky-left-1 min-w-[160px] md:min-w-[240px] bg-slate-100 text-slate-800 border-r border-b border-slate-200 align-middle text-left uppercase pl-5 text-sm">Nama Kantor</th>
-          `;
+      const breakdown = getPipelineBreakdown();
+      const showCode = userKode === '000' || breakdown !== 'CABANG';
+      const codeTitle = breakdown === 'AO' ? 'Kode AO' : breakdown === 'KANKAS' ? 'Kode Kankas' : 'Kode';
+      const nameTitle = breakdown === 'AO' ? 'Nama AO' : breakdown === 'KANKAS' ? 'Nama Kankas' : 'Nama Kantor';
+      const colGroup = document.getElementById('pipelineColGroup');
+      if (colGroup) {
+          const codeHiddenOnMobile = showCode && window.innerWidth < 640;
+          const widths = showCode && !codeHiddenOnMobile ? [68, 180] : [codeHiddenOnMobile ? 135 : 180];
+          widths.push(32, 100, 32, 100, 60, 32, 100, 32, 100, 32, 100, 32, 100);
+          colGroup.innerHTML = widths.map(width => `<col style="width:${width}px">`).join('');
       }
+      const identity = showCode
+          ? `<th rowspan="3" class="sticky-left-1 jt-code-col hidden sm:table-cell text-center">${codeTitle}</th><th rowspan="3" class="sticky-left-2 jt-grouped-name text-left">${nameTitle}</th>`
+          : `<th rowspan="3" class="sticky-left-1 jt-office-name text-left">${nameTitle}</th>`;
 
-      thHtml += `
-            <th rowspan="2" class="px-4 border-r border-b border-slate-200 align-middle text-right bg-slate-50 text-slate-700 w-[150px]">
-                <div class="text-xs md:text-sm font-bold">TARGET PIPELINE</div>
-                <div class="text-[10px] md:text-[11px] text-slate-400 font-normal mt-1 font-mono">NOA | Plafon</div>
-            </th>
-            <th colspan="3" class="text-center bg-blue-50 text-blue-900 border-r border-b border-blue-200 uppercase font-bold text-xs md:text-sm" style="padding: 8px;">Rekomendasi Pipeline AO</th>
-            <th rowspan="2" class="px-4 border-r border-b border-rose-200 align-middle bg-rose-50 text-rose-800 w-[130px]">
-                <div class="text-xs md:text-sm font-bold">DROP</div>
-                <div class="text-[10px] md:text-[11px] text-rose-600/80 font-normal mt-1 font-mono">NOA | Sisa OS</div>
-            </th>
-            <th colspan="3" class="text-center bg-emerald-50 text-emerald-900 border-b border-emerald-200 uppercase font-bold text-xs md:text-sm" style="padding: 8px;">SUDAH AMBIL</th>
-          </tr>`;
-
-      // Lapis 2
-      thHtml += `
+      th.innerHTML = `
           <tr>
-            <th class="px-4 text-center bg-blue-50 text-blue-800 border-r border-b border-blue-200 w-[140px]">
-                <div class="text-xs md:text-sm font-bold">LUNAS</div>
-                <div class="text-[10px] md:text-[11px] text-blue-600/80 font-normal mt-1 font-mono">NOA | Plafon</div>
-            </th>
-            <th class="px-4 text-center bg-purple-50 text-purple-800 border-r border-b border-purple-200 w-[160px]">
-                <div class="text-xs md:text-sm font-bold">BD <= 50%</div>
-                <div class="text-[10px] md:text-[11px] text-purple-600/80 font-normal mt-1 font-mono">NOA | Sisa OS</div>
-            </th>
-            <th class="px-4 text-center bg-orange-50 text-orange-800 border-r border-b border-orange-200 w-[160px]">
-                <div class="text-xs md:text-sm font-bold">BD > 50%</div>
-                <div class="text-[10px] md:text-[11px] text-orange-600/80 font-normal mt-1 font-mono">NOA | Sisa OS</div>
-            </th>
-            <th class="px-3 text-center bg-emerald-50 text-emerald-800 border-r border-b border-emerald-200 w-[70px] text-xs">NOA</th>
-            <th class="px-4 text-right bg-emerald-50 text-emerald-800 border-r border-b border-emerald-200 w-[130px] text-xs">NOMINAL</th>
-            <th class="px-3 text-center bg-emerald-50 text-emerald-800 border-b border-emerald-200 w-[70px] text-xs">%</th>
+              ${identity}
+              <th colspan="2" class="pipeline-head-potensi text-center border-r border-b">POTENSI KREDIT</th>
+              <th colspan="3" class="pipeline-head-refi text-center border-r border-b">REFINANCING / TOP UP</th>
+              <th colspan="6" class="pipeline-head-rekom text-center border-r border-b">REKOMENDASI PIPELINE KREDIT</th>
+              <th colspan="2" class="pipeline-head-drop text-center border-b">DROP</th>
           </tr>
-          <tr id="rowTotalPipelineAtas"></tr>
-      `;
-      th.innerHTML = thHtml;
+          <tr>
+              <th rowspan="2" class="pipeline-head-potensi pipeline-noa-col text-center border-r border-b">NOA</th>
+              <th rowspan="2" class="pipeline-head-potensi pipeline-amount-col text-center border-r border-b">PLAFON</th>
+              <th rowspan="2" class="pipeline-head-refi pipeline-noa-col text-center border-r border-b">NOA</th>
+              <th rowspan="2" class="pipeline-head-refi pipeline-amount-col text-right border-r border-b">PLAFON</th>
+              <th rowspan="2" class="pipeline-head-refi pipeline-percent-col text-center border-r border-b">%</th>
+              <th colspan="2" class="pipeline-head-lunas text-center border-r border-b">LUNAS</th>
+              <th colspan="2" class="pipeline-head-top text-center border-r border-b">NOMINAL &lt;= 50%</th>
+              <th colspan="2" class="pipeline-head-ret text-center border-r border-b">NOMINAL &gt; 50%</th>
+              <th rowspan="2" class="pipeline-head-drop pipeline-noa-col text-center border-r border-b">NOA</th>
+              <th rowspan="2" class="pipeline-head-drop pipeline-amount-col text-right border-b">NOMINAL</th>
+          </tr>
+          <tr>
+              <th class="pipeline-head-lunas pipeline-noa-col text-center border-r border-b">NOA</th>
+              <th class="pipeline-head-lunas pipeline-amount-col text-right border-r border-b">PLAFON</th>
+              <th class="pipeline-head-top pipeline-noa-col text-center border-r border-b">NOA</th>
+              <th class="pipeline-head-top pipeline-amount-col text-right border-r border-b">NOMINAL</th>
+              <th class="pipeline-head-ret pipeline-noa-col text-center border-r border-b">NOA</th>
+              <th class="pipeline-head-ret pipeline-amount-col text-right border-r border-b">NOMINAL</th>
+          </tr>
+          <tr id="rowTotalPipelineAtas"></tr>`;
   }
 
   // --- FETCH REKAP UTAMA ---
@@ -356,34 +806,39 @@
       const l = document.getElementById('loadingRekap');
       const tb = document.getElementById('bodyRekap');
       const trTot = document.getElementById('rowTotalPipelineAtas');
-      const pills = document.getElementById('summaryPills');
       
       if(abortRekap) abortRekap.abort();
       abortRekap = new AbortController();
 
-      l.classList.remove('hidden'); pills.classList.add('hidden');
+      l.classList.remove('hidden');
       
-      const colSpan = userKodeGlobal === '000' ? 10 : 9;
+      const showCode = userKodeGlobal === '000' || getPipelineBreakdown() !== 'CABANG';
+      const colSpan = showCode ? 15 : 14;
       tb.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-20 text-slate-400 italic text-base">Sedang mengambil data...</td></tr>`;
       trTot.innerHTML = '';
+      trTot.onclick = null;
+      trTot.classList.remove('pipeline-total-clickable');
       rekapDataCache = null;
 
       try {
-          const reqCabang = (userKodeGlobal === '000') ? null : userKodeGlobal;
+          const reqCabang = selectedPipelineOffice();
 
           const payload = {
               type: 'rekap_pipeline',
               closing_date: document.getElementById('closing_date').value,
               harian_date: document.getElementById('harian_date').value,
               tahun_jt: document.getElementById('tahun_jt').value,
-              kode_kantor: reqCabang 
+              kode_kantor: reqCabang,
+              korwil: selectedPipelineKorwil(),
+              breakdown_by: getPipelineBreakdown(),
+              kolektibilitas: state.kolektibilitas
           };
 
           const json = await apiCall(API_URL, payload, abortRekap.signal);
           let rows = json.data || [];
 
-          if (userKodeGlobal !== '000') {
-              rows = rows.filter(r => String(r.kode_cabang) === userKodeGlobal);
+          if (reqCabang) {
+              rows = rows.filter(r => String(r.kode_cabang).padStart(3, '0') === reqCabang);
           }
 
           if(rows.length === 0) {
@@ -394,93 +849,115 @@
 
           let T = { tgt_noa:0, tgt_nom:0, sdh_noa:0, sdh_nom:0, lun_noa:0, lun_nom:0, top_noa:0, top_nom:0, ret_noa:0, ret_nom:0, drop_noa:0, drop_nom:0 };
           let html = '';
+          const fmtOrDash = value => Number(value || 0) === 0 ? '-' : fmt(value);
 
           rows.forEach(r => {
               T.tgt_noa += +r.noa_target; T.tgt_nom += +r.plafon_closing;
               T.sdh_noa += +r.noa_sudah;  T.sdh_nom += +r.nominal_sudah;
               T.lun_noa += +r.noa_lunas;  T.lun_nom += +r.nominal_lunas;
               T.top_noa += +r.noa_topup;  T.top_nom += +r.os_topup;
-              T.ret_noa += +r.noa_retensi;T.ret_nom += +r.os_retensi;
+              T.ret_noa += +r.noa_retensi; T.ret_nom += +r.os_retensi;
               T.drop_noa += +r.noa_drop;  T.drop_nom += +r.os_drop;
 
-              const namaK = r.nama_kantor || r.kode_cabang;
+              const breakdown = getPipelineBreakdown();
+              const isGroupBreakdown = breakdown !== 'CABANG';
+              const namaK = isGroupBreakdown ? (r.group_label || r.group_code || '-') : (r.nama_kantor || r.kode_cabang);
+              const kodeK = isGroupBreakdown ? (r.group_code || '-') : (r.kode_cabang || '-');
+              const modalArgs = [r.kode_cabang || userKodeGlobal, namaK, breakdown, isGroupBreakdown ? (r.group_code || '') : '']
+                  .map(value => JSON.stringify(String(value ?? ''))
+                      .replace(/</g, '\\u003c')
+                      .replace(/&/g, '&amp;')
+                      .replace(/"/g, '&quot;')
+                      .replace(/'/g, '&#39;'))
+                  .join(', ');
 
-              // Kalkulasi Persentase per cabang
-              const divisorRealPerCabang = r.plafon_closing > 0 ? r.plafon_closing : 1;
-              const pctRealPerCabang = ((r.nominal_sudah / divisorRealPerCabang) * 100).toFixed(1);
+              const divisorRefi = Number(r.plafon_closing || 0);
+              const pctRefi = divisorRefi > 0 ? ((Number(r.nominal_sudah || 0) / divisorRefi) * 100).toFixed(2).replace('.', ',') : '0,00';
+              const detailStatus = category => category === 'REFINANCING' ? 'sudah' : category === 'LUNAS' ? 'lunas' : category === 'TOPUP' ? 'topup' : category === 'RETENSI' ? 'retensi' : category === 'DROP' ? 'drop' : '';
+              const detailClick = category => `onclick="event.stopPropagation(); openModal(${modalArgs}, '${detailStatus(category)}')"`;
 
-              let rowHtml = `<tr onclick="openModal('${r.kode_cabang}', '${namaK}')" class="transition h-[52px] group border-b border-slate-100">`;
+              let rowHtml = `<tr onclick="openModal(${modalArgs})" class="transition h-[52px] group border-b border-slate-100 cursor-pointer">`;
               
-              if (userKodeGlobal === '000') {
+              if (showCode) {
                   rowHtml += `
-                    <td class="sticky-left-1 px-3 py-2 border-r border-slate-100 font-mono text-slate-500 text-center hidden sm:table-cell bg-white group-hover:bg-slate-50 shadow-[inset_-1px_0_0_#e2e8f0] z-20 text-sm">${r.kode_cabang}</td>
-                    <td class="sticky-left-2 px-4 py-2 border-r border-slate-100 font-semibold text-slate-700 truncate bg-white group-hover:bg-slate-50 shadow-[inset_-1px_0_0_#e2e8f0] z-20 text-sm" title="${namaK}">${namaK}</td>
+                    <td class="sticky-left-1 px-3 py-2 border-r border-slate-100 font-mono text-slate-500 text-center hidden sm:table-cell bg-white group-hover:bg-slate-50 shadow-[inset_-1px_0_0_#e2e8f0] z-20 text-sm">${kodeK}</td>
+                    <td class="sticky-left-2 px-4 py-2 border-r border-slate-100 font-semibold text-slate-700 text-left truncate bg-white group-hover:bg-slate-50 shadow-[inset_-1px_0_0_#e2e8f0] z-20 text-sm" title="${namaK}">${namaK}</td>
                   `;
               } else {
                   rowHtml += `
-                    <td class="sticky-left-1 px-4 py-2 border-r border-slate-100 font-semibold text-slate-700 truncate bg-white group-hover:bg-slate-50 shadow-[inset_-1px_0_0_#e2e8f0] z-20 text-sm" title="${namaK}">${namaK}</td>
+                    <td class="sticky-left-1 jt-office-name px-4 py-2 border-r border-slate-100 font-semibold text-slate-700 text-left truncate bg-white group-hover:bg-slate-50 shadow-[inset_-1px_0_0_#e2e8f0] z-20 text-sm" title="${namaK}">${namaK}</td>
                   `;
               }
 
               rowHtml += `
-                    <td class="px-4 py-2 border-r border-slate-100 text-right"><div class="font-extrabold text-slate-800 text-sm md:text-base">${fmt(r.noa_target)}</div><div class="text-[10px] md:text-xs text-slate-400 font-mono mt-0.5">${fmt(r.plafon_closing)}</div></td>
-                    
-                    <td class="px-4 py-2 border-r border-blue-100 text-center bg-blue-50/40"><div class="font-extrabold text-blue-700 text-sm md:text-base">${fmt(r.noa_lunas)}</div><div class="text-[10px] md:text-xs text-blue-600 font-mono mt-0.5">${fmt(r.nominal_lunas)}</div></td>
-                    <td class="px-4 py-2 border-r border-purple-100 text-center bg-purple-50/40"><div class="font-extrabold text-purple-700 text-sm md:text-base">${fmt(r.noa_topup)}</div><div class="text-[10px] md:text-xs text-purple-600 font-mono mt-0.5">${fmt(r.os_topup)}</div></td>
-                    <td class="px-4 py-2 border-r border-orange-100 text-center bg-orange-50/40"><div class="font-extrabold text-orange-700 text-sm md:text-base">${fmt(r.noa_retensi)}</div><div class="text-[10px] md:text-xs text-orange-600 font-mono mt-0.5">${fmt(r.os_retensi)}</div></td>
-                    
-                    <td class="px-4 py-2 text-center bg-rose-50/40 border-r border-rose-100"><div class="font-extrabold text-rose-700 text-sm md:text-base">${fmt(r.noa_drop)}</div><div class="text-[10px] md:text-xs text-rose-600 font-mono mt-0.5">${fmt(r.os_drop)}</div></td>
-                    
-                    <td class="px-3 py-2 border-r border-emerald-100 text-center bg-emerald-50/40"><div class="font-extrabold text-emerald-700 text-sm md:text-base">${fmt(r.noa_sudah)}</div></td>
-                    <td class="px-4 py-2 border-r border-emerald-100 text-right bg-emerald-50/40"><div class="font-extrabold text-emerald-700 text-sm md:text-base">${fmt(r.nominal_sudah)}</div></td>
-                    <td class="px-3 py-2 border-r border-emerald-100 text-center bg-emerald-50/40"><div class="font-extrabold text-emerald-600 text-sm md:text-base">${pctRealPerCabang}%</div></td>
+                    <td class="pipeline-cell-potensi pipeline-noa-col text-center border-r">${fmtOrDash(r.noa_target)}</td>
+                    <td class="pipeline-cell-potensi pipeline-amount-col text-right border-r">${fmtOrDash(r.plafon_closing)}</td>
+                    <td ${detailClick('REFINANCING')} class="pipeline-cell-refi pipeline-noa-col jt-clickable text-center border-r">${fmtOrDash(r.noa_sudah)}</td>
+                    <td ${detailClick('REFINANCING')} class="pipeline-cell-refi pipeline-amount-col jt-clickable text-right border-r">${fmtOrDash(r.nominal_sudah)}</td>
+                    <td class="pipeline-cell-percent pipeline-percent-col text-center border-r">${pctRefi}%</td>
+                    <td ${detailClick('LUNAS')} class="pipeline-cell-lunas pipeline-noa-col jt-clickable text-center border-r">${fmtOrDash(r.noa_lunas)}</td>
+                    <td ${detailClick('LUNAS')} class="pipeline-cell-lunas pipeline-amount-col jt-clickable text-right border-r">${fmtOrDash(r.nominal_lunas)}</td>
+                    <td ${detailClick('TOPUP')} class="pipeline-cell-top pipeline-noa-col jt-clickable text-center border-r">${fmtOrDash(r.noa_topup)}</td>
+                    <td ${detailClick('TOPUP')} class="pipeline-cell-top pipeline-amount-col jt-clickable text-right border-r">${fmtOrDash(r.os_topup)}</td>
+                    <td ${detailClick('RETENSI')} class="pipeline-cell-ret pipeline-noa-col jt-clickable text-center border-r">${fmtOrDash(r.noa_retensi)}</td>
+                    <td ${detailClick('RETENSI')} class="pipeline-cell-ret pipeline-amount-col jt-clickable text-right border-r">${fmtOrDash(r.os_retensi)}</td>
+                    <td ${detailClick('DROP')} class="pipeline-cell-drop pipeline-noa-col jt-clickable text-center border-r">${fmtOrDash(r.noa_drop)}</td>
+                    <td ${detailClick('DROP')} class="pipeline-cell-drop pipeline-amount-col jt-clickable text-right">${fmtOrDash(r.os_drop)}</td>
                 </tr>`;
               html += rowHtml;
           });
           tb.innerHTML = html;
 
-          // Kalkulasi Persentase Capaian Realisasi Grand Total
-          const divisorReal = T.tgt_nom > 0 ? T.tgt_nom : 1;
-          const pctReal = ((T.sdh_nom / divisorReal) * 100).toFixed(1);
+          const pctTotal = T.tgt_nom > 0 ? ((T.sdh_nom / T.tgt_nom) * 100).toFixed(2).replace('.', ',') : '0,00';
 
           // Inject Grand Total ke Bawah Thead
-          if (userKodeGlobal === '000') {
+          if (showCode) {
               trTot.innerHTML = `
                   <th class="sticky-left-1 px-3 border-r border-blue-200 text-center text-blue-900 hidden sm:table-cell bg-[#eff6ff]">-</th>
                   <th class="sticky-left-2 px-4 border-r border-blue-200 text-left text-blue-900 uppercase tracking-widest font-extrabold text-sm md:text-base bg-[#eff6ff]">TOTAL </th>
               `;
           } else {
               trTot.innerHTML = `
-                  <th class="sticky-left-1 px-4 border-r border-blue-200 text-left text-blue-900 uppercase tracking-widest font-extrabold text-sm md:text-base bg-[#eff6ff]">TOTAL </th>
+                  <th class="sticky-left-1 jt-office-name px-4 border-r border-blue-200 text-left text-blue-900 uppercase tracking-widest font-extrabold text-sm md:text-base bg-[#eff6ff]">TOTAL </th>
               `;
           }
 
           trTot.innerHTML += `
-              <th class="px-4 border-r border-blue-200 text-right align-middle py-2 bg-[#eff6ff]"><div class="font-extrabold text-blue-900 text-sm md:text-base">${fmt(T.tgt_noa)}</div><div class="text-[11px] md:text-xs text-blue-700 font-mono mt-0.5 font-bold">${fmt(T.tgt_nom)}</div></th>
-              
-              <th class="px-4 border-r border-blue-200 text-center align-middle py-2 bg-[#eff6ff]"><div class="font-extrabold text-blue-800 text-sm md:text-base">${fmt(T.lun_noa)}</div><div class="text-[11px] md:text-xs text-blue-700 font-mono mt-0.5 font-bold">${fmt(T.lun_nom)}</div></th>
-              <th class="px-4 border-r border-blue-200 text-center align-middle py-2 bg-[#eff6ff]"><div class="font-extrabold text-purple-800 text-sm md:text-base">${fmt(T.top_noa)}</div><div class="text-[11px] md:text-xs text-purple-700 font-mono mt-0.5 font-bold">${fmt(T.top_nom)}</div></th>
-              <th class="px-4 border-r border-blue-200 text-center align-middle py-2 bg-[#eff6ff]"><div class="font-extrabold text-orange-800 text-sm md:text-base">${fmt(T.ret_noa)}</div><div class="text-[11px] md:text-xs text-orange-700 font-mono mt-0.5 font-bold">${fmt(T.ret_nom)}</div></th>
-              
-              <th class="px-4 border-r border-blue-200 text-center align-middle py-2 bg-[#eff6ff]"><div class="font-extrabold text-rose-800 text-sm md:text-base">${fmt(T.drop_noa)}</div><div class="text-[11px] md:text-xs text-rose-700 font-mono mt-0.5 font-bold">${fmt(T.drop_nom)}</div></th>
-              
-              <th class="px-3 border-r border-blue-200 text-center align-middle py-2 bg-[#eff6ff]"><div class="font-extrabold text-emerald-800 text-sm md:text-base">${fmt(T.sdh_noa)}</div></th>
-              <th class="px-4 border-r border-blue-200 text-right align-middle py-2 bg-[#eff6ff]"><div class="font-extrabold text-emerald-800 text-sm md:text-base">${fmt(T.sdh_nom)}</div></th>
-              <th class="px-3 text-center align-middle py-2 bg-[#eff6ff]"><div class="font-extrabold text-emerald-700 text-sm md:text-base">${pctReal}%</div></th>
+              <th class="pipeline-total-potensi pipeline-noa-col text-center border-r align-middle">${fmtOrDash(T.tgt_noa)}</th>
+              <th class="pipeline-total-potensi pipeline-amount-col text-right border-r align-middle">${fmtOrDash(T.tgt_nom)}</th>
+              <th class="pipeline-total-refi pipeline-noa-col text-center border-r align-middle">${fmtOrDash(T.sdh_noa)}</th>
+              <th class="pipeline-total-refi pipeline-amount-col text-right border-r align-middle">${fmtOrDash(T.sdh_nom)}</th>
+              <th class="pipeline-total-percent pipeline-percent-col text-center border-r align-middle">${pctTotal}%</th>
+              <th class="pipeline-total-lunas pipeline-noa-col text-center border-r align-middle">${fmtOrDash(T.lun_noa)}</th>
+              <th class="pipeline-total-lunas pipeline-amount-col text-right border-r align-middle">${fmtOrDash(T.lun_nom)}</th>
+              <th class="pipeline-total-top pipeline-noa-col text-center border-r align-middle">${fmtOrDash(T.top_noa)}</th>
+              <th class="pipeline-total-top pipeline-amount-col text-right border-r align-middle">${fmtOrDash(T.top_nom)}</th>
+              <th class="pipeline-total-ret pipeline-noa-col text-center border-r align-middle">${fmtOrDash(T.ret_noa)}</th>
+              <th class="pipeline-total-ret pipeline-amount-col text-right border-r align-middle">${fmtOrDash(T.ret_nom)}</th>
+              <th class="pipeline-total-drop pipeline-noa-col text-center border-r align-middle">${fmtOrDash(T.drop_noa)}</th>
+              <th class="pipeline-total-drop pipeline-amount-col text-right align-middle">${fmtOrDash(T.drop_nom)}</th>
           `;
 
-          // Update Pills (Disamakan dengan nama kolom baru)
-          T.pot_noa = T.lun_noa + T.top_noa + T.ret_noa;
-          T.pot_nom = T.lun_nom + T.top_nom + T.ret_nom;
-
-          document.getElementById('sum_sudah').innerText = fmt(T.sdh_noa);
-          document.getElementById('sum_sudah_nom').innerText = `Rp ${fmt(T.sdh_nom)} (${pctReal}%)`;
-          
-          document.getElementById('sum_potensi').innerText = fmt(T.pot_noa);
-          document.getElementById('sum_potensi_nom').innerText = 'Rp ' + fmt(T.pot_nom);
-
-          pills.classList.remove('hidden');
-          pills.classList.add('flex');
+          if (trTot.children.length > 0) {
+              const totalScope = selectedPipelineOffice() || '';
+              trTot.classList.add('pipeline-total-clickable');
+              trTot.onclick = () => openModal(totalScope, 'TOTAL', 'CABANG', '', '');
+              const bindTotalDetail = (indexes, status) => indexes.forEach(index => {
+                  const cell = trTot.children[index];
+                  if (!cell) return;
+                  cell.classList.add('pipeline-total-detail-clickable');
+                  cell.onclick = event => {
+                      event.stopPropagation();
+                      openModal(totalScope, 'TOTAL', 'CABANG', '', status);
+                  };
+              });
+              const totalIdentityCols = showCode ? 2 : 1;
+              bindTotalDetail([totalIdentityCols + 2, totalIdentityCols + 3], 'sudah');
+              bindTotalDetail([totalIdentityCols + 5, totalIdentityCols + 6], 'lunas');
+              bindTotalDetail([totalIdentityCols + 7, totalIdentityCols + 8], 'topup');
+              bindTotalDetail([totalIdentityCols + 9, totalIdentityCols + 10], 'retensi');
+              bindTotalDetail([totalIdentityCols + 11, totalIdentityCols + 12], 'drop');
+          }
 
       } catch(e) { if(e.name!=='AbortError') console.error(e); } finally { l.classList.add('hidden'); }
   }
@@ -489,33 +966,45 @@
   window.exportExcelRekapPipeline = function() {
       if(!rekapDataCache || rekapDataCache.length === 0) return alert("Tidak ada data rekap untuk didownload.");
 
-      let csv = "Kode\tNama Kantor\tTarget Pipeline NOA\tTarget Pipeline Plafon\tLunas NOA\tLunas Plafon\tTop Up NOA\tTop Up Sisa OS\tRetensi NOA\tRetensi Sisa OS\tDrop NOA\tDrop Sisa OS\tSudah Ambil NOA\tSudah Ambil Nominal\n";
+      const breakdown = getPipelineBreakdown();
+      const codeTitle = breakdown === 'AO' ? 'Kode AO' : breakdown === 'KANKAS' ? 'Kode Kankas' : 'Kode';
+      const nameTitle = breakdown === 'AO' ? 'Nama AO Kredit' : breakdown === 'KANKAS' ? 'Nama Kankas' : 'Nama Kantor';
+      let csv = `${codeTitle}\t${nameTitle}\tPotensi Kredit NOA\tPotensi Kredit Plafon\tRefinancing / Top Up NOA\tRefinancing / Top Up Plafon\t%\tLunas NOA\tLunas Plafon\tNominal <= 50% NOA\tNominal <= 50% Nominal\tNominal > 50% NOA\tNominal > 50% Nominal\tDrop NOA\tDrop Plafon\n`;
       
       rekapDataCache.forEach(r => {
-          csv += `'${r.kode_cabang}\t${r.nama_kantor||''}\t${r.noa_target}\t${Math.round(r.plafon_closing)}\t${r.noa_lunas}\t${Math.round(r.nominal_lunas)}\t${r.noa_topup}\t${Math.round(r.os_topup)}\t${r.noa_retensi}\t${Math.round(r.os_retensi)}\t${r.noa_drop}\t${Math.round(r.os_drop)}\t${r.noa_sudah}\t${Math.round(r.nominal_sudah)}\n`;
+          const code = breakdown === 'CABANG' ? r.kode_cabang : (r.group_code || '');
+          const name = breakdown === 'CABANG' ? (r.nama_kantor || '') : (r.group_label || code);
+          const pct = Number(r.plafon_closing || 0) > 0 ? (Number(r.nominal_sudah || 0) / Number(r.plafon_closing) * 100).toFixed(2).replace('.', ',') + '%' : '0,00%';
+          csv += `'${code}\t${name}\t${r.noa_target}\t${Math.round(r.plafon_closing)}\t${r.noa_sudah}\t${Math.round(r.nominal_sudah)}\t${pct}\t${r.noa_lunas}\t${Math.round(r.nominal_lunas)}\t${r.noa_topup}\t${Math.round(r.os_topup)}\t${r.noa_retensi}\t${Math.round(r.os_retensi)}\t${r.noa_drop}\t${Math.round(r.os_drop)}\n`;
       });
 
       const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
       const a = document.createElement('a');
       a.href = window.URL.createObjectURL(blob);
-      a.download = `Rekap_Pipeline_JT_${document.getElementById("tahun_jt").value}.xls`; 
+      a.download = `Rekomendasi_Pipeline_Kredit_${document.getElementById("tahun_jt").value}.xls`; 
       a.click();
   }
 
   // --- MODAL DETAIL NASABAH ---
-  function openModal(cabang, nama) {
-      if (userKodeGlobal !== '000' && String(cabang) !== userKodeGlobal) {
+  async function openModal(cabang, nama, groupType = 'CABANG', groupCode = '', detailStatus = '') {
+      if (userKodeGlobal !== '000' && cabang && String(cabang) !== userKodeGlobal) {
           alert(`AKSES DITOLAK!\nAnda tidak memiliki izin untuk melihat detail Cabang ${cabang}.`);
           return;
       }
 
-      state.cabang = cabang; state.kankas = ''; state.ao = ''; state.status = ''; state.page = 1;
+      state.cabang = cabang;
+      state.kankas = groupType === 'KANKAS' ? groupCode : '';
+      state.ao = groupType === 'AO' ? groupCode : '';
+      state.status = detailStatus || '';
+      state.page = 1;
       const modal = document.getElementById('modalDetail');
       modal.classList.remove('hidden'); modal.classList.add('flex');
       
-      document.getElementById('detailSubTitle').innerText = `${nama} • Tahun JT ${document.getElementById('tahun_jt').value}`;
+      const groupLabel = groupType === 'AO' ? 'Per AO Kredit' : groupType === 'KANKAS' ? 'Per Kankas' : 'Per Cabang';
+      document.getElementById('detailSubTitle').innerText = `${nama} - ${groupLabel} - Tahun JT ${document.getElementById('tahun_jt').value}`;
       document.getElementById('filter_ao_modal').innerHTML = '<option value="">Semua AO</option>';
-      loadKankasModal(cabang);
+      document.getElementById('filter_status_modal').value = state.status;
+      await loadKankasModal(cabang);
       fetchDetail();
   }
 
@@ -529,6 +1018,7 @@
           if(json.data && Array.isArray(json.data)) {
               json.data.forEach(x => { el.add(new Option(x.deskripsi_group1 || x.kode_group1, x.kode_group1)); });
           }
+          el.value = state.kankas || '';
       } catch(e) {}
   }
 
@@ -558,7 +1048,7 @@
               closing_date: document.getElementById('closing_date').value,
               harian_date: document.getElementById('harian_date').value,
               tahun_jt: document.getElementById('tahun_jt').value,
-              kode_kantor: state.cabang, kode_kankas: state.kankas, kode_ao: state.ao, filter_status: state.status,
+              kode_kantor: state.cabang, kode_kankas: state.kankas, kode_ao: state.ao, filter_status: state.status, kolektibilitas: state.kolektibilitas,
               page: state.page, limit: state.limit
           };
 
@@ -603,7 +1093,7 @@
           }
 
           if(rows.length === 0) {
-              tb.innerHTML = `<tr><td colspan="12" class="text-center py-20 text-slate-400 italic text-base">Tidak ada data nasabah.</td></tr>`;
+              tb.innerHTML = `<tr><td colspan="13" class="text-center py-20 text-slate-400 italic text-base">Tidak ada data nasabah.</td></tr>`;
               document.getElementById('pageInfo').innerText = '0 Data';
               return;
           }
@@ -614,8 +1104,10 @@
           rows.sort((a, b) => new Date(a.tgl_jatuh_tempo) - new Date(b.tgl_jatuh_tempo));
 
           trTot.innerHTML = `
-              <th class="mod-sticky-1 px-3 border-r border-b border-blue-200 uppercase tracking-widest text-center bg-[#eff6ff]">-</th>
-              <th class="mod-sticky-2 px-4 border-r border-b border-blue-200 uppercase tracking-widest font-extrabold text-sm bg-[#eff6ff]">TOTAL HALAMAN INI</th>
+              <th class="pipeline-desktop-identity mod-sticky-1 px-3 border-r border-b border-blue-200 uppercase tracking-widest text-center bg-[#eff6ff]">-</th>
+              <th class="pipeline-desktop-identity mod-sticky-2 px-4 border-r border-b border-blue-200 uppercase tracking-widest font-extrabold text-sm bg-[#eff6ff]">TOTAL HALAMAN INI</th>
+              <th class="pipeline-mobile-identity px-2 border-r border-b border-blue-200 uppercase tracking-widest font-extrabold text-[8px] bg-[#eff6ff]">TOTAL</th>
+               <th class="px-4 border-r border-b border-blue-200 text-center bg-[#eff6ff]">-</th>
               <th class="px-4 border-r border-b border-blue-200 text-center bg-[#eff6ff]">-</th>
               <th class="px-3 border-r border-b border-blue-200 text-center bg-[#eff6ff]">-</th>
               <th class="px-3 border-r border-b border-blue-200 text-center bg-[#eff6ff]">-</th>
@@ -634,7 +1126,8 @@
               const alamatLengkap = r.alamat || '-';
               const alamatPendek = alamatLengkap.length > 25 ? alamatLengkap.substring(0, 25) + '...' : alamatLengkap;
               const noHp = r.no_hp ? `<span class="font-mono text-slate-600">${r.no_hp}</span>` : `<span class="text-slate-400">-</span>`;
-              const kankas = r.kankas || '-';
+              const kankas = r.nama_kankas || r.kankas || '-';
+              const productName = r.nama_produk || (r.kode_produk_lama ? `PRODUK ${r.kode_produk_lama}` : '-');
               
               let statStr = (r.status_ket || '').toUpperCase();
               let isClear = statStr.includes("SUDAH") || statStr === "LUNAS" || statStr === "LUNAS (POTENSI)";
@@ -684,8 +1177,10 @@
 
               html += `
                 <tr class="transition h-[52px] group border-b border-slate-100">
-                    <td class="mod-sticky-1 px-3 py-2 font-mono text-sm text-slate-500 bg-white border-r border-slate-100 shadow-[inset_-1px_0_0_#e2e8f0]">${r.no_rekening}</td>
-                    <td class="mod-sticky-2 px-4 py-2 font-bold text-sm text-slate-700 bg-white truncate border-r border-slate-100 max-w-[220px] md:max-w-[280px] shadow-[inset_-1px_0_0_#e2e8f0]" title="${r.nama_nasabah}">${r.nama_nasabah}</td>
+                    <td class="pipeline-desktop-identity mod-sticky-1 px-3 py-2 font-mono text-sm text-slate-500 bg-white border-r border-slate-100 shadow-[inset_-1px_0_0_#e2e8f0]">${r.no_rekening}</td>
+                    <td class="pipeline-desktop-identity mod-sticky-2 px-4 py-2 font-bold text-sm text-slate-700 bg-white truncate border-r border-slate-100 max-w-[220px] md:max-w-[280px] shadow-[inset_-1px_0_0_#e2e8f0]" title="${r.nama_nasabah}">${r.nama_nasabah}</td>
+                    <td class="pipeline-mobile-identity px-2 py-1.5 bg-white border-r border-slate-100" title="${r.no_rekening} - ${r.nama_nasabah}"><span class="pipeline-mobile-account">${r.no_rekening || '-'}</span><span class="pipeline-mobile-name">${r.nama_nasabah || '-'}</span></td>
+                    <td class="px-4 py-2 text-sm font-semibold text-slate-700 truncate border-r border-slate-100" title="${productName}">${productName}</td>
                     <td class="px-4 py-2 text-sm text-slate-500 whitespace-nowrap border-r border-slate-100" title="${alamatLengkap}">${alamatPendek}</td>
                     <td class="px-3 py-2 text-center border-r border-slate-100 text-sm">${noHp}</td>
                     <td class="px-3 py-2 text-center font-mono text-xs md:text-sm text-slate-500 border-r border-slate-100">${kankas}</td>
@@ -708,8 +1203,10 @@
   }
 
   // --- EXPORT EXCEL DETAIL ---
-  window.downloadExcelDetail = async function() {
-      const btn = event.target.closest('button'); const txt = btn.innerHTML;
+  window.downloadExcelDetail = async function(event) {
+      const btn = event?.target?.closest('button') || document.querySelector('#modalDetail button[title="Download Excel"]');
+      if (!btn) return;
+      const txt = btn.innerHTML;
       btn.innerHTML = `<span class="animate-spin inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>...`;
       btn.disabled = true;
 
@@ -719,7 +1216,7 @@
               closing_date: document.getElementById('closing_date').value,
               harian_date: document.getElementById('harian_date').value,
               tahun_jt: document.getElementById('tahun_jt').value,
-              kode_kantor: state.cabang, kode_kankas: state.kankas, kode_ao: state.ao, filter_status: state.status, 
+              kode_kantor: state.cabang, kode_kankas: state.kankas, kode_ao: state.ao, filter_status: state.status, kolektibilitas: state.kolektibilitas,
               page: 1, limit: 10000 
           };
           const json = await apiCall(API_URL, payload);
@@ -729,15 +1226,16 @@
 
           rows.sort((a, b) => new Date(a.tgl_jatuh_tempo) - new Date(b.tgl_jatuh_tempo));
 
-          let csv = "No Rekening\tNama Nasabah\tAlamat\tNo HP\tKankas\tNama AO\tPlafon Awal\tTgl JT\tSisa OS\tStatus\tTgl Realisasi Baru\tNominal Baru\n";
+          let csv = "No Rekening\tNama Nasabah\tNama Produk\tAlamat\tNo HP\tKankas\tNama AO\tPlafon Awal\tTgl JT\tSisa OS\tStatus\tTgl Realisasi Baru\tNominal Baru\n";
           rows.forEach(r => {
               const isClear = r.status_ket.toUpperCase().includes("SUDAH") || r.status_ket.toUpperCase() === "LUNAS" || r.status_ket.toUpperCase() === "LUNAS (POTENSI)";
               const sisaOsEx = isClear ? 0 : Math.round(r.os_actual);
               const alamatEx = r.alamat || '-';
               const hpEx = r.no_hp || '-';
-              const kankasEx = r.kankas || '-';
+              const kankasEx = r.nama_kankas || r.kankas || '-';
+              const productEx = r.nama_produk || (r.kode_produk_lama ? `PRODUK ${r.kode_produk_lama}` : '-');
 
-              csv += `'${r.no_rekening}\t${r.nama_nasabah}\t${alamatEx}\t'${hpEx}\t${kankasEx}\t${r.nama_ao}\t${Math.round(r.plafon_awal)}\t${r.tgl_jatuh_tempo}\t${sisaOsEx}\t${r.status_ket}\t${r.tgl_baru||'-'}\t${Math.round(r.plafon_baru||0)}\n`;
+              csv += `'${r.no_rekening}\t${r.nama_nasabah}\t${productEx}\t${alamatEx}\t'${hpEx}\t${kankasEx}\t${r.nama_ao}\t${Math.round(r.plafon_awal)}\t${r.tgl_jatuh_tempo}\t${sisaOsEx}\t${r.status_ket}\t${r.tgl_baru||'-'}\t${Math.round(r.plafon_baru||0)}\n`;
           });
 
           const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });

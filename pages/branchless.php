@@ -4,7 +4,7 @@
 
 <style>
   :root { --primary: #059669; --bg: #f9fafb; --text: #334155; }
-  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+  body, .font-sans { font-family: 'Roboto', Arial, sans-serif !important; background: var(--bg); color: var(--text); overflow-x: hidden; }
   .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -18,6 +18,23 @@
   .apexcharts-tooltip { z-index: 99999 !important; background: transparent !important; border: none !important; box-shadow: none !important; }
   .trend-note { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; background: #ecfdf5; color: #047857; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
   .trend-note-dot { width: 7px; height: 7px; border-radius: 9999px; background: #10b981; box-shadow: 0 0 0 4px rgba(16,185,129,.14); }
+  .narrative-modal { --narrative-accent:#059669; --narrative-soft:#ecfdf5; position:fixed; inset:0; z-index:20000; display:flex; align-items:center; justify-content:center; padding:12px; background:rgba(15,23,42,.62); backdrop-filter:blur(6px); }
+  .narrative-modal.hidden { display:none; }
+  .narrative-card { display:flex; flex-direction:column; width:min(680px,calc(100vw - 24px)); max-height:min(88dvh,760px); overflow:hidden; border:1px solid #e2e8f0; border-radius:16px; background:#fff; box-shadow:0 28px 75px rgba(15,23,42,.3); }
+  .narrative-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border-bottom:1px solid #e2e8f0; background:linear-gradient(180deg,#fff,#f8fafc); }
+  .narrative-title { display:flex; align-items:center; min-width:0; gap:9px; }
+  .narrative-title-icon { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; flex:0 0 34px; border-radius:9px; background:var(--narrative-soft); color:var(--narrative-accent); }
+  .narrative-title h3 { margin:0; color:#0f172a; font-size:16px; font-weight:900; }
+  .narrative-title p { margin:2px 0 0; color:#64748b; font-size:9px; }
+  .narrative-close { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border:1px solid #fecaca; border-radius:8px; background:#fff1f2; color:#e11d48; cursor:pointer; }
+  .narrative-body { overflow:auto; padding:12px 14px 15px; }
+  .narrative-content { color:#475569; font-size:13px; line-height:1.55; }
+  .narrative-content p { margin:0; color:#0f172a; font-weight:900; }
+  .narrative-content ul { display:grid; gap:7px; margin:10px 0 0; padding-left:19px; }
+  .narrative-content li { padding-left:3px; }
+  .narrative-info-btn { display:inline-flex; align-items:center; justify-content:center; width:21px; height:21px; flex:0 0 21px; border:1px solid #a7f3d0; border-radius:999px; background:#ecfdf5; color:#059669; font-size:11px; font-weight:950; cursor:pointer; transition:.15s ease; }
+  .narrative-info-btn:hover { background:#d1fae5; transform:translateY(-1px); }
+  @media (max-width:767px) { .narrative-modal { align-items:flex-end; padding:0; } .narrative-card { width:100%; max-height:88dvh; border-right:0; border-bottom:0; border-left:0; border-radius:16px 16px 0 0; } .narrative-head { padding:10px 11px; } .narrative-body { padding:10px 11px 16px; } }
   .admin-card { border: 1px solid #e5e7eb; border-radius: 16px; background: #fff; box-shadow: 0 1px 3px rgba(15, 23, 42, .06); }
   .admin-card pre { white-space: pre-wrap; word-break: break-word; }
   .admin-kbd { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 2px 8px; color: #0f172a; }
@@ -41,30 +58,28 @@
           </h1>
           <p class="text-[10px] md:text-xs text-gray-500 mt-0.5 font-medium" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
         </div>
-        <button type="button" onclick="openNarrative()" class="w-7 h-7 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:text-emerald-600 hover:border-emerald-300 transition-colors shadow-sm" title="Narasi Otomatis">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-        </button>
+        <button type="button" onclick="openNarrative()" class="narrative-info-btn" title="Narasi Otomatis" aria-label="Buka narasi otomatis">i</button>
       </div>
-      <button type="button" id="btnFilterToggle" onclick="toggleFilter()" class="md:hidden flex items-center gap-1.5 bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-transform">
+      <button type="button" id="btnFilterToggle" onclick="toggleFilter()" class="hidden">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
         <span id="filterToggleLabel">Filter</span>
       </button>
     </div>
-    <form id="formFilterGlobal" class="hidden md:flex flex-col md:flex-row items-end gap-2.5 md:gap-3 bg-white p-2.5 md:p-3 rounded-xl shadow-sm border border-gray-200 w-full md:w-auto">
+    <form id="legacyBranchlessFilterForm" class="hidden">
       <div class="flex w-full md:w-auto gap-2 shrink-0">
         <div class="flex flex-col flex-1 min-w-0 md:w-[130px]">
           <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Closing M-1</label>
-          <input type="date" id="closing_date" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-emerald-500 transition-colors font-semibold cursor-pointer w-full bg-transparent" required>
+          <input type="date" id="legacy_branchless_closing_date" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-emerald-500 transition-colors font-semibold cursor-pointer w-full bg-transparent" required>
         </div>
         <div class="flex flex-col flex-1 min-w-0 md:w-[130px]">
           <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Harian/Actual</label>
-          <input type="date" id="harian_date" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-emerald-500 transition-colors font-semibold cursor-pointer w-full bg-transparent" required>
+          <input type="date" id="legacy_branchless_harian_date" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-emerald-500 transition-colors font-semibold cursor-pointer w-full bg-transparent" required>
         </div>
       </div>
       <div class="flex w-full md:w-auto items-end gap-2 shrink-0 mt-0.5 md:mt-0">
         <div class="flex flex-col flex-1 min-w-0 md:w-[180px]">
           <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Area/Cabang</label>
-          <select id="opt_area" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-emerald-500 bg-transparent transition-colors font-bold text-emerald-700 cursor-pointer w-full truncate">
+          <select id="legacy_branchless_opt_area" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-emerald-500 bg-transparent transition-colors font-bold text-emerald-700 cursor-pointer w-full truncate">
               <option value="KONSOLIDASI" class="font-bold">Konsolidasi</option>
               <optgroup label="Berdasarkan Korwil" class="text-gray-400">
                   <option value="KORWIL_SEMARANG" class="text-gray-700">Korwil Semarang</option>
@@ -72,7 +87,7 @@
                   <option value="KORWIL_BANYUMAS" class="text-gray-700">Korwil Banyumas</option>
                   <option value="KORWIL_PEKALONGAN" class="text-gray-700">Korwil Pekalongan</option>
               </optgroup>
-              <optgroup label="Berdasarkan Cabang" id="opt_cabang_list" class="text-gray-400"></optgroup>
+              <optgroup label="Berdasarkan Cabang" id="legacy_branchless_opt_cabang_list" class="text-gray-400"></optgroup>
           </select>
         </div>
         <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white w-[34px] md:w-auto h-[32px] md:h-[36px] md:px-5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md active:scale-95 shrink-0 mb-[1px]">
@@ -84,7 +99,7 @@
   </div>
 
   <!-- TAB NAVIGATION -->
-  <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+  <div class="hidden items-center gap-1 bg-gray-100 p-1 rounded-lg w-fit">
     <button onclick="switchView('rekap')" id="tab-rekap" class="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold transition-all bg-white shadow-sm text-emerald-700" title="Rekap Cabang">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
       <span class="hidden md:inline">Rekap</span>
@@ -518,17 +533,17 @@ VALUES
   </div>
 
   <!-- Narrative Modal -->
-  <div id="modalNarrative" class="fixed inset-0 z-[9999] hidden flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeNarrative()"></div>
-    <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
-      <button onclick="closeNarrative()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-      <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-        Narasi Otomatis
-      </h3>
-      <div id="narrativeContent" class="text-sm text-gray-700 space-y-2"></div>
+  <div id="modalNarrative" class="narrative-modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalNarrativeTitle">
+    <div class="absolute inset-0" onclick="closeNarrative()"></div>
+    <div class="narrative-card relative">
+      <header class="narrative-head">
+        <div class="narrative-title">
+          <span class="narrative-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path></svg></span>
+          <div><h3 id="modalNarrativeTitle">Narasi Otomatis</h3><p>Ringkasan performa Branchless berdasarkan data terbaru.</p></div>
+        </div>
+        <button type="button" onclick="closeNarrative()" class="narrative-close" aria-label="Tutup narasi"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+      </header>
+      <div class="narrative-body"><div id="narrativeContent" class="narrative-content"></div></div>
     </div>
   </div>
 </div>
@@ -565,20 +580,38 @@ VALUES
   const hideLoad = (id) => document.getElementById(id)?.classList.add('hidden');
 
   function toggleFilter() {
-      const form = document.getElementById('formFilterGlobal');
-      const label = document.getElementById('filterToggleLabel');
-      if (form.classList.contains('hidden')) {
-          form.classList.remove('hidden');
-          form.classList.add('flex');
-          label.textContent = 'Tutup';
-      } else {
-          form.classList.add('hidden');
-          form.classList.remove('flex');
-          label.textContent = 'Filter';
-      }
+      const panel = document.getElementById('branchlessNavbarFilterPanel');
+      const toggle = document.getElementById('branchlessNavbarFilterToggle');
+      if (!panel) return;
+      const open = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !open);
+      panel.classList.toggle('flex', open);
+      toggle?.classList.toggle('is-active', open);
+      toggle?.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function bindBranchlessNavbarControls() {
+      const panel = document.getElementById('branchlessNavbarFilterPanel');
+      const toggle = document.getElementById('branchlessNavbarFilterToggle');
+      const close = document.getElementById('branchlessNavbarFilterClose');
+      if (!panel || !toggle) return;
+      const setOpen = open => { panel.classList.toggle('hidden', !open); panel.classList.toggle('flex', open); toggle.classList.toggle('is-active', open); toggle.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+      toggle.addEventListener('click', event => { event.stopPropagation(); setOpen(panel.classList.contains('hidden')); });
+      close?.addEventListener('click', () => setOpen(false));
+      document.addEventListener('click', event => { if (panel.classList.contains('flex') && !panel.contains(event.target) && !toggle.contains(event.target)) setOpen(false); });
+      document.getElementById('branchlessViewSelect')?.addEventListener('change', event => switchView(event.target.value));
+      ['closing_date', 'harian_date', 'opt_area'].forEach(id => {
+          document.getElementById(id)?.addEventListener('change', () => {
+              branchlessPage = 1;
+              branchlessDetailPage = 1;
+              runFullSync();
+          });
+      });
   }
 
   function switchView(view) {
+      const viewSelect = document.getElementById('branchlessViewSelect');
+      if (viewSelect) viewSelect.value = view;
       document.getElementById('section-rekap').classList.add('hidden');
       document.getElementById('section-chart').classList.add('hidden');
       document.getElementById('section-device').classList.add('hidden');
@@ -642,11 +675,20 @@ VALUES
   }
 
   function openNarrative() {
-      document.getElementById('narrativeContent').innerHTML = generateNarrative();
-      document.getElementById('modalNarrative').classList.remove('hidden');
+    const modal = document.getElementById('modalNarrative');
+    if (!modal) return;
+    // Modal harus keluar dari <main> yang memiliki overflow-y-auto agar overlay
+    // benar-benar menutup viewport, termasuk navbar/header paling atas.
+    if (modal.parentElement !== document.body) document.body.appendChild(modal);
+    document.getElementById('narrativeContent').innerHTML = generateNarrative();
+    modal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
   }
   function closeNarrative() {
-      document.getElementById('modalNarrative').classList.add('hidden');
+    const modal = document.getElementById('modalNarrative');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
   }
   function downloadBranchlessTemplate(type) {
       const rows = type === 'temporary'
@@ -708,6 +750,7 @@ VALUES
   }
 
   window.addEventListener('DOMContentLoaded', async () => {
+    bindBranchlessNavbarControls();
     const user = (window.getUser && window.getUser()) || null;
     initBranchlessAdmin(user);
     let uKode = user?.kode ? String(user.kode).padStart(3,'0') : '000';
@@ -779,7 +822,7 @@ VALUES
       return { kode_kantor, korwil };
   }
 
-  document.getElementById('formFilterGlobal').addEventListener('submit', e => {
+  document.getElementById('branchlessNavbarFilterPanel')?.addEventListener('submit', e => {
       e.preventDefault();
       branchlessPage = 1;
       branchlessDetailPage = 1;

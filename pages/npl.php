@@ -12,7 +12,7 @@
   }
 
   body {
-    font-family:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    font-family:'Roboto',Arial,system-ui,sans-serif;
     background:var(--mk-bg);
     color:var(--mk-text);
     overflow:hidden;
@@ -505,6 +505,31 @@
     .mk-noa { margin-top:2px; font-size:6.8px; }
     .mk-pct-badge { min-width:43px; min-height:20px; padding:2px 5px; font-size:7px; }
     .mk-status { min-width:49px; padding:3px 5px; font-size:6.8px; }
+  }
+
+  /* Filter sekarang dirender oleh navbar; aturan ini menjaga field lama
+     tetap konsisten dengan grid navbar tanpa bentrok dengan breakpoint NPL. */
+  #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form > div {
+    grid-column:auto !important;
+    grid-row:auto !important;
+    width:auto !important;
+    min-width:0 !important;
+  }
+  #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form #mkFieldClosing.hidden {
+    display:none !important;
+  }
+  #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form #mkFieldMode,
+  #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form #mkFieldActual,
+  #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form #mkFieldArea,
+  #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form #mkFieldClosing:not(.hidden),
+  #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form .npl-navbar-filter-panel__submit-wrap {
+    display:flex !important;
+    flex-direction:column;
+    gap:4px;
+  }
+  #monitoringKreditPage,
+  #monitoringKreditPage * {
+    font-family:'Roboto',Arial,system-ui,sans-serif;
   }
 
   @media (max-width:374px) {
@@ -1457,6 +1482,386 @@
     .mk-insight-footnote { font-size:7.5px; }
   }
 
+  /* Navbar filter harus menang dari aturan layout filter lama di bawahnya. */
+  #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form {
+    display:grid !important;
+    grid-template-columns:repeat(4, minmax(0, 1fr)) !important;
+    align-items:end !important;
+    gap:10px !important;
+    width:100% !important;
+  }
+  #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form > div {
+    display:flex !important;
+    flex-direction:column !important;
+    grid-column:auto !important;
+    grid-row:auto !important;
+    width:auto !important;
+    min-width:0 !important;
+  }
+  #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form #mkFieldClosing.hidden {
+    display:none !important;
+  }
+  #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form .npl-navbar-filter-panel__submit-wrap {
+    display:flex !important;
+    flex-direction:column !important;
+  }
+  #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form .mk-label {
+    margin-bottom:0 !important;
+  }
+
+  @media (max-width:767px) {
+    #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form {
+      grid-template-columns:repeat(2, minmax(0, 1fr)) !important;
+      gap:8px !important;
+    }
+    #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form .npl-navbar-filter-panel__submit-wrap {
+      grid-column:1 / -1 !important;
+    }
+  }
+
+  @media (max-width:420px) {
+    #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form {
+      grid-template-columns:1fr !important;
+      gap:7px !important;
+    }
+    #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form .npl-navbar-filter-panel__submit-wrap {
+      grid-column:auto !important;
+    }
+  }
+
+  /* === Report NPL: modern surface, action group kanan, light/dark === */
+  :root {
+    --mk-surface:#ffffff;
+    --mk-surface-soft:#f8fafc;
+    --mk-surface-muted:#f1f5f9;
+    --mk-ink:#0f172a;
+    --mk-muted:#64748b;
+    --mk-line:#e2e8f0;
+    --mk-line-soft:#eef2f7;
+    --mk-card-shadow:0 10px 24px rgba(15,23,42,.06);
+  }
+  :root[data-monbis-theme="dark"] {
+    --mk-surface:#111827;
+    --mk-surface-soft:#0f172a;
+    --mk-surface-muted:#1e293b;
+    --mk-ink:#f8fafc;
+    --mk-muted:#94a3b8;
+    --mk-line:#334155;
+    --mk-line-soft:#263449;
+    --mk-card-shadow:0 16px 34px rgba(0,0,0,.24);
+  }
+
+  #monitoringKreditPage {
+    color:var(--mk-ink);
+    background:linear-gradient(180deg,var(--mk-surface-soft) 0%,var(--mk-surface-muted) 100%) !important;
+  }
+  #mkHeaderCard {
+    display:flex !important;
+    flex-direction:row !important;
+    flex-wrap:nowrap !important;
+    align-items:center !important;
+    width:100%;
+    min-width:0;
+    border-color:var(--mk-line) !important;
+    border-radius:16px !important;
+    background:linear-gradient(135deg,var(--mk-surface) 0%,var(--mk-surface-soft) 100%) !important;
+    box-shadow:var(--mk-card-shadow) !important;
+  }
+  #mkHeaderLead {
+    flex:1 1 auto !important;
+    min-width:0 !important;
+    max-width:none !important;
+  }
+  #mkHeaderLead > div:first-child {
+    min-width:0;
+    max-width:100%;
+  }
+  #mkHeaderMobileActions {
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    flex:0 0 auto !important;
+    margin-left:auto !important;
+    min-width:0;
+  }
+  #mkFieldExport {
+    display:flex !important;
+    align-items:center !important;
+    justify-content:flex-end !important;
+    gap:5px !important;
+    padding:4px !important;
+    border:1px solid var(--mk-line) !important;
+    border-radius:12px !important;
+    background:var(--mk-surface-soft) !important;
+    box-shadow:0 2px 6px rgba(15,23,42,.06) !important;
+  }
+  #mkFieldExport .mk-view-toggle,
+  #mkFieldExport .mk-export {
+    display:inline-flex !important;
+    width:36px !important;
+    min-width:36px !important;
+    height:36px !important;
+    flex:0 0 36px !important;
+    border-radius:10px !important;
+  }
+  #mkFieldExport .mk-view-toggle {
+    background:#eff6ff;
+    border-color:#bfdbfe;
+    color:#2563eb;
+  }
+  #mkFieldExport .mk-export {
+    background:#059669;
+  }
+  #mkHeaderSubtitle {
+    display:block !important;
+    width:100%;
+    max-width:100%;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+    white-space:nowrap !important;
+    color:var(--mk-muted) !important;
+    line-height:1.25 !important;
+  }
+  #monitoringKreditPage .mk-table-shell {
+    border-color:var(--mk-line) !important;
+    border-radius:14px !important;
+    background:var(--mk-surface) !important;
+    box-shadow:var(--mk-card-shadow);
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-scrollbar {
+    scrollbar-color:#475569 #0f172a;
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-scrollbar::-webkit-scrollbar-track {
+    background:#0f172a;
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-scrollbar::-webkit-scrollbar-thumb {
+    background:#475569;
+  }
+
+  :root[data-monbis-theme="dark"] body {
+    background:#0b1220 !important;
+    color:#e2e8f0;
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-table th,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-table td {
+    border-color:#263449;
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-table thead th {
+    background:#1e293b !important;
+    color:#cbd5e1 !important;
+    box-shadow:inset 0 -1px 0 #475569;
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-table thead .mk-col-code,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-table thead .mk-col-name {
+    background:#172554 !important;
+    color:#bfdbfe !important;
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-table .mk-col-code,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-table .mk-col-name {
+    background:#111827 !important;
+    color:#e2e8f0;
+    box-shadow:3px 0 7px -5px rgba(0,0,0,.8);
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-table thead .mk-col-code,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-table thead .mk-col-name {
+    background:#172554 !important;
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-total-row td,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-total-row td.mk-col-code,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-total-row td.mk-col-name {
+    background:#172554 !important;
+    color:#dbeafe !important;
+    border-color:#334155;
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-table tbody:not(.mk-total-body) tr:nth-child(even) td {
+    background:#0f172a;
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-table tbody:not(.mk-total-body) tr:hover td,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-table tbody:not(.mk-total-body) tr:hover td.mk-col-code,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-table tbody:not(.mk-total-body) tr:hover td.mk-col-name {
+    background:#1e293b !important;
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-noa,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-sort-icon {
+    color:#94a3b8;
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-tone-l { color:#93c5fd; }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-tone-dp { color:#cbd5e1; }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-tone-kl { color:#fbbf24; }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-tone-d { color:#fdba74; }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-tone-m,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-tone-npl { color:#fca5a5; }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-tone-porto { color:#a5b4fc; }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-loading {
+    background:rgba(15,23,42,.86);
+    color:#93c5fd;
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-info-panel {
+    border-color:#334155;
+    background:#111827;
+    color:#e2e8f0;
+    box-shadow:0 22px 52px rgba(0,0,0,.48),0 4px 12px rgba(0,0,0,.28);
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-info-panel-head {
+    border-color:#334155;
+    background:rgba(17,24,39,.97);
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-info-panel-title,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-insight-headline,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-insight-stat-value,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-insight-section-title,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-action-title { color:#f8fafc; }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-info-panel-subtitle,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-insight-copy,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-insight-date,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-insight-eyebrow,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-insight-stat-label,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-action-copy { color:#94a3b8; }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-info-close,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-insight-stat,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-insight-section {
+    border-color:#334155;
+    background:#0f172a;
+  }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-insight-hero { background:#172554; border-color:#334155; }
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-driver-item,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-action-item,
+  :root[data-monbis-theme="dark"] #monitoringKreditPage .mk-driver-empty { background:#1e293b; border-color:#334155; }
+
+  @media (max-width:767px) {
+    #mkHeaderCard {
+      gap:7px !important;
+      padding:7px !important;
+      border-radius:13px !important;
+    }
+    #mkHeaderMobileActions { gap:4px !important; }
+    #mkFieldExport { padding:3px !important; border-radius:10px !important; }
+    #mkFieldExport .mk-view-toggle,
+    #mkFieldExport .mk-export {
+      width:32px !important;
+      min-width:32px !important;
+      height:32px !important;
+      flex-basis:32px !important;
+      border-radius:8px !important;
+    }
+    #mkHeaderSubtitle { max-width:100%; }
+  }
+
+  @media (max-width:374px) {
+    #mkFieldExport .mk-view-toggle,
+    #mkFieldExport .mk-export {
+      width:30px !important;
+      min-width:30px !important;
+      height:30px !important;
+      flex-basis:30px !important;
+    }
+  }
+
+  /* Final clean pass: kurangi frame dan kontras yang tidak perlu. */
+  #mkHeaderCard {
+    padding:9px 12px !important;
+    border-radius:13px !important;
+    box-shadow:0 6px 18px rgba(15,23,42,.055) !important;
+  }
+  #mkHeaderIcon {
+    width:32px !important;
+    height:32px !important;
+    border-radius:9px !important;
+    box-shadow:0 3px 8px rgba(37,99,235,.18) !important;
+  }
+  #mkHeaderTitle {
+    letter-spacing:-.015em;
+  }
+  #mkFieldExport {
+    gap:6px !important;
+    padding:0 !important;
+    border:0 !important;
+    background:transparent !important;
+    box-shadow:none !important;
+  }
+  #mkFieldExport .mk-view-toggle,
+  #mkFieldExport .mk-export {
+    width:34px !important;
+    min-width:34px !important;
+    height:34px !important;
+    flex-basis:34px !important;
+    border-radius:9px !important;
+    box-shadow:0 2px 5px rgba(15,23,42,.09) !important;
+  }
+  #monitoringKreditPage .mk-table-shell {
+    border-radius:12px !important;
+    box-shadow:0 4px 14px rgba(15,23,42,.045);
+  }
+  #monitoringKreditPage .mk-table th,
+  #monitoringKreditPage .mk-table td {
+    border-right-color:rgba(226,232,240,.72);
+    border-bottom-color:rgba(226,232,240,.82);
+  }
+  #monitoringKreditPage .mk-table thead th {
+    height:36px;
+    font-size:8.5px;
+    letter-spacing:.025em;
+  }
+  #monitoringKreditPage .mk-table thead .mk-col-code,
+  #monitoringKreditPage .mk-table thead .mk-col-name {
+    background:#f0f7ff;
+  }
+  #monitoringKreditPage .mk-total-row td,
+  #monitoringKreditPage .mk-total-row td.mk-col-code,
+  #monitoringKreditPage .mk-total-row td.mk-col-name {
+    background:#f8fbff;
+    border-bottom:1px solid #bfdbfe;
+    box-shadow:0 3px 8px -6px rgba(15,23,42,.42);
+  }
+  #monitoringKreditPage .mk-table tbody:not(.mk-total-body) tr:hover td {
+    background:#f8fafc;
+  }
+
+  @media (max-width:767px) {
+    #mkHeaderCard { padding:7px 8px !important; }
+    #mkFieldExport .mk-view-toggle,
+    #mkFieldExport .mk-export {
+      width:31px !important;
+      min-width:31px !important;
+      height:31px !important;
+      flex-basis:31px !important;
+      border-radius:8px !important;
+    }
+  }
+
+  @media (max-width:374px) {
+    #mkFieldExport .mk-view-toggle,
+    #mkFieldExport .mk-export {
+      width:29px !important;
+      min-width:29px !important;
+      height:29px !important;
+      flex-basis:29px !important;
+    }
+  }
+
+  /* Scroll report tetap nyaman, tetapi tidak mengambil ruang visual. */
+  #monitoringKreditPage .mk-scrollbar {
+    scrollbar-width:thin;
+    scrollbar-color:#cbd5e1 transparent;
+  }
+  #monitoringKreditPage .mk-scrollbar::-webkit-scrollbar {
+    width:4px;
+    height:4px;
+  }
+  #monitoringKreditPage .mk-scrollbar::-webkit-scrollbar-track {
+    background:transparent;
+  }
+  #monitoringKreditPage .mk-scrollbar::-webkit-scrollbar-thumb {
+    background:#cbd5e1;
+    border-radius:999px;
+  }
+  #monitoringKreditPage .mk-scrollbar::-webkit-scrollbar-thumb:hover {
+    background:#94a3b8;
+  }
+  #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form .npl-navbar-filter-panel__submit-wrap {
+    display:none !important;
+  }
+
 </style>
 
 <div id="monitoringKreditPage" class="max-w-[1920px] w-full mx-auto px-2 md:px-4 py-2 md:py-4 h-[calc(100vh-72px)] flex flex-col gap-2 md:gap-3 overflow-hidden bg-slate-50">
@@ -1483,48 +1888,17 @@
         </div>
       </div>
 
-      <div id="mkHeaderMobileActions" class="mk-mobile-head-actions shrink-0">
-        <button type="button" id="mkFilterToggle" class="mk-filter-toggle shrink-0" aria-expanded="false" aria-controls="mkFilterPanel">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"></path><path d="M7 12h10"></path><path d="M10 18h4"></path></svg>
-          <span>Filter</span>
-        </button>
-      </div>
     </div>
 
-
-    <div id="mkFilterPanel" class="xl:flex xl:flex-1 xl:justify-end min-w-0">
-      <form id="mkFilterForm" class="kolek-mode flex flex-row flex-wrap xl:flex-nowrap items-end gap-2 w-full xl:w-auto" onsubmit="event.preventDefault(); fetchActiveCreditTab(true);">
-        <div id="mkFieldMode" class="w-[116px] md:w-[130px] min-w-0">
-          <label class="mk-label" for="hitungBerdasarkanCredit">Tipe Saldo</label>
-          <select id="hitungBerdasarkanCredit" class="mk-input">
-            <option value="baki_debet">BAKI DEBET</option>
-            <option value="saldo_bank">SALDO BANK</option>
-          </select>
-        </div>
-
-        <div id="mkFieldClosing" class="hidden w-[112px] md:w-[124px] min-w-0">
-          <label class="mk-label" for="closingDateCredit">Closing (M-1)</label>
-          <input type="date" id="closingDateCredit" class="mk-input" required onclick="this.showPicker && this.showPicker()">
-        </div>
-
-        <div id="mkFieldActual" class="w-[112px] md:w-[124px] min-w-0">
-          <label class="mk-label" for="actualDateCredit">Actual (Harian)</label>
-          <input type="date" id="actualDateCredit" class="mk-input" required onclick="this.showPicker && this.showPicker()">
-        </div>
-
-        <div id="mkFieldArea" class="flex-1 xl:flex-none xl:w-[250px] min-w-[180px]">
-          <label class="mk-label" for="optAreaCredit">Area/Cabang</label>
-          <select id="optAreaCredit" class="mk-input truncate"><option value="ALL">Memuat...</option></select>
-        </div>
-
+      <div id="mkHeaderMobileActions" class="mk-mobile-head-actions shrink-0">
         <div id="mkFieldExport" class="mk-actions shrink-0">
           <button type="button" id="mkViewToggle" class="mk-view-toggle" aria-label="Buka Perbandingan NPL" aria-controls="viewKolek viewNpl" aria-pressed="false" title="Buka Perbandingan NPL">
             <span id="mkViewToggleIcon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M4 19h16"></path>
-                <path d="M7 16v-5"></path>
-                <path d="M12 16V7"></path>
-                <path d="M17 16v-8"></path>
+                <path d="M4 7h16"></path>
+                <path d="m16 3 4 4-4 4"></path>
+                <path d="M20 17H4"></path>
+                <path d="m8 13-4 4 4 4"></path>
               </svg>
             </span>
             <span id="mkViewToggleTooltip" class="mk-toggle-tooltip">Buka Perbandingan NPL</span>
@@ -1532,17 +1906,16 @@
 
           <button type="button" class="mk-export" onclick="exportActiveCreditTab()" title="Export Excel (.xlsx)" aria-label="Export Excel">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"></path>
-              <path d="M14 2v6h6"></path>
-              <path d="M8 13l4 5"></path>
-              <path d="M12 13l-4 5"></path>
-              <path d="M15 13h2"></path>
-              <path d="M15 16h2"></path>
+              <path d="M5 20h14"></path>
+              <path d="M5 16v4"></path>
+              <path d="M19 16v4"></path>
+              <path d="M12 3v10"></path>
+              <path d="m8 9 4 4 4-4"></path>
             </svg>
           </button>
         </div>
-      </form>
-    </div>
+      </div>
+
   </section>
 
   <div id="mkInfoBackdrop" class="mk-info-backdrop" aria-hidden="true"></div>
@@ -2076,26 +2449,41 @@
     el('mkLoading')?.classList.toggle('hidden', !show);
   }
 
+  function filterPanelNode() {
+    return el('nplNavbarFilterPanel') || el('mkFilterPanel');
+  }
+
+  function filterToggleNode() {
+    return el('mkNavbarFilterToggle') || el('mkFilterToggle');
+  }
+
   function closeFilterSmall() {
-    if (window.innerWidth >= 1180) return;
-    el('mkFilterPanel')?.classList.remove('open');
+    const panel = filterPanelNode();
+    if (panel) {
+      panel.classList.remove('open', 'flex');
+      panel.classList.add('hidden');
+    }
     syncFilterToggle();
   }
 
   function syncFilterToggle() {
-    const panel = el('mkFilterPanel');
-    const btn = el('mkFilterToggle');
+    const panel = filterPanelNode();
+    const btn = filterToggleNode();
     if (!panel || !btn) return;
     const open = panel.classList.contains('open');
     btn.classList.toggle('active', open);
+    btn.classList.toggle('is-active', open);
     btn.setAttribute('aria-expanded', String(open));
     const label = btn.querySelector('span');
     if (label) label.textContent = open ? 'Tutup' : 'Filter';
   }
 
   function toggleFilter() {
-    if (window.innerWidth >= 1180) return;
-    el('mkFilterPanel')?.classList.toggle('open');
+    const panel = filterPanelNode();
+    if (!panel) return;
+    const open = !panel.classList.contains('open');
+    panel.classList.toggle('open', open);
+    panel.classList.toggle('hidden', !open);
     syncFilterToggle();
   }
 
@@ -2209,24 +2597,14 @@
 
   function syncViewTogglePlacement() {
     const toggle = el('mkViewToggle');
-    const mobileHost = el('mkHeaderMobileActions');
     const desktopHost = el('mkFieldExport');
-    const filterButton = el('mkFilterToggle');
     const exportButton = desktopHost?.querySelector('.mk-export');
-    if (!toggle || !mobileHost || !desktopHost) return;
+    if (!toggle || !desktopHost) return;
 
-    if (window.innerWidth < 768) {
-      if (toggle.parentElement !== mobileHost) {
-        mobileHost.insertBefore(toggle, filterButton || mobileHost.firstChild);
-      } else if (filterButton && toggle.nextElementSibling !== filterButton) {
-        mobileHost.insertBefore(toggle, filterButton);
-      }
-    } else {
-      if (toggle.parentElement !== desktopHost) {
-        desktopHost.insertBefore(toggle, exportButton || desktopHost.firstChild);
-      } else if (exportButton && toggle.nextElementSibling !== exportButton) {
-        desktopHost.insertBefore(toggle, exportButton);
-      }
+    if (toggle.parentElement !== desktopHost) {
+      desktopHost.insertBefore(toggle, exportButton || desktopHost.firstChild);
+    } else if (exportButton && toggle.nextElementSibling !== exportButton) {
+      desktopHost.insertBefore(toggle, exportButton);
     }
   }
 
@@ -2244,17 +2622,21 @@
       toggle.setAttribute('aria-pressed', String(!kolekActive));
       toggle.setAttribute('aria-label', kolekActive ? 'Buka Perbandingan NPL' : 'Kembali ke Rekap Kolektibilitas');
       toggle.title = kolekActive ? 'Buka Perbandingan NPL' : 'Kembali ke Rekap Kolektibilitas';
-      icon.innerHTML = kolekActive
-        ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"></path><path d="M7 16v-5"></path><path d="M12 16V7"></path><path d="M17 16v-8"></path></svg>`
-        : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>`;
+      icon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16"></path><path d="m16 3 4 4-4 4"></path><path d="M20 17H4"></path><path d="m8 13-4 4 4 4"></path></svg>`;
       if (tooltip) tooltip.textContent = kolekActive ? 'Buka Perbandingan NPL' : 'Kembali ke Rekap Kolektibilitas';
     }
 
     el('mkFieldClosing')?.classList.toggle('hidden', kolekActive);
     el('mkFilterForm')?.classList.toggle('kolek-mode', kolekActive);
-    el('mkHeaderSubtitle').textContent = kolekActive
+    const subtitle = el('mkHeaderSubtitle');
+    const subtitleText = kolekActive
       ? 'Posisi kredit berdasarkan kolektibilitas, NOA, dan saldo'
       : 'NPL closing bulan sebelumnya dibanding actual harian';
+    if (subtitle) {
+      subtitle.textContent = subtitleText;
+      subtitle.title = subtitleText;
+      subtitle.setAttribute('aria-label', subtitleText);
+    }
 
     syncMonitoringInfoMode();
     rebuildAreaOptions();
@@ -2289,7 +2671,7 @@
   async function fetchKolektibilitasCombined() {
     const actual = el('actualDateCredit')?.value;
     const area = el('optAreaCredit')?.value || 'ALL';
-    const mode = el('hitungBerdasarkanCredit')?.value || 'baki_debet';
+    const mode = el('hitungBerdasarkanCredit')?.value || 'saldo_bank';
     if (!actual) return;
 
     if (state.abortKolek) state.abortKolek.abort();
@@ -2340,7 +2722,7 @@
     const closing = el('closingDateCredit')?.value;
     const actual = el('actualDateCredit')?.value;
     const area = el('optAreaCredit')?.value || 'ALL';
-    const mode = el('hitungBerdasarkanCredit')?.value || 'baki_debet';
+    const mode = el('hitungBerdasarkanCredit')?.value || 'saldo_bank';
     if (!closing || !actual) return;
 
     if (state.abortNpl) state.abortNpl.abort();
@@ -2932,7 +3314,9 @@
     if (event.key === 'Escape' && mkInfoOpen) closeMonitoringInfo(true);
   });
 
+  el('mkNavbarFilterToggle')?.addEventListener('click', toggleFilter);
   el('mkFilterToggle')?.addEventListener('click', toggleFilter);
+  el('mkNavbarFilterClose')?.addEventListener('click', closeFilterSmall);
   el('mkViewToggle')?.addEventListener('click', () => {
     switchTab(state.activeTab === 'kolek' ? 'npl' : 'kolek');
   });
@@ -2961,8 +3345,7 @@
     clearTimeout(window.__mkResizeTimer);
     window.__mkResizeTimer = setTimeout(() => {
       if (window.innerWidth >= 1280) {
-        el('mkFilterPanel')?.classList.remove('open');
-        syncFilterToggle();
+          closeFilterSmall();
       }
       syncViewTogglePlacement();
       syncMonitoringCreditNavbarClearance();

@@ -24,12 +24,14 @@
   /* --- Tabel Utama Migrasi --- */
   #tabelMigrasiSC thead th { position: sticky !important; z-index: 40 !important; box-shadow: inset 0 -1px 0 #cbd5e1; }
   
-  /* Lapis 1 (Header Utama) */
-  .mig-row-1 th { top: 0 !important; height: 46px; background-color: #f8fafc !important;}
+  /* Header bertingkat: grup bucket, lalu subkolom bucket/run-off. */
+  .mig-row-1 th { top: 0 !important; height: 31px; background-color: #f8fafc !important;}
+  .mig-row-1 th[rowspan="2"] { height: 62px; }
+  .mig-row-2 th { top: 31px !important; height: 31px; background-color: #f8fafc !important; }
   #tabelMigrasiSC thead th.sticky-left { z-index: 60 !important; left: 0 !important; box-shadow: inset -1px -1px 0 #cbd5e1; background-color: #dcedc8 !important; } 
   
-  /* Lapis 2 (Grand Total) */
-  .mig-row-tot th { top: 46px !important; z-index: 45 !important; height: 50px; box-shadow: inset 0 -2px 0 #93c5fd; background-color: #eff6ff !important; }
+  /* Grand total berada setelah dua baris header. */
+  .mig-row-tot th { top: 62px !important; z-index: 45 !important; height: 50px; box-shadow: inset 0 -2px 0 #93c5fd; background-color: #eff6ff !important; }
   #tabelMigrasiSC thead tr.mig-row-tot th.sticky-left { z-index: 62 !important; left: 0 !important; box-shadow: inset -1px -2px 0 #93c5fd; background-color: #e2e8f0 !important; }
 
   /* Freeze Kiri Body Utama */
@@ -668,9 +670,811 @@
       #modalSearchRowMobile { display: none !important; }
   }
 
+  /* === Shared responsive shell === */
+  #migrasiScPage,
+  #migrasiScPage *,
+  #modalDetail,
+  #modalDetail * {
+      font-family:Roboto,Arial,system-ui,sans-serif !important;
+  }
+  #migrasiScPage { min-width:0; }
+  #legacyFilterWrapperMigrasi,
+  #btnToggleMainFilterMigrasi { display:none !important; }
+  .mig-header-actions {
+      position:absolute;
+      top:14px;
+      right:16px;
+      z-index:5;
+  }
+  .mig-title-wrap { padding-right:92px; }
+  #migrasiScPage .custom-scrollbar {
+      scrollbar-width:thin;
+      scrollbar-color:#94a3b8 transparent;
+  }
+  #migrasiScPage .custom-scrollbar::-webkit-scrollbar { width:5px; height:5px; }
+  #migrasiScPage .custom-scrollbar::-webkit-scrollbar-track { background:transparent; }
+  #migrasiScPage .custom-scrollbar::-webkit-scrollbar-thumb { background:#94a3b8; border-radius:999px; }
+  #migrasiScPage .mig-filter-card { border-color:#dbe3ee; box-shadow:0 8px 24px rgba(15,23,42,.06); }
+
+  :root[data-monbis-theme="dark"] #migrasiScPage { background:#0f172a !important; color:#e2e8f0 !important; }
+  :root[data-monbis-theme="dark"] #migrasiScPage .mig-filter-card,
+  :root[data-monbis-theme="dark"] #migrasiScPage > div:last-child,
+  :root[data-monbis-theme="dark"] #modalDetail > div.relative { background:#111827 !important; border-color:#334155 !important; }
+  :root[data-monbis-theme="dark"] #migrasiScPage h1,
+  :root[data-monbis-theme="dark"] #migrasiScPage .mig-title-wrap,
+  :root[data-monbis-theme="dark"] #migrasiScPage .mig-main-title { color:#f8fafc !important; }
+  :root[data-monbis-theme="dark"] #migrasiScPage .mig-filter-card,
+  :root[data-monbis-theme="dark"] #migrasiScPage #summaryCheck,
+  :root[data-monbis-theme="dark"] #migrasiScPage #infoMigrasiSC { border-color:#334155 !important; }
+  :root[data-monbis-theme="dark"] #migrasiScPage #bodyMatrix,
+  :root[data-monbis-theme="dark"] #migrasiScPage #tabelMigrasiSC .sticky-left,
+  :root[data-monbis-theme="dark"] #migrasiScPage #tableExportMigrasi,
+  :root[data-monbis-theme="dark"] #migrasiScPage #bodyDetail { background:#111827 !important; }
+  :root[data-monbis-theme="dark"] #migrasiScPage #tabelMigrasiSC td,
+  :root[data-monbis-theme="dark"] #migrasiScPage #tableExportMigrasi td,
+  :root[data-monbis-theme="dark"] #migrasiScPage #bodyDetail td { border-color:#334155 !important; }
+  :root[data-monbis-theme="dark"] #migrasiScPage #infoMigrasiSC,
+  :root[data-monbis-theme="dark"] #modalDetail > div.relative { color:#cbd5e1 !important; }
+
+  @media (max-width:767px) {
+      #migrasiScPage { padding:8px !important; }
+      #migrasiScPage .mig-filter-card { padding:10px !important; border-radius:12px !important; }
+      .mig-header-actions { top:9px; right:10px; }
+      .mig-title-wrap { padding-right:82px; }
+      #migrasiScPage .mig-main-title { max-width:calc(100vw - 126px); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      #migrasiScPage #tabelMigrasiSC { min-width:940px; }
+  }
+
+  /* Final table polish: neutral header, semantic movement backgrounds, compact typography */
+  #migrasiScPage #tabelMigrasiSC thead th,
+  #migrasiScPage #tabelMigrasiSC thead tr.mig-row-1 th {
+      background:#f8fafc !important;
+      color:#334155 !important;
+      border-color:#dbe3ee !important;
+      font-size:10px !important;
+      font-weight:700 !important;
+      letter-spacing:.025em !important;
+      line-height:1.2 !important;
+  }
+  #migrasiScPage #tabelMigrasiSC thead tr.mig-row-tot th {
+      background:#f1f5f9 !important;
+      color:#334155 !important;
+      border-color:#dbe3ee !important;
+      font-size:10px !important;
+      font-weight:700 !important;
+  }
+  #migrasiScPage #tabelMigrasiSC thead th.sticky-left,
+  #migrasiScPage #tabelMigrasiSC thead tr.mig-row-tot th.sticky-left {
+      background:#eef2f7 !important;
+      color:#334155 !important;
+      box-shadow:inset -1px -1px 0 #cbd5e1 !important;
+  }
+  #migrasiScPage #tabelMigrasiSC .mig-empty {
+      color:#94a3b8 !important;
+      font-weight:600 !important;
+  }
+  #migrasiScPage #tabelMigrasiSC .mig-pct {
+      display:inline-block;
+      margin-left:4px;
+      color:#64748b;
+      font-size:.9em;
+      font-weight:600;
+      white-space:nowrap;
+  }
+  #migrasiScPage #summaryCheck .mig-mini-card {
+      background:#f8fafc;
+      border-color:#dbe3ee;
+  }
+  /* Total run off diringkas di summary; tabel menampilkan komponen Angsuran dan Lunas. */
+  #migrasiScPage #tabelMigrasiSC th:nth-child(12),
+  #migrasiScPage #tabelMigrasiSC td:nth-child(12) {
+      display:none !important;
+  }
+  #migrasiScPage #tabelMigrasiSC thead tr.mig-row-2 th {
+      background:#f8fafc !important;
+      color:#334155 !important;
+      font-size:10px !important;
+      font-weight:700 !important;
+  }
+  @media (min-width:768px) {
+      #migrasiScPage #tabelMigrasiSC thead th,
+      #migrasiScPage #tabelMigrasiSC thead tr.mig-row-tot th { font-size:11px !important; }
+  }
+  :root[data-monbis-theme="dark"] #migrasiScPage #tabelMigrasiSC thead th,
+  :root[data-monbis-theme="dark"] #migrasiScPage #tabelMigrasiSC thead tr.mig-row-1 th {
+      background:#1e293b !important;
+      color:#e2e8f0 !important;
+      border-color:#475569 !important;
+  }
+  :root[data-monbis-theme="dark"] #migrasiScPage #tabelMigrasiSC thead tr.mig-row-tot th {
+      background:#243247 !important;
+      color:#e2e8f0 !important;
+      border-color:#475569 !important;
+  }
+  :root[data-monbis-theme="dark"] #migrasiScPage #summaryCheck .mig-mini-card {
+      background:#1e293b !important;
+      border-color:#475569 !important;
+  }
+  :root[data-monbis-theme="dark"] #migrasiScPage #tabelMigrasiSC .mig-pct { color:#94a3b8 !important; }
+
+  /* Keep the first two context columns visible like migrasi_bucket.php. */
+  #migrasiScPage { --mig-first-col:12%; }
+  #migrasiScPage #tabelMigrasiSC .sticky-left-2 {
+      position:sticky !important;
+      left:var(--mig-first-col) !important;
+      z-index:29 !important;
+      background:#f8fafc !important;
+      box-shadow:inset -1px 0 0 #dbe3ee;
+  }
+  #migrasiScPage #tabelMigrasiSC thead .sticky-left-2 { z-index:59 !important; background:#f8fafc !important; }
+  #migrasiScPage #tabelMigrasiSC thead tr.mig-row-tot .sticky-left-2 { z-index:61 !important; background:#f1f5f9 !important; }
+  #migrasiScPage #tabelMigrasiSC tbody .sticky-left-2 { background:#ffffff !important; }
+  :root[data-monbis-theme="dark"] #migrasiScPage #tabelMigrasiSC .sticky-left-2 { background:#1e293b !important; box-shadow:inset -1px 0 0 #475569; }
+  :root[data-monbis-theme="dark"] #migrasiScPage #tabelMigrasiSC thead .sticky-left-2 { background:#1e293b !important; }
+  :root[data-monbis-theme="dark"] #migrasiScPage #tabelMigrasiSC tbody .sticky-left-2 { background:#111827 !important; }
+
+  /* Main matrix fits its container without horizontal scroll. */
+  #migrasiScPage #matrixScrollArea {
+      overflow-x:hidden !important;
+      overflow-y:auto !important;
+  }
+  #migrasiScPage #tabelMigrasiSC {
+      width:100% !important;
+      min-width:100% !important;
+      max-width:100% !important;
+      table-layout:fixed !important;
+  }
+  #migrasiScPage #tabelMigrasiSC th,
+  #migrasiScPage #tabelMigrasiSC td {
+      min-width:0 !important;
+      max-width:none !important;
+      white-space:normal !important;
+      overflow:visible !important;
+      text-overflow:clip !important;
+      word-break:normal !important;
+  }
+  /* Nilai nominal dan NOA tidak boleh pecah per digit. */
+  #migrasiScPage #tabelMigrasiSC .mig-val,
+  #migrasiScPage #tabelMigrasiSC .mig-noa,
+  #migrasiScPage #tabelMigrasiSC .mig-pct,
+  #migrasiScPage #tabelMigrasiSC .mig-empty {
+      white-space:nowrap !important;
+      word-break:normal !important;
+      overflow:visible !important;
+      text-overflow:clip !important;
+  }
+  #migrasiScPage #tabelMigrasiSC th:nth-child(1),
+  #migrasiScPage #tabelMigrasiSC td:nth-child(1) { width:12% !important; }
+  #migrasiScPage #tabelMigrasiSC th:nth-child(2),
+  #migrasiScPage #tabelMigrasiSC td:nth-child(2) { width:12% !important; }
+  #migrasiScPage #tabelMigrasiSC th:nth-child(3),
+  #migrasiScPage #tabelMigrasiSC td:nth-child(3),
+  #migrasiScPage #tabelMigrasiSC th:nth-child(4),
+  #migrasiScPage #tabelMigrasiSC td:nth-child(4),
+  #migrasiScPage #tabelMigrasiSC th:nth-child(5),
+  #migrasiScPage #tabelMigrasiSC td:nth-child(5),
+  #migrasiScPage #tabelMigrasiSC th:nth-child(6),
+  #migrasiScPage #tabelMigrasiSC td:nth-child(6),
+  #migrasiScPage #tabelMigrasiSC th:nth-child(7),
+  #migrasiScPage #tabelMigrasiSC td:nth-child(7),
+  #migrasiScPage #tabelMigrasiSC th:nth-child(8),
+  #migrasiScPage #tabelMigrasiSC td:nth-child(8),
+  #migrasiScPage #tabelMigrasiSC th:nth-child(9),
+  #migrasiScPage #tabelMigrasiSC td:nth-child(9) { width:9% !important; }
+  #migrasiScPage #tabelMigrasiSC th:nth-child(10),
+  #migrasiScPage #tabelMigrasiSC td:nth-child(10),
+  #migrasiScPage #tabelMigrasiSC th:nth-child(11),
+  #migrasiScPage #tabelMigrasiSC td:nth-child(11) { width:6.5% !important; }
+  #migrasiScPage #tabelMigrasiSC .sticky-left { width:12% !important; left:0 !important; }
+  #migrasiScPage #tabelMigrasiSC .sticky-left-2 { width:12% !important; left:12% !important; }
+  #migrasiScPage #tabelMigrasiSC .mig-val { font-size:clamp(8px, .72vw, 12px) !important; }
+  #migrasiScPage #tabelMigrasiSC .mig-noa { font-size:clamp(7px, .55vw, 10px) !important; }
+  #migrasiScPage #tabelMigrasiSC .mig-pct { display:block; margin-left:0; }
+
+  @media (max-width:767px) {
+      /* Matriks padat tetap terbaca di layar kecil melalui scroll internal,
+         tanpa membuat seluruh halaman ikut melebar. */
+      #migrasiScPage #matrixScrollArea { overflow-x:auto !important; }
+      #migrasiScPage #tabelMigrasiSC {
+          width:980px !important;
+          min-width:980px !important;
+          max-width:none !important;
+      }
+      #migrasiScPage #tabelMigrasiSC .mig-val { font-size:10px !important; }
+      #migrasiScPage #tabelMigrasiSC .mig-noa { font-size:8px !important; }
+
+      /* Di mobile hanya DPD yang dikunci. M-1 harus ikut bergeser agar tidak
+         menutupi bucket actual ketika tabel di-swipe ke kanan. */
+      #migrasiScPage #tabelMigrasiSC tbody .sticky-left-2 {
+          left:auto !important;
+          z-index:1 !important;
+          position:sticky !important;
+          box-shadow:none !important;
+      }
+      #migrasiScPage #tabelMigrasiSC thead .sticky-left-2 {
+          left:auto !important;
+          z-index:40 !important;
+          position:sticky !important;
+          box-shadow:inset -1px -1px 0 #dbe3ee !important;
+      }
+  }
+
+  /* Modal detail: compact desktop toolbar + card layout on mobile */
+  #modalDetail .modal-detail-shell {
+      width:min(1480px, calc(100vw - 24px)) !important;
+      height:min(92vh, 900px) !important;
+      max-height:calc(100vh - 24px) !important;
+      border:1px solid #dbe3ee;
+      border-radius:18px !important;
+  }
+  #modalDetail .modal-detail-header { border-color:#e2e8f0 !important; }
+  #modalDetail .modal-detail-topbar {
+      min-height:62px;
+      padding:13px 18px !important;
+  }
+  #modalDetail .modal-detail-title {
+      color:#1e293b !important;
+      font-size:18px !important;
+      letter-spacing:-.02em;
+  }
+  #modalDetail .modal-detail-toolbar {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:0 18px 12px;
+  }
+  #modalDetail .modal-detail-search-row {
+      flex:1 1 280px;
+      padding:0 !important;
+  }
+  #modalDetail .modal-detail-search-row > div { width:min(100%, 360px) !important; }
+  #modalDetail .modal-detail-controls {
+      width:auto !important;
+      flex:0 0 auto;
+      border:0 !important;
+      padding:0 !important;
+      overflow:visible !important;
+  }
+  #modalDetail .modal-detail-controls select {
+      width:140px !important;
+      height:36px !important;
+      border-radius:9px !important;
+      background:#f8fafc !important;
+      color:#334155 !important;
+      border-color:#dbe3ee !important;
+      font-size:11px !important;
+  }
+  #modalDetail .modal-detail-controls button {
+      height:36px !important;
+      min-width:42px;
+      border-radius:9px !important;
+  }
+  #modalDetail .modal-detail-body {
+      padding:12px !important;
+      background:#f8fafc !important;
+  }
+  #modalDetail #tableExportMigrasi {
+      width:max-content;
+      min-width:100%;
+      border:1px solid #dbe3ee;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 2px 8px rgba(15,23,42,.04);
+  }
+  #modalDetail #headModalMigrasi th {
+      background:#f1f5f9 !important;
+      color:#475569 !important;
+      border-color:#dbe3ee !important;
+      font-size:10px !important;
+      font-weight:600 !important;
+      letter-spacing:.03em !important;
+      white-space:nowrap;
+  }
+  #modalDetail #bodyDetail td {
+      color:#334155;
+      border-color:#e2e8f0 !important;
+      background:#fff;
+      font-size:11px !important;
+      font-weight:400 !important;
+  }
+  #modalDetail #bodyDetail td .font-bold,
+  #modalDetail #bodyDetail td.font-bold { font-weight:500 !important; }
+  #modalDetail #bodyDetail tr:hover td { background:#f8fafc !important; }
+  #modalDetail #pageInfo { color:#475569 !important; background:#f1f5f9 !important; }
+  #mobileDetailMigrasi { display:none; }
+  .mig-mobile-detail-card {
+      padding:12px;
+      border:1px solid #dbe3ee;
+      border-radius:13px;
+      background:#fff;
+      box-shadow:0 2px 8px rgba(15,23,42,.04);
+  }
+  .mig-mobile-detail-head {
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:8px;
+      padding-bottom:9px;
+      border-bottom:1px solid #eef2f7;
+  }
+  .mig-mobile-detail-name { color:#1e293b; font-size:12px; font-weight:600; line-height:1.25; }
+  .mig-mobile-detail-meta { margin-top:3px; color:#64748b; font-size:9px; line-height:1.3; }
+  .mig-mobile-detail-status {
+      flex:0 0 auto;
+      padding:4px 7px;
+      border:1px solid #bfdbfe;
+      border-radius:999px;
+      background:#eff6ff;
+      color:#1d4ed8;
+      font-size:8px;
+      font-weight:600;
+      white-space:nowrap;
+  }
+  .mig-mobile-detail-address { margin:9px 0; color:#64748b; font-size:9px; line-height:1.35; }
+  .mig-mobile-detail-grid {
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      gap:7px;
+  }
+  .mig-mobile-detail-item {
+      min-width:0;
+      padding:8px;
+      border:1px solid #eef2f7;
+      border-radius:8px;
+      background:#f8fafc;
+  }
+  .mig-mobile-detail-item span {
+      display:block;
+      margin-bottom:3px;
+      color:#64748b;
+      font-size:8px;
+      font-weight:700;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+  }
+  .mig-mobile-detail-item strong {
+      display:block;
+      overflow:hidden;
+      color:#1e293b;
+      font-size:10px;
+      font-weight:800;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+  }
+  .mig-mobile-detail-foot {
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      margin-top:9px;
+      color:#64748b;
+      font-size:9px;
+  }
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-shell,
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-header,
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-toolbar,
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-search-row,
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-controls,
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-footer { background:#111827 !important; border-color:#334155 !important; }
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-title,
+  :root[data-monbis-theme="dark"] #modalDetail #bodyDetail td { color:#e2e8f0 !important; }
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-body { background:#0f172a !important; }
+  :root[data-monbis-theme="dark"] #modalDetail #tableExportMigrasi,
+  :root[data-monbis-theme="dark"] #modalDetail #bodyDetail td { border-color:#334155 !important; }
+  :root[data-monbis-theme="dark"] #modalDetail #headModalMigrasi th { background:#1e293b !important; color:#cbd5e1 !important; border-color:#475569 !important; }
+  :root[data-monbis-theme="dark"] .mig-mobile-detail-card { background:#111827; border-color:#334155; }
+  :root[data-monbis-theme="dark"] .mig-mobile-detail-name,
+  :root[data-monbis-theme="dark"] .mig-mobile-detail-item strong { color:#e2e8f0; }
+  :root[data-monbis-theme="dark"] .mig-mobile-detail-item { background:#1e293b; border-color:#334155; }
+
+  @media (max-width:767px) {
+      #modalDetail { padding:0 !important; }
+      #modalDetail .modal-detail-shell {
+          width:100% !important;
+          height:100dvh !important;
+          max-height:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+      }
+      #modalDetail .modal-detail-topbar { min-height:54px; padding:10px 12px !important; }
+      #modalDetail .modal-detail-title { font-size:15px !important; }
+      #modalDetail .modal-detail-toolbar {
+          display:grid;
+          grid-template-columns:minmax(0, 1fr);
+          gap:8px;
+          padding:0 12px 10px;
+      }
+      #modalDetail .modal-detail-search-row { width:100%; }
+      #modalDetail .modal-detail-search-row > div { width:100% !important; }
+      #modalDetail .modal-detail-controls {
+          display:grid !important;
+          grid-template-columns:minmax(0, 1fr) minmax(0, 1fr) 40px;
+          gap:6px !important;
+          width:100% !important;
+      }
+      #modalDetail .modal-detail-controls select { width:100% !important; height:34px !important; font-size:10px !important; }
+      #modalDetail .modal-detail-controls button { width:40px !important; height:34px !important; padding:0 !important; }
+      #modalDetail .modal-detail-controls button span { display:none !important; }
+      #modalDetail .modal-detail-body { padding:9px !important; }
+      #modalDetail #tableExportMigrasi { display:none !important; }
+      #modalDetail #mobileDetailMigrasi { display:grid !important; gap:8px; }
+      #modalDetail .modal-detail-body:has(#mobileDetailMigrasi) { overflow-y:auto !important; overflow-x:hidden !important; }
+      #modalDetail .modal-detail-footer { padding:9px 12px !important; }
+  }
+
+  /* Modal detail polish: clean surface, calmer table, and better mobile cards. */
+  body.modal-detail-open { overflow:hidden !important; }
+  #modalDetail > .absolute {
+      background:rgba(15,23,42,.64) !important;
+      backdrop-filter:blur(5px);
+  }
+  #modalDetail .modal-detail-shell {
+      width:min(1520px, calc(100vw - 32px)) !important;
+      height:min(90vh, 860px) !important;
+      max-height:calc(100vh - 32px) !important;
+      background:#fff !important;
+      border:1px solid #d9e2ee !important;
+      border-radius:20px !important;
+      box-shadow:0 24px 70px rgba(15,23,42,.24) !important;
+  }
+  #modalDetail .modal-detail-header {
+      background:#fff !important;
+      border-bottom:1px solid #e8eef5 !important;
+      box-shadow:0 2px 10px rgba(15,23,42,.035);
+  }
+  #modalDetail .modal-detail-topbar {
+      min-height:68px !important;
+      padding:16px 20px 13px !important;
+      border-bottom:0 !important;
+  }
+  #modalDetail .modal-detail-title {
+      color:#172033 !important;
+      font-size:19px !important;
+      line-height:1.15 !important;
+      letter-spacing:-.025em !important;
+  }
+  #modalDetail .modal-detail-title > span:first-child {
+      display:block !important;
+      width:6px !important;
+      height:24px !important;
+      background:#2563eb !important;
+      border-radius:999px !important;
+  }
+  #modalDetail #badgeMigrasi {
+      border:1px solid #bfdbfe !important;
+      background:#eff6ff !important;
+      color:#1d4ed8 !important;
+      border-radius:999px !important;
+      box-shadow:none !important;
+      font-family:inherit !important;
+      font-weight:700 !important;
+      line-height:1.2 !important;
+  }
+  #modalDetail .modal-detail-topbar > button {
+      width:34px !important;
+      height:34px !important;
+      border:1px solid #fee2e2 !important;
+      background:#fff7f7 !important;
+      color:#ef4444 !important;
+      border-radius:10px !important;
+      font-size:18px !important;
+  }
+  #modalDetail .modal-detail-topbar > button:hover {
+      background:#ef4444 !important;
+      border-color:#ef4444 !important;
+      color:#fff !important;
+  }
+  #modalDetail .modal-detail-toolbar {
+      display:grid !important;
+      grid-template-columns:minmax(240px,1fr) auto !important;
+      align-items:center !important;
+      gap:14px !important;
+      padding:0 20px 15px !important;
+      background:#fff !important;
+  }
+  #modalDetail .modal-detail-search-row {
+      min-width:0 !important;
+      padding:0 !important;
+      background:transparent !important;
+  }
+  #modalDetail .modal-detail-search-row > div { width:min(100%,420px) !important; }
+  #modalDetail #search_nasabah {
+      height:38px !important;
+      padding-left:36px !important;
+      border:1px solid #d7e1ee !important;
+      border-radius:10px !important;
+      background:#f8fafc !important;
+      color:#1e293b !important;
+      font-size:11px !important;
+      box-shadow:none !important;
+  }
+  #modalDetail #search_nasabah:focus {
+      background:#fff !important;
+      border-color:#93c5fd !important;
+      box-shadow:0 0 0 3px rgba(37,99,235,.10) !important;
+  }
+  #modalDetail .modal-detail-controls {
+      display:flex !important;
+      align-items:center !important;
+      justify-content:flex-end !important;
+      gap:8px !important;
+      width:auto !important;
+      padding:0 !important;
+      border:0 !important;
+      overflow:visible !important;
+  }
+  #modalDetail .modal-detail-controls select {
+      width:156px !important;
+      height:38px !important;
+      padding:0 30px 0 11px !important;
+      border:1px solid #d7e1ee !important;
+      border-radius:10px !important;
+      background:#fff !important;
+      color:#334155 !important;
+      font-size:11px !important;
+      font-weight:600 !important;
+      box-shadow:none !important;
+  }
+  #modalDetail .modal-detail-controls select:focus {
+      border-color:#93c5fd !important;
+      box-shadow:0 0 0 3px rgba(37,99,235,.10) !important;
+  }
+  #modalDetail .modal-detail-controls button {
+      width:42px !important;
+      min-width:42px !important;
+      height:38px !important;
+      padding:0 !important;
+      border-radius:10px !important;
+      box-shadow:0 5px 12px rgba(5,150,105,.16) !important;
+  }
+  #modalDetail .modal-detail-controls button svg { width:17px !important; height:17px !important; }
+  #modalDetail .modal-detail-body {
+      padding:16px !important;
+      background:#f6f8fb !important;
+  }
+  #modalDetail #tableExportMigrasi {
+      width:max-content !important;
+      min-width:100% !important;
+      border:1px solid #dbe4ef !important;
+      border-radius:13px !important;
+      border-collapse:separate !important;
+      border-spacing:0 !important;
+      overflow:hidden !important;
+      box-shadow:0 5px 16px rgba(15,23,42,.045) !important;
+  }
+  #modalDetail #headModalMigrasi th {
+      height:44px !important;
+      padding:9px 10px !important;
+      background:#eef3f8 !important;
+      color:#475569 !important;
+      border-color:#dbe4ef !important;
+      font-size:10px !important;
+      font-weight:700 !important;
+      letter-spacing:.025em !important;
+      line-height:1.2 !important;
+      white-space:nowrap !important;
+  }
+  #modalDetail #headModalMigrasi th:first-child { border-top-left-radius:12px; }
+  #modalDetail #headModalMigrasi th:last-child { border-top-right-radius:12px; }
+  #modalDetail #bodyDetail td {
+      height:48px !important;
+      padding:8px 10px !important;
+      color:#334155 !important;
+      background:#fff !important;
+      border-color:#e8eef5 !important;
+      font-size:11px !important;
+      font-weight:500 !important;
+      line-height:1.25 !important;
+      vertical-align:middle !important;
+  }
+  #modalDetail #bodyDetail tr:nth-child(even) td { background:#fbfdff !important; }
+  #modalDetail #bodyDetail tr:hover td { background:#f1f7ff !important; }
+  #modalDetail #bodyDetail td .font-bold,
+  #modalDetail #bodyDetail td.font-bold { font-weight:650 !important; }
+  #modalDetail .modal-detail-footer {
+      min-height:64px !important;
+      padding:12px 20px !important;
+      background:#fff !important;
+      border-top:1px solid #e8eef5 !important;
+  }
+  #modalDetail #pageInfo {
+      padding:7px 10px !important;
+      border:1px solid #e2e8f0 !important;
+      border-radius:8px !important;
+      background:#f8fafc !important;
+      color:#64748b !important;
+      font-size:10px !important;
+      font-weight:600 !important;
+  }
+  #modalDetail .modal-detail-footer button {
+      min-width:78px;
+      height:34px;
+      border-radius:9px;
+      font-size:11px;
+  }
+  #modalDetail .modal-detail-footer button:not(:disabled):hover {
+      border-color:#93c5fd !important;
+      background:#eff6ff !important;
+      color:#1d4ed8 !important;
+  }
+  #mobileDetailMigrasi { display:none; }
+  #mobileDetailMigrasi .mig-mobile-detail-card {
+      padding:14px !important;
+      border:1px solid #dce5ef !important;
+      border-radius:14px !important;
+      background:#fff !important;
+      box-shadow:0 4px 12px rgba(15,23,42,.045) !important;
+  }
+  #mobileDetailMigrasi .mig-mobile-detail-head {
+      padding-bottom:11px !important;
+      border-bottom:1px solid #edf2f7 !important;
+  }
+  #mobileDetailMigrasi .mig-mobile-detail-name {
+      color:#1e293b !important;
+      font-size:13px !important;
+      font-weight:700 !important;
+  }
+  #mobileDetailMigrasi .mig-mobile-detail-meta,
+  #mobileDetailMigrasi .mig-mobile-detail-address,
+  #mobileDetailMigrasi .mig-mobile-detail-foot { color:#64748b !important; font-size:10px !important; }
+  #mobileDetailMigrasi .mig-mobile-detail-address { margin:11px 0 !important; line-height:1.45 !important; }
+  #mobileDetailMigrasi .mig-mobile-detail-status {
+      padding:5px 8px !important;
+      border:1px solid #bfdbfe !important;
+      background:#eff6ff !important;
+      color:#1d4ed8 !important;
+      font-size:9px !important;
+  }
+  #mobileDetailMigrasi .mig-mobile-detail-grid { gap:8px !important; }
+  #mobileDetailMigrasi .mig-mobile-detail-item {
+      padding:9px !important;
+      border:1px solid #edf2f7 !important;
+      border-radius:9px !important;
+      background:#f8fafc !important;
+  }
+  #mobileDetailMigrasi .mig-mobile-detail-item span { color:#64748b !important; font-size:8px !important; }
+  #mobileDetailMigrasi .mig-mobile-detail-item strong { color:#1e293b !important; font-size:10px !important; }
+
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-shell,
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-header,
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-toolbar,
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-search-row,
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-footer { background:#111827 !important; border-color:#263449 !important; }
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-title { color:#f1f5f9 !important; }
+  :root[data-monbis-theme="dark"] #modalDetail #search_nasabah,
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-controls select { background:#172236 !important; border-color:#334155 !important; color:#e2e8f0 !important; }
+  :root[data-monbis-theme="dark"] #modalDetail .modal-detail-body { background:#0b1220 !important; }
+  :root[data-monbis-theme="dark"] #modalDetail #tableExportMigrasi { border-color:#334155 !important; }
+  :root[data-monbis-theme="dark"] #modalDetail #headModalMigrasi th { background:#1c2a3d !important; color:#cbd5e1 !important; border-color:#334155 !important; }
+  :root[data-monbis-theme="dark"] #modalDetail #bodyDetail td { background:#111827 !important; color:#e2e8f0 !important; border-color:#263449 !important; }
+  :root[data-monbis-theme="dark"] #modalDetail #bodyDetail tr:nth-child(even) td { background:#142033 !important; }
+  :root[data-monbis-theme="dark"] #modalDetail #bodyDetail tr:hover td { background:#1a3150 !important; }
+  :root[data-monbis-theme="dark"] #modalDetail #pageInfo { background:#172236 !important; border-color:#334155 !important; color:#cbd5e1 !important; }
+  :root[data-monbis-theme="dark"] #mobileDetailMigrasi .mig-mobile-detail-card { background:#111827 !important; border-color:#334155 !important; }
+  :root[data-monbis-theme="dark"] #mobileDetailMigrasi .mig-mobile-detail-name,
+  :root[data-monbis-theme="dark"] #mobileDetailMigrasi .mig-mobile-detail-item strong { color:#f1f5f9 !important; }
+  :root[data-monbis-theme="dark"] #mobileDetailMigrasi .mig-mobile-detail-item { background:#172236 !important; border-color:#334155 !important; }
+
+  @media (max-width:767px) {
+      #modalDetail .modal-detail-shell {
+          width:100% !important;
+          height:100dvh !important;
+          max-height:none !important;
+          border:0 !important;
+          border-radius:0 !important;
+      }
+      #modalDetail .modal-detail-topbar { min-height:58px !important; padding:12px 14px 10px !important; }
+      #modalDetail .modal-detail-title { font-size:16px !important; }
+      #modalDetail .modal-detail-title > span:first-child { width:5px !important; height:20px !important; }
+      #modalDetail .modal-detail-toolbar {
+          grid-template-columns:minmax(0,1fr) !important;
+          gap:9px !important;
+          padding:0 14px 12px !important;
+      }
+      #modalDetail #search_nasabah { height:36px !important; font-size:10px !important; }
+      #modalDetail .modal-detail-controls {
+          display:grid !important;
+          grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px !important;
+          gap:6px !important;
+          width:100% !important;
+      }
+      #modalDetail .modal-detail-controls select { width:100% !important; height:34px !important; font-size:10px !important; }
+      #modalDetail .modal-detail-controls button { width:40px !important; min-width:40px !important; height:34px !important; }
+      #modalDetail .modal-detail-controls button span { display:none !important; }
+      #modalDetail .modal-detail-body { padding:10px !important; }
+      #modalDetail #tableExportMigrasi { display:none !important; }
+      #modalDetail #mobileDetailMigrasi { display:grid !important; gap:9px !important; }
+      #modalDetail .modal-detail-footer { min-height:58px !important; padding:9px 12px !important; }
+      #modalDetail .modal-detail-footer button { min-width:68px; height:32px; font-size:10px; }
+  }
+
+  /* Header satu baris di desktop, turun rapi hanya saat layar sempit. */
+  #modalDetail .modal-detail-heading { min-width:0; }
+  #modalDetail .modal-detail-subtitle {
+      margin:5px 0 0 15px;
+      color:#64748b;
+      font-size:10px;
+      line-height:1.2;
+  }
+  #modalDetail .modal-detail-inline-actions {
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:8px;
+      min-width:0;
+  }
+  #modalDetail .modal-detail-inline-actions .modal-detail-toolbar {
+      display:flex !important;
+      align-items:center !important;
+      gap:8px !important;
+      padding:0 !important;
+      background:transparent !important;
+  }
+  #modalDetail .modal-detail-inline-actions .modal-detail-search-row {
+      width:232px !important;
+      flex:0 0 232px !important;
+  }
+  #modalDetail .modal-detail-inline-actions .modal-detail-controls {
+      display:flex !important;
+      width:auto !important;
+      gap:8px !important;
+  }
+  #modalDetail .modal-detail-inline-actions .modal-detail-controls select {
+      width:142px !important;
+  }
+  #modalDetail .modal-detail-inline-actions > button {
+      width:34px !important;
+      min-width:34px !important;
+      height:34px !important;
+  }
+
+  @media (max-width:767px) {
+      #modalDetail .modal-detail-topbar {
+          position:relative;
+          display:flex !important;
+          flex-wrap:wrap !important;
+          align-items:center !important;
+          padding:12px 14px 11px !important;
+      }
+      #modalDetail .modal-detail-heading {
+          width:100%;
+          padding-right:42px;
+      }
+      #modalDetail .modal-detail-subtitle { margin-left:11px; font-size:9px; }
+      #modalDetail .modal-detail-inline-actions {
+          display:contents !important;
+      }
+      #modalDetail .modal-detail-inline-actions .modal-detail-toolbar {
+          display:grid !important;
+          grid-template-columns:minmax(0,1fr) !important;
+          gap:8px !important;
+          width:100% !important;
+          margin-top:10px;
+      }
+      #modalDetail .modal-detail-inline-actions .modal-detail-search-row {
+          width:100% !important;
+          flex:none !important;
+      }
+      #modalDetail .modal-detail-inline-actions .modal-detail-controls {
+          display:grid !important;
+          grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px !important;
+          width:100% !important;
+          gap:6px !important;
+      }
+      #modalDetail .modal-detail-inline-actions .modal-detail-controls select { width:100% !important; }
+      #modalDetail .modal-detail-inline-actions > button {
+          position:absolute;
+          top:12px;
+          right:14px;
+          width:32px !important;
+          min-width:32px !important;
+          height:32px !important;
+      }
+  }
+
 </style>
 
-<div class="max-w-[1920px] mx-auto px-2 md:px-4 py-4 md:py-6 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
+<div id="migrasiScPage" class="max-w-[1920px] mx-auto px-2 md:px-4 py-4 md:py-6 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
   
   <!-- =========================================================
        HEADER / FILTER MIGRASI SC - STYLE OTP
@@ -691,22 +1495,19 @@
                 <div class="mig-title-wrap min-w-0">
                     <div class="flex items-center gap-2">
                         <h1 class="mig-main-title font-extrabold text-slate-900 tracking-tight leading-none">
-                            Migrasi SC - <span id="titleCabangMigrasi">ALL</span>
+                            Migrasi Soft Collection - <span id="titleCabangMigrasi">ALL</span>
                         </h1>
 
                         <button
                             type="button"
                             onclick="toggleInfoMigrasiSC(event)"
                             class="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[10px] font-black hover:bg-blue-700 transition shrink-0"
-                            title="Informasi Migrasi SC"
+                        title="Informasi Migrasi Soft Collection"
                         >
                             i
                         </button>
                     </div>
 
-                    <p class="hidden sm:block text-[9px] md:text-[11px] text-rose-600 font-bold italic mt-1">
-                        *Semua Nominal dlm Ribuan (Rp/1000)
-                    </p>
                 </div>
 
                 <button
@@ -724,9 +1525,9 @@
             </div>
 
             <!-- FILTER -->
-            <div id="filterWrapperMigrasi" class="hidden xl:block w-full xl:w-auto">
+            <div id="legacyFilterWrapperMigrasi" class="hidden xl:block w-full xl:w-auto">
                 <form
-                    id="formFilterMigrasi"
+                    id="legacyFormFilterMigrasi"
                     class="flex flex-row items-end gap-2 w-full overflow-x-auto no-scrollbar"
                     onsubmit="event.preventDefault(); fetchMatrix();"
                 >
@@ -735,7 +1536,7 @@
                         <label class="lbl text-slate-700">CLOSING (M-1)</label>
                         <input
                             type="date"
-                            id="closing_date"
+                            id="legacy_closing_date"
                             onchange="fetchMatrix()"
                             class="inp w-full text-[10px] md:text-sm font-semibold h-[34px] md:h-[38px] text-slate-800 cursor-pointer"
                             required
@@ -747,7 +1548,7 @@
                         <label class="lbl text-slate-700">ACTUAL (HARIAN)</label>
                         <input
                             type="date"
-                            id="harian_date"
+                            id="legacy_harian_date"
                             onchange="fetchMatrix()"
                             class="inp w-full text-[10px] md:text-sm font-semibold h-[34px] md:h-[38px] text-slate-800 cursor-pointer"
                             required
@@ -760,7 +1561,7 @@
                     <div class="field shrink-0 w-[170px] md:w-[220px]">
                         <label class="lbl text-slate-700">CABANG</label>
                         <select
-                            id="opt_kantor"
+                            id="legacy_opt_kantor"
                             class="inp w-full text-[10px] md:text-sm font-bold h-[34px] md:h-[38px] text-slate-700 bg-slate-50 cursor-pointer truncate"
                             onchange="updateTitleCabangMigrasi(); fetchMatrix();"
                         >
@@ -771,7 +1572,7 @@
                     <div class="mig-mobile-actions">
                     <button
                         type="button"
-                        id="btnToggleSummaryMigrasi"
+                        id="legacy_btnToggleSummaryMigrasi"
                         onclick="toggleSummaryMigrasiSC(event)"
                         class="mig-action-btn mig-flow-toggle btn-icon bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm shrink-0"
                         title="Buka / Tutup Flow Summary"
@@ -788,9 +1589,10 @@
                         class="mig-action-btn btn-icon bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shrink-0"
                         title="Download Excel"
                     >
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="md:w-[18px] md:h-[18px]">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
+                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" class="md:w-[18px] md:h-[18px]" aria-hidden="true">
+                            <path d="M12 3v12"></path>
+                            <path d="m7 10 5 5 5-5"></path>
+                            <path d="M5 20h14"></path>
                         </svg>
                     </button>
                     </div>
@@ -798,8 +1600,36 @@
             </div>
         </div>
 
+        <div class="mig-header-actions flex items-center gap-2 shrink-0">
+            <button
+                type="button"
+                id="btnToggleSummaryMigrasi"
+                onclick="toggleSummaryMigrasiSC(event)"
+                class="mig-action-btn mig-flow-toggle btn-icon bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm shrink-0"
+                title="Buka / Tutup Flow Summary"
+            >
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 17l6-6 4 4 8-8"></path>
+                    <path d="M14 7h7v7"></path>
+                </svg>
+            </button>
+
+            <button
+                type="button"
+                onclick="exportExcelRekapMigrasi()"
+                class="mig-action-btn btn-icon bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shrink-0"
+                title="Download Excel"
+            >
+                        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M12 3v12"></path>
+                            <path d="m7 10 5 5 5-5"></path>
+                            <path d="M5 20h14"></path>
+                        </svg>
+            </button>
+        </div>
+
         <!-- SUMMARY MINI CARD -->
-        <div id="summaryCheck" class="hidden flex-nowrap items-center gap-2 md:gap-3 mt-3 pt-3 border-t border-slate-100">
+        <div id="summaryCheck" class="hidden flex flex-nowrap items-center gap-2 md:gap-3 mt-3 pt-3 border-t border-slate-100">
 
             <div class="mig-mini-card">
                 <span class="text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">
@@ -827,17 +1657,47 @@
                 </span>
                 <div class="flex items-center gap-2" id="growthContainer"></div>
             </div>
+
+            <div class="mig-mini-card">
+                <span class="text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">
+                    RUN OFF ANGSURAN
+                </span>
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] md:text-sm font-black text-slate-700 font-mono tracking-tight" id="runoffAngsuranSummaryVal">-</span>
+                    <span class="text-[9px] md:text-[10px] font-semibold text-slate-500" id="runoffAngsuranSummaryNoa">NOA: -</span>
+                </div>
+            </div>
+
+            <div class="mig-mini-card">
+                <span class="text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">
+                    RUN OFF PELUNASAN
+                </span>
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] md:text-sm font-black text-slate-700 font-mono tracking-tight" id="runoffPelunasanSummaryVal">-</span>
+                    <span class="text-[9px] md:text-[10px] font-semibold text-slate-500" id="runoffPelunasanSummaryNoa">NOA: -</span>
+                </div>
+            </div>
+
+            <div class="mig-mini-card">
+                <span class="text-[9px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">
+                    TOTAL RUN OFF
+                </span>
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] md:text-sm font-black text-slate-700 font-mono tracking-tight" id="runoffTotalSummaryVal">-</span>
+                    <span class="text-[9px] md:text-[10px] font-semibold text-slate-500" id="runoffTotalSummaryNoa">NOA: -</span>
+                </div>
+            </div>
         </div>
 
         <!-- INFO PANEL -->
         <div id="infoMigrasiSC" class="info-popover-migrasi hidden">
             <div class="px-4 py-3 border-b border-slate-100">
-                <h3 class="text-sm font-black text-slate-900">Informasi Migrasi SC</h3>
+                <h3 class="text-sm font-black text-slate-900">Informasi Migrasi Soft Collection</h3>
             </div>
 
             <div class="px-4 py-3 text-[11px] md:text-xs text-slate-700 leading-relaxed space-y-2">
                 <p>
-                    <b>Migrasi SC</b> adalah monitoring perpindahan posisi bucket DPD debitur dari posisi
+                    <b>Migrasi Soft Collection</b> adalah monitoring perpindahan posisi bucket DPD debitur dari posisi
                     <b>Closing M-1</b> ke posisi <b>Actual/Harian</b>.
                 </p>
 
@@ -850,11 +1710,11 @@
                 </div>
 
                 <div class="border border-slate-200 rounded-lg p-2 bg-slate-50">
-                    <b>FE (31-90):</b> debitur dengan keterlambatan 31 sampai 90 hari.
+                    <b>FE (31-180):</b> debitur dengan keterlambatan 31 sampai 180 hari.
                 </div>
 
                 <div class="border border-slate-200 rounded-lg p-2 bg-slate-50">
-                    <b>BE (&gt;90):</b> debitur dengan keterlambatan lebih dari 90 hari.
+                    <b>BE (&gt;180):</b> debitur dengan keterlambatan lebih dari 180 hari.
                 </div>
 
                 <div class="border border-slate-200 rounded-lg p-2 bg-slate-50">
@@ -880,22 +1740,38 @@
         <span class="text-[10px] md:text-sm font-bold uppercase tracking-widest">Menyiapkan Matriks...</span>
     </div>
     
-    <div class="flex-1 w-full h-full overflow-auto custom-scrollbar relative">
+    <div id="matrixScrollArea" class="flex-1 w-full h-full overflow-auto custom-scrollbar relative">
       <table class="w-max min-w-full text-center border-separate border-spacing-0 text-slate-700 table-fixed" id="tabelMigrasiSC">
+        <colgroup>
+          <col style="width:12%">
+          <col style="width:12%">
+          <col style="width:9%">
+          <col style="width:9%">
+          <col style="width:9%">
+          <col style="width:9%">
+          <col style="width:9%">
+          <col style="width:9%">
+          <col style="width:9%">
+          <col style="width:6.5%">
+          <col style="width:6.5%">
+        </colgroup>
         <thead class="text-slate-800 font-bold tracking-wider text-[9px] md:text-xs">
           <tr class="mig-row-1">
-            <th class="sticky-left px-2 md:px-3 text-left w-[90px] md:w-[120px] uppercase align-middle bg-slate-50 border-r border-slate-200 text-blue-900">DPD M-1</th>
-            <th class="px-2 md:px-3 border-r border-slate-200 w-[90px] md:w-[130px] uppercase align-middle bg-slate-50 text-blue-900">POSISI M-1</th>
-            <th class="px-2 md:px-3 border-r border-green-200 w-[90px] md:w-[130px] text-green-700 bg-[#f0fdf4] align-middle">0</th>
-            <th class="px-2 md:px-3 border-r border-yellow-200 w-[90px] md:w-[130px] text-yellow-700 bg-[#fefce8] align-middle">1 - 7</th>
-            <th class="px-2 md:px-3 border-r border-yellow-200 w-[90px] md:w-[130px] text-yellow-700 bg-[#fefce8] align-middle">8 - 14</th>
-            <th class="px-2 md:px-3 border-r border-yellow-200 w-[90px] md:w-[130px] text-yellow-800 bg-[#fef9c3] align-middle">15 - 21</th>
-            <th class="px-2 md:px-3 border-r border-orange-200 w-[90px] md:w-[130px] text-orange-700 bg-[#fff7ed] align-middle">22 - 30</th>
-            <th class="px-2 md:px-3 border-r border-red-200 w-[90px] md:w-[130px] text-red-700 bg-[#fef2f2] align-middle">FE (31-90)</th>
-            <th class="px-2 md:px-3 border-r border-red-200 w-[90px] md:w-[130px] text-red-800 bg-[#fee2e2] align-middle">BE (>90)</th>
-            <th class="px-2 md:px-3 border-r border-slate-200 w-[90px] md:w-[130px] uppercase align-middle bg-slate-50 text-blue-700">ANGSURAN</th>
-            <th class="px-2 md:px-3 border-r border-slate-200 w-[90px] md:w-[130px] uppercase align-middle bg-slate-50 text-blue-700">PELUNASAN</th>
-            <th class="px-2 md:px-3 w-[100px] md:w-[140px] uppercase align-middle bg-slate-100 text-red-600">TOT RUN OFF</th>
+            <th rowspan="2" class="sticky-left px-2 md:px-3 text-center uppercase align-middle bg-slate-50 border-r border-slate-200 text-blue-900">DPD</th>
+            <th rowspan="2" class="sticky-left-2 px-2 md:px-3 border-r border-slate-200 uppercase align-middle bg-slate-50 text-slate-700">M-1</th>
+            <th colspan="7" class="px-2 md:px-3 border-r border-slate-200 uppercase align-middle bg-slate-50 text-slate-700">Actual DPD / Bucket</th>
+            <th colspan="2" class="px-2 md:px-3 uppercase align-middle bg-slate-50 text-slate-700">Run off</th>
+          </tr>
+          <tr class="mig-row-2">
+            <th class="px-2 md:px-3 border-r border-slate-200 align-middle">0</th>
+            <th class="px-2 md:px-3 border-r border-slate-200 align-middle">'1-7</th>
+            <th class="px-2 md:px-3 border-r border-slate-200 align-middle">'8-14</th>
+            <th class="px-2 md:px-3 border-r border-slate-200 align-middle">'15-21</th>
+            <th class="px-2 md:px-3 border-r border-slate-200 align-middle">'22-30</th>
+            <th class="px-2 md:px-3 border-r border-slate-200 align-middle">31-180</th>
+            <th class="px-2 md:px-3 border-r border-slate-200 align-middle">180+</th>
+            <th class="px-2 md:px-3 border-r border-slate-200 uppercase align-middle">Angsuran</th>
+            <th class="px-2 md:px-3 uppercase align-middle">Lunas</th>
           </tr>
           <tr id="rowTotalMigrasiAtas" class="mig-row-tot text-sm md:text-base font-extrabold tracking-wide"></tr>
         </thead>
@@ -907,47 +1783,51 @@
 
 <div id="modalDetail" class="fixed inset-0 hidden z-[9999] flex items-end md:items-center justify-center p-0 md:p-4">
   <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onclick="closeModal()"></div>
-  <div class="relative bg-white w-full h-[95vh] md:h-[92vh] max-w-[1700px] rounded-t-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
+  <div class="modal-detail-shell relative bg-white w-full h-[95vh] md:h-[92vh] max-w-[1700px] rounded-t-xl md:rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-scale-up">
     
-    <div class="flex flex-col bg-white border-b shrink-0 w-full z-50">
+    <div class="modal-detail-header flex flex-col bg-white border-b shrink-0 w-full z-50">
         <div class="modal-detail-topbar flex flex-row items-center justify-between px-3 py-2.5 md:px-4 md:py-3 gap-2 w-full overflow-hidden">
-            <div class="flex-1 min-w-0 shrink">
+            <div class="modal-detail-heading flex-1 min-w-0 shrink">
                 <h3 class="modal-detail-title font-bold text-slate-800 flex items-center gap-1.5 md:gap-2 text-[12px] md:text-xl leading-none min-w-0">
                     <span class="w-1.5 md:w-2 h-4 md:h-6 bg-blue-600 rounded-full hidden md:block"></span>
                     <span class="truncate">Detail Nasabah</span>
                     <span id="badgeMigrasi" class="text-[9px] md:text-sm bg-blue-600 text-white px-2 py-0.5 md:px-2.5 rounded-md md:rounded-full shadow-sm ml-1 md:ml-2 font-mono shrink-0">...</span>
                 </h3>
+                <div class="modal-detail-subtitle">Area: <span id="modalAreaMigrasi">-</span></div>
             </div>
 
-            <button onclick="closeModal()" class="w-[30px] h-[30px] md:w-[34px] md:h-[34px] flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-lg md:text-xl leading-none shrink-0">&times;</button>
-        </div>
+            <div class="modal-detail-inline-actions shrink-0">
+                <div class="modal-detail-toolbar">
+                    <div class="modal-detail-search-row">
+                        <div class="relative w-full">
+                            <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
+                                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </div>
+                            <input type="text" id="search_nasabah" onkeyup="filterTableDetail()" class="w-full pl-8 pr-3 py-1.5 h-[31px] md:h-[34px] bg-slate-50 border border-slate-200 rounded-lg text-[10px] md:text-xs outline-none focus:border-blue-500 focus:bg-white transition-all placeholder-slate-400 font-medium" placeholder="Cari nama / rekening...">
+                        </div>
+                    </div>
 
-        <div class="px-3 pb-2 md:px-4 md:pb-2 bg-white">
-            <div class="relative w-full md:w-[260px]">
-                <div class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none">
-                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    <div id="modalFilterWrapper" class="modal-detail-controls">
+                        <select id="opt_kankas_modal" class="inp px-1 md:px-2 h-[30px] md:h-[34px] w-[85px] md:w-[130px] text-[9px] md:text-xs font-bold text-blue-800 bg-blue-50/50 border-blue-200 outline-none shrink-0 cursor-pointer" onchange="loadDetail()">
+                            <option value="">Semua Kankas</option>
+                        </select>
+
+                        <select id="opt_ao_modal" class="inp px-1 md:px-2 h-[30px] md:h-[34px] w-[85px] md:w-[130px] text-[9px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetail()">
+                            <option value="">Semua AO</option>
+                        </select>
+                        
+                        <button onclick="exportExcelDetailMigrasi()" class="btn-icon bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 md:px-3 h-[30px] md:h-[34px] rounded-lg shadow-sm shrink-0 flex items-center justify-center gap-1.5 ml-auto md:ml-0" aria-label="Export detail">
+                            <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.1" d="M12 3v12"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.1" d="m7 10 5 5 5-5"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.1" d="M5 20h14"></path></svg>
+                            <span class="text-[10px] md:text-xs font-bold uppercase tracking-wider hidden sm:inline">Export</span>
+                        </button>
+                    </div>
                 </div>
-                <input type="text" id="search_nasabah" onkeyup="filterTableDetail()" class="w-full pl-8 pr-3 py-1.5 h-[31px] md:h-[34px] bg-slate-50 border border-slate-200 rounded-lg text-[10px] md:text-xs outline-none focus:border-blue-500 focus:bg-white transition-all placeholder-slate-400 font-medium" placeholder="Cari nama / rekening...">
+                <button onclick="closeModal()" class="w-[30px] h-[30px] md:w-[34px] md:h-[34px] flex items-center justify-center rounded-lg bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-lg md:text-xl leading-none shrink-0" aria-label="Tutup modal">&times;</button>
             </div>
-        </div>
-
-        <div id="modalFilterWrapper" class="flex flex-row items-center justify-start md:justify-end gap-1.5 md:gap-2 px-3 pb-2.5 md:px-4 md:pb-3 w-full bg-white overflow-x-auto no-scrollbar transition-all border-t border-slate-100 md:border-none">
-            <select id="opt_kankas_modal" class="inp px-1 md:px-2 h-[30px] md:h-[34px] w-[85px] md:w-[130px] text-[9px] md:text-xs font-bold text-blue-800 bg-blue-50/50 border-blue-200 outline-none shrink-0 cursor-pointer" onchange="loadDetail()">
-                <option value="">Kankas</option>
-            </select>
-
-            <select id="opt_ao_modal" class="inp px-1 md:px-2 h-[30px] md:h-[34px] w-[85px] md:w-[130px] text-[9px] md:text-xs font-bold text-slate-700 bg-slate-50 border-slate-200 outline-none shrink-0 cursor-pointer" onchange="loadDetail()">
-                <option value="">Semua AO</option>
-            </select>
-            
-            <button onclick="exportExcelDetailMigrasi()" class="btn-icon bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 md:px-3 h-[30px] md:h-[34px] rounded-lg shadow-sm shrink-0 flex items-center justify-center gap-1.5 ml-auto md:ml-0">
-                <svg class="w-3.5 h-3.5 md:w-4 md:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                <span class="text-[10px] md:text-xs font-bold uppercase tracking-wider hidden sm:inline">Export</span>
-            </button>
         </div>
     </div>
 
-    <div class="flex-1 overflow-auto bg-slate-50 relative p-0 md:p-3 custom-scrollbar">
+    <div class="modal-detail-body flex-1 overflow-auto bg-slate-50 relative p-0 md:p-3 custom-scrollbar">
         <div id="loadingDetail" class="hidden absolute inset-0 bg-white/90 z-40 flex flex-col items-center justify-center text-blue-600 backdrop-blur-sm">
             <div class="animate-spin rounded-full h-8 w-8 md:h-10 md:w-10 border-4 border-blue-500 border-t-transparent mb-2 md:mb-3"></div>
             <span class="text-[10px] md:text-sm font-bold uppercase tracking-widest">Memuat Detail...</span>
@@ -958,9 +1838,10 @@
                 </thead>
             <tbody id="bodyDetail" class="divide-y divide-slate-100 bg-white text-[9.5px] md:text-[12px]"></tbody>
         </table>
+        <div id="mobileDetailMigrasi" class="hidden"></div>
     </div>
 
-    <div class="px-3 py-2.5 md:px-6 md:py-4 border-t bg-white flex justify-between items-center shrink-0">
+    <div class="modal-detail-footer px-3 py-2.5 md:px-6 md:py-4 border-t bg-white flex justify-between items-center shrink-0">
         <span id="pageInfo" class="text-[9px] md:text-xs font-bold text-slate-600 bg-slate-100 px-2 md:px-3 py-1 rounded-md md:rounded-lg">0 Data</span>
         <div class="flex gap-1.5 md:gap-2">
             <button id="btnPrev" onclick="changePageDetail(-1)" class="px-3 md:px-4 py-1.5 md:py-2 bg-white border border-slate-300 rounded-md md:rounded-lg text-[9px] md:text-sm font-bold text-slate-600 hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 transition shadow-sm">« Prev</button>
@@ -978,7 +1859,7 @@ const API_DATE = './api/date/';
 const nfID = new Intl.NumberFormat('id-ID');
 
 // 🔥 FORMAT DIBAGI 1000 (Tabel Utama) & MURNI (Detail) 🔥
-const fmtK = n => nfID.format(Math.round(Number(n||0) / 1000));
+const fmtK = n => nfID.format(Math.round(Number(n||0)));
 const fmt  = n => nfID.format(Math.round(Number(n||0)));
 
 const apiCall = (u,o) => window.apiFetch ? window.apiFetch(u,o) : fetch(u,o);
@@ -986,7 +1867,33 @@ const BUCKETS = ['0','1-7','8-14','15-21','22-30','FE','BE'];
 
 let modalState = {from:'', to:'', page:1, limit:50};
 let rekapDataCache = null;
-let summaryMigrasiOpen = false; 
+let summaryMigrasiOpen = false;
+
+function displayAmount(n) {
+    return Number(n || 0) === 0 ? '-' : fmtK(n);
+}
+
+function displayCount(n) {
+    return Number(n || 0) === 0 ? '-' : fmt(n);
+}
+
+function migrationPct(value, source) {
+    const sourceValue = Number(source || 0);
+    return sourceValue > 0 ? (Number(value || 0) / sourceValue) * 100 : null;
+}
+
+function matrixPair(os, noa, pct = null, valueClass = 'text-slate-800', noaClass = 'text-slate-500') {
+    const amount = Number(os || 0);
+    const count = Number(noa || 0);
+    if (amount === 0 && count === 0) return '<div class="mig-empty">-</div>';
+
+    const percentage = pct !== null && Number.isFinite(Number(pct))
+        ? `<span class="mig-pct">${Number(pct).toFixed(2)}%</span>`
+        : '';
+
+    return `<div class="mig-val ${valueClass}">${displayAmount(amount)}</div>
+            <div class="mig-noa ${noaClass} font-medium">NOA: <span class="font-bold">${displayCount(count)}</span>${percentage}</div>`;
+}
 
 // 🔥 FUNGSI TOGGLE FILTER (BISA DIPAKAI MAIN & MODAL) 🔥
 function toggleFilter(id) {
@@ -1071,13 +1978,64 @@ function updateTitleCabangMigrasi() {
     const val = opt.value;
     const text = opt.options?.[opt.selectedIndex]?.text || '';
 
-    if (!val) {
+    if (!val || val === '000') {
         title.innerText = 'ALL';
+        return;
+    }
+
+    if (val.indexOf('KORWIL:') === 0) {
+        title.innerText = val.replace('KORWIL:', 'KORWIL ');
         return;
     }
 
     const matchKode = text.match(/\d{3}/);
     title.innerText = matchKode ? `CABANG ${matchKode[0]}` : text;
+}
+
+function getMigrasiNominalField() {
+    const value = document.getElementById('migrasiScNominal')?.value;
+    return value === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+}
+
+function getMigrasiNominalLabel() {
+    return getMigrasiNominalField() === 'baki_debet' ? 'Baki Debet' : 'Saldo Bank';
+}
+
+function getMigrasiBranchCode() {
+    const value = String(document.getElementById('opt_kantor')?.value || '');
+    return value.indexOf('CABANG:') === 0 ? value.substring(7) : (/^\d{1,3}$/.test(value) ? value : '');
+}
+
+function bindMigrasiNavbarFilter() {
+    const toggle = document.getElementById('migrasiBucketScNavbarFilterToggle');
+    const panel = document.getElementById('migrasiBucketScNavbarFilterPanel');
+    const close = document.getElementById('migrasiBucketScNavbarFilterClose');
+    if (!toggle || !panel || toggle.dataset.bound === '1') return;
+
+    const closePanel = () => {
+        panel.classList.add('hidden');
+        panel.classList.remove('flex');
+        toggle.classList.remove('is-active');
+        toggle.setAttribute('aria-expanded', 'false');
+    };
+    toggle.addEventListener('click', e => {
+        e.stopPropagation();
+        const opening = panel.classList.contains('hidden');
+        document.querySelectorAll('.dashboard-navbar-filter').forEach(item => {
+            if (item !== panel) item.classList.add('hidden');
+        });
+        if (opening) {
+            panel.classList.remove('hidden');
+            panel.classList.add('flex');
+            toggle.classList.add('is-active');
+            toggle.setAttribute('aria-expanded', 'true');
+        } else closePanel();
+    });
+    close?.addEventListener('click', closePanel);
+    document.addEventListener('click', e => {
+        if (!panel.contains(e.target) && !toggle.contains(e.target)) closePanel();
+    });
+    toggle.dataset.bound = '1';
 }
 
 document.addEventListener('click', function(e) {
@@ -1094,6 +2052,7 @@ document.addEventListener('click', function(e) {
 
 // --- INIT ---
 window.addEventListener('DOMContentLoaded', async () => {
+    bindMigrasiNavbarFilter();
     const user = (window.getUser && window.getUser()) || null;
     const uKode = (user?.kode ? String(user.kode).padStart(3,'0') : '000');
     
@@ -1124,8 +2083,8 @@ async function populateKantor(uKode){
     if (!el) return;
 
     if(uKode !== '000'){
-        el.innerHTML = `<option value="${uKode}">CABANG ${uKode}</option>`; 
-        el.value = uKode;
+        el.innerHTML = `<option value="CABANG:${uKode}">CABANG ${uKode}</option>`; 
+        el.value = `CABANG:${uKode}`;
         el.disabled = true;
         updateTitleCabangMigrasi();
         return;
@@ -1134,21 +2093,25 @@ async function populateKantor(uKode){
     try{ 
         const r = await apiCall(API_KODE,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'kode_kantor'})}); 
         const j = await r.json();
-        let h = '<option value="">KONSOLIDASI (SEMUA)</option>'; 
+        let h = '<option value="">Konsolidasi</option>';
+        ['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'].forEach(name => {
+            const label = name.charAt(0) + name.slice(1).toLowerCase();
+            h += `<option value="KORWIL:${name}">Korwil ${label}</option>`;
+        });
         (j.data||[]).filter(x => x.kode_kantor !== '000')
             .sort((a,b) => a.kode_kantor.localeCompare(b.kode_kantor))
-            .forEach(x => h += `<option value="${x.kode_kantor}">${x.kode_kantor} - ${x.nama_kantor}</option>`); 
+            .forEach(x => h += `<option value="CABANG:${x.kode_kantor}">${x.kode_kantor} - ${x.nama_kantor}</option>`);
         el.innerHTML = h;
         updateTitleCabangMigrasi();
     } catch{
-        el.innerHTML = '<option value="">Gagal load cabang</option>';
+        el.innerHTML = '<option value="">Gagal load area</option>';
         updateTitleCabangMigrasi();
     }
 }
 
 async function loadKankasModalDropdown() {
     const elKankas = document.getElementById('opt_kankas_modal');
-    const branch = document.getElementById('opt_kantor').value;
+    const branch = getMigrasiBranchCode();
     elKankas.innerHTML = '<option value="">Semua Kankas</option>';
     
     try {
@@ -1204,7 +2167,8 @@ async function fetchMatrix(){
             type: "rekap_migrasi_bucket", 
             closing_date: document.getElementById('closing_date').value, 
             harian_date: document.getElementById('harian_date').value, 
-            kode_kantor: document.getElementById('opt_kantor').value || null 
+            kode_kantor: document.getElementById('opt_kantor').value || null,
+            nominal_field: getMigrasiNominalField()
         };
         const r = await apiCall(API_ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(pl) }); 
         const j = await r.json();
@@ -1256,38 +2220,42 @@ function renderMatrix(data){
     
     document.getElementById('growthContainer').innerHTML = `
         <span class="text-[9px] md:text-[10px] font-bold ${bgGrowth} ${colorGrowth} px-1.5 py-0.5 rounded">${Math.abs(diffPct).toFixed(2)}%</span>
-        <span class="text-[11px] md:text-sm font-bold font-mono ${colorGrowth} tracking-tight">${fmtK(diffVal)}</span>
+        <span class="text-[11px] md:text-sm font-bold font-mono ${colorGrowth} tracking-tight">${displayAmount(diffVal)}</span>
     `;
 
     document.getElementById('flowBadPct').innerText = flowBadPct.toFixed(2) + '%';
-    document.getElementById('flowBadVal').innerText = fmtK(flowBadOS);
+    document.getElementById('flowBadVal').innerText = displayAmount(flowBadOS);
 
     document.getElementById('flowGoodPct').innerText = flowGoodPct.toFixed(2) + '%';
-    document.getElementById('flowGoodVal').innerText = fmtK(flowGoodOS);
+    document.getElementById('flowGoodVal').innerText = displayAmount(flowGoodOS);
+
+    const runoffAngsuran = GT.runoff_angsuran || { os: GT.angsuran || 0, noa: GT.angsuran_noa || 0 };
+    const runoffPelunasan = GT.runoff_pelunasan || GT.lunas || {};
+    const runoffTotal = GT.runoff_total || {};
+    document.getElementById('runoffAngsuranSummaryVal').innerText = displayAmount(runoffAngsuran.os);
+    document.getElementById('runoffAngsuranSummaryNoa').innerText = `NOA: ${displayCount(runoffAngsuran.noa)}`;
+    document.getElementById('runoffPelunasanSummaryVal').innerText = displayAmount(runoffPelunasan.os);
+    document.getElementById('runoffPelunasanSummaryNoa').innerText = `NOA: ${displayCount(runoffPelunasan.noa)}`;
+    document.getElementById('runoffTotalSummaryVal').innerText = displayAmount(runoffTotal.os);
+    document.getElementById('runoffTotalSummaryNoa').innerText = `NOA: ${displayCount(runoffTotal.noa)}`;
 
     // --- RENDER TOTAL STICKY (GABUNG NOA DIBANWAH OS PAKAI FMTK) 🔥 ---
-    let tf = `<th class="sticky-left px-2 md:px-3 text-left uppercase tracking-widest align-middle text-blue-900 bg-[#eff6ff] text-[11px] md:text-[13px] shadow-[inset_-1px_0_0_#93c5fd]">TOTAL</th>
-              <th class="border-r border-blue-300 px-2 md:px-3 text-center align-middle bg-[#eff6ff]">
-                 <div class="mig-val text-blue-900">${fmtK(GT.m1.os)}</div>
-                 <div class="mig-noa text-blue-500 font-normal">NOA: <span class="font-bold text-blue-700">${fmt(GT.m1.noa)}</span></div>
+    let tf = `<th class="sticky-left px-2 md:px-3 text-left uppercase tracking-widest align-middle">TOTAL</th>
+              <th class="sticky-left-2 border-r px-2 md:px-3 text-center align-middle">
+                 ${matrixPair(GT.m1.os, GT.m1.noa)}
               </th>`;
     
     BUCKETS.forEach(b => { 
-        tf += `<th class="border-r border-blue-300 px-2 md:px-3 text-center align-middle bg-[#eff6ff]">
-                  <div class="mig-val text-blue-900">${fmtK(GT.buckets[b].os)}</div>
-                  <div class="mig-noa text-blue-500 font-normal">NOA: <span class="font-bold text-blue-700">${fmt(GT.buckets[b].noa)}</span></div>
+        tf += `<th class="border-r px-2 md:px-3 text-center align-middle">
+                  ${matrixPair(GT.buckets[b].os, GT.buckets[b].noa)}
                </th>` 
     });
     
-    tf += `<th class="border-r border-blue-300 text-center px-2 md:px-3 align-middle bg-[#eff6ff]">
-              <div class="mig-val text-blue-700">${fmtK(GT.angsuran)}</div>
+    tf += `<th class="border-r text-center px-2 md:px-3 align-middle">
+              <div class="mig-val">${displayAmount(GT.angsuran)}</div>
            </th>
-           <th class="border-r border-blue-300 px-2 md:px-3 text-center align-middle bg-[#eff6ff]">
-              <div class="mig-val text-blue-900">${fmtK(GT.lunas.os)}</div>
-              <div class="mig-noa text-blue-500 font-normal">NOA: <span class="font-bold text-blue-700">${fmt(GT.lunas.noa)}</span></div>
-           </th>
-           <th class="text-center px-2 md:px-3 align-middle bg-[#eff6ff]">
-              <div class="mig-val text-red-600">${fmtK(GT.runoff_total.os)}</div>
+           <th class="px-2 md:px-3 text-center align-middle">
+              ${matrixPair(GT.lunas.os, GT.lunas.noa)}
            </th>`;
     
     const rowTot = document.getElementById('rowTotalMigrasiAtas');
@@ -1298,19 +2266,22 @@ function renderMatrix(data){
     let h = '';
     
     // Baris Realisasi
-    h += `<tr class="bg-emerald-50/40 hover:bg-emerald-100 border-b border-emerald-100 h-[48px] md:h-[52px]">
-            <td class="sticky-left px-2 md:px-3 text-left font-bold text-emerald-800 bg-emerald-50 border-r border-emerald-200 text-[10px] md:text-sm align-middle leading-tight min-w-[90px] md:min-w-[130px] truncate shadow-[inset_-1px_0_0_#a7f3d0]">REALISASI BARU</td>
-            <td class="border-r border-emerald-100 text-slate-400 align-middle text-center">-</td>
-            <td class="border-r border-emerald-100 px-2 md:px-3 align-middle text-center">
+    h += `<tr class="bg-white hover:bg-slate-50 border-b border-slate-200 h-[48px] md:h-[52px]">
+            <td class="sticky-left px-2 md:px-3 text-left font-bold text-slate-700 bg-white border-r border-slate-200 text-[10px] md:text-sm align-middle leading-tight min-w-[90px] md:min-w-[130px] truncate shadow-[inset_-1px_0_0_#e2e8f0]">REALISASI BARU</td>
+            <td class="sticky-left-2 border-r border-slate-200 text-slate-400 align-middle text-center">-</td>
+            <td class="border-r border-slate-200 px-2 md:px-3 align-middle text-center">
                 <div class="cursor-pointer flex flex-col justify-center h-full" onclick="openDetail('REALISASI','0')">
-                    <div class="mig-val text-emerald-800">${fmtK(real.os)}</div>
-                    <div class="mig-noa text-emerald-600 font-medium">NOA: <span class="font-bold text-emerald-800">${fmt(real.noa)}</span></div>
+                    ${matrixPair(real.os, real.noa)}
                 </div>
             </td>
-            <td colspan="6" class="text-[9px] md:text-xs italic text-slate-400 border-r border-emerald-100 align-middle text-center">Detail Tersebar di Bucket DPD</td>
-            <td class="border-r border-emerald-100 text-slate-400 align-middle text-center">-</td>
-            <td class="border-r border-emerald-100 text-slate-400 align-middle text-center">-</td>
-            <td class="text-slate-400 align-middle text-center">-</td>
+            <td class="text-[9px] md:text-xs italic text-slate-400 border-r border-slate-200 align-middle text-center">Detail Tersebar</td>
+            <td class="border-r border-slate-200 text-slate-400 align-middle text-center">-</td>
+            <td class="border-r border-slate-200 text-slate-400 align-middle text-center">-</td>
+            <td class="border-r border-slate-200 text-slate-400 align-middle text-center">-</td>
+            <td class="border-r border-slate-200 text-slate-400 align-middle text-center">-</td>
+            <td class="border-r border-slate-200 text-slate-400 align-middle text-center">-</td>
+            <td class="border-r border-slate-200 text-slate-400 align-middle text-center">-</td>
+            <td class="border-r border-slate-200 text-slate-400 align-middle text-center">-</td>
           </tr>`;
 
     // Loop Matrix Bucket
@@ -1318,9 +2289,8 @@ function renderMatrix(data){
         const m1 = data.summary_m1[f];
         h += `<tr class="hover:bg-slate-50 border-b border-slate-200 h-[48px] md:h-[52px]">
                 <td class="sticky-left px-2 md:px-3 text-left font-bold text-slate-700 bg-white border-r border-slate-200 text-[11px] md:text-sm align-middle min-w-[90px] md:min-w-[130px] truncate shadow-[inset_-1px_0_0_#e2e8f0]">${f}</td>
-                <td class="border-r border-slate-200 text-center px-2 md:px-3 align-middle bg-slate-50/30">
-                    <div class="mig-val text-slate-800">${fmtK(m1.os_m1)}</div>
-                    <div class="mig-noa text-slate-500">NOA: <span class="font-bold text-slate-700">${fmt(m1.noa_m1)}</span></div>
+                <td class="sticky-left-2 border-r border-slate-200 text-center px-2 md:px-3 align-middle bg-white">
+                    ${matrixPair(m1.os_m1, m1.noa_m1)}
                 </td>`;
         
         let ar = 0;
@@ -1328,15 +2298,13 @@ function renderMatrix(data){
             const c = data.matrix[f][t]; 
             ar += parseFloat(c.angsuran || 0);
             
-            let bgClass = ''; let textClass = 'text-slate-800'; let noaClass = 'text-slate-500';
+            let bgClass = 'bg-white';
 
             if(c.os > 0 && m1.os_m1 > 0){
                 if (j > i) { 
-                    bgClass = 'bg-red-50/70 border-red-100'; textClass = 'text-red-700'; noaClass = 'text-red-600'; 
+                    bgClass = 'bg-red-50/70 border-red-100';
                 } else if (j < i) {
-                    bgClass = 'bg-emerald-50/70 border-emerald-100'; textClass = 'text-emerald-700'; noaClass = 'text-emerald-600';
-                } else {
-                    bgClass = 'bg-blue-50/40 border-blue-100'; textClass = 'text-blue-800'; noaClass = 'text-blue-600'; 
+                    bgClass = 'bg-emerald-50/70 border-emerald-100';
                 }
             }
 
@@ -1345,8 +2313,7 @@ function renderMatrix(data){
 
             h += `<td class="border-r border-slate-200 px-2 md:px-3 align-middle text-center ${bgClass}">
                     <div class="h-full flex flex-col justify-center ${cursor}" ${clickEv}>
-                        <div class="mig-val ${textClass}">${fmtK(c.os)}</div>
-                        <div class="mig-noa ${noaClass} font-medium">NOA: <span class="font-bold">${fmt(c.noa)}</span></div>
+                        ${matrixPair(c.os, c.noa, migrationPct(c.os, m1.os_m1))}
                     </div>
                   </td>`;
         });
@@ -1355,14 +2322,11 @@ function renderMatrix(data){
         h += `<td class="border-r border-slate-200 align-middle px-2 md:px-3 text-center bg-slate-50/30">
                 <div class="mig-val text-blue-700">${fmtK(ar)}</div>
               </td>
-              <td class="border-r border-slate-200 px-2 md:px-3 text-center align-middle bg-slate-50/30">
+              <td class="px-2 md:px-3 text-center align-middle bg-slate-50/30">
                 <div class="h-full flex flex-col justify-center cursor-pointer hover:bg-blue-50" onclick="openDetail('${f}','O')">
                     <div class="mig-val text-blue-800">${fmtK(l.pelunasan)}</div>
                     <div class="mig-noa text-blue-500">NOA: <span class="font-bold text-blue-700">${fmt(l.noa)}</span></div>
                 </div>
-              </td>
-              <td class="text-center bg-red-50/10 align-middle px-2 md:px-3">
-                <div class="mig-val text-red-600">${fmtK(ar + parseFloat(l.pelunasan || 0))}</div>
               </td>
             </tr>`;
     });
@@ -1416,10 +2380,83 @@ function createWABtn(phone) {
     return `<span class="text-slate-600 font-mono font-bold text-[9px] md:text-[11px] tracking-wider">${phone}</span>`;
 }
 
+function escapeMigrasiHtml(value) {
+    return String(value ?? '-').replace(/[&<>"']/g, char => ({
+        '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;'
+    }[char]));
+}
+
+function formatDateMigrasi(value) {
+    if (!value) return '-';
+    const raw = String(value).slice(0, 10);
+    const parts = raw.split('-');
+    return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : raw;
+}
+
+function formatModalAmount(value) {
+    return Number(value || 0) === 0 ? '-' : fmt(value);
+}
+
+function renderMobileDetailMigrasi(rows) {
+    const el = document.getElementById('mobileDetailMigrasi');
+    if (!el) return;
+
+    if (!rows.length) {
+        el.innerHTML = '<div class="mig-mobile-detail-card text-center text-slate-400 text-[10px]">Tidak ada data detail.</div>';
+        return;
+    }
+
+    if (modalState.to === 'O') {
+        el.innerHTML = rows.map(x => `
+            <article class="mig-mobile-detail-card" data-search="${escapeMigrasiHtml(`${x.nama_nasabah || ''} ${x.no_rekening || ''} ${x.alamat || ''}`.toLowerCase())}">
+                <div class="mig-mobile-detail-head">
+                    <div>
+                        <div class="mig-mobile-detail-name">${escapeMigrasiHtml(x.nama_nasabah)}</div>
+                        <div class="mig-mobile-detail-meta">${escapeMigrasiHtml(x.no_rekening)} · ${escapeMigrasiHtml(x.nama_ao || '-')}</div>
+                    </div>
+                    <span class="mig-mobile-detail-status">${escapeMigrasiHtml(x.status_lunas || 'LUNAS')}</span>
+                </div>
+                <div class="mig-mobile-detail-address">${escapeMigrasiHtml(x.alamat || '-')}</div>
+                <div class="mig-mobile-detail-grid">
+                    <div class="mig-mobile-detail-item"><span>Rek Baru</span><strong>${escapeMigrasiHtml(x.rek_baru || '-')}</strong></div>
+                    <div class="mig-mobile-detail-item"><span>Plafond Lama</span><strong>${formatModalAmount(x.plafon_lama)}</strong></div>
+                    <div class="mig-mobile-detail-item"><span>Plafond Baru</span><strong>${formatModalAmount(x.plafond_baru)}</strong></div>
+                    <div class="mig-mobile-detail-item"><span>Tgl Realisasi</span><strong>${formatDateMigrasi(x.tgl_baru)}</strong></div>
+                </div>
+            </article>`).join('');
+        return;
+    }
+
+    el.innerHTML = rows.map(x => `
+        <article class="mig-mobile-detail-card" data-search="${escapeMigrasiHtml(`${x.nama_nasabah || ''} ${x.no_rekening || ''} ${x.alamat || ''}`.toLowerCase())}">
+            <div class="mig-mobile-detail-head">
+                <div>
+                    <div class="mig-mobile-detail-name">${escapeMigrasiHtml(x.nama_nasabah)}</div>
+                    <div class="mig-mobile-detail-meta">${escapeMigrasiHtml(x.no_rekening)} · ${escapeMigrasiHtml(x.kankas || '-')}</div>
+                </div>
+                <span class="mig-mobile-detail-status">${escapeMigrasiHtml(x.status_migrasi || '-')}</span>
+            </div>
+            <div class="mig-mobile-detail-address">${escapeMigrasiHtml(x.alamat || '-')}</div>
+            <div class="mig-mobile-detail-grid">
+                <div class="mig-mobile-detail-item"><span>${escapeMigrasiHtml(getMigrasiNominalLabel())} Current</span><strong>${formatModalAmount(x.baki_debet)}</strong></div>
+                <div class="mig-mobile-detail-item"><span>AO</span><strong>${escapeMigrasiHtml(x.nama_ao || '-')}</strong></div>
+                <div class="mig-mobile-detail-item"><span>Kolektibilitas</span><strong>${escapeMigrasiHtml(x.kolektibilitas || '-')}</strong></div>
+                <div class="mig-mobile-detail-item"><span>T. Pokok</span><strong>${formatModalAmount(x.tunggakan_pokok)}</strong></div>
+                <div class="mig-mobile-detail-item"><span>T. Bunga</span><strong>${formatModalAmount(x.tunggakan_bunga)}</strong></div>
+                <div class="mig-mobile-detail-item"><span>Totung</span><strong>${formatModalAmount(x.totung)}</strong></div>
+                <div class="mig-mobile-detail-item"><span>Saldo Tabungan</span><strong>${formatModalAmount(x.tabungan)}</strong></div>
+                <div class="mig-mobile-detail-item"><span>Total Bayar</span><strong>${formatModalAmount(x.total_bayar)}</strong></div>
+                <div class="mig-mobile-detail-item"><span>Tgl Bayar</span><strong>${formatDateMigrasi(x.tgl_bayar_terakhir)}</strong></div>
+            </div>
+            <div class="mig-mobile-detail-foot"><span>No HP: ${escapeMigrasiHtml(x.no_hp || '-')}</span><span>Kankas: ${escapeMigrasiHtml(x.kankas || '-')}</span></div>
+        </article>`).join('');
+}
+
 // 🔥 PERBAIKAN 2: Panggil fungsi load Kankas bersamaan dengan AO saat klik open detail
 function openDetail(f,t){ 
     modalState={from:f,to:t,page:1,limit:50}; 
     document.getElementById('modalDetail').classList.remove('hidden'); 
+    document.body.classList.add('modal-detail-open');
     document.getElementById('search_nasabah').value = '';
     
     let badgeText = `${f} ➔ ${t}`;
@@ -1427,8 +2464,11 @@ function openDetail(f,t){
     else if (t === 'O') badgeText = `LUNAS / RUN OFF (${f})`;
     
     document.getElementById('badgeMigrasi').innerText = badgeText; 
+    const areaLabel = document.getElementById('modalAreaMigrasi');
+    const areaTitle = document.getElementById('titleCabangMigrasi');
+    if (areaLabel) areaLabel.innerText = areaTitle?.innerText?.trim() || 'ALL';
     
-    const branch = document.getElementById('opt_kantor').value;
+    const branch = getMigrasiBranchCode();
     
     // Panggil dua dropdown filter secara pararel, lalu render tabelnya
     Promise.all([
@@ -1452,13 +2492,15 @@ function renderModalHeaderMigrasi() {
                 <th class="px-2 md:px-3 py-1.5 md:py-2 border-b border-r border-slate-300 w-[110px] md:w-[130px] text-center">No HP</th>
                 <th class="px-2 md:px-3 py-1.5 md:py-2 border-b border-r border-slate-300 w-[100px] md:w-[120px] text-center">Kankas</th>
                 <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[110px] md:w-[140px] text-center text-blue-700">AO</th>
-                <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-green-200 w-[110px] md:w-[140px] text-right bg-green-50 text-green-700">OS Current</th>
+                <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[110px] md:w-[140px] text-right">${getMigrasiNominalLabel()} Current</th>
                 <th class="px-2 md:px-3 py-1.5 md:py-2 border-b border-r border-slate-300 w-[100px] md:w-[110px] text-center">Status</th>
                 <th class="px-2 md:px-3 py-1.5 md:py-2 border-b border-r border-slate-300 w-[50px] md:w-[60px] text-center">Kol</th>
-                <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-red-200 w-[100px] md:w-[120px] text-right bg-red-50 text-red-700">Tgk Pokok</th>
-                <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-orange-200 w-[100px] md:w-[120px] text-right bg-orange-50 text-orange-700">Tgk Bunga</th>
-                <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[110px] md:w-[130px] text-right">Tabungan</th>
-                <th class="px-2 md:px-3 py-1.5 md:py-2 border-b border-slate-200 w-[90px] md:w-[100px] text-center">Stat Tab</th>
+                <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[100px] md:w-[120px] text-right">T. Pokok</th>
+                <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[100px] md:w-[120px] text-right">T. Bunga</th>
+                <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[100px] md:w-[120px] text-right">Totung</th>
+                <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[110px] md:w-[130px] text-right">Saldo Tabungan</th>
+                <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[105px] md:w-[130px] text-right">Total Bayar</th>
+                <th class="px-2 md:px-3 py-1.5 md:py-2 border-b border-slate-300 w-[90px] md:w-[110px] text-center">Tgl Bayar</th>
             </tr>
         `;
     } else {
@@ -1495,6 +2537,11 @@ window.filterTableDetail = function() {
             }
         }
     }
+
+    document.querySelectorAll('#mobileDetailMigrasi .mig-mobile-detail-card').forEach(card => {
+        const text = (card.dataset.search || card.textContent || '').toLowerCase();
+        card.style.display = text.indexOf(filter) > -1 ? '' : 'none';
+    });
 }
 
 async function loadDetail(){
@@ -1510,6 +2557,7 @@ async function loadDetail(){
             closing_date:document.getElementById('closing_date').value,
             harian_date:document.getElementById('harian_date').value,
             kode_kantor:document.getElementById('opt_kantor').value||null,
+            nominal_field:getMigrasiNominalField(),
             kode_kankas:kankasModal,
             kode_ao:aoModal,
             from_bucket:modalState.from,
@@ -1524,7 +2572,8 @@ async function loadDetail(){
         const m=j.data.pagination || { total_records:0, total_pages:1 };
         
         if(d.length===0){
-            tb.innerHTML='<tr><td colspan="14" class="py-20 text-center text-slate-400 italic text-[10px] md:text-sm">Tidak ada data detail.</td></tr>'; 
+            tb.innerHTML='<tr><td colspan="15" class="py-20 text-center text-slate-400 italic text-[10px] md:text-sm">Tidak ada data detail.</td></tr>'; 
+            renderMobileDetailMigrasi([]);
             info.innerText='0 Data'; 
             return;
         }
@@ -1539,9 +2588,6 @@ async function loadDetail(){
 
             if(modalState.to !== 'O') {
                 const btnWa = createWABtn(x.no_hp);
-                let statTabungan = `<span class="text-red-500 font-bold text-[9px] md:text-xs">Belum Aman</span>`;
-                if(x.status_tabungan === 'Aman') statTabungan = `<span class="text-green-600 font-bold text-[9px] md:text-xs">Aman</span>`;
-
                 let bgStat = 'bg-blue-50 text-blue-700 border-blue-200';
                 if(x.status_migrasi === 'Lunas') bgStat = 'bg-slate-100 text-slate-600 border-slate-300';
                 else if(x.status_migrasi === 'New') bgStat = 'bg-emerald-50 text-emerald-700 border-emerald-200';
@@ -1554,13 +2600,15 @@ async function loadDetail(){
                       <td class="px-2 md:px-3 py-1.5 md:py-2 text-center border-r border-slate-100">${btnWa}</td>
                       <td class="px-2 md:px-3 py-1.5 md:py-2 text-center font-mono text-[9px] md:text-[11px] text-slate-500 border-r border-slate-100">${x.kankas||'-'}</td>
                       <td class="px-2 md:px-4 py-1.5 md:py-2 text-center font-bold text-[9.5px] md:text-[11px] text-blue-700 border-r border-slate-100 truncate">${aoName}</td>
-                      <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-sm text-green-700 bg-green-50/30 border-r border-green-100">${fmt(x.baki_debet)}</td>
-                      <td class="px-2 md:px-3 py-1.5 md:py-2 text-center border-r border-slate-100"><span class="${bgStat} px-1.5 md:px-2.5 py-0.5 md:py-1 rounded-md md:rounded-lg text-[9px] md:text-[10px] font-bold border uppercase tracking-wider">${x.status_migrasi}</span></td>
-                      <td class="px-2 md:px-3 py-1.5 md:py-2 text-center font-bold text-[9.5px] md:text-sm text-slate-600 border-r border-slate-100">${x.kolektibilitas||'-'}</td>
-                      <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-sm text-red-600 bg-red-50/30 border-r border-red-100">${fmt(x.tunggakan_pokok)}</td>
-                      <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-sm text-orange-600 bg-orange-50/30 border-r border-orange-100">${fmt(x.tunggakan_bunga)}</td>
-                      <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-sm text-emerald-600 bg-emerald-50/10 border-r border-slate-100">${fmt(x.tabungan)}</td>
-                      <td class="px-2 md:px-3 py-1.5 md:py-2 text-center">${statTabungan}</td>
+                       <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-sm text-slate-800 border-r border-slate-100">${formatModalAmount(x.baki_debet)}</td>
+                       <td class="px-2 md:px-3 py-1.5 md:py-2 text-center border-r border-slate-100"><span class="${bgStat} px-1.5 md:px-2.5 py-0.5 md:py-1 rounded-md md:rounded-lg text-[9px] md:text-[10px] font-bold border uppercase tracking-wider">${x.status_migrasi}</span></td>
+                       <td class="px-2 md:px-3 py-1.5 md:py-2 text-center font-bold text-[9.5px] md:text-sm text-slate-600 border-r border-slate-100">${x.kolektibilitas||'-'}</td>
+                       <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-sm text-slate-700 border-r border-slate-100">${formatModalAmount(x.tunggakan_pokok)}</td>
+                       <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-sm text-slate-700 border-r border-slate-100">${formatModalAmount(x.tunggakan_bunga)}</td>
+                       <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-sm text-slate-800 border-r border-slate-100">${formatModalAmount(x.totung)}</td>
+                       <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-sm text-slate-700 border-r border-slate-100">${formatModalAmount(x.tabungan)}</td>
+                       <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-sm text-slate-800 border-r border-slate-100">${formatModalAmount(x.total_bayar)}</td>
+                       <td class="px-2 md:px-3 py-1.5 md:py-2 text-center font-mono text-[9.5px] md:text-[11px] text-slate-500">${formatDateMigrasi(x.tgl_bayar_terakhir)}</td>
                     </tr>`;
             } else {
                 let badge = `<span class="inline-flex items-center px-1.5 md:px-2.5 py-0.5 md:py-1 rounded text-[9px] md:text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">PROSPEK</span>`;
@@ -1583,6 +2631,8 @@ async function loadDetail(){
             }
         }); 
         tb.innerHTML=h; 
+        renderMobileDetailMigrasi(d);
+        filterTableDetail();
         
         info.innerText=`Hal ${modalState.page} dari ${m.total_pages} (${fmt(m.total_records)} Data)`;
         
@@ -1590,7 +2640,7 @@ async function loadDetail(){
         p.disabled=modalState.page<=1; n.disabled=modalState.page>=m.total_pages;
     } catch(e){
         console.error(e);
-        tb.innerHTML = `<tr><td colspan="14" class="py-16 text-center text-red-500 font-bold uppercase tracking-widest text-[10px] md:text-sm">Gagal memuat detail</td></tr>`;
+        tb.innerHTML = `<tr><td colspan="15" class="py-16 text-center text-red-500 font-bold uppercase tracking-widest text-[10px] md:text-sm">Gagal memuat detail</td></tr>`;
     } 
     finally{l.classList.add('hidden');}
 }
@@ -1609,6 +2659,7 @@ async function exportExcelDetailMigrasi() {
             closing_date:document.getElementById('closing_date').value,
             harian_date:document.getElementById('harian_date').value,
             kode_kantor:document.getElementById('opt_kantor').value||null,
+            nominal_field:getMigrasiNominalField(),
             kode_kankas:kankasModal,
             kode_ao: aoModal,
             from_bucket:modalState.from,
@@ -1624,9 +2675,9 @@ async function exportExcelDetailMigrasi() {
 
         let csv = "";
         if (modalState.to !== 'O') {
-            csv = `No Rekening\tNama Nasabah\tAlamat\tNo HP\tKankas\tAO\tOS Current\tStatus Migrasi\tKol\tTunggakan Pokok\tTunggakan Bunga\tTotal Tunggakan\tTabungan\tStatus Tabungan\n`;
+            csv = `No Rekening\tNama Nasabah\tAlamat\tNo HP\tKankas\tAO\t${getMigrasiNominalLabel()} Current\tStatus Migrasi\tKol\tT. Pokok\tT. Bunga\tTotung\tSaldo Tabungan\tTotal Bayar\tTgl Bayar\n`;
             rows.forEach(x => {
-                csv += `'${x.no_rekening}\t${x.nama_nasabah}\t${x.alamat||''}\t'${x.no_hp||''}\t${x.kankas||''}\t${x.nama_ao||''}\t${Math.round(x.baki_debet)}\t${x.status_migrasi}\t${x.kolektibilitas||''}\t${Math.round(x.tunggakan_pokok)}\t${Math.round(x.tunggakan_bunga)}\t${Math.round(x.totung)}\t${Math.round(x.tabungan)}\t${x.status_tabungan}\n`;
+                csv += `'${x.no_rekening}\t${x.nama_nasabah}\t${x.alamat||''}\t'${x.no_hp||''}\t${x.kankas||''}\t${x.nama_ao||''}\t${Math.round(x.baki_debet)}\t${x.status_migrasi}\t${x.kolektibilitas||''}\t${Math.round(x.tunggakan_pokok)}\t${Math.round(x.tunggakan_bunga)}\t${Math.round(x.totung)}\t${Math.round(x.tabungan)}\t${Math.round(x.total_bayar||0)}\t${x.tgl_bayar_terakhir||''}\n`;
             });
         } else {
             csv = `Nama Nasabah\tID Nasabah\tAlamat\tNama AO\tRek Lama\tPlafond Lama\tStatus\tRek Baru\tPlafond Baru\tTgl Realisasi Baru\n`;
@@ -1651,7 +2702,10 @@ function changePageDetail(step) {
     loadDetail();
 }
 
-function closeModal(){document.getElementById('modalDetail').classList.add('hidden');}
+function closeModal(){
+    document.getElementById('modalDetail').classList.add('hidden');
+    document.body.classList.remove('modal-detail-open');
+}
 window.addEventListener('resize', syncMainFilterByViewport);
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
 </script>

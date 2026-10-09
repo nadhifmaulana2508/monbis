@@ -128,6 +128,18 @@ mb_ui_assets('.');
     padding:10px 14px 12px !important; gap:10px;
   }
   #rrPage > .flex-none { margin-bottom:0 !important; }
+  /* Filter utama dipusatkan ke navbar agar header report tetap clean. */
+  #reportRrHeader .mb-filter-toggle { display:none !important; }
+  #reportRrHeader .mb-page-header__filters {
+    display:flex !important; flex:0 0 auto; width:auto; border-top:0; padding-top:0;
+  }
+  #reportRrHeader .mb-filter-row { display:flex; justify-content:flex-end; }
+  #reportRrPage > .mb-report-card > .mb-report-toolbar { display:none !important; }
+  @media (max-width:767px) {
+    #reportRrHeader { flex-direction:row !important; align-items:center !important; }
+    #reportRrHeader .mb-page-header__identity { width:auto; min-width:0; flex:1 1 auto; }
+    #reportRrHeader .mb-page-header__filters { width:auto; }
+  }
   #rrHeaderCard {
     padding:9px 11px !important; border-color:#e2e8f0;
     border-radius:12px; box-shadow:0 1px 3px rgba(15,23,42,.05);
@@ -1154,13 +1166,7 @@ mb_render_report_page([
         'subtitle' => 'Posisi repayment closing dibanding actual harian.',
         'icon' => mb_svg('chart'),
         'info_modal_id' => 'infoRR',
-        'filters' => [
-            ['id' => 'closing_date', 'label' => 'Closing (M-1)', 'type' => 'date', 'width' => '126px', 'attrs' => ['onchange' => 'fetchRekap()', 'onclick' => 'this.showPicker && this.showPicker()']],
-            ['id' => 'harian_date', 'label' => 'Actual (Harian)', 'type' => 'date', 'width' => '126px', 'attrs' => ['onchange' => 'fetchRekap()', 'onclick' => 'this.showPicker && this.showPicker()']],
-            ['id' => 'tipe_saldo_rr', 'label' => 'Tipe Saldo', 'type' => 'select', 'width' => '140px', 'options' => ['baki_debet' => 'BAKI DEBET', 'saldo_bank' => 'SALDO BANK'], 'attrs' => ['onchange' => 'fetchRekap()']],
-            ['id' => 'opt_kantor', 'label' => 'Area / Cabang', 'type' => 'select', 'width' => '245px', 'options' => ['' => 'Memuat kantor...'], 'attrs' => ['onchange' => 'handleRRAreaChange()']],
-            ['id' => 'rr_breakdown_by', 'label' => 'Breakdown', 'type' => 'select', 'width' => '155px', 'field_class' => 'rr-breakdown-field is-hidden', 'options' => ['KANKAS' => 'PER KANKAS', 'AO' => 'PER AO KREDIT'], 'attrs' => ['onchange' => 'fetchRekap()']],
-        ],
+        'filters' => [],
         'actions' => [[
             'tone' => 'success', 'icon' => 'download', 'title' => 'Download Excel',
             'attrs' => ['id' => 'rrExportMain', 'onclick' => 'exportExcelRekap()'],
@@ -1229,8 +1235,8 @@ mb_render_info_modal([
               <div class="field flex-1 min-w-[120px] md:min-w-[140px]">
                 <label class="lbl text-slate-700">TIPE SALDO</label>
                 <select id="tipe_saldo_rr" class="inp bg-slate-50 text-[10px] md:text-sm font-bold h-[32px] md:h-[38px] px-2 md:px-3 text-slate-700 cursor-pointer w-full" onchange="fetchRekap()">
+                  <option value="saldo_bank" selected>SALDO BANK</option>
                   <option value="baki_debet">BAKI DEBET</option>
-                  <option value="saldo_bank">SALDO BANK</option>
                 </select>
               </div>
               <div class="field flex-1 min-w-[180px] md:min-w-[220px]">
@@ -1577,7 +1583,7 @@ mb_render_detail_modal([
   let detailPageRequestId = 0;
   let activeDetailAbortController = null;
   const detailLimit = 30;
-  const getTipeSaldoRR = () => document.getElementById('tipe_saldo_rr')?.value || 'baki_debet';
+  const getTipeSaldoRR = () => document.getElementById('tipe_saldo_rr')?.value || 'saldo_bank';
   const getTipeSaldoLabelRR = () => getTipeSaldoRR() === 'saldo_bank' ? 'SALDO BANK' : 'BAKI DEBET';
 
   const getSortIcon = (col, currentCol, asc) => {
@@ -1596,6 +1602,36 @@ mb_render_detail_modal([
           el.classList.remove('flex');
       }
   }
+
+  function toggleRRNavbarFilter() {
+      const panel = document.getElementById('rrNavbarFilterPanel');
+      const toggle = document.getElementById('rrNavbarFilterToggle');
+      if (!panel) return;
+      const willOpen = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !willOpen);
+      panel.classList.toggle('flex', willOpen);
+      toggle?.classList.toggle('is-active', willOpen);
+      toggle?.setAttribute('aria-expanded', String(willOpen));
+  }
+
+  function closeRRNavbarFilter() {
+      const panel = document.getElementById('rrNavbarFilterPanel');
+      const toggle = document.getElementById('rrNavbarFilterToggle');
+      panel?.classList.add('hidden');
+      panel?.classList.remove('flex');
+      toggle?.classList.remove('is-active');
+      toggle?.setAttribute('aria-expanded', 'false');
+  }
+
+  window.toggleRRNavbarFilter = toggleRRNavbarFilter;
+  window.closeRRNavbarFilter = closeRRNavbarFilter;
+  document.getElementById('rrNavbarFilterToggle')?.addEventListener('click', toggleRRNavbarFilter);
+  document.getElementById('rrNavbarFilterClose')?.addEventListener('click', closeRRNavbarFilter);
+  ['closing_date', 'harian_date', 'tipe_saldo_rr', 'opt_kantor', 'rr_breakdown_by'].forEach(id => {
+      document.getElementById(id)?.addEventListener('change', () => {
+          if (window.innerWidth < 768) setTimeout(closeRRNavbarFilter, 180);
+      });
+  });
 
 
   function toggleRRModalFilter() {
@@ -2108,7 +2144,7 @@ mb_render_detail_modal([
 
           renderTableBodyRR(rekapDataCache, rekapGtCache);
           updateRRInsight();
-          window.MonbisUI?.closeMobileFilter?.('reportRrHeaderFilters');
+          closeRRNavbarFilter();
 
       } catch(e) { 
           if(e.name!=='AbortError') {

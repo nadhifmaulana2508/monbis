@@ -4,12 +4,37 @@ require_once __DIR__ . '/../helpers/response.php';
 
 class PipelineController {
     private $pdo;
+    private const KORWIL_RANGES = [
+        'SEMARANG' => ['001', '007'],
+        'SOLO' => ['008', '014'],
+        'BANYUMAS' => ['015', '021'],
+        'PEKALONGAN' => ['022', '028'],
+    ];
 
     public function __construct($pdo) {
         $this->pdo = $pdo;
     }
 
-    private function preparePipelineQuery($closing_date, $harian_date, $tahun_jt, $kc = null, $filter_ao = null, $filter_status = null, $filter_kankas = null) {
+    private function normalizePipelineKolektibilitas($value): array {
+        $values = is_array($value) ? $value : preg_split('/[,|]/', (string) $value);
+        $result = ['L'];
+        foreach ($values ?: [] as $item) {
+            $kolek = strtoupper(trim((string) $item));
+            if ($kolek === 'DP' && !in_array('DP', $result, true)) $result[] = 'DP';
+        }
+        return $result;
+    }
+
+    private function preparePipelineQuery($closing_date, $harian_date, $tahun_jt, $kc = null, $filter_ao = null, $filter_status = null, $filter_kankas = null, $korwil = null, $kolektibilitas = ['L'], $withProduct = false) {
+        $kolektibilitas = $this->normalizePipelineKolektibilitas($kolektibilitas);
+        $kolekPlaceholders = [];
+        foreach ($kolektibilitas as $index => $kolek) $kolekPlaceholders[] = ':pipeline_kolek_' . $index;
+        $productJoins = $withProduct ? "
+                LEFT JOIN produk_kredit pk_lama
+                  ON CAST(pk_lama.kode_produk AS CHAR) = CAST(t1.kode_produk AS CHAR)
+                LEFT JOIN produk_kredit pk_baru
+                  ON CAST(pk_baru.kode_produk AS CHAR) = CAST(pk_lama.kode_baru AS CHAR)" : '';
+
         $sql = "FROM nominatif t1
                 LEFT JOIN kode_kantor k ON t1.kode_cabang = k.kode_kantor
                 LEFT JOIN nominatif t2 ON t1.no_rekening = t2.no_rekening AND t2.created = :harian_1
@@ -19,25 +44,42 @@ class PipelineController {
                                        AND t3.tgl_realisasi > :closing_1      
                                        AND t3.tgl_realisasi <= :harian_3
                 LEFT JOIN ao_kredit ao ON t1.kode_group2 = ao.kode_group2
+                LEFT JOIN kankas kp ON TRIM(kp.kode_group1) = TRIM(t1.kode_group1)
+                                   AND LPAD(CAST(kp.kode_kantor AS CHAR), 3, '0') = LPAD(CAST(t1.kode_cabang AS CHAR), 3, '0')
+                {$productJoins}
                 WHERE t1.created = :closing_2 
                 AND YEAR(t1.tgl_jatuh_tempo) = :tahun 
-                AND t1.kolektibilitas = 'L' 
+                AND t1.kolektibilitas IN (" . implode(', ', $kolekPlaceholders) . ")
                 AND t1.baki_debet > 0";
 
         $bindings = [
             ':harian_1'  => $harian_date, ':harian_2' => $harian_date, ':harian_3' => $harian_date,
             ':closing_1' => $closing_date, ':closing_2' => $closing_date, ':tahun' => $tahun_jt
         ];
+        foreach ($kolektibilitas as $index => $kolek) $bindings[':pipeline_kolek_' . $index] = $kolek;
 
         if ($kc) { $sql .= " AND t1.kode_cabang = :kc"; $bindings[':kc'] = str_pad((string)$kc, 3, '0', STR_PAD_LEFT); }
-        if ($filter_ao) { $sql .= " AND t1.kode_group2 = :ao"; $bindings[':ao'] = $filter_ao; }
-        if ($filter_kankas) { $sql .= " AND t1.kode_group1 = :kankas"; $bindings[':kankas'] = $filter_kankas; } // Tambahan Filter Kankas
+        if (!$kc && $korwil && isset(self::KORWIL_RANGES[$korwil])) {
+            [$start, $end] = self::KORWIL_RANGES[$korwil];
+            $sql .= " AND LPAD(CAST(t1.kode_cabang AS CHAR), 3, '0') BETWEEN :korwil_start AND :korwil_end";
+            $bindings[':korwil_start'] = $start;
+            $bindings[':korwil_end'] = $end;
+        }
+        if ($filter_ao) {
+            if (strtoupper(trim((string) $filter_ao)) === 'UNASSIGNED') $sql .= " AND (t1.kode_group2 IS NULL OR TRIM(t1.kode_group2) = '')";
+            else { $sql .= " AND t1.kode_group2 = :ao"; $bindings[':ao'] = $filter_ao; }
+        }
+        if ($filter_kankas) {
+            if (strtoupper(trim((string) $filter_kankas)) === 'UNASSIGNED') $sql .= " AND (t1.kode_group1 IS NULL OR TRIM(t1.kode_group1) = '')";
+            else { $sql .= " AND t1.kode_group1 = :kankas"; $bindings[':kankas'] = $filter_kankas; }
+        } // Tambahan Filter Kankas
 
         if ($filter_status === 'sudah') $sql .= " AND t3.no_rekening IS NOT NULL"; 
         elseif ($filter_status === 'lunas') $sql .= " AND t3.no_rekening IS NULL AND (t2.no_rekening IS NULL OR t2.baki_debet <= 0)";
         elseif ($filter_status === 'topup') $sql .= " AND t3.no_rekening IS NULL AND t2.kolektibilitas = 'L' AND t2.baki_debet > 0 AND (t2.baki_debet / t1.jml_pinjaman) <= 0.5";
         elseif ($filter_status === 'retensi') $sql .= " AND t3.no_rekening IS NULL AND t2.kolektibilitas = 'L' AND t2.baki_debet > 0 AND (t2.baki_debet / t1.jml_pinjaman) > 0.5";
         elseif ($filter_status === 'drop') $sql .= " AND t3.no_rekening IS NULL AND t2.no_rekening IS NOT NULL AND t2.kolektibilitas != 'L' AND t2.baki_debet > 0";
+        elseif ($filter_status === 'belum_lunas') $sql .= " AND t3.no_rekening IS NULL AND t2.no_rekening IS NOT NULL AND t2.baki_debet > 0";
 
         return ['query' => $sql, 'params' => $bindings];
     }
@@ -45,17 +87,42 @@ class PipelineController {
     // --- REKAP ---
     public function getRekapPipeline($input = null) {
         $b = is_array($input) ? $input : [];
-        $closing = $b['closing_date'] ?? '2025-12-31';
+        $closing = $b['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian  = $b['harian_date'] ?? date('Y-m-d');
-        $tahun   = $b['tahun_jt'] ?? date('Y');
+        $tahun   = (int) ($b['tahun_jt'] ?? date('Y'));
+        if ($tahun < 2000) $tahun = (int) date('Y');
         $kc      = $b['kode_kantor'] ?? null;
+        $korwil  = strtoupper(trim((string) ($b['korwil'] ?? '')));
+        if (!isset(self::KORWIL_RANGES[$korwil])) $korwil = null;
+        $breakdown = strtoupper(trim((string) ($b['breakdown_by'] ?? '')));
+        $kolektibilitas = $this->normalizePipelineKolektibilitas($b['kolektibilitas'] ?? $b['kolek'] ?? ['L']);
+        $isBranch = $kc !== null && trim((string) $kc) !== '' && trim((string) $kc) !== '000';
+        if (!$isBranch || !in_array($breakdown, ['KANKAS', 'AO'], true)) {
+            $breakdown = $isBranch ? 'KANKAS' : 'CABANG';
+        }
 
         try {
-            $base = $this->preparePipelineQuery($closing, $harian, $tahun, $kc);
+            $base = $this->preparePipelineQuery($closing, $harian, $tahun, $kc, null, null, null, $korwil, $kolektibilitas);
+
+            if ($breakdown === 'KANKAS') {
+                $groupCode = "COALESCE(NULLIF(TRIM(t1.kode_group1), ''), 'UNASSIGNED')";
+                $groupLabel = "COALESCE(NULLIF(MAX(kp.deskripsi_group1), ''), CONCAT('Kankas ', {$groupCode}))";
+                $groupBy = $groupCode;
+            } elseif ($breakdown === 'AO') {
+                $groupCode = "COALESCE(NULLIF(TRIM(t1.kode_group2), ''), 'UNASSIGNED')";
+                $groupLabel = "COALESCE(NULLIF(MAX(ao.nama_ao), ''), CONCAT('AO ', {$groupCode}))";
+                $groupBy = $groupCode;
+            } else {
+                $groupCode = "LPAD(CAST(t1.kode_cabang AS CHAR), 3, '0')";
+                $groupLabel = "COALESCE(MAX(k.nama_kantor), CONCAT('CABANG ', {$groupCode}))";
+                $groupBy = $groupCode;
+            }
 
             $sql = "SELECT 
-                        t1.kode_cabang,
-                        COALESCE(k.nama_kantor, CONCAT('CABANG ', t1.kode_cabang)) as nama_kantor,
+                        LPAD(CAST(t1.kode_cabang AS CHAR), 3, '0') AS kode_cabang,
+                        COALESCE(MAX(k.nama_kantor), CONCAT('CABANG ', LPAD(CAST(t1.kode_cabang AS CHAR), 3, '0'))) AS nama_kantor,
+                        {$groupCode} AS group_code,
+                        {$groupLabel} AS group_label,
                         COUNT(t1.no_rekening) as noa_target,
                         SUM(t1.jml_pinjaman) as plafon_closing,
                         
@@ -66,6 +133,11 @@ class PipelineController {
                         -- LUNAS
                         SUM(CASE WHEN t3.no_rekening IS NULL AND (t2.no_rekening IS NULL OR t2.baki_debet <= 0) THEN 1 ELSE 0 END) as noa_lunas,
                         SUM(CASE WHEN t3.no_rekening IS NULL AND (t2.no_rekening IS NULL OR t2.baki_debet <= 0) THEN t1.jml_pinjaman ELSE 0 END) as nominal_lunas,
+
+                        -- BELUM LUNAS (sisa dan plafon pokok)
+                        SUM(CASE WHEN t3.no_rekening IS NULL AND t2.no_rekening IS NOT NULL AND t2.baki_debet > 0 THEN 1 ELSE 0 END) as noa_belum_lunas,
+                        SUM(CASE WHEN t3.no_rekening IS NULL AND t2.no_rekening IS NOT NULL AND t2.baki_debet > 0 THEN t2.baki_debet ELSE 0 END) as sisa_belum_lunas,
+                        SUM(CASE WHEN t3.no_rekening IS NULL AND t2.no_rekening IS NOT NULL AND t2.baki_debet > 0 THEN t1.jml_pinjaman ELSE 0 END) as plafon_belum_lunas,
 
                         -- TOP UP
                         SUM(CASE WHEN t3.no_rekening IS NULL AND t2.kolektibilitas = 'L' AND t2.baki_debet > 0 AND (t2.baki_debet / t1.jml_pinjaman) <= 0.5 THEN 1 ELSE 0 END) as noa_topup,
@@ -80,8 +152,8 @@ class PipelineController {
                         SUM(CASE WHEN t3.no_rekening IS NULL AND t2.no_rekening IS NOT NULL AND t2.kolektibilitas != 'L' AND t2.baki_debet > 0 THEN t2.baki_debet ELSE 0 END) as os_drop
 
                     " . $base['query'] . " 
-                    GROUP BY t1.kode_cabang, k.nama_kantor 
-                    ORDER BY t1.kode_cabang ASC";
+                    GROUP BY {$groupBy}, t1.kode_cabang
+                    ORDER BY group_label ASC";
 
             $stmt = $this->pdo->prepare($sql);
             foreach ($base['params'] as $key => $val) $stmt->bindValue($key, $val);
@@ -98,14 +170,16 @@ class PipelineController {
     // --- DETAIL ---
     public function getDetailPipeline($input = null) {
         $b = is_array($input) ? $input : [];
-        $closing = $b['closing_date'] ?? '2025-12-31';
+        $closing = $b['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian  = $b['harian_date'] ?? date('Y-m-d');
-        $tahun   = $b['tahun_jt'] ?? date('Y');
+        $tahun   = (int) ($b['tahun_jt'] ?? date('Y'));
+        if ($tahun < 2000) $tahun = (int) date('Y');
         
         $kc      = $b['kode_kantor'] ?? null;
         $kankas  = $b['kode_kankas'] ?? null; // Tangkap param kankas
         $ao      = $b['kode_ao'] ?? null;
         $status  = $b['filter_status'] ?? null;
+        $kolektibilitas = $this->normalizePipelineKolektibilitas($b['kolektibilitas'] ?? $b['kolek'] ?? ['L']);
         
         $page    = $b['page'] ?? 1;
         $limit   = $b['limit'] ?? 10;
@@ -113,7 +187,7 @@ class PipelineController {
 
         try {
             // Lempar filter kankas ke logic builder
-            $base = $this->preparePipelineQuery($closing, $harian, $tahun, $kc, $ao, $status, $kankas);
+            $base = $this->preparePipelineQuery($closing, $harian, $tahun, $kc, $ao, $status, $kankas, null, $kolektibilitas, true);
 
             // Statistik Header
             $sqlStats = "SELECT 
@@ -137,6 +211,9 @@ class PipelineController {
                         t1.alamat,
                         t1.hp as no_hp,
                         t1.kode_group1 as kankas,
+                        COALESCE(NULLIF(TRIM(kp.deskripsi_group1), ''), NULLIF(TRIM(t1.kode_group1), ''), '-') as nama_kankas,
+                        COALESCE(NULLIF(TRIM(pk_baru.nama_produk), ''), NULLIF(TRIM(pk_lama.nama_produk), ''), CONCAT('PRODUK ', CAST(t1.kode_produk AS CHAR))) as nama_produk,
+                        t1.kode_produk as kode_produk_lama,
                         t1.jml_pinjaman as plafon_awal,
                         t1.tgl_jatuh_tempo,
                         COALESCE(ao.nama_ao, t1.kode_group2) as nama_ao,

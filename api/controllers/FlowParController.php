@@ -33,6 +33,8 @@ class FlowParController {
     public function getFlowPar($input = []) {
         $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian_date  = $input['harian_date']  ?? date('Y-m-d');
+        $modeHitung = strtolower(trim((string)($input['hitung_berdasarkan'] ?? 'saldo_bank')));
+        $nominalColumn = $modeHitung === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
         $kc           = $input['kode_kantor']  ?? null;
         $korwil       = strtoupper(trim((string)($input['korwil'] ?? '')));
         $korwilRanges = [
@@ -74,7 +76,7 @@ class FlowParController {
                 $joinKey AS kode_cabang,
                 $selectName,
                 COUNT(c.no_rekening) AS noa_flow,
-                COALESCE(SUM(CASE WHEN c.no_rekening IS NOT NULL THEN h.baki_debet ELSE 0 END), 0) AS baki_debet_flow,
+                COALESCE(SUM(CASE WHEN c.no_rekening IS NOT NULL THEN h.$nominalColumn ELSE 0 END), 0) AS baki_debet_flow,
                 SUM(CASE
                     WHEN c.no_rekening IS NOT NULL
                      AND COALESCE(h.hari_menunggak_pokok, 0) <= 90
@@ -85,7 +87,7 @@ class FlowParController {
                     WHEN c.no_rekening IS NOT NULL
                      AND COALESCE(h.hari_menunggak_pokok, 0) <= 90
                      AND COALESCE(h.hari_menunggak_bunga, 0) <= 90
-                    THEN h.baki_debet ELSE 0
+                    THEN h.$nominalColumn ELSE 0
                 END), 0) AS nom_jt_lain,
                 SUM(CASE
                     WHEN c.no_rekening IS NOT NULL
@@ -97,7 +99,7 @@ class FlowParController {
                     WHEN c.no_rekening IS NOT NULL
                      AND COALESCE(h.hari_menunggak_pokok, 0) > 90
                      AND COALESCE(h.hari_menunggak_bunga, 0) <= 90
-                    THEN h.baki_debet ELSE 0
+                    THEN h.$nominalColumn ELSE 0
                 END), 0) AS nom_pokok_90,
                 SUM(CASE
                     WHEN c.no_rekening IS NOT NULL
@@ -109,7 +111,7 @@ class FlowParController {
                     WHEN c.no_rekening IS NOT NULL
                      AND COALESCE(h.hari_menunggak_pokok, 0) <= 90
                      AND COALESCE(h.hari_menunggak_bunga, 0) > 90
-                    THEN h.baki_debet ELSE 0
+                    THEN h.$nominalColumn ELSE 0
                 END), 0) AS nom_bunga_90,
                 SUM(CASE
                     WHEN c.no_rekening IS NOT NULL
@@ -121,7 +123,7 @@ class FlowParController {
                     WHEN c.no_rekening IS NOT NULL
                      AND COALESCE(h.hari_menunggak_pokok, 0) > 90
                      AND COALESCE(h.hari_menunggak_bunga, 0) > 90
-                    THEN h.baki_debet ELSE 0
+                    THEN h.$nominalColumn ELSE 0
                 END), 0) AS nom_pokok_bunga_90
             FROM $masterTable
             LEFT JOIN nominatif h
@@ -192,6 +194,197 @@ class FlowParController {
         }
     }
 
+    /**
+     * Ringkasan cockpit kredit: penyebab Flow PAR dan antrean potensi flow
+     * per minggu jatuh tempo. Endpoint ini sengaja hanya mengembalikan
+     * agregasi sehingga halaman dashboard tidak perlu memuat detail debitur.
+     */
+    public function getFlowParDashboard($input = []) {
+        $closing_date = !empty($input['closing_date']) ? date('Y-m-d', strtotime($input['closing_date'])) : date('Y-m-d', strtotime('last day of previous month'));
+        $harian_date  = !empty($input['harian_date']) ? date('Y-m-d', strtotime($input['harian_date'])) : date('Y-m-d');
+        $modeHitung   = strtolower(trim((string)($input['hitung_berdasarkan'] ?? 'saldo_bank')));
+        $nominalColumn = $modeHitung === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+        $kodeKantor = trim((string)($input['kode_kantor'] ?? ''));
+        $kodeKantor = str_replace('CABANG:', '', $kodeKantor);
+        $kodeKantor = ($kodeKantor === '' || $kodeKantor === '000' || strtoupper($kodeKantor) === 'ALL') ? null : str_pad($kodeKantor, 3, '0', STR_PAD_LEFT);
+        $korwil = strtoupper(trim((string)($input['korwil'] ?? '')));
+        $korwil = str_replace('KORWIL:', '', $korwil);
+        $korwilRanges = [
+            'SEMARANG' => ['001', '007'],
+            'SOLO' => ['008', '014'],
+            'BANYUMAS' => ['015', '021'],
+            'PEKALONGAN' => ['022', '028'],
+        ];
+        $korwilRange = $korwilRanges[$korwil] ?? null;
+        $monthStart = date('Y-m-01', strtotime($harian_date));
+        $monthEnd   = date('Y-m-t', strtotime($harian_date));
+
+        $scope = function (string $alias, array &$params, string $suffix) use ($kodeKantor, $korwilRange): string {
+            if ($kodeKantor !== null) {
+                $params[":kc_{$suffix}"] = $kodeKantor;
+                return " AND {$alias}.kode_cabang = :kc_{$suffix} ";
+            }
+            if ($korwilRange) {
+                $params[":kw_start_{$suffix}"] = $korwilRange[0];
+                $params[":kw_end_{$suffix}"] = $korwilRange[1];
+                return " AND {$alias}.kode_cabang BETWEEN :kw_start_{$suffix} AND :kw_end_{$suffix} ";
+            }
+            return " AND {$alias}.kode_cabang <> '000' ";
+        };
+
+        $params = [
+            ':closing_date' => $closing_date,
+            ':harian_date' => $harian_date,
+        ];
+        $scopeHFlow = $scope('h', $params, 'flow_h');
+        $scopeCFlow = $scope('c', $params, 'flow_c');
+
+        try {
+            $flowSql = "
+                SELECT
+                    COUNT(h.no_rekening) AS total_noa,
+                    COALESCE(SUM(h.{$nominalColumn}), 0) AS total_nominal,
+                    SUM(CASE WHEN COALESCE(h.hari_menunggak_pokok, 0) > 90 AND COALESCE(h.hari_menunggak_bunga, 0) <= 90 THEN 1 ELSE 0 END) AS pokok_noa,
+                    COALESCE(SUM(CASE WHEN COALESCE(h.hari_menunggak_pokok, 0) > 90 AND COALESCE(h.hari_menunggak_bunga, 0) <= 90 THEN h.{$nominalColumn} ELSE 0 END), 0) AS pokok_nominal,
+                    SUM(CASE WHEN COALESCE(h.hari_menunggak_pokok, 0) <= 90 AND COALESCE(h.hari_menunggak_bunga, 0) > 90 THEN 1 ELSE 0 END) AS bunga_noa,
+                    COALESCE(SUM(CASE WHEN COALESCE(h.hari_menunggak_pokok, 0) <= 90 AND COALESCE(h.hari_menunggak_bunga, 0) > 90 THEN h.{$nominalColumn} ELSE 0 END), 0) AS bunga_nominal,
+                    SUM(CASE WHEN COALESCE(h.hari_menunggak_pokok, 0) > 90 AND COALESCE(h.hari_menunggak_bunga, 0) > 90 THEN 1 ELSE 0 END) AS pokok_bunga_noa,
+                    COALESCE(SUM(CASE WHEN COALESCE(h.hari_menunggak_pokok, 0) > 90 AND COALESCE(h.hari_menunggak_bunga, 0) > 90 THEN h.{$nominalColumn} ELSE 0 END), 0) AS pokok_bunga_nominal,
+                    SUM(CASE WHEN COALESCE(h.hari_menunggak_pokok, 0) <= 90 AND COALESCE(h.hari_menunggak_bunga, 0) <= 90 THEN 1 ELSE 0 END) AS lainnya_noa,
+                    COALESCE(SUM(CASE WHEN COALESCE(h.hari_menunggak_pokok, 0) <= 90 AND COALESCE(h.hari_menunggak_bunga, 0) <= 90 THEN h.{$nominalColumn} ELSE 0 END), 0) AS lainnya_nominal
+                FROM nominatif h
+                INNER JOIN nominatif c ON c.no_rekening = h.no_rekening
+                    AND c.created = :closing_date
+                    AND c.kolektibilitas IN ('L', 'DP')
+                    {$scopeCFlow}
+                WHERE h.created = :harian_date
+                    AND h.kolektibilitas IN ('KL', 'D', 'M')
+                    {$scopeHFlow}
+            ";
+            $stmt = $this->pdo->prepare($flowSql);
+            foreach ($params as $key => $value) $stmt->bindValue($key, $value);
+            $stmt->execute();
+            $flow = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            $weekParams = [
+                ':closing_date_week' => $closing_date,
+                ':harian_date_week' => $harian_date,
+                ':month_start_week' => $monthStart,
+                ':month_end_week' => $monthEnd,
+                ':harian_date_overdue' => $harian_date,
+                ':harian_date_overdue_nominal' => $harian_date,
+            ];
+            $scopeHWeek = $scope('h', $weekParams, 'week_h');
+            $scopeCWeek = $scope('c', $weekParams, 'week_c');
+            $weekSql = "
+                SELECT
+                    CASE
+                        WHEN DAY(h.tgl_jatuh_tempo) <= 7 THEN 1
+                        WHEN DAY(h.tgl_jatuh_tempo) <= 14 THEN 2
+                        WHEN DAY(h.tgl_jatuh_tempo) <= 21 THEN 3
+                        ELSE 4
+                    END AS week_no,
+                    COUNT(h.no_rekening) AS noa,
+                    COALESCE(SUM(h.{$nominalColumn}), 0) AS nominal,
+                    COALESCE(SUM(h.tunggakan_pokok), 0) AS tunggakan_pokok,
+                    COALESCE(SUM(h.tunggakan_bunga), 0) AS tunggakan_bunga,
+                    SUM(CASE WHEN h.tgl_jatuh_tempo < DATE_ADD(:harian_date_overdue, INTERVAL 1 DAY) THEN 1 ELSE 0 END) AS overdue_noa,
+                    COALESCE(SUM(CASE WHEN h.tgl_jatuh_tempo < DATE_ADD(:harian_date_overdue_nominal, INTERVAL 1 DAY) THEN h.{$nominalColumn} ELSE 0 END), 0) AS overdue_nominal
+                FROM nominatif h
+                INNER JOIN nominatif c ON c.no_rekening = h.no_rekening
+                    AND c.created = :closing_date_week
+                    AND c.kolektibilitas IN ('L', 'DP')
+                    {$scopeCWeek}
+                WHERE h.created = :harian_date_week
+                    AND h.kolektibilitas IN ('L', 'DP')
+                    AND h.tgl_jatuh_tempo IS NOT NULL
+                    AND h.tgl_jatuh_tempo >= :month_start_week
+                    AND h.tgl_jatuh_tempo < DATE_ADD(:month_end_week, INTERVAL 1 DAY)
+                    {$scopeHWeek}
+                GROUP BY week_no
+                ORDER BY week_no
+            ";
+            $weekStmt = $this->pdo->prepare($weekSql);
+            foreach ($weekParams as $key => $value) $weekStmt->bindValue($key, $value);
+            $weekStmt->execute();
+            $weeks = $weekStmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $weekMap = [];
+            foreach ($weeks as $week) {
+                $weekNo = (int)($week['week_no'] ?? 0);
+                if ($weekNo < 1 || $weekNo > 4) continue;
+                $weekMap[$weekNo] = [
+                    'week' => $weekNo,
+                    'label' => 'Minggu ' . $weekNo,
+                    'range' => $weekNo === 1 ? 'Tgl 1–7' : ($weekNo === 2 ? 'Tgl 8–14' : ($weekNo === 3 ? 'Tgl 15–21' : 'Tgl 22–akhir bulan')),
+                    'noa' => (int)($week['noa'] ?? 0),
+                    'nominal' => (float)($week['nominal'] ?? 0),
+                    'tunggakan_pokok' => (float)($week['tunggakan_pokok'] ?? 0),
+                    'tunggakan_bunga' => (float)($week['tunggakan_bunga'] ?? 0),
+                    'total_tunggakan' => (float)($week['tunggakan_pokok'] ?? 0) + (float)($week['tunggakan_bunga'] ?? 0),
+                    'overdue_noa' => (int)($week['overdue_noa'] ?? 0),
+                    'overdue_nominal' => (float)($week['overdue_nominal'] ?? 0),
+                ];
+            }
+            for ($i = 1; $i <= 4; $i++) {
+                if (!isset($weekMap[$i])) $weekMap[$i] = [
+                    'week' => $i,
+                    'label' => 'Minggu ' . $i,
+                    'range' => $i === 1 ? 'Tgl 1–7' : ($i === 2 ? 'Tgl 8–14' : ($i === 3 ? 'Tgl 15–21' : 'Tgl 22–akhir bulan')),
+                    'noa' => 0, 'nominal' => 0, 'tunggakan_pokok' => 0, 'tunggakan_bunga' => 0,
+                    'total_tunggakan' => 0, 'overdue_noa' => 0, 'overdue_nominal' => 0,
+                ];
+            }
+            ksort($weekMap);
+
+            $flowKeys = ['total_noa','total_nominal','pokok_noa','pokok_nominal','bunga_noa','bunga_nominal','pokok_bunga_noa','pokok_bunga_nominal','lainnya_noa','lainnya_nominal'];
+            $flowOut = [];
+            foreach ($flowKeys as $key) $flowOut[$key] = (float)($flow[$key] ?? 0);
+            foreach (['total_noa','pokok_noa','bunga_noa','pokok_bunga_noa','lainnya_noa'] as $key) $flowOut[$key] = (int)$flowOut[$key];
+            $flowOut['categories'] = [
+                ['key'=>'pokok','label'=>'Tunggakan pokok >90 hari','noa'=>$flowOut['pokok_noa'],'nominal'=>$flowOut['pokok_nominal']],
+                ['key'=>'bunga','label'=>'Tunggakan bunga >90 hari','noa'=>$flowOut['bunga_noa'],'nominal'=>$flowOut['bunga_nominal']],
+                ['key'=>'pokok_bunga','label'=>'Tunggakan pokok & bunga >90 hari','noa'=>$flowOut['pokok_bunga_noa'],'nominal'=>$flowOut['pokok_bunga_nominal']],
+                ['key'=>'lainnya','label'=>'Lainnya / JT / one obligor','noa'=>$flowOut['lainnya_noa'],'nominal'=>$flowOut['lainnya_nominal']],
+            ];
+            $flowOut['weeks'] = array_values($weekMap);
+
+            sendResponse(200, 'Berhasil ambil cockpit Flow PAR', [
+                'params' => [
+                    'closing_date' => $closing_date,
+                    'harian_date' => $harian_date,
+                    'kode_kantor' => $kodeKantor,
+                    'korwil' => $korwil ?: null,
+                    'nominal_field' => $nominalColumn,
+                ],
+                'data' => $flowOut,
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, 'Error cockpit Flow PAR: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Detail Flow PAR untuk cockpit migrasi kolek.
+     * Endpoint ini memakai query detail yang sudah teruji di menu Flow PAR,
+     * tetapi menerima klasifikasi ringkas dari kartu dashboard.
+     */
+    public function getFlowParDashboardDetail($input = []) {
+        $classification = strtolower(trim((string)($input['klasifikasi_flow'] ?? '')));
+        $classificationMap = [
+            'pokok' => 'pokok_90',
+            'pokok_90' => 'pokok_90',
+            'bunga' => 'bunga_90',
+            'bunga_90' => 'bunga_90',
+            'pokok_bunga' => 'pokok_bunga_90',
+            'pokok_bunga_90' => 'pokok_bunga_90',
+            'lainnya' => 'jt_lain',
+            'jt_lain' => 'jt_lain',
+        ];
+        $input['klasifikasi_flow'] = $classificationMap[$classification] ?? '';
+        $this->getDebiturFlowPar($input);
+    }
+
     public function getDebiturFlowPar($input) {
         $kode_kantor  = str_pad($input['kode_kantor'] ?? '', 3, '0', STR_PAD_LEFT);
         $kode_kankas  = $input['kode_kankas'] ?? '';
@@ -205,6 +398,8 @@ class FlowParController {
         $korwilRange = $korwilRanges[$korwil] ?? null;
         $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian_date  = $input['harian_date']  ?? date('Y-m-d');
+        $modeHitung = strtolower(trim((string)($input['hitung_berdasarkan'] ?? 'saldo_bank')));
+        $nominalColumn = $modeHitung === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
         $month_start  = date('Y-m-01', strtotime($harian_date));
         $next_month_start = date('Y-m-01', strtotime('+1 month', strtotime($harian_date)));
 
@@ -242,7 +437,7 @@ class FlowParController {
                 h.nama_nasabah,
                 c.kolektibilitas AS kolek_closing,
                 h.kolektibilitas AS kolek_harian,
-                h.baki_debet,
+                h.$nominalColumn AS baki_debet,
                 h.alamat,
                 h.tunggakan_pokok,
                 h.tunggakan_bunga,
@@ -291,7 +486,7 @@ class FlowParController {
             WHERE h.created = :harian_date
               AND h.kolektibilitas IN ('KL','D','M')
               $filterHarian
-            ORDER BY h.baki_debet DESC
+            ORDER BY h.$nominalColumn DESC
         ";
 
         try {

@@ -1,6 +1,8 @@
 <style>
   /* Custom Scrollbar */
-  .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+  #mobPage { font-family:'Roboto', Arial, sans-serif; }
+  .custom-scrollbar { scrollbar-width:thin; scrollbar-color:#cbd5e1 transparent; }
+  .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
@@ -18,6 +20,12 @@
   #tabelMob th, #tabelMob td { background-clip: padding-box; background-color: #fff; }
   
   #tabelMob thead th { position: sticky !important; z-index: 40; box-shadow: inset 0 -1px 0 #cbd5e1, inset 0 1px 0 #cbd5e1; }
+
+  /* Hanya kolom MOB/FPD yang tetap terlihat saat tabel digeser horizontal. */
+  .mob-col-bulan-real { display:none !important; }
+  .mob-sticky-mob { position:sticky !important; left:0 !important; z-index:45 !important; box-shadow:2px 0 5px -3px rgba(15,23,42,.35); }
+  #tabelMob thead .mob-sticky-mob { z-index:62 !important; background-color:#e0f2fe !important; }
+  #rowTotalMobAtas .mob-sticky-mob { z-index:63 !important; background-color:#dbeafe !important; }
   
   .mob-row-1 th { top: 0 !important; height: 36px; background-color: #f1f5f9 !important; color: #1e3a8a; font-weight: 800; }
   .mob-row-2 th { top: 36px !important; height: 30px; background-color: #f8fafc !important; color: #334155; }
@@ -35,9 +43,11 @@
   #bodyMatrix td { position: relative; z-index: 10 !important; }
   .sticky-left { position: sticky !important; left: 0 !important; }
   #bodyMatrix td.sticky-left { z-index: 30 !important; background-color: #ffffff !important; box-shadow: inset -1px 0 0 #e2e8f0; font-weight: bold; }
+  #bodyMatrix td.mob-sticky-mob { z-index:31 !important; background-color:#eff6ff !important; }
   
   .cell-hover:hover { background-color: #e0f2fe !important; cursor: pointer; transform: scale(1.05); transition: 0.1s; z-index: 35 !important; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.1); border: 1px solid #3b82f6; border-radius: 6px; }
   #bodyMatrix tr:hover td { background-color: #f8fafc !important; }
+  #bodyMatrix tr:hover td.mob-sticky-mob { background-color:#eff6ff !important; }
   #bodyMatrix tr:hover td.sticky-left { background-color: #f8fafc !important; filter: brightness(0.98); }
 
   /* ========================================================
@@ -72,4 +82,22 @@
   .btn-icon:hover:not(:disabled) { transform:translateY(-1px); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
   input[type="date"]::-webkit-inner-spin-button, input[type="date"]::-webkit-calendar-picker-indicator { display: none; -webkit-appearance: none; }
   input[type="date"] { -moz-appearance: textfield; }
+
+  @media (max-width: 767px) {
+      #mobPage { height:calc(100vh - 96px) !important; min-height:420px; padding:8px !important; }
+      #mobHeaderCard { margin-bottom:8px !important; padding:8px !important; border-radius:12px !important; }
+      #mobHeaderCard h1 { font-size:14px !important; }
+      #mobHeaderCard .btn-icon { width:32px !important; height:30px !important; border-radius:8px !important; }
+  }
+
+  :root[data-monbis-theme="dark"] #mobPage { background:#0f172a !important; color:#e2e8f0 !important; }
+  :root[data-monbis-theme="dark"] #mobHeaderCard,
+  :root[data-monbis-theme="dark"] #mobPage .bg-white { background:#111827 !important; border-color:#334155 !important; }
+  :root[data-monbis-theme="dark"] #mobHeaderCard h1,
+  :root[data-monbis-theme="dark"] #mobPage .text-slate-800,
+  :root[data-monbis-theme="dark"] #mobPage .text-slate-700 { color:#f8fafc !important; }
+  :root[data-monbis-theme="dark"] #tabelMob th,
+  :root[data-monbis-theme="dark"] #tabelMob td,
+  :root[data-monbis-theme="dark"] #tableExportMob th,
+  :root[data-monbis-theme="dark"] #tableExportMob td { background-color:#111827 !important; border-color:#334155 !important; color:#e2e8f0; }
 </style>

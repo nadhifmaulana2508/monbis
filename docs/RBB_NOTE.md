@@ -13,7 +13,7 @@ Status: diparkir sementara. Fokus pengembangan berikutnya adalah KPI dan perbaik
 - Input ABA memiliki tab Penempatan, CKPN ABA otomatis, Pendapatan Bank Lain otomatis, dan History 3 Tahun.
 - CKPN ABA dihitung otomatis sebesar `nominal ABA × 0,5%`.
 - Pendapatan bunga dihitung otomatis sebesar `nominal ABA × (1,25% / 12)`.
-- History ABA mengambil data aktual 3 tahun terakhir dari `acc_history`.
+- History ABA mengambil data aktual 3 tahun dsterakhir dari `acc_history`.
 - Akses Input RBB sementara dibatasi untuk `employee_id` / `id_peg = 102-119`.
 - Draft, pengajuan, penolakan, dan approval diproses dari halaman Proyeksi RBB.
 

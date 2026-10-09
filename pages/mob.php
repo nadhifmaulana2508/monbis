@@ -5,7 +5,7 @@
 
 <?php include __DIR__ . '/components/mob_components/style.php'; ?>
 
-<div class="max-w-[1920px] w-full mx-auto px-2 md:px-4 py-4 md:py-6 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
+<div id="mobPage" class="max-w-[1920px] w-full mx-auto px-2 md:px-4 py-3 md:py-4 h-[calc(100vh-96px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
     
     <?php include __DIR__ . '/components/mob_components/filter_main.php'; ?>
 

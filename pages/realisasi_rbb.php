@@ -2,65 +2,30 @@
 // Laporan Realisasi Kredit vs RBB bulan berjalan.
 ?>
 
-<div class="max-w-[1920px] w-full mx-auto px-2 md:px-4 py-2.5 md:py-4 xl:py-5 h-[calc(100vh-60px)] md:h-[calc(100vh-80px)] flex flex-col font-sans text-slate-800 bg-slate-50 overflow-hidden">
-    <div class="relative z-20 flex-none mb-2.5 md:mb-3 w-full bg-white p-2 md:p-3 rounded-xl border border-slate-200 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-2.5 shrink-0">
-        <div class="flex items-center justify-between w-full xl:w-auto shrink-0 px-1">
-            <h1 class="text-base md:text-xl font-extrabold text-slate-800 flex items-center gap-2 whitespace-nowrap">
+<div id="realisasiRbbPage" class="max-w-[1920px] w-full mx-auto px-2 md:px-4 py-2.5 md:py-4 xl:py-5 h-full min-h-full flex flex-col font-sans text-slate-800 bg-slate-50">
+    <div class="rbb-page-header relative z-20 flex-none mb-2.5 md:mb-3 w-full bg-white p-2.5 md:p-3 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between gap-3 shrink-0">
+        <div class="flex items-center min-w-0 px-1">
+            <h1 class="text-base md:text-xl font-extrabold text-slate-800 flex items-center gap-2 min-w-0">
                 <span class="p-1.5 md:p-2 bg-indigo-600 rounded-lg text-white shadow-sm shrink-0">
                     <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 17v-6h6v6m-8 4h10a2 2 0 002-2V9.5a2 2 0 00-.586-1.414l-4.5-4.5A2 2 0 0012.5 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                 </span>
-                Realisasi vs RBB
+                <span class="truncate">Realisasi vs RBB</span>
                 <span class="relative group inline-flex">
                     <button type="button" class="rbb-info-btn" aria-label="Info nominal tabel">i</button>
                     <span class="rbb-info-pop">
-                        Nominal pada tabel ditampilkan dalam ribuan rupiah. Contoh: 1.000.000.000 tampil menjadi 1.000.000. Kartu ringkasan tetap memakai format singkat.
+                        Nominal pada tabel ditampilkan penuh dalam rupiah. Kartu ringkasan tetap memakai format singkat agar mudah dibaca.
                     </span>
                 </span>
             </h1>
-
-            <div class="xl:hidden flex items-center gap-1.5 ml-2 shrink-0">
-                <button type="button" id="rbb_summary_toggle_mobile" onclick="toggleRbbSummary()" class="rbb-summary-toggle h-[30px] w-[30px] bg-white border border-slate-200 text-slate-700 rounded-lg inline-flex items-center justify-center shadow-sm transition" aria-label="Sembunyikan rekap" title="Sembunyikan rekap"></button>
-                <button type="button" onclick="toggleRbbFilter()" class="h-[30px] px-2.5 bg-white border border-slate-200 text-slate-700 rounded-lg flex items-center gap-1.5 shadow-sm transition font-bold text-[10px] whitespace-nowrap shrink-0">
-                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M6 12h12M10 20h4"></path></svg> Filter
-                </button>
-            </div>
         </div>
-
-        <div id="filterWrapperRbb" class="hidden xl:flex w-full xl:w-auto flex-1 min-w-0 justify-end transition-all duration-300 shrink-0 border-t xl:border-none pt-3 xl:pt-0 mt-2 xl:mt-0">
-            <form id="rbb_filter_form" class="rbb-filter-grid w-full xl:w-auto" onsubmit="event.preventDefault(); fetchRbb();">
-                <div class="field rbb-filter-date">
-                    <label class="lbl">HARIAN</label>
-                    <input type="date" id="rbb_harian_date" class="inp font-bold text-slate-700 cursor-pointer" onclick="this.showPicker && this.showPicker()" onchange="fetchRbb()">
-                </div>
-                <div class="field rbb-filter-office">
-                    <label class="lbl">KANTOR</label>
-                    <select id="rbb_kantor" class="inp font-bold text-slate-700 truncate" onchange="fetchRbb()">
-                        <option value="000">000 - Konsolidasi</option>
-                        <option value="SEMARANG">Korwil Semarang</option>
-                        <option value="SOLO">Korwil Solo</option>
-                        <option value="BANYUMAS">Korwil Banyumas</option>
-                        <option value="PEKALONGAN">Korwil Pekalongan</option>
-                    </select>
-                </div>
-                <div class="field rbb-filter-compare">
-                    <label class="lbl">PEMBANDING</label>
-                    <select id="rbb_compare_mode" class="inp font-bold text-slate-700 truncate" onchange="fetchRbb()">
-                        <option value="auto">Auto</option>
-                        <option value="rbb">RBB</option>
-                        <option value="history">History YoY</option>
-                    </select>
-                </div>
-                <div class="rbb-filter-actions">
-                    <button type="button" id="rbb_summary_toggle" onclick="toggleRbbSummary()" class="rbb-summary-toggle hidden xl:inline-flex h-9 w-9 rounded-lg border border-slate-200 bg-white text-slate-700 items-center justify-center shadow-sm transition" aria-label="Sembunyikan rekap" title="Sembunyikan rekap"></button>
-                    <button type="button" onclick="exportRbbExcel()" class="btn-icon w-[32px] md:w-[42px] bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shrink-0" title="Download Excel">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline></svg>
-                    </button>
-                </div>
-            </form>
+        <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" onclick="exportRbbExcel()" class="btn-icon w-9 h-9 md:w-10 md:h-10 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm shrink-0" title="Download Excel" aria-label="Download Excel">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 20h14"></path></svg>
+            </button>
         </div>
     </div>
 
-    <div id="rbb_summary" class="rbb-summary-grid mb-2.5 md:mb-3 shrink-0"></div>
+    <div id="rbb_summary" class="hidden" aria-hidden="true"></div>
 
     <div class="flex-1 min-h-0 overflow-hidden bg-white rounded-xl shadow-sm border border-slate-200 relative flex flex-col z-10">
         <div id="rbb_loading" class="hidden absolute inset-0 bg-white/80 z-[100] flex flex-col items-center justify-center text-indigo-600 font-bold uppercase tracking-widest text-[10px] md:text-sm backdrop-blur-sm">
@@ -80,7 +45,7 @@
 <style>
     :root {
         --rbb-code-w: 64px;
-        --rbb-name-w: 210px;
+        --rbb-name-w: 150px;
         --rbb-period-w: 150px;
         --rbb-money-w: 142px;
         --rbb-money-wide-w: 158px;
@@ -88,32 +53,7 @@
         --rbb-head-h: 40px;
     }
 
-    .field { display:flex; flex-direction:column; gap:.25rem; min-width:0; }
-    .lbl { font-size:.62rem; font-weight:900; letter-spacing:.08em; color:#64748b; white-space:nowrap; }
-    .inp {
-        width:100%; min-width:0; height:2.25rem; border:1px solid #cbd5e1; border-radius:.65rem;
-        padding:0 .75rem; font-size:.76rem; outline:none; background:white; color:#334155;
-        transition:border-color .15s, box-shadow .15s;
-    }
-    .inp:focus { border-color:#6366f1; box-shadow:0 0 0 3px rgba(99,102,241,.14); }
-    .inp:disabled { background:#f8fafc; color:#64748b; cursor:not-allowed; }
     .btn-icon { height:2.25rem; border-radius:.65rem; display:inline-flex; align-items:center; justify-content:center; }
-
-    .rbb-filter-grid {
-        display:grid;
-        grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-        gap:.5rem;
-        align-items:end;
-    }
-    .rbb-filter-compare { grid-column:1 / 2; }
-    .rbb-filter-actions {
-        grid-column:2 / 3;
-        display:flex;
-        align-items:flex-end;
-        justify-content:flex-end;
-        gap:.5rem;
-        min-width:0;
-    }
 
     .rbb-summary-grid {
         display:grid;
@@ -163,6 +103,7 @@
 
     #rbb_table_scroller {
         isolation:isolate; overscroll-behavior:contain; -webkit-overflow-scrolling:touch;
+        overflow-x:hidden; overflow-y:auto;
         scrollbar-gutter:stable;
     }
     #rbb_table {
@@ -231,14 +172,6 @@
     .rbb-neutral { color:#475569; }
 
     @media (min-width:640px) {
-        .rbb-filter-grid {
-            grid-template-columns:130px minmax(190px,1fr) 150px auto;
-            gap:.6rem;
-        }
-        .rbb-filter-date,
-        .rbb-filter-office,
-        .rbb-filter-compare,
-        .rbb-filter-actions { grid-column:auto; }
         .rbb-summary-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:.65rem; }
         .rbb-card { padding:.72rem .78rem; }
     }
@@ -249,14 +182,10 @@
         .rbb-card .sub { font-size:.68rem; }
     }
 
-    @media (min-width:1280px) {
-        .rbb-filter-grid { grid-template-columns:140px 210px 155px auto; width:auto; }
-    }
-
     @media (min-width:1440px) {
         :root {
             --rbb-code-w:68px;
-            --rbb-name-w:240px;
+            --rbb-name-w:190px;
             --rbb-period-w:170px;
             --rbb-money-w:154px;
             --rbb-money-wide-w:174px;
@@ -266,10 +195,34 @@
         #rbb_table tbody td { font-size:.76rem; }
     }
 
+    @media (max-width:1199px) {
+        #rbb_table_scroller { overflow-x:hidden; }
+        #rbb_table { width:100%; min-width:100%; table-layout:fixed; }
+        #rbb_table th,
+        #rbb_table td {
+            min-width:0 !important;
+            max-width:none !important;
+            white-space:normal;
+            overflow:hidden;
+            overflow-wrap:anywhere;
+        }
+        #rbb_table .rbb-col-money-wide { display:none !important; }
+        #rbb_table:not(.rbb-monthly-view) .rbb-col-code { width:8%; min-width:0; max-width:none; }
+        #rbb_table:not(.rbb-monthly-view) .rbb-col-name { width:24%; min-width:0; max-width:none; }
+        #rbb_table:not(.rbb-monthly-view) .rbb-col-money { width:16%; min-width:0; max-width:none; }
+        #rbb_table:not(.rbb-monthly-view) .rbb-col-pct { width:10%; min-width:0; max-width:none; }
+        #rbb_table.rbb-history-view:not(.rbb-monthly-view) .rbb-col-name { width:20%; }
+        #rbb_table.rbb-monthly-view .rbb-col-period { width:16%; min-width:0; max-width:none; }
+        #rbb_table.rbb-monthly-view .rbb-col-name { width:20%; min-width:0; max-width:none; }
+        #rbb_table.rbb-monthly-view .rbb-col-money { width:12%; min-width:0; max-width:none; }
+        #rbb_table.rbb-monthly-view .rbb-col-pct { width:10%; min-width:0; max-width:none; }
+        .rbb-name-text { max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    }
+
     @media (min-width:768px) and (max-width:1023px) {
         :root {
             --rbb-code-w:56px;
-            --rbb-name-w:170px;
+            --rbb-name-w:130px;
             --rbb-period-w:138px;
             --rbb-money-w:124px;
             --rbb-money-wide-w:142px;
@@ -291,10 +244,6 @@
             --rbb-pct-w:76px;
             --rbb-head-h:38px;
         }
-
-        #filterWrapperRbb { max-height:calc(100vh - 130px); overflow:auto; }
-        .rbb-filter-grid { width:100%; }
-        .rbb-filter-actions > button:first-child { flex:1 1 auto; }
 
         /* Rekap mobile menjadi satu baris horizontal agar tidak menghabiskan tinggi layar. */
         .rbb-summary-grid {
@@ -344,7 +293,34 @@
             transform:translateY(0);
         }
 
-        #rbb_table_scroller { scrollbar-gutter:auto; }
+        #rbb_table_scroller {
+            scrollbar-gutter:auto;
+            overflow-x:hidden;
+        }
+        #rbb_table {
+            width:100%;
+            min-width:100%;
+            table-layout:fixed;
+        }
+        #rbb_table th,
+        #rbb_table td {
+            min-width:0 !important;
+            max-width:none !important;
+            white-space:normal;
+            overflow:hidden;
+            overflow-wrap:anywhere;
+        }
+        #rbb_table .rbb-col-code { display:none !important; }
+        #rbb_table .rbb-col-money-wide { display:none !important; }
+        #rbb_table:not(.rbb-monthly-view) .rbb-col-name { width:28%; min-width:0; max-width:none; }
+        #rbb_table:not(.rbb-monthly-view) .rbb-col-money { width:18%; min-width:0; max-width:none; }
+        #rbb_table:not(.rbb-monthly-view) .rbb-col-pct { width:16%; min-width:0; max-width:none; }
+        #rbb_table.rbb-history-view:not(.rbb-monthly-view) .rbb-col-name { width:22%; }
+        #rbb_table.rbb-history-view:not(.rbb-monthly-view) .rbb-col-pct { width:14%; }
+        #rbb_table.rbb-monthly-view .rbb-col-period { width:14%; min-width:0; max-width:none; }
+        #rbb_table.rbb-monthly-view .rbb-col-name { width:18%; min-width:0; max-width:none; }
+        #rbb_table.rbb-monthly-view .rbb-col-money { width:14%; min-width:0; max-width:none; }
+        #rbb_table.rbb-monthly-view .rbb-col-pct { width:12%; min-width:0; max-width:none; }
         #rbb_table th, #rbb_table td { padding:.36rem .38rem; }
         #rbb_table thead th {
             font-size:.55rem; letter-spacing:0; white-space:normal; line-height:1.12;
@@ -359,10 +335,7 @@
         #rbb_table:not(.rbb-branch-view):not(.rbb-monthly-view) thead .rbb-sticky-name { z-index:36; }
         #rbb_table:not(.rbb-branch-view):not(.rbb-monthly-view) thead .rbb-total-th.rbb-sticky-name { z-index:35; }
 
-        .rbb-name-text {
-            display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;
-            overflow:hidden; white-space:normal; line-height:1.15;
-        }
+        .rbb-name-text { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     }
 
     @media (max-width:374px) {
@@ -376,6 +349,43 @@
         #rbb_table thead th { font-size:.51rem; }
         #rbb_table tbody td { font-size:.57rem; }
     }
+
+    #realisasiRbbPage,
+    #realisasiRbbPage * { font-family:'Roboto', Arial, sans-serif; }
+    #realisasiRbbPage { min-width:0; }
+    #realisasiRbbPage .rbb-page-header { min-height:58px; }
+    #rbb_table_scroller {
+        scrollbar-width:thin;
+        scrollbar-color:#94a3b8 transparent;
+    }
+    #rbb_table_scroller::-webkit-scrollbar { width:4px; height:4px; }
+    #rbb_table_scroller::-webkit-scrollbar-track { background:transparent; }
+    #rbb_table_scroller::-webkit-scrollbar-thumb { background:#94a3b8; border-radius:999px; }
+    #rbb_table_scroller::-webkit-scrollbar-thumb:hover { background:#64748b; }
+    :root[data-monbis-theme="dark"] #realisasiRbbPage .rbb-page-header,
+    :root[data-monbis-theme="dark"] #realisasiRbbPage .rbb-card,
+    :root[data-monbis-theme="dark"] #realisasiRbbPage > div:last-child { background:#111827 !important; border-color:#334155 !important; }
+    :root[data-monbis-theme="dark"] #realisasiRbbPage .rbb-summary-toggle { background:#111827; border-color:#475569; color:#cbd5e1; }
+    :root[data-monbis-theme="dark"] #realisasiRbbPage #rbb_table tbody tr,
+    :root[data-monbis-theme="dark"] #realisasiRbbPage #rbb_table .rbb-sticky-code,
+    :root[data-monbis-theme="dark"] #realisasiRbbPage #rbb_table .rbb-sticky-name,
+    :root[data-monbis-theme="dark"] #realisasiRbbPage #rbb_table .rbb-sticky-period { background:#111827; }
+    :root[data-monbis-theme="dark"] #realisasiRbbPage #rbb_table tbody tr:hover td,
+    :root[data-monbis-theme="dark"] #realisasiRbbPage #rbb_table tbody tr:hover .rbb-sticky-code,
+    :root[data-monbis-theme="dark"] #realisasiRbbPage #rbb_table tbody tr:hover .rbb-sticky-name,
+    :root[data-monbis-theme="dark"] #realisasiRbbPage #rbb_table tbody tr:hover .rbb-sticky-period { background:#1e293b; }
+    :root[data-monbis-theme="dark"] #realisasiRbbPage .rbb-th { background:#1e293b; color:#cbd5e1; border-color:#475569 !important; }
+    :root[data-monbis-theme="dark"] #realisasiRbbPage .rbb-total-th { background:#172554; color:#e2e8f0; border-color:#475569 !important; }
+    :root[data-monbis-theme="dark"] #realisasiRbbPage .text-slate-800,
+    :root[data-monbis-theme="dark"] #realisasiRbbPage .text-slate-700 { color:#e2e8f0 !important; }
+    @media (max-width:767px) {
+        #realisasiRbbPage { padding-left:.5rem; padding-right:.5rem; }
+        #realisasiRbbPage .rbb-page-header { padding:.55rem .6rem; }
+        #realisasiRbbPage .rbb-page-header h1 { font-size:.88rem; }
+        #realisasiRbbPage .rbb-info-btn { width:1.1rem; height:1.1rem; font-size:.66rem; }
+        #realisasiRbbPage .rbb-page-header .btn-icon,
+        #realisasiRbbPage .rbb-page-header .rbb-summary-toggle { width:2rem; height:2rem; }
+    }
 </style>
 
 <script>
@@ -384,12 +394,14 @@ const RBB_KODE_API = './api/kode/';
 const RBB_DATE_API = './api/date/';
 const RBB_KORWIL = ['SEMARANG', 'SOLO', 'BANYUMAS', 'PEKALONGAN'];
 const rbbFmt = new Intl.NumberFormat('id-ID');
+const RBB_SUMMARY_ENABLED = false;
 let rbbRows = [];
 let rbbMonthlyRows = [];
 let rbbGrand = {};
 let rbbMeta = {};
 let rbbSort = { key: 'kode_kantor', asc: true };
 let rbbAbort = null;
+let rbbRequestSequence = 0;
 let rbbSummaryVisible = true;
 
 function rbbApiCall(url, options = {}) {
@@ -419,14 +431,17 @@ function syncRbbTableState(monthly = false) {
     if (!table) return;
     table.classList.toggle('rbb-branch-view', isRbbBranchFilter());
     table.classList.toggle('rbb-monthly-view', monthly);
+    table.classList.toggle('rbb-history-view', rbbMeta.compare_mode === 'history');
 }
 
 function closeRbbFilterOnSmallScreen() {
     if (window.innerWidth >= 1280) return;
-    const wrapper = document.getElementById('filterWrapperRbb');
+    const wrapper = document.getElementById('realisasiRbbNavbarFilterPanel');
     if (!wrapper) return;
     wrapper.classList.add('hidden');
     wrapper.classList.remove('flex');
+    document.getElementById('realisasiRbbNavbarFilterToggle')?.classList.remove('is-active');
+    document.getElementById('realisasiRbbNavbarFilterToggle')?.setAttribute('aria-expanded', 'false');
 }
 
 function resetRbbTableScroll() {
@@ -452,10 +467,46 @@ function rbbNameCell(row, sticky = true) {
 }
 
 function toggleRbbFilter() {
-    const el = document.getElementById('filterWrapperRbb');
+    toggleRbbNavbarFilter();
+}
+
+function closeRbbNavbarFilter() {
+    const el = document.getElementById('realisasiRbbNavbarFilterPanel');
     if (!el) return;
-    el.classList.toggle('hidden');
-    el.classList.toggle('flex');
+    el.classList.add('hidden');
+    el.classList.remove('flex');
+    const toggle = document.getElementById('realisasiRbbNavbarFilterToggle');
+    toggle?.classList.remove('is-active');
+    toggle?.setAttribute('aria-expanded', 'false');
+}
+
+function toggleRbbNavbarFilter() {
+    const el = document.getElementById('realisasiRbbNavbarFilterPanel');
+    const toggle = document.getElementById('realisasiRbbNavbarFilterToggle');
+    if (!el) return;
+    const isHidden = el.classList.toggle('hidden');
+    el.classList.toggle('flex', !isHidden);
+    toggle?.classList.toggle('is-active', !isHidden);
+    toggle?.setAttribute('aria-expanded', String(!isHidden));
+}
+
+function bindRbbNavbarFilters() {
+    const toggle = document.getElementById('realisasiRbbNavbarFilterToggle');
+    const panel = document.getElementById('realisasiRbbNavbarFilterPanel');
+    const close = document.getElementById('realisasiRbbNavbarFilterClose');
+    if (!toggle || !panel || toggle.dataset.bound === '1') return;
+
+    toggle.dataset.bound = '1';
+    toggle.addEventListener('click', toggleRbbNavbarFilter);
+    close?.addEventListener('click', closeRbbNavbarFilter);
+    ['rbb_harian_date', 'rbb_kantor', 'rbb_compare_mode'].forEach(id => {
+        document.getElementById(id)?.addEventListener('change', fetchRbb);
+    });
+    document.addEventListener('click', event => {
+        if (!panel.classList.contains('hidden') && !panel.contains(event.target) && !toggle.contains(event.target)) {
+            closeRbbNavbarFilter();
+        }
+    });
 }
 
 function rbbSummaryToggleIcon() {
@@ -469,7 +520,7 @@ function rbbSummaryToggleIcon() {
 
 function syncRbbSummaryUI() {
     const box = document.getElementById('rbb_summary');
-    box?.classList.toggle('hidden', !rbbSummaryVisible);
+    box?.classList.toggle('hidden', !RBB_SUMMARY_ENABLED || !rbbSummaryVisible);
 
     const label = rbbSummaryVisible ? 'Sembunyikan rekap' : 'Tampilkan rekap';
     ['rbb_summary_toggle', 'rbb_summary_toggle_mobile'].forEach(id => {
@@ -483,6 +534,7 @@ function syncRbbSummaryUI() {
 }
 
 function toggleRbbSummary() {
+    if (!RBB_SUMMARY_ENABLED) return;
     rbbSummaryVisible = !rbbSummaryVisible;
     syncRbbSummaryUI();
 }
@@ -501,7 +553,7 @@ function rbbNominal(value) {
 }
 
 function rbbTableNominal(value) {
-    return rbbFmt.format(Math.round(Number(value || 0) / 1000));
+    return rbbFmt.format(Math.round(Number(value || 0)));
 }
 
 function rbbPct(value) {
@@ -558,6 +610,7 @@ function initRbbInfoTooltip() {
 
 async function initRbbPage() {
     syncRbbSummaryUI();
+    bindRbbNavbarFilters();
     await loadRbbDate();
     await loadRbbKantor();
     fetchRbb();
@@ -624,6 +677,7 @@ async function loadRbbKantor() {
 async function fetchRbb() {
     const loading = document.getElementById('rbb_loading');
     const body = document.getElementById('rbb_body');
+    const requestId = ++rbbRequestSequence;
     const kantor = getRbbSelectedOffice();
     const harian = document.getElementById('rbb_harian_date')?.value || '';
     const compareMode = document.getElementById('rbb_compare_mode')?.value || 'auto';
@@ -655,12 +709,13 @@ async function fetchRbb() {
             signal: rbbAbort.signal
         });
         const json = await res.json();
-        if (json.status !== 200) throw new Error(json.message || 'Gagal mengambil data');
+        if (!res.ok || Number(json.status) !== 200) throw new Error(json.message || 'Gagal mengambil data');
 
-        rbbRows = json.data?.data || [];
-        rbbMonthlyRows = json.data?.monthly_breakdown || [];
-        rbbGrand = json.data?.grand_total || {};
-        rbbMeta = json.data?.meta || {};
+        const result = json.data || {};
+        rbbRows = Array.isArray(result.data) ? result.data : [];
+        rbbMonthlyRows = Array.isArray(result.monthly_breakdown) ? result.monthly_breakdown : [];
+        rbbGrand = result.grand_total && typeof result.grand_total === 'object' ? result.grand_total : {};
+        rbbMeta = result.meta && typeof result.meta === 'object' ? result.meta : {};
 
         if (rbbMonthlyRows.length) {
             rbbSort = { key: 'periode', asc: false };
@@ -675,17 +730,21 @@ async function fetchRbb() {
         resetRbbTableScroll();
         closeRbbFilterOnSmallScreen();
     } catch (e) {
-        if (e.name !== 'AbortError') {
+        if (e.name !== 'AbortError' && requestId === rbbRequestSequence) {
             body.innerHTML = `<tr><td colspan="12" class="py-12 text-center text-red-500 font-bold">Error: ${rbbEscape(e.message)}</td></tr>`;
         }
     } finally {
-        loading?.classList.add('hidden');
+        if (requestId === rbbRequestSequence) loading?.classList.add('hidden');
     }
 }
 
 function renderRbbSummary() {
     const box = document.getElementById('rbb_summary');
     if (!box) return;
+    if (!RBB_SUMMARY_ENABLED) {
+        box.className = 'hidden';
+        return;
+    }
 
     if (rbbMeta.compare_mode === 'history') {
         box.className = 'rbb-summary-grid mb-2.5 md:mb-3 shrink-0';
@@ -753,11 +812,11 @@ function renderRbbTable() {
         <tr>
             <th class="rbb-th rbb-sticky-code rbb-col-code rbb-sort text-left" onclick="sortRbb('kode_kantor')">Kode${rbbSortIcon('kode_kantor')}</th>
             ${rbbNameHeader(true)}
-            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('nilai_rbb')">RBB (Rb)${rbbSortIcon('nilai_rbb')}</th>
-            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('realisasi_bulan_ini')">Realisasi (Rb)${rbbSortIcon('realisasi_bulan_ini')}</th>
+            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('nilai_rbb')">RBB (Rp)${rbbSortIcon('nilai_rbb')}</th>
+            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('realisasi_bulan_ini')">Realisasi (Rp)${rbbSortIcon('realisasi_bulan_ini')}</th>
             <th class="rbb-th rbb-col-pct rbb-sort text-right" onclick="sortRbb('persentase_rbb_bulan_ini')">% RBB${rbbSortIcon('persentase_rbb_bulan_ini')}</th>
-            <th class="rbb-th rbb-col-money-wide rbb-sort text-right" onclick="sortRbb('kekurangan_sd_bulan_lalu')">Kurang Lalu (Rb)${rbbSortIcon('kekurangan_sd_bulan_lalu')}</th>
-            <th class="rbb-th rbb-col-money-wide rbb-sort text-right" onclick="sortRbb('total_beban_target')">Total Beban (Rb)${rbbSortIcon('total_beban_target')}</th>
+            <th class="rbb-th rbb-col-money-wide rbb-sort text-right" onclick="sortRbb('kekurangan_sd_bulan_lalu')">Kurang Lalu (Rp)${rbbSortIcon('kekurangan_sd_bulan_lalu')}</th>
+            <th class="rbb-th rbb-col-money-wide rbb-sort text-right" onclick="sortRbb('total_beban_target')">Total Beban (Rp)${rbbSortIcon('total_beban_target')}</th>
             <th class="rbb-th rbb-col-pct rbb-sort text-right" onclick="sortRbb('persentase_rbb_plus_kekurangan')">% Beban${rbbSortIcon('persentase_rbb_plus_kekurangan')}</th>
         </tr>
         ${totalRow}
@@ -865,12 +924,12 @@ function renderRbbHistoryTable(head, body) {
         <tr>
             <th class="rbb-th rbb-sticky-code rbb-col-code rbb-sort text-left" onclick="sortRbb('kode_kantor')">Kode${rbbSortIcon('kode_kantor')}</th>
             ${rbbNameHeader(true)}
-            <th class="rbb-th rbb-col-money-wide rbb-sort text-right" onclick="sortRbb('realisasi_bulan_ini')">Realisasi ${year} (Rb)${rbbSortIcon('realisasi_bulan_ini')}</th>
-            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('run_off')">Run Off (Rb)${rbbSortIcon('run_off')}</th>
-            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('growth')">Growth (Rb)${rbbSortIcon('growth')}</th>
+            <th class="rbb-th rbb-col-money-wide rbb-sort text-right" onclick="sortRbb('realisasi_bulan_ini')">Realisasi ${year} (Rp)${rbbSortIcon('realisasi_bulan_ini')}</th>
+            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('run_off')">Run Off (Rp)${rbbSortIcon('run_off')}</th>
+            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('growth')">Growth (Rp)${rbbSortIcon('growth')}</th>
             <th class="rbb-th rbb-col-pct rbb-sort text-right" onclick="sortRbb('growth_persen')">% Growth${rbbSortIcon('growth_persen')}</th>
-            <th class="rbb-th rbb-col-money-wide rbb-sort text-right" onclick="sortRbb('realisasi_tahun_lalu')">Realisasi ${prevYear} (Rb)${rbbSortIcon('realisasi_tahun_lalu')}</th>
-            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('selisih')">Selisih YoY (Rb)${rbbSortIcon('selisih')}</th>
+            <th class="rbb-th rbb-col-money-wide rbb-sort text-right" onclick="sortRbb('realisasi_tahun_lalu')">Realisasi ${prevYear} (Rp)${rbbSortIcon('realisasi_tahun_lalu')}</th>
+            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('selisih')">Selisih YoY (Rp)${rbbSortIcon('selisih')}</th>
             <th class="rbb-th rbb-col-pct rbb-sort text-right" onclick="sortRbb('yoy_persen')">% YoY${rbbSortIcon('yoy_persen')}</th>
         </tr>
         ${renderRbbHistoryTotalRow(false)}
@@ -913,12 +972,12 @@ function renderRbbHistoryMonthlyTable(head, body) {
         <tr>
             <th class="rbb-th rbb-sticky-period rbb-col-period rbb-sort text-left" onclick="sortRbb('periode')">Bulan${rbbSortIcon('periode')}</th>
             ${hideName ? '' : '<th class="rbb-th rbb-col-name text-left">Kantor</th>'}
-            <th class="rbb-th rbb-col-money-wide rbb-sort text-right" onclick="sortRbb('realisasi_bulan_ini')">Realisasi ${year} (Rb)${rbbSortIcon('realisasi_bulan_ini')}</th>
-            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('run_off')">Run Off (Rb)${rbbSortIcon('run_off')}</th>
-            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('growth')">Growth (Rb)${rbbSortIcon('growth')}</th>
+            <th class="rbb-th rbb-col-money-wide rbb-sort text-right" onclick="sortRbb('realisasi_bulan_ini')">Realisasi ${year} (Rp)${rbbSortIcon('realisasi_bulan_ini')}</th>
+            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('run_off')">Run Off (Rp)${rbbSortIcon('run_off')}</th>
+            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('growth')">Growth (Rp)${rbbSortIcon('growth')}</th>
             <th class="rbb-th rbb-col-pct rbb-sort text-right" onclick="sortRbb('growth_persen')">% Growth${rbbSortIcon('growth_persen')}</th>
-            <th class="rbb-th rbb-col-money-wide rbb-sort text-right" onclick="sortRbb('realisasi_tahun_lalu')">Realisasi ${prevYear} (Rb)${rbbSortIcon('realisasi_tahun_lalu')}</th>
-            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('selisih')">Selisih YoY (Rb)${rbbSortIcon('selisih')}</th>
+            <th class="rbb-th rbb-col-money-wide rbb-sort text-right" onclick="sortRbb('realisasi_tahun_lalu')">Realisasi ${prevYear} (Rp)${rbbSortIcon('realisasi_tahun_lalu')}</th>
+            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('selisih')">Selisih YoY (Rp)${rbbSortIcon('selisih')}</th>
             <th class="rbb-th rbb-col-pct rbb-sort text-right" onclick="sortRbb('yoy_persen')">% YoY${rbbSortIcon('yoy_persen')}</th>
         </tr>
         ${renderRbbHistoryTotalRow(true)}
@@ -998,11 +1057,11 @@ function renderRbbMonthlyTable(head, body) {
         <tr>
             <th class="rbb-th rbb-sticky-period rbb-col-period rbb-sort text-left" onclick="sortRbb('periode')">Bulan${rbbSortIcon('periode')}</th>
             ${hideName ? '' : '<th class="rbb-th rbb-col-name text-left">Kantor</th>'}
-            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('nilai_rbb')">RBB (Rb)${rbbSortIcon('nilai_rbb')}</th>
-            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('realisasi_bulan_ini')">Realisasi (Rb)${rbbSortIcon('realisasi_bulan_ini')}</th>
+            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('nilai_rbb')">RBB (Rp)${rbbSortIcon('nilai_rbb')}</th>
+            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('realisasi_bulan_ini')">Realisasi (Rp)${rbbSortIcon('realisasi_bulan_ini')}</th>
             <th class="rbb-th rbb-col-pct rbb-sort text-right" onclick="sortRbb('persentase_rbb_bulan_ini')">% RBB${rbbSortIcon('persentase_rbb_bulan_ini')}</th>
-            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('selisih')">Selisih (Rb)${rbbSortIcon('selisih')}</th>
-            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('kekurangan')">Kekurangan (Rb)${rbbSortIcon('kekurangan')}</th>
+            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('selisih')">Selisih (Rp)${rbbSortIcon('selisih')}</th>
+            <th class="rbb-th rbb-col-money rbb-sort text-right" onclick="sortRbb('kekurangan')">Kekurangan (Rp)${rbbSortIcon('kekurangan')}</th>
         </tr>
         ${renderRbbMonthlyTotalRow()}
     `;

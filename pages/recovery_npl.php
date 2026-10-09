@@ -10,7 +10,7 @@
       --primary:#2563eb;
       --bg:#f8fafc;
       --text:#334155;
-      font-family:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+      font-family:Roboto,Arial,system-ui,sans-serif;
       color:var(--text);
   }
 
@@ -1597,6 +1597,231 @@
       }
   }
 
+  /* === Shared modern shell / dark-light support === */
+  #recoveryPage {
+      --rec-surface:#fff;
+      --rec-soft:#f8fafc;
+      --rec-border:#dbe3ee;
+      --rec-text:#172033;
+      --rec-muted:#64748b;
+      color:var(--rec-text);
+      padding:10px 12px 12px !important;
+  }
+  #recoveryHeader {
+      padding:13px 15px !important;
+      border:1px solid var(--rec-border) !important;
+      border-radius:14px !important;
+      background:var(--rec-surface) !important;
+      box-shadow:0 8px 22px rgba(15,23,42,.05) !important;
+  }
+  #recoveryHeaderTop h1 { color:var(--rec-text) !important; }
+  #recoveryHeaderTop h1 > span:first-child { width:38px; height:38px; display:inline-flex; align-items:center; justify-content:center; border-radius:10px; }
+  #recoveryHeaderTop { min-width:0; }
+  .recovery-export-btn {
+      display:inline-flex; align-items:center; justify-content:center; gap:7px; flex:none;
+      min-height:38px; padding:0 13px; border:0; border-radius:10px; color:#fff; background:#059669;
+      font:700 11px Roboto,Arial,sans-serif; cursor:pointer; box-shadow:0 5px 12px rgba(5,150,105,.18);
+      transition:background .15s ease,transform .15s ease;
+  }
+  .recovery-export-btn:hover { background:#047857; transform:translateY(-1px); }
+  #btnToggleRecoveryFilter { display:none !important; }
+  #recScroller { border-color:var(--rec-border); border-radius:12px; scrollbar-width:thin; scrollbar-color:#94a3b8 transparent; }
+  #recScroller::-webkit-scrollbar { width:5px; height:5px; }
+  #recScroller::-webkit-scrollbar-track { background:transparent; }
+  #recScroller::-webkit-scrollbar-thumb { background:#94a3b8; border-radius:999px; }
+  #tabelRecovery tbody tr:hover td { background:#f8fafc; }
+  :root[data-monbis-theme="dark"] #recoveryPage { --rec-surface:#111827; --rec-soft:#0f172a; --rec-border:#334155; --rec-text:#e5e7eb; --rec-muted:#94a3b8; background:#0f172a !important; }
+  :root[data-monbis-theme="dark"] #recoveryHeader,
+  :root[data-monbis-theme="dark"] #recScroller { background:var(--rec-surface) !important; border-color:var(--rec-border) !important; }
+  :root[data-monbis-theme="dark"] #tabelRecovery,
+  :root[data-monbis-theme="dark"] #tabelRecovery td,
+  :root[data-monbis-theme="dark"] .col-kode,
+  :root[data-monbis-theme="dark"] .col-nama { color:#cbd5e1; background:var(--rec-surface); border-color:#334155; }
+  :root[data-monbis-theme="dark"] #tabelRecovery thead th,
+  :root[data-monbis-theme="dark"] #tabelRecovery .rec-head-2 th { background:#1e293b !important; color:#cbd5e1 !important; border-color:#334155 !important; }
+  :root[data-monbis-theme="dark"] #tabelRecovery tbody tr:hover td,
+  :root[data-monbis-theme="dark"] #tabelRecovery tbody tr:hover .col-kode,
+  :root[data-monbis-theme="dark"] #tabelRecovery tbody tr:hover .col-nama { background:#1e293b; }
+  :root[data-monbis-theme="dark"] .sticky-total td,
+  :root[data-monbis-theme="dark"] .sticky-total td.col-kode,
+  :root[data-monbis-theme="dark"] .sticky-total td.col-nama { background:#172554 !important; color:#bfdbfe; border-color:#334155; }
+  :root[data-monbis-theme="dark"] #modalCardRecovery,
+  :root[data-monbis-theme="dark"] #modalInfoCardRecovery { background:#111827; border-color:#334155; }
+  :root[data-monbis-theme="dark"] #modalRecoveryHeader,
+  :root[data-monbis-theme="dark"] .rec-info-header,
+  :root[data-monbis-theme="dark"] #recoveryDetailSummary { background:#0f172a; border-color:#334155; }
+  :root[data-monbis-theme="dark"] .modal-table th,
+  :root[data-monbis-theme="dark"] .modal-table td { background:#111827; color:#cbd5e1; border-color:#334155; }
+  @media (max-width:767px){
+      #recoveryPage { padding:8px !important; }
+      #recoveryHeader { padding:10px 11px !important; }
+      .recovery-export-btn { width:38px; padding:0 10px; }
+      .recovery-export-btn span { display:none; }
+      #recoveryPage .rec-head-full { display:none; }
+      #recoveryPage .rec-head-short { display:inline; }
+  }
+
+  /* === Elegant neutral palette ===
+     Keep colour reserved for percentage and difference indicators. */
+  #recoveryPage,
+  #modalDebiturRecovery,
+  #modalPeringatan,
+  #modalInfoRecovery,
+  #modalDebiturRecovery *,
+  #modalPeringatan *,
+  #modalInfoRecovery * {
+      font-family:Roboto,Arial,system-ui,sans-serif !important;
+  }
+
+  #recoveryPage #recoveryHeaderTop h1 > span:first-child {
+      background:#2563eb !important;
+      color:#fff !important;
+      box-shadow:0 5px 12px rgba(37,99,235,.18) !important;
+  }
+  #recoveryPage .rec-info-btn {
+      background:#f1f5f9 !important;
+      color:#475569 !important;
+      border-color:#cbd5e1 !important;
+  }
+  #recoveryPage .recovery-export-btn {
+      background:#059669 !important;
+      color:#fff !important;
+      box-shadow:0 5px 12px rgba(5,150,105,.18) !important;
+      width:38px !important;
+      padding:0 !important;
+  }
+  #recoveryPage .recovery-export-btn:hover { background:#047857 !important; }
+  #recoveryPage .recovery-export-btn span { display:none !important; }
+
+  #recoveryPage #tabelRecovery thead th,
+  #recoveryPage #tabelRecovery .head-lunas,
+  #recoveryPage #tabelRecovery .head-backflow,
+  #recoveryPage #tabelRecovery .head-angsuran,
+  #recoveryPage #tabelRecovery .head-flow,
+  #recoveryPage #tabelRecovery .head-total,
+  #recoveryPage #tabelRecovery .head-net,
+  #recoveryPage #tabelRecovery .head-ratio {
+      background:#f1f5f9 !important;
+      color:#334155 !important;
+      border-color:#dbe3ee !important;
+  }
+  #recoveryPage #tabelRecovery .rec-cell-link,
+  #recoveryPage #tabelRecovery .rec-cell-readonly,
+  #recoveryPage #tabelRecovery .rec-noa-cell,
+  #recoveryPage #tabelRecovery .rec-nom-cell {
+      color:#334155 !important;
+  }
+  #recoveryPage #tabelRecovery .rec-cell-link:hover { background:#f8fafc !important; }
+  #recoveryPage #tabelRecovery [class~="bg-blue-50/30"] { background:#f8fafc !important; }
+  #recoveryPage #tabelRecovery .rec-cell-empty,
+  #recoveryPage #tabelRecovery .text-red-600,
+  #recoveryPage #tabelRecovery .text-blue-800,
+  #recoveryPage #tabelRecovery .text-slate-500 {
+      color:#64748b !important;
+  }
+  #recoveryPage #tabelRecovery .sticky-total td,
+  #recoveryPage #tabelRecovery .sticky-total td.col-kode,
+  #recoveryPage #tabelRecovery .sticky-total td.col-nama {
+      background:#eaf0f7 !important;
+      color:#1e293b !important;
+      border-color:#cbd5e1 !important;
+  }
+
+  /* Metric signals remain intentionally semantic: red = worsening, green = improvement. */
+  #recoveryPage #tabelRecovery .rec-pos { color:#b91c1c !important; }
+  #recoveryPage #tabelRecovery .rec-neg { color:#047857 !important; }
+  #recoveryPage #tabelRecovery .rec-ratio-cell > span {
+      background:#f8fafc !important;
+      color:#475569 !important;
+      border-color:#cbd5e1 !important;
+  }
+  #recoveryPage #tabelRecovery .rec-ratio-cell > span.text-emerald-700,
+  #recoveryPage #tabelRecovery .rec-ratio-cell > span.text-red-700,
+  #recoveryPage #tabelRecovery .rec-ratio-cell > span.text-orange-700 {
+      background:#f8fafc !important;
+  }
+  #recoveryPage #tabelRecovery .rec-ratio-cell > span.text-emerald-700 { color:#047857 !important; }
+  #recoveryPage #tabelRecovery .rec-ratio-cell > span.text-red-700 { color:#b91c1c !important; }
+  #recoveryPage #tabelRecovery .rec-ratio-cell > span.text-orange-700 { color:#a16207 !important; }
+
+  #recoveryPage #tabelRecovery .head-flow {
+      background:#fff1f2 !important;
+      color:#b91c1c !important;
+      border-color:#fecdd3 !important;
+  }
+  #recoveryPage #tabelRecovery tbody td:nth-child(11),
+  #recoveryPage #tabelRecovery tbody td:nth-child(12) {
+      color:#b91c1c !important;
+  }
+
+  #recoveryPage .detail-type-badge,
+  #recoveryPage .detail-status-badge,
+  #recoveryPage .detail-kolek-badge,
+  #modalDebiturRecovery .detail-type-badge,
+  #modalDebiturRecovery .detail-status-badge,
+  #modalDebiturRecovery .detail-kolek-badge {
+      background:#f1f5f9 !important;
+      color:#475569 !important;
+      border-color:#dbe3ee !important;
+  }
+  #modalDebiturRecovery .detail-money-main,
+  #modalDebiturRecovery .detail-money-sub { color:#334155 !important; }
+
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery thead th,
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .head-lunas,
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .head-backflow,
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .head-angsuran,
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .head-flow,
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .head-total,
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .head-net,
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .head-ratio {
+      background:#1e293b !important;
+      color:#cbd5e1 !important;
+      border-color:#334155 !important;
+  }
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .head-flow {
+      background:#3f1d26 !important;
+      color:#fda4af !important;
+      border-color:#7f1d1d !important;
+  }
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery tbody td:nth-child(11),
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery tbody td:nth-child(12) {
+      color:#fca5a5 !important;
+  }
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .rec-cell-link,
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .rec-cell-readonly,
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .rec-noa-cell,
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .rec-nom-cell,
+  :root[data-monbis-theme="dark"] #modalDebiturRecovery .detail-money-main,
+  :root[data-monbis-theme="dark"] #modalDebiturRecovery .detail-money-sub {
+      color:#cbd5e1 !important;
+  }
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .sticky-total td,
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .sticky-total td.col-kode,
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .sticky-total td.col-nama {
+      background:#273449 !important;
+      color:#e2e8f0 !important;
+      border-color:#475569 !important;
+  }
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .rec-ratio-cell > span,
+  :root[data-monbis-theme="dark"] #recoveryPage .detail-type-badge,
+  :root[data-monbis-theme="dark"] #recoveryPage .detail-status-badge,
+  :root[data-monbis-theme="dark"] #recoveryPage .detail-kolek-badge,
+  :root[data-monbis-theme="dark"] #modalDebiturRecovery .detail-type-badge,
+  :root[data-monbis-theme="dark"] #modalDebiturRecovery .detail-status-badge,
+  :root[data-monbis-theme="dark"] #modalDebiturRecovery .detail-kolek-badge {
+      background:#1e293b !important;
+      color:#cbd5e1 !important;
+      border-color:#475569 !important;
+  }
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .rec-ratio-cell > span.text-emerald-700 { color:#34d399 !important; }
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .rec-ratio-cell > span.text-red-700 { color:#fca5a5 !important; }
+  :root[data-monbis-theme="dark"] #recoveryPage #tabelRecovery .rec-ratio-cell > span.text-orange-700 { color:#fcd34d !important; }
+  :root[data-monbis-theme="dark"] #recoveryPage .rec-info-btn {
+      background:#1e293b !important;
+      color:#cbd5e1 !important;
+      border-color:#475569 !important;
+  }
 </style>
 
 
@@ -1615,6 +1840,7 @@
       </button>
     </div>
 
+    <!-- Filter dipindahkan ke navbar.
     <div id="filterWrapperRecovery" class="w-full xl:w-auto flex-1 min-w-0 flex justify-end shrink-0 border-t xl:border-none pt-3 xl:pt-0 mt-2 xl:mt-0">
     <form id="formFilterRecovery" class="flex flex-row flex-wrap xl:flex-nowrap items-end gap-2 md:gap-2.5 w-full xl:w-auto" onsubmit="event.preventDefault();">
       <div class="filter-box flex flex-col shrink-0 w-[calc(50%-4px)] xl:w-[120px]">
@@ -1638,7 +1864,11 @@
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
       </button>
     </form>
-    </div>
+    </div> -->
+    <button type="button" onclick="exportRecoveryExcel()" class="recovery-export-btn" title="Export Rekap Excel" aria-label="Export Rekap Excel">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
+      <span>Export</span>
+    </button>
   </div>
 
   <div class="flex-1 min-h-0 relative flex flex-col">
@@ -1846,6 +2076,31 @@
   const kodeNum = v => Number(String(v??'').replace(/\D/g,'')||0);
   const formatDate = (s) => { if(!s) return '-'; const d=new Date(s); return isNaN(d)?'-': `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; };
 
+  const getRecoveryNominal = () => document.getElementById('opt_nominal_recovery')?.value === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+  const recoveryNominalLabel = () => getRecoveryNominal() === 'baki_debet' ? 'Baki Debet' : 'Saldo Bank';
+
+  function updateRecoveryNominalLabels(){
+      const label = recoveryNominalLabel();
+      ['recoveryNominalLabel','recoveryNominalLabel2','recoveryNominalLabel3','recoveryNominalLabel4','recoveryNominalLabel5']
+          .forEach(id => { const el=document.getElementById(id); if(el) el.textContent=label; });
+      const sortNominal = document.getElementById('sortTotalBaki');
+      if (sortNominal) sortNominal.innerHTML = `${label} ↕`;
+  }
+
+  function bindRecoveryNavbarFilter(){
+      const panel = document.getElementById('recoveryNplNavbarFilterPanel');
+      const toggle = document.getElementById('recoveryNplNavbarFilterToggle');
+      const close = document.getElementById('recoveryNplNavbarFilterClose');
+      if (!panel || !toggle) return;
+      const setOpen = open => {
+          panel.classList.toggle('hidden', !open);
+          panel.classList.toggle('flex', open);
+          toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      };
+      toggle.addEventListener('click', () => setOpen(panel.classList.contains('hidden')));
+      close?.addEventListener('click', () => setOpen(false));
+  }
+
   function recoveryDateOnly(value) {
       if (!value) return null;
       const raw = String(value).trim();
@@ -1954,12 +2209,12 @@
           <th class="rec-net-cell head-net" rowspan="2"><span class="rec-head-full">Perbaikan (-) / Pemburukan (+)</span><span class="rec-head-short">Baik (-) / Buruk (+)</span></th>
         </tr>
         <tr class="rec-head-2">
-          <th class="rec-sub-head head-lunas">NOA</th><th class="rec-sub-head head-lunas">Baki Debet</th>
-          <th class="rec-sub-head head-backflow">NOA</th><th class="rec-sub-head head-backflow">Baki Debet</th>
-          <th class="rec-sub-head head-angsuran">NOA</th><th class="rec-sub-head head-angsuran">Baki Debet</th>
+          <th class="rec-sub-head head-lunas">NOA</th><th class="rec-sub-head head-lunas"><span id="recoveryNominalLabel">Saldo Bank</span></th>
+          <th class="rec-sub-head head-backflow">NOA</th><th class="rec-sub-head head-backflow"><span id="recoveryNominalLabel2">Saldo Bank</span></th>
+          <th class="rec-sub-head head-angsuran">NOA</th><th class="rec-sub-head head-angsuran"><span id="recoveryNominalLabel3">Saldo Bank</span></th>
           <th class="rec-sub-head head-total cursor-pointer hover:bg-cyan-100" id="sortTotalNoa" title="Urutkan total NOA">NOA ↕</th>
           <th class="rec-sub-head head-total cursor-pointer hover:bg-cyan-100" id="sortTotalBaki" title="Urutkan total baki debet">Baki Debet ↕</th>
-          <th class="rec-sub-head head-flow">NOA</th><th class="rec-sub-head head-flow">Baki Debet</th>
+          <th class="rec-sub-head head-flow">NOA</th><th class="rec-sub-head head-flow"><span id="recoveryNominalLabel5">Saldo Bank</span></th>
         </tr>
       `;
 
@@ -2065,6 +2320,8 @@
   // --- INIT ---
   window.addEventListener('DOMContentLoaded', async () => {
     renderRecoveryHeader();
+    bindRecoveryNavbarFilter();
+    updateRecoveryNominalLabels();
     document.getElementById('btnInfoRecovery')?.addEventListener('click', () => {
         const modal = document.getElementById('modalInfoRecovery');
         renderRecoveryInfoInsight();
@@ -2088,6 +2345,7 @@
     document.getElementById('btnToggleRecoveryFilter')?.addEventListener('click', () => {
         const wrapper = document.getElementById('filterWrapperRecovery');
         const btn = document.getElementById('btnToggleRecoveryFilter');
+        if (!wrapper || !btn) return;
         const isOpen = wrapper.classList.toggle('is-open');
         btn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     });
@@ -2108,9 +2366,10 @@
         document.getElementById('harian_date_recovery').value = today;
     }
     
-    ['closing_date_recovery', 'harian_date_recovery', 'opt_kantor_recovery'].forEach(id => {
+    ['closing_date_recovery', 'harian_date_recovery', 'opt_nominal_recovery', 'opt_kantor_recovery'].forEach(id => {
         document.getElementById(id)?.addEventListener('change', () => {
             sortState = { column:null, direction:1 };
+            updateRecoveryNominalLabels();
             fetchRecoveryData();
         });
     });
@@ -2120,7 +2379,7 @@
   });
 
   // --- FILTER SUBMIT ---
-  document.getElementById('formFilterRecovery').addEventListener('submit', e => {
+  document.getElementById('formFilterRecovery')?.addEventListener('submit', e => {
     e.preventDefault();
     sortState = { column:null, direction:1 }; 
     fetchRecoveryData();
@@ -2142,7 +2401,8 @@
     
     const myKode = getAppUser();
     const optVal = document.getElementById('opt_kantor_recovery')?.value || (myKode === '000' ? 'ALL' : `CAB-${myKode}`);
-    const payload = { type:'Recovery NPL', closing_date, harian_date };
+    updateRecoveryNominalLabels();
+    const payload = { type:'Recovery NPL', closing_date, harian_date, nominal_field:getRecoveryNominal() };
     let kantor = '';
     let korwil = '';
     recoveryScopeMode = 'konsolidasi';
@@ -2495,7 +2755,7 @@
   });
 
   function buildRecoveryDetailPayload(type, kode, closing, harian) {
-      const payload = { type, closing_date: closing, harian_date: harian };
+      const payload = { type, closing_date: closing, harian_date: harian, nominal_field:getRecoveryNominal() };
       const cleanKode = String(kode || '').trim();
       const myKode = getAppUser();
       const optVal = document.getElementById('opt_kantor_recovery')?.value || 'ALL';
@@ -2702,7 +2962,7 @@
                     <th class="detail-col-jenis">Jenis</th>
                     <th class="modal-freeze-rek">No Rekening</th>
                     <th class="modal-freeze-name">Nama Nasabah</th>
-                    <th class="text-right">Baki Debet</th>
+                    <th class="text-right">${recoveryNominalLabel()}</th>
                     <th class="text-right">Recovery</th>
                     <th class="text-center">Kol</th>
                     <th class="text-center">Upd</th>

@@ -26,6 +26,10 @@ class NplController {
         return $this->korwilRanges[$key] ?? null;
     }
 
+    private function normalizeNominalField($field): string {
+        return strtolower(trim((string)$field)) === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+    }
+
 
     public function getNpl($input = []) {
         $closing_date = !empty($input['closing_date'])
@@ -55,7 +59,7 @@ class NplController {
             return;
         }
 
-        $modeHitung = strtolower(trim((string)($input['hitung_berdasarkan'] ?? 'baki_debet')));
+        $modeHitung = strtolower(trim((string)($input['hitung_berdasarkan'] ?? 'saldo_bank')));
         $colValue = $modeHitung === 'saldo_bank' ? 'saldo_bank' : 'baki_debet';
 
         /*
@@ -300,6 +304,7 @@ class NplController {
         $harian_date  = isset($input['harian_date'])  ? $input['harian_date']  : date('Y-m-d');
         $kc           = $this->normalizeKodeKantor($input['kode_kantor'] ?? null);
         $korwilRange  = $kc ? null : $this->korwilRange($input['korwil'] ?? null);
+        $nominalField = $this->normalizeNominalField($input['nominal_field'] ?? $input['hitung_berdasarkan'] ?? 'saldo_bank');
 
         if ($kc) {
             $colKey = "kode_group1";
@@ -328,29 +333,28 @@ class NplController {
         }
 
         $sql = "
-            WITH closing AS (
-                SELECT 
+            WITH closing_all AS (
+                SELECT
+                    no_rekening,
+                    kode_cabang,
+                    kode_group1,
+                    nama_nasabah,
+                    kolektibilitas,
+                    COALESCE({$nominalField}, 0) AS baki_debet
+                FROM nominatif
+                WHERE created = :closing_all
+                $filterClosingAll
+            ),
+            closing AS (
+                SELECT
                     no_rekening,
                     kode_cabang,
                     kode_group1,
                     nama_nasabah,
                     kolektibilitas,
                     baki_debet
-                FROM nominatif
-                WHERE created = :closing1
-                AND kolektibilitas IN ('KL', 'D', 'M')
-                $filterClosing
-            ),
-            closing_all AS (
-                SELECT
-                    no_rekening,
-                    kode_cabang,
-                    kode_group1,
-                    kolektibilitas,
-                    baki_debet
-                FROM nominatif
-                WHERE created = :closing_all
-                $filterClosingAll
+                FROM closing_all
+                WHERE kolektibilitas IN ('KL', 'D', 'M')
             ),
             harian AS (
                 SELECT 
@@ -358,7 +362,7 @@ class NplController {
                     kode_cabang,
                     kode_group1,
                     kolektibilitas,
-                    baki_debet,
+                    COALESCE({$nominalField}, 0) AS baki_debet,
                     tgl_jatuh_tempo
                 FROM nominatif
                 WHERE created = :harian1
@@ -476,19 +480,15 @@ class NplController {
 
         $stmt = $this->pdo->prepare($sql);
 
-        $stmt->bindValue(':closing1', $closing_date);
         $stmt->bindValue(':closing_all', $closing_date);
         $stmt->bindValue(':harian1', $harian_date);
         if ($kc) {
-            $stmt->bindValue(':kc_closing', $kc);
             $stmt->bindValue(':kc_closing_all_filter', $kc);
             $stmt->bindValue(':kc_harian', $kc);
             $stmt->bindValue(':kc_master', $kc);
         } elseif ($korwilRange) {
             $stmt->bindValue(':kw_master_start', $korwilRange[0]);
             $stmt->bindValue(':kw_master_end', $korwilRange[1]);
-            $stmt->bindValue(':kw_closing_start', $korwilRange[0]);
-            $stmt->bindValue(':kw_closing_end', $korwilRange[1]);
             $stmt->bindValue(':kw_closing_all_start', $korwilRange[0]);
             $stmt->bindValue(':kw_closing_all_end', $korwilRange[1]);
             $stmt->bindValue(':kw_harian_start', $korwilRange[0]);
@@ -639,6 +639,7 @@ public function getTop25NplPerCabang($input) {
         $harian_date  = isset($input['harian_date']) ? $input['harian_date'] : date('Y-m-d');
         $type         = isset($input['type']) ? strtolower($input['type']) : null; // lunas / backflow / angsuran / total_recovery
         $jtStatus     = strtolower(trim((string)($input['jt_status'] ?? 'all')));
+        $nominalField = $this->normalizeNominalField($input['nominal_field'] ?? $input['hitung_berdasarkan'] ?? 'saldo_bank');
 
         if (!$type || !in_array($type, ['lunas', 'backflow', 'angsuran', 'total_recovery'], true)) {
             sendResponse(400, "Tipe harus 'lunas', 'backflow', 'angsuran', atau 'total_recovery'.");
@@ -694,14 +695,14 @@ public function getTop25NplPerCabang($input) {
 
         $baseCte = "
             WITH closing AS (
-                SELECT c.no_rekening, c.nama_nasabah, c.baki_debet, c.kolektibilitas, c.kode_cabang, c.kode_group1
+                SELECT c.no_rekening, c.nama_nasabah, COALESCE(c.{$nominalField}, 0) AS baki_debet, c.kolektibilitas, c.kode_cabang, c.kode_group1
                 FROM nominatif c
                 WHERE c.created = :closing_date
                 AND c.kolektibilitas IN ('KL', 'D', 'M')
                 $scopeClosing
             ),
             harian AS (
-                SELECT h.no_rekening, h.nama_nasabah, h.baki_debet, h.kolektibilitas, h.kode_cabang, h.kode_group1, h.tgl_jatuh_tempo
+                SELECT h.no_rekening, h.nama_nasabah, COALESCE(h.{$nominalField}, 0) AS baki_debet, h.kolektibilitas, h.kode_cabang, h.kode_group1, h.tgl_jatuh_tempo
                 FROM nominatif h
                 WHERE h.created = :harian_date
                 $scopeHarian
@@ -714,7 +715,7 @@ public function getTop25NplPerCabang($input) {
                     SUM(angsuran_bunga) AS angsuran_bunga,
                     SUM(angsuran_denda) AS angsuran_denda
                 FROM transaksi_kredit
-                WHERE tgl_trans BETWEEN :awal_date AND :harian_date_trx
+                WHERE tgl_trans > :awal_date AND tgl_trans <= :harian_date_trx
                 $trxScope
                 GROUP BY no_rekening
             )
@@ -892,6 +893,11 @@ public function getTop25NplPerCabang($input) {
             ? date('Y-m-d', strtotime($input['closing_date'])) 
             : date('Y-m-t', strtotime($harian_date . ' -1 month'));
 
+        // Potensi NPL V1 mengirim basis nominal secara eksplisit.
+        // Jika tidak dikirim, pertahankan perilaku report V2 yang lama.
+        $modeHitung = strtolower(trim((string)($input['hitung_berdasarkan'] ?? 'baki_debet')));
+        $nominalColumn = $modeHitung === 'saldo_bank' ? 'saldo_bank' : 'baki_debet';
+
         $awalBulan  = date('Y-m-01', strtotime($harian_date));
         $akhirBulan = date('Y-m-t', strtotime($harian_date));
 
@@ -967,15 +973,15 @@ public function getTop25NplPerCabang($input) {
                 SELECT
                     h.$colKey AS kode_join,
                     COUNT(h.no_rekening) AS total_noa,
-                    SUM(COALESCE(h.baki_debet, 0)) AS total_baki,
+                    SUM(COALESCE(h.$nominalColumn, 0)) AS total_baki,
                     SUM(CASE WHEN h.kolektibilitas NOT IN ('KL','D','M') AND (h.tgl_jatuh_tempo < :ab1 OR h.tgl_jatuh_tempo > :ak1 OR h.tgl_jatuh_tempo IS NULL) AND (COALESCE(h.hari_menunggak,0) + :sh1) < 90 AND (COALESCE(h.hari_menunggak_pokok,0) + :sh2) < 90 AND (COALESCE(h.hari_menunggak_bunga,0) + :sh3) < 90 THEN 1 ELSE 0 END) AS noa_aman,
-                    SUM(CASE WHEN h.kolektibilitas NOT IN ('KL','D','M') AND (h.tgl_jatuh_tempo < :ab2 OR h.tgl_jatuh_tempo > :ak2 OR h.tgl_jatuh_tempo IS NULL) AND (COALESCE(h.hari_menunggak,0) + :sh4) < 90 AND (COALESCE(h.hari_menunggak_pokok,0) + :sh5) < 90 AND (COALESCE(h.hari_menunggak_bunga,0) + :sh6) < 90 THEN COALESCE(h.baki_debet,0) ELSE 0 END) AS baki_aman,
+                    SUM(CASE WHEN h.kolektibilitas NOT IN ('KL','D','M') AND (h.tgl_jatuh_tempo < :ab2 OR h.tgl_jatuh_tempo > :ak2 OR h.tgl_jatuh_tempo IS NULL) AND (COALESCE(h.hari_menunggak,0) + :sh4) < 90 AND (COALESCE(h.hari_menunggak_pokok,0) + :sh5) < 90 AND (COALESCE(h.hari_menunggak_bunga,0) + :sh6) < 90 THEN COALESCE(h.$nominalColumn,0) ELSE 0 END) AS baki_aman,
                     SUM(CASE WHEN h.kolektibilitas NOT IN ('KL','D','M') AND h.tgl_jatuh_tempo BETWEEN :ab3 AND :ak3 THEN 1 ELSE 0 END) AS noa_jt,
-                    SUM(CASE WHEN h.kolektibilitas NOT IN ('KL','D','M') AND h.tgl_jatuh_tempo BETWEEN :ab4 AND :ak4 THEN COALESCE(h.baki_debet,0) ELSE 0 END) AS baki_jt,
+                    SUM(CASE WHEN h.kolektibilitas NOT IN ('KL','D','M') AND h.tgl_jatuh_tempo BETWEEN :ab4 AND :ak4 THEN COALESCE(h.$nominalColumn,0) ELSE 0 END) AS baki_jt,
                     SUM(CASE WHEN h.kolektibilitas IN ('KL','D','M') THEN 1 ELSE 0 END) AS noa_flow,
-                    SUM(CASE WHEN h.kolektibilitas IN ('KL','D','M') THEN COALESCE(h.baki_debet,0) ELSE 0 END) AS baki_flow,
+                    SUM(CASE WHEN h.kolektibilitas IN ('KL','D','M') THEN COALESCE(h.$nominalColumn,0) ELSE 0 END) AS baki_flow,
                     SUM(CASE WHEN h.kolektibilitas NOT IN ('KL','D','M') AND (h.tgl_jatuh_tempo < :ab5 OR h.tgl_jatuh_tempo > :ak5 OR h.tgl_jatuh_tempo IS NULL) AND ((COALESCE(h.hari_menunggak,0) + :sh7) >= 90 OR (COALESCE(h.hari_menunggak_pokok,0) + :sh8) >= 90 OR (COALESCE(h.hari_menunggak_bunga,0) + :sh9) >= 90) THEN 1 ELSE 0 END) AS noa_potensi,
-                    SUM(CASE WHEN h.kolektibilitas NOT IN ('KL','D','M') AND (h.tgl_jatuh_tempo < :ab6 OR h.tgl_jatuh_tempo > :ak6 OR h.tgl_jatuh_tempo IS NULL) AND ((COALESCE(h.hari_menunggak,0) + :sh10) >= 90 OR (COALESCE(h.hari_menunggak_pokok,0) + :sh11) >= 90 OR (COALESCE(h.hari_menunggak_bunga,0) + :sh12) >= 90) THEN COALESCE(h.baki_debet,0) ELSE 0 END) AS baki_potensi
+                    SUM(CASE WHEN h.kolektibilitas NOT IN ('KL','D','M') AND (h.tgl_jatuh_tempo < :ab6 OR h.tgl_jatuh_tempo > :ak6 OR h.tgl_jatuh_tempo IS NULL) AND ((COALESCE(h.hari_menunggak,0) + :sh10) >= 90 OR (COALESCE(h.hari_menunggak_pokok,0) + :sh11) >= 90 OR (COALESCE(h.hari_menunggak_bunga,0) + :sh12) >= 90) THEN COALESCE(h.$nominalColumn,0) ELSE 0 END) AS baki_potensi
                 FROM nominatif n
                 JOIN nominatif h
                     ON h.created = :harian_date
@@ -1084,12 +1090,53 @@ public function getTop25NplPerCabang($input) {
             ? date('Y-m-d', strtotime($input['closing_date']))
             : (new DateTime($harian_date))->modify('first day of this month')->modify('-1 day')->format('Y-m-d');
 
+        $modeHitung = strtolower(trim((string)($input['hitung_berdasarkan'] ?? 'baki_debet')));
+        $nominalColumn = $modeHitung === 'saldo_bank' ? 'saldo_bank' : 'baki_debet';
+
         $awal_date = !empty($input['awal_date'])
             ? date('Y-m-d', strtotime($input['awal_date']))
             : date('Y-m-01', strtotime($harian_date));
 
         $bulan_awal      = date('Y-m-01', strtotime($harian_date));
         $bulan_akhir     = date('Y-m-t',  strtotime($harian_date));
+        $weekNo          = (int)($input['week_no'] ?? 0);
+        $weekFilter      = '';
+        if ($weekNo >= 1 && $weekNo <= 4) {
+            $weekStart = $weekNo === 1 ? 1 : (($weekNo - 1) * 7) + 1;
+            $weekEnd = $weekNo === 4 ? 31 : ($weekNo * 7);
+            $weekFilter = " AND DAY(h.jt_harian) BETWEEN {$weekStart} AND {$weekEnd} ";
+        }
+        $statusPotensi = strtoupper(trim((string)($input['status_potensi'] ?? 'ALL')));
+        $statusFilter = '';
+        if ($statusPotensi === 'FLOW KOLEK') {
+            $statusFilter = " AND h.kolek_harian IN ('KL','D','M') ";
+        } elseif ($statusPotensi === 'JATUH TEMPO') {
+            $statusFilter = " AND h.baki_debet_harian > 0
+                              AND h.kolek_harian NOT IN ('KL','D','M')
+                              AND h.jt_harian BETWEEN :status_bulan_awal AND :status_bulan_akhir ";
+        } elseif ($statusPotensi === 'AMAN') {
+            $statusFilter = " AND (
+                                  h.baki_debet_harian <= 0
+                                  OR (
+                                      h.kolek_harian NOT IN ('KL','D','M')
+                                      AND NOT (h.jt_harian BETWEEN :status_bulan_awal AND :status_bulan_akhir)
+                                      AND (h.hm_harian + :status_sisa_hari1) < 90
+                                      AND (h.hmp_harian + :status_sisa_hari2) < 90
+                                      AND (h.hmb_harian + :status_sisa_hari3) < 90
+                                  )
+                              ) ";
+        } elseif ($statusPotensi === 'MASIH POTENSI') {
+            $statusFilter = " AND h.baki_debet_harian > 0
+                              AND h.kolek_harian NOT IN ('KL','D','M')
+                              AND NOT (h.jt_harian BETWEEN :status_bulan_awal AND :status_bulan_akhir)
+                              AND NOT (
+                                  (h.hm_harian + :status_sisa_hari1) < 90
+                                  AND (h.hmp_harian + :status_sisa_hari2) < 90
+                                  AND (h.hmb_harian + :status_sisa_hari3) < 90
+                              ) ";
+        } elseif ($statusPotensi === 'LUNAS / AMAN') {
+            $statusFilter = " AND h.baki_debet_harian <= 0 ";
+        }
         // Harus sama dengan rentang jatuh tempo yang dipakai rekap flow:
         // rekening JT mulai tanggal 15 bulan sebelumnya sampai akhir bulan actual
         // tetap menjadi kandidat apabila sampai posisi actual belum selesai.
@@ -1121,7 +1168,7 @@ public function getTop25NplPerCabang($input) {
                     n.nama_nasabah,
                     n.alamat,
                     n.kolektibilitas AS kolek_closing,
-                    n.baki_debet     AS baki_debet_closing,
+                    n.$nominalColumn AS baki_debet_closing,
                     COALESCE(n.hari_menunggak,0)        AS hm_closing,
                     COALESCE(n.hari_menunggak_pokok,0)  AS hmp_closing,
                     COALESCE(n.hari_menunggak_bunga,0)  AS hmb_closing,
@@ -1144,7 +1191,7 @@ public function getTop25NplPerCabang($input) {
                 SELECT
                     h.no_rekening,
                     h.kolektibilitas AS kolek_harian,
-                    h.baki_debet     AS baki_debet_harian,
+                    h.$nominalColumn AS baki_debet_harian,
                     COALESCE(h.tunggakan_pokok,0)       AS tunggakan_pokok,
                     COALESCE(h.tunggakan_bunga,0)       AS tunggakan_bunga,
                     COALESCE(h.hari_menunggak,0)        AS hm_harian,
@@ -1220,6 +1267,8 @@ public function getTop25NplPerCabang($input) {
             LEFT JOIN tabungan tb ON tb.no_rekening = h.norek_tabungan
             LEFT JOIN ao_kredit a ON kd.kode_group2 = a.kode_group2 AND kd.kode_cabang = a.kode_kantor -- 🔥 JOIN ke tabel ao_kredit
             WHERE kk.kode_kantor <> '000'
+              {$weekFilter}
+              {$statusFilter}
             ORDER BY kd.baki_debet_closing DESC, kd.no_rekening
         ";
 
@@ -1244,6 +1293,15 @@ public function getTop25NplPerCabang($input) {
             $st->bindValue(':bulan_akhir2', $bulan_akhir);
             $st->bindValue(':jt_start_detail', $jt_start);
             $st->bindValue(':jt_end_detail', $jt_end);
+            if ($statusPotensi !== 'ALL' && $statusPotensi !== 'FLOW KOLEK' && $statusPotensi !== 'LUNAS / AMAN') {
+                $st->bindValue(':status_bulan_awal',  $bulan_awal);
+                $st->bindValue(':status_bulan_akhir', $bulan_akhir);
+            }
+            if ($statusPotensi === 'AMAN' || $statusPotensi === 'MASIH POTENSI') {
+                $st->bindValue(':status_sisa_hari1', $sisa_hari, PDO::PARAM_INT);
+                $st->bindValue(':status_sisa_hari2', $sisa_hari, PDO::PARAM_INT);
+                $st->bindValue(':status_sisa_hari3', $sisa_hari, PDO::PARAM_INT);
+            }
 
             if ($kode_kantor && $kode_kantor !== '000') {
                 $st->bindValue(':kode_kantor_c',   $kode_kantor);

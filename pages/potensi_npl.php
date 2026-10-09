@@ -1,7 +1,7 @@
 <style>
   :root { --primary: #2563eb; --bg: #f8fafc; --text: #334155; }
   
-  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+  body { font-family: 'Roboto', Arial, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
   
   /* === INPUTS === */
   .inp { 
@@ -87,10 +87,6 @@
 
   /* MOBILE RESPONSIVE */
   @media (max-width: 767px) {
-      #filterForm { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-      .filter-box { flex: 1 1 30%; min-width: 100px; }
-      #opt_kantor_rec { font-size: 11px; padding: 0 4px; }
-      #closing_date, #harian_date { font-size: 11px; padding: 0 4px; text-align: center; width: 100%; }
 
       .sticky-left-1 { display: none !important; }
       .sticky-left-2 { left: 0 !important; z-index: 45 !important; min-width: 140px; max-width: 160px; white-space: normal; line-height: 1.2; }
@@ -107,7 +103,7 @@
   .hidden { display:none !important; }
   .po-page { display:flex; flex-direction:column; width:100%; height:calc(100vh - 64px); height:calc(100dvh - 64px); min-height:430px; padding:8px; gap:7px; overflow:hidden; background:#f8fafc; }
   .po-header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex:none; padding:9px 11px; border:1px solid #dbe3ee; border-radius:12px; background:#fff; box-shadow:0 1px 3px rgba(15,23,42,.05); }
-  .po-titlebar { display:flex; align-items:center; justify-content:space-between; min-width:0; }
+  .po-titlebar { display:flex; align-items:center; justify-content:space-between; width:100%; min-width:0; }
   .po-title-wrap { display:flex; align-items:center; min-width:0; gap:9px; }
   .po-title-icon { display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; flex:0 0 38px; border-radius:10px; background:#2563eb; color:#fff; box-shadow:0 5px 12px rgba(37,99,235,.2); }
   .po-title-icon svg { width:19px; height:19px; }
@@ -117,7 +113,8 @@
   .po-title-copy p { margin:3px 0 0; overflow:hidden; color:#64748b; font-size:9px; font-weight:650; line-height:1.2; text-overflow:ellipsis; white-space:nowrap; }
   .po-unit-badge { display:inline-flex; align-items:center; height:20px; padding:0 7px; border:1px solid #bfdbfe; border-radius:999px; background:#eff6ff; color:#1d4ed8; font-size:8px; font-weight:900; text-transform:uppercase; white-space:nowrap; }
   .po-mobile-actions,.po-filter-toggle { display:none; }
-  .po-filter-form { display:grid; grid-template-columns:220px 122px 122px auto; align-items:end; gap:7px; min-width:0; }
+  .po-page-actions { display:flex; align-items:center; gap:7px; margin-left:auto; }
+  .po-filter-form { display:grid; grid-template-columns:minmax(190px,1.5fr) 145px 125px 122px 122px auto; align-items:end; gap:7px; min-width:0; }
   .po-field { display:flex; min-width:0; flex-direction:column; }
   .po-field > span { margin:0 0 3px 1px; color:#64748b; font-size:7px; font-weight:900; letter-spacing:.04em; line-height:1; text-transform:uppercase; white-space:nowrap; }
   .po-header .inp { height:34px; border-radius:8px; padding:0 9px; font-size:10px; font-weight:700; }
@@ -185,7 +182,7 @@
 
   @media (max-width:1279px) {
     .po-header { align-items:stretch; flex-direction:column; }
-    .po-filter-form { grid-template-columns:minmax(220px,1fr) 130px 130px auto; width:100%; padding-top:7px; border-top:1px solid #e2e8f0; }
+    .po-filter-form { grid-template-columns:minmax(180px,1fr) 130px 125px 130px auto; width:100%; padding-top:7px; border-top:1px solid #e2e8f0; }
   }
   @media (max-width:1023px) {
     #poScroller { overflow:auto; }
@@ -207,7 +204,7 @@
     .po-filter-form { display:none; grid-template-columns:minmax(0,1fr) minmax(0,1fr) 34px; gap:5px; padding-top:7px; }
     .po-filter-form.is-open { display:grid; }
     .po-field-office { grid-column:1/3; }
-    .po-filter-actions { grid-column:3; grid-row:1/3; align-self:end; flex-direction:column; }
+    .po-filter-actions { grid-column:3; grid-row:1/5; align-self:end; flex-direction:column; }
     .po-action-btn { width:34px; height:32px; }
     .po-header .inp { height:32px; padding:0 6px; font-size:9px; }
     .po-field > span { font-size:6.5px; }
@@ -392,6 +389,79 @@
       .po-detail-summary { grid-template-columns:repeat(5,minmax(104px,1fr)); }
   }
 
+  /* === CLEAN NEUTRAL THEME + DARK MODE === */
+  #poPage .po-group-head,
+  #poPage .po-group-total,
+  #poPage .po-group-safe,
+  #poPage .po-group-due,
+  #poPage .po-group-flow,
+  #poPage .po-group-risk {
+      border-top-color:#94a3b8 !important;
+      background:#f1f5f9 !important;
+      color:#334155 !important;
+  }
+  #poPage #tabelPotensi th[class*="bg-"],
+  #poPage #tabelPotensi td[class*="bg-"] { background:#fff !important; color:#334155 !important; }
+  #poPage #poTotalRow td,
+  #poPage #poTotalRow td[class*="bg-"] { background:#e2e8f0 !important; color:#334155 !important; border-color:#cbd5e1 !important; }
+  #poPage .po-noa-link { color:#334155 !important; }
+  #poPage .status-aman,
+  #poPage .status-jt,
+  #poPage .status-flow { background:#f1f5f9 !important; color:#334155 !important; }
+
+  :root[data-monbis-theme="dark"] body { background:#0f172a; color:#e2e8f0; }
+  :root[data-monbis-theme="dark"] #poPage { background:#0f172a; }
+  :root[data-monbis-theme="dark"] #poPage .po-header,
+  :root[data-monbis-theme="dark"] #poPage #poScroller,
+  :root[data-monbis-theme="dark"] #poPage #tabelPotensi th,
+  :root[data-monbis-theme="dark"] #poPage #tabelPotensi td,
+  :root[data-monbis-theme="dark"] .po-modal-card,
+  :root[data-monbis-theme="dark"] .po-modal-header,
+  :root[data-monbis-theme="dark"] .po-modal-toolbar,
+  :root[data-monbis-theme="dark"] .po-modal-content,
+  :root[data-monbis-theme="dark"] .po-detail-card,
+  :root[data-monbis-theme="dark"] .po-summary-item,
+  :root[data-monbis-theme="dark"] .po-help-card,
+  :root[data-monbis-theme="dark"] .po-help-head,
+  :root[data-monbis-theme="dark"] .po-help-item {
+      background:#111827 !important;
+      color:#e2e8f0 !important;
+      border-color:#334155 !important;
+  }
+  :root[data-monbis-theme="dark"] #poPage .po-title-line h1,
+  :root[data-monbis-theme="dark"] .po-modal-title-copy h3,
+  :root[data-monbis-theme="dark"] .po-summary-item strong,
+  :root[data-monbis-theme="dark"] .po-detail-card-name,
+  :root[data-monbis-theme="dark"] #tabelPotensi td,
+  :root[data-monbis-theme="dark"] .po-help-title h3,
+  :root[data-monbis-theme="dark"] .po-help-item-head { color:#e2e8f0 !important; }
+  :root[data-monbis-theme="dark"] #poPage .po-title-copy p,
+  :root[data-monbis-theme="dark"] #poPage .po-field > span,
+  :root[data-monbis-theme="dark"] .po-modal-title-copy p,
+  :root[data-monbis-theme="dark"] .po-detail-card-metric span,
+  :root[data-monbis-theme="dark"] .po-help-title p,
+  :root[data-monbis-theme="dark"] .po-help-item p { color:#94a3b8 !important; }
+  :root[data-monbis-theme="dark"] #poPage .inp,
+  :root[data-monbis-theme="dark"] .po-modal-search input,
+  :root[data-monbis-theme="dark"] .po-modal-select {
+      background:#0f172a !important;
+      color:#e2e8f0 !important;
+      border-color:#475569 !important;
+  }
+  :root[data-monbis-theme="dark"] #poPage #tabelPotensi thead th,
+  :root[data-monbis-theme="dark"] #poPage .po-group-head { background:#1e293b !important; color:#cbd5e1 !important; }
+  :root[data-monbis-theme="dark"] #poPage #poTotalRow td { background:#1e293b !important; color:#e2e8f0 !important; border-color:#475569 !important; }
+  :root[data-monbis-theme="dark"] #poPage #poBody td,
+  :root[data-monbis-theme="dark"] #poPage #poBody tr:nth-child(even) td,
+  :root[data-monbis-theme="dark"] #poPage #poBody tr:hover td { background:#111827 !important; color:#e2e8f0 !important; border-color:#263449 !important; }
+  :root[data-monbis-theme="dark"] #poPage .po-filter-toggle,
+  :root[data-monbis-theme="dark"] .po-modal-close,
+  :root[data-monbis-theme="dark"] .po-help-close { background:#1e293b; color:#cbd5e1; border-color:#475569; }
+  :root[data-monbis-theme="dark"] #poPage #poScroller::-webkit-scrollbar-track,
+  :root[data-monbis-theme="dark"] .po-modal-content::-webkit-scrollbar-track { background:#0f172a; }
+  :root[data-monbis-theme="dark"] #poPage #poScroller::-webkit-scrollbar-thumb,
+  :root[data-monbis-theme="dark"] .po-modal-content::-webkit-scrollbar-thumb { background:#475569; }
+
 </style>
 
 <div id="poPage" class="po-page">
@@ -406,42 +476,17 @@
           <div class="po-title-line">
             <h1>Potensi NPL</h1>
             <button type="button" id="btnInfoPotensi" class="po-info-btn" title="Panduan Potensi NPL" aria-label="Buka panduan Potensi NPL">i</button>
-            <span id="badgeUnit" class="po-unit-badge">MEMUAT...</span>
           </div>
           <p>Monitoring kandidat NPL, status penyelamatan, dan komitmen pembayaran cabang.</p>
         </div>
       </div>
-      <div class="po-mobile-actions">
+      <div class="po-page-actions">
         <div id="loadingMini" class="hidden animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
-        <button type="button" id="btnTogglePOFilter" class="po-filter-toggle" aria-expanded="false">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
-          <span>Filter</span>
-        </button>
-      </div>
-    </div>
-
-    <form id="filterForm" class="po-filter-form">
-      <label class="po-field po-field-office">
-        <span>Kantor</span>
-        <select id="opt_kantor_rec" class="inp"><option value="">Memuat...</option></select>
-      </label>
-      <label class="po-field">
-        <span>Closing (M-1)</span>
-        <input type="date" id="closing_date" class="inp" required>
-      </label>
-      <label class="po-field">
-        <span>Actual (Harian)</span>
-        <input type="date" id="harian_date" class="inp" required>
-      </label>
-      <div class="po-filter-actions">
-        <button type="submit" class="po-action-btn po-action-search" title="Terapkan filter" aria-label="Terapkan filter">
-          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.6-3.6"></path></svg>
-        </button>
         <button type="button" onclick="exportPotensiExcel()" class="po-action-btn po-action-excel" title="Export Excel" aria-label="Export Excel">
           <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14a2 2 0 0 0 2-2v-3"></path><path d="M3 16v3a2 2 0 0 0 2 2"></path></svg>
         </button>
       </div>
-    </form>
+    </div>
   </header>
 
   <div class="flex-1 min-h-0 relative flex flex-col">
@@ -472,12 +517,12 @@
           </tr>
           <tr>
             <th class="text-center w-[60px] bg-blue-50 cursor-pointer hover:bg-blue-100 transition" onclick="doSort('total_noa')">NOA ⬍</th>
-            <th class="text-right min-w-[120px] bg-blue-50 cursor-pointer hover:bg-blue-100 transition" onclick="doSort('total_baki')">BAKI DEBET ⬍</th>
+            <th class="text-right min-w-[120px] bg-blue-50 cursor-pointer hover:bg-blue-100 transition" onclick="doSort('total_baki')">SALDO BANK</th>
             
-            <th class="text-center w-[60px] bg-green-50">NOA</th><th class="text-right min-w-[120px] bg-green-50">BAKI DEBET</th>
-            <th class="text-center w-[60px] bg-yellow-50">NOA</th><th class="text-right min-w-[120px] bg-yellow-50">BAKI DEBET</th>
-            <th class="text-center w-[60px] bg-red-50">NOA</th><th class="text-right min-w-[120px] bg-red-50">BAKI DEBET</th>
-            <th class="text-center w-[60px] bg-orange-50">NOA</th><th class="text-right min-w-[120px] bg-orange-50">BAKI DEBET</th>
+            <th class="text-center w-[60px] bg-green-50">NOA</th><th class="text-right min-w-[120px] bg-green-50">SALDO BANK</th>
+            <th class="text-center w-[60px] bg-yellow-50">NOA</th><th class="text-right min-w-[120px] bg-yellow-50">SALDO BANK</th>
+            <th class="text-center w-[60px] bg-red-50">NOA</th><th class="text-right min-w-[120px] bg-red-50">SALDO BANK</th>
+            <th class="text-center w-[60px] bg-orange-50">NOA</th><th class="text-right min-w-[120px] bg-orange-50">SALDO BANK</th>
           </tr>
         </thead>
         <tbody id="poTotalRow"></tbody>
@@ -548,8 +593,8 @@
           <th class="modal-freeze-2 text-left">Debitur / Alamat / AO</th>
           <th class="text-center">Status Potensi</th>
           <th class="text-center">Kolek C → H</th>
-          <th class="text-right">BD Closing</th>
-          <th class="text-right">BD Harian</th>
+          <th class="text-right po-nominal-detail-label">Nominal Closing</th>
+          <th class="text-right po-nominal-detail-label">Nominal Actual</th>
           <th class="text-right">Tunggakan P / B</th>
           <th class="text-right">Saldo Tab</th>
           <th class="text-center">JT</th>
@@ -687,11 +732,38 @@
   let detailPoRaw = [];
   let detailPoFiltered = []; 
   let sortState = { col: null, dir: 1 };
-  let currentFilter = { closing:'', harian:'' };
+  let currentFilter = { closing:'', harian:'', korwil:'', nominal:'saldo_bank' };
+  const poKorwilRanges = { SEMARANG:['001','007'], SOLO:['008','014'], BANYUMAS:['015','021'], PEKALONGAN:['022','028'] };
+  window.poKantorList = [];
   let currentDetailKode = '';
   let currentDetailStatus = 'ALL'; 
   let poAbort;
   window.currentUserKode = '000';
+
+  function selectedPoNominal(){ return document.getElementById('potensiNplNominal')?.value === 'baki_debet' ? 'baki_debet' : 'saldo_bank'; }
+  function selectedPoArea(){ return String(document.getElementById('potensiNplArea')?.value || ''); }
+  function selectedPoKorwil(){
+      const area = selectedPoArea().toUpperCase();
+      return area.startsWith('KOR-') ? area.slice(4) : '';
+  }
+  function selectedPoBranch(){
+      const area = selectedPoArea();
+      return /^\d{3}$/.test(area) && area !== '000' ? area : '';
+  }
+  function selectedPoClosing(){ return document.getElementById('potensiNplClosing')?.value || ''; }
+  function selectedPoActual(){ return document.getElementById('potensiNplActual')?.value || ''; }
+  function poNominalLabel(){ return selectedPoNominal() === 'baki_debet' ? 'BAKI DEBET' : 'SALDO BANK'; }
+  function updatePoNominalLabels(){
+      const label = poNominalLabel();
+      document.querySelectorAll('#tabelPotensi th').forEach(th => {
+          const text = String(th.textContent || '').toUpperCase();
+          if(text.includes('BAKI DEBET') || text.includes('SALDO BANK')) th.textContent = label;
+      });
+      document.querySelectorAll('#modalTablePO .po-nominal-detail-label').forEach((node, index) => {
+          node.textContent = index % 2 === 0 ? 'Nominal Closing' : 'Nominal Actual';
+      });
+      document.querySelectorAll('.po-detail-card-metric .po-nominal-detail-label').forEach(node => { node.textContent = 'Nominal Actual'; });
+  }
 
   function updatePoStickyHeader() {
       const thead = document.getElementById('poHead1');
@@ -706,19 +778,22 @@
   // INIT PAGE & USER LOGIN (ANTI BOCOR)
   // =========================================================
 
-  function syncPOFilterButton() {
-      const form = document.getElementById('filterForm');
-      const btn = document.getElementById('btnTogglePOFilter');
+  function syncPONavbarFilterButton() {
+      const form = document.getElementById('potensiNplNavbarFilterPanel');
+      const btn = document.getElementById('potensiNplNavbarFilterToggle');
       if(!form || !btn) return;
-      const open = form.classList.contains('is-open');
+      const open = !form.classList.contains('hidden');
       btn.setAttribute('aria-expanded', String(open));
-      const label = btn.querySelector('span');
-      if(label) label.textContent = open ? 'Tutup' : 'Filter';
   }
-  document.getElementById('btnTogglePOFilter')?.addEventListener('click', () => {
-      document.getElementById('filterForm')?.classList.toggle('is-open');
-      syncPOFilterButton();
+  function closePONavbarFilter(){
+      document.getElementById('potensiNplNavbarFilterPanel')?.classList.add('hidden');
+      syncPONavbarFilterButton();
+  }
+  document.getElementById('potensiNplNavbarFilterToggle')?.addEventListener('click', () => {
+      document.getElementById('potensiNplNavbarFilterPanel')?.classList.toggle('hidden');
+      syncPONavbarFilterButton();
   });
+  document.getElementById('potensiNplNavbarFilterClose')?.addEventListener('click', closePONavbarFilter);
 
   function openInfoPotensi() {
       document.getElementById('modalInfoPotensi')?.classList.remove('hidden');
@@ -746,7 +821,6 @@
       } catch(e) {}
       
       window.currentUserKode = String(k).padStart(3, '0');
-      document.getElementById('badgeUnit').innerText = (window.currentUserKode === '000') ? 'KONSOLIDASI' : `CABANG ${window.currentUserKode}`;
 
       // 2. KUNCI DROPDOWN CABANG, jalan paralel dengan ambil tanggal
       const kantorOptionsPromise = populateKantorOptionsPO(window.currentUserKode);
@@ -756,31 +830,53 @@
           const res = await fetch('./api/date/');
           const j = await res.json();
           if(j?.data){
-              document.getElementById('closing_date').value = j.data.last_closing;
-              document.getElementById('harian_date').value  = j.data.last_created;
-              currentFilter = { closing: j.data.last_closing, harian: j.data.last_created };
+              document.getElementById('potensiNplClosing').value = j.data.last_closing;
+              document.getElementById('potensiNplActual').value  = j.data.last_created;
+              currentFilter = { closing: j.data.last_closing, harian: j.data.last_created, korwil: selectedPoKorwil(), nominal: selectedPoNominal() };
+              updatePoNominalLabels();
               fetchPotensiData();
           }
       } catch(e) { 
           const today = new Date().toISOString().split('T')[0];
-          document.getElementById('closing_date').value = today;
-          document.getElementById('harian_date').value = today;
-          currentFilter = { closing: today, harian: today };
+          document.getElementById('potensiNplClosing').value = today;
+          document.getElementById('potensiNplActual').value = today;
+          currentFilter = { closing: today, harian: today, korwil: selectedPoKorwil(), nominal: selectedPoNominal() };
+          updatePoNominalLabels();
           fetchPotensiData();
       }
       kantorOptionsPromise.catch(() => {});
   });
 
+  function renderPoAreaOptions(){
+      const select = document.getElementById('potensiNplArea');
+      if(!select || window.currentUserKode !== '000') return;
+      const previous = selectedPoArea();
+      let html = '<option value="">KONSOLIDASI (SEMUA)</option>';
+      Object.keys(poKorwilRanges).forEach(korwil => {
+          html += `<option value="KOR-${korwil}">KORWIL ${korwil}</option>`;
+      });
+      (window.poKantorList || [])
+          .filter(x => String(x.kode_kantor).padStart(3,'0') !== '000')
+          .sort((a,b) => String(a.kode_kantor).localeCompare(String(b.kode_kantor), 'id-ID', {numeric:true}))
+          .forEach(it => {
+              const kode = String(it.kode_kantor).padStart(3,'0');
+              html += `<option value="${kode}">${kode} - ${it.nama_kantor}</option>`;
+          });
+      select.innerHTML = html;
+      select.value = Array.from(select.options).some(option => option.value === previous) ? previous : '';
+      select.disabled = false;
+  }
+
   // --- FUNGSI LOCK DROPDOWN KANTOR ---
   async function populateKantorOptionsPO(userKode){
-      const optKantor = document.getElementById('opt_kantor_rec');
+      const optArea = document.getElementById('potensiNplArea');
 
       // JIKA YANG LOGIN CABANG -> LANGSUNG KUNCI MATI
       if(userKode && userKode !== '000'){
-          optKantor.innerHTML = `<option value="${userKode}">CABANG ${userKode}</option>`;
-          optKantor.value = userKode;
-          optKantor.disabled = true;
-          optKantor.classList.add('bg-slate-100', 'cursor-not-allowed');
+          optArea.innerHTML = `<option value="${userKode}">CABANG ${userKode}</option>`;
+          optArea.value = userKode;
+          optArea.disabled = true;
+          optArea.classList.add('bg-slate-100', 'cursor-not-allowed');
           return; 
       }
 
@@ -791,34 +887,40 @@
           });
           const json = await res.json();
           let list = json.data || [];
+          window.poKantorList = list;
           
-          let html = `<option value="">KONSOLIDASI (SEMUA)</option>`;
-          list.filter(x => x.kode_kantor !== '000').sort((a,b) => String(a.kode_kantor).localeCompare(b.kode_kantor)).forEach(it => {
-              html += `<option value="${String(it.kode_kantor).padStart(3,'0')}">${String(it.kode_kantor).padStart(3,'0')} - ${it.nama_kantor}</option>`;
-          });
-          optKantor.innerHTML = html;
-          optKantor.disabled = false;
+          renderPoAreaOptions();
       } catch(e){
-          optKantor.innerHTML = `<option value="">Error Load</option>`;
+          optArea.innerHTML = `<option value="">Error Load</option>`;
       }
   }
 
-  // --- FILTER SUBMIT ---
-  document.getElementById('filterForm').addEventListener('submit', e => {
-    e.preventDefault();
-    currentFilter.closing = document.getElementById('closing_date').value;
-    currentFilter.harian  = document.getElementById('harian_date').value;
-    sortState = { col:null, dir:1 }; 
+  // --- FILTER NAVBAR ---
+  function applyPONavbarFilter(){
+    currentFilter.closing = selectedPoClosing();
+    currentFilter.harian  = selectedPoActual();
+    currentFilter.korwil  = selectedPoKorwil();
+    currentFilter.nominal = selectedPoNominal();
+    updatePoNominalLabels();
+    sortState = { col:null, dir:1 };
+    closePONavbarFilter();
     fetchPotensiData();
+  }
+  document.getElementById('potensiNplNavbarFilterPanel')?.addEventListener('submit', e => {
+    e.preventDefault();
+    applyPONavbarFilter();
   });
 
-  ['opt_kantor_rec','closing_date','harian_date'].forEach(id => {
+  ['potensiNplArea','potensiNplNominal','potensiNplClosing','potensiNplActual'].forEach(id => {
       document.getElementById(id)?.addEventListener('change', () => {
-          currentFilter.closing = document.getElementById('closing_date').value;
-          currentFilter.harian = document.getElementById('harian_date').value;
+          currentFilter.closing = selectedPoClosing();
+          currentFilter.harian = selectedPoActual();
+          currentFilter.korwil = selectedPoKorwil();
+          currentFilter.nominal = selectedPoNominal();
+          updatePoNominalLabels();
           sortState = {col:null,dir:1};
           fetchPotensiData();
-          if(window.innerWidth < 768) { document.getElementById('filterForm')?.classList.remove('is-open'); syncPOFilterButton(); }
+          if(window.innerWidth < 768) closePONavbarFilter();
       });
   });
 
@@ -837,7 +939,7 @@
     const ttotal = document.getElementById('poTotalRow');
     tbody.innerHTML = ''; ttotal.innerHTML = '';
 
-    const kantor = document.getElementById('opt_kantor_rec').value || '';
+    const kantor = selectedPoBranch();
     document.getElementById('thNamaPO').innerText = (kantor !== '') ? "NAMA KANKAS" : "NAMA KANTOR";
 
     try {
@@ -845,7 +947,9 @@
             type: 'Potensi NPL', 
             closing_date: currentFilter.closing, 
             harian_date: currentFilter.harian,
-            kode_kantor: kantor
+            kode_kantor: kantor,
+            korwil: currentFilter.korwil || selectedPoKorwil(),
+            hitung_berdasarkan: currentFilter.nominal || selectedPoNominal()
         };
 
         const res = await fetch('./api/npl/', {
@@ -893,7 +997,7 @@
       const el = document.getElementById('poTotalRow');
       if(!tot) return;
 
-      const dropVal = document.getElementById('opt_kantor_rec').value || '';
+      const dropVal = selectedPoBranch();
       const targetKode = dropVal !== '' ? dropVal : '000'; 
 
       const getLink = (angka, status, colorClass) => {
@@ -997,11 +1101,11 @@
                   <th colspan="2" style="background-color:#ffedd5;">MASIH POTENSI</th>
               </tr>
               <tr>
-                  <th>NOA</th><th>BAKI DEBET</th>
-                  <th>NOA</th><th>BAKI DEBET</th>
-                  <th>NOA</th><th>BAKI DEBET</th>
-                  <th>NOA</th><th>BAKI DEBET</th>
-                  <th>NOA</th><th>BAKI DEBET</th>
+                  <th>NOA</th><th>${poNominalLabel()}</th>
+                  <th>NOA</th><th>${poNominalLabel()}</th>
+                  <th>NOA</th><th>${poNominalLabel()}</th>
+                  <th>NOA</th><th>${poNominalLabel()}</th>
+                  <th>NOA</th><th>${poNominalLabel()}</th>
               </tr>
           </thead>
           <tbody>`;
@@ -1043,7 +1147,7 @@
       });
       table += `</tbody></table>`;
 
-      const tgl = document.getElementById('harian_date').value;
+      const tgl = selectedPoActual();
       const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
       const a = document.createElement('a');
       a.href = window.URL.createObjectURL(blob);
@@ -1155,10 +1259,12 @@
           const payload = { 
               type: 'Debitur Potensi NPL', 
               kode_kantor: currentDetailKode === '000' ? '' : currentDetailKode, 
+              korwil: currentFilter.korwil || selectedPoKorwil(),
               kode_kankas: kankas,             
               kode_ao: aoFilter,             
               closing_date: currentFilter.closing, 
               harian_date: currentFilter.harian,
+              hitung_berdasarkan: currentFilter.nominal || selectedPoNominal(),
               status_filter: 'ALL',
               include_lunas: 1,
               include_aman_backflow: 1
@@ -1240,7 +1346,7 @@
               ${statusPotensiBadge(d)}
             </div>
             <div class="po-detail-card-metrics">
-              <div class="po-detail-card-metric"><span>BD Harian</span><strong>${fmtNom(d.baki_debet_harian)}</strong></div>
+              <div class="po-detail-card-metric"><span class="po-nominal-detail-label">Nominal Actual</span><strong>${fmtNom(d.baki_debet_harian)}</strong></div>
               <div class="po-detail-card-metric"><span>Tungg. Pokok</span><strong>${fmtNom(d.tunggakan_pokok)}</strong></div>
               <div class="po-detail-card-metric"><span>Tungg. Bunga</span><strong>${fmtNom(d.tunggakan_bunga)}</strong></div>
               <div class="po-detail-card-metric"><span>Kolek C → H</span><strong>${poEscape(d.kolek_closing || '-')} → ${poEscape(d.kolek_harian || '-')}</strong></div>
@@ -1322,7 +1428,7 @@
       if(filteredData.length === 0) return alert('Tidak ada detail untuk diexport!');
       let table = `<table border="1"><thead><tr>
         <th>NO REKENING</th><th>NAMA NASABAH</th><th>ALAMAT</th><th>NAMA AO</th><th>STATUS POTENSI</th>
-        <th>KOL CLOSING</th><th>BD CLOSING</th><th>KOL HARIAN</th><th>BD HARIAN</th>
+        <th>KOL CLOSING</th><th>${poNominalLabel()} CLOSING</th><th>KOL HARIAN</th><th>${poNominalLabel()} ACTUAL</th>
         <th>TUNGG POKOK</th><th>TUNGG BUNGA</th><th>SALDO TABUNGAN</th><th>JT</th><th>DPD</th><th>DPD TP</th><th>DPD TB</th>
         <th>ANGS. POKOK</th><th>ANGS. BUNGA</th><th>TGL TRANS</th><th>STATUS KOMITMEN</th><th>KOMITMEN</th><th>TGL JANJI</th><th>NOMINAL JANJI</th><th>ALASAN</th>
       </tr></thead><tbody>`;

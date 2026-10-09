@@ -1,66 +1,23 @@
 <div class="max-w-[100vw] lg:max-w-7xl mx-auto px-2 md:px-4 py-4" id="MB_root">
-  
-  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-3 mb-4">
-    <div class="flex items-center justify-between w-full lg:w-auto shrink-0">
-        <div class="flex items-center gap-3">
-          <h1 id="MB_title" class="font-bold flex items-center gap-2 text-slate-800 text-lg md:text-xl">
-            <span class="bg-blue-600 text-white p-1.5 rounded-lg shadow-sm text-xs">📊</span>
-            <span>Migrasi DPD</span>
-          </h1>
-          <button onclick="MB_showAnalisis()" class="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300 rounded-md text-[10px] font-bold shadow-sm transition">
-              <span class="text-xs">ℹ️</span> Analisis
-          </button>
-        </div>
-        
-        <button type="button" onclick="document.getElementById('MB_formFilter').classList.toggle('hidden'); document.getElementById('MB_formFilter').classList.toggle('flex');" class="lg:hidden h-[28px] px-2.5 bg-white border border-slate-200 text-slate-700 rounded-md flex items-center gap-1 shadow-sm font-bold text-[10px] ml-2 shrink-0">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-            Filter
-        </button>
+  <div id="MB_pageHead" class="mb-page-head flex items-center justify-between gap-3 mb-4 shrink-0">
+    <div class="min-w-0">
+      <h1 id="MB_title" class="font-bold flex items-center gap-2 text-slate-800 text-lg md:text-xl min-w-0">
+        <span class="mb-page-icon bg-blue-600 text-white rounded-lg shadow-sm" aria-hidden="true">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"></path><path d="M10 19V5"></path><path d="M16 19v-7"></path><path d="M22 19V3"></path></svg>
+        </span>
+        <span class="truncate">Migrasi DPD</span>
+        <button type="button" onclick="MB_showAnalisis()" class="mb-info-button" aria-label="Buka analisis migrasi" title="Analisis migrasi">i</button>
+      </h1>
+      <p class="mb-page-subtitle">Perbandingan pergerakan bucket berdasarkan nominal terpilih</p>
     </div>
-
-    <form id="MB_formFilter" class="hidden lg:flex bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm flex-wrap items-center lg:items-end gap-2 shrink-0 w-full lg:w-auto transition-all">
-      <div class="flex flex-col justify-center px-1 mr-1">
-          <label class="relative inline-flex items-center cursor-pointer mb-1" title="Aktifkan mode Proyeksi">
-            <input type="checkbox" id="MB_isProyeksi" onchange="MB_toggleProyeksi()" class="sr-only peer">
-            <div class="w-8 h-4 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-600"></div>
-            <span class="ml-1.5 text-[9px] font-bold text-indigo-700 uppercase tracking-wider">Proyeksi</span>
-          </label>
-      </div>
-
-      <div class="flex flex-col gap-0.5 flex-1 lg:flex-none lg:w-[125px]">
-        <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1" for="MB_nominalField">Dasar Nominal</label>
-        <select id="MB_nominalField" onchange="MB_checkDate()" class="w-full border border-slate-300 rounded-md px-2 text-[11px] font-medium h-7 shadow-sm focus:border-blue-500 outline-none cursor-pointer">
-          <option value="baki_debet" selected>Baki Debet</option>
-          <option value="saldo_bank">Saldo Bank</option>
-        </select>
-      </div>
-
-      <div class="flex flex-col gap-0.5 flex-1 lg:flex-none lg:w-[110px]">
-        <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1" for="MB_closing">Closing</label>
-        <input type="date" id="MB_closing" onchange="MB_checkDate()" class="w-full border border-slate-300 rounded-md px-2 text-[11px] font-medium h-7 shadow-sm focus:border-blue-500 outline-none cursor-pointer">
-      </div>
-      <div class="flex flex-col gap-0.5 flex-1 lg:flex-none lg:w-[110px]">
-        <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1" for="MB_harian">Act/Proj</label>
-        <input type="date" id="MB_harian" onchange="MB_checkDate()" class="w-full border border-slate-300 rounded-md px-2 text-[11px] font-medium h-7 shadow-sm focus:border-blue-500 outline-none cursor-pointer">
-      </div>
-      <div class="flex flex-col gap-0.5 flex-1 lg:flex-none lg:w-[220px]">
-        <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1" for="MB_optFilter">Area/Cabang</label>
-        <select id="MB_optFilter" onchange="MB_filterWilayah()" class="border-b-2 border-transparent hover:border-slate-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-blue-500 bg-transparent transition-colors font-bold text-slate-700 cursor-pointer w-full truncate">
-          <option value="000">Konsolidasi</option>
-        </select>
-      </div>
-
-      <div class="flex gap-1 mt-1 lg:mt-auto w-full lg:w-auto justify-end">
-          <button type="button" onclick="MB_exportRekap()" class="h-7 w-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md shadow-sm transition flex items-center justify-center shrink-0" title="Export Excel Rekap">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          </button>
-      </div>
-    </form>
-  </div>
-
-  <div class="flex bg-slate-200/60 p-1 rounded-md w-max mb-3 shadow-inner border border-slate-200">
-      <button onclick="MB_switchTab('rekap')" id="btnTabRekap" class="px-4 py-1 text-[11px] md:text-xs font-bold rounded bg-white text-blue-600 shadow-sm transition">Rekap Summary</button>
-      <button onclick="MB_switchTab('migrasi')" id="btnTabMigrasi" class="px-4 py-1 text-[11px] md:text-xs font-bold rounded text-slate-500 hover:text-slate-800 transition">Matriks Migrasi</button>
+    <div class="mb-page-actions flex items-center gap-1.5 shrink-0">
+      <button id="MB_swapViewButton" type="button" onclick="MB_toggleView()" class="mb-swap-button btn-icon" aria-label="Tampilkan matriks migrasi" title="Tampilkan matriks migrasi" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11"></path><path d="m14 3 4 4-4 4"></path><path d="M17 17H6"></path><path d="m10 13-4 4 4 4"></path></svg>
+      </button>
+      <button id="MB_exportRekapButton" type="button" onclick="MB_exportRekap()" class="mb-export-button btn-icon" title="Export Excel Rekap" aria-label="Export Excel Rekap">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 20h14"></path></svg>
+      </button>
+    </div>
   </div>
 
   <div id="MB_loading" class="hidden flex items-center gap-2 text-sm text-blue-600 font-bold mb-3 tracking-wider">
@@ -76,11 +33,11 @@
               <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 border-b pb-1">📊 NPL Closing (M-1)</div>
               <div class="flex justify-between items-end">
                   <div>
-                      <div id="MB_labelTotalM1" class="text-[10px] text-slate-400 font-medium">Total Baki Debet M-1</div>
+                      <div id="MB_labelTotalM1" class="text-[10px] text-slate-400 font-medium">Total Saldo Bank M-1</div>
                       <div id="stat_os_m1" class="text-sm font-bold text-slate-700">0</div>
                   </div>
                   <div class="text-right">
-                      <div id="MB_labelNplM1" class="text-[10px] text-red-400 font-medium">NPL Baki Debet M-1</div>
+                      <div id="MB_labelNplM1" class="text-[10px] text-red-400 font-medium">NPL Saldo Bank M-1</div>
                       <div class="flex items-baseline gap-1 justify-end">
                           <div id="stat_npl_m1" class="text-sm font-bold text-red-600">0</div>
                           <div id="stat_pct_m1" class="text-[10px] font-bold text-red-600 bg-red-50 px-1 rounded">0%</div>
@@ -93,11 +50,11 @@
               <div class="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-2 border-b border-blue-100 pb-1">📈 NPL Actual/Proyeksi</div>
               <div class="flex justify-between items-end">
                   <div>
-                      <div id="MB_labelTotalActual" class="text-[10px] text-slate-500 font-medium">Total Baki Debet Actual</div>
+                      <div id="MB_labelTotalActual" class="text-[10px] text-slate-500 font-medium">Total Saldo Bank Actual</div>
                       <div id="stat_os_act" class="text-sm font-bold text-slate-800">0</div>
                   </div>
                   <div class="text-right">
-                      <div id="MB_labelNplActual" class="text-[10px] text-red-500 font-medium">NPL Baki Debet Actual</div>
+                      <div id="MB_labelNplActual" class="text-[10px] text-red-500 font-medium">NPL Saldo Bank Actual</div>
                       <div class="flex items-baseline gap-1 justify-end">
                           <div id="stat_npl_act" class="text-sm font-bold text-red-600">0</div>
                           <div id="stat_pct_act" class="text-[10px] font-bold text-white bg-red-500 px-1 rounded shadow-sm">0%</div>
@@ -292,6 +249,214 @@
   .th-sort:after { content: " ⬍"; font-size: 8px; color: #9ca3af; margin-left: 2px; }
   .th-sort.asc:after { content: " ▲"; color: #2563eb; }
   .th-sort.desc:after { content: " ▼"; color: #2563eb; }
+
+  /* Migrasi DPD final polish: konsisten, responsif, dan mendukung dark/light. */
+  :root {
+    --mb-bg: #f8fafc;
+    --mb-surface: #ffffff;
+    --mb-soft: #f1f5f9;
+    --mb-text: #1e293b;
+    --mb-muted: #64748b;
+    --mb-border: #dbe3ee;
+    --mb-line: #e2e8f0;
+    --mb-scroll: #94a3b8;
+    --mb-scroll-track: #eef2f7;
+    --mb-worse-bg: #fef2f2;
+    --mb-worse-text: #b91c1c;
+    --mb-better-bg: #f0fdf4;
+    --mb-better-text: #15803d;
+  }
+  :root[data-monbis-theme="dark"] {
+    --mb-bg: #0f172a;
+    --mb-surface: #111827;
+    --mb-soft: #1e293b;
+    --mb-text: #e2e8f0;
+    --mb-muted: #94a3b8;
+    --mb-border: #334155;
+    --mb-line: #263449;
+    --mb-scroll: #64748b;
+    --mb-scroll-track: #111827;
+    --mb-worse-bg: #3f1d24;
+    --mb-worse-text: #fca5a5;
+    --mb-better-bg: #123b2a;
+    --mb-better-text: #86efac;
+  }
+
+  #MB_root,
+  #MB_root button,
+  #MB_root input,
+  #MB_root select,
+  #MB_modal,
+  #MB_modal button,
+  #MB_modal input,
+  #MB_modal select {
+    font-family: Roboto, Arial, system-ui, sans-serif !important;
+  }
+  #MB_root {
+    width: 100%;
+    max-width: 1600px !important;
+    min-height: calc(100dvh - 72px);
+    color: var(--mb-text);
+    background: var(--mb-bg);
+    box-sizing: border-box;
+  }
+  #MB_root .mb-page-head {
+    min-height: 58px;
+    padding: 10px 12px;
+    border: 1px solid var(--mb-border);
+    border-radius: 14px;
+    background: var(--mb-surface);
+    box-shadow: 0 1px 3px rgba(15,23,42,.05);
+  }
+  #MB_root .mb-page-icon {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+  #MB_root #MB_title { color: var(--mb-text) !important; }
+  #MB_root .mb-page-subtitle { margin: 3px 0 0 44px; color: var(--mb-muted); font-size: 10px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #MB_root .mb-info-button,
+  #MB_root .mb-swap-button,
+  #MB_root .mb-export-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--mb-border);
+    border-radius: 9px;
+    transition: transform .15s ease, background-color .15s ease, border-color .15s ease;
+  }
+  #MB_root .mb-info-button {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border-radius: 999px;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  #MB_root .mb-swap-button {
+    width: 36px;
+    height: 36px;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #2563eb;
+    cursor: pointer;
+  }
+  #MB_root .mb-export-button {
+    width: 36px;
+    height: 36px;
+    background: #059669 !important;
+    border-color: #059669 !important;
+    color: #fff !important;
+    cursor: pointer;
+    box-shadow: 0 5px 12px rgba(15,23,42,.12);
+  }
+  #MB_root .mb-info-button:hover,
+  #MB_root .mb-swap-button:hover,
+  #MB_root .mb-export-button:hover { transform: translateY(-1px); border-color: #94a3b8; }
+  #MB_root .mb-export-button:hover { background: #047857 !important; }
+
+  #MB_root #MB_loading { color: var(--mb-muted) !important; }
+  #MB_root #view_rekap > .grid > div,
+  #MB_root #angsuran_category_summary,
+  #MB_root #list_perbaikan > div,
+  #MB_root #list_stay > div,
+  #MB_root #list_pemburukan > div {
+    background: var(--mb-surface) !important;
+    border-color: var(--mb-border) !important;
+    color: var(--mb-text);
+  }
+  #MB_root #view_rekap > .grid > div > div:first-child { background: var(--mb-soft) !important; border-color: var(--mb-line) !important; }
+  #MB_root #angsuran_category_summary_content > div { background: var(--mb-surface) !important; border-color: var(--mb-border) !important; color: var(--mb-text) !important; }
+  #MB_root #MB_tblWrap {
+    border-color: var(--mb-border) !important;
+    background: var(--mb-surface) !important;
+    scrollbar-width: thin;
+    scrollbar-color: var(--mb-scroll) var(--mb-scroll-track);
+  }
+  #MB_root #MB_tblWrap::-webkit-scrollbar,
+  #MB_modalTableWrap::-webkit-scrollbar,
+  #MB_modalTotals::-webkit-scrollbar { width: 5px; height: 5px; }
+  #MB_root #MB_tblWrap::-webkit-scrollbar-track,
+  #MB_modalTableWrap::-webkit-scrollbar-track { background: var(--mb-scroll-track); border-radius: 999px; }
+  #MB_root #MB_tblWrap::-webkit-scrollbar-thumb,
+  #MB_modalTableWrap::-webkit-scrollbar-thumb { background: var(--mb-scroll); border-radius: 999px; }
+  #MB_root #MB_table { color: var(--mb-text) !important; }
+  #MB_root #MB_table thead,
+  #MB_root #MB_table thead tr,
+  #MB_root #MB_table thead th,
+  #MB_root #MB_table thead th.sticky-col-1,
+  #MB_root #MB_table thead th.sticky-col-2 {
+    background: var(--mb-soft) !important;
+    color: var(--mb-text) !important;
+    border-color: var(--mb-line) !important;
+  }
+  #MB_root #MB_table tbody td { background: var(--mb-surface) !important; color: var(--mb-text) !important; border-color: var(--mb-line) !important; }
+  #MB_root #MB_table tbody tr:hover td { background: var(--mb-soft) !important; }
+  #MB_root #MB_table #MB_row_total td,
+  #MB_root #MB_table #MB_row_total td.sticky-col-1,
+  #MB_root #MB_table #MB_row_total td.sticky-col-2 {
+    background: var(--mb-soft) !important;
+    color: var(--mb-text) !important;
+    border-color: var(--mb-line) !important;
+  }
+  #MB_root #MB_table #MB_row_realisasi td { background: var(--mb-surface) !important; color: var(--mb-text) !important; border-color: var(--mb-line) !important; }
+  #MB_root #MB_table .flow-worse {
+    background: var(--mb-worse-bg) !important;
+    color: var(--mb-worse-text) !important;
+  }
+  #MB_root #MB_table .flow-worse .num,
+  #MB_root #MB_table .flow-worse .cell-link { color: var(--mb-worse-text) !important; }
+  #MB_root #MB_table .flow-better {
+    background: var(--mb-better-bg) !important;
+    color: var(--mb-better-text) !important;
+  }
+  #MB_root #MB_table .flow-better .num,
+  #MB_root #MB_table .flow-better .cell-link { color: var(--mb-better-text) !important; }
+  #MB_root #MB_table td:not(.flow-worse):not(.flow-better) { background: var(--mb-surface) !important; }
+  #MB_root #MB_table .cell-sub { color: var(--mb-muted) !important; }
+  #MB_root #MB_table .cell-link { color: var(--mb-text) !important; }
+
+  #MB_modalCard,
+  #MB_modalCard > div,
+  #MB_modalTable,
+  #MB_modalTableWrap { background: var(--mb-surface) !important; color: var(--mb-text) !important; border-color: var(--mb-border) !important; }
+  #MB_modalCard input,
+  #MB_modalCard select { background: var(--mb-surface) !important; color: var(--mb-text) !important; border-color: var(--mb-border) !important; }
+  #MB_modalThead th { background: var(--mb-soft) !important; color: var(--mb-text) !important; border-color: var(--mb-line) !important; }
+  #MB_modalThead tr.sticky-total td { background: var(--mb-soft) !important; color: var(--mb-text) !important; border-color: var(--mb-line) !important; }
+  #MB_modalTbody td { background: var(--mb-surface) !important; color: var(--mb-text) !important; border-color: var(--mb-line) !important; }
+  #MB_modalTbody tr:hover td { background: var(--mb-soft) !important; }
+  #MB_modalAnalisis > div,
+  #MB_modalAnalisis > div > div { background: var(--mb-surface) !important; color: var(--mb-text) !important; border-color: var(--mb-border) !important; }
+  #MB_modalAnalisis [class*="text-amber-"],
+  #MB_modalAnalisis [class*="text-red-"],
+  #MB_modalAnalisis [class*="text-emerald-"] { color: var(--mb-text) !important; }
+  #MB_modalAnalisis [class*="border-amber-"] { border-color: var(--mb-line) !important; }
+
+  @media (max-width: 767px) {
+    #MB_root { min-height: calc(100dvh - 54px); padding: 6px !important; }
+    #MB_root .mb-page-head { min-height: 50px; padding: 7px 8px; border-radius: 11px; }
+    #MB_root #MB_title { font-size: 14px !important; gap: 6px !important; }
+    #MB_root .mb-page-icon { width: 29px; height: 29px; border-radius: 8px; }
+    #MB_root .mb-page-icon svg { width: 16px; height: 16px; }
+    #MB_root .mb-page-subtitle { display: none; }
+    #MB_root .mb-info-button { width: 17px; height: 17px; font-size: 10px; }
+    #MB_root .mb-swap-button,
+    #MB_root .mb-export-button { width: 30px; height: 30px; }
+    #MB_root #view_rekap > .grid { grid-template-columns: minmax(0, 1fr) !important; }
+    #MB_root #view_rekap > .grid > div { min-width: 0; }
+    #MB_root #MB_tblWrap { max-height: calc(100dvh - 180px) !important; }
+    #MB_root #MB_table { min-width: 1000px; }
+    #MB_modalCard { width: 100vw !important; height: 96dvh !important; border-radius: 16px 16px 0 0 !important; }
+    #MB_modalTable { min-width: 1550px; }
+  }
 </style>
 
 <script>
@@ -362,7 +527,35 @@
   }
 
   function getSelectedNominalLabel() {
-    return document.getElementById('MB_nominalField')?.value === 'saldo_bank' ? 'Saldo Bank' : 'Baki Debet';
+    return (document.getElementById('MB_nominalField')?.value || 'saldo_bank') === 'saldo_bank' ? 'Saldo Bank' : 'Baki Debet';
+  }
+
+  let mbFilterOpen = false;
+  function applyMbNavbarFilterState() {
+    const panel = document.getElementById('migrasiBucketNavbarFilterPanel');
+    const toggle = document.getElementById('migrasiBucketNavbarFilterToggle');
+    if (!panel) return;
+    panel.classList.toggle('hidden', !mbFilterOpen);
+    panel.classList.toggle('flex', mbFilterOpen);
+    toggle?.classList.toggle('is-active', mbFilterOpen);
+    toggle?.setAttribute('aria-expanded', String(mbFilterOpen));
+  }
+
+  function bindMbNavbarFilter() {
+    const panel = document.getElementById('migrasiBucketNavbarFilterPanel');
+    const toggle = document.getElementById('migrasiBucketNavbarFilterToggle');
+    const close = document.getElementById('migrasiBucketNavbarFilterClose');
+    if (!panel || !toggle || toggle.dataset.bound === '1') return;
+    toggle.dataset.bound = '1';
+    toggle.addEventListener('click', () => { mbFilterOpen = !mbFilterOpen; applyMbNavbarFilterState(); });
+    close?.addEventListener('click', () => { mbFilterOpen = false; applyMbNavbarFilterState(); });
+    document.addEventListener('click', event => {
+      if (mbFilterOpen && !panel.contains(event.target) && !toggle.contains(event.target)) {
+        mbFilterOpen = false;
+        applyMbNavbarFilterState();
+      }
+    });
+    applyMbNavbarFilterState();
   }
 
   document.getElementById('MB_modalClose').onclick = () => elMod.classList.add('hidden');
@@ -373,6 +566,9 @@
   let gIsKonsol = true;
 
   (async function init(){
+    bindMbNavbarFilter();
+    const nominal = document.getElementById('MB_nominalField');
+    if (nominal) nominal.value = 'saldo_bank';
     const d = await getLastDates();
     if(d){ elClosing.value=d.last_closing; elHarian.value=d.last_created; }
     await populateKantor();
@@ -396,13 +592,23 @@
 
       if (tab === 'rekap') {
           vRekap.classList.remove('hidden'); vMigrasi.classList.add('hidden');
-          bRekap.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded bg-white text-blue-600 shadow-sm transition";
-          bMigrasi.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded text-slate-500 hover:text-slate-800 transition";
+          if (bRekap) bRekap.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded bg-white text-blue-600 shadow-sm transition";
+          if (bMigrasi) bMigrasi.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded text-slate-500 hover:text-slate-800 transition";
       } else {
           vRekap.classList.add('hidden'); vMigrasi.classList.remove('hidden');
-          bMigrasi.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded bg-white text-blue-600 shadow-sm transition";
-          bRekap.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded text-slate-500 hover:text-slate-800 transition";
+          if (bMigrasi) bMigrasi.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded bg-white text-blue-600 shadow-sm transition";
+          if (bRekap) bRekap.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded text-slate-500 hover:text-slate-800 transition";
       }
+      const swapButton = document.getElementById('MB_swapViewButton');
+      const showingMatrix = tab !== 'rekap';
+      swapButton?.setAttribute('aria-pressed', String(showingMatrix));
+      swapButton?.setAttribute('title', showingMatrix ? 'Tampilkan rekap summary' : 'Tampilkan matriks migrasi');
+      swapButton?.setAttribute('aria-label', showingMatrix ? 'Tampilkan rekap summary' : 'Tampilkan matriks migrasi');
+  };
+
+  window.MB_toggleView = function() {
+      const showingMatrix = !document.getElementById('view_migrasi')?.classList.contains('hidden');
+      MB_switchTab(showingMatrix ? 'rekap' : 'migrasi');
   };
 
   window.MB_toggleProyeksi = function() {
@@ -511,7 +717,7 @@
           type:'migrasi bucket', 
           closing_date, 
           harian_date,
-          nominal_field: document.getElementById('MB_nominalField')?.value || 'baki_debet',
+          nominal_field: document.getElementById('MB_nominalField')?.value || 'saldo_bank',
           is_proyeksi: document.getElementById('MB_isProyeksi').checked 
       };
       if(kode_kantor) payload.kode_kantor = kode_kantor;
@@ -764,8 +970,9 @@
 
         let flowCls = '';
         const fi = idxBucket(f), ti = idxBucket(t);
-        if(t==='O') flowCls = 'flow-better';
-        else if(fi>=0 && ti>=0){ flowCls = (ti>fi) ? 'flow-worse' : (ti<fi ? 'flow-better' : ''); }
+        const hasNominal = getNum(c.os) > 0;
+        if(hasNominal && t==='O') flowCls = 'flow-better';
+        else if(hasNominal && fi>=0 && ti>=0){ flowCls = (ti>fi) ? 'flow-worse' : (ti<fi ? 'flow-better' : ''); }
 
         const sub = [];
         if(getNum(c.noa)>0) sub.push(nfID.format(c.noa)+' NOA');
@@ -779,7 +986,7 @@
           <td class="text-left sticky-col-1 col-from font-bold text-slate-700">${DPD_LABEL[f]||f}</td>
           <td class="text-right sticky-col-2 col-6 text-slate-800">${dashHTML(os_m1)}</td>
           ${cellsHtml.join('')}
-          <td class="text-right col-N bg-emerald-50 text-emerald-700">${linkCell(f,'RUNOFF',runoff)}</td>
+          <td class="text-right col-N ${runoff > 0 ? 'flow-better' : ''}">${linkCell(f,'RUNOFF',runoff)}</td>
         </tr>`);
     }
 
@@ -876,7 +1083,7 @@
         to_bucket: to_raw,
         page: pg,
         per_page: currentDetailPerPage,
-        nominal_field: document.getElementById('MB_nominalField')?.value || 'baki_debet',
+        nominal_field: document.getElementById('MB_nominalField')?.value || 'saldo_bank',
         is_proyeksi: document.getElementById('MB_isProyeksi').checked
       };
       if(kode) payload.kode_kantor = kode;
@@ -1220,7 +1427,7 @@
           page: 1,
           per_page: 100,
           export_all: true,
-          nominal_field: document.getElementById('MB_nominalField')?.value || 'baki_debet',
+          nominal_field: document.getElementById('MB_nominalField')?.value || 'saldo_bank',
           is_proyeksi: document.getElementById('MB_isProyeksi').checked
         };
         if (kode) payload.kode_kantor = kode;

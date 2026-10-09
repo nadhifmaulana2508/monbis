@@ -111,6 +111,10 @@
   .mph-info-btn[aria-expanded="true"] { background:#2563eb; color:#fff; border-color:#2563eb; }
 
   .mph-mobile-actions { display:none; align-items:center; gap:5px; margin-left:auto; }
+  .mph-header-actions { display:flex; align-items:center; gap:6px; margin-left:auto; flex:0 0 auto; }
+  .mph-header-actions .mph-action-btn { box-shadow:0 1px 2px rgba(15,23,42,.08); }
+  .mph-header-actions .mph-action-btn.hidden { display:none; }
+  .mph-header-actions .mph-view-toggle { width:36px; height:36px; }
   .mph-filter-toggle {
     height:30px;
     padding:0 9px;
@@ -522,6 +526,7 @@
     #monitoringPHPage { height:calc(100dvh - 64px); padding:7px; }
     #mphHeader { flex-direction:column; align-items:stretch; gap:8px; }
     .mph-brand { width:100%; }
+    .mph-header-actions { position:absolute; top:10px; right:12px; }
     #mphFilterPanel { margin-left:0; width:100%; }
     .mph-filter-form { width:100%; justify-content:flex-end; }
     .mph-filter-set.active { width:100%; justify-content:flex-end; }
@@ -532,15 +537,17 @@
   @media (max-width:767px) {
     #monitoringPHPage { height:calc(100dvh - 56px); padding:5px 4px; gap:5px; }
     #mphHeader { display:block; padding:6px 7px; border-radius:9px; }
-    .mph-brand { width:100%; gap:6px; }
+    .mph-brand { width:100%; gap:6px; padding-right:100px; }
     .mph-brand-icon { width:27px; height:27px; flex-basis:27px; border-radius:7px; }
     .mph-brand-icon svg { width:14px; height:14px; }
     #mphTitle { font-size:11.5px; }
     #mphSubtitle { max-width:170px; margin-top:2px; font-size:6.5px; }
     .mph-info-btn { width:17px; height:17px; flex-basis:17px; font-size:9px; }
-    .mph-mobile-actions { display:flex; }
-    .mph-mobile-actions .mph-view-toggle { width:29px; height:29px; flex-basis:29px; border-radius:8px; }
-    .mph-mobile-actions .mph-view-toggle svg { width:14px; height:14px; }
+    .mph-header-actions { position:absolute; top:6px; right:7px; gap:4px; }
+    .mph-header-actions .mph-view-toggle,
+    .mph-header-actions .mph-action-btn { width:29px; height:29px; min-width:29px; flex-basis:29px; border-radius:8px; }
+    .mph-header-actions .mph-view-toggle svg,
+    .mph-header-actions .mph-action-btn svg { width:14px; height:14px; }
     .mph-tooltip { display:none; }
 
     #mphFilterPanel { display:none; width:100%; margin:6px 0 0; padding-top:6px; border-top:1px solid #e2e8f0; }
@@ -929,51 +936,19 @@
         </div>
         <span id="mphSubtitle">Recovery Pinjaman Hapus Buku dan Rekap LGD dalam satu menu.</span>
       </div>
-      <div class="mph-mobile-actions">
-        <button type="button" id="mphMobileViewToggle" class="mph-view-toggle" aria-label="Buka Rekap LGD" title="Buka Rekap LGD">
-          <span class="mph-view-icon"></span>
-          <span class="mph-tooltip">Buka Rekap LGD</span>
-        </button>
-        <button type="button" id="mphFilterToggle" class="mph-filter-toggle" aria-expanded="false" aria-controls="mphFilterPanel">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
-          <span>Filter</span>
-        </button>
-      </div>
     </div>
 
-    <div id="mphFilterPanel">
-      <form id="mphFilterForm" class="mph-filter-form" onsubmit="event.preventDefault();">
-        <!-- RECOVERY PH FILTER -->
-        <div id="recoveryFilterSet" class="mph-filter-set active">
-          <div class="mph-field date">
-            <label class="mph-label" for="recoveryStartDate">Dari</label>
-            <input id="recoveryStartDate" type="date" class="mph-input" required onclick="try{this.showPicker()}catch(e){}">
-          </div>
-          <div class="mph-field date">
-            <label class="mph-label" for="recoveryEndDate">Sampai</label>
-            <input id="recoveryEndDate" type="date" class="mph-input" required onclick="try{this.showPicker()}catch(e){}">
-          </div>
-          <button type="button" id="exportRecoveryBtn" class="mph-action-btn" title="Export Recovery PH" aria-label="Export Recovery PH">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          </button>
-        </div>
-
-        <!-- REKAP LGD FILTER -->
-        <div id="lgdFilterSet" class="mph-filter-set">
-          <div class="mph-field date lgd-position-field">
-            <label class="mph-label" for="lgdPositionDate">Posisi Data</label>
-            <input id="lgdPositionDate" type="date" class="mph-input" required onclick="try{this.showPicker()}catch(e){}">
-          </div>
-          <button type="button" id="exportLgdBtn" class="mph-action-btn" title="Export Rekap LGD" aria-label="Export Rekap LGD">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          </button>
-        </div>
-
-        <button type="button" id="mphDesktopViewToggle" class="mph-view-toggle" aria-label="Buka Rekap LGD" title="Buka Rekap LGD">
-          <span class="mph-view-icon"></span>
-          <span class="mph-tooltip">Buka Rekap LGD</span>
-        </button>
-      </form>
+    <div class="mph-header-actions" aria-label="Aksi Monitoring PH">
+      <button type="button" id="mphDesktopViewToggle" class="mph-view-toggle" aria-label="Buka Rekap LGD" title="Buka Rekap LGD">
+        <span class="mph-view-icon"></span>
+        <span class="mph-tooltip">Buka Rekap LGD</span>
+      </button>
+      <button type="button" id="exportRecoveryBtn" class="mph-action-btn" title="Export Recovery PH" aria-label="Export Recovery PH">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      </button>
+      <button type="button" id="exportLgdBtn" class="mph-action-btn hidden" title="Export Rekap LGD" aria-label="Export Rekap LGD">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      </button>
     </div>
   </header>
 
@@ -1198,9 +1173,7 @@
   }
 
   function viewIcon(view) {
-    return view === 'recovery'
-      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"></path><path d="M7 16v-5"></path><path d="M12 16V7"></path><path d="M17 16v-8"></path></svg>`
-      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>`;
+    return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7h11"></path><path d="m15 3 4 4-4 4"></path><path d="M16 17H5"></path><path d="m9 21-4-4 4-4"></path></svg>`;
   }
 
   function syncViewButtons() {
@@ -1221,8 +1194,11 @@
     const isRecovery = state.activeView === 'recovery';
     el('recoveryView')?.classList.toggle('active',isRecovery);
     el('lgdView')?.classList.toggle('active',!isRecovery);
-    el('recoveryFilterSet')?.classList.toggle('active',isRecovery);
-    el('lgdFilterSet')?.classList.toggle('active',!isRecovery);
+    el('recoveryPhStartField')?.classList.toggle('hidden',!isRecovery);
+    el('recoveryPhEndField')?.classList.toggle('hidden',!isRecovery);
+    el('recoveryPhLgdField')?.classList.toggle('hidden',isRecovery);
+    el('exportRecoveryBtn')?.classList.toggle('hidden',!isRecovery);
+    el('exportLgdBtn')?.classList.toggle('hidden',isRecovery);
     el('mphSubtitle').textContent = isRecovery
       ? 'Recovery Pinjaman Hapus Buku berdasarkan periode transaksi.'
       : 'Rekap Loss Given Default, recovery, RR, dan sisa saldo hapus buku.';
@@ -1234,7 +1210,6 @@
   async function switchView() {
     state.activeView = state.activeView === 'recovery' ? 'lgd' : 'recovery';
     syncViewUI();
-    closeFilterSmall();
     const scroller = state.activeView === 'recovery' ? el('recoveryScroller') : el('lgdScrollerCombined');
     if (scroller) { scroller.scrollTop=0; scroller.scrollLeft=0; }
     if (state.activeView === 'recovery') {
@@ -1244,24 +1219,26 @@
     }
   }
 
-  function toggleFilter() {
-    if (window.innerWidth >= 768) return;
-    state.filterOpen = !state.filterOpen;
-    el('mphFilterPanel')?.classList.toggle('open',state.filterOpen);
-    el('mphFilterToggle')?.classList.toggle('open',state.filterOpen);
-    el('mphFilterToggle')?.setAttribute('aria-expanded',String(state.filterOpen));
-    const span = el('mphFilterToggle')?.querySelector('span');
-    if (span) span.textContent = state.filterOpen ? 'Tutup' : 'Filter';
-  }
-
-  function closeFilterSmall() {
-    if (window.innerWidth >= 768) return;
-    state.filterOpen = false;
-    el('mphFilterPanel')?.classList.remove('open');
-    el('mphFilterToggle')?.classList.remove('open');
-    el('mphFilterToggle')?.setAttribute('aria-expanded','false');
-    const span = el('mphFilterToggle')?.querySelector('span');
-    if (span) span.textContent='Filter';
+  function bindRecoveryPhNavbarFilter() {
+    const panel = el('recoveryPhNavbarFilterPanel');
+    const toggle = el('recoveryPhNavbarFilterToggle');
+    const close = el('recoveryPhNavbarFilterClose');
+    if (!panel || !toggle) return;
+    const setOpen = open => {
+      panel.classList.toggle('hidden',!open);
+      panel.classList.toggle('flex',open);
+      toggle.classList.toggle('is-active',open);
+      toggle.setAttribute('aria-expanded',open ? 'true' : 'false');
+    };
+    toggle.addEventListener('click',event => {
+      event.stopPropagation();
+      setOpen(panel.classList.contains('hidden'));
+    });
+    close?.addEventListener('click',() => setOpen(false));
+    document.addEventListener('click',event => {
+      if (!panel.classList.contains('flex')) return;
+      if (!panel.contains(event.target) && !toggle.contains(event.target)) setOpen(false);
+    });
   }
 
   function syncStickyHeights() {
@@ -1749,8 +1726,7 @@
 
   /* EVENTS */
   el('mphDesktopViewToggle')?.addEventListener('click',switchView);
-  el('mphMobileViewToggle')?.addEventListener('click',switchView);
-  el('mphFilterToggle')?.addEventListener('click',toggleFilter);
+  bindRecoveryPhNavbarFilter();
   el('mphInfoButton')?.addEventListener('click',()=>state.infoOpen?closeInfo(true):openInfo());
   el('mphInfoClose')?.addEventListener('click',()=>closeInfo(true));
   el('mphInfoBackdrop')?.addEventListener('click',()=>closeInfo(false));
@@ -1785,12 +1761,6 @@
   });
 
   window.addEventListener('resize',debounce(()=>{
-    if(window.innerWidth>=768) {
-      state.filterOpen=false;
-      el('mphFilterPanel')?.classList.remove('open');
-      el('mphFilterToggle')?.classList.remove('open');
-      el('mphFilterToggle')?.setAttribute('aria-expanded','false');
-    }
     syncStickyHeights();
   },100));
 

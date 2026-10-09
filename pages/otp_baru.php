@@ -159,7 +159,6 @@
   @media (min-width:1280px) {
     .otp-card { display:flex !important; flex-direction: row; align-items:center !important; gap:16px !important; padding:12px 16px !important; }
     .otp-title-wrap { flex: 0 0 auto; width: auto; }
-    #filterWrapperMain { width:100% !important; margin:0 !important; padding:0 !important; border:0 !important; flex: 1 1 auto; display: flex; justify-content: flex-end; min-w:0; }
   }
 
   @media (max-width:640px) {
@@ -440,7 +439,6 @@
     .otp-filter-kpp { grid-column:span 1; }
     .otp-filter-export { grid-column:span 1; }
     .otp-filter-export .lbl { display:block !important; visibility:hidden; }
-    #filterWrapperMain { padding-top:9px; }
   }
 
   @media (max-width:900px) {
@@ -465,7 +463,6 @@
     .otp-card { padding:7px !important; gap:6px !important; border-radius:9px; }
     .otp-title-wrap { padding:0 !important; }
     .otp-title { max-width:160px; }
-    #filterWrapperMain { margin-top:5px !important; padding-top:7px !important; }
 
     .otp-filter-grid {
       display:grid !important;
@@ -866,6 +863,12 @@
     #tabelRekapRR thead tr.sticky-total th { top:64px !important; }
   }
 
+  /* Header actions selalu berada di sisi kanan kartu, mengikuti toolbar report lain. */
+  @media (min-width:768px) {
+    .otp-card { flex-direction:row !important; align-items:center !important; }
+    .otp-title-wrap { width:auto !important; }
+  }
+
   @media (min-width:768px) and (max-width:1279px) {
     #tabelRekapRR { min-width:1246px !important; }
     #tabelRekapRR .otp-report-cell,
@@ -930,22 +933,48 @@
     display:inline-flex !important;
     align-items:center;
     justify-content:center;
-    gap:6px;
-    border-color:#bfdbfe !important;
-    background:#eff6ff !important;
-    color:#1d4ed8 !important;
+    width:34px;
+    height:34px;
+    padding:0 !important;
+    border:1px solid #dbe3ee !important;
+    border-radius:8px !important;
+    background:#2563eb !important;
+    color:#fff !important;
     font-weight:850 !important;
     cursor:pointer;
-    box-shadow:0 1px 2px rgba(37,99,235,.06);
+    box-shadow:0 5px 12px rgba(37,99,235,.16);
   }
-  .otp-view-switch:hover { background:#dbeafe !important; border-color:#93c5fd !important; }
+  .otp-view-switch:hover { background:#1d4ed8 !important; border-color:#1d4ed8 !important; transform:translateY(-1px); }
   .otp-view-switch.is-collection {
-    border-color:#c7d2fe !important;
-    background:#eef2ff !important;
-    color:#4338ca !important;
+    border-color:#dbe3ee !important;
+    background:#2563eb !important;
+    color:#fff !important;
   }
-  .otp-view-switch-icon { display:inline-flex; width:14px; height:14px; flex:0 0 auto; }
-  .otp-view-switch-icon svg { width:14px; height:14px; }
+  .otp-view-switch-icon { display:inline-flex; width:15px; height:15px; flex:0 0 auto; }
+  .otp-view-switch-icon svg { width:15px; height:15px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+  .otp-kpp-toggle {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:5px;
+    min-height:32px;
+    padding:0 8px;
+    border:1px solid #dbe3ee;
+    border-radius:8px;
+    background:#f8fafc;
+    color:#334155;
+    font-size:10px;
+    font-weight:850;
+    line-height:1;
+    white-space:nowrap;
+    cursor:pointer;
+    user-select:none;
+  }
+  .otp-kpp-toggle:hover { border-color:#93c5fd; background:#eff6ff; color:#1d4ed8; }
+  .otp-kpp-toggle input { width:14px; height:14px; margin:0; accent-color:#2563eb; cursor:pointer; }
+  :root[data-monbis-theme="dark"] .otp-kpp-toggle { border-color:#475569; background:#111827; color:#cbd5e1; }
+  :root[data-monbis-theme="dark"] .otp-kpp-toggle:hover { border-color:#60a5fa; background:#172554; color:#bfdbfe; }
 
   .otp-info-root { position:relative; display:inline-flex; align-items:center; z-index:200000 !important; }
   .otp-info-button {
@@ -1389,7 +1418,6 @@
   .otp-info-button { width: 21px !important; height: 21px !important; border-color: #bfdbfe !important; background: #eff6ff !important; color: #2563eb !important; }
   .otp-info-button:hover { transform: translateY(-1px); background: #dbeafe !important; }
 
-  #filterWrapperMain { min-width: 0; }
   .otp-filter-grid { display: grid !important; grid-template-columns: 42px 116px 116px minmax(150px,190px) minmax(115px,145px) 104px minmax(130px,165px) 46px 42px; gap: 7px !important; justify-content: end; align-items: end; }
   .otp-filter-grid > * { width: auto !important; max-width: none !important; min-width: 0 !important; margin: 0 !important; }
   .otp-filter-grid > .w-px { display: none !important; }
@@ -1490,7 +1518,6 @@
     #otpPage { --otp-page-offset: 80px; }
     .otp-card { display:flex !important; flex-direction:row !important; align-items:center !important; gap:14px !important; }
     .otp-title-wrap { flex:0 0 auto; width:auto !important; }
-    #filterWrapperMain { flex:1 1 auto; width:auto !important; border:0 !important; margin:0 !important; padding:0 !important; }
     #otpMainScroll { overflow-x:hidden !important; }
     #tabelRekapRR { width:100% !important; min-width:0 !important; table-layout:fixed !important; }
   }
@@ -1513,7 +1540,14 @@
     :root { --otp-page-offset: 54px; }
     #otpPage { padding:5px !important; gap:5px !important; min-height:360px !important; }
     .otp-card { min-height:0; padding:8px !important; border-radius:12px !important; gap:6px !important; }
-    .otp-title-wrap { padding:0 !important; }
+    .otp-title-wrap { padding:0 78px 0 0 !important; }
+    .otp-mobile-head-actions {
+      position:absolute;
+      top:8px;
+      right:8px;
+      margin-left:0 !important;
+      z-index:2;
+    }
     .otp-title-wrap h1 { font-size:13px !important; gap:7px !important; }
     .otp-title-wrap h1 > span:first-child { width:30px; height:30px; border-radius:8px !important; }
     .otp-title-wrap h1 > span:first-child svg { width:15px !important; height:15px !important; }
@@ -1521,7 +1555,6 @@
     .otp-page-subtitle { margin:2px 0 0 37px; max-width:180px; font-size:7px; }
     .otp-filter-toggle-main { height:30px !important; padding:0 8px !important; border-radius:8px !important; }
 
-    #filterWrapperMain { margin-top:5px !important; padding-top:7px !important; }
     .otp-filter-grid { grid-template-columns:repeat(12,minmax(0,1fr)) !important; gap:5px !important; }
     .otp-filter-rekap { grid-column:span 2; }
     .otp-filter-closing,.otp-filter-harian { grid-column:span 5 !important; }
@@ -1669,6 +1702,14 @@
       border-radius:8px !important;
     }
 
+    .otp-kpp-toggle {
+      min-height:30px;
+      padding:0 6px;
+      border-radius:8px;
+      font-size:9px;
+    }
+    .otp-kpp-toggle input { width:13px; height:13px; }
+
     .otp-filter-toggle-main {
       width:31px !important;
       min-width:31px !important;
@@ -1681,7 +1722,7 @@
     /* Tombol pergantian laporan dipindah ke kiri tombol Filter. */
     .otp-filter-rekap { display:none !important; }
 
-    /* Tabel utama tetap dipakai pada mobile; kartu mobile dinonaktifkan. */
+    /* Pada mobile laporan diringkas menjadi kartu agar tidak memaksa scroll horizontal. */
     #otpMobileMain { display:none !important; }
     #otpMainScroll {
       display:block !important;
@@ -2072,11 +2113,272 @@
     .otp-ccl-access-btn { width:100%; }
   }
 
+  /* ========================================================
+     OTP FINAL POLISH - CLEAN PALETTE, THEME, AND RESPONSIVE
+     ======================================================== */
+  :root {
+    --otp-ui-bg: #f8fafc;
+    --otp-ui-surface: #ffffff;
+    --otp-ui-surface-soft: #f8fafc;
+    --otp-ui-surface-muted: #f1f5f9;
+    --otp-ui-text: #1e293b;
+    --otp-ui-muted: #64748b;
+    --otp-ui-border: #dbe3ee;
+    --otp-ui-line: #e2e8f0;
+    --otp-ui-accent: #2563eb;
+    --otp-ui-scroll: #94a3b8;
+    --otp-ui-scroll-track: #eef2f7;
+  }
+
+  :root[data-monbis-theme="dark"] {
+    --otp-ui-bg: #0f172a;
+    --otp-ui-surface: #111827;
+    --otp-ui-surface-soft: #0f172a;
+    --otp-ui-surface-muted: #1e293b;
+    --otp-ui-text: #e2e8f0;
+    --otp-ui-muted: #94a3b8;
+    --otp-ui-border: #334155;
+    --otp-ui-line: #263449;
+    --otp-ui-accent: #60a5fa;
+    --otp-ui-scroll: #64748b;
+    --otp-ui-scroll-track: #111827;
+  }
+
+  #otpPage,
+  #otpPage button,
+  #otpPage input,
+  #otpPage select,
+  #modalDetailRR,
+  #modalDetailRR button,
+  #modalDetailRR input,
+  #modalDetailRR select,
+  #modalAreaRekapRR,
+  #modalAreaRekapRR button,
+  #modalAreaRekapRR input,
+  #modalAreaRekapRR select {
+    font-family: Roboto, Arial, system-ui, sans-serif !important;
+  }
+
+  #otpPage {
+    color: var(--otp-ui-text) !important;
+    background: var(--otp-ui-bg) !important;
+    color-scheme: light;
+  }
+
+  :root[data-monbis-theme="dark"] #otpPage,
+  :root[data-monbis-theme="dark"] #modalDetailRR,
+  :root[data-monbis-theme="dark"] #modalAreaRekapRR { color-scheme: dark; }
+
+  #otpPage,
+  #otpPage *,
+  #modalDetailRR,
+  #modalDetailRR *,
+  #modalAreaRekapRR,
+  #modalAreaRekapRR * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--otp-ui-scroll) var(--otp-ui-scroll-track);
+  }
+
+  #otpPage ::-webkit-scrollbar,
+  #modalDetailRR ::-webkit-scrollbar,
+  #modalAreaRekapRR ::-webkit-scrollbar { width: 5px; height: 5px; }
+  #otpPage ::-webkit-scrollbar-track,
+  #modalDetailRR ::-webkit-scrollbar-track,
+  #modalAreaRekapRR ::-webkit-scrollbar-track { background: var(--otp-ui-scroll-track); border-radius: 999px; }
+  #otpPage ::-webkit-scrollbar-thumb,
+  #modalDetailRR ::-webkit-scrollbar-thumb,
+  #modalAreaRekapRR ::-webkit-scrollbar-thumb { background: var(--otp-ui-scroll); border-radius: 999px; }
+  #otpPage ::-webkit-scrollbar-thumb:hover,
+  #modalDetailRR ::-webkit-scrollbar-thumb:hover,
+  #modalAreaRekapRR ::-webkit-scrollbar-thumb:hover { background: var(--otp-ui-muted); }
+  #otpPage ::-webkit-scrollbar-button,
+  #modalDetailRR ::-webkit-scrollbar-button,
+  #modalAreaRekapRR ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+
+  #otpPage .otp-card,
+  #otpPage #otpMainPanel,
+  #otpPage .otp-template-summary-card,
+  #otpPage .otp-mobile-total,
+  #otpPage .otp-mobile-day-card,
+  #otpPage .otp-mobile-collection-card,
+  #otpPage .otp-mobile-item,
+  #modalDetailRR > .relative,
+  #modalAreaRekapRR > .relative {
+    border-color: var(--otp-ui-border) !important;
+    background: var(--otp-ui-surface) !important;
+    color: var(--otp-ui-text) !important;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .06) !important;
+  }
+
+  #otpPage .otp-title-wrap h1,
+  #otpPage .otp-mobile-card-title,
+  #otpPage .otp-template-summary-card b,
+  #modalDetailRR h2,
+  #modalDetailRR h3,
+  #modalAreaRekapRR h2,
+  #modalAreaRekapRR h3 { color: var(--otp-ui-text) !important; }
+
+  #otpPage .otp-page-subtitle,
+  #otpPage .otp-template-summary-card span,
+  #otpPage .otp-template-summary-card small,
+  #otpPage .otp-mobile-card-sub,
+  #otpPage .otp-mobile-item span,
+  #otpPage .otp-mobile-item small,
+  #modalDetailRR .text-slate-400,
+  #modalDetailRR .text-slate-500,
+  #modalAreaRekapRR .text-slate-400,
+  #modalAreaRekapRR .text-slate-500 { color: var(--otp-ui-muted) !important; }
+
+  #otpPage .otp-template-summary-card::before { background: #94a3b8 !important; }
+  #otpPage .otp-template-summary-card.tone-blue::before,
+  #otpPage .otp-template-summary-card.tone-cyan::before,
+  #otpPage .otp-template-summary-card.tone-red::before,
+  #otpPage .otp-template-summary-card.tone-green::before,
+  #otpPage .otp-template-summary-card.tone-purple::before { background: #64748b !important; }
+  #otpPage .otp-template-summary-card.is-critical,
+  #otpPage .otp-template-summary-card.is-warning,
+  #otpPage .otp-template-summary-card.is-good { border-color: var(--otp-ui-border) !important; background: var(--otp-ui-surface) !important; }
+
+  /* Keep the report table neutral; status remains readable through labels and values. */
+  #tabelRekapRR,
+  #tableExportRR { border-color: var(--otp-ui-line) !important; color: var(--otp-ui-text) !important; }
+  #tabelRekapRR thead th,
+  #tableExportRR thead th,
+  #tabelRekapRR .otp-excel-head,
+  #tabelRekapRR .otp-excel-sub {
+    background: var(--otp-ui-surface-muted) !important;
+    color: var(--otp-ui-text) !important;
+    border-color: var(--otp-ui-line) !important;
+  }
+  #tabelRekapRR tbody td,
+  #tabelRekapRR tbody th,
+  #tableExportRR tbody td,
+  #tableExportRR tbody th {
+    background: var(--otp-ui-surface) !important;
+    color: var(--otp-ui-text) !important;
+    border-color: var(--otp-ui-line) !important;
+  }
+  #tabelRekapRR tbody tr:hover td,
+  #tableExportRR tbody tr:hover td { background: var(--otp-ui-surface-soft) !important; }
+  #rowTotalRRAtas th,
+  #rowTotalRRAtas td,
+  #tabelRekapRR .otp-total-main-row th,
+  #tabelRekapRR .otp-total-main-row td {
+    background: var(--otp-ui-surface-muted) !important;
+    color: var(--otp-ui-text) !important;
+    border-color: var(--otp-ui-border) !important;
+  }
+  #tabelRekapRR [class*="text-blue-"],
+  #tabelRekapRR [class*="text-cyan-"],
+  #tabelRekapRR [class*="text-emerald-"],
+  #tabelRekapRR [class*="text-green-"],
+  #tabelRekapRR [class*="text-amber-"],
+  #tabelRekapRR [class*="text-orange-"],
+  #tabelRekapRR [class*="text-red-"],
+  #tabelRekapRR [class*="text-rose-"],
+  #tabelRekapRR [class*="text-purple-"] { color: var(--otp-ui-text) !important; }
+  #tabelRekapRR [class*="bg-blue-"],
+  #tabelRekapRR [class*="bg-cyan-"],
+  #tabelRekapRR [class*="bg-emerald-"],
+  #tabelRekapRR [class*="bg-green-"],
+  #tabelRekapRR [class*="bg-amber-"],
+  #tabelRekapRR [class*="bg-orange-"],
+  #tabelRekapRR [class*="bg-red-"],
+  #tabelRekapRR [class*="bg-rose-"],
+  #tabelRekapRR [class*="bg-purple-"] { background: transparent !important; }
+
+  #tabelRekapRR .otp-report-tgl,
+  #tabelRekapRR .otp-head-tgl,
+  #tabelRekapRR .collection-area-col,
+  #tabelRekapRR .collection-code-col {
+    background: var(--otp-ui-surface) !important;
+    color: var(--otp-ui-text) !important;
+  }
+  #tabelRekapRR thead .otp-report-tgl,
+  #tabelRekapRR thead .otp-head-tgl,
+  #tabelRekapRR thead .collection-area-col,
+  #tabelRekapRR thead .collection-code-col { background: var(--otp-ui-surface-muted) !important; }
+
+  #otpPage .otp-pct-badge,
+  #otpPage .otp-pct-green,
+  #otpPage .otp-pct-yellow,
+  #otpPage .otp-pct-red,
+  #otpPage .otp-pct-neutral {
+    border: 1px solid var(--otp-ui-border) !important;
+    background: var(--otp-ui-surface-muted) !important;
+    color: var(--otp-ui-text) !important;
+  }
+  #otpPage .otp-mobile-item.item-red,
+  #otpPage .otp-mobile-item.item-green,
+  #otpPage .otp-mobile-item.item-amber { border-color: var(--otp-ui-border) !important; background: var(--otp-ui-surface-soft) !important; }
+  #otpPage .otp-mobile-item.item-red b,
+  #otpPage .otp-mobile-item.item-green b,
+  #otpPage .otp-mobile-item.item-amber b { color: var(--otp-ui-text) !important; }
+
+  #otpPage .inp,
+  #modalDetailRR input,
+  #modalDetailRR select,
+  #modalAreaRekapRR input,
+  #modalAreaRekapRR select {
+    border-color: var(--otp-ui-border) !important;
+    background: var(--otp-ui-surface) !important;
+    color: var(--otp-ui-text) !important;
+  }
+  #otpPage .inp:disabled { background: var(--otp-ui-surface-muted) !important; color: var(--otp-ui-muted) !important; }
+
+  #modalDetailRR .bg-white,
+  #modalAreaRekapRR .bg-white { background: var(--otp-ui-surface) !important; }
+  #modalDetailRR .bg-slate-50,
+  #modalAreaRekapRR .bg-slate-50 { background: var(--otp-ui-surface-soft) !important; }
+  #modalDetailRR td,
+  #modalDetailRR th,
+  #modalAreaRekapRR td,
+  #modalAreaRekapRR th { border-color: var(--otp-ui-line) !important; color: var(--otp-ui-text) !important; }
+  #tableExportRR thead th { background: var(--otp-ui-surface-muted) !important; color: var(--otp-ui-text) !important; }
+
+  :root[data-monbis-theme="dark"] #otpPage .otp-info-button,
+  :root[data-monbis-theme="dark"] #otpPage .otp-kpp-toggle,
+  :root[data-monbis-theme="dark"] #otpPage .otp-view-switch,
+  :root[data-monbis-theme="dark"] #otpPage .btn-icon,
+  :root[data-monbis-theme="dark"] #modalDetailRR button,
+  :root[data-monbis-theme="dark"] #modalAreaRekapRR button { border-color: var(--otp-ui-border) !important; }
+  :root[data-monbis-theme="dark"] #otpPage .otp-help-panel,
+  :root[data-monbis-theme="dark"] .otp-ccl-access-card { background: var(--otp-ui-surface) !important; color: var(--otp-ui-text) !important; border-color: var(--otp-ui-border) !important; }
+  :root[data-monbis-theme="dark"] #otpPage .otp-help-head,
+  :root[data-monbis-theme="dark"] .otp-ccl-access-head { background: var(--otp-ui-surface-muted) !important; border-color: var(--otp-ui-line) !important; }
+
+  @media (max-width: 1279px) {
+    #otpPage { height: calc(var(--otp-vh) - 72px) !important; min-height: 0 !important; }
+    #otpMainPanel { min-height: 0 !important; }
+    #otpMainScroll { overflow-x: auto !important; overflow-y: auto !important; }
+  }
+
+  @media (max-width: 767px) {
+    #otpPage { height: calc(var(--otp-vh) - 54px) !important; min-height: 320px !important; padding: 5px !important; gap: 5px !important; }
+    #otpPage .otp-card { min-height: 48px !important; padding: 7px !important; }
+    #otpPage .otp-mobile-head-actions { max-width: 58%; gap: 4px !important; }
+    #otpPage .otp-kpp-toggle { max-width: 58px; overflow: hidden; text-overflow: ellipsis; }
+    #otpPage #otpMainPanel { min-height: 0 !important; border-radius: 10px !important; }
+    #otpPage #otpMainScroll { overflow: auto !important; }
+    #tabelRekapRR { min-width: 870px !important; width: 870px !important; }
+    #tableExportRR { min-width: 1120px !important; }
+    #modalDetailRR > .relative,
+    #modalAreaRekapRR > .relative { width: 100% !important; max-width: 100% !important; max-height: 94dvh !important; border-radius: 16px 16px 0 0 !important; }
+    #modalDetailRR .flex-1.overflow-auto,
+    #modalAreaRekapRR .flex-1.overflow-auto { overflow: auto !important; -webkit-overflow-scrolling: touch; }
+  }
+
+  @media (max-width: 374px) {
+    #otpPage .otp-title { max-width: 112px !important; }
+    #otpPage .otp-mobile-head-actions { max-width: 61%; }
+    #tabelRekapRR { min-width: 820px !important; width: 820px !important; }
+  }
+
 </style>
 
 <div id="otpPage" class="otp-shell max-w-[1920px] w-full mx-auto flex flex-col overflow-hidden">
 <div class="otp-card relative z-[60] flex-none w-full bg-white p-3 rounded-lg border border-slate-200 shadow-sm flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 shrink-0">
-    <div class="otp-title-wrap flex items-center justify-between w-full xl:w-auto shrink-0 px-1">
+    <div class="otp-title-wrap flex items-center w-full xl:w-auto shrink-0 px-1">
         <div class="flex flex-col gap-0.5 md:gap-1 min-w-0 flex-1">
           <h1 class="text-base md:text-lg font-bold flex items-center gap-2 text-slate-800 whitespace-nowrap">
             <span class="p-1.5 bg-blue-600 text-white rounded shrink-0">
@@ -2170,82 +2472,24 @@
           </h1>
         </div>
 
-        <div class="otp-mobile-head-actions ml-auto shrink-0">
+    </div>
+
+    <div class="otp-mobile-head-actions flex items-center gap-1 ml-auto shrink-0">
+            <label class="otp-kpp-toggle" for="chk_127" title="Sertakan KPP 127">
+                <input type="checkbox" id="chk_127" onchange="fetchRekapRR()">
+                <span>KPP-In</span>
+            </label>
+            <button id="btnMainViewRR" type="button" onclick="toggleMainOtpViewRR()" aria-pressed="false" class="otp-view-switch hidden xl:inline-flex" title="Buka Rekap CCL" aria-label="Buka Rekap CCL">
+                <span id="mainViewIconRR" class="otp-view-switch-icon" aria-hidden="true"></span>
+                <span id="mainViewLabelRR" class="sr-only">Rekap</span>
+            </button>
             <button id="btnMainViewRRMobile" type="button" onclick="toggleMainOtpViewRR()" aria-pressed="false" class="otp-view-switch otp-mobile-view-switch" title="Buka Rekap CCL" aria-label="Buka Rekap CCL">
                 <span id="mainViewIconRRMobile" class="otp-view-switch-icon" aria-hidden="true"></span>
                 <span class="sr-only">Ganti tampilan OTP dan Collection</span>
             </button>
-            <button type="button" onclick="toggleMainFilter()" class="otp-filter-toggle-main xl:hidden h-[32px] px-3 bg-white border border-slate-200 text-slate-700 rounded flex items-center gap-1.5 shadow-sm transition font-bold text-xs whitespace-nowrap shrink-0 hover:bg-slate-50">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-                <span class="hidden sm:inline">Filter</span>
+            <button type="button" onclick="exportExcelRekapRR()" class="btn-icon h-[32px] w-[34px] bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-sm shrink-0 flex items-center justify-center" title="Download Excel" aria-label="Download Excel">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 20h14"></path></svg>
             </button>
-        </div>
-    </div>
-
-    <div id="filterWrapperMain" class="filter-transition w-full xl:w-auto xl:flex-1 border-t xl:border-none pt-3 xl:pt-0 mt-2 xl:mt-0">
-        <form id="formFilterRR" class="w-full flex-1 min-w-0" onsubmit="event.preventDefault(); fetchRekapRR();">
-            <div class="otp-filter-grid flex flex-wrap xl:flex-nowrap items-end gap-2 w-full justify-end">
-                <div class="field otp-filter-rekap shrink-0 w-[42px]">
-                    <!-- <label class="lbl">TAMPILAN</label> -->
-                    <button id="btnMainViewRR" type="button" onclick="toggleMainOtpViewRR()" aria-pressed="false" class="otp-view-switch inp w-full">
-                        <span id="mainViewIconRR" class="otp-view-switch-icon" aria-hidden="true"></span>
-                        <span id="mainViewLabelRR" class="sr-only">Rekap</span>
-                    </button>
-                </div>
-                
-                <div class="field otp-filter-closing shrink-0 w-[calc(50%-4px)] sm:w-[115px]">
-                    <label class="lbl">CLOSING (M-1)</label>
-                    <input type="date" id="closing_date" onchange="fetchRekapRR()" class="inp w-full" required onclick="try{this.showPicker()}catch(e){}">
-                </div>
-                <div class="field otp-filter-harian shrink-0 w-[calc(50%-4px)] sm:w-[115px]">
-                    <label class="lbl">ACTUAL (HARIAN)</label>
-                    <input type="date" id="harian_date" onchange="fetchRekapRR()" class="inp w-full" required onclick="try{this.showPicker()}catch(e){}">
-                </div>
-                
-                <div class="w-px h-6 bg-slate-200 shrink-0 mx-0.5 hidden xl:block mb-1.5"></div>
-                
-                <div class="field otp-filter-cabang shrink-0 w-[calc(50%-4px)] sm:flex-1 sm:min-w-[140px] xl:max-w-[180px]">
-                    <label class="lbl">CABANG</label>
-                    <select id="opt_kantor" class="inp w-full truncate" onchange="handleCabangChangeOtp()">
-                        <option value="">Loading...</option>
-                    </select>
-                </div>
-                <div class="field otp-filter-sub shrink-0 w-[calc(50%-4px)] sm:flex-1 sm:min-w-[120px] xl:max-w-[140px]">
-                    <label id="lbl_sub_otp" class="lbl">KORWIL</label>
-                    <select id="opt_sub_otp" class="inp w-full truncate" onchange="fetchRekapRR()">
-                        <option value="">ALL KORWIL</option>
-                    </select>
-                </div>
-                
-                <div class="field otp-filter-dpd flex-1 min-w-[70px] sm:w-[100px] sm:flex-none">
-                    <label class="lbl">DPD BUCKET</label>
-                    <select id="opt_dpd_bucket" class="inp w-full" onchange="fetchRekapRR()">
-                        <option value="all">ALL</option>
-                        <option value="dpd0">DPD 0</option>
-                        <option value="dpd1-30">DPD 1-30</option>
-                    </select>
-                </div>
-                <div class="field otp-filter-ao flex-1 min-w-[80px] sm:w-[140px] xl:max-w-[160px] sm:flex-none">
-                    <label class="lbl">AO KREDIT</label>
-                    <select id="opt_ao_otp" class="inp w-full truncate disabled:bg-slate-50 disabled:text-slate-400" onchange="fetchRekapRR()" disabled>
-                        <option value="">PILIH CABANG DULU</option>
-                    </select>
-                </div>
-                <div class="field otp-filter-kpp shrink-0 w-[44px] sm:w-[48px]">
-                    <label class="lbl text-center w-full">KPP</label>
-                    <div class="flex items-center justify-center h-[34px] px-2 bg-slate-50 border border-slate-200 rounded cursor-pointer hover:bg-slate-100 transition" onclick="document.getElementById('chk_127').click()">
-                        <input type="checkbox" id="chk_127" class="w-3.5 h-3.5 text-blue-600 bg-white border-slate-300 rounded cursor-pointer" onclick="event.stopPropagation()" onchange="fetchRekapRR()">
-                    </div>
-                </div>
-                <div class="field otp-filter-export shrink-0 w-[40px]">
-                    <label class="lbl opacity-0 hidden sm:block select-none">&nbsp;</label>
-                    <button type="button" onclick="exportExcelRekapRR()" class="btn-icon h-[34px] w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-sm shrink-0 flex items-center justify-center">
-                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline></svg>
-                    </button>
-                </div>
-                
-            </div>
-        </form>
     </div>
 </div>
 
@@ -2452,13 +2696,14 @@
       const rows = Array.isArray(rekapDataRaw) ? rekapDataRaw : [];
       const gt = rekapGtRaw;
       if (!rows.length && !gt) { alert('Tidak ada data untuk diexport.'); return; }
-      let csv = 'TGL\tTARGET M-1 BAKI DEBET\tTARGET M-1 NOA\tOTP BAKI DEBET\tOTP NOA\tDITAGIH BAKI DEBET\tDITAGIH NOA\tLUNAS BAKI DEBET\tLUNAS NOA\tLEWAT JT (%)\tOTP ANGSURAN (%)\tTOTAL ANGSURAN\tTOTAL RUN OFF\tPERSEN\n';
+      const nominalLabel = getOtpNominalLabelRR().toUpperCase();
+      let csv = `TGL\tTARGET M-1 ${nominalLabel}\tTARGET M-1 NOA\tOTP LANCAR SESUAI JT ${nominalLabel}\tOTP LANCAR SESUAI JT NOA\tOTP LANCAR LEWAT JT ${nominalLabel}\tOTP LANCAR LEWAT JT NOA\tDITAGIH ${nominalLabel}\tDITAGIH NOA\tLUNAS ${nominalLabel}\tLUNAS NOA\tLEWAT JT (%)\tOTP ANGSURAN (%)\tTOTAL ANGSURAN\tTOTAL RUN OFF\tPERSEN\n`;
       if (gt) {
-          csv += `TOTAL\t${Math.round(gt.target_os||0)}\t${gt.target_noa||0}\t${Math.round(gt.lancar_os||0)}\t${gt.lancar_noa||0}\t${Math.round(gt.macet_os||0)}\t${gt.macet_noa||0}\t${Math.round(gt.lunas_os||0)}\t${gt.lunas_noa||0}\t${Math.round(gt.angsuran_lewat||0)} (${gt.angsuran_lewat_persen||0}%)\t${Math.round(gt.angsuran_sesuai||0)} (${gt.angsuran_sesuai_persen||0}%)\t${Math.round(gt.angsuran||0)}\t${Math.round(gt.total_bayar||0)}\t${gt.persen||0}%\n`;
+          csv += `TOTAL\t${Math.round(gt.target_os||0)}\t${gt.target_noa||0}\t${Math.round(gt.lancar_sesuai_os||0)}\t${gt.lancar_sesuai_noa||0}\t${Math.round(gt.lancar_lewat_os||0)}\t${gt.lancar_lewat_noa||0}\t${Math.round(gt.macet_os||0)}\t${gt.macet_noa||0}\t${Math.round(gt.lunas_os||0)}\t${gt.lunas_noa||0}\t${Math.round(gt.angsuran_lewat||0)} (${gt.angsuran_lewat_persen||0}%)\t${Math.round(gt.angsuran_sesuai||0)} (${gt.angsuran_sesuai_persen||0}%)\t${Math.round(gt.angsuran||0)}\t${Math.round(gt.total_bayar||0)}\t${gt.persen||0}%\n`;
       }
       rows.forEach(r => {
           const p = (r.persen !== null && r.persen !== undefined) ? `${r.persen}%` : '-';
-          csv += `${r.tgl}\t${Math.round(r.target_os||0)}\t${r.target_noa||0}\t${Math.round(r.lancar_os||0)}\t${r.lancar_noa||0}\t${Math.round(r.macet_os||0)}\t${r.macet_noa||0}\t${Math.round(r.lunas_os||0)}\t${r.lunas_noa||0}\t${Math.round(r.angsuran_lewat||0)} (${r.angsuran_lewat_persen||0}%)\t${Math.round(r.angsuran_sesuai||0)} (${r.angsuran_sesuai_persen||0}%)\t${Math.round(r.angsuran||0)}\t${Math.round(r.total_bayar||0)}\t${p}\n`;
+          csv += `${r.tgl}\t${Math.round(r.target_os||0)}\t${r.target_noa||0}\t${Math.round(r.lancar_sesuai_os||0)}\t${r.lancar_sesuai_noa||0}\t${Math.round(r.lancar_lewat_os||0)}\t${r.lancar_lewat_noa||0}\t${Math.round(r.macet_os||0)}\t${r.macet_noa||0}\t${Math.round(r.lunas_os||0)}\t${r.lunas_noa||0}\t${Math.round(r.angsuran_lewat||0)} (${r.angsuran_lewat_persen||0}%)\t${Math.round(r.angsuran_sesuai||0)} (${r.angsuran_sesuai_persen||0}%)\t${Math.round(r.angsuran||0)}\t${Math.round(r.total_bayar||0)}\t${p}\n`;
       });
       const blob = new Blob([csv], { type: 'application/vnd.ms-excel;charset=utf-8' });
       const url = window.URL.createObjectURL(blob);
@@ -2637,10 +2882,12 @@
           </div>
           <div class="otp-mobile-grid">
             ${otpMobileItemRR('Target M-1', fmtShort(gt.target_os), `${fmt(gt.target_noa)} NOA`, "initModalDetail('ALL','ALL')")}
-            ${otpMobileItemRR('OTP Lancar', fmtShort(gt.lancar_os), `${fmt(gt.lancar_noa)} NOA`, "initModalDetail('ALL','LANCAR')", 'item-green')}
+            ${otpMobileItemRR('Lancar Sesuai JT', fmtShort(gt.lancar_sesuai_os), `${fmt(gt.lancar_sesuai_noa)} NOA`, "initModalDetail('ALL','LANCAR_SESUAI')", 'item-green')}
+            ${otpMobileItemRR('Lancar Lewat JT', fmtShort(gt.lancar_lewat_os), `${fmt(gt.lancar_lewat_noa)} NOA`, "initModalDetail('ALL','LANCAR_LEWAT')", 'item-red')}
             ${otpMobileItemRR('Ditagih', fmtShort(gt.macet_os), `${fmt(gt.macet_noa)} NOA`, "initModalDetail('ALL','MENUNGGAK')", 'item-red')}
             ${otpMobileItemRR('Lunas', fmtShort(gt.lunas_os), `${fmt(gt.lunas_noa)} NOA`, "initModalLunas('ALL')", 'item-green')}
-            ${otpMobileItemRR('Angsuran', fmtShort(gt.angsuran), `${fmtPct(gt.angsuran_sesuai_persen)} sesuai JT`, "initModalDetail('ALL','ANGSURAN')", 'item-amber')}
+            ${otpMobileItemRR('OTP Sesuai JT', fmtShort(gt.angsuran_sesuai), `${fmt(getDueNoaRR(gt, 'sesuai', true))} NOA`, "initModalDetail('ALL','SESUAI_TAGIH')", 'item-green')}
+            ${otpMobileItemRR('OTP Lewat JT', fmtShort(gt.angsuran_lewat), `${fmt(getDueNoaRR(gt, 'lewat', true))} NOA`, "initModalDetail('ALL','LEWAT_TAGIH')", 'item-red')}
             ${otpMobileItemRR('Total Run Off', fmtShort(gt.total_bayar), 'Realisasi kumulatif', null)}
           </div>
         </article>` : '';
@@ -2655,10 +2902,12 @@
               </div>
               <div class="otp-mobile-grid">
                 ${otpMobileItemRR('Target M-1', fmtShort(r.target_os), `${fmt(r.target_noa)} NOA`, `initModalDetail('${tgl}','ALL')`)}
-                ${otpMobileItemRR('OTP Lancar', fmtShort(r.lancar_os), `${fmt(r.lancar_noa)} NOA`, `initModalDetail('${tgl}','LANCAR')`, 'item-green')}
+                ${otpMobileItemRR('Lancar Sesuai JT', fmtShort(r.lancar_sesuai_os), `${fmt(r.lancar_sesuai_noa)} NOA`, `initModalDetail('${tgl}','LANCAR_SESUAI')`, 'item-green')}
+                ${otpMobileItemRR('Lancar Lewat JT', fmtShort(r.lancar_lewat_os), `${fmt(r.lancar_lewat_noa)} NOA`, `initModalDetail('${tgl}','LANCAR_LEWAT')`, 'item-red')}
                 ${otpMobileItemRR('Ditagih', fmtShort(r.macet_os), `${fmt(r.macet_noa)} NOA`, `initModalDetail('${tgl}','MENUNGGAK')`, 'item-red')}
                 ${otpMobileItemRR('Lunas', fmtShort(r.lunas_os), `${fmt(r.lunas_noa)} NOA`, `initModalLunas('${tgl}')`, 'item-green')}
-                ${otpMobileItemRR('Angsuran', fmtShort(r.angsuran), `${fmtPct(r.angsuran_sesuai_persen)} sesuai JT`, `initModalDetail('${tgl}','ANGSURAN')`, 'item-amber')}
+                ${otpMobileItemRR('OTP Sesuai JT', fmtShort(r.angsuran_sesuai), `${fmt(getDueNoaRR(r, 'sesuai'))} NOA`, `initModalDetail('${tgl}','SESUAI_TAGIH')`, 'item-green')}
+                ${otpMobileItemRR('OTP Lewat JT', fmtShort(r.angsuran_lewat), `${fmt(getDueNoaRR(r, 'lewat'))} NOA`, `initModalDetail('${tgl}','LEWAT_TAGIH')`, 'item-red')}
                 ${otpMobileItemRR('Total Run Off', fmtShort(r.total_bayar), `${fmtPct(r.angsuran_lewat_persen)} lewat JT`, null)}
               </div>
             </article>`;
@@ -2722,7 +2971,7 @@
   let otpMainViewMode = window.innerWidth < 768 ? 'mobile' : 'desktop';
 
   const isOtpMobile = () => window.innerWidth < 768;
-  const getMainColspanRR = () => mainOtpView === 'collection' ? 12 : (isOtpMobile() ? 10 : 14);
+  const getMainColspanRR = () => mainOtpView === 'collection' ? 12 : 11;
   const getDetailColspanRR = () => currentMode === 'NORMAL' ? 21 : 10;
 
   function renderOtpColgroupRR() {
@@ -2774,6 +3023,7 @@
               <col style="width:92px">
               <col style="width:92px">
               <col style="width:92px">
+              <col style="width:92px">
               <col style="width:100px">
               <col style="width:100px">
               <col style="width:92px">
@@ -2781,17 +3031,14 @@
               <col style="width:62px">
           `;
       } else {
-          /* Total lebar dasar desktop sekitar 1.086px agar muat di panel web tanpa scroll horizontal. */
+          /* Desktop memakai satu sel ringkas per metrik agar nominal + NOA tidak melebar. */
           cg.innerHTML = `
               <col style="width:56px">
-              <col style="width:96px">
-              <col style="width:44px">
-              <col style="width:96px">
-              <col style="width:44px">
-              <col style="width:96px">
-              <col style="width:44px">
-              <col style="width:96px">
-              <col style="width:44px">
+              <col style="width:112px">
+              <col style="width:104px">
+              <col style="width:112px">
+              <col style="width:112px">
+              <col style="width:112px">
               <col style="width:104px">
               <col style="width:104px">
               <col style="width:96px">
@@ -2808,6 +3055,12 @@
               <small class="otp-mobile-metric-noa">${fmt(noa)} NOA</small>
           </a>
       `;
+  }
+
+  function compactMetricRR(value, noa, action, tone = '') {
+      const tag = action ? 'button' : 'span';
+      const attrs = action ? ` type="button" onclick="${action}"` : '';
+      return `<${tag}${attrs} class="otp-mini-detail ${tone}"><span>${fmt(value)}</span><small>${fmt(noa)} NOA</small></${tag}>`;
   }
 
   const getSortIcon = (col, currentCol, asc) => {
@@ -2936,9 +3189,7 @@
       const title = document.getElementById('otpTitle');
       const bucket = getBucketLabel(document.getElementById('opt_dpd_bucket')?.value || 'all');
       const buttonLabel = isCollection ? 'Kembali ke tampilan OTP' : 'Buka Rekap CCL';
-      const iconHtml = isCollection
-          ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18"></path><path d="m9 18-6-6 6-6"></path></svg>`
-          : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"></path><path d="M12 19V5"></path><path d="M20 19v-7"></path><path d="M3 19h18"></path></svg>`;
+      const iconHtml = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10M7 17h10M5 7l2-2 2 2M19 17l-2 2-2-2"></path></svg>`;
 
       ['btnMainViewRR', 'btnMainViewRRMobile'].forEach(id => {
           const btn = document.getElementById(id);
@@ -3005,6 +3256,8 @@
       const map = {
           ALL: 'Semua',
           LANCAR: 'OTP Lancar',
+          LANCAR_SESUAI: 'OTP Lancar Sesuai Tgl Jatuh Tempo',
+          LANCAR_LEWAT: 'OTP Lancar Lewat Tgl Jatuh Tempo',
           MENUNGGAK: 'Ditagih',
           ANGSURAN: 'Angsuran',
           TOTAL_BAYAR: 'Total Bayar',
@@ -3013,6 +3266,15 @@
       };
       return map[String(status || '').toUpperCase()] || status || '-';
   };
+
+  function getOtpNominalRR() {
+      const selected = document.getElementById('opt_nominal_otp')?.value;
+      return selected === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+  }
+
+  function getOtpNominalLabelRR() {
+      return getOtpNominalRR() === 'baki_debet' ? 'Baki Debet' : 'Saldo Bank';
+  }
 
   const fmtShort = n => {
       const v = Math.abs(Number(n || 0));
@@ -3050,7 +3312,7 @@
       }, 30);
   }
 
-  let mainFilterOpen = window.innerWidth >= 1280;
+  let mainFilterOpen = false;
 
   function toggleMainFilter() {
       mainFilterOpen = !mainFilterOpen;
@@ -3058,14 +3320,32 @@
   }
 
   function applyFilterState() {
-      const el = document.getElementById('filterWrapperMain');
-      if(mainFilterOpen) {
-          el.classList.remove('filter-collapsed');
-          el.classList.add('filter-expanded');
-      } else {
-          el.classList.remove('filter-expanded');
-          el.classList.add('filter-collapsed');
-      }
+      const el = document.getElementById('otpNavbarFilterPanel');
+      const toggle = document.getElementById('otpNavbarFilterToggle');
+      if (!el) return;
+      el.classList.toggle('hidden', !mainFilterOpen);
+      el.classList.toggle('flex', mainFilterOpen);
+      toggle?.classList.toggle('is-active', mainFilterOpen);
+      toggle?.setAttribute('aria-expanded', String(mainFilterOpen));
+  }
+
+  function bindOtpNavbarFilter() {
+      const panel = document.getElementById('otpNavbarFilterPanel');
+      const toggle = document.getElementById('otpNavbarFilterToggle');
+      const close = document.getElementById('otpNavbarFilterClose');
+      if (!panel || !toggle || toggle.dataset.bound === '1') return;
+      toggle.dataset.bound = '1';
+      toggle.addEventListener('click', toggleMainFilter);
+      close?.addEventListener('click', () => {
+          mainFilterOpen = false;
+          applyFilterState();
+      });
+      document.addEventListener('click', event => {
+          if (mainFilterOpen && !panel.contains(event.target) && !toggle.contains(event.target)) {
+              mainFilterOpen = false;
+              applyFilterState();
+          }
+      });
   }
 
   function mountOtpHelpPortalRR() {
@@ -3144,18 +3424,25 @@
   window.addEventListener('DOMContentLoaded', async () => {
     mountOtpHelpPortalRR();
     syncOtpViewportRR();
-    mainFilterOpen = window.innerWidth >= 1280;
+    mainFilterOpen = false;
+    bindOtpNavbarFilter();
     mainOtpView = 'otp';
     applyFilterState();
     syncMainViewButtonRR();
+
+    // OTP selalu mulai dari basis Saldo Bank; Baki Debet tetap tersedia
+    // sebagai pilihan manual pada filter navbar.
+    const nominalOtp = document.getElementById('opt_nominal_otp');
+    if (nominalOtp) nominalOtp.value = 'saldo_bank';
 
     const user = (window.getUser && window.getUser()) || null;
     let uKode = (user && user.kode) ? String(user.kode).padStart(3, '0') : '000';
     if(uKode === '099') uKode = '000';
     
-    await populateKantor(uKode);
-
-    const d = await getLastHarianData(); 
+    const [, d] = await Promise.all([
+        populateKantor(uKode),
+        getLastHarianData()
+    ]);
     if(d) {
         document.getElementById('closing_date').value = d.last_closing;
         document.getElementById('harian_date').value  = d.last_created;
@@ -3173,11 +3460,6 @@
       syncOtpViewportRR();
       clearTimeout(window.__otpResizeTimer);
       window.__otpResizeTimer = setTimeout(() => {
-          if(window.innerWidth >= 1280 && !mainFilterOpen) {
-              mainFilterOpen = true;
-              applyFilterState();
-          }
-
           const nextMode = isOtpMobile() ? 'mobile' : 'desktop';
           if (nextMode !== otpMainViewMode) {
               otpMainViewMode = nextMode;
@@ -3326,7 +3608,7 @@
                   </div>
                   <div class="otp-due-meta">
                       <span>${fmt(noa)} NOA</span>
-                      <span>Baki Debet ${fmtShort(baki)}</span>
+                      <span>${getOtpNominalLabelRR()} ${fmtShort(baki)}</span>
                   </div>
               </button>
           `;
@@ -3399,6 +3681,14 @@
           }
       }
       return null;
+  }
+
+  function getDueTotalNoaRR(source, isGrandTotal = false) {
+      const sesuai = getDueNoaRR(source, 'sesuai', isGrandTotal);
+      const lewat = getDueNoaRR(source, 'lewat', isGrandTotal);
+      const tanpaTanggal = isGrandTotal ? Number(dueSummaryRaw?.tanpa_tanggal?.noa || 0) : 0;
+      const values = [sesuai, lewat, tanpaTanggal].filter(value => value !== null && value !== undefined && Number.isFinite(Number(value)));
+      return values.length ? values.reduce((total, value) => total + Number(value), 0) : null;
   }
 
   function renderDueMetricRR(amount, percent, noa, action, tone = '') {
@@ -3475,16 +3765,18 @@
                     <div class="flex items-center justify-center">TGL ${getSortIcon('tgl', sortMainCol, sortMainAsc)}</div>
                 </th>
                 <th rowspan="2" class="otp-excel-head otp-group-target" onclick="sortMainRR('target_os', 'number')">TARGET M-1</th>
-                <th rowspan="2" class="otp-excel-head otp-group-otp" onclick="sortMainRR('lancar_os', 'number')">OTP</th>
+                <th colspan="2" class="otp-excel-head otp-group-otp">OTP LANCAR</th>
                 <th rowspan="2" class="otp-excel-head otp-group-collect" onclick="sortMainRR('macet_os', 'number')">DITAGIH</th>
                 <th rowspan="2" class="otp-excel-head otp-group-paid" onclick="sortMainRR('lunas_os', 'number')">LUNAS</th>
-                <th colspan="3" class="otp-excel-head otp-group-installment">ANGSURAN</th>
+                <th colspan="3" class="otp-excel-head otp-group-installment">OTP PEMBAYARAN</th>
                 <th rowspan="2" class="otp-excel-head otp-group-runoff" onclick="sortMainRR('total_bayar', 'number')">TOTAL RUN OFF</th>
                 <th rowspan="2" class="otp-excel-head otp-group-percent" onclick="sortMainRR('persen', 'number')">%</th>
               </tr>
               <tr class="rr-row-2">
-                <th class="otp-excel-sub otp-group-installment" onclick="sortMainRR('angsuran_lewat_persen', 'number')">LEWAT JT</th>
+                <th class="otp-excel-sub otp-group-otp" onclick="sortMainRR('lancar_sesuai_os', 'number')">SESUAI JT</th>
+                <th class="otp-excel-sub otp-group-otp" onclick="sortMainRR('lancar_lewat_os', 'number')">LEWAT JT</th>
                 <th class="otp-excel-sub otp-group-installment" onclick="sortMainRR('angsuran_sesuai_persen', 'number')">SESUAI JT</th>
+                <th class="otp-excel-sub otp-group-installment" onclick="sortMainRR('angsuran_lewat_persen', 'number')">LEWAT JT</th>
                 <th class="otp-excel-sub otp-group-installment" onclick="sortMainRR('angsuran', 'number')">TOTAL</th>
               </tr>
               <tr class="rr-row-tot sticky-total otp-total-main-row" id="rowTotalRRAtas"></tr>
@@ -3498,11 +3790,11 @@
             <th rowspan="2" class="otp-excel-head otp-head-tgl otp-group-date sticky left-0 z-30" onclick="sortMainRR('tgl', 'string')">
                 <div class="flex items-center justify-center">TGL ${getSortIcon('tgl', sortMainCol, sortMainAsc)}</div>
             </th>
-            <th colspan="2" class="otp-excel-head otp-group-target">TARGET M-1</th>
-            <th colspan="2" class="otp-excel-head otp-group-otp">OTP</th>
-            <th colspan="2" class="otp-excel-head otp-group-collect">DITAGIH</th>
-            <th colspan="2" class="otp-excel-head otp-group-paid">LUNAS</th>
-            <th colspan="3" class="otp-excel-head otp-group-installment">ANGSURAN</th>
+            <th rowspan="2" class="otp-excel-head otp-group-target" onclick="sortMainRR('target_os', 'number')">TARGET M-1</th>
+            <th colspan="2" class="otp-excel-head otp-group-otp">OTP LANCAR</th>
+            <th rowspan="2" class="otp-excel-head otp-group-collect" onclick="sortMainRR('macet_os', 'number')">DITAGIH</th>
+            <th rowspan="2" class="otp-excel-head otp-group-paid" onclick="sortMainRR('lunas_os', 'number')">LUNAS</th>
+            <th colspan="3" class="otp-excel-head otp-group-installment">OTP PEMBAYARAN</th>
             <th rowspan="2" class="otp-excel-head otp-group-runoff" onclick="sortMainRR('total_bayar', 'number')">
                 <div class="flex items-center justify-center">TOTAL RUN OFF ${getSortIcon('total_bayar', sortMainCol, sortMainAsc)}</div>
             </th>
@@ -3511,16 +3803,10 @@
             </th>
           </tr>
           <tr class="rr-row-2">
-            <th class="otp-excel-sub otp-group-target" onclick="sortMainRR('target_os', 'number')">BAKI DEBET</th>
-            <th class="otp-excel-sub otp-group-target" onclick="sortMainRR('target_noa', 'number')">NOA</th>
-            <th class="otp-excel-sub otp-group-otp" onclick="sortMainRR('lancar_os', 'number')">BAKI DEBET</th>
-            <th class="otp-excel-sub otp-group-otp" onclick="sortMainRR('lancar_noa', 'number')">NOA</th>
-            <th class="otp-excel-sub otp-group-collect" onclick="sortMainRR('macet_os', 'number')">BAKI DEBET</th>
-            <th class="otp-excel-sub otp-group-collect" onclick="sortMainRR('macet_noa', 'number')">NOA</th>
-            <th class="otp-excel-sub otp-group-paid" onclick="sortMainRR('lunas_os', 'number')">BAKI DEBET</th>
-            <th class="otp-excel-sub otp-group-paid" onclick="sortMainRR('lunas_noa', 'number')">NOA</th>
-            <th class="otp-excel-sub otp-group-installment" onclick="sortMainRR('angsuran_lewat_persen', 'number')">LEWAT JT</th>
-            <th class="otp-excel-sub otp-group-installment" onclick="sortMainRR('angsuran_sesuai_persen', 'number')">SESUAI JT</th>
+            <th class="otp-excel-sub otp-group-otp" onclick="sortMainRR('lancar_sesuai_os', 'number')">SESUAI JT</th>
+            <th class="otp-excel-sub otp-group-otp" onclick="sortMainRR('lancar_lewat_os', 'number')">LEWAT JT</th>
+            <th class="otp-excel-sub otp-group-installment" onclick="sortMainRR('angsuran_sesuai', 'number')">SESUAI JT</th>
+            <th class="otp-excel-sub otp-group-installment" onclick="sortMainRR('angsuran_lewat', 'number')">LEWAT JT</th>
             <th class="otp-excel-sub otp-group-installment" onclick="sortMainRR('angsuran', 'number')">TOTAL</th>
           </tr>
           <tr class="rr-row-tot sticky-total otp-total-main-row" id="rowTotalRRAtas"></tr>
@@ -3591,7 +3877,8 @@
             kode_kankas: reqKankas,
             kode_ao: aoVal,
             dpd_bucket: dpdBucket,
-            include_127: document.getElementById('chk_127').checked
+            include_127: document.getElementById('chk_127').checked,
+            hitung_berdasarkan: getOtpNominalRR()
         };
 
         const res = await apiCall(API_RR_URL, {
@@ -3704,8 +3991,11 @@
   function renderMainCollectionRR() {
       const tb = document.getElementById('bodyRR');
       if (!tb) return;
+      if (isOtpMobile()) {
+          renderCollectionMobileCardsRR();
+          return;
+      }
       renderOtpTemplateSummaryRR(mainCollectionSummary, 'collection');
-      /* Rekap CCL pada mobile juga tetap menggunakan tabel. */
       setOtpMainSurfaceRR(false);
       const renderRow = (r, isTotal = false) => {
           const rowClass = isTotal ? 'bg-blue-50 font-black text-blue-900' : 'hover:bg-slate-50';
@@ -3749,7 +4039,10 @@
       tb.innerHTML = '';
       renderOtpTemplateSummaryRR(gt, 'otp');
 
-      /* Mobile tetap memakai tabel agar struktur laporan konsisten di semua device. */
+      if (isOtpMobile()) {
+          renderOtpMobileCardsRR(rows, gt);
+          return;
+      }
       setOtpMainSurfaceRR(false);
 
       if(rows.length === 0){
@@ -3763,11 +4056,12 @@
               trTotal.innerHTML = `
                   <th class="otp-report-total otp-report-tgl sticky left-0 z-20">TOTAL</th>
                   <th class="otp-report-total">${mobileMetricRR(gt.target_os, gt.target_noa, "initModalDetail('ALL','ALL')")}</th>
-                  <th class="otp-report-total">${mobileMetricRR(gt.lancar_os, gt.lancar_noa, "initModalDetail('ALL','LANCAR')")}</th>
+                  <th class="otp-report-total">${mobileMetricRR(gt.lancar_sesuai_os, gt.lancar_sesuai_noa, "initModalDetail('ALL','LANCAR_SESUAI')", 'text-emerald-700')}</th>
+                  <th class="otp-report-total">${mobileMetricRR(gt.lancar_lewat_os, gt.lancar_lewat_noa, "initModalDetail('ALL','LANCAR_LEWAT')", 'text-rose-700')}</th>
                   <th class="otp-report-total">${mobileMetricRR(gt.macet_os, gt.macet_noa, "initModalDetail('ALL','MENUNGGAK')", 'text-rose-700')}</th>
                   <th class="otp-report-total">${mobileMetricRR(gt.lunas_os, gt.lunas_noa, "initModalLunas('ALL')", 'text-emerald-700')}</th>
-                  <th class="otp-report-total">${renderDueMetricRR(gt.angsuran_lewat, gt.angsuran_lewat_persen, getDueNoaRR(gt, 'lewat', true), "initModalDetail('ALL','LEWAT_TAGIH')", 'text-rose-700')}</th>
                   <th class="otp-report-total">${renderDueMetricRR(gt.angsuran_sesuai, gt.angsuran_sesuai_persen, getDueNoaRR(gt, 'sesuai', true), "initModalDetail('ALL','SESUAI_TAGIH')", 'text-emerald-700')}</th>
+                  <th class="otp-report-total">${renderDueMetricRR(gt.angsuran_lewat, gt.angsuran_lewat_persen, getDueNoaRR(gt, 'lewat', true), "initModalDetail('ALL','LEWAT_TAGIH')", 'text-rose-700')}</th>
                   <th class="otp-report-total text-right"><a href="javascript:void(0)" onclick="initModalDetail('ALL','ANGSURAN')">${fmt(gt.angsuran)}</a></th>
                   <th class="otp-report-total text-right">${fmt(gt.total_bayar)}</th>
                   <th class="otp-report-total">${renderOtpPctBadge(gt.persen)}</th>
@@ -3780,11 +4074,12 @@
                   <tr class="otp-report-row">
                       <td class="otp-report-cell otp-report-tgl sticky left-0 z-20">${escRR(r.tgl)}</td>
                       <td class="otp-report-cell">${mobileMetricRR(r.target_os, r.target_noa, `initModalDetail('${escRR(r.tgl)}','ALL')`)}</td>
-                      <td class="otp-report-cell">${mobileMetricRR(r.lancar_os, r.lancar_noa, `initModalDetail('${escRR(r.tgl)}','LANCAR')`)}</td>
+                      <td class="otp-report-cell">${mobileMetricRR(r.lancar_sesuai_os, r.lancar_sesuai_noa, `initModalDetail('${escRR(r.tgl)}','LANCAR_SESUAI')`, 'text-emerald-700')}</td>
+                      <td class="otp-report-cell">${mobileMetricRR(r.lancar_lewat_os, r.lancar_lewat_noa, `initModalDetail('${escRR(r.tgl)}','LANCAR_LEWAT')`, 'text-rose-700')}</td>
                       <td class="otp-report-cell">${mobileMetricRR(r.macet_os, r.macet_noa, `initModalDetail('${escRR(r.tgl)}','MENUNGGAK')`, 'text-rose-700')}</td>
                       <td class="otp-report-cell">${mobileMetricRR(r.lunas_os, r.lunas_noa, `initModalLunas('${escRR(r.tgl)}')`, 'text-emerald-700')}</td>
-                      <td class="otp-report-cell">${renderDueMetricRR(r.angsuran_lewat, r.angsuran_lewat_persen, getDueNoaRR(r, 'lewat'), `initModalDetail('${escRR(r.tgl)}','LEWAT_TAGIH')`, 'text-rose-700')}</td>
                       <td class="otp-report-cell">${renderDueMetricRR(r.angsuran_sesuai, r.angsuran_sesuai_persen, getDueNoaRR(r, 'sesuai'), `initModalDetail('${escRR(r.tgl)}','SESUAI_TAGIH')`, 'text-emerald-700')}</td>
+                      <td class="otp-report-cell">${renderDueMetricRR(r.angsuran_lewat, r.angsuran_lewat_persen, getDueNoaRR(r, 'lewat'), `initModalDetail('${escRR(r.tgl)}','LEWAT_TAGIH')`, 'text-rose-700')}</td>
                       <td class="otp-report-cell text-right"><a href="javascript:void(0)" onclick="initModalDetail('${escRR(r.tgl)}','ANGSURAN')">${fmt(r.angsuran)}</a></td>
                       <td class="otp-report-cell text-right">${fmt(r.total_bayar)}</td>
                       <td class="otp-report-cell">${pctHtml}</td>
@@ -3798,17 +4093,14 @@
       if(gt && trTotal) {
         trTotal.innerHTML = `
             <th class="otp-report-total otp-report-tgl sticky left-0 z-20">TOTAL</th>
-            <th class="otp-report-total text-right"><a href="javascript:void(0)" onclick="initModalDetail('ALL','ALL')">${fmt(gt.target_os)}</a></th>
-            <th class="otp-report-total"><a href="javascript:void(0)" onclick="initModalDetail('ALL','ALL')">${fmt(gt.target_noa)}</a></th>
-            <th class="otp-report-total text-right"><a href="javascript:void(0)" onclick="initModalDetail('ALL','LANCAR')">${fmt(gt.lancar_os)}</a></th>
-            <th class="otp-report-total"><a href="javascript:void(0)" onclick="initModalDetail('ALL','LANCAR')">${fmt(gt.lancar_noa)}</a></th>
-            <th class="otp-report-total text-right"><a href="javascript:void(0)" onclick="initModalDetail('ALL','MENUNGGAK')">${fmt(gt.macet_os)}</a></th>
-            <th class="otp-report-total"><a href="javascript:void(0)" onclick="initModalDetail('ALL','MENUNGGAK')">${fmt(gt.macet_noa)}</a></th>
-            <th class="otp-report-total text-right"><a href="javascript:void(0)" onclick="initModalLunas('ALL')">${fmt(gt.lunas_os)}</a></th>
-            <th class="otp-report-total"><a href="javascript:void(0)" onclick="initModalLunas('ALL')">${fmt(gt.lunas_noa)}</a></th>
-            <th class="otp-report-total">${renderDueMetricRR(gt.angsuran_lewat, gt.angsuran_lewat_persen, getDueNoaRR(gt, 'lewat', true), "initModalDetail('ALL','LEWAT_TAGIH')", 'text-rose-700')}</th>
+            <th class="otp-report-total">${compactMetricRR(gt.target_os, gt.target_noa, "initModalDetail('ALL','ALL')")}</th>
+            <th class="otp-report-total">${compactMetricRR(gt.lancar_sesuai_os, gt.lancar_sesuai_noa, "initModalDetail('ALL','LANCAR_SESUAI')", 'text-emerald-700')}</th>
+            <th class="otp-report-total">${compactMetricRR(gt.lancar_lewat_os, gt.lancar_lewat_noa, "initModalDetail('ALL','LANCAR_LEWAT')", 'text-rose-700')}</th>
+            <th class="otp-report-total">${compactMetricRR(gt.macet_os, gt.macet_noa, "initModalDetail('ALL','MENUNGGAK')", 'text-rose-700')}</th>
+            <th class="otp-report-total">${compactMetricRR(gt.lunas_os, gt.lunas_noa, "initModalLunas('ALL')", 'text-indigo-700')}</th>
             <th class="otp-report-total">${renderDueMetricRR(gt.angsuran_sesuai, gt.angsuran_sesuai_persen, getDueNoaRR(gt, 'sesuai', true), "initModalDetail('ALL','SESUAI_TAGIH')", 'text-emerald-700')}</th>
-            <th class="otp-report-total text-right"><a href="javascript:void(0)" onclick="initModalDetail('ALL','ANGSURAN')">${fmt(gt.angsuran)}</a></th>
+            <th class="otp-report-total">${renderDueMetricRR(gt.angsuran_lewat, gt.angsuran_lewat_persen, getDueNoaRR(gt, 'lewat', true), "initModalDetail('ALL','LEWAT_TAGIH')", 'text-rose-700')}</th>
+            <th class="otp-report-total">${compactMetricRR(gt.angsuran, getDueTotalNoaRR(gt, true), "initModalDetail('ALL','ANGSURAN')", 'text-amber-700')}</th>
             <th class="otp-report-total text-right">${fmt(gt.total_bayar)}</th>
             <th class="otp-report-total">${renderOtpPctBadge(gt.persen)}</th>
         `;
@@ -3819,17 +4111,14 @@
           return `
             <tr class="otp-report-row">
                 <td class="otp-report-cell otp-report-tgl sticky left-0 z-20">${escRR(r.tgl)}</td>
-                <td class="otp-report-cell text-right"><a href="javascript:void(0)" onclick="initModalDetail('${escRR(r.tgl)}','ALL')">${fmt(r.target_os)}</a></td>
-                <td class="otp-report-cell"><a href="javascript:void(0)" onclick="initModalDetail('${escRR(r.tgl)}','ALL')">${fmt(r.target_noa)}</a></td>
-                <td class="otp-report-cell text-right"><a href="javascript:void(0)" onclick="initModalDetail('${escRR(r.tgl)}','LANCAR')">${fmt(r.lancar_os)}</a></td>
-                <td class="otp-report-cell"><a href="javascript:void(0)" onclick="initModalDetail('${escRR(r.tgl)}','LANCAR')">${fmt(r.lancar_noa)}</a></td>
-                <td class="otp-report-cell text-right"><a href="javascript:void(0)" onclick="initModalDetail('${escRR(r.tgl)}','MENUNGGAK')">${fmt(r.macet_os)}</a></td>
-                <td class="otp-report-cell"><a href="javascript:void(0)" onclick="initModalDetail('${escRR(r.tgl)}','MENUNGGAK')">${fmt(r.macet_noa)}</a></td>
-                <td class="otp-report-cell text-right"><a href="javascript:void(0)" onclick="initModalLunas('${escRR(r.tgl)}')">${fmt(r.lunas_os)}</a></td>
-                <td class="otp-report-cell"><a href="javascript:void(0)" onclick="initModalLunas('${escRR(r.tgl)}')">${fmt(r.lunas_noa)}</a></td>
-                <td class="otp-report-cell">${renderDueMetricRR(r.angsuran_lewat, r.angsuran_lewat_persen, getDueNoaRR(r, 'lewat'), `initModalDetail('${escRR(r.tgl)}','LEWAT_TAGIH')`, 'text-rose-700')}</td>
+                <td class="otp-report-cell">${compactMetricRR(r.target_os, r.target_noa, `initModalDetail('${escRR(r.tgl)}','ALL')`)}</td>
+                <td class="otp-report-cell">${compactMetricRR(r.lancar_sesuai_os, r.lancar_sesuai_noa, `initModalDetail('${escRR(r.tgl)}','LANCAR_SESUAI')`, 'text-emerald-700')}</td>
+                <td class="otp-report-cell">${compactMetricRR(r.lancar_lewat_os, r.lancar_lewat_noa, `initModalDetail('${escRR(r.tgl)}','LANCAR_LEWAT')`, 'text-rose-700')}</td>
+                <td class="otp-report-cell">${compactMetricRR(r.macet_os, r.macet_noa, `initModalDetail('${escRR(r.tgl)}','MENUNGGAK')`, 'text-rose-700')}</td>
+                <td class="otp-report-cell">${compactMetricRR(r.lunas_os, r.lunas_noa, `initModalLunas('${escRR(r.tgl)}')`, 'text-indigo-700')}</td>
                 <td class="otp-report-cell">${renderDueMetricRR(r.angsuran_sesuai, r.angsuran_sesuai_persen, getDueNoaRR(r, 'sesuai'), `initModalDetail('${escRR(r.tgl)}','SESUAI_TAGIH')`, 'text-emerald-700')}</td>
-                <td class="otp-report-cell text-right"><a href="javascript:void(0)" onclick="initModalDetail('${escRR(r.tgl)}','ANGSURAN')">${fmt(r.angsuran)}</a></td>
+                <td class="otp-report-cell">${renderDueMetricRR(r.angsuran_lewat, r.angsuran_lewat_persen, getDueNoaRR(r, 'lewat'), `initModalDetail('${escRR(r.tgl)}','LEWAT_TAGIH')`, 'text-rose-700')}</td>
+                <td class="otp-report-cell">${compactMetricRR(r.angsuran, getDueTotalNoaRR(r), `initModalDetail('${escRR(r.tgl)}','ANGSURAN')`, 'text-amber-700')}</td>
                 <td class="otp-report-cell text-right">${fmt(r.total_bayar)}</td>
                 <td class="otp-report-cell">${pctHtml}</td>
             </tr>
@@ -3991,7 +4280,7 @@
                       <div class="flex items-center justify-end">TARGET M-1 ${getSortIcon('os_m1', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-4 py-2 border-b border-r border-slate-200 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('os_curr', 'number')">
-                      <div class="flex items-center justify-end">BAKI DEBET ${getSortIcon('os_curr', sortDetailCol, sortDetailAsc)}</div>
+                      <div class="flex items-center justify-end">${getOtpNominalLabelRR().toUpperCase()} ${getSortIcon('os_curr', sortDetailCol, sortDetailAsc)}</div>
                   </th>
                   <th class="px-2 md:px-4 py-2 border-b border-r border-slate-200 w-[90px] md:w-[130px] text-right cursor-pointer hover:bg-slate-200 transition select-none" onclick="sortDetailRR('totung', 'number')">
                       <div class="flex items-center justify-end">TUNGGAKAN ${getSortIcon('totung', sortDetailCol, sortDetailAsc)}</div>
@@ -4099,7 +4388,7 @@
       currentDetailParams = { 
           type: 'detail_rr', closing_date: document.getElementById('closing_date').value, harian_date: document.getElementById('harian_date').value, 
           kode_kantor: branch, korwil: reqKorwil, kode_kankas: preselectKankasCode || reqKankas, kode_ao: mainAo,
-          tgl_tagih: tgl, status: status, collection_status: 'ALL', dpd_bucket: dpdBucket, include_127: document.getElementById('chk_127').checked, limit: detailLimit 
+          tgl_tagih: tgl, status: status, collection_status: 'ALL', dpd_bucket: dpdBucket, include_127: document.getElementById('chk_127').checked, hitung_berdasarkan: getOtpNominalRR(), limit: detailLimit 
       };
       syncCollectionFilterInputsRR('ALL');
 
@@ -4132,7 +4421,8 @@
           kode_kankas: lblSub === "KANKAS" ? subVal : reqKankas,
           kode_ao: mainAo,
           dpd_bucket: document.getElementById('opt_dpd_bucket').value,
-          include_127: document.getElementById('chk_127').checked
+            include_127: document.getElementById('chk_127').checked,
+            hitung_berdasarkan: getOtpNominalRR()
       };
   }
 
@@ -4214,7 +4504,7 @@
       currentDetailParams = { 
           type: 'detail_lunas_rr', closing_date: document.getElementById('closing_date').value, harian_date: document.getElementById('harian_date').value, 
           kode_kantor: branch, korwil: reqKorwil, kode_kankas: preselectKankasCode || reqKankas, kode_ao: mainAo,
-          tgl_tagih: tgl, dpd_bucket: dpdBucket, include_127: document.getElementById('chk_127').checked, limit: detailLimit 
+          tgl_tagih: tgl, dpd_bucket: dpdBucket, include_127: document.getElementById('chk_127').checked, hitung_berdasarkan: getOtpNominalRR(), limit: detailLimit 
       };
       syncCollectionFilterInputsRR('ALL');
 
@@ -4362,7 +4652,7 @@
                   <div class="otp-detail-grid">
                     ${moneyItem('Plafond', r.jml_pinjaman)}
                     ${moneyItem('Target M-1', r.os_m1)}
-                    ${moneyItem('Baki Debet', r.os_curr, 'text-blue-700')}
+                    ${moneyItem(getOtpNominalLabelRR(), r.os_curr, 'text-blue-700')}
                     ${moneyItem('Tunggakan', r.totung, 'text-rose-700')}
                     ${moneyItem('Tabungan', r.tabungan, tabClass)}
                     ${moneyItem('Trx Bulan Ini', r.trx_bulan_ini, 'text-emerald-700')}
@@ -4442,7 +4732,7 @@
 
           let csv = "";
           if(currentMode === 'NORMAL') {
-              csv = `No Rekening\tNama Nasabah\tKode Produk\tAlamat\tNo HP\tKankas\tNama AO\tTgl JT\tPlafond\tTarget (M-1)\tBaki Debet Actual\tTot Tunggakan\tDPD\tSaldo Tabungan\tStatus Tabungan\tTrx Bulan Lalu\tTgl Bayar Lalu\tTrx Bulan Ini\tTgl Bayar Ini\tJanji Pokok\tJanji Bunga\tJanji Bayar\tTgl Komitmen\tKeterangan Komitmen\tStatus Collection\tStatus Tagih\n`;
+              csv = `No Rekening\tNama Nasabah\tKode Produk\tAlamat\tNo HP\tKankas\tNama AO\tTgl JT\tPlafond\tTarget (M-1)\t${getOtpNominalLabelRR()} Actual\tTot Tunggakan\tDPD\tSaldo Tabungan\tStatus Tabungan\tTrx Bulan Lalu\tTgl Bayar Lalu\tTrx Bulan Ini\tTgl Bayar Ini\tJanji Pokok\tJanji Bunga\tJanji Bayar\tTgl Komitmen\tKeterangan Komitmen\tStatus Collection\tStatus Tagih\n`;
               rows.forEach(r => {
                   csv += `'${r.no_rekening}\t${r.nama_nasabah}\t${r.kode_produk||''}\t${r.alamat||''}\t'${r.no_hp||''}\t${r.kankas||''}\t${r.nama_ao}\t${r.tgl_jatuh_tempo}\t${Math.round(r.jml_pinjaman)}\t${Math.round(r.os_m1)}\t${Math.round(r.os_curr)}\t${Math.round(r.totung)}\t${r.dpd_curr}\t${Math.round(r.tabungan)}\t${r.status_tabungan}\t${Math.round(r.trx_bulan_lalu||0)}\t${fmtDateID(r.tgl_bayar_lalu)}\t${Math.round(r.trx_bulan_ini||0)}\t${fmtDateID(r.tgl_bayar_ini)}\t${Math.round(r.janji_pokok||0)}\t${Math.round(r.janji_bunga||0)}\t${Math.round(r.nominal_janji||0)}\t${fmtDateID(r.tgl_komitmen)}\t${r.komit_keterangan||''}\t${r.collection_status||'NC'}\t${r.status_ket}\n`;
               });

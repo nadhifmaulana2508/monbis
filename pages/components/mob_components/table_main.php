@@ -8,8 +8,8 @@
     <table class="w-max min-w-full text-center border-separate border-spacing-0 text-slate-700 table-fixed" id="tabelMob">
       <thead class="font-bold tracking-wider text-[9px] md:text-[11px] select-none">
         <tr class="mob-row-1">
-          <th rowspan="2" class="sticky-left px-2 md:px-3 text-left w-[80px] md:w-[100px] uppercase align-middle border-r border-slate-200">Bulan Real</th>
-          <th rowspan="2" class="px-1 md:px-2 py-1.5 border-r border-slate-200 align-middle text-blue-700 w-[40px] md:w-[50px]">MOB</th>
+          <th rowspan="2" class="mob-col-bulan-real">Bulan Real</th>
+          <th rowspan="2" class="mob-sticky-mob px-1 md:px-2 py-1.5 border-r border-slate-200 align-middle text-blue-700 w-[52px] md:w-[70px]">MOB / FPD</th>
           <th rowspan="2" class="px-2 md:px-3 py-1.5 border-r border-slate-200 text-right w-[100px] md:w-[120px] align-middle text-blue-700">Tot Plafond</th>
           <th colspan="8" class="py-1.5 border-b border-slate-200 text-center uppercase tracking-widest text-slate-600">DPD (Days Past Due)</th>
         </tr>

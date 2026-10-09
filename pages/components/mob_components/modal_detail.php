@@ -8,7 +8,7 @@
             <div class="flex-1 min-w-[180px] shrink-0">
                 <h3 class="font-bold text-slate-800 flex items-center gap-1.5 md:gap-2 text-[12px] md:text-xl leading-none">
                     <span class="w-1.5 md:w-2 h-4 md:h-6 bg-blue-600 rounded-full hidden md:block"></span> 
-                    <span class="truncate">Detail Debitur MOB</span> 
+                    <span class="truncate">Detail Debitur MOB / FPD</span> 
                     <span id="badgeBucketDetail" class="text-[9px] md:text-sm bg-blue-600 text-white px-2 py-0.5 md:px-2.5 rounded-md md:rounded-full shadow-sm ml-1 font-mono shrink-0">Bucket ?</span>
                 </h3>
                 <p class="text-[9px] md:text-[11px] text-slate-500 mt-1 md:ml-4 font-mono font-medium leading-none truncate" id="subTitleDetail">Loading...</p>

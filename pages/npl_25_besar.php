@@ -1,39 +1,18 @@
-<div class="max-w-7xl mx-auto px-4 py-4 h-screen flex flex-col font-sans bg-slate-50">
+<div class="npl25-page max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 min-h-[calc(100vh-64px)] flex flex-col font-sans bg-slate-50">
   
-  <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-3 shrink-0">
-    <div class="flex items-start justify-between w-full md:w-auto">
-      <div>
-        <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
-          <span>🔥</span><span>25 Debitur Terbesar NPL</span>
+  <section class="npl25-page__header flex items-center gap-3 mb-3 shrink-0">
+    <div class="npl25-page__icon" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m7 15 3-4 3 2 5-7"></path>
+      </svg>
+    </div>
+    <div class="min-w-0">
+      <h1 class="text-lg md:text-2xl font-extrabold tracking-tight text-slate-900 truncate">
+          25 Debitur Terbesar NPL
         </h1>
-        <p class="text-[10px] md:text-xs text-slate-500 mt-1 ml-1 font-medium">
-          *Berdasarkan posisi Nominatif Closing Bulan Lalu
-        </p>
-      </div>
-
-      <button id="btnToggleNplFilter" class="md:hidden flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-sm font-semibold text-slate-700 shadow-sm hover:bg-gray-50 focus:outline-none transition">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-          Filter
-      </button>
+      <p class="text-[10px] md:text-xs text-slate-500 mt-0.5 font-medium">Berdasarkan posisi nominatif closing bulan lalu.</p>
     </div>
-
-    <div id="filterPanelNpl" class="hidden md:block bg-white border border-gray-200 rounded-xl p-3 shadow-sm w-full md:w-auto transition-all origin-top">
-      <form id="formFilterTopNpl" class="flex flex-row items-center gap-3 w-full">
-        <div class="flex flex-col flex-1 md:w-[250px]">
-            <label class="text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">PILIH KANTOR</label>
-            <select id="selCabangNpl" class="inp font-medium text-slate-700 shadow-sm truncate h-9">
-              <option value="">konsolidasi</option>
-            </select>
-        </div>
-        
-        <div class="flex items-end h-full pt-5">
-          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white h-9 w-10 md:w-11 rounded-lg font-bold shadow-sm flex items-center justify-center transition" title="Tampilkan Data">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" x2="16.65" y2="16.65"></line></svg>
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
+  </section>
 
   <div id="loadingTop" class="hidden flex items-center gap-2 text-sm text-blue-600 font-bold mb-2 ml-1">
     <div class="animate-spin h-4 w-4 border-2 border-blue-200 border-t-blue-600 rounded-full"></div>
@@ -69,10 +48,39 @@
 </div>
 
 <style>
+  .npl25-page { font-family:'Roboto', Arial, sans-serif; color:#334155; }
+  .npl25-page__header {
+    min-height:58px;
+    padding:12px 14px;
+    border:1px solid #dbe3ee;
+    border-radius:14px;
+    background:#fff;
+    box-shadow:0 6px 18px rgba(15,23,42,.05);
+  }
+  .npl25-page__icon {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:32px;
+    height:32px;
+    flex:0 0 32px;
+    border-radius:10px;
+    background:#2563eb;
+    color:#fff;
+    font-size:18px;
+    font-weight:900;
+    box-shadow:0 5px 12px rgba(37,99,235,.18);
+  }
+  #nplScroller { scrollbar-width:thin; scrollbar-color:#cbd5e1 transparent; }
+  #nplScrollInner::-webkit-scrollbar { width:6px; height:6px; }
+  #nplScrollInner::-webkit-scrollbar-track { background:transparent; }
+  #nplScrollInner::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:999px; }
+  #nplScrollInner::-webkit-scrollbar-thumb:hover { background:#94a3b8; }
   .inp { border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0 0.75rem; font-size: 13px; background: #fff; width: 100%; outline: none; transition: border 0.2s; }
   .inp:focus { border-color: #2563eb; ring: 2px solid #bfdbfe; }
   
-  #tabelTopNpl thead th { background: #d9ead3 !important; color: #1e293b; font-weight: 700; border-color: #cbd5e1; }
+  #tabelTopNpl { font-family:'Roboto', Arial, sans-serif; }
+  #tabelTopNpl thead th { background: #eff6ff !important; color: #1e3a5f; font-weight: 800; border-color: #cbd5e1; }
   
   .freeze-1 { position: sticky; left: 0; background: #fff; border-right: 1px solid #e2e8f0; }
   .freeze-2 { position: sticky; left: 7.5rem; background: #fff; border-right: 1px solid #e2e8f0; box-shadow: 2px 0 5px rgba(0,0,0,0.03); }
@@ -105,9 +113,23 @@
   const nfID = new Intl.NumberFormat('id-ID');
   const fmt = n => nfID.format(Number(n||0));
   const selCabang = document.getElementById('selCabangNpl');
+  const npl25FilterPanel = document.getElementById('npl25NavbarFilterPanel');
+  const npl25FilterToggle = document.getElementById('npl25NavbarFilterToggle');
 
-  document.getElementById('btnToggleNplFilter').addEventListener('click', function() {
-      document.getElementById('filterPanelNpl').classList.toggle('hidden');
+  function toggleNpl25Filter(force) {
+    if (!npl25FilterPanel) return;
+    const open = typeof force === 'boolean' ? force : npl25FilterPanel.classList.contains('hidden');
+    npl25FilterPanel.classList.toggle('hidden', !open);
+    npl25FilterPanel.classList.toggle('flex', open);
+    npl25FilterToggle?.classList.toggle('is-active', open);
+    npl25FilterToggle?.setAttribute('aria-expanded', String(open));
+  }
+
+  npl25FilterToggle?.addEventListener('click', () => toggleNpl25Filter());
+  document.getElementById('npl25NavbarFilterClose')?.addEventListener('click', () => toggleNpl25Filter(false));
+  document.addEventListener('click', event => {
+    if (!npl25FilterPanel?.classList.contains('flex')) return;
+    if (!npl25FilterPanel.contains(event.target) && !npl25FilterToggle?.contains(event.target)) toggleNpl25Filter(false);
   });
 
   selCabang.addEventListener('change', () => { document.getElementById('formFilterTopNpl').requestSubmit(); });
@@ -145,7 +167,7 @@
 
   document.getElementById("formFilterTopNpl").addEventListener("submit", (e) => {
     e.preventDefault();
-    if(window.innerWidth < 768) document.getElementById('filterPanelNpl').classList.add('hidden');
+    if(window.innerWidth < 768) toggleNpl25Filter(false);
     fetchTop25Npl(selCabang.value);
   });
 

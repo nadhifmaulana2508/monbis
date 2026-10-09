@@ -30,7 +30,7 @@ switch ($method) {
             // Untuk Matriks / Summary di Atas
             $controller->migrasiBucketOsc($input);
 
-        } elseif ($type === 'detail_migrasi_bucket') {
+        } elseif ($type === 'detail_migrasi_bucket' || $type === 'detail_lunas_migrasi') {
             // Untuk Tabel Rincian Nasabah (Drilldown)
             $controller->getMigrasiDetail($input);
 

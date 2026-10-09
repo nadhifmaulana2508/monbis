@@ -34,10 +34,6 @@
             <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Area/Cabang</label>
             <select id="filter_kantor" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-blue-500 bg-transparent transition-colors font-bold text-gray-700 cursor-pointer w-full truncate"></select>
           </div>
-          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white w-[34px] md:w-auto h-[32px] md:h-[36px] md:px-5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md transform active:scale-95 shrink-0 mb-[1px]">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="md:hidden"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <span class="hidden md:inline">Tampilkan</span>
-          </button>
       </div>
 
     </form>
@@ -308,6 +304,7 @@
 
 <style>
   .bar-fill { transition: height 1s cubic-bezier(0.4, 0, 0.2, 1), width 1s ease-in-out; }
+  .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
   .custom-scrollbar::-webkit-scrollbar { width: 4px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -428,6 +425,17 @@
         document.getElementById('formFilterMaster').classList.add('hidden');
         document.getElementById('formFilterMaster').classList.remove('flex');
     }
+  });
+
+  let dashboardAoFilterTimer = null;
+  function scheduleDashboardAoFilter() {
+    clearTimeout(dashboardAoFilterTimer);
+    dashboardAoFilterTimer = setTimeout(() => {
+      document.getElementById('formFilterMaster')?.requestSubmit();
+    }, 180);
+  }
+  ['filter_closing','filter_harian','filter_kantor'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', scheduleDashboardAoFilter);
   });
 
   document.getElementById('filter_tren').addEventListener('change', () => { fetchTrenPortofolio(); });

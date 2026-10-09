@@ -58,6 +58,10 @@ switch ($method) {
             $controller->getRekapProdukKredit($input);
         } elseif ($input['type'] === 'detail_produk_kredit') {
             $controller->getDetailProdukKredit($input);
+        } elseif ($input['type'] === 'npl_breakdown') {
+            $controller->getNplBreakdown($input);
+        } elseif ($input['type'] === 'npl_breakdown_detail') {
+            $controller->getNplBreakdownDetail($input);
         
             
 

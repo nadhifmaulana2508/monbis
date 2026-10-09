@@ -15,14 +15,18 @@ switch ($method) {
     case 'POST':
         if ($input['type'] === 'kolek m1 and actual') {
             $controller->getRekapKolektabilitas($input);
-        } elseif($input['type'] === 'migrasi kolek'){
-            $controller->getMigrasiKolektabilitas($input);
+        } elseif(strtolower((string)($input['type'] ?? '')) === 'migrasi kolek'){
+            $controller->getMigrasiKolektabilitasV2($input);
+        } elseif(strtolower((string)($input['type'] ?? '')) === 'migrasi payment projection'){
+            $controller->getMigrasiPaymentProjection($input);
         } elseif($input['type'] === 'migrasi bucket'){
             $controller->migrasiBucketOsc($input);
         } elseif($input['type'] === 'detail debutir migrasi'){
             $controller->getMigrasiBucketDetail($input);
         } elseif($input['type'] === 'bucket osc'){
             $controller->getBucketOsc($input);
+        } elseif(strtolower((string)($input['type'] ?? '')) === 'migrasi ckpn summary'){
+            $controller->getMigrasiCkpnSummary($input);
         } elseif($input['type'] === 'bucket ckpn'){
             $controller->getBucketCkpn($input);
 

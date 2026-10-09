@@ -1,4 +1,36 @@
-<div class="w-full min-h-screen bg-slate-50 p-3 md:p-5 font-sans text-slate-900">
+<style>
+  #realisasiAoPage,
+  #realisasiAoPage * { font-family:Roboto, Arial, sans-serif; }
+  #realisasiAoPage { min-height:100%; }
+  #realisasiAoPage .rao-scroll,
+  #modalDetail .rao-scroll { scrollbar-width:thin; scrollbar-color:#cbd5e1 transparent; }
+  #realisasiAoPage .rao-scroll::-webkit-scrollbar,
+  #modalDetail .rao-scroll::-webkit-scrollbar { width:4px; height:4px; }
+  #realisasiAoPage .rao-scroll::-webkit-scrollbar-track,
+  #modalDetail .rao-scroll::-webkit-scrollbar-track { background:transparent; }
+  #realisasiAoPage .rao-scroll::-webkit-scrollbar-thumb,
+  #modalDetail .rao-scroll::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:999px; }
+  :root[data-monbis-theme="dark"] #realisasiAoPage .bg-white,
+  :root[data-monbis-theme="dark"] #modalDetail .bg-white { background:#111827 !important; }
+  :root[data-monbis-theme="dark"] #realisasiAoPage .bg-slate-50,
+  :root[data-monbis-theme="dark"] #modalDetail .bg-slate-50 { background:#0f172a !important; }
+  :root[data-monbis-theme="dark"] #realisasiAoPage .bg-sky-50,
+  :root[data-monbis-theme="dark"] #modalDetail .bg-sky-50 { background:#172554 !important; color:#dbeafe !important; }
+  :root[data-monbis-theme="dark"] #realisasiAoPage .bg-blue-100 { background:#1e3a8a !important; color:#dbeafe !important; }
+  :root[data-monbis-theme="dark"] #realisasiAoPage .text-slate-900,
+  :root[data-monbis-theme="dark"] #realisasiAoPage .text-slate-800,
+  :root[data-monbis-theme="dark"] #modalDetail .text-slate-900,
+  :root[data-monbis-theme="dark"] #modalDetail .text-slate-800 { color:#f8fafc !important; }
+  :root[data-monbis-theme="dark"] #realisasiAoPage .border-slate-200,
+  :root[data-monbis-theme="dark"] #realisasiAoPage .border-slate-100,
+  :root[data-monbis-theme="dark"] #modalDetail .border-slate-200 { border-color:#334155 !important; }
+  @media (max-width:640px) {
+    #realisasiAoPage { padding:10px !important; }
+    #realisasiAoPage > div { height:calc(100vh - 84px) !important; min-height:430px; }
+  }
+</style>
+
+<div id="realisasiAoPage" class="w-full min-h-screen bg-slate-50 p-3 md:p-5 font-sans text-slate-900">
   <div class="mx-auto flex h-[calc(100vh-32px)] w-full max-w-7xl flex-col gap-3 md:h-[calc(100vh-40px)] md:gap-4">
 
     <!-- HEADER -->
@@ -32,12 +64,12 @@
         </div>
 
         <!-- DESKTOP FILTER -->
-        <div class="hidden items-end gap-2 lg:flex">
+        <div id="legacyRealisasiFilter" class="hidden">
           <div class="flex flex-col gap-1">
             <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Closing (M-1)</label>
             <input
               type="date"
-              id="tgl_awal"
+              id="legacy_tgl_awal"
               onchange="fetchTopData(1)"
               class="h-9 w-32 rounded-lg border border-slate-300 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             >
@@ -47,7 +79,7 @@
             <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Harian (Actual)</label>
             <input
               type="date"
-              id="tgl_akhir"
+              id="legacy_tgl_akhir"
               onchange="syncClosingFromHarian(); syncMobileFiltersFromDesktop(); fetchTopData(1)"
               class="h-9 w-32 rounded-lg border border-slate-300 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             >
@@ -56,7 +88,7 @@
           <div class="flex flex-col gap-1">
               <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Area/Cabang</label>
             <select
-              id="filter_kantor"
+              id="legacy_filter_kantor"
               onchange="syncMobileFiltersFromDesktop(); fetchTopData(1)"
               class="h-9 w-48 rounded-lg border border-slate-300 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             ></select>
@@ -82,12 +114,26 @@
         <button
           type="button"
           onclick="toggleMobileFilter()"
-          class="flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-[11px] font-black text-slate-700 shadow-sm lg:hidden"
+          class="hidden"
         >
           <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5">
             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
           </svg>
           Filter
+        </button>
+
+        <button
+          type="button"
+          onclick="exportFullData()"
+          class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-70"
+          title="Export Excel"
+          aria-label="Export Excel"
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 3v12"></path>
+            <path d="m7 10 5 5 5-5"></path>
+            <path d="M5 20h14"></path>
+          </svg>
         </button>
       </div>
 
@@ -99,7 +145,7 @@
             <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Closing</label>
             <input
               type="date"
-              id="tgl_awal_mobile"
+              id="legacy_tgl_awal_mobile"
               onchange="syncDateFromMobile(); fetchTopData(1)"
               class="h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-bold text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             >
@@ -109,7 +155,7 @@
             <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Harian</label>
             <input
               type="date"
-              id="tgl_akhir_mobile"
+              id="legacy_tgl_akhir_mobile"
               onchange="syncDateFromMobile(); fetchTopData(1)"
               class="h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-bold text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
             >
@@ -119,7 +165,7 @@
             <div class="flex min-w-0 flex-col gap-1">
             <label class="text-[9px] font-black uppercase tracking-widest text-slate-700">Area/Cabang</label>
               <select
-                id="filter_kantor_mobile"
+                id="legacy_filter_kantor_mobile"
                 onchange="syncKantorFromMobile(); fetchTopData(1)"
                 class="h-9 w-full rounded-lg border border-slate-300 bg-white px-2 text-[11px] font-bold text-slate-800 outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
               ></select>
@@ -217,7 +263,7 @@
       </div>
 
       <!-- MAIN TABLE -->
-      <div class="min-h-0 flex-1 overflow-auto">
+      <div class="rao-scroll min-h-0 flex-1 overflow-auto">
         <table class="w-full min-w-[430px] border-separate border-spacing-0 text-[11px] md:min-w-[760px]">
 
           <thead>
@@ -310,7 +356,7 @@
       </button>
     </div>
 
-    <div class="overflow-auto">
+    <div class="rao-scroll overflow-auto">
       <table class="w-full min-w-[390px] border-separate border-spacing-0 text-xs md:min-w-[700px]">
         <thead>
           <tr>
@@ -347,6 +393,8 @@
   let totalPage = 1;
   let lastTopData = [];
   let infoCloseTimer = null;
+  let activeTopRequest = null;
+  let topRequestSequence = 0;
 
   const id = (x) => document.getElementById(x);
   const fmt = (n) => new Intl.NumberFormat("id-ID").format(+n || 0);
@@ -358,19 +406,36 @@
   };
 
   window.addEventListener("DOMContentLoaded", async () => {
-    setDefaultDates();
+    const latestDates = await fetchLatestDates();
+    setDefaultDates(latestDates);
     await populateKantor();
-    syncMobileFiltersFromDesktop();
+    bindNavbarFilters();
     await fetchTopData(1);
   });
 
-  function setDefaultDates() {
+  async function fetchLatestDates() {
+    try {
+      const r = await fetch("./api/date/", { cache: "no-store" });
+      const j = await r.json();
+      if (!r.ok || Number(j.status) !== 200) throw new Error(j.message || "Tanggal data tidak tersedia");
+      return j.data || {};
+    } catch (e) {
+      console.warn("Gagal mengambil tanggal data terakhir, gunakan tanggal lokal.", e);
+      return {};
+    }
+  }
+
+  function setDefaultDates(latest = {}) {
     const now = new Date();
+    const actual = latest.last_created || formatLocalDate(now);
+    const closing = latest.last_closing || formatLocalDate(new Date(
+      Number(actual.slice(0, 4)),
+      Number(actual.slice(5, 7)) - 1,
+      0
+    ));
 
-    id("tgl_akhir").value = formatLocalDate(now);
-
-    const closing = new Date(now.getFullYear(), now.getMonth(), 0);
-    id("tgl_awal").value = formatLocalDate(closing);
+    id("tgl_akhir").value = actual;
+    id("tgl_awal").value = closing;
   }
 
   function syncClosingFromHarian() {
@@ -384,7 +449,48 @@
   }
 
   function toggleMobileFilter() {
-    id("mobileFilterPanel").classList.toggle("hidden");
+    const toggle = id("realisasiAoNavbarFilterToggle");
+    const panel = id("realisasiAoNavbarFilterPanel");
+    if (!toggle || !panel) return;
+    const hidden = panel.classList.toggle("hidden");
+    panel.classList.toggle("flex", !hidden);
+    toggle.classList.toggle("is-active", !hidden);
+    toggle.setAttribute("aria-expanded", String(!hidden));
+  }
+
+  function closeNavbarFilter() {
+    const panel = id("realisasiAoNavbarFilterPanel");
+    const toggle = id("realisasiAoNavbarFilterToggle");
+    if (!panel) return;
+    panel.classList.add("hidden");
+    panel.classList.remove("flex");
+    toggle?.classList.remove("is-active");
+    toggle?.setAttribute("aria-expanded", "false");
+  }
+
+  function bindNavbarFilters() {
+    const toggle = id("realisasiAoNavbarFilterToggle");
+    const close = id("realisasiAoNavbarFilterClose");
+    const panel = id("realisasiAoNavbarFilterPanel");
+    toggle?.addEventListener("click", toggleMobileFilter);
+    close?.addEventListener("click", closeNavbarFilter);
+    document.addEventListener("click", event => {
+      if (panel && !panel.classList.contains("hidden") && !panel.contains(event.target) && !toggle?.contains(event.target)) {
+        closeNavbarFilter();
+      }
+    });
+
+    let timer = null;
+    const schedule = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => fetchTopData(1), 160);
+    };
+    id("tgl_awal")?.addEventListener("change", schedule);
+    id("tgl_akhir")?.addEventListener("change", () => {
+      syncClosingFromHarian();
+      schedule();
+    });
+    id("filter_kantor")?.addEventListener("change", schedule);
   }
 
   function showInfoPanel() {
@@ -443,7 +549,7 @@
 
   async function populateKantor() {
     const desktop = id("filter_kantor");
-    const mobile = id("filter_kantor_mobile");
+    if (!desktop) return;
 
     const user =
       (window.getUser && window.getUser()) ||
@@ -481,9 +587,7 @@
           });
 
         desktop.innerHTML = html;
-        mobile.innerHTML = html;
         desktop.disabled = false;
-        mobile.disabled = false;
       } else {
         const cabangUser = listKantor.find(x => String(x.kode_kantor).padStart(3, "0") === userKode);
 
@@ -494,32 +598,24 @@
         }
 
         desktop.innerHTML = html;
-        mobile.innerHTML = html;
         desktop.disabled = true;
-        mobile.disabled = true;
       }
     } catch (e) {
       const html = `<option value="ALL">Konsolidasi</option>`;
       desktop.innerHTML = html;
-      mobile.innerHTML = html;
     }
   }
 
   function syncMobileFiltersFromDesktop() {
-    id("tgl_awal_mobile").value = id("tgl_awal").value;
-    id("tgl_akhir_mobile").value = id("tgl_akhir").value;
-    id("filter_kantor_mobile").value = id("filter_kantor").value;
+    return true;
   }
 
   function syncDateFromMobile() {
-    id("tgl_awal").value = id("tgl_awal_mobile").value;
-    id("tgl_akhir").value = id("tgl_akhir_mobile").value;
-    syncClosingFromHarian();
-    id("tgl_awal_mobile").value = id("tgl_awal").value;
+    return true;
   }
 
   function syncKantorFromMobile() {
-    id("filter_kantor").value = id("filter_kantor_mobile").value;
+    return true;
   }
 
   function buildPayload(page = 1, customLimit = null) {
@@ -543,6 +639,10 @@
   async function fetchTopData(page) {
     currentPage = page;
     syncMobileFiltersFromDesktop();
+    const requestId = ++topRequestSequence;
+
+    if (activeTopRequest) activeTopRequest.abort();
+    activeTopRequest = new AbortController();
 
     id("loadingAO").classList.remove("hidden");
     id("loadingAO").classList.add("flex");
@@ -559,20 +659,30 @@
       const r = await fetch("./api/kredit/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(buildPayload(page))
+        body: JSON.stringify(buildPayload(page)),
+        signal: activeTopRequest.signal
       });
 
       const res = await r.json();
-      const wrapper = res.data || {};
-      const list = wrapper.data || [];
+      if (!r.ok || Number(res.status) !== 200) {
+        throw new Error(res.message || `HTTP ${r.status}`);
+      }
+
+      const wrapper = res.data && !Array.isArray(res.data) ? res.data : {};
+      const list = Array.isArray(wrapper.data)
+        ? wrapper.data
+        : (Array.isArray(res.data) ? res.data : []);
       const pag = wrapper.pagination || {};
       const summary = wrapper.summary || {};
+
+      if (requestId !== topRequestSequence) return;
 
       lastTopData = list;
 
       renderTable(list, (page - 1) * 10, summary);
       updatePaginationUI(pag);
     } catch (e) {
+      if (e.name === "AbortError" || requestId !== topRequestSequence) return;
       id("tbodyAO").innerHTML = `
         <tr>
           <td colspan="5" class="py-16 text-center text-xs font-black text-red-500">
@@ -582,8 +692,10 @@
       `;
       updateTotalRow([]);
     } finally {
-      id("loadingAO").classList.add("hidden");
-      id("loadingAO").classList.remove("flex");
+      if (requestId === topRequestSequence) {
+        id("loadingAO").classList.add("hidden");
+        id("loadingAO").classList.remove("flex");
+      }
     }
   }
 
@@ -709,6 +821,9 @@
       });
 
       const j = await r.json();
+      if (!r.ok || Number(j.status) !== 200) {
+        throw new Error(j.message || `HTTP ${r.status}`);
+      }
 
       const wrapper = j.data || {};
       const list = Array.isArray(wrapper) ? wrapper : (wrapper.data || []);
@@ -789,7 +904,12 @@
       });
 
       const res = await r.json();
-      const list = res.data?.data || [];
+      if (!r.ok || Number(res.status) !== 200) {
+        throw new Error(res.message || `HTTP ${r.status}`);
+      }
+      const list = Array.isArray(res.data?.data)
+        ? res.data.data
+        : (Array.isArray(res.data) ? res.data : []);
 
       const totalNOA = list.reduce((sum, row) => sum + Number(row.total_noa || 0), 0);
       const totalRealisasi = list.reduce((sum, row) => sum + Number(row.total_realisasi || 0), 0);

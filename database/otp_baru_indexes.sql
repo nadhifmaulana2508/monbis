@@ -13,6 +13,12 @@ ALTER TABLE nominatif
   ADD INDEX idx_otp_created_scope_rekening (created, kolektibilitas, kode_cabang, kode_group1, kode_group2, hari_menunggak, no_rekening),
   ADD INDEX idx_otp_created_rekening_status (created, no_rekening, baki_debet, hari_menunggak);
 
+-- Indeks tambahan untuk mode default OTP: saldo_bank.
+-- Dibutuhkan agar filter target dan lookup actual tidak kembali full scan.
+ALTER TABLE nominatif
+  ADD INDEX idx_otp_created_scope_saldo_bank (created, kolektibilitas, kode_cabang, kode_group1, kode_group2, hari_menunggak, saldo_bank),
+  ADD INDEX idx_otp_created_rekening_saldo (created, no_rekening, saldo_bank, hari_menunggak);
+
 ALTER TABLE transaksi_kredit
   ADD INDEX idx_otp_trx_rekening_tanggal (no_rekening, tgl_trans),
   ADD INDEX idx_otp_trx_tanggal_rekening (tgl_trans, no_rekening);

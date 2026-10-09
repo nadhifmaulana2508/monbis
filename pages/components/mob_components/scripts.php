@@ -11,14 +11,16 @@ let abortMainMob;
 let detailParamsMob = {}; 
 let detailPageMob = 1;
 let rekapDataCacheMob = null; 
-const getTipeSaldoMob = () => document.getElementById('tipe_saldo_mob')?.value || 'baki_debet';
+const getTipeSaldoMob = () => document.getElementById('tipe_saldo_mob')?.value || 'saldo_bank';
 const getTipeSaldoLabelMob = () => getTipeSaldoMob() === 'saldo_bank' ? 'Saldo Bank' : 'Baki Debet';
 
 function getActiveMobFilterPayload() {
     const areaVal = document.getElementById('opt_area').value;
     const subVal = document.getElementById('opt_sub_main').value;
     const aoVal  = document.getElementById('opt_ao_main').value;
-    const payload = {};
+    const payload = {
+        status_jatuh_tempo: document.getElementById('status_jatuh_tempo_mob')?.value || 'ALL'
+    };
 
     if(areaVal === 'ALL') {
         if(subVal !== 'ALL') payload.korwil = subVal;
@@ -39,6 +41,34 @@ function toggleFilter(id) {
         el.classList.add('hidden'); el.classList.remove('flex');
     }
 }
+
+function toggleMobNavbarFilter() {
+    const panel = document.getElementById('mobNavbarFilterPanel');
+    const toggle = document.getElementById('mobNavbarFilterToggle');
+    if (!panel) return;
+    const willOpen = panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', !willOpen);
+    panel.classList.toggle('flex', willOpen);
+    toggle?.classList.toggle('is-active', willOpen);
+    toggle?.setAttribute('aria-expanded', String(willOpen));
+}
+
+function closeMobNavbarFilter() {
+    const panel = document.getElementById('mobNavbarFilterPanel');
+    const toggle = document.getElementById('mobNavbarFilterToggle');
+    panel?.classList.add('hidden');
+    panel?.classList.remove('flex');
+    toggle?.classList.remove('is-active');
+    toggle?.setAttribute('aria-expanded', 'false');
+}
+
+document.getElementById('mobNavbarFilterToggle')?.addEventListener('click', toggleMobNavbarFilter);
+document.getElementById('mobNavbarFilterClose')?.addEventListener('click', closeMobNavbarFilter);
+['harian_date_mob', 'status_jatuh_tempo_mob', 'tipe_saldo_mob', 'opt_area', 'opt_sub_main', 'opt_ao_main'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', () => {
+        if (window.innerWidth < 768) setTimeout(closeMobNavbarFilter, 180);
+    });
+});
 
 window.toggleExportMobMenu = function(e) {
     if (e) e.stopPropagation();
@@ -232,12 +262,12 @@ async function fetchRekapMob(){
                     </td>`;
             });
 
-            const txtMob = r.mob ? r.mob : '-';
+            const txtMob = Number(r.mob) === 1 ? 'FPD' : (r.mob ? r.mob : '-');
 
             html += `
                 <tr class="hover:bg-slate-50 border-b border-slate-200 group h-[48px] md:h-[54px]">
-                    <td class="sticky-left px-2 md:px-3 py-1.5 text-left font-bold text-[10px] md:text-xs text-slate-700 bg-white border-r border-slate-200 align-middle shadow-[inset_-1px_0_0_#e2e8f0] z-10 min-w-[80px] md:min-w-[100px] truncate" title="${r.group_name}">${r.group_name}</td>
-                    <td class="px-1 md:px-2 py-1.5 border-r border-slate-200 text-center font-bold text-[10px] md:text-xs text-blue-700 bg-blue-50/30 align-middle">${txtMob}</td>
+                    <td class="mob-col-bulan-real">${r.group_name}</td>
+                    <td class="mob-sticky-mob px-1 md:px-2 py-1.5 border-r border-slate-200 text-center font-bold text-[10px] md:text-xs text-blue-700 bg-blue-50/30 align-middle">${txtMob}</td>
                     <td class="px-2 md:px-3 py-1.5 border-r border-slate-200 text-right font-mono font-bold text-[10px] md:text-xs text-blue-800 bg-blue-50/10 align-middle leading-tight">${fmt(r.total_plafond)}</td>
                     ${cells}
                 </tr>`;
@@ -245,8 +275,8 @@ async function fetchRekapMob(){
         tbody.innerHTML = html;
 
         // --- RENDER TOTAL STICKY ---
-        let tf = `<th class="sticky-left px-2 md:px-3 text-left uppercase tracking-widest align-middle text-blue-900 z-50 bg-[#eff6ff] text-[9px] md:text-[11px] shadow-[inset_-1px_0_0_#93c5fd]">TOTAL</th>
-                  <th class="border-r border-blue-300 px-1 md:px-2 text-center align-middle text-blue-900 bg-[#eff6ff]">-</th>
+        let tf = `<th class="mob-col-bulan-real">TOTAL</th>
+                  <th class="mob-sticky-mob border-r border-blue-300 px-1 md:px-2 text-center align-middle text-blue-900 bg-[#eff6ff]">-</th>
                   <th class="border-r border-blue-300 px-2 md:px-3 text-right font-mono font-bold text-[10px] md:text-[12px] text-blue-900 align-middle bg-[#eff6ff] leading-tight">${fmt(grandTotal.plafond)}</th>`;
         
         let pembagiTotal = grandTotal.plafond > 0 ? grandTotal.plafond : 1;
@@ -281,7 +311,8 @@ window.exportExcelRekapMob = function() {
 
     rows.forEach(r => {
         let pembagi = parseFloat(r.total_plafond || 0);
-        csv += `'${r.group_name}\t${r.mob||'-'}\t${Math.round(r.total_plafond)}\t`;
+        const mobLabel = Number(r.mob) === 1 ? 'FPD' : (r.mob || '-');
+        csv += `'${r.group_name}\t${mobLabel}\t${Math.round(r.total_plafond)}\t`;
         bk.forEach(b => {
             const d = r.buckets[b];
             let rowOS = parseFloat(d.os || 0);
@@ -294,7 +325,7 @@ window.exportExcelRekapMob = function() {
     const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
     const a = document.createElement('a');
     a.href = window.URL.createObjectURL(blob);
-    a.download = `Rekap_MOB_${document.getElementById("harian_date_mob").value}.xls`; 
+    a.download = `Rekap_MOB_FPD_${document.getElementById("harian_date_mob").value}.xls`; 
     a.click();
 }
 
@@ -337,12 +368,14 @@ function renderModalHeaderMigrasi() {
             <th class="px-2 md:px-3 py-1.5 md:py-2 border-b border-r border-slate-300 w-[100px] md:w-[120px] text-center">Kankas</th>
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[110px] md:w-[140px] text-center">Tgl Realisasi</th>
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[110px] md:w-[140px] text-right">Plafond</th>
-            <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-green-200 w-[110px] md:w-[140px] text-right bg-green-50 text-green-700">OS Current</th>
+            <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-green-200 w-[110px] md:w-[140px] text-right bg-green-50 text-green-700">${getTipeSaldoLabelMob()}</th>
             <th class="px-2 md:px-3 py-1.5 md:py-2 border-b border-r border-slate-300 w-[50px] md:w-[60px] text-center">Kol</th>
-            <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-red-200 w-[100px] md:w-[130px] text-right bg-red-50 text-red-800">Tot Tunggakan</th>
-            <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-green-200 w-[110px] md:w-[140px] text-right bg-green-50 text-green-800">Total Bayar</th>
+            <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-amber-200 w-[110px] md:w-[140px] text-right bg-amber-50 text-amber-800">Tunggakan Pokok</th>
+            <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-orange-200 w-[110px] md:w-[140px] text-right bg-orange-50 text-orange-800">Tunggakan Bunga</th>
+            <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-red-200 w-[100px] md:w-[130px] text-right bg-red-50 text-red-800">Totung</th>
+            <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-green-200 w-[150px] md:w-[190px] text-right bg-green-50 text-green-800">Total Bayar</th>
+            <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-indigo-200 w-[110px] md:w-[140px] text-center bg-indigo-50 text-indigo-800">Tgl Transaksi</th>
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[110px] md:w-[140px] text-right">Tabungan</th>
-            <th class="px-2 md:px-3 py-1.5 md:py-2 border-b border-slate-200 w-[90px] md:w-[100px] text-center">Stat Tab</th>
         </tr>
     `;
 }
@@ -377,17 +410,14 @@ async function fetchDetailMob(){
         const totalPages   = json.data?.total_pages || 1;
 
         if(list.length === 0){
-            tbody.innerHTML = `<tr><td colspan="14" class="py-20 text-center text-slate-400 italic text-[10px] md:text-sm">Tidak ada data detail.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="16" class="py-20 text-center text-slate-400 italic text-[10px] md:text-sm">Tidak ada data detail.</td></tr>`;
             return;
         }
 
         let html = '';
         list.forEach(row => {
-            let statTabungan = parseFloat(row.tabungan) >= (1.5 * parseFloat(row.totung)) 
-                ? `<span class="text-green-600 font-bold text-[9px] md:text-xs">Aman</span>` 
-                : `<span class="text-red-500 font-bold text-[9px] md:text-xs">Belum Aman</span>`;
-
             let alamatPendek = row.alamat && row.alamat.length > 25 ? row.alamat.substring(0, 25) + '...' : (row.alamat||'-');
+            const tglTransaksi = row.tgl_trans || row.tgl_transaksi || '-';
 
             html += `
                 <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[40px] md:h-[48px] group">
@@ -401,10 +431,19 @@ async function fetchDetailMob(){
                     <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-medium text-[9.5px] md:text-[12px] text-slate-500 border-r border-slate-100">${fmt(row.plafond)}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-[13px] text-blue-700 border-r border-slate-100 bg-slate-50/50">${fmt(row.os)}</td>
                     <td class="px-2 md:px-3 py-1.5 md:py-2 text-center font-bold text-[9.5px] md:text-sm text-slate-600 border-r border-slate-100">${row.kolektibilitas||'-'}</td>
+                    <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-sm text-amber-700 bg-amber-50/30 border-r border-amber-100">${fmt(row.tunggakan_pokok)}</td>
+                    <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-sm text-orange-700 bg-orange-50/30 border-r border-orange-100">${fmt(row.tunggakan_bunga)}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-sm text-red-600 bg-red-50/30 border-r border-red-100">${fmt(row.totung)}</td>
-                    <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-[12px] text-green-700 bg-green-50/30 border-r border-green-100">${fmt(row.transaksi)}</td>
+                    <td class="px-2 md:px-4 py-1.5 md:py-2 text-right bg-green-50/30 border-r border-green-100">
+                        <div class="font-mono font-bold text-[9.5px] md:text-[12px] text-green-700">${fmt(row.transaksi)}</div>
+                        <div class="text-[8px] md:text-[10px] font-normal leading-tight whitespace-nowrap">
+                            <span class="text-emerald-700">P: ${fmt(row.total_pokok)}</span>
+                            <span class="text-slate-400"> | </span>
+                            <span class="text-amber-700">B: ${fmt(row.total_bunga)}</span>
+                        </div>
+                    </td>
+                    <td class="px-2 md:px-4 py-1.5 md:py-2 text-center font-mono text-[9.5px] md:text-[11px] text-indigo-700 bg-indigo-50/30 border-r border-indigo-100">${tglTransaksi}</td>
                     <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-mono font-bold text-[9.5px] md:text-[12px] text-emerald-600 bg-emerald-50/10 border-r border-slate-100">${fmt(row.tabungan)}</td>
-                    <td class="px-2 md:px-3 py-1.5 md:py-2 text-center">${statTabungan}</td>
                 </tr>`;
         });
         tbody.innerHTML = html;
@@ -415,7 +454,7 @@ async function fetchDetailMob(){
         filterTableDetail();
 
     } catch(e){
-        tbody.innerHTML = `<tr><td colspan="14" class="py-16 text-center text-red-500 font-bold uppercase tracking-widest">Gagal mengambil detail.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="16" class="py-16 text-center text-red-500 font-bold uppercase tracking-widest">Gagal mengambil detail.</td></tr>`;
     } finally { loader.classList.add('hidden'); }
 }
 
@@ -434,14 +473,14 @@ window.exportExcelDetailMob = async function() {
         if(rows.length === 0) return alert("Tidak ada data");
 
         const saldoLabel = getTipeSaldoLabelMob();
-        let csv = `No Rekening\tNama Nasabah\tAO\tKankas\tTgl Realisasi\tPlafond\t${saldoLabel}\tKol\tTot Tunggakan\tTabungan\n`;
+        let csv = `No Rekening\tNama Nasabah\tAO\tKankas\tTgl Realisasi\tPlafond\t${saldoLabel}\tKol\tTunggakan Pokok\tTunggakan Bunga\tTotung\tTotal Bayar\tPokok Bayar\tBunga Bayar\tTgl Transaksi\tTabungan\n`;
         rows.forEach(x => {
-            csv += `'${x.no_rekening}\t${x.nama_nasabah}\t${x.nama_ao||''}\t${x.nama_kankas||''}\t${x.tgl_realisasi}\t${Math.round(x.plafond)}\t${Math.round(x.os)}\t${x.kolektibilitas||''}\t${Math.round(x.totung)}\t${Math.round(x.tabungan)}\n`;
+            csv += `'${x.no_rekening}\t${x.nama_nasabah}\t${x.nama_ao||''}\t${x.nama_kankas||''}\t${x.tgl_realisasi}\t${Math.round(x.plafond)}\t${Math.round(x.os)}\t${x.kolektibilitas||''}\t${Math.round(x.tunggakan_pokok||0)}\t${Math.round(x.tunggakan_bunga||0)}\t${Math.round(x.totung)}\t${Math.round(x.transaksi)}\t${Math.round(x.total_pokok||0)}\t${Math.round(x.total_bunga||0)}\t${x.tgl_trans || x.tgl_transaksi || ''}\t${Math.round(x.tabungan)}\n`;
         });
 
         const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
         const a = document.createElement('a'); a.href = window.URL.createObjectURL(blob);
-        a.download = `Detail_MOB_${detailParamsMob.bulan_realisasi}_Bucket_${detailParamsMob.bucket_label}.xls`; a.click();
+        a.download = `Detail_MOB_FPD_${detailParamsMob.bulan_realisasi}_Bucket_${detailParamsMob.bucket_label}.xls`; a.click();
     } catch(e) { alert("Gagal export data."); } finally { btn.innerHTML = txt; btn.disabled = false; }
 }
 
@@ -486,7 +525,7 @@ window.exportExcelNominatifMob = async function() {
         const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
         const a = document.createElement('a');
         a.href = window.URL.createObjectURL(blob);
-        a.download = `Nominatif_MOB_${harian}.xls`;
+        a.download = `Nominatif_MOB_FPD_${harian}.xls`;
         a.click();
     } catch(e) {
         alert(e.message || "Gagal export nominatif.");

@@ -5,6 +5,8 @@
 </div>
 <!-- TUTUP WRAPPER UTAMA -->
 
+<?php require __DIR__ . '/components/sidebar_behavior.php'; ?>
+
 <!-- FLOATING HELPDESK BUTTON -->
 <!-- <div class="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-1">
     <div id="helpdeskContainer" 
@@ -82,99 +84,7 @@
         });
     }
 
-    // --- 3. SCRIPT MENU SIDEBAR DESKTOP & MOBILE ---
-    document.addEventListener('DOMContentLoaded', () => {
-      const accordions = Array.from(document.querySelectorAll('#sidebar .accordion-btn'));
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebarOverlay');
-      const btnToggle = document.getElementById('btnToggleSidebar');
-      const groups = accordions
-        .map(button => button.closest('.accordion-group'))
-        .filter(Boolean);
-
-      function getContent(group) {
-        return group?.querySelector(':scope > .accordion-content');
-      }
-
-      function setGroupState(group, open) {
-        const button = group?.querySelector(':scope > .accordion-btn');
-        const content = getContent(group);
-        const caret = button?.querySelector('.caret');
-        if (!button || !content) return;
-
-        content.classList.toggle('hidden', !open);
-        button.classList.toggle('is-open', open);
-        button.setAttribute('aria-expanded', open ? 'true' : 'false');
-        if (caret) caret.classList.toggle('rotate-180', open);
-      }
-
-      function closeAllAccordions(except = null) {
-        groups.forEach(group => {
-          if (group !== except) setGroupState(group, false);
-        });
-      }
-
-      function markActiveSidebarMenu() {
-        const current = (window.location.pathname.split('/').pop() || 'dashboard').replace(/\/+$/, '');
-        const links = document.querySelectorAll('#sidebar nav a[href]');
-        links.forEach(link => {
-          const href = (link.getAttribute('href') || '').replace(/^\.?\//, '').replace(/\/+$/, '');
-          const isActive = href === current || (!current && href === 'dashboard');
-          link.classList.toggle('is-active', isActive);
-          if (!isActive) {
-            link.classList.remove('bg-blue-50', 'text-blue-600');
-          }
-          if (isActive) {
-            const group = link.closest('.accordion-group');
-            const button = group?.querySelector('.accordion-btn');
-            button?.classList.add('is-active');
-          }
-        });
-      }
-
-      markActiveSidebarMenu();
-
-      accordions.forEach(btn => {
-        const group = btn.closest('.accordion-group');
-        const content = getContent(group);
-        btn.type = 'button';
-        btn.setAttribute('aria-expanded', 'false');
-        if (content) {
-          const contentId = `sidebar-menu-${accordions.indexOf(btn)}`;
-          content.id = content.id || contentId;
-          btn.setAttribute('aria-controls', content.id);
-        }
-
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const isOpen = content && !content.classList.contains('hidden');
-          closeAllAccordions();
-          if (!isOpen) setGroupState(group, true);
-        });
-      });
-
-      if(sidebar) {
-          sidebar.addEventListener('mouseenter', () => {
-              sidebar.classList.remove('is-idle');
-          });
-          sidebar.addEventListener('mouseleave', () => {
-              if (window.innerWidth >= 768) { 
-                  closeAllAccordions();
-                  sidebar.classList.add('is-idle');
-              }
-          });
-      }
-
-      function toggleSidebar() {
-        if(sidebar) sidebar.classList.toggle('-translate-x-full');
-        if(overlay) overlay.classList.toggle('hidden');
-      }
-
-      if(btnToggle) btnToggle.addEventListener('click', toggleSidebar);
-      if(overlay) overlay.addEventListener('click', toggleSidebar);
-    });
-
-    // --- 4. SCRIPT RENDER USER & ROLE (SSO SYNC AUTO-FETCH) ---
+    // --- 3. SCRIPT RENDER USER & ROLE (SSO SYNC AUTO-FETCH) ---
     (async () => {
         const TOKEN_KEY = 'dpk_token', USER_KEY = 'dpk_user', USER_VERIFIED_KEY = 'dpk_user_verified_at';
         const WHOAMI_REFRESH_MS = 5 * 60 * 1000;

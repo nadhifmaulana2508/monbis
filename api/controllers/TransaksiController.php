@@ -1978,6 +1978,8 @@ class TransaksiController {
         $b = is_array($input) ? $input : [];
         $harian  = $b['harian_date'] ?? date('Y-m-d');
         $channel = !empty($b['channel']) ? strtoupper($b['channel']) : 'VA';
+        $kode_kantor = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+        $korwil = !empty($b['korwil']) ? strtoupper($b['korwil']) : null;
 
         if (!$harian) return sendResponse(400, "Tanggal Actual (Harian) wajib diisi.", null);
 
@@ -2001,32 +2003,48 @@ class TransaksiController {
             $chanFilter = " AND TRIM(t.kode_transaksi) IN ('320', '150', '152', '140', '16', '162') ";
         }
 
-        // Query: aggregate per cabang (seluruh cabang, tanpa filter area)
+        $sqlFilter = "";
+        $params = [':closing' => $closing_date, ':harian' => $harian];
+        if ($kode_kantor && $kode_kantor !== '000') {
+            $sqlFilter .= " AND t.kantor = :kode_kantor ";
+            $params[':kode_kantor'] = $kode_kantor;
+        } elseif ($korwil) {
+            $kw_start = null; $kw_end = null;
+            switch ($korwil) {
+                case 'SEMARANG':   $kw_start = '001'; $kw_end = '007'; break;
+                case 'SOLO':       $kw_start = '008'; $kw_end = '014'; break;
+                case 'BANYUMAS':   $kw_start = '015'; $kw_end = '021'; break;
+                case 'PEKALONGAN': $kw_start = '022'; $kw_end = '028'; break;
+            }
+            if ($kw_start && $kw_end) {
+                $sqlFilter .= " AND t.kantor BETWEEN :kw_start AND :kw_end ";
+                $params[':kw_start'] = $kw_start;
+                $params[':kw_end'] = $kw_end;
+            }
+        }
+
+        // Query langsung ke tabel transaksi: agregasi per cabang sesuai filter area.
+        // Subquery pemetaan sebelumnya tidak menambah hasil apa pun dan membuat database
+        // harus membuat derived table sebelum melakukan GROUP BY.
         $sql = "
             SELECT 
-                kantor,
-                nama_kantor,
-                SUM(jumlah) as total_nom,
-                COUNT(1) as total_trx
-            FROM (
-                SELECT 
-                    t.kantor,
-                    kk.nama_kantor,
-                    t.jumlah
-                FROM va t
-                LEFT JOIN kode_kantor kk ON t.kantor = kk.kode_kantor
-                WHERE t.tgl_transaksi > :closing AND t.tgl_transaksi <= :harian
-                $chanFilter
-                AND t.kantor != '000'
-            ) as mapped_data
-            GROUP BY kantor, nama_kantor
+                t.kantor,
+                kk.nama_kantor,
+                SUM(t.jumlah) as total_nom,
+                COUNT(*) as total_trx
+            FROM va t
+            LEFT JOIN kode_kantor kk ON t.kantor = kk.kode_kantor
+            WHERE t.tgl_transaksi > :closing AND t.tgl_transaksi <= :harian
+            $chanFilter
+            $sqlFilter
+            AND t.kantor <> '000'
+            GROUP BY t.kantor, kk.nama_kantor
             ORDER BY total_nom DESC
         ";
 
         try {
             $stmt = $this->pdo->prepare($sql);
-            $stmt->bindValue(':closing', $closing_date);
-            $stmt->bindValue(':harian', $harian);
+            foreach ($params as $key => $value) { $stmt->bindValue($key, $value); }
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

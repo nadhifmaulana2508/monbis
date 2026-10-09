@@ -60,7 +60,7 @@
             <li id="sub-rekap-rr"><a href="rekap_rr" class="nb-item nb-tap">Rekap Repayment Rate</a></li>
             <li id="sub-migrasi-bucket-sc"><a href="migrasi_bucket_sc" class="nb-item nb-tap">Migrasi Bucket SC</a></li>
             <li id="sub-mob"><a href="mob" class="nb-item nb-tap">MOB 6 Bulan</a></li>
-            <li id="sub-pipelane-ao"><a href="pipelane_ao_jt" class="nb-item nb-tap">Pipelane AO Kredit</a></li>
+            <li id="sub-pipelane-ao"><a href="recom_pipelane" class="nb-item nb-tap">Rekomendasi Pipelane AO Kredit</a></li>
             <li id="sub-jatuh-tempo"><a href="jatuh_tempo" class="nb-item nb-tap">Jatuh Tempo and Refinacing</a></li>
           </ul>
         </div>

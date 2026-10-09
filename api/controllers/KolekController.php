@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../helpers/perhitungan_ckpn_actual.php';
+require_once __DIR__ . '/../helpers/LoanInstallmentHelper.php';
 
 class KolekController {
       private $pdo;
@@ -25,6 +26,134 @@ class KolekController {
           sendResponse(200, "Snapshot tidak tersedia", ["params"=>["closing_date"=>$closing,"harian_date"=>$harian,"kode_kantor"=>$kantor], "data"=>null]);
           return;
         }
+
+        // Jalur agregasi ringan: dua query snapshot, lalu penggabungan di PHP.
+        // Query lama mengulang derived table closing/harian berkali-kali sehingga
+        // bebannya meningkat tajam ketika snapshot berisi banyak rekening.
+        $nominalField = $this->normalizeMigrasiNominalField(
+          $input['nominal_field'] ?? $input['hitung_berdasarkan'] ?? 'saldo_bank'
+        );
+        $loadSnapshot = function(string $date) use ($kantor, $nominalField): array {
+          $sql = "SELECT no_rekening, kolektibilitas, COALESCE({$nominalField}, 0) AS nominal
+                  FROM nominatif WHERE created = ?";
+          $params = [$date];
+          if ($kantor !== null) {
+            $sql .= " AND kode_cabang = ?";
+            $params[] = $kantor;
+          }
+          $stmt = $this->pdo->prepare($sql);
+          $stmt->execute($params);
+          $result = [];
+          while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $account = (string)($row['no_rekening'] ?? '');
+            if ($account === '') continue;
+            $result[$account] = [
+              'kol' => strtoupper(trim((string)($row['kolektibilitas'] ?? ''))),
+              'nominal' => (float)($row['nominal'] ?? 0),
+            ];
+          }
+          return $result;
+        };
+
+        $m1Accounts = $loadSnapshot($closing);
+        $actualAccounts = $loadSnapshot($harian);
+        $lm = ['L','DP','KL','D','M'];
+        $m1Agg = $actualAgg = [];
+        foreach ($lm as $kol) {
+          $m1Agg[$kol] = ['noa'=>0, 'os'=>0.0];
+          $actualAgg[$kol] = ['noa'=>0, 'os'=>0.0];
+        }
+        $realisasi = ['noa'=>0, 'os'=>0.0];
+        $lunas = ['noa'=>0, 'os'=>0.0];
+
+        foreach ($m1Accounts as $account => $row) {
+          $kol = $row['kol'];
+          if (isset($m1Agg[$kol])) {
+            $m1Agg[$kol]['noa']++;
+            $m1Agg[$kol]['os'] += $row['nominal'];
+          }
+          if (!isset($actualAccounts[$account])) {
+            $lunas['noa']++;
+            $lunas['os'] += $row['nominal'];
+          }
+        }
+        foreach ($actualAccounts as $account => $row) {
+          if (!isset($m1Accounts[$account])) {
+            $realisasi['noa']++;
+            $realisasi['os'] += $row['nominal'];
+            continue;
+          }
+          $kol = $row['kol'];
+          if (isset($actualAgg[$kol])) {
+            $actualAgg[$kol]['noa']++;
+            $actualAgg[$kol]['os'] += $row['nominal'];
+          }
+        }
+
+        $rows = [];
+        $rows[] = [
+          'kol'=>'Realisasi', 'm1_noa'=>0, 'm1_os'=>0.0,
+          'act_noa'=>$realisasi['noa'], 'act_os'=>$realisasi['os'],
+          'inc_os'=>null, 'inc_pct'=>null
+        ];
+        foreach ($lm as $kol) {
+          $m1Noa = $m1Agg[$kol]['noa'];
+          $m1Os = $m1Agg[$kol]['os'];
+          $actNoa = $actualAgg[$kol]['noa'];
+          $actOs = $actualAgg[$kol]['os'];
+          $incOs = $actOs - $m1Os;
+          $rows[] = [
+            'kol'=>$kol, 'm1_noa'=>$m1Noa, 'm1_os'=>$m1Os,
+            'act_noa'=>$actNoa, 'act_os'=>$actOs,
+            'inc_os'=>$incOs, 'inc_pct'=>$m1Os > 0 ? round($incOs / $m1Os * 100, 2) : null
+          ];
+        }
+        $rows[] = [
+          'kol'=>'Lunas', 'm1_noa'=>0, 'm1_os'=>0.0,
+          'act_noa'=>$lunas['noa'], 'act_os'=>$lunas['os'],
+          'inc_os'=>null, 'inc_pct'=>null
+        ];
+
+        $totM1Noa = 0; $totM1Os = 0.0; $totActualNoa = 0; $totActualOs = 0.0;
+        $nplM1Os = 0.0; $nplActualOs = 0.0;
+        foreach ($lm as $kol) {
+          $totM1Noa += $m1Agg[$kol]['noa'];
+          $totM1Os += $m1Agg[$kol]['os'];
+          $totActualNoa += $actualAgg[$kol]['noa'];
+          $totActualOs += $actualAgg[$kol]['os'];
+          if (in_array($kol, ['KL','D','M'], true)) {
+            $nplM1Os += $m1Agg[$kol]['os'];
+            $nplActualOs += $actualAgg[$kol]['os'];
+          }
+        }
+        $totalActualNoa = $totActualNoa + $realisasi['noa'];
+        $totalActualOs = $totActualOs + $realisasi['os'];
+        $nplM1Pct = $totM1Os > 0 ? round($nplM1Os / $totM1Os * 100, 2) : 0.0;
+        $nplActualPct = $totalActualOs > 0 ? round($nplActualOs / $totalActualOs * 100, 2) : 0.0;
+
+        return sendResponse(200, "OK", [
+          'params'=>[
+            'closing_date'=>$closing, 'harian_date'=>$harian,
+            'kode_kantor'=>$kantor, 'nominal_field'=>$nominalField
+          ],
+          'data'=>[
+            'rows'=>$rows,
+            'total_osc'=>[
+              'm1_noa'=>$totM1Noa, 'm1_os'=>$totM1Os,
+              'act_noa'=>$totalActualNoa, 'act_os'=>$totalActualOs,
+              'inc_os'=>$totalActualOs - $totM1Os
+            ],
+            'npl'=>[
+              'm1_pct'=>$nplM1Pct, 'actual_pct'=>$nplActualPct,
+              'inc_pct'=>round($nplActualPct - $nplM1Pct, 2)
+            ],
+            'debug'=>[
+              'act_os_lm_only'=>$totActualOs,
+              'realisasi_os'=>$realisasi['os'],
+              'act_os_total'=>$totalActualOs
+            ]
+          ]
+        ]);
 
         // -------- 2) Subquery templates (positional ?) --------
         $subClosing = "(
@@ -368,6 +497,786 @@ class KolekController {
         ]);
       }
 
+      /**
+       * Migrasi kolektibilitas versi ringkas dan cepat.
+       *
+       * Angsuran hanya mengambil delta positif (closing - actual).
+       * Jika actual lebih besar dari closing, delta tersebut dipisahkan
+       * sebagai restruck/kapitalisasi agar tidak mengotori angka angsuran.
+       */
+      public function getMigrasiKolektabilitasV2($input = []) {
+        $closing = $this->asDate($input['closing_date'] ?? null);
+        $harian  = $this->asDate($input['harian_date'] ?? null);
+        $kantor  = trim((string)($input['kode_kantor'] ?? ''));
+        $kantor  = str_replace('CABANG:', '', $kantor);
+        $kantor  = ($kantor === '' || $kantor === '000') ? null : str_pad($kantor, 3, '0', STR_PAD_LEFT);
+        $korwil  = strtoupper(trim((string)($input['korwil'] ?? '')));
+        $korwil  = str_replace('KORWIL:', '', $korwil);
+        $bounds  = $this->getMigrasiKorwilBounds($korwil);
+        $nominalField = $this->normalizeMigrasiNominalField(
+          $input['nominal_field'] ?? $input['hitung_berdasarkan'] ?? 'saldo_bank'
+        );
+        $detailType = strtolower(trim((string)($input['detail'] ?? '')));
+        if (!in_array($detailType, ['', 'migration', 'realisasi', 'restruck', 'angsuran', 'pelunasan'], true)) $detailType = '';
+        $detailSource = strtoupper(trim((string)($input['detail_source'] ?? '')));
+        $detailTarget = strtoupper(trim((string)($input['detail_target'] ?? '')));
+
+        if (!$closing || !$harian) {
+          sendResponse(400, 'closing_date & harian_date wajib (YYYY-MM-DD)');
+          return;
+        }
+        if (!$this->snapshotExists('nominatif', $closing) || !$this->snapshotExists('nominatif', $harian)) {
+          sendResponse(200, 'Snapshot tidak tersedia', [
+            'params'=>[
+              'closing_date'=>$closing, 'harian_date'=>$harian,
+              'kode_kantor'=>$kantor, 'korwil'=>$korwil ?: null,
+              'nominal_field'=>$nominalField
+            ],
+            'data'=>null
+          ]);
+          return;
+        }
+
+        // Dua snapshot diambil dengan query sederhana yang dapat memakai index
+        // (created, kode_cabang, no_rekening). Pairing dan agregasi dilakukan
+        // sekali di PHP agar query UNION/CTE tidak memaksa materialisasi ulang.
+        $loadSnapshot = function (string $date) use ($kantor, $bounds, $nominalField): array {
+          $sql = "SELECT no_rekening, nama_nasabah, kode_cabang, kolektibilitas,
+                         COALESCE(hari_menunggak, 0) AS hari_menunggak,
+                         tgl_jatuh_tempo, COALESCE({$nominalField}, 0) AS nominal
+                  FROM nominatif
+                  WHERE created = ? AND kolektibilitas IN ('L','DP','KL','D','M')";
+          $params = [$date];
+          if ($kantor !== null) {
+            $sql .= ' AND kode_cabang = ?';
+            $params[] = $kantor;
+          } elseif ($bounds) {
+            $sql .= ' AND kode_cabang BETWEEN ? AND ?';
+            $params[] = $bounds[0];
+            $params[] = $bounds[1];
+          }
+          $st = $this->pdo->prepare($sql);
+          $st->execute($params);
+          $rows = [];
+          while ($row = $st->fetch(PDO::FETCH_ASSOC)) {
+            $account = trim((string)($row['no_rekening'] ?? ''));
+            if ($account === '') continue;
+            $rows[$account] = [
+              'no_rekening'=>$account,
+              'nama_nasabah'=>(string)($row['nama_nasabah'] ?? ''),
+              'kode_cabang'=>(string)($row['kode_cabang'] ?? ''),
+              'kol'=>(string)($row['kolektibilitas'] ?? ''),
+              'dpd'=>(int)($row['hari_menunggak'] ?? 0),
+              'tgl_jatuh_tempo'=>$row['tgl_jatuh_tempo'] ?? null,
+              'nominal'=>(float)($row['nominal'] ?? 0)
+            ];
+          }
+          return $rows;
+        };
+
+        try {
+          $closingRows = $loadSnapshot($closing);
+          $harianRows = $loadSnapshot($harian);
+        } catch (PDOException $e) {
+          sendResponse(500, 'PDO Error: ' . $e->getMessage(), null);
+          return;
+        }
+
+        // Pembanding run off periode sebelumnya memakai closing akhir bulan
+        // sebelumnya dan posisi harian pada tanggal yang sama di bulan lalu.
+        $previousClosing = date('Y-m-t', strtotime($closing . ' -1 month'));
+        $previousHarian = date('Y-m-d', strtotime($harian . ' -1 month'));
+        $calculateRunOff = static function (array $fromRows, array $toRows): array {
+          $angsuran = 0.0;
+          $pelunasan = 0.0;
+          foreach ($fromRows as $account => $from) {
+            $to = $toRows[$account] ?? null;
+            if ($to === null) {
+              $pelunasan += (float)($from['nominal'] ?? 0);
+            } elseif ((float)($from['nominal'] ?? 0) > (float)($to['nominal'] ?? 0)) {
+              $angsuran += (float)$from['nominal'] - (float)$to['nominal'];
+            }
+          }
+          return ['angsuran'=>$angsuran, 'pelunasan'=>$pelunasan, 'total'=>$angsuran + $pelunasan];
+        };
+        $previousRunOff = ['angsuran'=>0.0, 'pelunasan'=>0.0, 'total'=>0.0];
+        if ($this->snapshotExists('nominatif', $previousClosing) && $this->snapshotExists('nominatif', $previousHarian)) {
+          try {
+            $previousRunOff = $calculateRunOff($loadSnapshot($previousClosing), $loadSnapshot($previousHarian));
+          } catch (PDOException $e) {
+            $previousRunOff = ['angsuran'=>0.0, 'pelunasan'=>0.0, 'total'=>0.0];
+          }
+        }
+
+        $SRC = ['L','DP','KL','D','M'];
+        $DST = ['L','DP','KL','D','M','LUNAS'];
+        $detailRows = [];
+        $appendDetail = function ($closingRow, $actualRow, string $source, string $target) use (&$detailRows): void {
+          $closingNominal = (float)($closingRow['nominal'] ?? 0);
+          $actualNominal = (float)($actualRow['nominal'] ?? 0);
+          $delta = $actualNominal - $closingNominal;
+          $detailRows[] = [
+            'no_rekening'=>(string)($actualRow['no_rekening'] ?? $closingRow['no_rekening'] ?? ''),
+            'nama_nasabah'=>(string)($actualRow['nama_nasabah'] ?? $closingRow['nama_nasabah'] ?? ''),
+            'kode_cabang'=>(string)($actualRow['kode_cabang'] ?? $closingRow['kode_cabang'] ?? ''),
+            'kolektibilitas_m1'=>$source,
+            'kolektibilitas_actual'=>$target,
+            'nominal_closing'=>$closingNominal,
+            'nominal_actual'=>$actualNominal,
+            'selisih'=>$delta,
+            'angsuran'=>$delta < 0 ? abs($delta) : 0.0,
+            'restruck'=>$delta > 0 ? $delta : 0.0,
+            'hari_menunggak_m1'=>(int)($closingRow['dpd'] ?? 0),
+            'hari_menunggak_actual'=>(int)($actualRow['dpd'] ?? 0),
+            'tgl_jatuh_tempo'=>$actualRow['tgl_jatuh_tempo'] ?? $closingRow['tgl_jatuh_tempo'] ?? null
+          ];
+        };
+        $pair = [];
+        $newByBucket = array_fill_keys($SRC, ['noa'=>0, 'os'=>0.0]);
+        foreach ($closingRows as $account=>$closingRow) {
+          $src = $closingRow['kol'];
+          if (!in_array($src, $SRC, true)) continue;
+          $actualRow = $harianRows[$account] ?? null;
+          $dst = $actualRow['kol'] ?? 'LUNAS';
+          if (!isset($pair[$src][$dst])) {
+            $pair[$src][$dst] = [
+              'noa'=>0, 'os_c'=>0.0, 'os_h'=>0.0,
+              'angsuran_os'=>0.0, 'restruck_os'=>0.0,
+              'angsuran_noa'=>0, 'restruck_noa'=>0
+            ];
+          }
+          $p =& $pair[$src][$dst];
+          $closingNominal = $closingRow['nominal'];
+          $actualNominal = $actualRow['nominal'] ?? 0.0;
+          $p['noa']++;
+          $p['os_c'] += $closingNominal;
+          if ($actualRow === null) {
+            // Rekening hilang di actual dianggap lunas dengan OS closing.
+          } else {
+            $p['os_h'] += $actualNominal;
+            if ($closingNominal > $actualNominal) {
+              $p['angsuran_os'] += $closingNominal - $actualNominal;
+              $p['angsuran_noa']++;
+            } elseif ($actualNominal > $closingNominal) {
+              $p['restruck_os'] += $actualNominal - $closingNominal;
+              $p['restruck_noa']++;
+            }
+          }
+          if ($detailType !== '') {
+            $matches = false;
+            if ($detailType === 'migration') {
+              $matches = $src === $detailSource && $dst === $detailTarget;
+            } elseif ($detailType === 'pelunasan') {
+              $matches = $actualRow === null;
+            } elseif ($detailType === 'angsuran') {
+              $matches = $actualRow !== null && $closingNominal > $actualNominal;
+            } elseif ($detailType === 'restruck') {
+              $matches = $actualRow !== null && $actualNominal > $closingNominal;
+            }
+            if ($matches) $appendDetail($closingRow, $actualRow, $src, $dst);
+          }
+          unset($p);
+        }
+        foreach ($harianRows as $account=>$actualRow) {
+          if (isset($closingRows[$account])) continue;
+          $dst = $actualRow['kol'];
+          if (!isset($newByBucket[$dst])) continue;
+          $newByBucket[$dst]['noa']++;
+          $newByBucket[$dst]['os'] += $actualRow['nominal'];
+          if ($detailType === 'realisasi' || ($detailType === 'migration' && $detailSource === 'REALISASI' && $detailTarget === $dst)) {
+            $appendDetail(['no_rekening'=>'', 'nominal'=>0.0], $actualRow, 'REALISASI', $dst);
+          }
+        }
+
+        $totals = [
+          'm1_noa'=>0, 'm1_os'=>0.0,
+          'actual'=>array_fill_keys($DST, ['noa'=>0, 'os'=>0.0]),
+          'realisasi'=>['noa'=>0, 'os'=>0.0, 'by_bucket'=>$newByBucket],
+          'realisasi_baru'=>['noa'=>0, 'os'=>0.0],
+          'restruck'=>['noa'=>0, 'os'=>0.0],
+          'angsuran'=>['noa'=>0, 'os'=>0.0],
+          'pelunasan'=>['noa'=>0, 'os'=>0.0],
+          'run_off_total'=>0.0,
+          'run_off_prev_angsuran'=>0.0,
+          'run_off_prev_pelunasan'=>0.0,
+          'run_off_prev_total'=>0.0,
+          'flow_par'=>0.0,
+          'backflow_total'=>0.0,
+          'rr_prev'=>0.0,
+          'rr_actual'=>0.0,
+          'rr_prev_noa'=>0,
+          'rr_actual_noa'=>0
+        ];
+
+        $rows = [];
+        foreach ($SRC as $src) {
+          $m1Noa = 0;
+          $m1Os = 0.0;
+          $actual = [];
+          $angsuran = ['noa'=>0, 'os'=>0.0];
+          $restruck = ['noa'=>0, 'os'=>0.0];
+          $pelunasan = ['noa'=>0, 'os'=>0.0];
+
+          foreach ($DST as $dst) {
+            $p = $pair[$src][$dst] ?? [
+              'noa'=>0, 'os_c'=>0.0, 'os_h'=>0.0,
+              'angsuran_os'=>0.0, 'restruck_os'=>0.0,
+              'angsuran_noa'=>0, 'restruck_noa'=>0
+            ];
+            $m1Noa += $p['noa'];
+            $m1Os += $p['os_c'];
+            $actOs = $dst === 'LUNAS' ? $p['os_c'] : $p['os_h'];
+            $actual[$dst] = [
+              'noa'=>$p['noa'], 'os'=>$actOs,
+              'pct'=>0.0, 'noa_pct'=>0.0
+            ];
+            $totals['actual'][$dst]['noa'] += $p['noa'];
+            $totals['actual'][$dst]['os'] += $actOs;
+
+            if ($dst === 'LUNAS') {
+              $pelunasan['noa'] += $p['noa'];
+              $pelunasan['os'] += $p['os_c'];
+            } else {
+              $angsuran['noa'] += $p['angsuran_noa'];
+              $angsuran['os'] += $p['angsuran_os'];
+              $restruck['noa'] += $p['restruck_noa'];
+              $restruck['os'] += $p['restruck_os'];
+            }
+          }
+
+          foreach ($actual as &$cell) {
+            $cell['pct'] = $m1Os > 0 ? round($cell['os'] / $m1Os * 100, 2) : 0.0;
+            $cell['noa_pct'] = $m1Noa > 0 ? round($cell['noa'] / $m1Noa * 100, 2) : 0.0;
+          }
+          unset($cell);
+
+          $rows[] = [
+            'kol'=>$src,
+            'm1'=>['noa'=>$m1Noa, 'os'=>$m1Os],
+            'actual'=>[
+              'L'=>$actual['L'], 'DP'=>$actual['DP'], 'KL'=>$actual['KL'],
+              'D'=>$actual['D'], 'M'=>$actual['M'], 'Lunas'=>$actual['LUNAS']
+            ],
+            'realisasi_restruck'=>$restruck,
+            'angsuran'=>$angsuran,
+            'pelunasan'=>$pelunasan,
+            'run_off'=>$angsuran['os'] + $pelunasan['os'],
+            'run_off_ansuran'=>$angsuran['os']
+          ];
+
+          $totals['m1_noa'] += $m1Noa;
+          $totals['m1_os'] += $m1Os;
+          $totals['restruck']['noa'] += $restruck['noa'];
+          $totals['restruck']['os'] += $restruck['os'];
+          $totals['angsuran']['noa'] += $angsuran['noa'];
+          $totals['angsuran']['os'] += $angsuran['os'];
+          $totals['pelunasan']['noa'] += $pelunasan['noa'];
+          $totals['pelunasan']['os'] += $pelunasan['os'];
+          $totals['run_off_total'] += $angsuran['os'] + $pelunasan['os'];
+          if (in_array($src, ['L','DP'], true)) {
+            $totals['flow_par'] += $actual['KL']['os'] + $actual['D']['os'] + $actual['M']['os'];
+          }
+          if (in_array($src, ['KL','D','M'], true)) {
+            $totals['backflow_total'] += $actual['L']['os'] + $actual['DP']['os'];
+          }
+        }
+
+        foreach ($newByBucket as $dst=>$v) {
+          $totals['realisasi']['noa'] += $v['noa'];
+          $totals['realisasi']['os'] += $v['os'];
+          $totals['actual'][$dst]['noa'] += $v['noa'];
+          $totals['actual'][$dst]['os'] += $v['os'];
+        }
+        $totals['realisasi_baru'] = $totals['realisasi'];
+
+        // RR sesuai definisi cockpit: DPD 0 dan kolektibilitas Lancar (L).
+        foreach ($closingRows as $row) {
+          if ($row['kol'] === 'L' && (int)$row['dpd'] === 0 && $row['nominal'] > 0) {
+            $totals['rr_prev_noa']++;
+            $totals['rr_prev'] += $row['nominal'];
+          }
+        }
+        foreach ($harianRows as $row) {
+          if ($row['kol'] === 'L' && (int)$row['dpd'] === 0 && $row['nominal'] > 0) {
+            $totals['rr_actual_noa']++;
+            $totals['rr_actual'] += $row['nominal'];
+          }
+        }
+
+        $m1Npl = 0.0;
+        $actualNpl = 0.0;
+        foreach ($rows as $row) {
+          if (in_array($row['kol'], ['KL','D','M'], true)) $m1Npl += $row['m1']['os'];
+          foreach (['KL','D','M'] as $dst) $actualNpl += $row['actual'][$dst]['os'];
+        }
+        foreach (['KL','D','M'] as $dst) $actualNpl += $newByBucket[$dst]['os'];
+
+        $actualTotal = 0.0;
+        foreach (['L','DP','KL','D','M'] as $dst) $actualTotal += $totals['actual'][$dst]['os'];
+        $nplM1Pct = $totals['m1_os'] > 0 ? round($m1Npl / $totals['m1_os'] * 100, 2) : 0.0;
+        $nplActualPct = $actualTotal > 0 ? round($actualNpl / $actualTotal * 100, 2) : 0.0;
+
+        $totals['actual_total'] = $actualTotal;
+        $totals['npl_prev'] = $m1Npl;
+        $totals['npl_now'] = $actualNpl;
+        $totals['npl_prev_pct'] = $nplM1Pct;
+        $totals['npl_now_pct'] = $nplActualPct;
+        $totals['npl_delta_pct'] = round($nplActualPct - $nplM1Pct, 2);
+        $totals['rr_prev_pct'] = $totals['m1_os'] > 0 ? round($totals['rr_prev'] / $totals['m1_os'] * 100, 2) : 0.0;
+        $totals['rr_actual_pct'] = $actualTotal > 0 ? round($totals['rr_actual'] / $actualTotal * 100, 2) : 0.0;
+        $totals['rr_delta_pct'] = round($totals['rr_actual_pct'] - $totals['rr_prev_pct'], 2);
+        $totals['growth'] = $actualTotal - $totals['m1_os'];
+        $totals['restruck_total'] = $totals['restruck'];
+        $totals['angsuran_os_total'] = $totals['angsuran']['os'];
+        $totals['realisasi_bulan_ini'] = $totals['realisasi']['os'] + $totals['restruck']['os'];
+        $totals['run_off_prev_angsuran'] = $previousRunOff['angsuran'];
+        $totals['run_off_prev_pelunasan'] = $previousRunOff['pelunasan'];
+        $totals['run_off_prev_total'] = $previousRunOff['total'];
+        $totals['run_off_delta'] = $totals['run_off_total'] - $previousRunOff['total'];
+        $totals['run_off_prev_closing'] = $previousClosing;
+        $totals['run_off_prev_harian'] = $previousHarian;
+
+        foreach ($DST as $dst) {
+          $totals['actual'][$dst]['pct'] = $totals['m1_os'] > 0
+            ? round($totals['actual'][$dst]['os'] / $totals['m1_os'] * 100, 2) : 0.0;
+          $totals['actual'][$dst]['noa_pct'] = $totals['m1_noa'] > 0
+            ? round($totals['actual'][$dst]['noa'] / $totals['m1_noa'] * 100, 2) : 0.0;
+        }
+
+        $responseData = ['rows'=>$rows, 'totals'=>$totals];
+        if ($detailType !== '') {
+          usort($detailRows, static function ($a, $b) {
+            return (float)($b['nominal_closing'] ?? 0) <=> (float)($a['nominal_closing'] ?? 0);
+          });
+          $responseData['detail_rows'] = $detailRows;
+          $responseData['detail_total'] = count($detailRows);
+        }
+
+        sendResponse(200, 'OK', [
+          'params'=>[
+            'kode_kantor'=>$kantor,
+            'korwil'=>$korwil ?: null,
+            'closing_date'=>$closing,
+            'harian_date'=>$harian,
+            'nominal_field'=>$nominalField
+          ],
+          'data'=>$responseData
+        ]);
+      }
+
+      /**
+       * Proyeksi pembayaran cockpit migrasi kolek.
+       *
+       * Kolek L dipisahkan antara sudah/belum bayar pada bulan berjalan.
+       * Untuk rekening yang belum bayar, pembayaran bulan sebelumnya dipakai
+       * sebagai baseline proyeksi. Untuk DP/KL/D/M, hanya rekening yang
+       * membayar positif pada tiga bulan penuh sebelumnya yang dirangkum.
+       */
+      public function getMigrasiPaymentProjection($input = []) {
+        $closing = $this->asDate($input['closing_date'] ?? null);
+        $harian  = $this->asDate($input['harian_date'] ?? null);
+        $kantor  = trim((string)($input['kode_kantor'] ?? ''));
+        $kantor  = str_replace('CABANG:', '', $kantor);
+        $kantor  = ($kantor === '' || $kantor === '000') ? null : str_pad($kantor, 3, '0', STR_PAD_LEFT);
+        $korwil  = strtoupper(trim((string)($input['korwil'] ?? '')));
+        $korwil  = str_replace('KORWIL:', '', $korwil);
+        $bounds  = $this->getMigrasiKorwilBounds($korwil);
+        $nominalField = $this->normalizeMigrasiNominalField(
+          $input['nominal_field'] ?? $input['hitung_berdasarkan'] ?? 'saldo_bank'
+        );
+        $detailType = strtolower(trim((string)($input['detail'] ?? '')));
+        if (!in_array($detailType, ['', 'l_paid', 'l_unpaid', 'consistent'], true)) $detailType = '';
+
+        if (!$closing || !$harian) {
+          sendResponse(400, 'closing_date & harian_date wajib (YYYY-MM-DD)');
+          return;
+        }
+
+        $currentStart = date('Y-m-01', strtotime($harian));
+        $prev1Start   = date('Y-m-01', strtotime('-1 month', strtotime($currentStart)));
+        $prev2Start   = date('Y-m-01', strtotime('-2 month', strtotime($currentStart)));
+        $prev3Start   = date('Y-m-01', strtotime('-3 month', strtotime($currentStart)));
+        $paymentExpr  = '(COALESCE(t.angsuran_pokok, 0) + COALESCE(t.angsuran_bunga, 0) - COALESCE(t.diskon_bunga, 0))';
+
+        $params = [
+          ':closing_date_projection' => $closing,
+          ':actual_date' => $harian,
+          ':actual_date_tx' => $harian,
+          ':history_start' => $prev3Start,
+          ':current_start' => $currentStart,
+          ':current_end' => date('Y-m-d', strtotime($harian . ' +1 day')),
+          ':current_end_trx' => date('Y-m-d', strtotime($harian . ' +1 day')),
+          ':current_start_last' => $currentStart,
+          ':current_end_last' => date('Y-m-d', strtotime($harian . ' +1 day')),
+          ':prev1_start' => $prev1Start,
+          ':current_start_prev1_sum' => $currentStart,
+          ':prev1_start_last' => $prev1Start,
+          ':current_start_prev1_last' => $currentStart,
+          ':prev2_start' => $prev2Start,
+          ':prev1_start_prev2_sum' => $prev1Start,
+          ':prev2_start_last' => $prev2Start,
+          ':prev1_start_prev2_last' => $prev1Start,
+          ':prev3_start' => $prev3Start,
+          ':prev2_start_prev3_sum' => $prev2Start,
+          ':prev3_start_last' => $prev3Start,
+          ':prev2_start_prev3_last' => $prev2Start,
+        ];
+        $scopeActual = '';
+        $scopeTrx = '';
+        $scopeTrxAccount = '';
+        if ($kantor !== null) {
+          $scopeActual = ' AND n.kode_cabang = :projection_kc_actual ';
+          $scopeTrx = ' AND t.kode_kantor = :projection_kc_trx ';
+          $scopeTrxAccount = ' AND n2.kode_cabang = :projection_kc_trx_account ';
+          $params[':projection_kc_actual'] = $kantor;
+          $params[':projection_kc_trx'] = $kantor;
+          $params[':projection_kc_trx_account'] = $kantor;
+        } elseif ($bounds) {
+          $scopeActual = ' AND n.kode_cabang BETWEEN :projection_kw_start_actual AND :projection_kw_end_actual ';
+          $scopeTrx = ' AND t.kode_kantor BETWEEN :projection_kw_start_trx AND :projection_kw_end_trx ';
+          $scopeTrxAccount = ' AND n2.kode_cabang BETWEEN :projection_kw_start_trx_account AND :projection_kw_end_trx_account ';
+          $params[':projection_kw_start_actual'] = $bounds[0];
+          $params[':projection_kw_end_actual'] = $bounds[1];
+          $params[':projection_kw_start_trx'] = $bounds[0];
+          $params[':projection_kw_end_trx'] = $bounds[1];
+          $params[':projection_kw_start_trx_account'] = $bounds[0];
+          $params[':projection_kw_end_trx_account'] = $bounds[1];
+        } else {
+          $scopeActual = " AND n.kode_cabang <> '000' ";
+          $scopeTrx = " AND t.kode_kantor <> '000' ";
+          $scopeTrxAccount = " AND n2.kode_cabang <> '000' ";
+        }
+
+        $sql = "
+          SELECT
+            n.no_rekening,
+            n.nama_nasabah,
+            n.kode_cabang,
+            n.kolektibilitas,
+            COALESCE(n.hari_menunggak, 0) AS hari_menunggak,
+            COALESCE(n.{$nominalField}, 0) AS nominal_actual,
+            nc.no_rekening AS closing_no_rekening,
+            COALESCE(nc.hari_menunggak, 0) AS dpd_closing,
+            COALESCE(nc.{$nominalField}, 0) AS nominal_closing,
+            nc.jml_pinjaman AS closing_jml_pinjaman,
+            nc.jml_angsuran AS closing_jml_angsuran,
+            nc.suku_bunga_per_tahun AS closing_suku_bunga_per_tahun,
+            nc.type_kredit AS closing_type_kredit,
+            nc.tgl_realisasi AS closing_tgl_realisasi,
+            n.tgl_jatuh_tempo,
+            COALESCE(p.bayar_current, 0) AS bayar_current,
+            p.tgl_bayar_current,
+            COALESCE(p.bayar_prev1, 0) AS bayar_prev1,
+            p.tgl_bayar_prev1,
+            COALESCE(p.bayar_prev2, 0) AS bayar_prev2,
+            p.tgl_bayar_prev2,
+            COALESCE(p.bayar_prev3, 0) AS bayar_prev3,
+            p.tgl_bayar_prev3
+          FROM nominatif n
+          LEFT JOIN nominatif nc
+            ON nc.no_rekening = n.no_rekening
+           AND nc.kode_cabang = n.kode_cabang
+           AND nc.created = :closing_date_projection
+          LEFT JOIN (
+            SELECT
+              t.no_rekening,
+              SUM(CASE WHEN t.tgl_trans >= :current_start AND t.tgl_trans < :current_end THEN {$paymentExpr} ELSE 0 END) AS bayar_current,
+              MAX(CASE WHEN t.tgl_trans >= :current_start_last AND t.tgl_trans < :current_end_last AND {$paymentExpr} > 0 THEN t.tgl_trans END) AS tgl_bayar_current,
+              SUM(CASE WHEN t.tgl_trans >= :prev1_start AND t.tgl_trans < :current_start_prev1_sum THEN {$paymentExpr} ELSE 0 END) AS bayar_prev1,
+              MAX(CASE WHEN t.tgl_trans >= :prev1_start_last AND t.tgl_trans < :current_start_prev1_last AND {$paymentExpr} > 0 THEN t.tgl_trans END) AS tgl_bayar_prev1,
+              SUM(CASE WHEN t.tgl_trans >= :prev2_start AND t.tgl_trans < :prev1_start_prev2_sum THEN {$paymentExpr} ELSE 0 END) AS bayar_prev2,
+              MAX(CASE WHEN t.tgl_trans >= :prev2_start_last AND t.tgl_trans < :prev1_start_prev2_last AND {$paymentExpr} > 0 THEN t.tgl_trans END) AS tgl_bayar_prev2,
+              SUM(CASE WHEN t.tgl_trans >= :prev3_start AND t.tgl_trans < :prev2_start_prev3_sum THEN {$paymentExpr} ELSE 0 END) AS bayar_prev3,
+              MAX(CASE WHEN t.tgl_trans >= :prev3_start_last AND t.tgl_trans < :prev2_start_prev3_last AND {$paymentExpr} > 0 THEN t.tgl_trans END) AS tgl_bayar_prev3
+            FROM transaksi_kredit t
+            INNER JOIN nominatif n2
+              ON n2.no_rekening = t.no_rekening
+             AND n2.created = :actual_date_tx
+             AND n2.kolektibilitas IN ('L','DP','KL','D','M')
+             AND COALESCE(n2.{$nominalField}, 0) > 0
+             {$scopeTrxAccount}
+            WHERE t.tgl_trans >= :history_start
+              AND t.tgl_trans < :current_end_trx
+              {$scopeTrx}
+            GROUP BY t.no_rekening
+          ) p ON p.no_rekening = n.no_rekening
+          WHERE n.created = :actual_date
+            AND n.kolektibilitas IN ('L','DP','KL','D','M')
+            AND COALESCE(n.{$nominalField}, 0) > 0
+            {$scopeActual}
+        ";
+
+        try {
+          $stmt = $this->pdo->prepare($sql);
+          foreach ($params as $key => $value) $stmt->bindValue($key, $value);
+          $stmt->execute();
+          $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Throwable $e) {
+          sendResponse(500, 'Gagal mengambil proyeksi pembayaran: ' . $e->getMessage());
+          return;
+        }
+
+        $lancar = [
+          'eligible_noa' => 0, 'eligible_os' => 0.0,
+          'sudah_bayar_noa' => 0, 'sudah_bayar_os' => 0.0, 'sudah_bayar_nominal' => 0.0,
+          'belum_bayar_noa' => 0, 'belum_bayar_os' => 0.0,
+          'proyeksi_nominal' => 0.0, 'proyeksi_noa' => 0,
+          'bulan_lalu_nominal' => 0.0
+        ];
+        $bucket3 = [];
+        foreach (['DP','KL','D','M'] as $bucket) {
+          $bucket3[$bucket] = [
+            'noa' => 0, 'os' => 0.0,
+            'bulan_1' => 0.0, 'bulan_2' => 0.0, 'bulan_3' => 0.0
+          ];
+        }
+        $unpaidRows = [];
+        $paidRows = [];
+        $consistentRows = [];
+        $runoffBuckets = [];
+        foreach ([
+          '0' => 'Bucket 0',
+          '1_30' => 'Bucket 1 - 30',
+          '31_90' => 'Bucket 31 - 90',
+          '91_180' => 'Bucket 91 - 180',
+          '180_plus' => 'Bucket 180 +'
+        ] as $key => $label) {
+          $runoffBuckets[$key] = [
+            'key' => $key, 'label' => $label, 'noa' => 0,
+            'closing' => 0.0,
+            'angsuran_sep' => 0.0, 'angsuran_okt' => 0.0,
+            'pokok_sep' => 0.0, 'bunga_sep' => 0.0,
+            'pokok_okt' => 0.0, 'bunga_okt' => 0.0,
+            'belum_bayar_sep_noa' => 0, 'belum_bayar_okt_noa' => 0
+          ];
+        }
+
+        foreach ($rows as $row) {
+          $kol = strtoupper(trim((string)($row['kolektibilitas'] ?? '')));
+          $currentPaid = (float)($row['bayar_current'] ?? 0);
+          $prev1 = (float)($row['bayar_prev1'] ?? 0);
+          $prev2 = (float)($row['bayar_prev2'] ?? 0);
+          $prev3 = (float)($row['bayar_prev3'] ?? 0);
+          $nominal = (float)($row['nominal_actual'] ?? 0);
+
+          if (!empty($row['closing_no_rekening']) && (float)($row['nominal_closing'] ?? 0) > 0) {
+            $dpdClosing = max(0, (int)($row['dpd_closing'] ?? 0));
+            $bucketKey = $dpdClosing <= 0 ? '0'
+              : ($dpdClosing <= 30 ? '1_30'
+              : ($dpdClosing <= 90 ? '31_90'
+              : ($dpdClosing <= 180 ? '91_180' : '180_plus')));
+            $loanForSchedule = [
+              'jml_pinjaman' => $row['closing_jml_pinjaman'],
+              'jml_angsuran' => $row['closing_jml_angsuran'],
+              'suku_bunga_per_tahun' => $row['closing_suku_bunga_per_tahun'],
+              'type_kredit' => $row['closing_type_kredit'],
+              'tgl_realisasi' => $row['closing_tgl_realisasi'],
+            ];
+            $billSep = LoanInstallmentHelper::calculateMonthlyBill($loanForSchedule, $prev1Start);
+            $billOkt = LoanInstallmentHelper::calculateMonthlyBill($loanForSchedule, $currentStart);
+            $paidSep = $prev1 > 0;
+            $paidOkt = $currentPaid > 0;
+            $runoffBuckets[$bucketKey]['noa']++;
+            $runoffBuckets[$bucketKey]['closing'] += (float)$row['nominal_closing'];
+            if (!$paidSep) {
+              $runoffBuckets[$bucketKey]['belum_bayar_sep_noa']++;
+              $runoffBuckets[$bucketKey]['angsuran_sep'] += $billSep['total'];
+              $runoffBuckets[$bucketKey]['pokok_sep'] += $billSep['pokok'];
+              $runoffBuckets[$bucketKey]['bunga_sep'] += $billSep['bunga'];
+            }
+            if (!$paidOkt) {
+              $runoffBuckets[$bucketKey]['belum_bayar_okt_noa']++;
+              $runoffBuckets[$bucketKey]['angsuran_okt'] += $billOkt['total'];
+              $runoffBuckets[$bucketKey]['pokok_okt'] += $billOkt['pokok'];
+              $runoffBuckets[$bucketKey]['bunga_okt'] += $billOkt['bunga'];
+            }
+          }
+
+          if ($kol === 'L' && (int)($row['hari_menunggak'] ?? 0) === 0) {
+            $lancar['eligible_noa']++;
+            $lancar['eligible_os'] += $nominal;
+            if ($currentPaid > 0) {
+              $lancar['sudah_bayar_noa']++;
+              $lancar['sudah_bayar_os'] += $nominal;
+              $lancar['sudah_bayar_nominal'] += $currentPaid;
+              $paidRows[] = [
+                'no_rekening' => $row['no_rekening'],
+                'nama_nasabah' => $row['nama_nasabah'],
+                'kode_cabang' => $row['kode_cabang'],
+                'nominal_actual' => $nominal,
+                'bayar_current' => $currentPaid,
+                'tgl_bayar_current' => $row['tgl_bayar_current'],
+                'tgl_jatuh_tempo' => $row['tgl_jatuh_tempo']
+              ];
+            } else {
+              $lancar['belum_bayar_noa']++;
+              $lancar['belum_bayar_os'] += $nominal;
+              $lancar['proyeksi_nominal'] += $prev1;
+              if ($prev1 > 0) $lancar['proyeksi_noa']++;
+              $lancar['bulan_lalu_nominal'] += $prev1;
+              $unpaidRows[] = [
+                'no_rekening' => $row['no_rekening'],
+                'nama_nasabah' => $row['nama_nasabah'],
+                'kode_cabang' => $row['kode_cabang'],
+                'nominal_actual' => $nominal,
+                'bulan_lalu_nominal' => $prev1,
+                'tgl_bayar_bulan_lalu' => $row['tgl_bayar_prev1'],
+                'tgl_jatuh_tempo' => $row['tgl_jatuh_tempo']
+              ];
+            }
+          }
+
+          if (isset($bucket3[$kol]) && $prev1 > 0 && $prev2 > 0 && $prev3 > 0) {
+            $bucket3[$kol]['noa']++;
+            $bucket3[$kol]['os'] += $nominal;
+            $bucket3[$kol]['bulan_1'] += $prev1;
+            $bucket3[$kol]['bulan_2'] += $prev2;
+            $bucket3[$kol]['bulan_3'] += $prev3;
+            $consistentRows[] = [
+              'no_rekening' => $row['no_rekening'],
+              'nama_nasabah' => $row['nama_nasabah'],
+              'kode_cabang' => $row['kode_cabang'],
+              'kolektibilitas' => $kol,
+              'nominal_actual' => $nominal,
+              'bulan_1' => $prev1, 'bulan_2' => $prev2, 'bulan_3' => $prev3,
+              'tgl_bayar_bulan_1' => $row['tgl_bayar_prev1'],
+              'tgl_bayar_bulan_2' => $row['tgl_bayar_prev2'],
+              'tgl_bayar_bulan_3' => $row['tgl_bayar_prev3']
+            ];
+          }
+        }
+
+        usort($unpaidRows, static function ($a, $b) {
+          return (float)$b['bulan_lalu_nominal'] <=> (float)$a['bulan_lalu_nominal'];
+        });
+        usort($consistentRows, static function ($a, $b) {
+          return (float)$b['nominal_actual'] <=> (float)$a['nominal_actual'];
+        });
+
+        $detailRows = $detailType === 'l_paid'
+          ? $paidRows
+          : ($detailType === 'l_unpaid' ? $unpaidRows : $consistentRows);
+        usort($paidRows, static function ($a, $b) {
+          return (float)$b['bayar_current'] <=> (float)$a['bayar_current'];
+        });
+        if ($detailType === 'l_paid') $detailRows = $paidRows;
+
+        $runoffTotal = [
+          'noa' => 0, 'closing' => 0.0,
+          'angsuran_sep' => 0.0, 'angsuran_okt' => 0.0,
+          'pokok_sep' => 0.0, 'bunga_sep' => 0.0,
+          'pokok_okt' => 0.0, 'bunga_okt' => 0.0,
+          'belum_bayar_sep_noa' => 0, 'belum_bayar_okt_noa' => 0
+        ];
+        foreach ($runoffBuckets as &$bucket) {
+          $bucket['persen'] = $bucket['closing'] > 0
+            ? ($bucket['pokok_okt'] / $bucket['closing']) * 100 : 0.0;
+          $bucket['belum_masuk'] = $bucket['pokok_okt'];
+          $bucket['proyeksi_okt'] = $bucket['pokok_okt'];
+          $bucket['noa'] = (int)$bucket['noa'];
+          foreach (['noa', 'closing', 'angsuran_sep', 'angsuran_okt', 'pokok_sep', 'bunga_sep', 'pokok_okt', 'bunga_okt', 'belum_bayar_sep_noa', 'belum_bayar_okt_noa'] as $key) {
+            $runoffTotal[$key] += (float)$bucket[$key];
+          }
+        }
+        unset($bucket);
+        $runoffTotal['persen'] = $runoffTotal['closing'] > 0
+          ? ($runoffTotal['pokok_okt'] / $runoffTotal['closing']) * 100 : 0.0;
+        $runoffTotal['belum_masuk'] = $runoffTotal['pokok_okt'];
+        $runoffTotal['proyeksi_okt'] = $runoffTotal['pokok_okt'];
+
+        $responseData = [
+          'lancar' => $lancar,
+          'konsisten_3_bulan' => $bucket3,
+          'belum_bayar_rows' => array_slice($unpaidRows, 0, 30),
+          'konsisten_3_bulan_rows' => array_slice($consistentRows, 0, 30),
+          'runoff_buckets' => array_values($runoffBuckets),
+          'runoff_total' => $runoffTotal,
+          'runoff_period' => [
+            'closing' => $closing,
+            'angsuran_sep_start' => $prev1Start,
+            'angsuran_sep_end' => date('Y-m-d', strtotime($currentStart . ' -1 day')),
+            'angsuran_okt_start' => $currentStart,
+            'angsuran_okt_end' => $harian,
+            'days_elapsed' => (int)date('j', strtotime($harian)),
+            'days_in_month' => (int)date('t', strtotime($harian))
+          ]
+        ];
+        if ($detailType !== '') $responseData['detail_rows'] = $detailRows;
+
+        sendResponse(200, 'OK', [
+          'params' => [
+            'closing_date' => $closing,
+            'harian_date' => $harian,
+            'kode_kantor' => $kantor,
+            'korwil' => $korwil ?: null,
+            'nominal_field' => $nominalField,
+            'bulan_lalu' => $prev1Start,
+            'bulan_lalu_ke_2' => $prev2Start,
+            'bulan_lalu_ke_3' => $prev3Start
+          ],
+          'data' => $responseData
+        ]);
+      }
+
+      /** Ringkasan CKPN dashboard migrasi berdasarkan nilai_ckpn di nominatif. */
+      public function getMigrasiCkpnSummary($input = []) {
+        $b = is_array($input) ? $input : (json_decode(file_get_contents('php://input'), true) ?: []);
+        $closing = $this->asDate($b['closing_date'] ?? null);
+        $harian  = $this->asDate($b['harian_date'] ?? null);
+        $kcRaw   = trim((string)($b['kode_kantor'] ?? ''));
+        $kcRaw   = str_replace('CABANG:', '', $kcRaw);
+        $kc      = ($kcRaw === '' || $kcRaw === '000') ? null : str_pad($kcRaw, 3, '0', STR_PAD_LEFT);
+        $korwil  = strtoupper(trim((string)($b['korwil'] ?? '')));
+        $korwil  = str_replace('KORWIL:', '', $korwil);
+        $bounds  = $this->getMigrasiKorwilBounds($korwil);
+
+        if (!$closing || !$harian) {
+          return sendResponse(400, 'closing_date & harian_date wajib (YYYY-MM-DD)');
+        }
+
+        $sumForDate = function (string $date) use ($kc, $bounds): float {
+          [$ds, $de] = $this->dayRange($date);
+          $sql = "SELECT COALESCE(SUM(COALESCE(nilai_ckpn, 0)), 0)
+                  FROM nominatif
+                  WHERE created >= ? AND created < ?";
+          $params = [$ds, $de];
+          if ($kc !== null) {
+            $sql .= " AND LPAD(CAST(kode_cabang AS CHAR),3,'0') = ?";
+            $params[] = $kc;
+          } elseif ($bounds) {
+            $sql .= " AND LPAD(CAST(kode_cabang AS CHAR),3,'0') BETWEEN ? AND ?";
+            $params[] = $bounds[0];
+            $params[] = $bounds[1];
+          } else {
+            $sql .= " AND LPAD(CAST(kode_cabang AS CHAR),3,'0') <> '000'";
+          }
+          $st = $this->pdo->prepare($sql);
+          $st->execute($params);
+          return (float)($st->fetchColumn() ?: 0);
+        };
+
+        try {
+          $ckpnClosing = $sumForDate($closing);
+          $ckpnActual  = $sumForDate($harian);
+        } catch (PDOException $e) {
+          return sendResponse(500, 'PDO Error: ' . $e->getMessage(), null);
+        }
+
+        return sendResponse(200, 'OK', [
+          'params' => [
+            'closing_date' => $closing,
+            'harian_date' => $harian,
+            'kode_kantor' => $kc,
+            'korwil' => $korwil ?: null
+          ],
+          'data' => [
+            'ckpn_closing' => (int)round($ckpnClosing),
+            'ckpn_actual' => (int)round($ckpnActual),
+            'ckpn_delta' => (int)round($ckpnActual - $ckpnClosing)
+          ]
+        ]);
+      }
+
       public function getBucketCkpn($input=null){
         // ---- params
         $b = is_array($input)?$input:(json_decode(file_get_contents('php://input'),true) ?: []);
@@ -375,13 +1284,16 @@ class KolekController {
         $harian  = $this->asDate($b['harian_date'] ?? null);
         $kc_raw  = $b['kode_kantor'] ?? null;
         $kc      = ($kc_raw===null || $kc_raw==='') ? null : str_pad((string)$kc_raw,3,'0',STR_PAD_LEFT);
+        $korwil  = strtoupper(trim((string)($b['korwil'] ?? '')));
+        $korwil  = str_replace('KORWIL:', '', $korwil);
+        $korwilBounds = $this->getMigrasiKorwilBounds($korwil);
         if (!$closing || !$harian) return sendResponse(400,"closing_date & harian_date wajib (YYYY-MM-DD)");
 
         [$defs,$nameMap,$tagMap] = $this->loadBuckets();
         $order = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N'];
 
-        $M1  = $this->computeCKPNForDate($closing,$kc,$defs);
-        $CUR = $this->computeCKPNForDate($harian ,$kc,$defs);
+        $M1  = $this->computeCKPNForDate($closing,$kc,$defs,$korwilBounds);
+        $CUR = $this->computeCKPNForDate($harian ,$kc,$defs,$korwilBounds);
 
         // ---- O_LUNAS: CKPN M-1 utk akun yang hilang (curr = 0)
         $o_ckpn = 0; $o_noa = 0;
@@ -461,6 +1373,7 @@ class KolekController {
           'closing_date'=>$closing,
           'harian_date'=>$harian,
           'kode_kantor'=>$kc,
+          'korwil'=>$korwil ?: null,
           'rows'=>$rows,
 
           // Ringkasan per cluster (A..N)
@@ -496,7 +1409,7 @@ class KolekController {
 
     
     /** hitung CKPN per bucket untuk 1 tanggal (pakai snapshot kalau ada; kalau tidak compute) */
-    private function computeCKPNForDate(string $d, ?string $kc, array $defs): array {
+    private function computeCKPNForDate(string $d, ?string $kc, array $defs, ?array $bounds = null): array {
       $sumPer=[]; $ckByAcc=[]; $accSet=[];
       $LGD = $this->loadGlobalLGD($d);
 
@@ -507,20 +1420,34 @@ class KolekController {
         $sqlOS="SELECT no_rekening, saldo_bank, baki_debet, kode_cabang, hari_menunggak, kode_produk
                 FROM nominatif WHERE created >= ? AND created < ?";
         $paramsOS=[$ds,$de];
-        if ($kc!==null){ $sqlOS.=" AND LPAD(CAST(kode_cabang AS CHAR),3,'0') = ?"; $paramsOS[]=$kc; }
-        else { $sqlOS.=" AND LPAD(CAST(kode_cabang AS CHAR),3,'0') <> '000'"; }
+        if ($kc!==null){
+          $sqlOS.=" AND LPAD(CAST(kode_cabang AS CHAR),3,'0') = ?";
+          $paramsOS[]=$kc;
+        } elseif ($bounds) {
+          $sqlOS.=" AND LPAD(CAST(kode_cabang AS CHAR),3,'0') BETWEEN ? AND ?";
+          $paramsOS[]=$bounds[0]; $paramsOS[]=$bounds[1];
+        } else {
+          $sqlOS.=" AND LPAD(CAST(kode_cabang AS CHAR),3,'0') <> '000'";
+        }
         $stOS=$this->pdo->prepare($sqlOS); $stOS->execute($paramsOS);
         $nom = $stOS->fetchAll(PDO::FETCH_ASSOC);
       } catch(PDOException $e){ $nom=[]; }
 
-      $useSnap = $this->hasSnapshot($d,$kc);
+      $useSnap = $this->hasSnapshot($d,$kc,$bounds);
       if ($useSnap){
         try{
           $sql="SELECT no_rekening, hari_menunggak, nilai_ckpn FROM nominatif_ckpn
                 WHERE created >= ? AND created < ?";
           $params=[$ds,$de];
-          if ($kc!==null){ $sql.=" AND LPAD(CAST(kode_cabang AS CHAR),3,'0') = ?"; $params[]=$kc; }
-          else { $sql.=" AND kode_cabang <> '000'"; }
+          if ($kc!==null){
+            $sql.=" AND LPAD(CAST(kode_cabang AS CHAR),3,'0') = ?";
+            $params[]=$kc;
+          } elseif ($bounds) {
+            $sql.=" AND LPAD(CAST(kode_cabang AS CHAR),3,'0') BETWEEN ? AND ?";
+            $params[]=$bounds[0]; $params[]=$bounds[1];
+          } else {
+            $sql.=" AND kode_cabang <> '000'";
+          }
           $st=$this->pdo->prepare($sql); $st->execute($params);
           while($r=$st->fetch(PDO::FETCH_ASSOC)){
             $acc=$r['no_rekening']; $accSet[$acc]=true;
@@ -590,6 +1517,9 @@ class KolekController {
       $harian  = $this->asDate($b['harian_date'] ?? null);
       $kc_raw  = $b['kode_kantor'] ?? null;
       $kc      = ($kc_raw===null || $kc_raw==='') ? null : str_pad((string)$kc_raw,3,'0',STR_PAD_LEFT);
+      $nominalField = $this->normalizeMigrasiNominalField(
+        $b['nominal_field'] ?? $b['hitung_berdasarkan'] ?? 'saldo_bank'
+      );
       if (!$closing || !$harian) return sendResponse(400,"closing_date & harian_date wajib (YYYY-MM-DD)");
 
       // ---- Master bucket
@@ -597,8 +1527,8 @@ class KolekController {
       $order = ['A','B','C','D','E','F','G','H','I','J','K','L','M','N'];
 
       // ---- Data per tanggal
-      $M1  = $this->computeOSForDate($closing,$kc,$defs);
-      $CUR = $this->computeOSForDate($harian ,$kc,$defs);
+      $M1  = $this->computeOSForDate($closing,$kc,$defs,'nominatif',$nominalField);
+      $CUR = $this->computeOSForDate($harian ,$kc,$defs,'nominatif',$nominalField);
 
       // ===== EXCLUDE realisasi baru dari ACTUAL SEMUA BUCKET =====
       foreach ($CUR['accSet'] as $acc => $_) {
@@ -625,7 +1555,7 @@ class KolekController {
       $realisasi = ['noa'=>0,'os'=>0];
       $start_month = date('Y-m-01', strtotime($harian));
       [$ds,$de] = $this->dayRange($harian);
-      $sqlR = "SELECT COUNT(*) AS noa, COALESCE(SUM(baki_debet),0) AS os
+      $sqlR = "SELECT COUNT(*) AS noa, COALESCE(SUM({$nominalField}),0) AS os
               FROM nominatif
               WHERE created >= ? AND created < ?
                 AND tgl_realisasi BETWEEN ? AND ?";
@@ -842,7 +1772,7 @@ class KolekController {
       [$s2, $e2] = $this->dayRange($harian);
 
       // Query Nominal RR M-1
-      $sqlRRM1 = "SELECT COALESCE(SUM(baki_debet),0) FROM nominatif WHERE created >= ? AND created < ? AND COALESCE(hari_menunggak, 0) = 0 AND kolektibilitas = 'L' AND baki_debet > 0";
+      $sqlRRM1 = "SELECT COALESCE(SUM({$nominalField}),0) FROM nominatif WHERE created >= ? AND created < ? AND COALESCE(hari_menunggak, 0) = 0 AND kolektibilitas = 'L' AND {$nominalField} > 0";
       $pM1 = [$s1, $e1];
       if ($kc !== null){ $sqlRRM1 .= " AND LPAD(CAST(kode_cabang AS CHAR),3,'0') = ?"; $pM1[] = $kc; }
       else { $sqlRRM1 .= " AND LPAD(CAST(kode_cabang AS CHAR),3,'0') <> '000'"; }
@@ -850,7 +1780,7 @@ class KolekController {
       $osA_m1 = (int)$stRRM1->fetchColumn();
 
       // Query Nominal RR Actual
-      $sqlRRCur = "SELECT COALESCE(SUM(baki_debet),0) FROM nominatif WHERE created >= ? AND created < ? AND COALESCE(hari_menunggak, 0) = 0 AND kolektibilitas = 'L' AND baki_debet > 0";
+      $sqlRRCur = "SELECT COALESCE(SUM({$nominalField}),0) FROM nominatif WHERE created >= ? AND created < ? AND COALESCE(hari_menunggak, 0) = 0 AND kolektibilitas = 'L' AND {$nominalField} > 0";
       $pCur = [$s2, $e2];
       if ($kc !== null){ $sqlRRCur .= " AND LPAD(CAST(kode_cabang AS CHAR),3,'0') = ?"; $pCur[] = $kc; }
       else { $sqlRRCur .= " AND LPAD(CAST(kode_cabang AS CHAR),3,'0') <> '000'"; }
@@ -882,6 +1812,7 @@ class KolekController {
       // ---- Response
       return sendResponse(200,"OK",[
         'closing_date'=>$closing,'harian_date'=>$harian,'kode_kantor'=>$kc,
+        'nominal_field'=>$nominalField,
         'realisasi_row'=>$realisasi,
         'rows'=>$rows,
         'grand_total'=>[
@@ -1303,12 +2234,18 @@ class KolekController {
       return $pdMap;
     }
 
-    private function hasSnapshot(string $d, ?string $kc): bool {
+    private function hasSnapshot(string $d, ?string $kc, ?array $bounds = null): bool {
       try {
         [$ds,$de] = $this->dayRange($d);
         $sql = "SELECT COUNT(1) FROM nominatif_ckpn WHERE created >= ? AND created < ?";
         $params = [$ds,$de];
-        if ($kc!==null){ $sql.=" AND LPAD(CAST(kode_cabang AS CHAR),3,'0') = ?"; $params[]=$kc; }
+        if ($kc!==null){
+          $sql.=" AND LPAD(CAST(kode_cabang AS CHAR),3,'0') = ?";
+          $params[]=$kc;
+        } elseif ($bounds) {
+          $sql.=" AND LPAD(CAST(kode_cabang AS CHAR),3,'0') BETWEEN ? AND ?";
+          $params[]=$bounds[0]; $params[]=$bounds[1];
+        }
         $st = $this->pdo->prepare($sql); $st->execute($params);
         return ((int)$st->fetchColumn() > 0);
       } catch (PDOException $e) { return false; }
