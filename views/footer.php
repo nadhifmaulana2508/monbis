@@ -7,6 +7,28 @@
 
 <?php require __DIR__ . '/components/sidebar_behavior.php'; ?>
 
+<!-- MODAL PEMBERITAHUAN MONBIS -->
+<div id="monbisAnnouncementModal" class="monbis-announcement hidden" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="monbisAnnouncementTitle">
+    <div class="monbis-announcement__backdrop" data-announcement-close></div>
+    <article class="monbis-announcement__card">
+        <header class="monbis-announcement__head">
+            <div class="monbis-announcement__title-wrap">
+                <span class="monbis-announcement__icon" aria-hidden="true">i</span>
+                <div>
+                    <span class="monbis-announcement__eyebrow">Pemberitahuan Monbis</span>
+                    <h2 id="monbisAnnouncementTitle">Perubahan Signifikan MONBIS v1.1</h2>
+                </div>
+            </div>
+            <button type="button" class="monbis-announcement__close" data-announcement-close aria-label="Tutup pemberitahuan">&times;</button>
+        </header>
+        <div class="monbis-announcement__body">
+            <p id="monbisAnnouncementMessage"></p>
+            <div class="monbis-announcement__period" id="monbisAnnouncementPeriod"></div>
+            <button type="button" class="monbis-announcement__confirm" data-announcement-close>Saya Mengerti</button>
+        </div>
+    </article>
+</div>
+
 <!-- FLOATING HELPDESK BUTTON -->
 <!-- <div class="fixed bottom-4 right-4 z-[60] flex flex-col items-end gap-1">
     <div id="helpdeskContainer" 
@@ -322,6 +344,132 @@
 </script>
 
 <style>
+    .monbis-announcement {
+        position:fixed;
+        inset:0;
+        z-index:5000;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        padding:16px;
+        font-family:var(--monbis-event-font, Roboto, Arial, system-ui, sans-serif);
+    }
+    .monbis-announcement.hidden { display:none; }
+    .monbis-announcement__backdrop {
+        position:absolute;
+        inset:0;
+        background:rgba(15,23,42,.62);
+        backdrop-filter:blur(6px);
+    }
+    .monbis-announcement__card {
+        position:relative;
+        z-index:1;
+        width:min(640px, calc(100vw - 32px));
+        overflow:hidden;
+        border:1px solid #dbe3ee;
+        border-radius:18px;
+        background:#fff;
+        color:#0f172a;
+        box-shadow:0 30px 80px rgba(15,23,42,.30);
+    }
+    .monbis-announcement__head {
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:14px;
+        padding:16px 18px;
+        border-bottom:1px solid #e2e8f0;
+        background:linear-gradient(180deg,#fff,#f8fafc);
+    }
+    .monbis-announcement__title-wrap { display:flex; align-items:center; gap:11px; min-width:0; }
+    .monbis-announcement__icon {
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        width:36px;
+        height:36px;
+        flex:0 0 36px;
+        border:1px solid #bfdbfe;
+        border-radius:10px;
+        background:#eff6ff;
+        color:#2563eb;
+        font-size:17px;
+        font-weight:900;
+    }
+    .monbis-announcement__eyebrow {
+        display:block;
+        margin-bottom:3px;
+        color:#64748b;
+        font-size:9px;
+        font-weight:900;
+        letter-spacing:.13em;
+        text-transform:uppercase;
+    }
+    .monbis-announcement__head h2 { margin:0; color:#0f172a; font-size:18px; font-weight:950; line-height:1.25; }
+    .monbis-announcement__close {
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        width:34px;
+        height:34px;
+        flex:0 0 34px;
+        border:1px solid #fecaca;
+        border-radius:9px;
+        background:#fff1f2;
+        color:#e11d48;
+        font-size:24px;
+        line-height:1;
+        cursor:pointer;
+    }
+    .monbis-announcement__close:hover { background:#ffe4e6; }
+    .monbis-announcement__body { padding:18px; }
+    .monbis-announcement__body p {
+        margin:0;
+        color:#475569;
+        font-size:13px;
+        line-height:1.7;
+        white-space:pre-line;
+    }
+    .monbis-announcement__period {
+        margin-top:14px;
+        padding:9px 11px;
+        border:1px solid #dbeafe;
+        border-radius:10px;
+        background:#eff6ff;
+        color:#1d4ed8;
+        font-size:11px;
+        font-weight:800;
+    }
+    .monbis-announcement__confirm {
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        min-height:38px;
+        margin-top:16px;
+        padding:0 16px;
+        border:0;
+        border-radius:10px;
+        background:#2563eb;
+        color:#fff;
+        font-size:12px;
+        font-weight:900;
+        cursor:pointer;
+        box-shadow:0 9px 18px rgba(37,99,235,.2);
+    }
+    .monbis-announcement__confirm:hover { background:#1d4ed8; }
+    :root[data-monbis-theme="dark"] .monbis-announcement__card { border-color:#334155; background:#111827; color:#f8fafc; }
+    :root[data-monbis-theme="dark"] .monbis-announcement__head { border-color:#334155; background:linear-gradient(180deg,#111827,#0f172a); }
+    :root[data-monbis-theme="dark"] .monbis-announcement__head h2 { color:#f8fafc; }
+    :root[data-monbis-theme="dark"] .monbis-announcement__body p { color:#cbd5e1; }
+    :root[data-monbis-theme="dark"] .monbis-announcement__period { border-color:#1e3a8a; background:#172554; color:#bfdbfe; }
+    @media (max-width:640px) {
+        .monbis-announcement { align-items:flex-end; padding:0; }
+        .monbis-announcement__card { width:100%; border-right:0; border-bottom:0; border-left:0; border-radius:18px 18px 0 0; }
+        .monbis-announcement__head { padding:13px 14px; }
+        .monbis-announcement__body { padding:14px; }
+        .monbis-announcement__head h2 { font-size:16px; }
+        .monbis-announcement__confirm { width:100%; }
+    }
     .monbis-ai-chat {
         position:fixed;
         left:18px;
@@ -712,6 +860,82 @@
         document.querySelectorAll('[data-ai-question]').forEach(btn => {
             btn.addEventListener('click', () => ask(btn.dataset.aiQuestion || 'Jelaskan data halaman ini.'));
         });
+    })();
+</script>
+
+<script>
+    (function () {
+        const API = './api/event_theme/notification';
+        const PENDING_KEY = 'monbis_login_announcement_pending';
+        const modal = document.getElementById('monbisAnnouncementModal');
+        const title = document.getElementById('monbisAnnouncementTitle');
+        const message = document.getElementById('monbisAnnouncementMessage');
+        const period = document.getElementById('monbisAnnouncementPeriod');
+
+        function closeAnnouncement() {
+            if (!modal) return;
+            modal.classList.add('hidden');
+            modal.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('overflow-hidden');
+            document.documentElement.classList.remove('overflow-hidden');
+        }
+
+        function formatDate(value) {
+            if (!value) return '';
+            const date = new Date(value + 'T00:00:00');
+            if (Number.isNaN(date.getTime())) return value;
+            return date.toLocaleDateString('id-ID', { day:'2-digit', month:'long', year:'numeric' });
+        }
+
+        function openAnnouncement(data) {
+            if (!modal || !data) return;
+            if (title) title.textContent = data.title || 'Pemberitahuan Monbis';
+            if (message) message.textContent = data.message || '';
+            if (period) {
+                const start = formatDate(data.start_date);
+                const end = formatDate(data.end_date);
+                period.textContent = start && end ? `Berlaku ${start} s/d ${end}` : 'Pemberitahuan aktif';
+                period.classList.toggle('hidden', !start && !end);
+            }
+            modal.classList.remove('hidden');
+            modal.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('overflow-hidden');
+            document.documentElement.classList.add('overflow-hidden');
+        }
+
+        async function refreshAnnouncement() {
+            let pending = false;
+            try { pending = sessionStorage.getItem(PENDING_KEY) === '1'; } catch (error) {}
+            if (!pending || !modal) return;
+
+            try {
+                const res = await fetch(API, { cache:'no-store' });
+                const json = await res.json();
+                const data = json && json.status === 200 ? json.data : null;
+                try { sessionStorage.removeItem(PENDING_KEY); } catch (error) {}
+                if (data) openAnnouncement(data);
+            } catch (error) {
+                console.warn('Gagal memuat pemberitahuan Monbis:', error);
+            }
+        }
+
+        window.MonbisAnnouncement = window.MonbisAnnouncement || {};
+        window.MonbisAnnouncement.refresh = refreshAnnouncement;
+        window.MonbisAnnouncement.open = openAnnouncement;
+        window.MonbisAnnouncement.close = closeAnnouncement;
+
+        document.querySelectorAll('[data-announcement-close]').forEach(button => {
+            button.addEventListener('click', closeAnnouncement);
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && modal && !modal.classList.contains('hidden')) closeAnnouncement();
+        });
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', refreshAnnouncement, { once:true });
+        } else {
+            refreshAnnouncement();
+        }
     })();
 </script>
 

@@ -48,6 +48,42 @@ class EventThemeController
         $this->pdo->exec($sql);
         $this->ensureColumn('monbis_event_themes', 'image_fit', "VARCHAR(20) NOT NULL DEFAULT 'cover'");
         $this->ensureColumn('monbis_event_themes', 'image_position', "VARCHAR(40) NOT NULL DEFAULT 'center'");
+
+        $notificationSql = "CREATE TABLE IF NOT EXISTS monbis_event_notifications (
+            id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            notification_name VARCHAR(120) NOT NULL DEFAULT 'Pemberitahuan Monbis',
+            title VARCHAR(180) NOT NULL,
+            message TEXT NOT NULL,
+            is_active TINYINT(1) NOT NULL DEFAULT 1,
+            show_after_login TINYINT(1) NOT NULL DEFAULT 1,
+            start_date DATE NULL,
+            end_date DATE NULL,
+            created_by VARCHAR(30) NULL,
+            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY (id),
+            KEY idx_notification_active_period (is_active, show_after_login, start_date, end_date),
+            KEY idx_notification_updated (updated_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+        $notificationTableCheck = $this->pdo->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'monbis_event_notifications'");
+        $notificationTableCheck->execute();
+        $notificationTableExisted = (int)$notificationTableCheck->fetchColumn() > 0;
+        $this->pdo->exec($notificationSql);
+        if (!$notificationTableExisted) {
+            $start = date('Y-m-d');
+            $end = date('Y-m-d', strtotime('+6 days'));
+            $seed = $this->pdo->prepare("INSERT INTO monbis_event_notifications
+                (notification_name, title, message, is_active, show_after_login, start_date, end_date, created_by)
+                VALUES (:name, :title, :message, 1, 1, :start_date, :end_date, '102-119')");
+            $seed->execute(array(
+                ':name' => 'Rilis Monbis v1.1',
+                ':title' => 'Perubahan Signifikan MONBIS v1.1',
+                ':message' => "MONBIS v1.1 telah hadir dengan pembaruan tampilan, filter navbar, laporan saldo bank dan baki debet, serta pengalaman yang lebih responsif di berbagai perangkat.\n\nSilakan jelajahi menu-menu terbaru dan gunakan tombol informasi jika membutuhkan panduan.",
+                ':start_date' => $start,
+                ':end_date' => $end
+            ));
+        }
     }
 
     private function ensureColumn($table, $column, $definition)
@@ -157,6 +193,35 @@ class EventThemeController
         );
     }
 
+    private function normalizeNotification($row)
+    {
+        if (!$row) {
+            return null;
+        }
+        return array(
+            'id' => (int)$row['id'],
+            'notification_name' => $row['notification_name'],
+            'title' => $row['title'],
+            'message' => $row['message'],
+            'is_active' => (int)$row['is_active'],
+            'show_after_login' => (int)$row['show_after_login'],
+            'start_date' => $row['start_date'],
+            'end_date' => $row['end_date'],
+            'created_by' => $row['created_by'],
+            'updated_at' => $row['updated_at']
+        );
+    }
+
+    private function notificationDate($value)
+    {
+        $value = trim((string)$value);
+        if ($value === '') {
+            return null;
+        }
+        $date = DateTime::createFromFormat('Y-m-d', $value);
+        return $date && $date->format('Y-m-d') === $value ? $value : null;
+    }
+
     private function uploadImage($current = null)
     {
         if (empty($_FILES['event_image']) || !is_uploaded_file($_FILES['event_image']['tmp_name'])) {
@@ -207,6 +272,22 @@ class EventThemeController
         sendResponse(200, 'OK', $this->normalizeRow($stmt->fetch(PDO::FETCH_ASSOC)));
     }
 
+    public function activeNotification()
+    {
+        $today = date('Y-m-d');
+        $sql = "SELECT *
+                FROM monbis_event_notifications
+                WHERE is_active = 1
+                  AND show_after_login = 1
+                  AND (start_date IS NULL OR start_date <= :today_start)
+                  AND (end_date IS NULL OR end_date >= :today_end)
+                ORDER BY COALESCE(updated_at, created_at) DESC, id DESC
+                LIMIT 1";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute(array(':today_start' => $today, ':today_end' => $today));
+        sendResponse(200, 'OK', $this->normalizeNotification($stmt->fetch(PDO::FETCH_ASSOC)));
+    }
+
     public function listing($input)
     {
         $this->assertAdmin($input);
@@ -214,6 +295,18 @@ class EventThemeController
         $rows = array();
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $rows[] = $this->normalizeRow($row);
+        }
+        sendResponse(200, 'OK', $rows);
+    }
+
+    public function notificationListing($input)
+    {
+        $this->assertAdmin($input);
+        $stmt = $this->pdo->query("SELECT * FROM monbis_event_notifications
+            ORDER BY is_active DESC, COALESCE(updated_at, created_at) DESC, id DESC LIMIT 50");
+        $rows = array();
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $rows[] = $this->normalizeNotification($row);
         }
         sendResponse(200, 'OK', $rows);
     }
@@ -285,6 +378,78 @@ class EventThemeController
         sendResponse(200, 'Event berhasil disimpan.', $this->normalizeRow($stmt->fetch(PDO::FETCH_ASSOC)));
     }
 
+    public function saveNotification($input)
+    {
+        $adminId = $this->assertAdmin($input);
+        $id = (int)$this->inputValue($input, 'id', '0');
+        $title = $this->inputValue($input, 'title', 'Perubahan Monbis');
+        $message = $this->inputValue($input, 'message', 'Ada pembaruan penting di Monbis.');
+        if ($title === '' || $message === '') {
+            sendResponse(400, 'Judul dan isi pemberitahuan wajib diisi.');
+        }
+
+        $data = array(
+            ':notification_name' => $this->inputValue($input, 'notification_name', 'Pemberitahuan Monbis'),
+            ':title' => $title,
+            ':message' => $message,
+            ':is_active' => $this->inputValue($input, 'is_active', '1') === '1' ? 1 : 0,
+            ':show_after_login' => $this->inputValue($input, 'show_after_login', '1') === '1' ? 1 : 0,
+            ':start_date' => $this->notificationDate($this->inputValue($input, 'start_date', '')),
+            ':end_date' => $this->notificationDate($this->inputValue($input, 'end_date', '')),
+            ':created_by' => (string)$adminId
+        );
+
+        if ($data[':start_date'] && $data[':end_date'] && $data[':start_date'] > $data[':end_date']) {
+            sendResponse(400, 'Tanggal mulai tidak boleh melewati tanggal selesai.');
+        }
+
+        $current = null;
+        if ($id > 0) {
+            $stmt = $this->pdo->prepare("SELECT * FROM monbis_event_notifications WHERE id = :id");
+            $stmt->execute(array(':id' => $id));
+            $current = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+
+        try {
+            $this->pdo->beginTransaction();
+            if ($data[':is_active'] === 1) {
+                $this->pdo->exec("UPDATE monbis_event_notifications SET is_active = 0");
+            }
+
+            if ($id > 0 && $current) {
+                $data[':id'] = $id;
+                $sql = "UPDATE monbis_event_notifications
+                        SET notification_name = :notification_name,
+                            title = :title,
+                            message = :message,
+                            is_active = :is_active,
+                            show_after_login = :show_after_login,
+                            start_date = :start_date,
+                            end_date = :end_date,
+                            created_by = :created_by
+                        WHERE id = :id";
+                $this->pdo->prepare($sql)->execute($data);
+            } else {
+                $sql = "INSERT INTO monbis_event_notifications
+                        (notification_name, title, message, is_active, show_after_login, start_date, end_date, created_by)
+                        VALUES
+                        (:notification_name, :title, :message, :is_active, :show_after_login, :start_date, :end_date, :created_by)";
+                $this->pdo->prepare($sql)->execute($data);
+                $id = (int)$this->pdo->lastInsertId();
+            }
+            $this->pdo->commit();
+        } catch (Throwable $error) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            sendResponse(500, 'Gagal menyimpan pemberitahuan.');
+        }
+
+        $stmt = $this->pdo->prepare("SELECT * FROM monbis_event_notifications WHERE id = :id");
+        $stmt->execute(array(':id' => $id));
+        sendResponse(200, 'Pemberitahuan berhasil disimpan.', $this->normalizeNotification($stmt->fetch(PDO::FETCH_ASSOC)));
+    }
+
     public function delete($input)
     {
         $this->assertAdmin($input);
@@ -295,5 +460,17 @@ class EventThemeController
         $stmt = $this->pdo->prepare("DELETE FROM monbis_event_themes WHERE id = :id");
         $stmt->execute(array(':id' => $id));
         sendResponse(200, 'Event berhasil dihapus.');
+    }
+
+    public function deleteNotification($input)
+    {
+        $this->assertAdmin($input);
+        $id = (int)$this->inputValue($input, 'id', '0');
+        if ($id <= 0) {
+            sendResponse(400, 'ID pemberitahuan tidak valid.');
+        }
+        $stmt = $this->pdo->prepare("DELETE FROM monbis_event_notifications WHERE id = :id");
+        $stmt->execute(array(':id' => $id));
+        sendResponse(200, 'Pemberitahuan berhasil dihapus.');
     }
 }

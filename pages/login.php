@@ -230,6 +230,7 @@ require_once __DIR__ . '/../components/login-showcase.php';
             console.error("Error mengambil data user (whoami):", err);
         }
 
+        try { sessionStorage.setItem('monbis_login_announcement_pending', '1'); } catch (error) {}
         location.href = `${BASE_APP}/${postLoginPage}`;
 
     } catch (error) {

@@ -6,12 +6,18 @@
       </div>
       <div>
         <h1>Setting Event</h1>
-        <p>Atur tampilan navbar dan sidebar sesuai event aktif.</p>
+        <p>Atur tampilan event dan pemberitahuan Monbis untuk pengguna.</p>
       </div>
     </div>
-    <button type="button" class="event-admin-refresh" onclick="eventAdminLoad()">Refresh</button>
+    <button type="button" class="event-admin-refresh" onclick="eventAdminRefreshAll()">Refresh</button>
   </div>
 
+  <div class="event-admin-tabs" role="tablist" aria-label="Pengaturan event Monbis">
+    <button type="button" class="event-tab is-active" data-event-tab="theme" role="tab" aria-selected="true" onclick="eventAdminSwitchTab('theme')">Tampilan Event</button>
+    <button type="button" class="event-tab" data-event-tab="notification" role="tab" aria-selected="false" onclick="eventAdminSwitchTab('notification')">Pemberitahuan</button>
+  </div>
+
+  <div id="eventThemeTab" class="event-admin-tab">
   <div class="event-admin-grid">
     <form id="eventThemeForm" class="event-admin-card" enctype="multipart/form-data">
       <input type="hidden" id="eventId" name="id">
@@ -148,6 +154,76 @@
     </div>
     <div id="eventList" class="event-list"></div>
   </div>
+  </div>
+
+  <div id="eventNotificationTab" class="event-admin-tab hidden">
+    <div class="event-admin-grid event-notification-grid">
+      <form id="notificationForm" class="event-admin-card">
+        <input type="hidden" id="notificationId" name="id">
+        <div class="event-card-heading">
+          <span>Konfigurasi Pemberitahuan</span>
+          <button type="button" onclick="notificationAdminReset()">Baru</button>
+        </div>
+
+        <label class="event-field">
+          <span>Nama Konfigurasi</span>
+          <input id="notificationName" name="notification_name" type="text" maxlength="120" placeholder="Contoh: Rilis Monbis v1.1">
+        </label>
+
+        <label class="event-field">
+          <span>Judul Modal</span>
+          <input id="notificationTitle" name="title" type="text" maxlength="180" placeholder="Perubahan Signifikan MONBIS v1.1">
+        </label>
+
+        <label class="event-field">
+          <span>Isi Pemberitahuan</span>
+          <textarea id="notificationMessage" name="message" rows="7" maxlength="3000" placeholder="Tulis ringkasan perubahan yang ingin disampaikan..."></textarea>
+        </label>
+
+        <div class="event-form-row">
+          <label class="event-field">
+            <span>Mulai Tampil</span>
+            <input id="notificationStart" name="start_date" type="date">
+          </label>
+          <label class="event-field">
+            <span>Selesai Tampil</span>
+            <input id="notificationEnd" name="end_date" type="date">
+          </label>
+        </div>
+
+        <label class="event-check">
+          <input id="notificationActive" name="is_active" type="checkbox" value="1" checked>
+          <span>Pemberitahuan aktif</span>
+        </label>
+
+        <label class="event-check">
+          <input id="notificationAfterLogin" name="show_after_login" type="checkbox" value="1" checked>
+          <span>Tampilkan setelah login</span>
+        </label>
+
+        <p class="event-hint">Periode default dibuat 7 hari kalender. Matikan centang aktif jika ingin menyembunyikan modal tanpa menghapus konfigurasi.</p>
+        <div class="event-actions">
+          <button type="submit" class="event-save">Simpan Pemberitahuan</button>
+        </div>
+        <div id="notificationAdminMessage" class="event-message"></div>
+      </form>
+
+      <div class="event-admin-card event-notification-guide">
+        <div class="event-card-heading"><span>Catatan Penggunaan</span></div>
+        <div class="notification-guide-item"><b>Aktif / nonaktif</b><span>Hanya satu pemberitahuan aktif yang ditampilkan kepada pengguna.</span></div>
+        <div class="notification-guide-item"><b>Setelah login</b><span>Modal muncul sekali setiap login baru selama tanggal tampil masih berlaku.</span></div>
+        <div class="notification-guide-item"><b>Periode</b><span>Di luar tanggal mulai dan selesai, pemberitahuan tidak akan muncul.</span></div>
+      </div>
+    </div>
+
+    <div class="event-admin-card event-list-card">
+      <div class="event-card-heading">
+        <span>Daftar Pemberitahuan</span>
+        <small id="notificationCount">0 pemberitahuan</small>
+      </div>
+      <div id="notificationList" class="event-list notification-list"></div>
+    </div>
+  </div>
 </section>
 
 <style>
@@ -172,6 +248,35 @@
     gap:12px;
     padding:16px;
   }
+  .event-admin-tabs {
+    display:flex;
+    align-items:center;
+    gap:6px;
+    width:max-content;
+    max-width:100%;
+    padding:4px;
+    border:1px solid #dbe3ee;
+    border-radius:12px;
+    background:#f8fafc;
+  }
+  .event-tab {
+    min-height:34px;
+    padding:0 13px;
+    border:1px solid transparent;
+    border-radius:9px;
+    background:transparent;
+    color:#64748b;
+    font-size:11px;
+    font-weight:900;
+    cursor:pointer;
+  }
+  .event-tab.is-active {
+    border-color:#bfdbfe;
+    background:#eff6ff;
+    color:#2563eb;
+    box-shadow:0 3px 8px rgba(37,99,235,.08);
+  }
+  .event-admin-tab.hidden { display:none; }
   .event-admin-title { display:flex; align-items:center; gap:12px; min-width:0; }
   .event-admin-title h1 { margin:0; font-size:22px; font-weight:950; letter-spacing:-.02em; }
   .event-admin-title p { margin:3px 0 0; color:#64748b; font-size:12px; font-weight:650; }
@@ -239,9 +344,9 @@
     text-transform:uppercase;
   }
   .event-field input,
-  .event-field select {
+  .event-field select,
+  .event-field textarea {
     width:100%;
-    height:40px;
     border:1px solid #cbd5e1;
     border-radius:10px;
     background:#fff;
@@ -251,6 +356,9 @@
     font-weight:750;
     outline:none;
   }
+  .event-field input,
+  .event-field select { height:40px; }
+  .event-field textarea { min-height:142px; padding:10px; resize:vertical; line-height:1.55; }
   .event-field input[type="color"] { padding:4px; }
   .event-field input[type="file"] { padding:8px 10px; height:auto; }
   .event-field input:focus,
@@ -266,6 +374,17 @@
   .event-save { padding:0 16px; background:#059669; color:#fff; }
   .event-message { min-height:20px; margin-top:10px; color:#64748b; font-size:12px; font-weight:700; }
   .event-message.is-error { color:#dc2626; }
+  .event-notification-guide { align-self:start; }
+  .notification-guide-item {
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    padding:11px 0;
+    border-bottom:1px solid #e2e8f0;
+  }
+  .notification-guide-item:last-child { border-bottom:0; }
+  .notification-guide-item b { color:#0f172a; font-size:12px; }
+  .notification-guide-item span { color:#64748b; font-size:11px; line-height:1.55; }
   .event-preview {
     display:grid;
     grid-template-columns:150px 1fr;
@@ -330,6 +449,8 @@
   .event-row__swatch { width:48px; height:48px; border-radius:12px; object-fit:cover; background:var(--row-accent,#2563eb); }
   .event-row strong { display:block; color:#0f172a; font-size:13px; font-weight:950; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .event-row span { display:block; margin-top:2px; color:#64748b; font-size:11px; font-weight:700; }
+  .event-row small { display:block; margin-top:4px; color:#94a3b8; font-size:10px; line-height:1.4; }
+  .notification-row { grid-template-columns:48px minmax(0,1fr) auto; }
   .event-row__actions { display:flex; gap:6px; }
   .event-row__actions button {
     height:32px;
@@ -360,6 +481,7 @@
   :root[data-monbis-theme="dark"] .event-row span { color:#94a3b8; }
   :root[data-monbis-theme="dark"] .event-field input,
   :root[data-monbis-theme="dark"] .event-field select,
+  :root[data-monbis-theme="dark"] .event-field textarea,
   :root[data-monbis-theme="dark"] .event-row__actions button {
     background:#0b1220;
     border-color:#475569;
@@ -367,6 +489,12 @@
   }
   :root[data-monbis-theme="dark"] .event-preview,
   :root[data-monbis-theme="dark"] .event-row { background:#0b1220; border-color:#334155; }
+  :root[data-monbis-theme="dark"] .event-admin-tabs { background:#0b1220; border-color:#334155; }
+  :root[data-monbis-theme="dark"] .event-tab { color:#94a3b8; }
+  :root[data-monbis-theme="dark"] .event-tab.is-active { background:#172554; border-color:#3b82f6; color:#bfdbfe; }
+  :root[data-monbis-theme="dark"] .notification-guide-item { border-color:#334155; }
+  :root[data-monbis-theme="dark"] .notification-guide-item b { color:#f8fafc; }
+  :root[data-monbis-theme="dark"] .notification-guide-item span { color:#94a3b8; }
   :root[data-monbis-theme="dark"] .event-preview-main,
   :root[data-monbis-theme="dark"] .event-preview-content div { background:#111827; border-color:#334155; }
   @media (max-width:980px) {
@@ -375,6 +503,8 @@
   }
   @media (max-width:640px) {
     .event-admin-header { align-items:flex-start; flex-direction:column; }
+    .event-admin-tabs { width:100%; }
+    .event-tab { flex:1; padding:0 8px; }
     .event-form-row { grid-template-columns:1fr; }
     .event-preview { grid-template-columns:92px 1fr; min-height:220px; }
     .event-preview-content { grid-template-columns:1fr; }
@@ -402,9 +532,18 @@
     imagePosition:'eventImagePosition',
     active:'eventActive',
     removeImage:'eventRemoveImage',
-    image:'eventImage'
+    image:'eventImage',
+    notificationId:'notificationId',
+    notificationName:'notificationName',
+    notificationTitle:'notificationTitle',
+    notificationMessage:'notificationMessage',
+    notificationStart:'notificationStart',
+    notificationEnd:'notificationEnd',
+    notificationActive:'notificationActive',
+    notificationAfterLogin:'notificationAfterLogin'
   };
   let rows = [];
+  let notificationRows = [];
 
   function el(id) { return document.getElementById(id); }
   function user() {
@@ -446,6 +585,18 @@
     if (!box) return;
     box.textContent = text || '';
     box.classList.toggle('is-error', !!error);
+  }
+  function notificationMsg(text, error) {
+    const box = el('notificationAdminMessage');
+    if (!box) return;
+    box.textContent = text || '';
+    box.classList.toggle('is-error', !!error);
+  }
+  function localDate(offset = 0) {
+    const date = new Date();
+    date.setHours(12, 0, 0, 0);
+    date.setDate(date.getDate() + offset);
+    return date.toISOString().slice(0, 10);
   }
   function assetUrl(path) {
     if (!path) return '';
@@ -519,6 +670,103 @@
   window.eventAdminReset = function () {
     fillForm(null);
     msg('');
+  };
+
+  window.eventAdminSwitchTab = function (tab) {
+    const isNotification = tab === 'notification';
+    el('eventThemeTab')?.classList.toggle('hidden', isNotification);
+    el('eventNotificationTab')?.classList.toggle('hidden', !isNotification);
+    document.querySelectorAll('[data-event-tab]').forEach(button => {
+      const active = button.dataset.eventTab === tab;
+      button.classList.toggle('is-active', active);
+      button.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+  };
+
+  function fillNotification(data) {
+    const defaults = {
+      id:'',
+      notification_name:'Rilis Monbis v1.1',
+      title:'Perubahan Signifikan MONBIS v1.1',
+      message:'MONBIS v1.1 telah hadir dengan pembaruan tampilan, filter navbar, laporan saldo bank dan baki debet, serta pengalaman yang lebih responsif di berbagai perangkat.\n\nSilakan jelajahi menu-menu terbaru dan gunakan tombol informasi jika membutuhkan panduan.',
+      start_date:localDate(0),
+      end_date:localDate(6),
+      is_active:1,
+      show_after_login:1
+    };
+    const value = data || defaults;
+    el(ids.notificationId).value = value.id || '';
+    el(ids.notificationName).value = value.notification_name || defaults.notification_name;
+    el(ids.notificationTitle).value = value.title || defaults.title;
+    el(ids.notificationMessage).value = value.message || defaults.message;
+    el(ids.notificationStart).value = value.start_date || defaults.start_date;
+    el(ids.notificationEnd).value = value.end_date || defaults.end_date;
+    el(ids.notificationActive).checked = data ? Number(value.is_active) === 1 : true;
+    el(ids.notificationAfterLogin).checked = data ? Number(value.show_after_login) === 1 : true;
+  }
+
+  window.notificationAdminReset = function () {
+    fillNotification(null);
+    notificationMsg('');
+  };
+
+  window.notificationAdminEdit = function (id) {
+    const row = notificationRows.find(item => Number(item.id) === Number(id));
+    if (!row) return;
+    fillNotification(row);
+    window.eventAdminSwitchTab('notification');
+    window.scrollTo({ top:0, behavior:'smooth' });
+  };
+
+  window.notificationAdminDelete = async function (id) {
+    if (!confirm('Hapus pemberitahuan ini?')) return;
+    const currentAdminId = await waitForAdminId();
+    try {
+      const res = await fetch(API + 'notification_delete', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'X-Employee-Id':currentAdminId },
+        body:JSON.stringify({ id, id_peg:currentAdminId })
+      });
+      const json = await res.json();
+      if (json.status !== 200) throw new Error(json.message || 'Gagal hapus pemberitahuan');
+      notificationMsg('Pemberitahuan berhasil dihapus.');
+      await notificationAdminLoad();
+      window.MonbisAnnouncement?.refresh?.();
+    } catch (error) {
+      notificationMsg(error.message, true);
+    }
+  };
+
+  window.notificationAdminActivate = async function (id) {
+    const row = notificationRows.find(item => Number(item.id) === Number(id));
+    if (!row) return;
+    const currentAdminId = await waitForAdminId();
+    try {
+      const payload = {
+        id:Number(row.id),
+        id_peg:currentAdminId,
+        notification_name:row.notification_name || 'Pemberitahuan Monbis',
+        title:row.title || 'Perubahan Monbis',
+        message:row.message || '',
+        is_active:'1',
+        show_after_login:Number(row.show_after_login) === 1 ? '1' : '0',
+        start_date:row.start_date || '',
+        end_date:row.end_date || ''
+      };
+      const res = await fetch(API + 'notification_save', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'X-Employee-Id':currentAdminId },
+        body:JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (json.status !== 200) throw new Error(json.message || 'Gagal mengaktifkan pemberitahuan');
+      notificationMsg('Pemberitahuan berhasil diaktifkan.');
+      fillNotification(json.data);
+      await notificationAdminLoad();
+      window.MonbisAnnouncement?.refresh?.();
+    } catch (error) {
+      notificationMsg(error.message, true);
+    }
   };
 
   window.eventAdminEdit = function (id) {
@@ -610,6 +858,31 @@
     }).join('');
   }
 
+  function renderNotificationList() {
+    const box = el('notificationList');
+    const count = el('notificationCount');
+    if (count) count.textContent = notificationRows.length + ' pemberitahuan';
+    if (!box) return;
+    if (!notificationRows.length) {
+      box.innerHTML = '<div class="event-row"><div class="event-row__swatch"></div><div><strong>Belum ada pemberitahuan</strong><span>Buat pengumuman pertama untuk pengguna Monbis.</span></div></div>';
+      return;
+    }
+    box.innerHTML = notificationRows.map(row => {
+      const active = Number(row.is_active) === 1 ? 'Aktif' : 'Nonaktif';
+      const login = Number(row.show_after_login) === 1 ? 'Setelah login' : 'Tidak otomatis';
+      const period = (row.start_date || '-') + ' s/d ' + (row.end_date || '-');
+      const preview = String(row.message || '').replace(/\s+/g, ' ').slice(0, 110);
+      const activateBtn = Number(row.is_active) === 1
+        ? ''
+        : '<button type="button" onclick="notificationAdminActivate(' + Number(row.id) + ')">Aktifkan</button>';
+      return '<div class="event-row notification-row">' +
+        '<div class="event-row__swatch" style="--row-accent:' + esc('#2563eb') + '"></div>' +
+        '<div><strong>' + esc(row.title || row.notification_name) + '</strong><span>' + esc(period + ' - ' + active + ' - ' + login) + '</span><small>' + esc(preview) + '</small></div>' +
+        '<div class="event-row__actions">' + activateBtn + '<button type="button" onclick="notificationAdminEdit(' + Number(row.id) + ')">Edit</button><button type="button" class="danger" onclick="notificationAdminDelete(' + Number(row.id) + ')">Hapus</button></div>' +
+      '</div>';
+    }).join('');
+  }
+
   window.eventAdminLoad = async function () {
     const currentAdminId = await waitForAdminId();
     if (!currentAdminId) {
@@ -628,6 +901,24 @@
       renderList();
     } catch (error) {
       msg(error.message, true);
+    }
+  };
+
+  window.notificationAdminLoad = async function () {
+    const currentAdminId = await waitForAdminId();
+    if (!currentAdminId) return;
+    try {
+      const res = await fetch(API + 'notification_list', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'X-Employee-Id':currentAdminId },
+        body:JSON.stringify({ id_peg:currentAdminId })
+      });
+      const json = await res.json();
+      if (json.status !== 200) throw new Error(json.message || 'Gagal memuat pemberitahuan');
+      notificationRows = Array.isArray(json.data) ? json.data : [];
+      renderNotificationList();
+    } catch (error) {
+      notificationMsg(error.message, true);
     }
   };
 
@@ -661,6 +952,47 @@
     }
   }
 
+  async function submitNotification(event) {
+    event.preventDefault();
+    const currentAdminId = await waitForAdminId();
+    if (!currentAdminId) {
+      notificationMsg('Akses ditolak.', true);
+      return;
+    }
+    const payload = {
+      id:el(ids.notificationId)?.value || '',
+      id_peg:currentAdminId,
+      notification_name:el(ids.notificationName)?.value.trim() || 'Pemberitahuan Monbis',
+      title:el(ids.notificationTitle)?.value.trim() || '',
+      message:el(ids.notificationMessage)?.value.trim() || '',
+      start_date:el(ids.notificationStart)?.value || '',
+      end_date:el(ids.notificationEnd)?.value || '',
+      is_active:el(ids.notificationActive)?.checked ? '1' : '0',
+      show_after_login:el(ids.notificationAfterLogin)?.checked ? '1' : '0'
+    };
+    try {
+      notificationMsg('Menyimpan pemberitahuan...');
+      const res = await fetch(API + 'notification_save', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'X-Employee-Id':currentAdminId },
+        body:JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (json.status !== 200) throw new Error(json.message || 'Gagal menyimpan pemberitahuan');
+      notificationMsg('Pemberitahuan berhasil disimpan.');
+      fillNotification(json.data);
+      await notificationAdminLoad();
+      window.MonbisAnnouncement?.refresh?.();
+    } catch (error) {
+      notificationMsg(error.message, true);
+    }
+  }
+
+  window.eventAdminRefreshAll = function () {
+    eventAdminLoad();
+    notificationAdminLoad();
+  };
+
   document.addEventListener('DOMContentLoaded', () => {
     Object.values(ids).forEach(id => {
       const node = el(id);
@@ -669,8 +1001,11 @@
     });
     el(ids.image)?.addEventListener('change', renderPreviewImage);
     el('eventThemeForm')?.addEventListener('submit', submitForm);
+    el('notificationForm')?.addEventListener('submit', submitNotification);
     fillForm(null);
+    fillNotification(null);
     eventAdminLoad();
+    notificationAdminLoad();
   });
 })();
 </script>

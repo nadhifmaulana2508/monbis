@@ -27,11 +27,25 @@ switch ($action) {
         $controller->active();
         break;
 
+    case 'notification':
+        if ($method !== 'GET' && $method !== 'POST') {
+            sendResponse(405, 'Metode tidak diizinkan.');
+        }
+        $controller->activeNotification();
+        break;
+
     case 'list':
         if ($method !== 'POST') {
             sendResponse(405, 'Gunakan POST.');
         }
         $controller->listing($input);
+        break;
+
+    case 'notification_list':
+        if ($method !== 'POST') {
+            sendResponse(405, 'Gunakan POST.');
+        }
+        $controller->notificationListing($input);
         break;
 
     case 'save':
@@ -41,11 +55,25 @@ switch ($action) {
         $controller->save($input);
         break;
 
+    case 'notification_save':
+        if ($method !== 'POST') {
+            sendResponse(405, 'Gunakan POST.');
+        }
+        $controller->saveNotification($input);
+        break;
+
     case 'delete':
         if ($method !== 'POST') {
             sendResponse(405, 'Gunakan POST.');
         }
         $controller->delete($input);
+        break;
+
+    case 'notification_delete':
+        if ($method !== 'POST') {
+            sendResponse(405, 'Gunakan POST.');
+        }
+        $controller->deleteNotification($input);
         break;
 
     default:
