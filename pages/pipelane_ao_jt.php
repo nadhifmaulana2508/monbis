@@ -365,6 +365,46 @@
           max-width:135px;
       }
   }
+
+  /* Final sticky layer: one scroll container, opaque cells, stable offsets. */
+  #recomPipelaneTableScroll {
+      position:relative;
+      isolation:isolate;
+      overscroll-behavior:contain;
+  }
+  #tabelPipeline thead th { position:sticky !important; }
+  #tabelPipeline tbody td.sticky-left-1,
+  #tabelPipeline tbody td.sticky-left-2 {
+      position:sticky !important;
+      z-index:20 !important;
+      background-color:#fff !important;
+      background-clip:padding-box;
+  }
+  #tabelPipeline tbody tr:nth-child(even) td.sticky-left-1,
+  #tabelPipeline tbody tr:nth-child(even) td.sticky-left-2 { background-color:#fbfdff !important; }
+  #tabelPipeline tbody tr:hover td.sticky-left-1,
+  #tabelPipeline tbody tr:hover td.sticky-left-2 { background-color:#eff6ff !important; }
+  #tabelPipeline .sticky-left-1 { left:0 !important; }
+  #tabelPipeline .sticky-left-2 { left:68px !important; }
+  #tabelPipeline .sticky-left-1.jt-office-name { left:0 !important; }
+  #tabelPipeline thead tr:first-child th.sticky-left-1,
+  #tabelPipeline thead tr:first-child th.sticky-left-2 { z-index:70 !important; }
+  #tabelPipeline thead tr:nth-child(2) th.sticky-left-1,
+  #tabelPipeline thead tr:nth-child(2) th.sticky-left-2 { z-index:69 !important; }
+  #rowTotalPipelineAtas th.sticky-left-1,
+  #rowTotalPipelineAtas th.sticky-left-2 { z-index:60 !important; }
+  #tableExportModal .mod-sticky-1 { left:0; }
+  #tableExportModal .mod-sticky-2 { left:120px; }
+  @media (min-width:768px) {
+      #tableExportModal .mod-sticky-1 { width:120px; min-width:120px; max-width:120px; }
+      #tableExportModal .mod-sticky-2 { width:280px; min-width:280px; max-width:280px; }
+  }
+  @media (max-width:767px) {
+      #tabelPipeline .sticky-left-1:not(.jt-office-name) { display:none !important; }
+      #tabelPipeline .sticky-left-2 { left:0 !important; width:135px; min-width:135px; max-width:135px; }
+      #tabelPipeline .sticky-left-1.jt-office-name { display:table-cell !important; width:135px; min-width:135px; max-width:135px; }
+      #tableExportModal .pipeline-mobile-identity { left:0 !important; width:145px; min-width:145px; max-width:145px; }
+  }
 </style>
 
 <div id="recomPipelanePage" class="pipeline-page jt-page max-w-[1920px] mx-auto px-2 md:px-4 py-3 md:py-6 h-[calc(100vh-80px)] flex flex-col bg-slate-50 font-sans text-slate-800 overflow-hidden">
@@ -761,7 +801,7 @@
       const nameTitle = breakdown === 'AO' ? 'Nama AO' : breakdown === 'KANKAS' ? 'Nama Kankas' : 'Nama Kantor';
       const colGroup = document.getElementById('pipelineColGroup');
       if (colGroup) {
-          const codeHiddenOnMobile = showCode && window.innerWidth < 640;
+          const codeHiddenOnMobile = showCode && window.innerWidth < 768;
           const widths = showCode && !codeHiddenOnMobile ? [68, 180] : [codeHiddenOnMobile ? 135 : 180];
           widths.push(32, 100, 32, 100, 60, 32, 100, 32, 100, 32, 100, 32, 100);
           colGroup.innerHTML = widths.map(width => `<col style="width:${width}px">`).join('');
