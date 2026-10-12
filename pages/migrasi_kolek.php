@@ -12,6 +12,7 @@
       </div>
     </div>
     <div class="mk-head-actions">
+      <span id="mkFetchStatus" class="mk-fetch-status hidden" role="status" aria-live="polite"><i></i><span id="mkFetchStatusText">Memuat data...</span></span>
       <span id="mkNominalBadge" class="mk-nominal-badge">SALDO BANK</span>
       <button type="button" id="mkViewSwap" class="mk-view-swap" onclick="toggleMkReportView()" title="Tampilkan Rekap Migrasi Kolektibilitas" aria-label="Tampilkan Rekap Migrasi Kolektibilitas" aria-pressed="false">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11"></path><path d="m14 3 4 4-4 4"></path><path d="M17 17H6"></path><path d="m10 13-4 4 4 4"></path></svg>
@@ -79,13 +80,15 @@
         <div class="mk-outlook-item mk-outlook-primary"><span>RR actual</span><strong id="mkRrPct">-</strong><small id="mkRrDetail">Menunggu data RR</small></div>
         <div class="mk-outlook-item"><span>Basis RR M-1</span><strong id="mkRrTarget">-</strong><small id="mkRrTargetNoa">NOA: -</small></div>
         <div class="mk-outlook-item"><span>Lancar actual</span><strong id="mkRrPaid">-</strong><small id="mkRrPaidNoa">NOA: -</small></div>
-        <div class="mk-outlook-item mk-outlook-warning"><span>Keluar basis RR</span><strong id="mkRrLate">-</strong><small id="mkRrLateNoa">NOA: -</small></div>
+        <button type="button" class="mk-outlook-item mk-outlook-warning mk-outlook-clickable" onclick="mkOpenRRExit()" title="Buka detail rekening yang keluar dari basis RR">
+          <span>Keluar basis RR</span><strong id="mkRrLate">-</strong><small id="mkRrLateNoa">NOA: -</small>
+        </button>
         <div class="mk-outlook-item mk-outlook-runoff"><span>Proyeksi run off angsuran</span><strong id="mkProjectedRunoff">-</strong><small id="mkProjectedRunoffNote">Angsuran murni</small></div>
       </div>
       <div class="mk-runoff-projection">
-        <div class="mk-runoff-projection-head"><div><b>Proyeksi Angsuran per Bucket DPD</b><small>Tanpa pelunasan · hanya rekening yang belum bayar · % = pokok Okt / closing</small></div><small id="mkRunoffProjectionPeriod">-</small></div>
+        <div class="mk-runoff-projection-head"><div><b>Proyeksi Angsuran per Bucket DPD</b><small>Tanpa pelunasan · tagihan belum bayar pada periode masing-masing · % = pokok Okt / closing</small></div><small id="mkRunoffProjectionPeriod">-</small></div>
         <div class="mk-runoff-table-wrap">
-          <div class="mk-runoff-table-head"><span>BUCKET</span><span>CLOSING</span><span>ANGSURAN SEP</span><span>ANGSURAN OKT</span><span>%</span></div>
+          <div class="mk-runoff-table-head"><span>BUCKET</span><span>CLOSING</span><span>TAGIHAN SEP<br>BELUM BAYAR</span><span>TAGIHAN OKT<br>S.D. ACTUAL</span><span>%</span></div>
           <div id="mkRunoffBucketTable"><div class="mk-state">Menunggu proyeksi angsuran...</div></div>
         </div>
       </div>
@@ -406,6 +409,10 @@
   .mk-state { padding:18px 8px; color:var(--mk-muted); font-size:10px; text-align:center; }
   .mk-outlook-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:7px; padding:5px 16px 15px; }
   .mk-outlook-item { min-width:0; padding:9px 8px; border:1px solid #e5eaf0; border-radius:10px; background:#fbfdff; }
+  button.mk-outlook-item { width:100%; color:inherit; font:inherit; text-align:left; cursor:pointer; }
+  button.mk-outlook-clickable { transition:border-color .15s ease, background .15s ease, transform .15s ease; }
+  button.mk-outlook-clickable:hover { border-color:#93c5fd; background:#f8fbff; transform:translateY(-1px); }
+  button.mk-outlook-clickable:focus-visible { outline:2px solid #60a5fa; outline-offset:2px; }
   .mk-outlook-item span { display:block; overflow:hidden; color:var(--mk-muted); font-size:8px; font-weight:800; text-overflow:ellipsis; text-transform:uppercase; white-space:nowrap; }
   .mk-outlook-item strong { display:block; margin-top:6px; overflow:hidden; color:var(--mk-text); font-size:12px; line-height:1.1; text-overflow:ellipsis; white-space:nowrap; }
   .mk-outlook-item small { display:block; margin-top:4px; overflow:hidden; color:var(--mk-muted); font-size:8px; text-overflow:ellipsis; white-space:nowrap; }
@@ -549,6 +556,10 @@
   .mk-table-actions { display:flex; align-items:center; justify-content:flex-end; gap:9px; flex:0 0 auto; }
   .mk-table-head h2 { margin:0; color:var(--mk-text); font-size:14px; font-weight:800; }
   .mk-table-head p { margin:4px 0 0; color:var(--mk-muted); font-size:10px; }
+  .mk-fetch-status { display:inline-flex; align-items:center; gap:6px; min-height:28px; padding:0 9px; border:1px solid #bfdbfe; border-radius:9px; background:#eff6ff; color:#1d4ed8; font-size:9px; font-weight:800; white-space:nowrap; }
+  .mk-fetch-status.hidden { display:none; }
+  .mk-fetch-status i { width:12px; height:12px; flex:0 0 12px; border:2px solid #bfdbfe; border-top-color:#2563eb; border-radius:999px; animation:mk-spin .8s linear infinite; }
+  :root[data-monbis-theme="dark"] #migrasiKolekPage .mk-fetch-status { border-color:#3656a3; background:#172554; color:#bfdbfe; }
   .mk-loading { align-items:center; gap:6px; color:#2563eb; font-size:10px; font-weight:700; }
   .mk-loading:not(.hidden) { display:inline-flex; }
   .mk-loading i { width:12px; height:12px; border:2px solid #bfdbfe; border-top-color:#2563eb; border-radius:999px; animation:mk-spin .8s linear infinite; }
@@ -723,6 +734,7 @@
     .mk-projection-section-head { flex-direction:column; gap:3px; } .mk-projection-section-head small { text-align:left; }
     .mk-payment-stats { gap:5px; } .mk-payment-stat { padding:7px; } .mk-payment-stat strong { font-size:10px; }
     .mk-table-head { align-items:flex-start; padding:12px; } .mk-table-head h2 { font-size:12px; } .mk-table-head p { font-size:9px; } .mk-table-note { padding:10px 12px; font-size:9px; }
+    .mk-head-actions { gap:5px; } .mk-fetch-status { min-height:25px; padding:0 7px; font-size:8px; } .mk-fetch-status span { display:none; } .mk-fetch-status i { width:11px; height:11px; flex-basis:11px; }
     .mk-table-actions { gap:6px; } .mk-table-actions .mk-loading { font-size:8px; } .mk-table-actions .mk-loading i { width:10px; height:10px; }
     .mk-table { min-width:920px; }
     .mk-modal { padding:8px; }
@@ -750,12 +762,31 @@
   const mkPct = value => `${mkNum(value).toFixed(2)}%`;
   const mkApi = (url, options={}) => window.apiFetch ? window.apiFetch(url, options) : fetch(url, options);
   let mkAbort = null;
+  let mkMainRequest = 0;
+  let mkCockpitAbort = null;
+  let mkCockpitTimer = null;
+  let mkNplAbort = null;
+  let mkCockpitRequest = 0;
   let mkLastData = null;
+  let mkLastFetchKey = '';
+  let mkFetchInFlightKey = '';
   let mkCkpnData = {};
   let mkLastRecovery = null;
   const mkEl = id => document.getElementById(id);
   const mkEscape = value => String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char]));
   const mkIsEmpty = value => !value || (mkNum(value.os) === 0 && mkNum(value.noa) === 0);
+
+  function setMkFetchStatus(active, text = 'Memuat data...') {
+    const status = mkEl('mkFetchStatus');
+    const statusText = mkEl('mkFetchStatusText');
+    const tableLoading = mkEl('mkLoading');
+    if (status) status.classList.toggle('hidden', !active);
+    if (statusText && active) statusText.textContent = text;
+    if (tableLoading) {
+      tableLoading.classList.toggle('hidden', !active);
+      if (active && tableLoading.lastChild) tableLoading.lastChild.textContent = ` ${text}`;
+    }
+  }
 
   function toggleMkSummary() {
     const summary = mkEl('mkSummary');
@@ -806,7 +837,34 @@
   function mkCombined(a, b) { return {os:mkNum(a?.os)+mkNum(b?.os), noa:mkNum(a?.noa)+mkNum(b?.noa)}; }
   function mkRowLabel(label, note='') { return `<div class="mk-row-label">${mkEscape(label)}${note ? `<small>${mkEscape(note)}</small>` : ''}</div>`; }
 
-  function renderMigrasiSummary(totals) {
+  function clearMkCockpitTimer() {
+    if (mkCockpitTimer === null) return;
+    clearTimeout(mkCockpitTimer);
+    mkCockpitTimer = null;
+  }
+
+  function invalidateMkCockpitRequests() {
+    clearMkCockpitTimer();
+    mkCockpitRequest++;
+    if (mkCockpitAbort) {
+      mkCockpitAbort.abort();
+      mkCockpitAbort = null;
+    }
+    if (mkNplAbort) {
+      mkNplAbort.abort();
+      mkNplAbort = null;
+    }
+  }
+
+  function scheduleMkCockpit(payload) {
+    clearMkCockpitTimer();
+    mkCockpitTimer = setTimeout(() => {
+      mkCockpitTimer = null;
+      loadMkCockpit(payload || getMigrasiKolekFilter());
+    }, 0);
+  }
+
+  function renderMigrasiSummary(totals, payload = null) {
     const set=(id,value)=>{const el=mkEl(id);if(el)el.textContent=value;};
     const actualNoa=['L','DP','KL','D','M'].reduce((sum,key)=>sum+mkNum(totals.actual?.[key]?.noa),0);
     const realisasi=totals.realisasi_baru||totals.realisasi||{}; const restruck=totals.restruck||{}; const angsuran=totals.angsuran||{}; const pelunasan=totals.pelunasan||{};
@@ -821,7 +879,7 @@
     set('mkNplDelta',`Δ NPL: ${totals.npl_delta_pct>=0?'+':''}${mkPct(totals.npl_delta_pct)}`);
     renderMkCharts(totals);
     renderMkOutlookFromMigration(totals);
-    setTimeout(() => loadMkCockpit(getMigrasiKolekFilter()), 0);
+    scheduleMkCockpit(payload);
   }
 
   function mkFmtShort(value) {
@@ -1159,13 +1217,15 @@
     </div>`;
   }
 
-  async function loadMkNplBreakdown(payload = {}) {
+  async function loadMkNplBreakdown(payload = {}, parentSignal = null) {
     const requestId = ++mkNplBreakdownRequest;
+    if (mkNplAbort) mkNplAbort.abort();
+    mkNplAbort = new AbortController();
     const dimension = String(mkEl('mkNplDimension')?.value || 'TAHUN').toUpperCase();
     renderMkNplBreakdown({ loading:true, dimension, nominal_field:payload.nominal_field });
     const requestPayload = {...mkScopedPayload(payload, 'npl_breakdown'), dimension};
     try {
-      const response = await mkApi('./api/kredit/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(requestPayload)});
+      const response = await mkApi('./api/kredit/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(requestPayload), signal:parentSignal || mkNplAbort.signal});
       const result = await response.json();
       if (requestId === mkNplBreakdownRequest && result.status === 200) renderMkNplBreakdown(result.data || {});
       else if (requestId === mkNplBreakdownRequest) renderMkNplBreakdown({dimension, nominal_field:payload.nominal_field, data:[], grand_total:{}});
@@ -1285,9 +1345,11 @@
     return scoped;
   }
 
-  let mkCockpitRequest = 0;
   async function loadMkCockpit(payload) {
     const requestId = ++mkCockpitRequest;
+    if (mkCockpitAbort) mkCockpitAbort.abort();
+    mkCockpitAbort = new AbortController();
+    const signal = mkCockpitAbort.signal;
     mkLastRecovery = null;
     mkCkpnData = {};
     renderMkFlowDashboard({categories:[], weeks:[]});
@@ -1297,31 +1359,46 @@
     renderMkPaymentProjection({});
     renderMkMobDashboard({});
     renderMkNplBreakdown({loading:true, dimension:mkEl('mkNplDimension')?.value || 'TAHUN', nominal_field:payload.nominal_field});
-    loadMkNplBreakdown(payload);
-    const flowRequest = mkApi('./api/flow_par/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(mkScopedPayload(payload, 'Flow Par Dashboard'))}).then(response => response.json());
-    const potentialRequest = mkApi('./api/npl/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(mkScopedPayload(payload, 'Potensi NPL'))}).then(response => response.json());
-    const rrRequest = mkApi('./api/rr/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(mkScopedPayload(payload, 'rr'))}).then(response => response.json());
-    const recoveryRequest = mkApi('./api/npl/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(mkScopedPayload(payload, 'Recovery NPL'))}).then(response => response.json());
-    const paymentRequest = mkApi('./api/kolek/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(mkScopedPayload(payload, 'migrasi payment projection'))}).then(response => response.json());
-    const ckpnRequest = mkApi('./api/kolek/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(mkScopedPayload(payload, 'migrasi ckpn summary'))}).then(response => response.json());
+    const nplRequest = loadMkNplBreakdown(payload, signal);
+    const postJson = (url, body) => mkApi(url, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body),
+      signal
+    }).then(response => response.json());
+    const flowRequest = postJson('./api/flow_par/', mkScopedPayload(payload, 'Flow Par Dashboard'));
+    const potentialRequest = postJson('./api/npl/', mkScopedPayload(payload, 'Potensi NPL'));
+    const rrRequest = postJson('./api/rr/', mkScopedPayload(payload, 'rr'));
+    const recoveryRequest = postJson('./api/npl/', mkScopedPayload(payload, 'Recovery NPL'));
+    const paymentRequest = postJson('./api/kolek/', mkScopedPayload(payload, 'migrasi payment projection'));
+    const ckpnRequest = postJson('./api/kolek/', mkScopedPayload(payload, 'migrasi ckpn summary'));
     const mobPayload = {...mkScopedPayload(payload, 'mob_vintage'), rekap_by:'bulan', status_jatuh_tempo:'ALL'};
-    const mobRequest = mkApi('./api/kredit/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(mobPayload)}).then(response => response.json());
-    try { const result = await flowRequest; if (requestId === mkCockpitRequest && result.status === 200) renderMkFlowDashboard(result.data?.data || {}); } catch (_) {}
-    try { const result = await potentialRequest; if (requestId === mkCockpitRequest && result.status === 200) renderMkPotentialDashboard(result.data || {}); } catch (_) {}
-    try { const result = await rrRequest; if (requestId === mkCockpitRequest && result.status === 200) renderMkRR(result.data?.grand_total || {}); } catch (_) {}
-    try {
-      const result = await recoveryRequest;
-      if (requestId === mkCockpitRequest && result.status === 200) {
-        const rows = Array.isArray(result.data) ? result.data : [];
-        const total = rows.find(row => String(row.kode_cabang || '').toUpperCase() === 'TOTAL') || rows[rows.length - 1] || {};
-        mkLastRecovery = total;
-        renderMkCharts(mkLastData?.totals || {}, total);
-        renderMkRecoveryDashboard(total);
-      }
-    } catch (_) {}
-    try { const result = await paymentRequest; if (requestId === mkCockpitRequest && result.status === 200) renderMkPaymentProjection(result.data || {}); } catch (_) {}
-    try { const result = await ckpnRequest; if (requestId === mkCockpitRequest && result.status === 200) renderMkCkpnSummary(result.data?.data || {}); } catch (_) {}
-    try { const result = await mobRequest; if (requestId === mkCockpitRequest && result.status === 200) renderMkMobDashboard(result.data || {}); } catch (_) {}
+    const mobRequest = postJson('./api/kredit/', mobPayload);
+    const isCurrent = () => requestId === mkCockpitRequest;
+    const renderWhenReady = (request, render) => request
+      .then(result => {
+        if (isCurrent() && result.status === 200) render(result);
+      })
+      .catch(() => {});
+    const recoveryReady = recoveryRequest.then(result => {
+      if (!isCurrent() || result.status !== 200) return;
+      const rows = Array.isArray(result.data) ? result.data : [];
+      const total = rows.find(row => String(row.kode_cabang || '').toUpperCase() === 'TOTAL') || rows[rows.length - 1] || {};
+      mkLastRecovery = total;
+      renderMkCharts(mkLastData?.totals || {}, total);
+      renderMkRecoveryDashboard(total);
+    }).catch(() => {});
+    await Promise.all([
+      renderWhenReady(flowRequest, result => renderMkFlowDashboard(result.data?.data || {})),
+      renderWhenReady(potentialRequest, result => renderMkPotentialDashboard(result.data || {})),
+      renderWhenReady(rrRequest, result => renderMkRR(result.data?.grand_total || {})),
+      recoveryReady,
+      nplRequest,
+      renderWhenReady(paymentRequest, result => renderMkPaymentProjection(result.data || {})),
+      renderWhenReady(ckpnRequest, result => renderMkCkpnSummary(result.data?.data || {})),
+      renderWhenReady(mobRequest, result => renderMkMobDashboard(result.data || {}))
+    ]);
+    if (isCurrent()) setMkFetchStatus(false);
   }
 
   let mkRecoveryRows = [];
@@ -1445,6 +1522,7 @@
   let mkDetailNplDimension = '';
   let mkDetailNplKey = '';
   let mkDetailNplLabel = '';
+  let mkDetailPagination = null;
   let mkDetailAbort = null;
   let mkDetailRequest = 0;
 
@@ -1503,6 +1581,17 @@
       summary.innerHTML = items.map(item => `<div class="mk-modal-stat"><span>${item[0]}</span><strong>${item[1]}</strong></div>`).join('');
       return;
     }
+    if (mkDetailMode === 'rr_exit') {
+      const m1 = mkDetailRows.reduce((sum, row) => sum + mkNum(row.os_m1), 0);
+      const actual = mkDetailRows.reduce((sum, row) => sum + mkNum(row.os_curr), 0);
+      const tunggakan = mkDetailRows.reduce((sum, row) => sum + mkNum(row.totung), 0);
+      const totalRows = mkDetailPagination?.total_records || mkDetailRows.length;
+      const shown = totalRows > mkDetailRows.length ? `${mkFmt(mkDetailRows.length)} / ${mkFmt(totalRows)}` : mkFmt(totalRows);
+      const basis = mkEl('mkDetailModalBasis')?.textContent || 'SALDO BANK';
+      const items = [['Rekening keluar', shown], [`${basis} M-1`, mkFmtShort(m1)], [`${basis} actual`, mkFmtShort(actual)], ['Total tunggakan', mkFmtShort(tunggakan)]];
+      summary.innerHTML = items.map(item => `<div class="mk-modal-stat"><span>${item[0]}</span><strong>${item[1]}</strong></div>`).join('');
+      return;
+    }
     const nominalKey = mkDetailMode === 'flow' ? 'baki_debet' : 'baki_debet_harian';
     const tunggakan = mkDetailRows.reduce((sum, row) => sum + mkNum(row.total_tunggakan), 0);
     const nominal = mkDetailRows.reduce((sum, row) => sum + mkNum(row[nominalKey]), 0);
@@ -1523,6 +1612,25 @@
     });
     if (!rows.length) {
       body.innerHTML = '<div class="mk-modal-empty">Tidak ada detail sesuai pencarian.</div>';
+      return;
+    }
+    if (mkDetailMode === 'rr_exit') {
+      const basis = mkEl('mkDetailModalBasis')?.textContent || 'SALDO BANK';
+      body.innerHTML = `<table class="mk-recovery-table">
+        <thead><tr><th>REKENING</th><th>NAMA NASABAH</th><th>CABANG / KANKAS / AO</th><th>STATUS M-1 → ACTUAL</th><th class="num">${mkEscape(basis)} M-1</th><th class="num">${mkEscape(basis)} ACTUAL</th><th class="num">SELISIH</th><th class="num">DPD</th><th class="num">TOTUNG</th><th>STATUS BAYAR</th></tr></thead>
+        <tbody>${rows.map(row => `<tr>
+          <td>${mkEscape(row.no_rekening || '-')}</td>
+          <td><span class="mk-recovery-name" title="${mkEscape(row.nama_nasabah || '-')}">${mkEscape(row.nama_nasabah || '-')}</span></td>
+          <td>${mkEscape(row.kankas || row.kode_kankas || row.kode_cabang || '-')}<small class="mk-recovery-sub">${mkEscape(row.nama_ao || row.kode_ao || '-')}</small></td>
+          <td><span class="mk-recovery-type">${mkEscape(row.status_m1 || 'LANCAR')} → ${mkEscape(row.status_actual || 'MENUNGGAK')}</span></td>
+          <td class="num">${mkFmt(row.os_m1)}</td>
+          <td class="num"><span class="mk-recovery-amount">${mkFmt(row.os_curr)}</span></td>
+          <td class="num">${mkFmt(row.delta_os)}</td>
+          <td class="num">${mkFmt(row.dpd_curr)}</td>
+          <td class="num"><strong>${mkFmt(row.totung)}</strong></td>
+          <td>${mkEscape(row.status_pembayaran || '-')}</td>
+        </tr>`).join('')}</tbody>
+      </table>`;
       return;
     }
     if (mkDetailMode === 'npl') {
@@ -1667,6 +1775,7 @@
     const modal = mkEl('mkDetailModal');
     if (!modal) return;
     mkDetailMode = mode;
+    mkDetailPagination = null;
     modal.hidden = false;
     document.body.classList.add('mk-modal-open');
     if (mkDetailAbort) mkDetailAbort.abort();
@@ -1732,8 +1841,15 @@
       mkDetailNplLabel = options.groupLabel || '';
       if (kicker) kicker.textContent = 'DETAIL NPL';
       if (title) title.textContent = mkDetailNplLabel ? `NPL - ${mkDetailNplLabel}` : 'Seluruh NPL';
-    }
-    if (mode === 'projection') {
+    } else if (mode === 'rr_exit') {
+      payload.type = 'detail_rekap_rr';
+      payload.status = 'MIGRASI';
+      payload.limit = 500;
+      payload.page = 1;
+      payload.skip_count = false;
+      if (kicker) kicker.textContent = 'DETAIL KELUAR BASIS RR';
+      if (title) title.textContent = 'Rekening Keluar Basis RR';
+    } else if (mode === 'projection') {
       payload.type = 'migrasi payment projection';
       payload.detail = options.detail || 'l_unpaid';
       mkDetailProjectionType = payload.detail;
@@ -1747,7 +1863,7 @@
     }
     const requestId = ++mkDetailRequest;
     try {
-      const endpoint = mode === 'flow' ? './api/flow_par/' : (mode === 'potensi' ? './api/npl/' : ((mode === 'mob' || mode === 'npl') ? './api/kredit/' : './api/kolek/'));
+      const endpoint = mode === 'flow' ? './api/flow_par/' : (mode === 'potensi' ? './api/npl/' : ((mode === 'mob' || mode === 'npl') ? './api/kredit/' : (mode === 'rr_exit' ? './api/rr/' : './api/kolek/')));
       const response = await mkApi(endpoint, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal:mkDetailAbort.signal});
       const result = await response.json();
       if (requestId !== mkDetailRequest || modal.hidden) return;
@@ -1755,6 +1871,9 @@
       if (mode === 'projection' || mode === 'migration') {
         if (mode === 'projection') mkDetailProjectionParams = result.data?.params || {};
         mkDetailRows = Array.isArray(result.data?.data?.detail_rows) ? result.data.data.detail_rows : [];
+      } else if (mode === 'rr_exit') {
+        mkDetailRows = Array.isArray(result.data?.data) ? result.data.data : [];
+        mkDetailPagination = result.data?.pagination || null;
       } else if (mode === 'mob' || mode === 'npl') {
         mkDetailRows = Array.isArray(result.data?.data) ? result.data.data : [];
       } else {
@@ -1788,6 +1907,7 @@
   function mkOpenNplBreakdownDetail(dimension = 'TAHUN', groupKey = '', groupLabel = '') {
     mkOpenDetail('npl', {dimension:decodeURIComponent(dimension || 'TAHUN'), groupKey:decodeURIComponent(groupKey || ''), groupLabel:decodeURIComponent(groupLabel || '')});
   }
+  function mkOpenRRExit() { mkOpenDetail('rr_exit'); }
   function mkOpenRR() { window.location.href = './rekap_rr'; }
 
   function mkMigrationMetric(value, source, target) {
@@ -1818,9 +1938,47 @@
     if(area.indexOf('KORWIL:')===0)payload.korwil=area.substring(7); else if(area&&area!=='000')payload.kode_kantor=area.replace('CABANG:',''); return payload;
   }
   async function fetchMigrasiKolekFromNavbar(){
-    const payload=getMigrasiKolekFilter(); if(!payload.closing_date||!payload.harian_date)return;
-    const loading=mkEl('mkLoading'); loading?.classList.remove('hidden'); if(mkAbort)mkAbort.abort(); mkAbort=new AbortController();
-    try{const response=await mkApi('./api/kolek/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:mkAbort.signal});const result=await response.json();if(result.status!==200||!result.data?.data)throw new Error(result.message||'Data migrasi tidak tersedia');mkLastData=result.data.data;renderMigrasiSummary(mkLastData.totals||{});renderMigrasiTable(mkLastData);const label=payload.nominal_field==='baki_debet'?'BAKI DEBET':'SALDO BANK';if(mkEl('mkNominalBadge'))mkEl('mkNominalBadge').textContent=label;if(mkEl('mkTableSubtitle'))mkEl('mkTableSubtitle').textContent=`Nominal dalam ${label.toLowerCase()} asli • Angsuran murni dipisahkan dari restruck`;}catch(error){if(error.name!=='AbortError')mkEl('mkMigrationBody').innerHTML=`<tr><td colspan="11" class="mk-empty-row">${mkEscape(error.message||'Gagal memuat data migrasi.')}</td></tr>`;}finally{loading?.classList.add('hidden');}
+    const payload=getMigrasiKolekFilter();
+    if(!payload.closing_date||!payload.harian_date){
+      mkMainRequest++;
+      mkFetchInFlightKey='';
+      if(mkAbort)mkAbort.abort();
+      invalidateMkCockpitRequests();
+      setMkFetchStatus(false);
+      return;
+    }
+    const fetchKey=JSON.stringify(payload);
+    if(fetchKey===mkFetchInFlightKey)return;
+    if(fetchKey===mkLastFetchKey&&mkLastData){setMkFetchStatus(false);return;}
+    mkFetchInFlightKey=fetchKey;
+    const requestId=++mkMainRequest;
+    setMkFetchStatus(true, 'Mengambil data migrasi...');
+    invalidateMkCockpitRequests();
+    if(mkAbort)mkAbort.abort();
+    mkAbort=new AbortController();
+    try{
+      const response=await mkApi('./api/kolek/',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),signal:mkAbort.signal});
+      const result=await response.json();
+      if(requestId!==mkMainRequest)return;
+      if(result.status!==200||!result.data?.data)throw new Error(result.message||'Data migrasi tidak tersedia');
+      mkLastData=result.data.data;
+      renderMigrasiSummary(mkLastData.totals||{},payload);
+      renderMigrasiTable(mkLastData);
+      mkLastFetchKey=fetchKey;
+      setMkFetchStatus(false);
+      const label=payload.nominal_field==='baki_debet'?'BAKI DEBET':'SALDO BANK';
+      if(mkEl('mkNominalBadge'))mkEl('mkNominalBadge').textContent=label;
+      if(mkEl('mkTableSubtitle'))mkEl('mkTableSubtitle').textContent=`Nominal dalam ${label.toLowerCase()} asli • Angsuran murni dipisahkan dari restruck`;
+    }catch(error){
+      if(requestId===mkMainRequest){
+        mkFetchInFlightKey='';
+        setMkFetchStatus(false);
+        if(error.name!=='AbortError')mkEl('mkMigrationBody').innerHTML=`<tr><td colspan="11" class="mk-empty-row">${mkEscape(error.message||'Gagal memuat data migrasi.')}</td></tr>`;
+      }
+    }finally{
+      if(requestId===mkMainRequest&&mkFetchInFlightKey===fetchKey&&mkLastFetchKey!==fetchKey)mkFetchInFlightKey='';
+      if(requestId===mkMainRequest&&mkLastData===null)setMkFetchStatus(false);
+    }
   }
   window.fetchMigrasiKolekFromNavbar=fetchMigrasiKolekFromNavbar;
 
@@ -1867,5 +2025,11 @@
     document.documentElement.dataset.mkChartTooltips='1';
   }
 
-  window.addEventListener('DOMContentLoaded',async()=>{bindMigrasiKolekNavbarFilter();bindMkRecoveryModal();bindMkDetailModal();bindMkChartTooltips();try{const dateRes=await mkApi('./api/date/');const dateJson=await dateRes.json();const dates=dateJson.data||{};if(mkEl('migrasiKolekClosing'))mkEl('migrasiKolekClosing').value=dates.last_closing||'';if(mkEl('migrasiKolekHarian'))mkEl('migrasiKolekHarian').value=dates.last_created||'';}catch(_){}await populateMigrasiKolekArea();fetchMigrasiKolekFromNavbar();});
+  window.addEventListener('DOMContentLoaded',async()=>{
+    bindMigrasiKolekNavbarFilter();bindMkRecoveryModal();bindMkDetailModal();bindMkChartTooltips();
+    setMkFetchStatus(true, 'Menyiapkan filter...');
+    const loadDates=async()=>{try{const dateRes=await mkApi('./api/date/');const dateJson=await dateRes.json();const dates=dateJson.data||{};if(mkEl('migrasiKolekClosing'))mkEl('migrasiKolekClosing').value=dates.last_closing||'';if(mkEl('migrasiKolekHarian'))mkEl('migrasiKolekHarian').value=dates.last_created||'';}catch(_) {}};
+    await Promise.allSettled([loadDates(),populateMigrasiKolekArea()]);
+    fetchMigrasiKolekFromNavbar();
+  });
 </script>

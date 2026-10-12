@@ -898,14 +898,17 @@ class KolekController {
         $prev3Start   = date('Y-m-01', strtotime('-3 month', strtotime($currentStart)));
         $paymentExpr  = '(COALESCE(t.angsuran_pokok, 0) + COALESCE(t.angsuran_bunga, 0) - COALESCE(t.diskon_bunga, 0))';
 
-        $params = [
-          ':closing_date_projection' => $closing,
-          ':actual_date' => $harian,
+        $currentScope = '';
+        $closingScope = '';
+        $transactionScope = '';
+        $transactionAccountScope = '';
+        $currentParams = [':actual_date' => $harian];
+        $closingParams = [':closing_date_projection' => $closing];
+        $transactionParams = [
           ':actual_date_tx' => $harian,
           ':history_start' => $prev3Start,
           ':current_start' => $currentStart,
           ':current_end' => date('Y-m-d', strtotime($harian . ' +1 day')),
-          ':current_end_trx' => date('Y-m-d', strtotime($harian . ' +1 day')),
           ':current_start_last' => $currentStart,
           ':current_end_last' => date('Y-m-d', strtotime($harian . ' +1 day')),
           ':prev1_start' => $prev1Start,
@@ -920,97 +923,131 @@ class KolekController {
           ':prev2_start_prev3_sum' => $prev2Start,
           ':prev3_start_last' => $prev3Start,
           ':prev2_start_prev3_last' => $prev2Start,
+          ':current_end_trx' => date('Y-m-d', strtotime($harian . ' +1 day')),
         ];
-        $scopeActual = '';
-        $scopeTrx = '';
-        $scopeTrxAccount = '';
         if ($kantor !== null) {
-          $scopeActual = ' AND n.kode_cabang = :projection_kc_actual ';
-          $scopeTrx = ' AND t.kode_kantor = :projection_kc_trx ';
-          $scopeTrxAccount = ' AND n2.kode_cabang = :projection_kc_trx_account ';
-          $params[':projection_kc_actual'] = $kantor;
-          $params[':projection_kc_trx'] = $kantor;
-          $params[':projection_kc_trx_account'] = $kantor;
+          $currentScope = ' AND n.kode_cabang = :projection_kc_current ';
+          $closingScope = ' AND nc.kode_cabang = :projection_kc_closing ';
+          $transactionScope = ' AND t.kode_kantor = :projection_kc_trx ';
+          $transactionAccountScope = ' AND n2.kode_cabang = :projection_kc_trx_account ';
+          $currentParams[':projection_kc_current'] = $kantor;
+          $closingParams[':projection_kc_closing'] = $kantor;
+          $transactionParams[':projection_kc_trx'] = $kantor;
+          $transactionParams[':projection_kc_trx_account'] = $kantor;
         } elseif ($bounds) {
-          $scopeActual = ' AND n.kode_cabang BETWEEN :projection_kw_start_actual AND :projection_kw_end_actual ';
-          $scopeTrx = ' AND t.kode_kantor BETWEEN :projection_kw_start_trx AND :projection_kw_end_trx ';
-          $scopeTrxAccount = ' AND n2.kode_cabang BETWEEN :projection_kw_start_trx_account AND :projection_kw_end_trx_account ';
-          $params[':projection_kw_start_actual'] = $bounds[0];
-          $params[':projection_kw_end_actual'] = $bounds[1];
-          $params[':projection_kw_start_trx'] = $bounds[0];
-          $params[':projection_kw_end_trx'] = $bounds[1];
-          $params[':projection_kw_start_trx_account'] = $bounds[0];
-          $params[':projection_kw_end_trx_account'] = $bounds[1];
+          $currentScope = ' AND n.kode_cabang BETWEEN :projection_kw_start_current AND :projection_kw_end_current ';
+          $closingScope = ' AND nc.kode_cabang BETWEEN :projection_kw_start_closing AND :projection_kw_end_closing ';
+          $transactionScope = ' AND t.kode_kantor BETWEEN :projection_kw_start_trx AND :projection_kw_end_trx ';
+          $transactionAccountScope = ' AND n2.kode_cabang BETWEEN :projection_kw_start_trx_account AND :projection_kw_end_trx_account ';
+          $currentParams[':projection_kw_start_current'] = $bounds[0];
+          $currentParams[':projection_kw_end_current'] = $bounds[1];
+          $closingParams[':projection_kw_start_closing'] = $bounds[0];
+          $closingParams[':projection_kw_end_closing'] = $bounds[1];
+          $transactionParams[':projection_kw_start_trx'] = $bounds[0];
+          $transactionParams[':projection_kw_end_trx'] = $bounds[1];
+          $transactionParams[':projection_kw_start_trx_account'] = $bounds[0];
+          $transactionParams[':projection_kw_end_trx_account'] = $bounds[1];
         } else {
-          $scopeActual = " AND n.kode_cabang <> '000' ";
-          $scopeTrx = " AND t.kode_kantor <> '000' ";
-          $scopeTrxAccount = " AND n2.kode_cabang <> '000' ";
+          $currentScope = " AND n.kode_cabang <> '000' ";
+          $closingScope = " AND nc.kode_cabang <> '000' ";
+          $transactionScope = " AND t.kode_kantor <> '000' ";
+          $transactionAccountScope = " AND n2.kode_cabang <> '000' ";
         }
 
-        $sql = "
-          SELECT
-            n.no_rekening,
-            n.nama_nasabah,
-            n.kode_cabang,
-            n.kolektibilitas,
-            COALESCE(n.hari_menunggak, 0) AS hari_menunggak,
-            COALESCE(n.{$nominalField}, 0) AS nominal_actual,
-            nc.no_rekening AS closing_no_rekening,
-            COALESCE(nc.hari_menunggak, 0) AS dpd_closing,
-            COALESCE(nc.{$nominalField}, 0) AS nominal_closing,
-            nc.jml_pinjaman AS closing_jml_pinjaman,
-            nc.jml_angsuran AS closing_jml_angsuran,
-            nc.suku_bunga_per_tahun AS closing_suku_bunga_per_tahun,
-            nc.type_kredit AS closing_type_kredit,
-            nc.tgl_realisasi AS closing_tgl_realisasi,
-            n.tgl_jatuh_tempo,
-            COALESCE(p.bayar_current, 0) AS bayar_current,
-            p.tgl_bayar_current,
-            COALESCE(p.bayar_prev1, 0) AS bayar_prev1,
-            p.tgl_bayar_prev1,
-            COALESCE(p.bayar_prev2, 0) AS bayar_prev2,
-            p.tgl_bayar_prev2,
-            COALESCE(p.bayar_prev3, 0) AS bayar_prev3,
-            p.tgl_bayar_prev3
+        $sqlCurrent = "
+          SELECT n.no_rekening,n.nama_nasabah,n.kode_cabang,n.kolektibilitas,
+                 COALESCE(n.hari_menunggak, 0) AS hari_menunggak,
+                 COALESCE(n.{$nominalField}, 0) AS nominal_actual,
+                 n.tgl_jatuh_tempo
           FROM nominatif n
-          LEFT JOIN nominatif nc
-            ON nc.no_rekening = n.no_rekening
-           AND nc.kode_cabang = n.kode_cabang
-           AND nc.created = :closing_date_projection
-          LEFT JOIN (
-            SELECT
-              t.no_rekening,
-              SUM(CASE WHEN t.tgl_trans >= :current_start AND t.tgl_trans < :current_end THEN {$paymentExpr} ELSE 0 END) AS bayar_current,
-              MAX(CASE WHEN t.tgl_trans >= :current_start_last AND t.tgl_trans < :current_end_last AND {$paymentExpr} > 0 THEN t.tgl_trans END) AS tgl_bayar_current,
-              SUM(CASE WHEN t.tgl_trans >= :prev1_start AND t.tgl_trans < :current_start_prev1_sum THEN {$paymentExpr} ELSE 0 END) AS bayar_prev1,
-              MAX(CASE WHEN t.tgl_trans >= :prev1_start_last AND t.tgl_trans < :current_start_prev1_last AND {$paymentExpr} > 0 THEN t.tgl_trans END) AS tgl_bayar_prev1,
-              SUM(CASE WHEN t.tgl_trans >= :prev2_start AND t.tgl_trans < :prev1_start_prev2_sum THEN {$paymentExpr} ELSE 0 END) AS bayar_prev2,
-              MAX(CASE WHEN t.tgl_trans >= :prev2_start_last AND t.tgl_trans < :prev1_start_prev2_last AND {$paymentExpr} > 0 THEN t.tgl_trans END) AS tgl_bayar_prev2,
-              SUM(CASE WHEN t.tgl_trans >= :prev3_start AND t.tgl_trans < :prev2_start_prev3_sum THEN {$paymentExpr} ELSE 0 END) AS bayar_prev3,
-              MAX(CASE WHEN t.tgl_trans >= :prev3_start_last AND t.tgl_trans < :prev2_start_prev3_last AND {$paymentExpr} > 0 THEN t.tgl_trans END) AS tgl_bayar_prev3
-            FROM transaksi_kredit t
-            INNER JOIN nominatif n2
-              ON n2.no_rekening = t.no_rekening
-             AND n2.created = :actual_date_tx
-             AND n2.kolektibilitas IN ('L','DP','KL','D','M')
-             AND COALESCE(n2.{$nominalField}, 0) > 0
-             {$scopeTrxAccount}
-            WHERE t.tgl_trans >= :history_start
-              AND t.tgl_trans < :current_end_trx
-              {$scopeTrx}
-            GROUP BY t.no_rekening
-          ) p ON p.no_rekening = n.no_rekening
           WHERE n.created = :actual_date
             AND n.kolektibilitas IN ('L','DP','KL','D','M')
             AND COALESCE(n.{$nominalField}, 0) > 0
-            {$scopeActual}
+            {$currentScope}
+        ";
+        $sqlClosing = "
+          SELECT nc.no_rekening,nc.kode_cabang,
+                 COALESCE(nc.hari_menunggak, 0) AS dpd_closing,
+                 COALESCE(nc.{$nominalField}, 0) AS nominal_closing,
+                 nc.jml_pinjaman AS closing_jml_pinjaman,
+                 nc.jml_angsuran AS closing_jml_angsuran,
+                 nc.suku_bunga_per_tahun AS closing_suku_bunga_per_tahun,
+                 nc.type_kredit AS closing_type_kredit,
+                 nc.tgl_realisasi AS closing_tgl_realisasi,
+                 nc.tgl_jatuh_tempo AS closing_tgl_jatuh_tempo
+          FROM nominatif nc
+          WHERE nc.created = :closing_date_projection
+            {$closingScope}
+        ";
+        $sqlTransactions = "
+          SELECT t.no_rekening,
+                 SUM(CASE WHEN t.tgl_trans >= :current_start AND t.tgl_trans < :current_end THEN {$paymentExpr} ELSE 0 END) AS bayar_current,
+                 MAX(CASE WHEN t.tgl_trans >= :current_start_last AND t.tgl_trans < :current_end_last AND {$paymentExpr} > 0 THEN t.tgl_trans END) AS tgl_bayar_current,
+                 SUM(CASE WHEN t.tgl_trans >= :prev1_start AND t.tgl_trans < :current_start_prev1_sum THEN {$paymentExpr} ELSE 0 END) AS bayar_prev1,
+                 MAX(CASE WHEN t.tgl_trans >= :prev1_start_last AND t.tgl_trans < :current_start_prev1_last AND {$paymentExpr} > 0 THEN t.tgl_trans END) AS tgl_bayar_prev1,
+                 SUM(CASE WHEN t.tgl_trans >= :prev2_start AND t.tgl_trans < :prev1_start_prev2_sum THEN {$paymentExpr} ELSE 0 END) AS bayar_prev2,
+                 MAX(CASE WHEN t.tgl_trans >= :prev2_start_last AND t.tgl_trans < :prev1_start_prev2_last AND {$paymentExpr} > 0 THEN t.tgl_trans END) AS tgl_bayar_prev2,
+                 SUM(CASE WHEN t.tgl_trans >= :prev3_start AND t.tgl_trans < :prev2_start_prev3_sum THEN {$paymentExpr} ELSE 0 END) AS bayar_prev3,
+                 MAX(CASE WHEN t.tgl_trans >= :prev3_start_last AND t.tgl_trans < :prev2_start_prev3_last AND {$paymentExpr} > 0 THEN t.tgl_trans END) AS tgl_bayar_prev3
+          FROM transaksi_kredit t
+          INNER JOIN nominatif n2
+            ON n2.no_rekening = t.no_rekening
+           AND n2.created = :actual_date_tx
+           AND n2.kolektibilitas IN ('L','DP','KL','D','M')
+           AND COALESCE(n2.{$nominalField}, 0) > 0
+           {$transactionAccountScope}
+          WHERE t.tgl_trans >= :history_start
+            AND t.tgl_trans < :current_end_trx
+            {$transactionScope}
+          GROUP BY t.no_rekening
         ";
 
         try {
-          $stmt = $this->pdo->prepare($sql);
-          foreach ($params as $key => $value) $stmt->bindValue($key, $value);
-          $stmt->execute();
-          $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+          $stmtCurrent = $this->pdo->prepare($sqlCurrent);
+          $stmtCurrent->execute($currentParams);
+          $currentRows = $stmtCurrent->fetchAll(PDO::FETCH_ASSOC);
+
+          $closingByAccount = [];
+          $stmtClosing = $this->pdo->prepare($sqlClosing);
+          $stmtClosing->execute($closingParams);
+          while ($row = $stmtClosing->fetch(PDO::FETCH_ASSOC)) {
+            $key = trim((string)$row['no_rekening']) . '|' . trim((string)$row['kode_cabang']);
+            $closingByAccount[$key] = $row;
+          }
+
+          $paymentByAccount = [];
+          $stmtTransactions = $this->pdo->prepare($sqlTransactions);
+          $stmtTransactions->execute($transactionParams);
+          while ($row = $stmtTransactions->fetch(PDO::FETCH_ASSOC)) {
+            $paymentByAccount[trim((string)$row['no_rekening'])] = $row;
+          }
+
+          $rows = [];
+          foreach ($currentRows as $row) {
+            $account = trim((string)$row['no_rekening']);
+            $scopeKey = $account . '|' . trim((string)$row['kode_cabang']);
+            $closingRow = $closingByAccount[$scopeKey] ?? null;
+            $paymentRow = $paymentByAccount[$account] ?? [];
+            $rows[] = array_merge($row, [
+              'closing_no_rekening' => $closingRow['no_rekening'] ?? null,
+              'dpd_closing' => $closingRow['dpd_closing'] ?? 0,
+              'nominal_closing' => $closingRow['nominal_closing'] ?? 0,
+              'closing_jml_pinjaman' => $closingRow['closing_jml_pinjaman'] ?? null,
+              'closing_jml_angsuran' => $closingRow['closing_jml_angsuran'] ?? null,
+              'closing_suku_bunga_per_tahun' => $closingRow['closing_suku_bunga_per_tahun'] ?? null,
+              'closing_type_kredit' => $closingRow['closing_type_kredit'] ?? null,
+              'closing_tgl_realisasi' => $closingRow['closing_tgl_realisasi'] ?? null,
+              'closing_tgl_jatuh_tempo' => $closingRow['closing_tgl_jatuh_tempo'] ?? null,
+              'bayar_current' => $paymentRow['bayar_current'] ?? 0,
+              'tgl_bayar_current' => $paymentRow['tgl_bayar_current'] ?? null,
+              'bayar_prev1' => $paymentRow['bayar_prev1'] ?? 0,
+              'tgl_bayar_prev1' => $paymentRow['tgl_bayar_prev1'] ?? null,
+              'bayar_prev2' => $paymentRow['bayar_prev2'] ?? 0,
+              'tgl_bayar_prev2' => $paymentRow['tgl_bayar_prev2'] ?? null,
+              'bayar_prev3' => $paymentRow['bayar_prev3'] ?? 0,
+              'tgl_bayar_prev3' => $paymentRow['tgl_bayar_prev3'] ?? null,
+            ]);
+          }
         } catch (Throwable $e) {
           sendResponse(500, 'Gagal mengambil proyeksi pembayaran: ' . $e->getMessage());
           return;
@@ -1072,19 +1109,24 @@ class KolekController {
               'type_kredit' => $row['closing_type_kredit'],
               'tgl_realisasi' => $row['closing_tgl_realisasi'],
             ];
-            $billSep = LoanInstallmentHelper::calculateMonthlyBill($loanForSchedule, $prev1Start);
-            $billOkt = LoanInstallmentHelper::calculateMonthlyBill($loanForSchedule, $currentStart);
             $paidSep = $prev1 > 0;
             $paidOkt = $currentPaid > 0;
+            $oktDue = $this->isMonthlyDueByDate($row['closing_tgl_jatuh_tempo'] ?? null, $harian);
             $runoffBuckets[$bucketKey]['noa']++;
             $runoffBuckets[$bucketKey]['closing'] += (float)$row['nominal_closing'];
             if (!$paidSep) {
+              $billSep = LoanInstallmentHelper::calculateMonthlyBill($loanForSchedule, $prev1Start);
               $runoffBuckets[$bucketKey]['belum_bayar_sep_noa']++;
               $runoffBuckets[$bucketKey]['angsuran_sep'] += $billSep['total'];
               $runoffBuckets[$bucketKey]['pokok_sep'] += $billSep['pokok'];
               $runoffBuckets[$bucketKey]['bunga_sep'] += $billSep['bunga'];
             }
-            if (!$paidOkt) {
+            // Oktober masih berjalan. Rekening yang tanggal jatuh temponya
+            // belum lewat actual tidak boleh dihitung sebagai belum bayar;
+            // jika tidak, tagihan tanggal 13-31 ikut masuk dan membandingkan
+            // Oktober partial dengan September full-month menjadi bias.
+            if (!$paidOkt && $oktDue) {
+              $billOkt = LoanInstallmentHelper::calculateMonthlyBill($loanForSchedule, $currentStart);
               $runoffBuckets[$bucketKey]['belum_bayar_okt_noa']++;
               $runoffBuckets[$bucketKey]['angsuran_okt'] += $billOkt['total'];
               $runoffBuckets[$bucketKey]['pokok_okt'] += $billOkt['pokok'];
@@ -2152,6 +2194,27 @@ class KolekController {
       if (!$s) return null;
       $t = strtotime($s);
       return $t ? date('Y-m-d', $t) : null;
+    }
+
+    /**
+     * Menentukan apakah jatuh tempo angsuran bulan berjalan sudah lewat
+     * sampai tanggal actual. Jika tanggal jatuh tempo kosong, pertahankan
+     * perilaku lama agar data legacy tidak hilang dari proyeksi.
+     */
+    private function isMonthlyDueByDate($dueDate, string $actualDate): bool {
+      if (!$dueDate || strtotime((string)$dueDate) === false || strtotime($actualDate) === false) return true;
+
+      $actualTs = strtotime($actualDate);
+      $dueDay = (int)date('j', strtotime((string)$dueDate));
+      $lastDay = (int)date('t', $actualTs);
+      $mappedDay = min($dueDay, $lastDay);
+
+      // Ikuti pemetaan tanggal jatuh tempo yang dipakai modul RR: bila hari
+      // terakhir jatuh Minggu, gunakan hari kerja sebelumnya.
+      $lastDate = sprintf('%04d-%02d-%02d', (int)date('Y', $actualTs), (int)date('m', $actualTs), $lastDay);
+      if ($mappedDay === $lastDay && (int)date('w', strtotime($lastDate)) === 0) $mappedDay--;
+
+      return (int)date('j', $actualTs) >= $mappedDay;
     }
     
     private function snapshotExists($table, $created) {

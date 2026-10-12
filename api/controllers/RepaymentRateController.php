@@ -1754,6 +1754,16 @@ class RepaymentRateController {
         $closing = $b['closing_date'] ?? null;
         $harian  = $b['harian_date'] ?? null;
         $kc      = !empty($b['kode_kantor']) ? str_pad($b['kode_kantor'], 3, '0', STR_PAD_LEFT) : null;
+        $korwil  = strtoupper(trim((string)($b['korwil'] ?? '')));
+        $kwStart = null;
+        $kwEnd = null;
+        switch ($korwil) {
+            case 'SEMARANG':   $kwStart = '001'; $kwEnd = '007'; break;
+            case 'SOLO':       $kwStart = '008'; $kwEnd = '014'; break;
+            case 'BANYUMAS':   $kwStart = '015'; $kwEnd = '021'; break;
+            case 'PEKALONGAN': $kwStart = '022'; $kwEnd = '028'; break;
+            default: $korwil = '';
+        }
         $kankas  = $b['kode_kankas'] ?? null;
         $ao      = $b['kode_ao'] ?? null;
         $search  = trim($b['search'] ?? '');
@@ -1828,7 +1838,7 @@ class RepaymentRateController {
         if ($statusPembayaran === 'BELUM_JATUH_TEMPO') $detailExtraWhere .= " AND COALESCE(trx.trx_bulan_ini, 0) <= 0 AND DAY(:harian_status_rr) <= {$dueDaySql}";
         if ($statusPembayaran === 'BELUM_BAYAR') $detailExtraWhere .= " AND COALESCE(trx.trx_bulan_ini, 0) <= 0 AND DAY(:harian_status_rr) > {$dueDaySql}";
 
-        $bind = function($stmt) use ($s1, $e1, $s2, $e2, $txStart, $txEnd, $harian, $kc, $kankas, $ao, $search) {
+        $bind = function($stmt) use ($s1, $e1, $s2, $e2, $txStart, $txEnd, $harian, $kc, $kwStart, $kwEnd, $kankas, $ao, $search) {
             if (preg_match('/\\:s1(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':s1', $s1);
             if (preg_match('/\\:e1(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':e1', $e1);
             if (preg_match('/\\:s2(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':s2', $s2);
@@ -1842,6 +1852,10 @@ class RepaymentRateController {
             if (preg_match('/\\:s1_lancar_due(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':s1_lancar_due', $s1);
             if (preg_match('/\\:e1_lancar_due(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':e1_lancar_due', $e1);
             if ($kc && $kc !== '000') $stmt->bindValue(':kc', $kc);
+            if ($kwStart && $kwEnd) {
+                if (preg_match('/\\:kw_start(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':kw_start', $kwStart);
+                if (preg_match('/\\:kw_end(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':kw_end', $kwEnd);
+            }
             if ($kankas) $stmt->bindValue(':kankas', $kankas);
             if ($ao) $stmt->bindValue(':ao', $ao);
             if ($search !== '') {
@@ -1850,7 +1864,7 @@ class RepaymentRateController {
                 $stmt->bindValue(':search3', "%$search%");
             }
         };
-        $bindActualOnly = function($stmt) use ($s1, $e1, $s2, $e2, $txStart, $txEnd, $harian, $kc, $kankas, $ao, $search) {
+        $bindActualOnly = function($stmt) use ($s1, $e1, $s2, $e2, $txStart, $txEnd, $harian, $kc, $kwStart, $kwEnd, $kankas, $ao, $search) {
             $stmt->bindValue(':s2', $s2);
             $stmt->bindValue(':e2', $e2);
             if (strpos($stmt->queryString, ':tx_start') !== false) $stmt->bindValue(':tx_start', $txStart);
@@ -1860,6 +1874,10 @@ class RepaymentRateController {
             if (preg_match('/\\:s1_lancar_due(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':s1_lancar_due', $s1);
             if (preg_match('/\\:e1_lancar_due(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':e1_lancar_due', $e1);
             if ($kc && $kc !== '000') $stmt->bindValue(':kc', $kc);
+            if ($kwStart && $kwEnd) {
+                if (preg_match('/\\:kw_start(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':kw_start', $kwStart);
+                if (preg_match('/\\:kw_end(?![A-Za-z0-9_])/', $stmt->queryString)) $stmt->bindValue(':kw_end', $kwEnd);
+            }
             if ($kankas) $stmt->bindValue(':kankas', $kankas);
             if ($ao) $stmt->bindValue(':ao', $ao);
             if ($search !== '') {
@@ -1902,6 +1920,7 @@ class RepaymentRateController {
             // seperti detail delta karena itu menampilkan semua rekening RR.
             $filters = "";
             if ($kc && $kc !== '000') $filters .= " AND t2.kode_cabang = :kc";
+            elseif ($kwStart && $kwEnd) $filters .= " AND t2.kode_cabang BETWEEN :kw_start AND :kw_end";
             if ($kankas) $filters .= " AND t2.kode_group1 = :kankas";
             if ($ao) $filters .= " AND t2.kode_group2 = :ao";
             if ($search !== '') {
@@ -1954,6 +1973,7 @@ class RepaymentRateController {
         } elseif ($mode === 'ACTUAL') {
             $actualFilters = "";
             if ($kc && $kc !== '000') $actualFilters .= " AND t2.kode_cabang = :kc";
+            elseif ($kwStart && $kwEnd) $actualFilters .= " AND t2.kode_cabang BETWEEN :kw_start AND :kw_end";
             if ($kankas) $actualFilters .= " AND t2.kode_group1 = :kankas";
             if ($ao) $actualFilters .= " AND t2.kode_group2 = :ao";
             if ($search !== '') {
@@ -2006,6 +2026,7 @@ class RepaymentRateController {
             // UNION seluruh nomor rekening pada dua tanggal.
             $filters = "";
             if ($kc && $kc !== '000') $filters .= " AND COALESCE(t2.kode_cabang, t1.kode_cabang) = :kc";
+            elseif ($kwStart && $kwEnd) $filters .= " AND COALESCE(t2.kode_cabang, t1.kode_cabang) BETWEEN :kw_start AND :kw_end";
             if ($kankas) $filters .= " AND COALESCE(t2.kode_group1, t1.kode_group1) = :kankas";
             if ($ao) $filters .= " AND COALESCE(t2.kode_group2, t1.kode_group2) = :ao";
             if ($search !== '') {

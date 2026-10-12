@@ -277,6 +277,19 @@
   @media (max-width:420px) {
     #recomPipelaneNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:1fr; gap:7px; }
   }
+  #searchDebiturNavbarFilterPanel { width:min(1180px, calc(100vw - 24px)); }
+  #searchDebiturNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(5, minmax(0, 1fr)); }
+  #searchDebiturNavbarFilterPanel .dashboard-navbar-filter__field { min-width:0; }
+  #searchDebiturNavbarFilterPanel .dashboard-navbar-filter__field > .ts-wrapper,
+  #searchDebiturNavbarFilterPanel .dashboard-navbar-filter__field > .ts-wrapper .ts-control { width:100%; }
+  #searchDebiturNavbarFilterPanel .dashboard-navbar-filter__field .ts-control { min-height:38px; }
+  @media (max-width:767px) {
+    #searchDebiturNavbarFilterPanel { right:8px; width:calc(100vw - 16px); }
+    #searchDebiturNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
+  }
+  @media (max-width:420px) {
+    #searchDebiturNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:1fr; gap:7px; }
+  }
   :root {
     --monbis-event-accent:#2563eb;
     --monbis-event-header-bg:#ffffff;
@@ -2252,6 +2265,21 @@
         </div>
       </form>
       <?php endif; ?>
+
+      <?php if (($page ?? '') === 'search_debitur'): ?>
+      <div id="searchDebiturNavbarFilterPanel" class="dashboard-navbar-filter hidden flex-col" aria-label="Filter Search Debitur Kredit">
+        <div class="dashboard-navbar-filter__head">
+          <div>
+            <span class="dashboard-navbar-filter__eyebrow">Filter</span>
+            <strong class="dashboard-navbar-filter__title">Atur filter Search Debitur Kredit</strong>
+          </div>
+          <button type="button" id="searchDebiturNavbarFilterClose" class="dashboard-navbar-filter__close" aria-label="Tutup filter" title="Tutup filter">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+          </button>
+        </div>
+        <div class="dashboard-navbar-filter__fields" id="searchDebiturNavbarFilterFields"></div>
+      </div>
+      <?php endif; ?>
       
       <!-- Area Lonceng & Profile -->
       <div class="flex items-center gap-4 sm:gap-6 ml-auto">
@@ -2372,6 +2400,11 @@
         <?php endif; ?>
         <?php if (in_array(($page ?? ''), ['recom_pipelane', 'pipelane_ao_jt'], true)): ?>
         <button type="button" id="recomPipelaneNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Rekomendasi Pipelane AO Kredit" title="Buka filter Rekomendasi Pipelane AO Kredit" aria-expanded="false" aria-controls="recomPipelaneNavbarFilterPanel">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+        </button>
+        <?php endif; ?>
+        <?php if (($page ?? '') === 'search_debitur'): ?>
+        <button type="button" id="searchDebiturNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Search Debitur Kredit" title="Buka filter Search Debitur Kredit" aria-expanded="false" aria-controls="searchDebiturNavbarFilterPanel">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
         </button>
         <?php endif; ?>

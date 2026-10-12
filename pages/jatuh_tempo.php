@@ -447,6 +447,164 @@
       #tableDetailJT .jt-mobile-identity .jt-mobile-account { color:#64748b; font:700 8px/1.15 ui-monospace,SFMono-Regular,Menlo,monospace; }
       #tableDetailJT .jt-mobile-identity .jt-mobile-name { margin-top:2px; color:#334155; font-size:9px; font-weight:800; }
   }
+
+  /* ========================================================
+     FINAL POLISH: soft palette + stable responsive scrolling
+     ======================================================== */
+  #jtScroller,
+  #jtModalContent {
+      position:relative;
+      isolation:isolate;
+      overscroll-behavior:contain;
+      -webkit-overflow-scrolling:touch;
+  }
+
+  /* Header grup dibuat netral; warna dipakai seperlunya pada badge/status saja. */
+  #tabelJT thead th.jt-head-neutral,
+  #tabelJT thead th.jt-head-blue,
+  #tabelJT thead th.jt-head-green,
+  #tabelJT thead th.jt-head-sky,
+  #tabelJT thead th.jt-head-orange,
+  #tabelJT thead tr:first-child th,
+  #tabelJT thead tr:nth-child(2) th {
+      background:#f5f7fa !important;
+      color:#475569 !important;
+      border-color:#dbe3ec !important;
+      box-shadow:inset 0 -1px 0 #dbe3ec !important;
+  }
+  #tabelJT thead tr:first-child th.sticky-left-1,
+  #tabelJT thead tr:first-child th.sticky-left-2,
+  #tabelJT thead tr:nth-child(2) th.sticky-left-1,
+  #tabelJT thead tr:nth-child(2) th.sticky-left-2 {
+      background:#eef3f8 !important;
+      color:#475569 !important;
+  }
+
+  #tabelJT tbody td,
+  #tabelJT tbody td.sticky-left-1,
+  #tabelJT tbody td.sticky-left-2 {
+      background:#fff !important;
+      color:#475569 !important;
+      border-color:#edf1f5 !important;
+      background-clip:padding-box;
+  }
+  #tabelJT tbody tr:nth-child(even) td,
+  #tabelJT tbody tr:nth-child(even) td.sticky-left-1,
+  #tabelJT tbody tr:nth-child(even) td.sticky-left-2 { background:#fbfcfd !important; }
+  #tabelJT tbody tr:hover td,
+  #tabelJT tbody tr:hover td.sticky-left-1,
+  #tabelJT tbody tr:hover td.sticky-left-2 { background:#f5f8fb !important; }
+
+  #rowTotalJTAtas th {
+      background:#eef3f8 !important;
+      color:#334155 !important;
+      border-color:#d5dee9 !important;
+      box-shadow:inset 0 -1px 0 #cbd5e1 !important;
+  }
+  #rowTotalJTAtas th.sticky-left-1,
+  #rowTotalJTAtas th.sticky-left-2 { background:#e8eef5 !important; color:#334155 !important; }
+
+  /* Detail modal mengikuti warna dan kontras tabel utama. */
+  #tableDetailJT thead th,
+  #tableDetailJT thead th.mod-sticky-1,
+  #tableDetailJT thead th.mod-sticky-2,
+  #tableDetailJT thead th.jt-mobile-identity {
+      background:#f5f7fa !important;
+      color:#475569 !important;
+      border-color:#dbe3ec !important;
+      box-shadow:inset 0 -1px 0 #dbe3ec !important;
+  }
+  #tableDetailJT tbody td,
+  #tableDetailJT tbody td.mod-sticky-1,
+  #tableDetailJT tbody td.mod-sticky-2,
+  #tableDetailJT tbody td.jt-mobile-identity {
+      background:#fff !important;
+      color:#475569 !important;
+      border-color:#edf1f5 !important;
+      background-clip:padding-box;
+  }
+  #tableDetailJT tbody tr:nth-child(even) td,
+  #tableDetailJT tbody tr:nth-child(even) td.mod-sticky-1,
+  #tableDetailJT tbody tr:nth-child(even) td.mod-sticky-2,
+  #tableDetailJT tbody tr:nth-child(even) td.jt-mobile-identity { background:#fbfcfd !important; }
+  #tableDetailJT tbody tr:hover td,
+  #tableDetailJT tbody tr:hover td.mod-sticky-1,
+  #tableDetailJT tbody tr:hover td.mod-sticky-2,
+  #tableDetailJT tbody tr:hover td.jt-mobile-identity { background:#f5f8fb !important; }
+  #rowTotalDetailAtas th {
+      background:#eef3f8 !important;
+      color:#334155 !important;
+      border-color:#d5dee9 !important;
+  }
+
+  /* Tombol kolektibilitas tidak lagi menambah aksen hijau di toolbar. */
+  .jt-kolek-toggle {
+      border-color:#dbe3ec;
+      background:#f5f7fa;
+      color:#475569;
+  }
+  .jt-kolek-toggle:hover { background:#edf2f7; border-color:#cbd5e1; }
+
+  @media (max-width:1279px) {
+      #jtHeaderCard > div:nth-child(2) {
+          width:100%;
+          margin-left:auto;
+          justify-content:flex-end;
+          flex-wrap:wrap;
+      }
+  }
+  @media (max-width:767px) {
+      #jtHeaderCard {
+          flex-direction:row;
+          align-items:center;
+          flex-wrap:nowrap;
+      }
+      #jtHeaderCard .jt-title-copy {
+          flex:1 1 auto;
+          min-width:0;
+      }
+      #jtHeaderCard h1 {
+          min-width:0;
+          gap:4px;
+          font-size:12px;
+      }
+      #jtHeaderCard .jt-title-text {
+          min-width:0;
+          overflow:hidden;
+          text-overflow:ellipsis;
+          white-space:nowrap;
+      }
+      #jtHeaderCard > div:nth-child(2) {
+          width:auto;
+          flex:0 0 auto;
+          align-self:center;
+          margin-top:0;
+          margin-left:auto;
+          justify-content:flex-end;
+          flex-wrap:wrap;
+          gap:4px;
+      }
+      #jtHeaderCard > div:nth-child(2) .jt-breakdown-toggle,
+      #jtHeaderCard > div:nth-child(2) .jt-kolek-toggle,
+      #jtHeaderCard > div:nth-child(2) .jt-download-btn {
+          width:30px;
+          min-width:30px;
+          height:30px;
+      }
+      #tabelJT { width:max-content; min-width:980px; }
+      #tabelJT th,
+      #tabelJT td { font-size:8.5px; }
+      #tabelJT .sticky-left-2,
+      #tabelJT .jt-grouped-name,
+      #tabelJT .jt-office-name {
+          width:145px;
+          min-width:145px;
+          max-width:145px;
+      }
+      #tableDetailJT { width:max-content; min-width:1120px; }
+      #tableDetailJT th { font-size:7.5px !important; }
+      #tableDetailJT td { font-size:8.5px; }
+  }
 </style>
 
 <script>

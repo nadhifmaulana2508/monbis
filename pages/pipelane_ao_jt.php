@@ -259,15 +259,22 @@
   #tabelPipeline thead tr:first-child th.sticky-left-2 { z-index:70; background:#f1f5f9 !important; }
   #tabelPipeline thead tr:nth-child(2) th.sticky-left-1,
   #tabelPipeline thead tr:nth-child(2) th.sticky-left-2 { z-index:69; background:#eff6ff !important; }
-  #tabelPipeline thead th.pipeline-head-potensi { background:#eff6ff !important; color:#1d4ed8 !important; }
-  #tabelPipeline thead th.pipeline-head-refi { background:#ecfdf5 !important; color:#047857 !important; }
-  #tabelPipeline thead th.pipeline-head-percent { background:#f8fafc !important; color:#475569 !important; width:90px; min-width:90px; }
-  #tabelPipeline thead th.pipeline-head-lunas { background:#f0f9ff !important; color:#0369a1 !important; }
-  #tabelPipeline thead th.pipeline-head-belum { background:#fff7ed !important; color:#c2410c !important; }
-  #tabelPipeline thead th.pipeline-head-rekom { background:#eaf4ff !important; color:#1e3a5f !important; }
-  #tabelPipeline thead th.pipeline-head-top { background:#f5f3ff !important; color:#6d28a9 !important; }
-  #tabelPipeline thead th.pipeline-head-ret { background:#fff7ed !important; color:#c2410c !important; }
-  #tabelPipeline thead th.pipeline-head-drop { background:#fff1f2 !important; color:#be123c !important; }
+  /* Soft table palette: distinction tetap terlihat dari grouping dan border,
+     bukan dari banyak warna pada setiap kolom. */
+  #tabelPipeline thead th.pipeline-head-potensi,
+  #tabelPipeline thead th.pipeline-head-refi,
+  #tabelPipeline thead th.pipeline-head-percent,
+  #tabelPipeline thead th.pipeline-head-lunas,
+  #tabelPipeline thead th.pipeline-head-belum,
+  #tabelPipeline thead th.pipeline-head-rekom,
+  #tabelPipeline thead th.pipeline-head-top,
+  #tabelPipeline thead th.pipeline-head-ret,
+  #tabelPipeline thead th.pipeline-head-drop {
+      background:#f5f7fa !important;
+      color:#475569 !important;
+      box-shadow:inset 0 -1px 0 #dbe3ec;
+  }
+  #tabelPipeline thead th.pipeline-head-percent { width:90px; min-width:90px; }
   #tabelPipeline .pipeline-noa-col {
       width:32px;
       min-width:32px;
@@ -290,22 +297,36 @@
   #tabelPipeline .pipeline-percent-col {
       text-align:center !important;
   }
-  #tabelPipeline .pipeline-cell-potensi { color:#1e3a5f; background:#fff !important; }
-  #tabelPipeline .pipeline-cell-refi { color:#047857; background:#ecfdf5 !important; }
-  #tabelPipeline .pipeline-cell-percent { color:#c2410c; background:#fff !important; }
-  #tabelPipeline .pipeline-cell-lunas { color:#0369a1; background:#f0f9ff !important; }
-  #tabelPipeline .pipeline-cell-belum { color:#c2410c; background:#fff7ed !important; }
+  #tabelPipeline .pipeline-cell-potensi,
+  #tabelPipeline .pipeline-cell-refi,
+  #tabelPipeline .pipeline-cell-percent,
+  #tabelPipeline .pipeline-cell-lunas,
+  #tabelPipeline .pipeline-cell-belum,
   #tabelPipeline .pipeline-cell-top,
-  #tabelPipeline .pipeline-total-top { color:#6d28d9 !important; background:#f5f3ff !important; }
   #tabelPipeline .pipeline-cell-ret,
-  #tabelPipeline .pipeline-total-ret { color:#c2410c !important; background:#fff7ed !important; }
-  #tabelPipeline .pipeline-cell-drop,
-  #tabelPipeline .pipeline-total-drop { color:#be123c !important; background:#fff1f2 !important; }
-  #tabelPipeline .pipeline-total-potensi { color:#1e40af !important; background:#eff6ff !important; }
-  #tabelPipeline .pipeline-total-refi { color:#047857 !important; background:#ecfdf5 !important; }
-  #tabelPipeline .pipeline-total-percent { color:#c2410c !important; background:#eff6ff !important; }
-  #tabelPipeline .pipeline-total-lunas { color:#0369a1 !important; background:#f0f9ff !important; }
-  #tabelPipeline .pipeline-total-belum { color:#c2410c !important; background:#fff7ed !important; }
+  #tabelPipeline .pipeline-cell-drop {
+      color:#334155 !important;
+      background:#fff !important;
+  }
+  #tabelPipeline .pipeline-total-potensi,
+  #tabelPipeline .pipeline-total-refi,
+  #tabelPipeline .pipeline-total-percent,
+  #tabelPipeline .pipeline-total-lunas,
+  #tabelPipeline .pipeline-total-belum,
+  #tabelPipeline .pipeline-total-top,
+  #tabelPipeline .pipeline-total-ret,
+  #tabelPipeline .pipeline-total-drop {
+      color:#334155 !important;
+      background:#eef3f8 !important;
+  }
+  #tabelPipeline .pipeline-total-potensi,
+  #tabelPipeline .pipeline-total-refi,
+  #tabelPipeline .pipeline-total-percent,
+  #tabelPipeline .pipeline-total-lunas,
+  #tabelPipeline .pipeline-total-belum,
+  #tabelPipeline .pipeline-total-top,
+  #tabelPipeline .pipeline-total-ret,
+  #tabelPipeline .pipeline-total-drop { border-color:#d5dee9 !important; }
   #modalDetail { padding:12px; background:rgba(15,23,42,.68); backdrop-filter:blur(7px); }
   #modalDetail > .relative { width:min(1760px,calc(100vw - 24px)); height:min(94dvh,920px); max-width:none; border:1px solid #dbe3ee; border-radius:16px; }
   #pipelineModalHeader { background:#fff; border-color:#e2e8f0; }
@@ -405,6 +426,32 @@
       #tabelPipeline .sticky-left-1.jt-office-name { display:table-cell !important; width:135px; min-width:135px; max-width:135px; }
       #tableExportModal .pipeline-mobile-identity { left:0 !important; width:145px; min-width:145px; max-width:145px; }
   }
+
+  /* Detail modal memakai palette yang sama agar tidak terasa seperti tabel lain. */
+  #tableExportModal thead th,
+  #tableExportModal thead th.mod-sticky-1,
+  #tableExportModal thead th.mod-sticky-2,
+  #tableExportModal thead th.pipeline-mobile-identity {
+      background:#f5f7fa !important;
+      color:#475569 !important;
+      border-color:#dbe3ec !important;
+  }
+  #tableExportModal tbody td,
+  #tableExportModal tbody td.mod-sticky-1,
+  #tableExportModal tbody td.mod-sticky-2,
+  #tableExportModal tbody td.pipeline-mobile-identity {
+      background:#fff !important;
+      color:#334155;
+      border-color:#edf1f5 !important;
+  }
+  #tableExportModal tbody tr:nth-child(even) td,
+  #tableExportModal tbody tr:nth-child(even) td.mod-sticky-1,
+  #tableExportModal tbody tr:nth-child(even) td.mod-sticky-2,
+  #tableExportModal tbody tr:nth-child(even) td.pipeline-mobile-identity { background:#fbfcfd !important; }
+  #tableExportModal tbody tr:hover td,
+  #tableExportModal tbody tr:hover td.mod-sticky-1,
+  #tableExportModal tbody tr:hover td.mod-sticky-2,
+  #tableExportModal tbody tr:hover td.pipeline-mobile-identity { background:#f5f8fb !important; }
 </style>
 
 <div id="recomPipelanePage" class="pipeline-page jt-page max-w-[1920px] mx-auto px-2 md:px-4 py-3 md:py-6 h-[calc(100vh-80px)] flex flex-col bg-slate-50 font-sans text-slate-800 overflow-hidden">
