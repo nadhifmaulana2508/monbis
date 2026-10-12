@@ -7,3 +7,7 @@ docs/*
 !docs/database/
 
 api-tests
+
+# Local agent/task metadata and documentation virtual environment
+.agents/
+.venv-docs/
