@@ -525,17 +525,66 @@ function processAndRenderTable(rows, gt) {
 window.exportExcelRekap = function() {
     if (rekapDataCache.length === 0) return alert("Tidak ada data untuk diexport.");
 
-    const nominalLabel = nominalFieldReal === 'baki_debet' ? 'Baki Debet' : 'Saldo Bank';
-    let csv = `Kode\tNama Kantor\t${nominalLabel} (sesuai date closing)\tRealisasi (Nominal / NOA)\tKapitalisasi Restruck (Nominal / NOA)\tPelunasan (Nominal / NOA)\tAngsuran (Nominal / NOA)\tRun Off (Nominal / NOA)\t${nominalLabel} (sesuai date actual)\tGrowth\n`;
+    let tableRows = '';
 
     rekapDataCache.forEach(r => {
         const closing = getNominalClosing(r);
         const actual = getNominalActual(r);
-        const metric = (nominal, noa) => `${Math.round(Number(nominal || 0))} (NOA: ${Number(noa || 0)})`;
-        csv += `'${r.kode_kantor}\t${r.nama_kantor}\t${Math.round(closing)}\t${metric(r.total_realisasi, r.noa_realisasi)}\t${metric(r.total_restruck, r.noa_restruck)}\t${metric(r.pelunasan, r.noa_pelunasan)}\t${metric(r.angsuran_murni, r.noa_angsuran_murni)}\t${metric(r.total_run_off, r.noa_run_off)}\t${Math.round(actual)}\t${Math.round(r.growth || 0)}\n`;
+        tableRows += `
+            <tr>
+                <td style="mso-number-format:'\\@';">${escapeExcel(r.kode_kantor || '')}</td>
+                <td>${escapeExcel(r.nama_kantor || '')}</td>
+                <td class="count">${escapeExcel(fmtCellCount(r.noa_realisasi))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(r.total_realisasi))}</td>
+                <td class="count">${escapeExcel(fmtCellCount(r.noa_restruck))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(r.total_restruck))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(r.pelunasan))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(r.angsuran_murni))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(r.total_run_off))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(closing))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(actual))}</td>
+                <td class="amount">${escapeExcel(fmtGrowth(r.growth))}</td>
+            </tr>
+        `;
     });
 
-    const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
+    const html = `
+        <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; }
+                    th { background: #dbeafe; color: #172554; border: 1px solid #94a3b8; padding: 7px; font-weight: bold; white-space: nowrap; }
+                    td { border: 1px solid #cbd5e1; padding: 6px; white-space: nowrap; }
+                    td.count { text-align: center; }
+                    td.amount { text-align: right; }
+                </style>
+            </head>
+            <body>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kode</th>
+                            <th>Nama Kantor</th>
+                            <th>NOA Realisasi</th>
+                            <th>Nominal Realisasi</th>
+                            <th>NOA Restruck</th>
+                            <th>Nominal Restruck</th>
+                            <th>Pelunasan</th>
+                            <th>Angsuran Murni</th>
+                            <th>Total Run Off</th>
+                            <th>Portofolio Closing</th>
+                            <th>Portofolio Harian</th>
+                            <th>Growth Net</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            </body>
+        </html>
+    `;
+
+    const blob = new Blob(["\ufeff" + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const a = document.createElement('a');
 
     a.href = window.URL.createObjectURL(blob);
