@@ -6,7 +6,7 @@
 
 // 1. Load Dependencies (Gunakan require_once ke helper pusat)
 require_once __DIR__ . '/../helpers/response.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 require_once __DIR__ . '/../controllers/RepaymentRateController.php';
 
 // 2. Init Database (Cara Aman agar $pdo tidak null)
@@ -49,9 +49,18 @@ switch ($method) {
         if ($type === 'rekap_rr') {
             $controller->getRepaymentRate($input);
 
+        } elseif ($type === 'rekap_rr_area') {
+            $controller->getRepaymentRateArea($input);
+
+        } elseif ($type === 'rekap_rr_collection_area') {
+            $controller->getRepaymentRateCollectionArea($input);
+
         // --- B. DETAIL DRILL DOWN ---
         } elseif ($type === 'detail_rr') {
             $controller->getDetailRepaymentRate($input);
+
+        } elseif ($type === 'detail_rekap_rr') {
+            $controller->getDetailRekapRr($input);
 
         // --- C. MONITORING (EARLY WARNING) ---
         } elseif ($type === 'monitoring_rr') {
@@ -81,3 +90,4 @@ switch ($method) {
         sendResponse(405, "Metode tidak diizinkan (Gunakan POST)");
         break;
 }
+

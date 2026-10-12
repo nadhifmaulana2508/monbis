@@ -1,15 +1,16 @@
-<div class="max-w-7xl mx-auto px-4 py-5 font-sans" id="BD_root">
+<div class="max-w-[1600px] mx-auto px-4 py-5 font-sans" id="BD_root">
   
-  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-4">
-    <div class="shrink-0">
+  <div class="actual-kredit-page-head flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-4">
+    <div class="actual-kredit-page-title shrink-0">
       <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2 text-slate-800">
         <span class="bg-blue-600 text-white p-1.5 rounded-lg shadow-sm text-sm">📊</span>
-        <span>Bucket DPD (OSC)</span>
+        <span>Report Actual Kredit</span>
       </h1>
-      <p class="text-[11px] text-slate-500 mt-1.5 ml-1 font-medium">*Perbandingan M-1 vs Actual</p>
+      <p class="text-[11px] text-slate-500 mt-1.5 ml-1 font-medium">Perbandingan M-1 dengan actual berdasarkan bucket DPD dan kolektabilitas.</p>
     </div>
 
-    <form id="formFilterKolek" class="bg-white p-2 md:p-3 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-end gap-3 shrink-0">
+    <!-- Filter dipindahkan ke navbar. -->
+    <!-- <form id="formFilterKolek" class="bg-white p-2 md:p-3 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-end gap-3 shrink-0">
       <div class="field flex flex-col gap-1">
         <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wider ml-1" for="closing_date_kolek">Closing</label>
         <input type="date" id="closing_date_kolek" class="inp" required>
@@ -35,7 +36,11 @@
           <span class="text-xs font-bold uppercase tracking-wide hidden md:inline">Rekap</span>
         </button>
       </div>
-    </form>
+    </form> -->
+    <button type="button" onclick="exportSemuaLaporan()" class="actual-kredit-export" title="Download Excel semua laporan" aria-label="Download Excel semua laporan">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path></svg>
+      <span>Export</span>
+    </button>
   </div>
 
   <div id="loadingKolek" class="hidden flex items-center gap-2 text-sm text-blue-600 font-bold mb-3 tracking-wider">
@@ -63,9 +68,9 @@
         </tr>
         <tr>
           <th class="border-b border-r border-blue-200 px-3 py-2 bg-blue-50">NOA</th>
-          <th class="border-b border-r border-blue-200 px-3 py-2 bg-blue-50">OSC</th>
+          <th class="border-b border-r border-blue-200 px-3 py-2 bg-blue-50"><span id="actualKreditM1NominalLabel">Saldo Bank</span></th>
           <th class="border-b border-r border-blue-200 px-3 py-2 bg-blue-50">NOA</th>
-          <th class="border-b border-r border-blue-200 px-3 py-2 bg-blue-50">OSC</th>
+          <th class="border-b border-r border-blue-200 px-3 py-2 bg-blue-50"><span id="actualKreditActualNominalLabel">Saldo Bank</span></th>
           <th class="border-b border-r border-emerald-200 px-3 py-2 bg-emerald-50 text-emerald-800">NOA</th>
           <th class="border-b border-r border-emerald-200 px-3 py-2 bg-emerald-50 text-emerald-800">OSC</th>
           <th class="border-b border-emerald-200 px-3 py-2 bg-emerald-50 text-emerald-800">%</th>
@@ -75,7 +80,7 @@
     </table>
   </div>
 
-  <div id="pairWrap" class="mt-5 grid grid-cols-1 gap-5 hidden lg:grid-cols-10">
+  <div id="pairWrap" class="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-10">
     
     <div class="card lg:col-span-4 flex flex-col">
       <div class="card-header flex items-center gap-2">
@@ -127,9 +132,9 @@
             <tr>
               <th class="border-r border-orange-100 px-2 py-2">KOL</th>
               <th class="border-r border-orange-100 px-2 py-2">M-1 NOA</th>
-              <th class="border-r border-orange-100 px-2 py-2">M-1 OS</th>
+              <th class="border-r border-orange-100 px-2 py-2">M-1 <span id="actualKreditKolM1NominalLabel">Saldo Bank</span></th>
               <th class="border-r border-orange-100 px-2 py-2">Actual NOA</th>
-              <th class="border-r border-orange-100 px-2 py-2">Actual OS</th>
+              <th class="border-r border-orange-100 px-2 py-2">Actual <span id="actualKreditKolActualNominalLabel">Saldo Bank</span></th>
               <th class="px-2 py-2">Inc OS</th>
             </tr>
           </thead>
@@ -216,6 +221,73 @@
     .filter-wrap .field:nth-child(2){grid-column:2;}
     .filter-wrap .field:nth-child(3){grid-column:1;}
   }
+
+  /* ===== Modern responsive theme ===== */
+  #BD_root {
+    --ak-surface:#ffffff;
+    --ak-soft:#f8fafc;
+    --ak-border:#dbe3ee;
+    --ak-text:#172033;
+    --ak-muted:#64748b;
+    color:var(--ak-text);
+    font-family:Roboto, Arial, system-ui, sans-serif;
+  }
+  #BD_root .actual-kredit-page-head {
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    margin-bottom:18px; padding:16px 18px; border:1px solid var(--ak-border);
+    border-radius:16px; background:var(--ak-surface); box-shadow:0 8px 22px rgba(15,23,42,.05);
+  }
+  #BD_root .actual-kredit-page-title { display:block; min-width:0; }
+  #BD_root .actual-kredit-page-title h1 > span:first-child { width:40px; height:40px; display:inline-flex; align-items:center; justify-content:center; flex:none; border-radius:11px; }
+  #BD_root .actual-kredit-page-icon { width:40px; height:40px; display:grid; place-items:center; flex:none; border-radius:11px; color:#fff; background:#2563eb; box-shadow:0 6px 14px rgba(37,99,235,.2); }
+  #BD_root .actual-kredit-page-icon svg { width:21px; height:21px; }
+  #BD_root .actual-kredit-page-title h1 { margin:0; color:var(--ak-text); font-size:1.2rem; line-height:1.2; font-weight:800; }
+  #BD_root .actual-kredit-page-title p { margin:4px 0 0; color:var(--ak-muted); font-size:.72rem; line-height:1.35; }
+  #BD_root .actual-kredit-export { display:inline-flex; align-items:center; justify-content:center; gap:7px; flex:none; min-height:38px; padding:0 13px; border:0; border-radius:10px; color:#fff; background:#059669; font:700 .72rem Roboto,Arial,sans-serif; cursor:pointer; box-shadow:0 5px 12px rgba(5,150,105,.18); transition:background .15s ease, transform .15s ease; }
+  #BD_root .actual-kredit-export:hover { background:#047857; transform:translateY(-1px); }
+  #BD_root .actual-kredit-export svg { width:16px; height:16px; }
+  #BD_root .hscroll { border-color:var(--ak-border); border-radius:14px; scrollbar-width:thin; scrollbar-color:#94a3b8 transparent; }
+  #BD_root .hscroll::-webkit-scrollbar { width:5px; height:5px; }
+  #BD_root .hscroll::-webkit-scrollbar-thumb { background:#94a3b8; border-radius:999px; }
+  #BD_root .hscroll::-webkit-scrollbar-track { background:transparent; }
+  #BD_root .card { padding:16px; background:var(--ak-surface); border-color:var(--ak-border); border-radius:14px; box-shadow:0 8px 22px rgba(15,23,42,.05); }
+  #BD_root .card-header { color:var(--ak-text); }
+  #BD_root .metric { background:var(--ak-soft); border-color:var(--ak-border); }
+  #BD_root #tblFlowRate thead,
+  #BD_root #tblKOL thead { background:#f1f5f9 !important; color:#334155 !important; }
+  #BD_root #tblFlowRate thead th,
+  #BD_root #tblKOL thead th { background:#f1f5f9 !important; color:#334155 !important; border-color:var(--ak-border) !important; }
+  #BD_root #bodyKol .subhead { color:var(--ak-text) !important; }
+  #BD_root table th { font-size:.68rem; letter-spacing:.025em; }
+  #BD_root table td { font-size:.75rem; }
+  #BD_root .subhead { background:#f1f5f9 !important; }
+  #BD_root tbody tr:hover td { background:#f8fafc; }
+
+  :root[data-monbis-theme="dark"] #BD_root { --ak-surface:#111827; --ak-soft:#0f172a; --ak-border:#334155; --ak-text:#e5e7eb; --ak-muted:#94a3b8; }
+  :root[data-monbis-theme="dark"] #BD_root .actual-kredit-page-head,
+  :root[data-monbis-theme="dark"] #BD_root .card,
+  :root[data-monbis-theme="dark"] #BD_root .hscroll { background:var(--ak-surface); }
+  :root[data-monbis-theme="dark"] #BD_root .subhead,
+  :root[data-monbis-theme="dark"] #BD_root tbody tr:hover td { background:#1e293b !important; }
+  :root[data-monbis-theme="dark"] #BD_root table td:first-child { color:#cbd5e1; }
+  :root[data-monbis-theme="dark"] #BD_root .thead-blue,
+  :root[data-monbis-theme="dark"] #BD_root .thead-blue th { background:#172554 !important; color:#bfdbfe; }
+  :root[data-monbis-theme="dark"] #BD_root #tblFlowRate thead,
+  :root[data-monbis-theme="dark"] #BD_root #tblKOL thead,
+  :root[data-monbis-theme="dark"] #BD_root #tblFlowRate thead th,
+  :root[data-monbis-theme="dark"] #BD_root #tblKOL thead th { background:#1e293b !important; color:#cbd5e1 !important; border-color:#334155 !important; }
+  :root[data-monbis-theme="dark"] #BD_root .inp { background:#0f172a; border-color:#475569; color:#e5e7eb; }
+
+  @media (max-width:767px){
+    #BD_root { padding-left:10px; padding-right:10px; }
+    #BD_root .actual-kredit-page-head { align-items:flex-start; padding:13px; border-radius:13px; }
+    #BD_root .actual-kredit-page-title h1 { font-size:1rem; }
+    #BD_root .actual-kredit-page-title p { max-width:220px; }
+    #BD_root .actual-kredit-export { min-width:38px; padding:0 10px; }
+    #BD_root .actual-kredit-export span { display:none; }
+    #BD_root .wide-bucket { min-width:760px; }
+    #BD_root .card { padding:12px; }
+  }
 </style>
 
 <script>
@@ -226,6 +298,38 @@
   const byCode = (arr, key='dpd_code') => Object.fromEntries((arr||[]).map(r=>[String(r[key]||''), r]));
 
   const selKantor = document.getElementById('opt_kantor_kolek');
+
+  const getActualKreditNominal = () => {
+    const value = document.getElementById('opt_nominal_kolek')?.value;
+    return value === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+  };
+
+  function updateActualKreditNominalLabels(){
+    const label = getActualKreditNominal() === 'baki_debet' ? 'Baki Debet' : 'Saldo Bank';
+    ['actualKreditM1NominalLabel','actualKreditActualNominalLabel','actualKreditKolM1NominalLabel','actualKreditKolActualNominalLabel']
+      .forEach(id => { const el=document.getElementById(id); if(el) el.textContent=label; });
+  }
+
+  function bindActualKreditNavbarFilter(){
+    const panel = document.getElementById('actualKreditNavbarFilterPanel');
+    const toggle = document.getElementById('actualKreditNavbarFilterToggle');
+    const close = document.getElementById('actualKreditNavbarFilterClose');
+    if(!panel || !toggle) return;
+    const setOpen = open => {
+      panel.classList.toggle('hidden', !open);
+      panel.classList.toggle('flex', open);
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    };
+    toggle.addEventListener('click', () => setOpen(panel.classList.contains('hidden')));
+    close?.addEventListener('click', () => setOpen(false));
+  }
+
+  window.fetchActualKreditFromNavbar = function(){
+    const closing = document.getElementById('closing_date_kolek')?.value;
+    const harian = document.getElementById('harian_date_kolek')?.value;
+    updateActualKreditNominalLabels();
+    if(closing && harian) fetchAll(closing, harian, selKantor?.value || null, getActualKreditNominal());
+  };
 
   async function populateKantorOptions(userKode){
     try{
@@ -244,40 +348,37 @@
   }
 
   window.addEventListener('DOMContentLoaded', async () => {
+    bindActualKreditNavbarFilter();
     const d = await getLastHarianData();
     if(!d) return;
 
     document.getElementById('closing_date_kolek').value=d.last_closing;
     document.getElementById('harian_date_kolek').value=d.last_created;
+    document.getElementById('opt_nominal_kolek').value='saldo_bank';
+    updateActualKreditNominalLabels();
 
     const user=(window.getUser&&window.getUser())||null;
     const userKode=(user?.kode?String(user.kode).padStart(3,'0'):null);
     await populateKantorOptions(userKode);
 
-    fetchAll(d.last_closing, d.last_created, (userKode&&userKode!=='000')?userKode:null);
+    fetchAll(d.last_closing, d.last_created, (userKode&&userKode!=='000')?userKode:null, getActualKreditNominal());
   });
 
   async function getLastHarianData(){
     try{const r=await apiCall('./api/date/'); const j=await r.json(); return j.data||null;}catch{return null;}
   }
 
-  document.getElementById('formFilterKolek').addEventListener('submit', e=>{
-    e.preventDefault();
-    const closing=document.getElementById('closing_date_kolek').value;
-    const harian =document.getElementById('harian_date_kolek').value;
-    const kode   =selKantor.value || null;
-    fetchAll(closing,harian,kode);
-  });
-
   selKantor.addEventListener('change', ()=>{
     const closing=document.getElementById('closing_date_kolek').value;
     const harian =document.getElementById('harian_date_kolek').value;
     const kode   =selKantor.value || null;
-    if(closing&&harian) fetchAll(closing,harian,kode);
+    if(closing&&harian) fetchAll(closing,harian,kode,getActualKreditNominal());
   });
 
+  document.getElementById('opt_nominal_kolek')?.addEventListener('change', window.fetchActualKreditFromNavbar);
+
   let abortAll;
-  async function fetchAll(closing_date, harian_date, kode_kantor){
+  async function fetchAll(closing_date, harian_date, kode_kantor, nominal_field='saldo_bank'){
     const loading=document.getElementById('loadingKolek');
     const tbody  =document.getElementById('bodyKolek');
     const pair   =document.getElementById('pairWrap');
@@ -289,7 +390,7 @@
     if(abortAll) abortAll.abort();
     abortAll=new AbortController();
 
-    const base = {closing_date, harian_date};
+    const base = {closing_date, harian_date, nominal_field: nominal_field === 'baki_debet' ? 'baki_debet' : 'saldo_bank'};
     if(kode_kantor) base.kode_kantor = kode_kantor;
 
     try{
@@ -437,10 +538,11 @@
   window.exportSemuaLaporan = function() {
       const closing = document.getElementById('closing_date_kolek').value;
       const harian = document.getElementById('harian_date_kolek').value;
+      const nominal = getActualKreditNominal() === 'baki_debet' ? 'BAKI DEBET' : 'SALDO BANK';
       let html = "";
 
       // 1. Ekstrak Tabel Bucket (Tanpa CKPN)
-      html += "<h3>1. BUCKET DPD (OSC)</h3>";
+      html += `<h3>1. REPORT ACTUAL KREDIT - BUCKET DPD (${nominal})</h3>`;
       html += "<table border='1'><thead><tr>";
       document.querySelectorAll('#tblBucket thead tr:first-child th').forEach(th => html += `<th style="background:#eff6ff">${th.innerText}</th>`);
       html += "</tr><tr>";
@@ -479,7 +581,7 @@
 
       const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-      a.download = `Laporan_Bucket_KOL_FR_${closing}_vs_${harian}.xls`; a.click();
+      a.download = `Laporan_Actual_Kredit_${closing}_vs_${harian}.xls`; a.click();
   };
 
 </script>

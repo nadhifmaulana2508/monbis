@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/NplController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 $controller = new NplController($pdo);
 
@@ -36,10 +36,12 @@ switch ($method) {
             $controller->getPotensiNplRekap($input);
         } elseif ($input['type'] === 'Debitur Potensi NPL') {
             $controller->getDetailPotensiNpl($input);
+        } elseif ($input['type'] === 'Potensi NPL Dashboard Detail') {
+            $controller->getDetailPotensiNpl($input);
         } elseif ($input['type'] === 'Backet') {
             $controller->getBucket($input = []);
         
-        } elseif (in_array($input['type'], ['lunas', 'backflow'])) {
+        } elseif (in_array($input['type'], ['lunas', 'backflow', 'angsuran', 'total_recovery'])) {
             $controller->getDetailRecoveryNpl($input);
 
         } else {
@@ -51,3 +53,4 @@ switch ($method) {
         sendResponse(405, "Metode tidak diizinkan");
         break;
 }
+

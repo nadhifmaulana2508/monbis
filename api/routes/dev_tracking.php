@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/DevTrackingController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 $controller = new DevTrackingController($pdo);
 
@@ -81,3 +81,4 @@ switch ($method) {
         sendResponse(405, "Method not allowed");
         break;
 }
+

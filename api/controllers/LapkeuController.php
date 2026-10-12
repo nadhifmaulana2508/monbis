@@ -12,6 +12,57 @@ class LaporanKeuanganController
         $this->pdo = $pdo;
     }
 
+    private function getKorwilRange(?string $korwil): ?array
+    {
+        $korwil = strtoupper(trim((string) $korwil));
+
+        switch ($korwil) {
+            case 'SEMARANG':
+                return ['001', '007'];
+            case 'SOLO':
+                return ['008', '014'];
+            case 'BANYUMAS':
+                return ['015', '021'];
+            case 'PEKALONGAN':
+                return ['022', '028'];
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Kode 210 hanya dieliminasi pada konsolidasi.
+     * Scope kantor dan korwil memakai saldo aset utuh.
+     */
+    private function isConsolidatedScope(string $kodeKantor, ?array $korwilRange = null): bool
+    {
+        return !$korwilRange && in_array(strtolower(trim($kodeKantor)), ['konsolidasi', '000'], true);
+    }
+
+    private function getKodePerkRangeWhere(array $kodePrefixes, string $field = 'kode_perk'): string
+    {
+        $prefixes = array_values(array_unique(array_map('strval', $kodePrefixes)));
+        sort($prefixes, SORT_STRING);
+
+        if ($prefixes === ['1', '2', '3']) {
+            return "{$field} >= '1' AND {$field} < '4'";
+        }
+
+        if ($prefixes === ['4', '5']) {
+            return "{$field} >= '4' AND {$field} < '6'";
+        }
+
+        $conditions = [];
+        foreach ($prefixes as $prefix) {
+            $prefix = preg_replace('/[^0-9]/', '', $prefix);
+            if ($prefix !== '') {
+                $conditions[] = "{$field} LIKE " . $this->pdo->quote($prefix . '%');
+            }
+        }
+
+        return $conditions ? implode(' OR ', $conditions) : '1=0';
+    }
+
 
 
     /**
@@ -24,54 +75,48 @@ class LaporanKeuanganController
         // 1. Ambil Tanggal H-1 atau dari request
         $tanggal = $input['harian_date'] ?? date('Y-m-d', strtotime('-1 day'));
         
-        // 2. Susun Kondisi LIKE ('1%', '2%', dll)
-        $likeConditions = [];
-        foreach ($kodePrefixes as $prefix) {
-            $likeConditions[] = "TRIM(CAST(kode_perk AS CHAR)) LIKE :prefix_{$prefix}";
-        }
-        $sqlLike = implode(' OR ', $likeConditions);
+        // 2. Susun range kode agar index kode_perk lebih mudah dipakai
+        $sqlKodePerk = $this->getKodePerkRangeWhere($kodePrefixes);
 
         // 3. Query Database: Tarik semua cabang 000 - 028 secara vertical
         // Kita grouping berdasarkan KODE PERK dan KODE KANTOR
         $sql = "
             SELECT 
-                TRIM(CAST(kode_perk AS CHAR)) AS kode_perk,
-                LPAD(CAST(kode_kantor AS CHAR), 3, '0') AS kode_kantor,
+                kode_perk,
+                kode_kantor,
+                MAX(NULLIF(TRIM(nama_perk), '')) AS nama_perk,
                 SUM(saldo_akhir) AS total_saldo
             FROM acc_history
             WHERE tanggal = :tanggal
-              AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN '000' AND '028'
-              AND ({$sqlLike})
+              AND kode_kantor BETWEEN '000' AND '028'
+              AND ({$sqlKodePerk})
             GROUP BY 
-                TRIM(CAST(kode_perk AS CHAR)),
-                LPAD(CAST(kode_kantor AS CHAR), 3, '0')
+                kode_perk,
+                kode_kantor
             HAVING SUM(saldo_akhir) <> 0
-            ORDER BY TRIM(CAST(kode_perk AS CHAR)) ASC
+            ORDER BY kode_perk ASC
         ";
 
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':tanggal', $tanggal);
-            foreach ($kodePrefixes as $prefix) {
-                $stmt->bindValue(":prefix_{$prefix}", "{$prefix}%");
-            }
             $stmt->execute();
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
             // 4. Proses PIVOTING Menggunakan PHP Array (Super Cepat!)
-            $coaDict = $this->getCoaDictionary();
             $pivotData = [];
 
             foreach ($results as $row) {
                 $perk   = $row['kode_perk'];
                 $kantor = $row['kode_kantor'];
                 $saldo  = (float) $row['total_saldo'];
+                $namaPerk = trim((string) ($row['nama_perk'] ?? ''));
 
                 // Jika kode_perk ini belum ada di array pivot, kita inisialisasi dulu
                 if (!isset($pivotData[$perk])) {
                     $pivotData[$perk] = [
                         'kode_perk'      => $perk,
-                        'nama_perkiraan' => $coaDict[$perk] ?? 'Nama Perkiraan Tidak Ditemukan',
+                        'nama_perkiraan' => $namaPerk !== '' ? $namaPerk : $perk,
                         'konsolidasi'    => 0 // Untuk Total Keseluruhan
                     ];
                     
@@ -131,6 +176,695 @@ class LaporanKeuanganController
         }
     }
 
+    public function apiGetLapNeracaActual(array $input)
+    {
+        try {
+            $tanggal = trim((string)($input['harian_date'] ?? $input['tanggal'] ?? ''));
+            if ($tanggal === '') {
+                $stmtDate = $this->pdo->query("SELECT MAX(tanggal) FROM acc_history");
+                $tanggal = (string)$stmtDate->fetchColumn();
+            }
+
+            $kodeKantorReq = trim((string)($input['kode_kantor'] ?? '000'));
+            $korwilReq = strtoupper(trim((string)($input['korwil'] ?? '')));
+            $detailKantorReq = trim((string)($input['detail_kantor'] ?? ''));
+            $detailKantor = preg_match('/^\d{1,3}$/', $detailKantorReq)
+                ? str_pad($detailKantorReq, 3, '0', STR_PAD_LEFT)
+                : '';
+            $korwilRange = $this->getKorwilRange($korwilReq);
+
+            $params = [':tanggal' => $tanggal];
+            $scopeLabel = 'Konsolidasi';
+            $sqlKantor = "AND kode_kantor BETWEEN '000' AND '028'";
+            $isConsolidated = true;
+
+            if ($korwilRange) {
+                $sqlKantor = "AND kode_kantor BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = str_pad((string)$korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $params[':kw_end'] = str_pad((string)$korwilRange[1], 3, '0', STR_PAD_LEFT);
+                $scopeLabel = 'Korwil ' . ucfirst(strtolower($korwilReq));
+                $isConsolidated = false;
+            } elseif (strtolower($kodeKantorReq) === 'pusat') {
+                $sqlKantor = "AND kode_kantor = '000'";
+                $scopeLabel = 'Pusat';
+                $isConsolidated = false;
+            } elseif (!in_array(strtolower($kodeKantorReq), ['000', 'konsolidasi', 'all'], true)) {
+                $kodeKantor = str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT);
+                $sqlKantor = "AND kode_kantor = :kode_kantor";
+                $params[':kode_kantor'] = $kodeKantor;
+                $scopeLabel = $kodeKantor;
+                $isConsolidated = false;
+            }
+
+            // Saat user membuka laporan cabang, sertakan metadata audit COA
+            // untuk cabang tersebut agar tombol breakdown tetap tersedia.
+            if ($detailKantor === '' && !$korwilRange && preg_match('/^\d{1,3}$/', $kodeKantorReq) && str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT) !== '000') {
+                $detailKantor = str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT);
+            }
+
+            $sql = "
+                SELECT
+                    TRIM(CAST(kode_perk AS CHAR)) AS kode_perk,
+                    MAX(NULLIF(TRIM(nama_perk), '')) AS nama_perk,
+                    MAX(TRIM(CAST(kode_induk AS CHAR))) AS kode_induk,
+                    MIN(COALESCE(level_perk, 0)) AS level_perk,
+                    SUM(saldo_akhir) AS saldo
+                FROM acc_history
+                WHERE tanggal = :tanggal
+                  $sqlKantor
+                  AND kode_perk >= '1'
+                  AND kode_perk < '4'
+                GROUP BY TRIM(CAST(kode_perk AS CHAR))
+                HAVING SUM(saldo_akhir) <> 0 OR CHAR_LENGTH(TRIM(CAST(kode_perk AS CHAR))) <= 3
+                ORDER BY TRIM(CAST(kode_perk AS CHAR)) ASC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $assetRows = [];
+            $pasivaRows = [];
+            $totalAsset = 0.0;
+            $totalPasiva = 0.0;
+            $saldoAkun210 = 0.0;
+
+            foreach ($rows as $row) {
+                $kode = trim((string)($row['kode_perk'] ?? ''));
+                if ($kode === '') {
+                    continue;
+                }
+
+                $saldo = (float)($row['saldo'] ?? 0);
+                $item = [
+                    'kode_perk' => $kode,
+                    'nama_perkiraan' => trim((string)($row['nama_perk'] ?? '')) !== '' ? trim((string)$row['nama_perk']) : $kode,
+                    'kode_induk' => trim((string)($row['kode_induk'] ?? '')),
+                    'level_perk' => (int)($row['level_perk'] ?? 0),
+                    'saldo' => $saldo,
+                    'depth' => max(0, min(5, strlen($kode) === 1 ? 0 : (int)floor((strlen($kode) - 1) / 2))),
+                ];
+
+                if (strpos($kode, '1') === 0) {
+                    $assetRows[] = $item;
+                    if ($kode === '1') {
+                        $totalAsset = $saldo;
+                    }
+                } elseif (strpos($kode, '2') === 0 || strpos($kode, '3') === 0) {
+                    $pasivaRows[] = $item;
+                    if ($kode === '210') {
+                        $saldoAkun210 = $saldo;
+                    }
+                    if ($kode === '2' || $kode === '3') {
+                        $totalPasiva += $saldo;
+                    }
+                }
+            }
+
+            if ($isConsolidated && $saldoAkun210 != 0.0) {
+                foreach ($assetRows as &$assetRow) {
+                    if ($assetRow['kode_perk'] === '1') {
+                        $assetRow['saldo'] = (float)$assetRow['saldo'] - $saldoAkun210;
+                        break;
+                    }
+                }
+                unset($assetRow);
+                $totalAsset -= $saldoAkun210;
+
+                foreach ($pasivaRows as &$pasivaRow) {
+                    if ($pasivaRow['kode_perk'] === '2') {
+                        $pasivaRow['saldo'] = (float)$pasivaRow['saldo'] - $saldoAkun210;
+                    } elseif ($pasivaRow['kode_perk'] === '210') {
+                        $pasivaRow['saldo'] = 0.0;
+                    }
+                }
+                unset($pasivaRow);
+                $totalPasiva -= $saldoAkun210;
+            }
+
+            if ($totalAsset == 0.0) {
+                foreach ($assetRows as $row) {
+                    if ((int)$row['depth'] === 1) {
+                        $totalAsset += (float)$row['saldo'];
+                    }
+                }
+            }
+
+            if ($totalPasiva == 0.0) {
+                foreach ($pasivaRows as $row) {
+                    if ((int)$row['depth'] === 0) {
+                        $totalPasiva += (float)$row['saldo'];
+                    }
+                }
+            }
+
+            // Pada konsolidasi, sediakan jejak selisih per cabang agar total
+            // gabungan dapat ditelusuri sampai ke sumber saldonya.
+            $branchBreakdown = [];
+            if ($isConsolidated || $detailKantor !== '') {
+                $branchFilter = "AND ah.kode_kantor BETWEEN '000' AND '028'";
+                $branchParams = [];
+                if ($detailKantor !== '') {
+                    $branchFilter = 'AND ah.kode_kantor = :detail_kantor';
+                    $branchParams[':detail_kantor'] = $detailKantor;
+                }
+                $sqlBranch = "
+                    SELECT
+                        TRIM(CAST(ah.kode_kantor AS CHAR)) AS kode_kantor,
+                        MAX(NULLIF(TRIM(kk.nama_kantor), '')) AS nama_kantor,
+                        SUM(CASE WHEN TRIM(CAST(ah.kode_perk AS CHAR)) = '1' THEN ah.saldo_akhir ELSE 0 END) AS aktiva,
+                        SUM(CASE WHEN TRIM(CAST(ah.kode_perk AS CHAR)) IN ('2', '3') THEN ah.saldo_akhir ELSE 0 END) AS pasiva,
+                        SUM(CASE WHEN TRIM(CAST(ah.kode_perk AS CHAR)) = '210' THEN ah.saldo_akhir ELSE 0 END) AS eliminasi_210
+                    FROM acc_history ah
+                    LEFT JOIN kode_kantor kk ON kk.kode_kantor = ah.kode_kantor
+                    WHERE ah.tanggal = :tanggal_branch
+                      {$branchFilter}
+                      AND ah.kode_perk >= '1'
+                      AND ah.kode_perk < '4'
+                    GROUP BY TRIM(CAST(ah.kode_kantor AS CHAR))
+                    ORDER BY TRIM(CAST(ah.kode_kantor AS CHAR)) ASC
+                ";
+                $stmtBranch = $this->pdo->prepare($sqlBranch);
+                $stmtBranch->execute(array_merge([':tanggal_branch' => $tanggal], $branchParams));
+                foreach ($stmtBranch->fetchAll(PDO::FETCH_ASSOC) as $branch) {
+                    $aktivaBruto = (float)($branch['aktiva'] ?? 0);
+                    $pasivaBruto = (float)($branch['pasiva'] ?? 0);
+                    $eliminasi210 = (float)($branch['eliminasi_210'] ?? 0);
+                    $aktivaBersih = $aktivaBruto - $eliminasi210;
+                    $pasivaBersih = $pasivaBruto - $eliminasi210;
+                    $kodeBranch = str_pad(trim((string)$branch['kode_kantor']), 3, '0', STR_PAD_LEFT);
+                    $branchBreakdown[] = [
+                        'kode_kantor' => $kodeBranch,
+                        'nama_kantor' => trim((string)($branch['nama_kantor'] ?? '')) ?: ($kodeBranch === '000' ? 'Pusat' : 'Cabang ' . $kodeBranch),
+                        'aktiva' => $aktivaBersih,
+                        'pasiva' => $pasivaBersih,
+                        'selisih' => $aktivaBersih - $pasivaBersih,
+                        'sumber' => [
+                            'aktiva_akun_1' => $aktivaBruto,
+                            'pasiva_akun_2_3' => $pasivaBruto,
+                            'eliminasi_akun_210' => $eliminasi210,
+                        ],
+                        'coa_breakdown' => [],
+                    ];
+                }
+
+                // Rincian COA per cabang untuk menelusuri angka pembentuk selisih.
+                $previousDateSql = 'SELECT MAX(tanggal) FROM acc_history WHERE tanggal < :tanggal_previous_lookup';
+                $previousDateParams = [':tanggal_previous_lookup' => $tanggal];
+                if ($detailKantor !== '') {
+                    $previousDateSql .= ' AND kode_kantor = :detail_kantor_previous';
+                    $previousDateParams[':detail_kantor_previous'] = $detailKantor;
+                }
+                $stmtPreviousDate = $this->pdo->prepare($previousDateSql);
+                $stmtPreviousDate->execute($previousDateParams);
+                $tanggalSebelumnya = (string)($stmtPreviousDate->fetchColumn() ?: '');
+                $previousJoin = '';
+                $previousSelect = 'NULL AS saldo_akhir_sebelumnya';
+                $branchCoaParams = array_merge([':tanggal_branch_coa' => $tanggal], $branchParams);
+                if ($tanggalSebelumnya !== '') {
+                    $previousJoin = "
+                        LEFT JOIN (
+                            SELECT
+                                TRIM(CAST(kode_kantor AS CHAR)) AS kode_kantor,
+                                TRIM(CAST(kode_perk AS CHAR)) AS kode_perk,
+                                SUM(saldo_akhir) AS saldo_akhir_sebelumnya
+                            FROM acc_history
+                            WHERE tanggal = :tanggal_branch_coa_prev
+                              " . ($detailKantor !== '' ? 'AND kode_kantor = :detail_kantor_prev' : "AND kode_kantor BETWEEN '000' AND '028'") . "
+                              AND kode_perk >= '1'
+                              AND kode_perk < '4'
+                            GROUP BY TRIM(CAST(kode_kantor AS CHAR)), TRIM(CAST(kode_perk AS CHAR))
+                        ) prev ON prev.kode_kantor = TRIM(CAST(ah.kode_kantor AS CHAR))
+                              AND prev.kode_perk = TRIM(CAST(ah.kode_perk AS CHAR))
+                    ";
+                    $previousSelect = 'prev.saldo_akhir_sebelumnya AS saldo_akhir_sebelumnya';
+                    $branchCoaParams[':tanggal_branch_coa_prev'] = $tanggalSebelumnya;
+                    if ($detailKantor !== '') $branchCoaParams[':detail_kantor_prev'] = $detailKantor;
+                }
+                $sqlBranchCoa = "
+                    SELECT
+                        TRIM(CAST(ah.kode_kantor AS CHAR)) AS kode_kantor,
+                        TRIM(CAST(ah.kode_perk AS CHAR)) AS kode_perk,
+                        MAX(NULLIF(TRIM(ah.nama_perk), '')) AS nama_perkiraan,
+                        MAX(TRIM(CAST(ah.kode_induk AS CHAR))) AS kode_induk,
+                        SUM(ah.saldo_awal) AS saldo_awal,
+                        SUM(ah.debet) AS debet,
+                        SUM(ah.kredit) AS kredit,
+                        SUM(ah.saldo_akhir) AS saldo,
+                        {$previousSelect}
+                    FROM acc_history ah
+                    {$previousJoin}
+                    WHERE ah.tanggal = :tanggal_branch_coa
+                      {$branchFilter}
+                      AND ah.kode_perk >= '1'
+                      AND ah.kode_perk < '4'
+                    GROUP BY TRIM(CAST(ah.kode_kantor AS CHAR)), TRIM(CAST(ah.kode_perk AS CHAR))
+                    HAVING SUM(ah.saldo_akhir) <> 0
+                        OR SUM(ah.saldo_awal) <> 0
+                        OR SUM(ah.debet) <> 0
+                        OR SUM(ah.kredit) <> 0
+                    ORDER BY TRIM(CAST(ah.kode_kantor AS CHAR)), ABS(SUM(ah.saldo_akhir)) DESC
+                ";
+                $stmtBranchCoa = $this->pdo->prepare($sqlBranchCoa);
+                $stmtBranchCoa->execute($branchCoaParams);
+                $branchIndex = [];
+                foreach ($branchBreakdown as $idx => $branchItem) {
+                    $branchIndex[$branchItem['kode_kantor']] = $idx;
+                }
+                foreach ($stmtBranchCoa->fetchAll(PDO::FETCH_ASSOC) as $coa) {
+                    $kodeBranch = str_pad(trim((string)$coa['kode_kantor']), 3, '0', STR_PAD_LEFT);
+                    if (!isset($branchIndex[$kodeBranch])) continue;
+                    $branchBreakdown[$branchIndex[$kodeBranch]]['coa_breakdown'][] = [
+                        'kode_perk' => trim((string)$coa['kode_perk']),
+                        'nama_perkiraan' => trim((string)($coa['nama_perkiraan'] ?? '')) ?: trim((string)$coa['kode_perk']),
+                        'kode_induk' => trim((string)($coa['kode_induk'] ?? '')),
+                        'saldo_awal' => (float)($coa['saldo_awal'] ?? 0),
+                        'debet' => (float)($coa['debet'] ?? 0),
+                        'kredit' => (float)($coa['kredit'] ?? 0),
+                        'saldo' => (float)($coa['saldo'] ?? 0),
+                        'saldo_akhir_sebelumnya' => $coa['saldo_akhir_sebelumnya'] !== null ? (float)$coa['saldo_akhir_sebelumnya'] : null,
+                        'selisih_saldo_awal_coa' => $coa['saldo_akhir_sebelumnya'] !== null
+                            ? (float)$coa['saldo_awal'] - (float)$coa['saldo_akhir_sebelumnya']
+                            : null,
+                    ];
+                }
+
+                foreach ($branchBreakdown as &$branchItem) {
+                    $parentCodes = [];
+                    foreach ($branchItem['coa_breakdown'] as $coaItem) {
+                        $parent = trim((string)($coaItem['kode_induk'] ?? ''));
+                        if ($parent !== '') $parentCodes[$parent] = true;
+                    }
+                    foreach ($branchItem['coa_breakdown'] as &$coaItem) {
+                        $coaItem['is_leaf'] = !isset($parentCodes[$coaItem['kode_perk']]);
+                        // Dampak ke (Aktiva - Pasiva): debit menambah selisih,
+                        // kredit mengurangi selisih; berlaku untuk kedua sisi.
+                        $coaItem['impact_mutasi'] = (float)$coaItem['debet'] - (float)$coaItem['kredit'];
+                        $coaItem['perubahan_saldo'] = (float)$coaItem['saldo'] - (float)$coaItem['saldo_awal'];
+                        $isAktiva = strpos((string)$coaItem['kode_perk'], '1') === 0;
+                        $saldoSeharusnya = $isAktiva
+                            ? (float)$coaItem['saldo_awal'] + (float)$coaItem['debet'] - (float)$coaItem['kredit']
+                            : (float)$coaItem['saldo_awal'] - (float)$coaItem['debet'] + (float)$coaItem['kredit'];
+                        $coaItem['rekonsiliasi_saldo'] = (float)$coaItem['saldo'] - $saldoSeharusnya;
+                        $coaItem['indikasi'] = [];
+                        if ($coaItem['is_leaf'] && $coaItem['selisih_saldo_awal_coa'] !== null && abs((float)$coaItem['selisih_saldo_awal_coa']) > 0.01) {
+                            $coaItem['indikasi'][] = 'Saldo awal tidak sama dengan saldo akhir sebelumnya';
+                        }
+                        if ($coaItem['is_leaf'] && abs((float)$coaItem['rekonsiliasi_saldo']) > 0.01) {
+                            $coaItem['indikasi'][] = 'Rumus saldo awal/debet/kredit tidak sesuai saldo akhir';
+                        }
+                    }
+                    unset($coaItem);
+                }
+                unset($branchItem);
+
+                foreach ($branchBreakdown as &$branchItem) {
+                    $root = [];
+                    foreach ($branchItem['coa_breakdown'] as $coaItem) {
+                        $kodeCoa = $coaItem['kode_perk'];
+                        if (in_array($kodeCoa, ['1', '2', '3', '210'], true)) {
+                            $root[$kodeCoa] = $coaItem;
+                        }
+                    }
+                    $zero = ['saldo_awal' => 0.0, 'debet' => 0.0, 'kredit' => 0.0, 'saldo' => 0.0];
+                    $r1 = $root['1'] ?? $zero;
+                    $r2 = $root['2'] ?? $zero;
+                    $r3 = $root['3'] ?? $zero;
+                    $r210 = $root['210'] ?? $zero;
+                    $totalDebetLeaf = 0.0;
+                    $totalKreditLeaf = 0.0;
+                    foreach ($branchItem['coa_breakdown'] as $coaItem) {
+                        if ($coaItem['is_leaf']) {
+                            $totalDebetLeaf += (float)$coaItem['debet'];
+                            $totalKreditLeaf += (float)$coaItem['kredit'];
+                        }
+                    }
+                    $awalPasiva = (float)$r2['saldo_awal'] + (float)$r3['saldo_awal'];
+                    $akhirPasiva = (float)$r2['saldo'] + (float)$r3['saldo'];
+                    $debetPasiva = (float)$r2['debet'] + (float)$r3['debet'];
+                    $kreditPasiva = (float)$r2['kredit'] + (float)$r3['kredit'];
+                    $branchItem['analisa'] = [
+                        'tanggal_sebelumnya' => $tanggalSebelumnya !== '' ? $tanggalSebelumnya : null,
+                        'saldo_awal_aktiva' => (float)$r1['saldo_awal'],
+                        'saldo_awal_pasiva' => $awalPasiva,
+                        'selisih_saldo_awal' => (float)$r1['saldo_awal'] - $awalPasiva,
+                        'debet_aktiva' => (float)$r1['debet'],
+                        'debet_pasiva' => $debetPasiva,
+                        'kredit_aktiva' => (float)$r1['kredit'],
+                        'kredit_pasiva' => $kreditPasiva,
+                        'total_debet_leaf' => $totalDebetLeaf,
+                        'total_kredit_leaf' => $totalKreditLeaf,
+                        'selisih_debet_kredit' => $totalDebetLeaf - $totalKreditLeaf,
+                        'saldo_akhir_aktiva' => (float)$r1['saldo'],
+                        'saldo_akhir_pasiva' => $akhirPasiva,
+                        'mutasi_aktiva' => ((float)$r1['debet'] - (float)$r1['kredit']),
+                        'mutasi_pasiva' => (($kreditPasiva - $debetPasiva)),
+                        'selisih_mutasi' => ((float)$r1['saldo'] - (float)$r1['saldo_awal']) - ($akhirPasiva - $awalPasiva),
+                        'rekonsiliasi_akun_1' => (float)$r1['saldo'] - ((float)$r1['saldo_awal'] + (float)$r1['debet'] - (float)$r1['kredit']),
+                        'rekonsiliasi_akun_2' => (float)$r2['saldo'] - ((float)$r2['saldo_awal'] - (float)$r2['debet'] + (float)$r2['kredit']),
+                        'rekonsiliasi_akun_3' => (float)$r3['saldo'] - ((float)$r3['saldo_awal'] - (float)$r3['debet'] + (float)$r3['kredit']),
+                        'saldo_akun_210' => (float)$r210['saldo'],
+                    ];
+                }
+                unset($branchItem);
+
+                foreach ($branchBreakdown as &$branchItem) {
+                    $debetKreditGap = abs((float)($branchItem['analisa']['selisih_debet_kredit'] ?? 0));
+                    if ($debetKreditGap > 0.01) {
+                        foreach ($branchItem['coa_breakdown'] as &$coaItem) {
+                            if ($coaItem['is_leaf'] && abs((float)$coaItem['impact_mutasi']) > 0.01) {
+                                $coaItem['indikasi'][] = 'Debet/kredit ikut membentuk mismatch';
+                            }
+                        }
+                        unset($coaItem);
+                    }
+                    $branchItem['coa_issue_count'] = 0;
+                    foreach ($branchItem['coa_breakdown'] as $coaItem) {
+                        if ($coaItem['is_leaf'] && !empty($coaItem['indikasi'])) $branchItem['coa_issue_count']++;
+                    }
+                    $branchItem['has_coa_issue'] = $branchItem['coa_issue_count'] > 0;
+                }
+                unset($branchItem);
+                usort($branchBreakdown, static function ($a, $b) {
+                    return abs((float)$b['selisih']) <=> abs((float)$a['selisih']);
+                });
+            }
+
+            sendResponse(200, "Berhasil memuat Lap Neraca Actual", [
+                'tanggal' => $tanggal,
+                'kode_kantor' => $kodeKantorReq,
+                'korwil' => $korwilReq,
+                'scope_label' => $scopeLabel,
+                'aktiva' => $assetRows,
+                'pasiva' => $pasivaRows,
+                'totals' => [
+                    'aktiva' => $totalAsset,
+                    'pasiva' => $totalPasiva,
+                    'selisih' => $totalAsset - $totalPasiva,
+                    'eliminasi_210' => $isConsolidated ? $saldoAkun210 : 0,
+                ],
+                'branch_breakdown' => $branchBreakdown,
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, "Gagal memuat Lap Neraca Actual: " . $e->getMessage(), null);
+        }
+    }
+
+    public function apiGetLapLabaRugiActual(array $input)
+    {
+        try {
+            $tanggal = trim((string)($input['harian_date'] ?? $input['tanggal'] ?? ''));
+            if ($tanggal === '') {
+                $stmtDate = $this->pdo->query("SELECT MAX(tanggal) FROM acc_history");
+                $tanggal = (string)$stmtDate->fetchColumn();
+            }
+
+            $kodeKantorReq = trim((string)($input['kode_kantor'] ?? '000'));
+            $korwilReq = strtoupper(trim((string)($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
+
+            $params = [':tanggal' => $tanggal];
+            $scopeLabel = 'Konsolidasi';
+            $sqlKantor = "AND kode_kantor BETWEEN '000' AND '028'";
+            $isBranchScope = false;
+
+            if ($korwilRange) {
+                $sqlKantor = "AND kode_kantor BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = str_pad((string)$korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $params[':kw_end'] = str_pad((string)$korwilRange[1], 3, '0', STR_PAD_LEFT);
+                $scopeLabel = 'Korwil ' . ucfirst(strtolower($korwilReq));
+            } elseif (strtolower($kodeKantorReq) === 'pusat') {
+                $sqlKantor = "AND kode_kantor = '000'";
+                $scopeLabel = 'Pusat';
+            } elseif (!in_array(strtolower($kodeKantorReq), ['000', 'konsolidasi', 'all'], true)) {
+                $kodeKantor = str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT);
+                $sqlKantor = "AND kode_kantor = :kode_kantor";
+                $params[':kode_kantor'] = $kodeKantor;
+                $scopeLabel = $kodeKantor;
+                $isBranchScope = true;
+            }
+
+            $sql = "
+                SELECT
+                    TRIM(CAST(kode_perk AS CHAR)) AS kode_perk,
+                    MAX(NULLIF(TRIM(nama_perk), '')) AS nama_perk,
+                    MAX(TRIM(CAST(kode_induk AS CHAR))) AS kode_induk,
+                    MIN(COALESCE(level_perk, 0)) AS level_perk,
+                    SUM(saldo_akhir) AS saldo
+                FROM acc_history
+                WHERE tanggal = :tanggal
+                  $sqlKantor
+                  AND kode_perk >= '4'
+                  AND kode_perk < '6'
+                GROUP BY TRIM(CAST(kode_perk AS CHAR))
+                HAVING SUM(saldo_akhir) <> 0 OR CHAR_LENGTH(TRIM(CAST(kode_perk AS CHAR))) <= 3
+                ORDER BY TRIM(CAST(kode_perk AS CHAR)) ASC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $pendapatanRows = [];
+            $biayaRows = [];
+            $totalPendapatan = 0.0;
+            $totalBiaya = 0.0;
+
+            foreach ($rows as $row) {
+                $kode = trim((string)($row['kode_perk'] ?? ''));
+                if ($kode === '') {
+                    continue;
+                }
+
+                $saldo = (float)($row['saldo'] ?? 0);
+                $item = [
+                    'kode_perk' => $kode,
+                    'nama_perkiraan' => trim((string)($row['nama_perk'] ?? '')) !== '' ? trim((string)$row['nama_perk']) : $kode,
+                    'kode_induk' => trim((string)($row['kode_induk'] ?? '')),
+                    'level_perk' => (int)($row['level_perk'] ?? 0),
+                    'saldo' => $saldo,
+                    'depth' => max(0, min(5, strlen($kode) === 1 ? 0 : (int)floor((strlen($kode) - 1) / 2))),
+                ];
+
+                if (strpos($kode, '4') === 0) {
+                    $pendapatanRows[] = $item;
+                    if ($kode === '4') {
+                        $totalPendapatan = $saldo;
+                    }
+                } elseif (strpos($kode, '5') === 0) {
+                    $biayaRows[] = $item;
+                    if ($kode === '5') {
+                        $totalBiaya = $saldo;
+                    }
+                }
+            }
+
+            if ($totalPendapatan == 0.0) {
+                foreach ($pendapatanRows as $row) {
+                    if ((int)$row['depth'] === 1) {
+                        $totalPendapatan += (float)$row['saldo'];
+                    }
+                }
+            }
+            if ($totalBiaya == 0.0) {
+                foreach ($biayaRows as $row) {
+                    if ((int)$row['depth'] === 1) {
+                        $totalBiaya += (float)$row['saldo'];
+                    }
+                }
+            }
+
+            $labaKotor = $totalPendapatan - $totalBiaya;
+            $pajak = (!$isBranchScope && $labaKotor > 0) ? ($labaKotor * 0.22) : 0.0;
+            $labaBersih = $labaKotor - $pajak;
+
+            sendResponse(200, "Berhasil memuat Lap Laba Rugi Actual", [
+                'tanggal' => $tanggal,
+                'kode_kantor' => $kodeKantorReq,
+                'korwil' => $korwilReq,
+                'scope_label' => $scopeLabel,
+                'pajak_dihitung' => !$isBranchScope,
+                'pendapatan' => $pendapatanRows,
+                'biaya' => $biayaRows,
+                'totals' => [
+                    'pendapatan' => $totalPendapatan,
+                    'biaya' => $totalBiaya,
+                    'laba_kotor' => $labaKotor,
+                    'pajak' => $pajak,
+                    'laba_bersih' => $labaBersih,
+                ],
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, "Gagal memuat Lap Laba Rugi Actual: " . $e->getMessage(), null);
+        }
+    }
+
+    public function apiGetRekapLapkeuActual(array $input)
+    {
+        try {
+            $tanggal = trim((string)($input['harian_date'] ?? $input['tanggal'] ?? ''));
+            if ($tanggal === '') {
+                $stmtDate = $this->pdo->query("SELECT MAX(tanggal) FROM acc_history");
+                $tanggal = (string)$stmtDate->fetchColumn();
+            }
+
+            $kodeKantorReq = trim((string)($input['kode_kantor'] ?? '000'));
+            $korwilReq = strtoupper(trim((string)($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
+
+            $params = [':tanggal' => $tanggal];
+            $scopeLabel = 'Konsolidasi';
+            $sqlKantor = "AND ah.kode_kantor BETWEEN '000' AND '028'";
+            $isConsolidated = true;
+
+            if ($korwilRange) {
+                $sqlKantor = "AND ah.kode_kantor BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = str_pad((string)$korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $params[':kw_end'] = str_pad((string)$korwilRange[1], 3, '0', STR_PAD_LEFT);
+                $scopeLabel = 'Korwil ' . ucfirst(strtolower($korwilReq));
+                $isConsolidated = false;
+            } elseif (strtolower($kodeKantorReq) === 'pusat') {
+                $sqlKantor = "AND ah.kode_kantor = '000'";
+                $scopeLabel = 'Pusat';
+                $isConsolidated = false;
+            } elseif (!in_array(strtolower($kodeKantorReq), ['000', 'konsolidasi', 'all'], true)) {
+                $kodeKantor = str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT);
+                $sqlKantor = "AND ah.kode_kantor = :kode_kantor";
+                $params[':kode_kantor'] = $kodeKantor;
+                $scopeLabel = $kodeKantor;
+                $isConsolidated = false;
+            }
+
+            $assetCodes = [
+                '101', '102', '103', '104', '105',
+                '10601', '10602', '10604', '10605', '10606',
+                '107', '108', '109', '110', '11102', '112', '113',
+                '116', '117', '118', '119', '120', '121',
+            ];
+            $assetIn = implode(',', array_map([$this->pdo, 'quote'], $assetCodes));
+
+            $sql = "
+                SELECT
+                    ah.kode_kantor,
+                    COALESCE(kk.nama_kantor, CONCAT('Kc. ', ah.kode_kantor)) AS nama_kantor,
+                    SUM(CASE WHEN ah.kode_perk IN ($assetIn) THEN ah.saldo_akhir ELSE 0 END) AS aset,
+                    SUM(CASE WHEN ah.kode_perk = '10601' THEN ah.saldo_akhir ELSE 0 END) AS kredit,
+                    SUM(CASE WHEN ah.kode_perk = '20401' THEN ah.saldo_akhir ELSE 0 END) AS tabungan,
+                    SUM(CASE WHEN ah.kode_perk = '20402' THEN ah.saldo_akhir ELSE 0 END) AS deposito,
+                    SUM(CASE WHEN ah.kode_perk = '210' THEN ah.saldo_akhir ELSE 0 END) AS eliminasi_210,
+                    SUM(CASE WHEN ah.kode_perk = '2' THEN ah.saldo_akhir ELSE 0 END) AS liabilitas,
+                    SUM(CASE WHEN ah.kode_perk = '3' THEN ah.saldo_akhir ELSE 0 END) AS ekuitas,
+                    SUM(CASE WHEN ah.kode_perk = '4' THEN ah.saldo_akhir ELSE 0 END) AS pendapatan,
+                    SUM(CASE WHEN ah.kode_perk = '5' THEN ah.saldo_akhir ELSE 0 END) AS beban
+                FROM acc_history ah
+                LEFT JOIN kode_kantor kk ON kk.kode_kantor = ah.kode_kantor
+                WHERE ah.tanggal = :tanggal
+                  $sqlKantor
+                  AND (
+                    ah.kode_perk IN ($assetIn)
+                    OR ah.kode_perk IN ('2','3','4','5','210','20401','20402')
+                  )
+                GROUP BY ah.kode_kantor, kk.nama_kantor
+                ORDER BY ah.kode_kantor ASC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $rows = [];
+            $total = [
+                'aset' => 0.0,
+                'kredit' => 0.0,
+                'tabungan' => 0.0,
+                'deposito' => 0.0,
+                'liabilitas' => 0.0,
+                'ekuitas' => 0.0,
+                'pendapatan' => 0.0,
+                'beban' => 0.0,
+                'laba_kotor' => 0.0,
+                'eliminasi_210' => 0.0,
+            ];
+
+            foreach ($results as $row) {
+                $aset = (float)($row['aset'] ?? 0);
+                $kredit = (float)($row['kredit'] ?? 0);
+                $tabungan = (float)($row['tabungan'] ?? 0);
+                $deposito = (float)($row['deposito'] ?? 0);
+                $liabilitas = (float)($row['liabilitas'] ?? 0);
+                $ekuitas = (float)($row['ekuitas'] ?? 0);
+                $pendapatan = (float)($row['pendapatan'] ?? 0);
+                $beban = (float)($row['beban'] ?? 0);
+                $labaKotor = $pendapatan - $beban;
+                $eliminasi210 = (float)($row['eliminasi_210'] ?? 0);
+
+                $rows[] = [
+                    'kode_kantor' => str_pad((string)($row['kode_kantor'] ?? ''), 3, '0', STR_PAD_LEFT),
+                    'nama_kantor' => (string)($row['nama_kantor'] ?? ''),
+                    'aset' => $aset,
+                    'kredit' => $kredit,
+                    'tabungan' => $tabungan,
+                    'deposito' => $deposito,
+                    'liabilitas' => $liabilitas,
+                    'ekuitas' => $ekuitas,
+                    'pendapatan' => $pendapatan,
+                    'beban' => $beban,
+                    'laba_kotor' => $labaKotor,
+                    'eliminasi_210' => $eliminasi210,
+                ];
+
+                $total['aset'] += $aset;
+                $total['kredit'] += $kredit;
+                $total['tabungan'] += $tabungan;
+                $total['deposito'] += $deposito;
+                $total['liabilitas'] += $liabilitas;
+                $total['ekuitas'] += $ekuitas;
+                $total['pendapatan'] += $pendapatan;
+                $total['beban'] += $beban;
+                $total['laba_kotor'] += $labaKotor;
+                $total['eliminasi_210'] += $eliminasi210;
+            }
+
+            if ($isConsolidated && $total['eliminasi_210'] != 0.0) {
+                $total['aset'] -= $total['eliminasi_210'];
+                $total['liabilitas'] -= $total['eliminasi_210'];
+            }
+
+            $labaNegativeCount = 0;
+            $lowestProfit = null;
+            $highestExpense = null;
+            foreach ($rows as $row) {
+                if ((float)$row['laba_kotor'] < 0) {
+                    $labaNegativeCount++;
+                }
+                if ($lowestProfit === null || (float)$row['laba_kotor'] < (float)$lowestProfit['laba_kotor']) {
+                    $lowestProfit = $row;
+                }
+                if ($highestExpense === null || (float)$row['beban'] > (float)$highestExpense['beban']) {
+                    $highestExpense = $row;
+                }
+            }
+
+            sendResponse(200, "Berhasil memuat Rekap Lapkeu Actual", [
+                'tanggal' => $tanggal,
+                'kode_kantor' => $kodeKantorReq,
+                'korwil' => $korwilReq,
+                'scope_label' => $scopeLabel,
+                'is_consolidated' => $isConsolidated,
+                'rows' => $rows,
+                'total' => $total,
+                'summary' => [
+                    'jumlah_kantor' => count($rows),
+                    'laba_minus' => $labaNegativeCount,
+                    'laba_terendah' => $lowestProfit,
+                    'beban_terbesar' => $highestExpense,
+                ],
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, "Gagal memuat Rekap Lapkeu Actual: " . $e->getMessage(), null);
+        }
+    }
+
     /**
      * FUNGSI DETAIL: Untuk cek per Kantor, per Kanwil, atau Total Konsolidasi saja
      */
@@ -138,58 +872,137 @@ class LaporanKeuanganController
     {
         try {
             $tanggal = $input['harian_date'] ?? date('Y-m-d', strtotime('-1 day'));
+            $closingDate = $input['closing_date'] ?? null;
+            if (!$closingDate) {
+                $closingDateObj = new DateTime($tanggal);
+                $closingDateObj->modify('last day of previous month');
+                $closingDate = $closingDateObj->format('Y-m-d');
+            }
             $typeReport = $input['type'] ?? ''; 
             $kodeKantor = $input['kode_kantor'] ?? 'konsolidasi';
 
-            $prefixes = (strpos($typeReport, 'neraca') !== false) ? ['1', '2', '3'] : ['4', '5'];
-            $sqlLike = "";
-            foreach ($prefixes as $p) { $sqlLike .= "TRIM(CAST(kode_perk AS CHAR)) LIKE '{$p}%' OR "; }
-            $sqlLike = rtrim($sqlLike, " OR ");
+            $isNeraca = strpos($typeReport, 'neraca') !== false;
+            $isConsolidated = strtolower(trim((string) $kodeKantor)) === 'konsolidasi';
+            $prefixes = $isNeraca ? ['1', '2', '3'] : ['4', '5'];
+            $sqlKodePerk = $this->getKodePerkRangeWhere($prefixes);
 
             $sqlFilter = "";
-            $params = [':tanggal' => $tanggal];
+            $params = [
+                ':tanggal_actual' => $tanggal,
+                ':tanggal_filter' => $tanggal,
+                ':closing_actual' => $closingDate,
+                ':closing_filter' => $closingDate,
+            ];
 
             if ($kodeKantor === 'konsolidasi') {
-                $sqlFilter = " AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN '000' AND '028' ";
+                $sqlFilter = " AND kode_kantor BETWEEN '000' AND '028' ";
             } else {
                 $params[':kode_kantor'] = str_pad($kodeKantor, 3, '0', STR_PAD_LEFT);
-                $sqlFilter = " AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') = :kode_kantor ";
+                $sqlFilter = " AND kode_kantor = :kode_kantor ";
             }
 
-            // Note: HAVING SUM <> 0 kita hapus agar data 0 ketarik dulu ke PHP
+            // Jika tanggal actual belum memiliki snapshot, gunakan posisi H-7.
+            // Closing tetap memakai tanggal yang dipilih user agar perbandingan
+            // actual vs closing tidak bergeser ke periode lain.
+            $dateCheckParams = [':tanggal_check' => $tanggal];
+            if (isset($params[':kode_kantor'])) {
+                $dateCheckParams[':kode_kantor'] = $params[':kode_kantor'];
+            }
+            $dateCheckSql = "
+                SELECT 1
+                FROM acc_history
+                WHERE tanggal = :tanggal_check
+                {$sqlFilter}
+                AND ({$sqlKodePerk})
+                LIMIT 1
+            ";
+            $dateCheckStmt = $this->pdo->prepare($dateCheckSql);
+            $dateCheckStmt->execute($dateCheckParams);
+            if (!$dateCheckStmt->fetchColumn()) {
+                $h7Date = new DateTime($tanggal);
+                $h7Date->modify('-7 days');
+                $tanggal = $h7Date->format('Y-m-d');
+                $params[':tanggal_actual'] = $tanggal;
+                $params[':tanggal_filter'] = $tanggal;
+            }
+
+            // Catatan performa: query ini sengaja hanya membaca dua tanggal dan satu
+            // rentang kode akun. Agar agregasi tidak kembali ke tabel utama untuk
+            // setiap baris, siapkan covering index di database (jalankan terpisah):
+            // CREATE INDEX idx_acc_history_lapkeu_detail
+            // ON acc_history (tanggal, kode_kantor, kode_perk, saldo_akhir, nama_perk);
+            // Jangan dieksekusi otomatis dari aplikasi.
             $sql = "
                 SELECT 
-                    TRIM(CAST(kode_perk AS CHAR)) AS kode_perk,
-                    SUM(saldo_akhir) AS total_saldo
+                    kode_perk,
+                    MAX(nama_perk) AS nama_perk,
+                    SUM(CASE WHEN tanggal = :tanggal_actual THEN saldo_akhir ELSE 0 END) AS total_saldo,
+                    SUM(CASE WHEN tanggal = :closing_actual THEN saldo_akhir ELSE 0 END) AS closing_saldo
                 FROM acc_history
-                WHERE tanggal = :tanggal
+                WHERE tanggal IN (:tanggal_filter, :closing_filter)
                 {$sqlFilter}
-                AND ({$sqlLike})
+                AND ({$sqlKodePerk})
                 GROUP BY kode_perk
-                ORDER BY kode_perk ASC
+                ORDER BY
+                    CASE WHEN CHAR_LENGTH(kode_perk) = 1 THEN 0 ELSE 1 END,
+                    CAST(kode_perk AS UNSIGNED),
+                    kode_perk ASC
             ";
 
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $coaDict = $this->getCoaDictionary();
+            // Pada konsolidasi, saldo akun 210 merupakan eliminasi antar-unit.
+            // Root aset memakai saldo induk 1 dikurangi akun 210.
+            $eliminasi210Actual = 0.0;
+            $eliminasi210Closing = 0.0;
+            if ($isNeraca && $isConsolidated) {
+                foreach ($results as $result) {
+                    $resultKode = (string) ($result['kode_perk'] ?? '');
+                    if ($resultKode === '210') {
+                        $eliminasi210Actual = (float) ($result['total_saldo'] ?? 0);
+                        $eliminasi210Closing = (float) ($result['closing_saldo'] ?? 0);
+                    }
+                }
+            }
+
             $mappedData = [];
 
             foreach ($results as $row) {
-                $kode = $row['kode_perk'];
+                $kode = (string) $row['kode_perk'];
                 $saldo = (float)$row['total_saldo'];
+                $closingSaldo = (float)($row['closing_saldo'] ?? 0);
+
+                if ($isNeraca && $isConsolidated) {
+                    if ($kode === '1' || $kode === '2') {
+                        $saldo -= $eliminasi210Actual;
+                        $closingSaldo -= $eliminasi210Closing;
+                    } elseif ($kode === '210') {
+                        $saldo = 0.0;
+                        $closingSaldo = 0.0;
+                    }
+                }
+
+                $namaPerk = trim((string) ($row['nama_perk'] ?? ''));
                 $panjangKode = strlen($kode);
+                $selisih = $saldo - $closingSaldo;
+                $growth = $closingSaldo != 0.0 ? ($selisih / abs($closingSaldo)) * 100 : ($saldo == 0.0 ? 0.0 : 100.0);
 
                 // 🔥 LOGIKA FILTER SAKTI:
                 // 1. Jika panjang kode <= 3 digit, MASUKKAN (meskipun saldo 0)
                 // 2. Jika panjang kode > 3 digit DAN saldo != 0, MASUKKAN
                 // 3. Selain itu (kode > 3 digit dan saldo 0), ABAIKAN
-                if ($panjangKode <= 3 || ($panjangKode > 3 && $saldo != 0)) {
+                if ($panjangKode <= 3 || ($panjangKode > 3 && ($saldo != 0 || $closingSaldo != 0))) {
                     $mappedData[] = [
                         'kode_perk'      => $kode,
-                        'nama_perkiraan' => $coaDict[$kode] ?? 'Detail Lainnya',
+                        'nama_perkiraan' => $namaPerk !== '' ? $namaPerk : $kode,
                         'total_saldo'    => $saldo,
+                        'closing_saldo'  => $closingSaldo,
+                        'selisih_saldo'  => $selisih,
+                        'growth_persen'  => round($growth, 2),
+                        'closing_date'   => $closingDate,
+                        'harian_date'    => $tanggal,
                         'kantor_cek'     => strtoupper($kodeKantor)
                     ];
                 }
@@ -258,9 +1071,9 @@ class LaporanKeuanganController
             $params = $dateList; // Masukkan list tanggal ke parameter duluan
 
             if (strtolower($kodeKantorReq) === 'konsolidasi') {
-                $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN '000' AND '028'";
+                $sqlKantor = "AND kode_kantor BETWEEN '000' AND '028'";
             } else {
-                $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') = ?";
+                $sqlKantor = "AND kode_kantor = ?";
                 $params[] = str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT); // Tambah param kantor
             }
 
@@ -270,8 +1083,8 @@ class LaporanKeuanganController
                     SELECT 
                         tanggal,
                         (
-                            SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '4' THEN saldo_akhir ELSE 0 END) -
-                            SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '5' THEN saldo_akhir ELSE 0 END)
+                            SUM(CASE WHEN kode_perk = '4' THEN saldo_akhir ELSE 0 END) -
+                            SUM(CASE WHEN kode_perk = '5' THEN saldo_akhir ELSE 0 END)
                         ) AS total_saldo
                     FROM acc_history
                     WHERE tanggal IN ($inQuery)
@@ -284,22 +1097,31 @@ class LaporanKeuanganController
                 $sql = "
                     SELECT 
                         tanggal,
+                        MAX(NULLIF(TRIM(nama_perk), '')) AS nama_perk,
                         SUM(saldo_akhir) AS total_saldo
                     FROM acc_history
                     WHERE tanggal IN ($inQuery)
                       $sqlKantor
-                      AND TRIM(CAST(kode_perk AS CHAR)) = ?
+                      AND kode_perk = ?
                     GROUP BY tanggal
                 ";
                 
                 $params[] = $kodePerk; // Tambah param kode_perk terakhir
-                $coaDict = $this->getCoaDictionary();
-                $namaAkun = $coaDict[$kodePerk] ?? 'Nama Akun';
+                $namaAkun = $kodePerk;
             }
 
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if ($kodePerk !== 'LABA_RUGI') {
+                foreach ($results as $row) {
+                    $namaPerk = trim((string) ($row['nama_perk'] ?? ''));
+                    if ($namaPerk !== '') {
+                        $namaAkun = $namaPerk;
+                        break;
+                    }
+                }
+            }
 
             // 4. Mapping Hasil Query
             $dataMap = [];
@@ -341,6 +1163,578 @@ class LaporanKeuanganController
         }
     }
 
+    public function apiGetDefaultAccHistoryDate()
+    {
+        try {
+            $stmt = $this->pdo->query("SELECT MAX(tanggal) AS last_created FROM acc_history");
+            $lastCreated = (string) ($stmt->fetchColumn() ?: '');
+            $closingDate = null;
+            if ($lastCreated !== '') {
+                $closingDateObj = new DateTime($lastCreated);
+                $closingDateObj->modify('last day of previous month');
+                $closingDate = $closingDateObj->format('Y-m-d');
+            }
+
+            sendResponse(200, "Tanggal terakhir data acc_history", [
+                'last_created' => $lastCreated,
+                'last_closing' => $closingDate,
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, "Gagal memuat tanggal acc_history: " . $e->getMessage(), null);
+        }
+    }
+
+    public function apiGetTrenMakroMingguan(array $input)
+    {
+        try {
+            $baseDate = $input['harian_date'] ?? date('Y-m-d');
+            $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
+            $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
+            $isConsolidated = $this->isConsolidatedScope((string) $kodeKantorReq, $korwilRange);
+
+            $baseDateObj = new DateTime($baseDate);
+            $monthStart = $baseDateObj->format('Y-m-01');
+            $monthEnd = $baseDateObj->format('Y-m-t');
+            $effectiveEnd = min($baseDate, $monthEnd);
+            $closingDateObj = clone $baseDateObj;
+            $closingDateObj->modify('last day of previous month');
+            $closingDate = $closingDateObj->format('Y-m-d');
+            $lastDay = (int) $baseDateObj->format('j');
+            $maxWeek = (int) floor(($lastDay - 1) / 7) + 1;
+            $weekDateMap = [];
+            $queryDates = [$closingDate];
+
+            for ($week = 1; $week <= $maxWeek; $week++) {
+                $endDay = min($week * 7, (int) $baseDateObj->format('t'), $lastDay);
+                $endWeek = $baseDateObj->format('Y-m-') . str_pad((string) $endDay, 2, '0', STR_PAD_LEFT);
+                $weekDateMap[$week] = $endWeek;
+                $queryDates[] = $endWeek;
+            }
+            $queryDates = array_values(array_unique($queryDates));
+
+            $sqlKantor = '';
+            $params = [];
+            $datePlaceholders = [];
+            foreach ($queryDates as $index => $date) {
+                $key = ':date_' . $index;
+                $datePlaceholders[] = $key;
+                $params[$key] = $date;
+            }
+
+            if ($korwilRange) {
+                $sqlKantor = "AND kode_kantor BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $params[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
+            } elseif ($isConsolidated) {
+                $sqlKantor = "AND kode_kantor BETWEEN '000' AND '028'";
+            } else {
+                $sqlKantor = "AND kode_kantor = :kode_kantor";
+                $params[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
+            }
+            if ($korwilRange) {
+                $sqlKantorNom = "AND kode_cabang BETWEEN :kw_start AND :kw_end";
+            } elseif ($isConsolidated) {
+                $sqlKantorNom = "AND kode_cabang BETWEEN '000' AND '028'";
+            } else {
+                $sqlKantorNom = "AND kode_cabang = :kode_kantor";
+            }
+
+            $asetCodes = [
+                '101','102','103','104','105','10601','10602','10604','10605','10606',
+                '107','108','109','110','11102','112','113','116','117','118','119','120','121'
+            ];
+            $quoteCode = function ($code) {
+                return $this->pdo->quote((string) $code);
+            };
+            $asetQuoted = implode(',', array_map($quoteCode, $asetCodes));
+            $trackedCodes = array_merge($asetCodes, ['210', '20401', '20402', '4', '5']);
+            $trackedQuoted = implode(',', array_map($quoteCode, array_unique($trackedCodes)));
+            $assetAdjustmentSql = $isConsolidated
+                ? " - SUM(CASE WHEN kode_perk = '210' THEN saldo_akhir ELSE 0 END)"
+                : '';
+
+            $sql = "
+                SELECT
+                    tanggal,
+                    SUM(CASE WHEN kode_perk IN ($asetQuoted) THEN saldo_akhir ELSE 0 END)
+                    $assetAdjustmentSql AS aset_gabungan,
+                    SUM(CASE WHEN kode_perk = 10601 THEN saldo_akhir ELSE 0 END) AS kredit_baki_debet,
+                    SUM(CASE WHEN kode_perk = 20401 THEN saldo_akhir ELSE 0 END) AS tabungan,
+                    SUM(CASE WHEN kode_perk = 20402 THEN saldo_akhir ELSE 0 END) AS deposito,
+                    SUM(CASE WHEN kode_perk IN (20401, 20402) THEN saldo_akhir ELSE 0 END) AS dpk,
+                    SUM(CASE WHEN kode_perk = 4 THEN saldo_akhir ELSE 0 END) AS pendapatan,
+                    SUM(CASE WHEN kode_perk = 5 THEN saldo_akhir ELSE 0 END) AS beban,
+                    SUM(CASE WHEN kode_perk = 4 THEN saldo_akhir ELSE 0 END)
+                    - SUM(CASE WHEN kode_perk = 5 THEN saldo_akhir ELSE 0 END) AS laba_net
+                FROM acc_history
+                WHERE tanggal IN (" . implode(',', $datePlaceholders) . ")
+                  $sqlKantor
+                  AND kode_perk IN ($trackedQuoted)
+                GROUP BY tanggal
+                ORDER BY tanggal ASC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $rowsByDate = [];
+            foreach ($rows as $row) {
+                $rowsByDate[$row['tanggal']] = [
+                    'tanggal' => $row['tanggal'],
+                    'aset_gabungan' => (float) ($row['aset_gabungan'] ?? 0),
+                    'kredit_baki_debet' => (float) ($row['kredit_baki_debet'] ?? 0),
+                    'tabungan' => (float) ($row['tabungan'] ?? 0),
+                    'deposito' => (float) ($row['deposito'] ?? 0),
+                    'dpk' => (float) ($row['dpk'] ?? 0),
+                    'pendapatan' => (float) ($row['pendapatan'] ?? 0),
+                    'beban' => (float) ($row['beban'] ?? 0),
+                    'laba_net' => (float) ($row['laba_net'] ?? 0),
+                    'npl' => 0,
+                    'npl_persen' => 0,
+                ];
+            }
+
+            $nplParams = $params;
+            $sqlNpl = "
+                SELECT
+                    created AS tanggal,
+                    SUM(CASE WHEN kolektibilitas IN ('KL','D','M') THEN baki_debet ELSE 0 END) AS total_npl
+                FROM nominatif
+                WHERE created IN (" . implode(',', $datePlaceholders) . ")
+                  $sqlKantorNom
+                GROUP BY created
+            ";
+            $stmtNpl = $this->pdo->prepare($sqlNpl);
+            $stmtNpl->execute($nplParams);
+            foreach ($stmtNpl->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $tgl = $row['tanggal'];
+                if (!isset($rowsByDate[$tgl])) {
+                    $rowsByDate[$tgl] = [
+                        'tanggal' => $tgl,
+                        'aset_gabungan' => 0,
+                        'kredit_baki_debet' => 0,
+                        'tabungan' => 0,
+                        'deposito' => 0,
+                        'dpk' => 0,
+                        'pendapatan' => 0,
+                        'beban' => 0,
+                        'laba_net' => 0,
+                        'npl' => 0,
+                        'npl_persen' => 0,
+                    ];
+                }
+                $rowsByDate[$tgl]['npl'] = (float) ($row['total_npl'] ?? 0);
+            }
+            foreach ($rowsByDate as $tgl => $row) {
+                $kredit = (float) ($row['kredit_baki_debet'] ?? 0);
+                $rowsByDate[$tgl]['npl_persen'] = $kredit > 0 ? round((((float) ($row['npl'] ?? 0)) / $kredit) * 100, 2) : 0;
+            }
+
+            $closingRow = $rowsByDate[$closingDate] ?? [];
+            $previousClosing = [
+                'tanggal' => $closingDate,
+                'aset_gabungan' => (float) ($closingRow['aset_gabungan'] ?? 0),
+                'kredit_baki_debet' => (float) ($closingRow['kredit_baki_debet'] ?? 0),
+                'tabungan' => (float) ($closingRow['tabungan'] ?? 0),
+                'deposito' => (float) ($closingRow['deposito'] ?? 0),
+                'dpk' => (float) ($closingRow['dpk'] ?? 0),
+                'pendapatan' => (float) ($closingRow['pendapatan'] ?? 0),
+                'beban' => (float) ($closingRow['beban'] ?? 0),
+                'laba_net' => (float) ($closingRow['laba_net'] ?? 0),
+                'npl' => (float) ($closingRow['npl'] ?? 0),
+                'npl_persen' => (float) ($closingRow['npl_persen'] ?? 0),
+            ];
+            $weeks = [];
+
+            for ($week = 1; $week <= $maxWeek; $week++) {
+                $startDay = (($week - 1) * 7) + 1;
+                $endDay = min($week * 7, (int) $baseDateObj->format('t'), $lastDay);
+                $startWeek = $baseDateObj->format('Y-m-') . str_pad((string) $startDay, 2, '0', STR_PAD_LEFT);
+                $endWeek = $weekDateMap[$week];
+                $weekRow = $rowsByDate[$endWeek] ?? [
+                    'tanggal' => $endWeek,
+                    'aset_gabungan' => 0,
+                    'kredit_baki_debet' => 0,
+                    'tabungan' => 0,
+                    'deposito' => 0,
+                    'dpk' => 0,
+                    'pendapatan' => 0,
+                    'beban' => 0,
+                    'laba_net' => 0,
+                    'npl' => 0,
+                    'npl_persen' => 0,
+                ];
+
+                $weeks[] = [
+                    'label' => 'Pekan ' . $week,
+                    'tanggal' => $weekRow['tanggal'],
+                    'keterangan' => date('d M', strtotime($startWeek)) . ' - ' . date('d M', strtotime($endWeek)),
+                    'aset_gabungan' => $weekRow['aset_gabungan'],
+                    'kredit_baki_debet' => $weekRow['kredit_baki_debet'],
+                    'tabungan' => $weekRow['tabungan'],
+                    'deposito' => $weekRow['deposito'],
+                    'dpk' => $weekRow['dpk'],
+                    'pendapatan' => $weekRow['pendapatan'],
+                    'beban' => $weekRow['beban'],
+                    'laba_net' => $weekRow['laba_net'],
+                    'npl' => $weekRow['npl'],
+                    'npl_persen' => $weekRow['npl_persen'],
+                ];
+            }
+
+            $latest = end($weeks) ?: null;
+            $previous = count($weeks) > 1 ? $weeks[count($weeks) - 2] : null;
+            $calcGrowth = function ($current, $past) {
+                if ((float) $past == 0.0) {
+                    return (float) $current == 0.0 ? 0.0 : 100.0;
+                }
+                return round(((($current - $past) / abs($past)) * 100), 2);
+            };
+
+            $summary = $latest ? [
+                'label' => $latest['label'],
+                'tanggal' => $latest['tanggal'],
+                'aset_gabungan' => $latest['aset_gabungan'],
+                'kredit_baki_debet' => $latest['kredit_baki_debet'],
+                'tabungan' => $latest['tabungan'],
+                'deposito' => $latest['deposito'],
+                'dpk' => $latest['dpk'],
+                'pendapatan' => $latest['pendapatan'],
+                'beban' => $latest['beban'],
+                'laba_net' => $latest['laba_net'],
+                'npl' => $latest['npl'],
+                'npl_persen' => $latest['npl_persen'],
+                'laba_setelah_pajak' => $latest['laba_net'] - ($latest['laba_net'] * 0.22),
+                'pajak_laba' => $latest['laba_net'] * 0.22,
+                'previous' => [
+                    'label' => $previous['label'] ?? null,
+                    'tanggal' => $previous['tanggal'] ?? null,
+                    'aset_gabungan' => $previous['aset_gabungan'] ?? 0,
+                    'kredit_baki_debet' => $previous['kredit_baki_debet'] ?? 0,
+                    'tabungan' => $previous['tabungan'] ?? 0,
+                    'deposito' => $previous['deposito'] ?? 0,
+                    'dpk' => $previous['dpk'] ?? 0,
+                    'pendapatan' => $previous['pendapatan'] ?? 0,
+                    'beban' => $previous['beban'] ?? 0,
+                    'laba_net' => $previous['laba_net'] ?? 0,
+                    'npl' => $previous['npl'] ?? 0,
+                    'npl_persen' => $previous['npl_persen'] ?? 0,
+                ],
+                'previous_closing' => $previousClosing,
+                'delta_aset' => $latest['aset_gabungan'] - ($previous['aset_gabungan'] ?? 0),
+                'delta_kredit' => $latest['kredit_baki_debet'] - ($previous['kredit_baki_debet'] ?? 0),
+                'delta_tabungan' => $latest['tabungan'] - ($previous['tabungan'] ?? 0),
+                'delta_deposito' => $latest['deposito'] - ($previous['deposito'] ?? 0),
+                'delta_dpk' => $latest['dpk'] - ($previous['dpk'] ?? 0),
+                'delta_pendapatan' => $latest['pendapatan'] - ($previous['pendapatan'] ?? 0),
+                'delta_beban' => $latest['beban'] - ($previous['beban'] ?? 0),
+                'delta_laba' => $latest['laba_net'] - ($previous['laba_net'] ?? 0),
+                'delta_npl' => $latest['npl'] - ($previous['npl'] ?? 0),
+                'delta_npl_persen' => $latest['npl_persen'] - ($previous['npl_persen'] ?? 0),
+                'delta_closing_aset' => $latest['aset_gabungan'] - $previousClosing['aset_gabungan'],
+                'delta_closing_kredit' => $latest['kredit_baki_debet'] - $previousClosing['kredit_baki_debet'],
+                'delta_closing_tabungan' => $latest['tabungan'] - $previousClosing['tabungan'],
+                'delta_closing_deposito' => $latest['deposito'] - $previousClosing['deposito'],
+                'delta_closing_dpk' => $latest['dpk'] - $previousClosing['dpk'],
+                'delta_closing_pendapatan' => $latest['pendapatan'] - $previousClosing['pendapatan'],
+                'delta_closing_beban' => $latest['beban'] - $previousClosing['beban'],
+                'delta_closing_laba' => $latest['laba_net'] - $previousClosing['laba_net'],
+                'delta_closing_npl' => $latest['npl'] - $previousClosing['npl'],
+                'delta_closing_npl_persen' => $latest['npl_persen'] - $previousClosing['npl_persen'],
+                'growth_aset' => $calcGrowth($latest['aset_gabungan'], $previous['aset_gabungan'] ?? 0),
+                'growth_kredit' => $calcGrowth($latest['kredit_baki_debet'], $previous['kredit_baki_debet'] ?? 0),
+                'growth_tabungan' => $calcGrowth($latest['tabungan'], $previous['tabungan'] ?? 0),
+                'growth_deposito' => $calcGrowth($latest['deposito'], $previous['deposito'] ?? 0),
+                'growth_dpk' => $calcGrowth($latest['dpk'], $previous['dpk'] ?? 0),
+                'growth_pendapatan' => $calcGrowth($latest['pendapatan'], $previous['pendapatan'] ?? 0),
+                'growth_beban' => $calcGrowth($latest['beban'], $previous['beban'] ?? 0),
+                'growth_laba' => $calcGrowth($latest['laba_net'], $previous['laba_net'] ?? 0),
+                'growth_npl' => $calcGrowth($latest['npl'], $previous['npl'] ?? 0),
+                'growth_closing_aset' => $calcGrowth($latest['aset_gabungan'], $previousClosing['aset_gabungan']),
+                'growth_closing_kredit' => $calcGrowth($latest['kredit_baki_debet'], $previousClosing['kredit_baki_debet']),
+                'growth_closing_tabungan' => $calcGrowth($latest['tabungan'], $previousClosing['tabungan']),
+                'growth_closing_deposito' => $calcGrowth($latest['deposito'], $previousClosing['deposito']),
+                'growth_closing_dpk' => $calcGrowth($latest['dpk'], $previousClosing['dpk']),
+                'growth_closing_pendapatan' => $calcGrowth($latest['pendapatan'], $previousClosing['pendapatan']),
+                'growth_closing_beban' => $calcGrowth($latest['beban'], $previousClosing['beban']),
+                'growth_closing_laba' => $calcGrowth($latest['laba_net'], $previousClosing['laba_net']),
+                'growth_closing_npl' => $calcGrowth($latest['npl'], $previousClosing['npl']),
+            ] : null;
+
+            $scopeLabel = $korwilRange ? ('KORWIL ' . $korwilReq) : strtoupper($kodeKantorReq);
+
+            sendResponse(200, "Berhasil memuat tren makro mingguan (" . $scopeLabel . ")", [
+                'scope' => $scopeLabel,
+                'periode' => [
+                    'start' => $monthStart,
+                    'end' => $effectiveEnd,
+                ],
+                'formula' => [
+                    'aset_gabungan' => "101 + 102 + 103 + 104 + 105 + 10601 + 10602 + 10604 + 10605 + 10606 + 107 + 108 + 109 + 110 + 11102 + 112 + 113 + 116 + 117 + 118 + 119 + 120 + 121" . ($isConsolidated ? " - 210" : ""),
+                    'kredit_baki_debet' => "10601",
+                    'tabungan' => "20401",
+                    'deposito' => "20402",
+                    'dpk' => "20401 + 20402",
+                    'pendapatan' => "4",
+                    'beban' => "5",
+                    'laba_net' => "4 - 5",
+                    'npl' => "Nominatif kolektibilitas KL + D + M",
+                    'npl_persen' => "NPL / Kredit Baki Debet x 100%",
+                ],
+                'summary' => $summary,
+                'weeks' => $weeks,
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, "Gagal memuat tren makro mingguan: " . $e->getMessage(), null);
+        }
+    }
+
+    private function getBranchYtdMakro(string $kodeKantor, string $baseDate, array $asetCodes): array
+    {
+        $baseDateObj = new DateTime($baseDate);
+        $year = (int) $baseDateObj->format('Y');
+        $throughMonth = (int) $baseDateObj->format('n');
+        $periodStart = sprintf('%04d-01-01', $year);
+        $asetIn = implode(',', array_map([$this->pdo, 'quote'], $asetCodes));
+        $trackedIn = implode(',', array_map([$this->pdo, 'quote'], array_merge($asetCodes, ['4', '5'])));
+
+        $sql = "
+            SELECT
+                ah.tanggal,
+                SUM(CASE WHEN ah.kode_perk IN ($asetIn) THEN ah.saldo_akhir ELSE 0 END) AS aset,
+                SUM(CASE WHEN ah.kode_perk = '4' THEN ah.saldo_akhir ELSE 0 END) AS pendapatan,
+                SUM(CASE WHEN ah.kode_perk = '5' THEN ah.saldo_akhir ELSE 0 END) AS beban
+            FROM acc_history ah
+            INNER JOIN (
+                SELECT YEAR(tanggal) AS tahun, MONTH(tanggal) AS bulan, MAX(tanggal) AS tanggal
+                FROM acc_history
+                WHERE kode_kantor = :kode_tanggal
+                  AND tanggal BETWEEN :periode_awal AND :periode_akhir
+                GROUP BY YEAR(tanggal), MONTH(tanggal)
+            ) periode ON periode.tanggal = ah.tanggal
+            WHERE ah.kode_kantor = :kode_nilai
+              AND ah.kode_perk IN ($trackedIn)
+            GROUP BY ah.tanggal
+            ORDER BY ah.tanggal ASC
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([
+            ':kode_tanggal' => $kodeKantor,
+            ':kode_nilai' => $kodeKantor,
+            ':periode_awal' => $periodStart,
+            ':periode_akhir' => $baseDate,
+        ]);
+
+        $rowsByMonth = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $month = (int) (new DateTime((string) $row['tanggal']))->format('n');
+            $pendapatan = (float) ($row['pendapatan'] ?? 0);
+            $beban = (float) ($row['beban'] ?? 0);
+            $rowsByMonth[$month] = [
+                'tanggal' => (string) $row['tanggal'],
+                'aset' => (float) ($row['aset'] ?? 0),
+                'pendapatan_akumulasi' => $pendapatan,
+                'beban_akumulasi' => $beban,
+                'laba_akumulasi' => $pendapatan - $beban,
+            ];
+        }
+
+        $items = [];
+        for ($month = 1; $month <= $throughMonth; $month++) {
+            if (!isset($rowsByMonth[$month])) {
+                continue;
+            }
+            $current = $rowsByMonth[$month];
+            $previous = $month > 1 ? ($rowsByMonth[$month - 1] ?? null) : null;
+            $previousPendapatan = (float) ($previous['pendapatan_akumulasi'] ?? 0);
+            $previousBeban = (float) ($previous['beban_akumulasi'] ?? 0);
+            $previousLaba = (float) ($previous['laba_akumulasi'] ?? 0);
+
+            $items[] = [
+                'bulan' => $month,
+                'tanggal' => $current['tanggal'],
+                'aset' => $current['aset'],
+                'pendapatan' => $current['pendapatan_akumulasi'] - $previousPendapatan,
+                'beban' => $current['beban_akumulasi'] - $previousBeban,
+                'laba' => $current['laba_akumulasi'] - $previousLaba,
+                'pendapatan_akumulasi' => $current['pendapatan_akumulasi'],
+                'beban_akumulasi' => $current['beban_akumulasi'],
+                'laba_akumulasi' => $current['laba_akumulasi'],
+            ];
+        }
+
+        return [
+            'tahun' => $year,
+            'sampai_bulan' => $throughMonth,
+            'kode_kantor' => $kodeKantor,
+            'items' => $items,
+        ];
+    }
+
+    public function apiGetDistribusiMakroKantor(array $input)
+    {
+        try {
+            $baseDate = $input['harian_date'] ?? date('Y-m-d');
+            $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
+            $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
+            $isConsolidated = $this->isConsolidatedScope((string) $kodeKantorReq, $korwilRange);
+            $baseDateObj = new DateTime($baseDate);
+            $previousDateObj = clone $baseDateObj;
+            $previousDateObj->modify('last day of previous month');
+            $previousDate = $previousDateObj->format('Y-m-d');
+
+            $params = [
+                ':tanggal_aktual' => $baseDate,
+                ':tanggal_bulan_lalu' => $previousDate,
+            ];
+            $sqlKantor = "AND ah.kode_kantor BETWEEN '001' AND '028'";
+
+            if ($korwilRange) {
+                $sqlKantor = "AND ah.kode_kantor BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $params[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
+            } elseif (strtolower($kodeKantorReq) !== 'konsolidasi' && $kodeKantorReq !== '000') {
+                $sqlKantor = "AND ah.kode_kantor = :kode_kantor";
+                $params[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
+            }
+
+            $asetCodes = [
+                '101','102','103','104','105','10601','10602','10604','10605','10606',
+                '107','108','109','110','11102','112','113','116','117','118','119','120','121'
+            ];
+            $quoteCode = function ($code) {
+                return $this->pdo->quote((string) $code);
+            };
+            $asetIn = implode(',', array_map($quoteCode, $asetCodes));
+            // Distribusi ini menampilkan posisi setiap kantor, sehingga saldo 210
+            // tidak boleh dieliminasi pada masing-masing cabang. Eliminasi 210
+            // hanya berlaku sekali pada total konsolidasi di laporan keuangan.
+            $trackedCodes = array_merge($asetCodes, ['4', '5']);
+            $trackedIn = implode(',', array_map($quoteCode, array_unique($trackedCodes)));
+
+            $sql = "
+                SELECT
+                    ah.tanggal,
+                    ah.kode_kantor,
+                    COALESCE(kk.nama_kantor, CONCAT('Kc. ', ah.kode_kantor)) AS nama_kantor,
+                    SUM(CASE WHEN ah.kode_perk IN ($asetIn) THEN ah.saldo_akhir ELSE 0 END) AS aset,
+                    SUM(CASE WHEN ah.kode_perk = '4' THEN ah.saldo_akhir ELSE 0 END) AS pendapatan,
+                    SUM(CASE WHEN ah.kode_perk = '5' THEN ah.saldo_akhir ELSE 0 END) AS beban,
+                    SUM(CASE WHEN ah.kode_perk = '4' THEN ah.saldo_akhir ELSE 0 END)
+                    - SUM(CASE WHEN ah.kode_perk = '5' THEN ah.saldo_akhir ELSE 0 END) AS laba
+                FROM acc_history ah
+                LEFT JOIN kode_kantor kk ON kk.kode_kantor = ah.kode_kantor
+                WHERE ah.tanggal IN (:tanggal_aktual, :tanggal_bulan_lalu)
+                  $sqlKantor
+                  AND ah.kode_perk IN ($trackedIn)
+                GROUP BY ah.tanggal, ah.kode_kantor, kk.nama_kantor
+                ORDER BY ah.kode_kantor ASC, ah.tanggal ASC
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $metrics = ['aset' => [], 'laba' => [], 'pendapatan' => [], 'beban' => []];
+            $kantorRows = [];
+
+            foreach ($rows as $row) {
+                $kode = str_pad((string) $row['kode_kantor'], 3, '0', STR_PAD_LEFT);
+                if (!isset($kantorRows[$kode])) {
+                    $kantorRows[$kode] = [
+                        'kode_kantor' => $kode,
+                        'nama_kantor' => $row['nama_kantor'] ?: ('Kc. ' . $kode),
+                        'aktual' => ['aset' => 0, 'laba' => 0, 'pendapatan' => 0, 'beban' => 0],
+                        'bulan_lalu' => ['aset' => 0, 'laba' => 0, 'pendapatan' => 0, 'beban' => 0],
+                    ];
+                }
+
+                $bucket = ($row['tanggal'] === $baseDate) ? 'aktual' : 'bulan_lalu';
+                foreach (array_keys($metrics) as $metric) {
+                    $kantorRows[$kode][$bucket][$metric] = (float) ($row[$metric] ?? 0);
+                }
+            }
+
+            foreach ($kantorRows as $kantor) {
+                foreach (array_keys($metrics) as $metric) {
+                    $aktual = (float) ($kantor['aktual'][$metric] ?? 0);
+                    $bulanLalu = (float) ($kantor['bulan_lalu'][$metric] ?? 0);
+                    $net = $aktual - $bulanLalu;
+                    $nominal = ($metric === 'aset') ? $aktual : $net;
+                    $growth = $bulanLalu != 0 ? round(($net / abs($bulanLalu)) * 100, 2) : ($aktual != 0 ? 100 : 0);
+
+                    $metrics[$metric][] = [
+                        'kode_kantor' => $kantor['kode_kantor'],
+                        'nama_kantor' => $kantor['nama_kantor'],
+                        'nominal' => $nominal,
+                        'net' => $net,
+                        'aktual' => $aktual,
+                        'bulan_lalu' => $bulanLalu,
+                        'growth' => $growth,
+                    ];
+                }
+            }
+
+            $buildSummary = function (array $items) {
+                $total = array_sum(array_map(function ($item) {
+                    return (float) $item['nominal'];
+                }, $items));
+                $count = count($items);
+                $avg = $count ? $total / $count : 0;
+                $top = $items;
+                usort($top, function ($a, $b) {
+                    return $b['nominal'] <=> $a['nominal'];
+                });
+                $bottom = $items;
+                usort($bottom, function ($a, $b) {
+                    return $a['nominal'] <=> $b['nominal'];
+                });
+
+                return [
+                    'total' => $total,
+                    'average' => $avg,
+                    'top' => array_slice($top, 0, 3),
+                    'bottom' => array_slice($bottom, 0, 3),
+                ];
+            };
+
+            $scopeLabel = $korwilRange ? ('KORWIL ' . $korwilReq) : strtoupper($kodeKantorReq);
+            $response = [];
+            foreach ($metrics as $key => $items) {
+                $response[$key] = [
+                    'items' => $items,
+                    'summary' => $buildSummary($items),
+                ];
+            }
+
+            $singleBranchCode = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
+            $isSingleBranch = !$korwilRange
+                && !$isConsolidated
+                && preg_match('/^\d{3}$/', $singleBranchCode)
+                && $singleBranchCode >= '001'
+                && $singleBranchCode <= '028';
+            $branchYtd = $isSingleBranch
+                ? $this->getBranchYtdMakro($singleBranchCode, $baseDate, $asetCodes)
+                : null;
+
+            sendResponse(200, "Berhasil memuat distribusi makro kantor (" . $scopeLabel . ")", [
+                'scope' => $scopeLabel,
+                'tanggal' => $baseDate,
+                'tanggal_bulan_lalu' => $previousDate,
+                'mode' => 'distribusi_makro',
+                'keterangan' => 'Distribusi aset per kantor memakai seluruh komponen aset tanpa eliminasi kode 210. Eliminasi 210 hanya diterapkan pada total konsolidasi.',
+                'metrics' => $response,
+                'branch_ytd' => $branchYtd,
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, "Gagal memuat distribusi makro kantor: " . $e->getMessage(), null);
+        }
+    }
+
     /**
      * =================================================================
      * ENDPOINT: API FINANCIAL KPI DASHBOARD
@@ -352,13 +1746,21 @@ class LaporanKeuanganController
         try {
             $baseDate = $input['harian_date'] ?? date('Y-m-d');
             $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
+            $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
+            $isConsolidated = $this->isConsolidatedScope((string) $kodeKantorReq, $korwilRange);
 
             // 1. 🔥 FILTER KANTOR (Bisa dipakai u/ acc_history & nominatif) 🔥
             $sqlKantorAcc = "";
             $sqlKantorNom = "";
             $params = [':tanggal' => $baseDate];
 
-            if (strtolower($kodeKantorReq) === 'konsolidasi') {
+            if ($korwilRange) {
+                $sqlKantorAcc = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN :kw_start AND :kw_end";
+                $sqlKantorNom = "AND LPAD(CAST(kode_cabang AS CHAR), 3, '0') BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = $korwilRange[0];
+                $params[':kw_end'] = $korwilRange[1];
+            } elseif ($isConsolidated) {
                 $sqlKantorAcc = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN '000' AND '028'";
                 // Nominatif konsolidasi tidak perlu filter cabang
             } else {
@@ -371,9 +1773,18 @@ class LaporanKeuanganController
             // QUERY 1: Hitung Semua Variabel dari ACC_HISTORY (Buku Besar)
             // =========================================================
             // Tambahan: '107' (CKPN Kredit) untuk hitung Coverage Ratio
+            $asetCodes = [
+                '101','102','103','104','105','10601','10602','10604','10605','10606',
+                '107','108','109','110','11102','112','113','116','117','118','119','120','121'
+            ];
+            $asetIn = "'" . implode("','", $asetCodes) . "'";
+            $assetAdjustmentSql = $isConsolidated
+                ? " - SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '210' THEN saldo_akhir ELSE 0 END)"
+                : '';
             $sqlRasio = "
                 SELECT 
-                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '1' THEN saldo_akhir ELSE 0 END) AS total_aset,
+                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) IN ($asetIn) THEN saldo_akhir ELSE 0 END)
+                    $assetAdjustmentSql AS total_aset,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '3' THEN saldo_akhir ELSE 0 END) AS total_ekuitas,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '101' THEN saldo_akhir ELSE 0 END) AS kas,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '104' THEN saldo_akhir ELSE 0 END) AS penempatan_bank,
@@ -454,6 +1865,7 @@ class LaporanKeuanganController
             $sqlTopBiaya = "
                 SELECT 
                     TRIM(CAST(kode_perk AS CHAR)) as kode, 
+                    MAX(NULLIF(TRIM(nama_perk), '')) AS nama,
                     SUM(saldo_akhir) as total_biaya
                 FROM acc_history
                 WHERE tanggal = :tanggal $sqlKantorAcc
@@ -485,18 +1897,28 @@ class LaporanKeuanganController
                 }
             }
 
+            $leafBiaya = array_values(array_filter($leafBiaya, function($row) {
+                $kode = (string) ($row['kode'] ?? '');
+                $nama = strtoupper(trim((string) ($row['nama'] ?? '')));
+                if (strpos($kode, '50101') === 0 || $kode === '50203') {
+                    return false;
+                }
+                return strpos($nama, 'TAMADES') === false
+                    && strpos($nama, 'BEBAN BUNGA') === false
+                    && strpos($nama, 'BEBAN BG') === false;
+            }));
+
             usort($leafBiaya, function($a, $b) {
                 return $b['total_biaya'] <=> $a['total_biaya']; 
             });
 
             $top5BiayaRaw = array_slice($leafBiaya, 0, 5);
 
-            $coaDict = $this->getCoaDictionary();
             $topBiaya = [];
             foreach($top5BiayaRaw as $row) {
                 $topBiaya[] = [
                     'kode'    => $row['kode'],
-                    'nama'    => $coaDict[$row['kode']] ?? 'Biaya / Beban Lainnya',
+                    'nama'    => trim((string) ($row['nama'] ?? '')) !== '' ? $row['nama'] : 'Biaya / Beban Lainnya',
                     'nominal' => (float) $row['total_biaya']
                 ];
             }
@@ -504,6 +1926,8 @@ class LaporanKeuanganController
             // =========================================================
             // BUNGKUS KE DALAM RESPONSE JSON
             // =========================================================
+            $scopeLabel = $korwilRange ? ('KORWIL ' . $korwilReq) : strtoupper($kodeKantorReq);
+
             $responseData = [
                 'rasio' => [
                     'bopo_persen'           => round($bopo, 2),
@@ -531,7 +1955,7 @@ class LaporanKeuanganController
                 'top_5_biaya' => $topBiaya
             ];
 
-            sendResponse(200, "Berhasil memuat KPI Kesehatan Bank (" . strtoupper($kodeKantorReq) . ")", $responseData);
+            sendResponse(200, "Berhasil memuat KPI Kesehatan Bank (" . $scopeLabel . ")", $responseData);
 
         } catch (Exception $e) {
             sendResponse(500, "Gagal memuat KPI: " . $e->getMessage(), null);
@@ -548,6 +1972,9 @@ class LaporanKeuanganController
         try {
             $baseDate = $input['harian_date'] ?? date('Y-m-d');
             $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
+            $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
+            $isConsolidated = $this->isConsolidatedScope((string) $kodeKantorReq, $korwilRange);
 
             // 1. Tentukan 3 Titik Waktu
             $baseDateObj = new DateTime($baseDate);
@@ -565,7 +1992,11 @@ class LaporanKeuanganController
             $sqlKantor = "";
             $params = [$dateCurrent, $dateLastMonth, $dateLastYear];
 
-            if (strtolower($kodeKantorReq) === 'konsolidasi') {
+            if ($korwilRange) {
+                $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN ? AND ?";
+                $params[] = $korwilRange[0];
+                $params[] = $korwilRange[1];
+            } elseif ($isConsolidated) {
                 $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') BETWEEN '000' AND '028'";
             } else {
                 $sqlKantor = "AND LPAD(CAST(kode_kantor AS CHAR), 3, '0') = ?";
@@ -573,17 +2004,30 @@ class LaporanKeuanganController
             }
 
             // 3. Query Super Cepat: Tarik Akun Makro (1-5) & Akun Mikro Pembentuk Rasio
+            $asetCodes = [
+                '101','102','103','104','105','10601','10602','10604','10605','10606',
+                '107','108','109','110','11102','112','113','116','117','118','119','120','121'
+            ];
+            $asetIn = "'" . implode("','", $asetCodes) . "'";
+            $assetAdjustmentSql = $isConsolidated
+                ? " - SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '210' THEN saldo_akhir ELSE 0 END)"
+                : '';
             $sql = "
                 SELECT 
                     tanggal,
-                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '1' THEN saldo_akhir ELSE 0 END) AS aset,
+                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) IN ($asetIn) THEN saldo_akhir ELSE 0 END)
+                    $assetAdjustmentSql AS aset,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '2' THEN saldo_akhir ELSE 0 END) AS kewajiban,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '3' THEN saldo_akhir ELSE 0 END) AS ekuitas,
+                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '101' THEN saldo_akhir ELSE 0 END) AS kas,
+                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '104' THEN saldo_akhir ELSE 0 END) AS penempatan_bank,
+                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '201' THEN saldo_akhir ELSE 0 END) AS kewajiban_segera,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '4' THEN saldo_akhir ELSE 0 END) AS pendapatan,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '5' THEN saldo_akhir ELSE 0 END) AS biaya,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '106' THEN saldo_akhir ELSE 0 END) AS kredit,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '20401' THEN saldo_akhir ELSE 0 END) AS tabungan,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '20402' THEN saldo_akhir ELSE 0 END) AS deposito,
+                    SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) IN ('20401', '20402') THEN saldo_akhir ELSE 0 END) AS dpk,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '401' THEN saldo_akhir ELSE 0 END) AS pend_ops,
                     SUM(CASE WHEN TRIM(CAST(kode_perk AS CHAR)) = '501' THEN saldo_akhir ELSE 0 END) AS biaya_ops
                 FROM acc_history
@@ -597,8 +2041,9 @@ class LaporanKeuanganController
 
             // 4. Mapping Data berdasarkan Tanggal (Siapkan default 0)
             $defaultData = [
-                'aset' => 0, 'kewajiban' => 0, 'ekuitas' => 0, 'pendapatan' => 0, 'biaya' => 0,
-                'kredit' => 0, 'tabungan' => 0, 'deposito' => 0, 'pend_ops' => 0, 'biaya_ops' => 0
+                'aset' => 0, 'kewajiban' => 0, 'ekuitas' => 0, 'pendapatan' => 0, 'biaya' => 0, 'dpk' => 0,
+                'kredit' => 0, 'tabungan' => 0, 'deposito' => 0, 'pend_ops' => 0, 'biaya_ops' => 0,
+                'kas' => 0, 'penempatan_bank' => 0, 'kewajiban_segera' => 0
             ];
 
             $dataMap = [
@@ -612,6 +2057,7 @@ class LaporanKeuanganController
                 foreach ($defaultData as $key => $val) {
                     $dataMap[$tgl][$key] = (float) $row[$key];
                 }
+                $dataMap[$tgl]['dpk'] = ((float) ($row['tabungan'] ?? 0)) + ((float) ($row['deposito'] ?? 0));
             }
 
             // 5. Fungsi Helper Buat Ngitung Pertumbuhan Nominal (%)
@@ -621,12 +2067,19 @@ class LaporanKeuanganController
             };
 
             // Fungsi Helper Buat Ngitung Rasio (Persentase Kesehatan)
-            $calculateRasio = function($data) {
+            $calculateRasio = function($data, $date) {
                 $dpk = $data['tabungan'] + $data['deposito'];
+                $labaBerjalan = $data['pendapatan'] - $data['biaya'];
+                $monthNumber = max(1, (int) date('n', strtotime($date)));
+                $labaDisetahunkan = ($labaBerjalan / $monthNumber) * 12;
+                $alatLikuid = $data['kas'] + $data['penempatan_bank'];
                 return [
                     'bopo' => ($data['pend_ops'] > 0) ? ($data['biaya_ops'] / $data['pend_ops']) * 100 : 0,
                     'ldr'  => ($dpk > 0) ? ($data['kredit'] / $dpk) * 100 : 0,
                     'casa' => ($dpk > 0) ? ($data['tabungan'] / $dpk) * 100 : 0,
+                    'roa'  => ($data['aset'] > 0) ? ($labaDisetahunkan / $data['aset']) * 100 : 0,
+                    'roe'  => ($data['ekuitas'] > 0) ? ($labaDisetahunkan / $data['ekuitas']) * 100 : 0,
+                    'cash' => ($data['kewajiban_segera'] > 0) ? ($alatLikuid / $data['kewajiban_segera']) * 100 : 0,
                 ];
             };
 
@@ -661,13 +2114,25 @@ class LaporanKeuanganController
                 'growth_yoy'         => $calculateGrowth($lrCurr, $lrPrevY)
             ];
 
+            $dpkCurr  = $dataMap[$dateCurrent]['tabungan'] + $dataMap[$dateCurrent]['deposito'];
+            $dpkPrevM = $dataMap[$dateLastMonth]['tabungan'] + $dataMap[$dateLastMonth]['deposito'];
+            $dpkPrevY = $dataMap[$dateLastYear]['tabungan'] + $dataMap[$dateLastYear]['deposito'];
+
+            $summaryData['dpk'] = [
+                'nominal_aktual'     => $dpkCurr,
+                'nominal_bulan_lalu' => $dpkPrevM,
+                'nominal_tahun_lalu' => $dpkPrevY,
+                'growth_mom'         => $calculateGrowth($dpkCurr, $dpkPrevM),
+                'growth_yoy'         => $calculateGrowth($dpkCurr, $dpkPrevY)
+            ];
+
             // 7. Format Response Rasio Kesehatan (Khusus Persentase)
-            $rasioCurr  = $calculateRasio($dataMap[$dateCurrent]);
-            $rasioPrevM = $calculateRasio($dataMap[$dateLastMonth]);
-            $rasioPrevY = $calculateRasio($dataMap[$dateLastYear]);
+            $rasioCurr  = $calculateRasio($dataMap[$dateCurrent], $dateCurrent);
+            $rasioPrevM = $calculateRasio($dataMap[$dateLastMonth], $dateLastMonth);
+            $rasioPrevY = $calculateRasio($dataMap[$dateLastYear], $dateLastYear);
 
             $rasioData = [];
-            foreach (['bopo', 'ldr', 'casa'] as $r) {
+            foreach (['bopo', 'ldr', 'casa', 'roa', 'roe', 'cash'] as $r) {
                 $rasioData[$r] = [
                     'persen_aktual'     => round($rasioCurr[$r], 2),
                     'persen_bulan_lalu' => round($rasioPrevM[$r], 2),
@@ -678,8 +2143,10 @@ class LaporanKeuanganController
             }
 
             // 8. Rangkum Hasil
+            $scopeLabel = $korwilRange ? ('KORWIL ' . $korwilReq) : strtoupper($kodeKantorReq);
+
             $responseData = [
-                'info_kantor'  => strtoupper($kodeKantorReq),
+                'info_kantor'  => $scopeLabel,
                 'info_tanggal' => [
                     'aktual'     => $dateCurrent,
                     'bulan_lalu' => $dateLastMonth,
@@ -689,17 +2156,543 @@ class LaporanKeuanganController
                 'kesehatan_rasio' => $rasioData
             ];
 
-            sendResponse(200, "Berhasil memuat Summary Perbandingan (" . strtoupper($kodeKantorReq) . ")", $responseData);
+            sendResponse(200, "Berhasil memuat Summary Perbandingan (" . $scopeLabel . ")", $responseData);
 
         } catch (Exception $e) {
             sendResponse(500, "Gagal memuat Summary: " . $e->getMessage(), null);
         }
     }
 
+    public function apiGetTvMakroSummary(array $input)
+    {
+        try {
+            $baseDate = $input['harian_date'] ?? date('Y-m-d');
+            $useH7Fallback = filter_var($input['h7_fallback'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $kodeKantorReq = $input['kode_kantor'] ?? 'konsolidasi';
+            $korwilReq = strtoupper(trim((string) ($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
+            $isConsolidated = $this->isConsolidatedScope((string) $kodeKantorReq, $korwilRange);
+
+            $baseDateObj = new DateTime($baseDate);
+            $dateCurrent = $baseDateObj->format('Y-m-d');
+            $dateLastMonthObj = clone $baseDateObj;
+            $dateLastMonthObj->modify('last day of previous month');
+            $dateLastMonth = $dateLastMonthObj->format('Y-m-d');
+            $dateLastYearObj = clone $baseDateObj;
+            $dateLastYearObj->modify('-1 year');
+            $dateLastYear = $dateLastYearObj->format('Y') . '-12-31';
+
+            $params = [
+                ':date_current' => $dateCurrent,
+                ':date_last_month' => $dateLastMonth,
+                ':date_last_year' => $dateLastYear,
+            ];
+            $sqlKantorAcc = '';
+            $sqlKantorNom = '';
+
+            if ($korwilRange) {
+                $sqlKantorAcc = "AND kode_kantor BETWEEN :kw_start AND :kw_end";
+                $sqlKantorNom = "AND kode_cabang BETWEEN :kw_start AND :kw_end";
+                $params[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $params[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
+            } elseif ($isConsolidated) {
+                $sqlKantorAcc = "AND kode_kantor BETWEEN '000' AND '028'";
+            } else {
+                $sqlKantorAcc = "AND kode_kantor = :kode_kantor";
+                $sqlKantorNom = "AND kode_cabang = :kode_kantor";
+                $params[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
+            }
+
+            // Ikhtisar memakai aturan laporan utama: bila snapshot acc_history
+            // pada tanggal pilihan belum ada, gunakan H-7. Cek satu baris
+            // terlebih dahulu agar tidak perlu menjalankan rangkaian request
+            // tanggal dari browser.
+            if ($useH7Fallback) {
+                $dateCheckParams = [':snapshot_check_date' => $dateCurrent];
+                if ($korwilRange) {
+                    $dateCheckParams[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
+                    $dateCheckParams[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
+                } elseif (!$isConsolidated) {
+                    $dateCheckParams[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
+                }
+
+                $dateCheckStmt = $this->pdo->prepare("SELECT 1 FROM acc_history WHERE tanggal = :snapshot_check_date {$sqlKantorAcc} AND kode_perk IN ('101','104','10601','10606','20401','20402','4','5') LIMIT 1");
+                $dateCheckStmt->execute($dateCheckParams);
+                if (!$dateCheckStmt->fetchColumn()) {
+                    $h7DateObj = clone $baseDateObj;
+                    $h7DateObj->modify('-7 days');
+                    $dateCurrent = $h7DateObj->format('Y-m-d');
+
+                    $dateLastMonthObj = clone $h7DateObj;
+                    $dateLastMonthObj->modify('last day of previous month');
+                    $dateLastMonth = $dateLastMonthObj->format('Y-m-d');
+                    $dateLastYearObj = clone $h7DateObj;
+                    $dateLastYearObj->modify('-1 year');
+                    $dateLastYear = $dateLastYearObj->format('Y') . '-12-31';
+                }
+
+                $params[':date_current'] = $dateCurrent;
+                $params[':date_last_month'] = $dateLastMonth;
+                $params[':date_last_year'] = $dateLastYear;
+            }
+
+            $asetCodes = [
+                '101','102','103','104','105','10601','10602','10604','10605','10606',
+                '107','108','109','110','11102','112','113','116','117','118','119','120','121'
+            ];
+            $quoteCode = function ($code) {
+                return $this->pdo->quote((string) $code);
+            };
+            $asetIn = implode(',', array_map($quoteCode, $asetCodes));
+            $trackedCodes = array_unique(array_merge($asetCodes, [
+                '210', '2', '3', '101', '104', '10401', '10402', '105', '201', '20202', '205', '211', '4', '5', '106', '10601',
+                '10606', '107', '204', '20401', '20402', '20603', '30106', '401', '40101', '501', '50101'
+            ]));
+            $trackedIn = implode(',', array_map($quoteCode, $trackedCodes));
+            $assetAdjustmentSql = $isConsolidated
+                ? " - SUM(CASE WHEN kode_perk = '210' THEN saldo_akhir ELSE 0 END)"
+                : '';
+
+            $sql = "
+                SELECT
+                    tanggal,
+                    SUM(CASE WHEN kode_perk IN ($asetIn) THEN saldo_akhir ELSE 0 END)
+                    $assetAdjustmentSql AS aset,
+                    SUM(CASE WHEN kode_perk = '2' THEN saldo_akhir ELSE 0 END) AS kewajiban,
+                    SUM(CASE WHEN kode_perk = '3' THEN saldo_akhir ELSE 0 END) AS ekuitas,
+                    SUM(CASE WHEN kode_perk = '101' THEN saldo_akhir ELSE 0 END) AS kas,
+                    SUM(CASE WHEN kode_perk = '104' THEN saldo_akhir ELSE 0 END) AS ppbl,
+                    SUM(CASE WHEN kode_perk = '10401' THEN saldo_akhir ELSE 0 END) AS ppbl_giro,
+                    SUM(CASE WHEN kode_perk = '10402' THEN saldo_akhir ELSE 0 END) AS ppbl_tabungan,
+                    SUM(CASE WHEN kode_perk = '105' THEN saldo_akhir ELSE 0 END) AS ckpn_ppbl,
+                    SUM(CASE WHEN kode_perk = '201' THEN saldo_akhir ELSE 0 END) AS kewajiban_segera,
+                    SUM(CASE WHEN kode_perk = '20202' THEN saldo_akhir ELSE 0 END) AS utang_bunga_deposito,
+                    SUM(CASE WHEN kode_perk = '205' THEN saldo_akhir ELSE 0 END) AS simpanan_bank_lain,
+                    SUM(CASE WHEN kode_perk = '211' THEN saldo_akhir ELSE 0 END) AS liabilitas_lainnya,
+                    SUM(CASE WHEN kode_perk = '4' THEN saldo_akhir ELSE 0 END) AS pendapatan,
+                    SUM(CASE WHEN kode_perk = '5' THEN saldo_akhir ELSE 0 END) AS biaya,
+                    SUM(CASE WHEN kode_perk = '106' THEN saldo_akhir ELSE 0 END) AS kredit,
+                    SUM(CASE WHEN kode_perk = '10601' THEN saldo_akhir ELSE 0 END) AS kredit_baki_debet,
+                    SUM(CASE WHEN kode_perk = '10606' THEN saldo_akhir ELSE 0 END) AS saldo_bank_ead,
+                    SUM(CASE WHEN kode_perk = '107' THEN saldo_akhir ELSE 0 END) AS ckpn_kredit,
+                    SUM(CASE WHEN kode_perk = '204' THEN saldo_akhir ELSE 0 END) AS simpanan_pihak_ketiga,
+                    SUM(CASE WHEN kode_perk = '20401' THEN saldo_akhir ELSE 0 END) AS tabungan,
+                    SUM(CASE WHEN kode_perk = '20402' THEN saldo_akhir ELSE 0 END) AS deposito,
+                    SUM(CASE WHEN kode_perk = '20603' THEN saldo_akhir ELSE 0 END) AS deposito_bank_lain_gt_3_bulan,
+                    SUM(CASE WHEN kode_perk = '30106' THEN saldo_akhir ELSE 0 END) AS modal_pinjaman,
+                    SUM(CASE WHEN kode_perk = '401' THEN saldo_akhir ELSE 0 END) AS pend_ops,
+                    SUM(CASE WHEN kode_perk = '501' THEN saldo_akhir ELSE 0 END) AS biaya_ops,
+                    SUM(CASE WHEN kode_perk = '40101' THEN saldo_akhir ELSE 0 END) AS pend_bunga,
+                    SUM(CASE WHEN kode_perk = '50101' THEN saldo_akhir ELSE 0 END) AS beban_bunga
+                FROM acc_history
+                WHERE tanggal IN (:date_current, :date_last_month, :date_last_year)
+                  $sqlKantorAcc
+                  AND kode_perk IN ($trackedIn)
+                GROUP BY tanggal
+            ";
+
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute($params);
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $availableDates = array_fill_keys(array_map(function ($row) {
+                return (string)($row['tanggal'] ?? '');
+            }, $rows), true);
+
+            $sqlPerkiraan = "
+                SELECT kode_perk, MAX(nama_perk) AS nama_perk
+                FROM acc_history
+                WHERE tanggal IN (:date_current, :date_last_month, :date_last_year)
+                  $sqlKantorAcc
+                  AND kode_perk IN ($trackedIn)
+                GROUP BY kode_perk
+            ";
+            $stmtPerkiraan = $this->pdo->prepare($sqlPerkiraan);
+            $stmtPerkiraan->execute($params);
+            $perkiraanRows = $stmtPerkiraan->fetchAll(PDO::FETCH_ASSOC);
+            $perkiraanMap = [];
+            foreach ($perkiraanRows as $row) {
+                $perkiraanMap[(string) $row['kode_perk']] = $row['nama_perk'] ?: (string) $row['kode_perk'];
+            }
+
+            $defaultData = [
+                'aset' => 0, 'kewajiban' => 0, 'ekuitas' => 0, 'kas' => 0, 'ppbl' => 0,
+                'ppbl_giro' => 0, 'ppbl_tabungan' => 0, 'ckpn_ppbl' => 0,
+                'kewajiban_segera' => 0, 'utang_bunga_deposito' => 0, 'simpanan_bank_lain' => 0, 'liabilitas_lainnya' => 0,
+                'pendapatan' => 0, 'biaya' => 0, 'kredit' => 0,
+                'kredit_baki_debet' => 0, 'saldo_bank_ead' => 0, 'ckpn_kredit' => 0,
+                'simpanan_pihak_ketiga' => 0, 'tabungan' => 0, 'deposito' => 0,
+                'deposito_bank_lain_gt_3_bulan' => 0, 'modal_pinjaman' => 0,
+                'pend_ops' => 0, 'biaya_ops' => 0,
+                'pend_bunga' => 0, 'beban_bunga' => 0,
+            ];
+            $dataMap = [
+                $dateCurrent => $defaultData,
+                $dateLastMonth => $defaultData,
+                $dateLastYear => $defaultData,
+            ];
+            foreach ($rows as $row) {
+                $tgl = $row['tanggal'];
+                if (!isset($dataMap[$tgl])) {
+                    continue;
+                }
+                foreach ($defaultData as $key => $val) {
+                    $dataMap[$tgl][$key] = (float) ($row[$key] ?? 0);
+                }
+            }
+
+            $nplParams = [
+                ':date_current' => $dateCurrent,
+                ':date_last_month' => $dateLastMonth,
+            ];
+            if ($korwilRange) {
+                $nplParams[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $nplParams[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
+            } elseif (!$isConsolidated) {
+                $nplParams[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
+            }
+            $sqlNpl = "
+                SELECT created, SUM(baki_debet) AS total_npl
+                FROM nominatif
+                WHERE created IN (:date_current, :date_last_month)
+                  AND kolektibilitas IN ('KL', 'D', 'M')
+                  $sqlKantorNom
+                GROUP BY created
+            ";
+            $stmtNpl = $this->pdo->prepare($sqlNpl);
+            $stmtNpl->execute($nplParams);
+            $nplMap = [
+                $dateCurrent => 0,
+                $dateLastMonth => 0,
+            ];
+            foreach ($stmtNpl->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $nplMap[$row['created']] = (float) ($row['total_npl'] ?? 0);
+            }
+            $totalNpl = (float) ($nplMap[$dateCurrent] ?? 0);
+            $totalNplPrev = (float) ($nplMap[$dateLastMonth] ?? 0);
+
+            $calculateGrowth = function ($current, $past) {
+                if ((float) $past == 0.0) {
+                    return (float) $current == 0.0 ? 0.0 : 100.0;
+                }
+                return round((($current - $past) / abs($past)) * 100, 2);
+            };
+            $buildNominalSummary = function ($key) use ($dataMap, $dateCurrent, $dateLastMonth, $dateLastYear, $calculateGrowth) {
+                $curr = $dataMap[$dateCurrent][$key] ?? 0;
+                $prevM = $dataMap[$dateLastMonth][$key] ?? 0;
+                $prevY = $dataMap[$dateLastYear][$key] ?? 0;
+                return [
+                    'nominal_aktual' => $curr,
+                    'nominal_bulan_lalu' => $prevM,
+                    'nominal_tahun_lalu' => $prevY,
+                    'growth_mom' => $calculateGrowth($curr, $prevM),
+                    'growth_yoy' => $calculateGrowth($curr, $prevY),
+                ];
+            };
+            $getAverageAsetProduktif = function ($targetDate) use ($sqlKantorAcc, $korwilRange, $kodeKantorReq, $isConsolidated) {
+                $targetObj = new DateTime($targetDate);
+                $year = $targetObj->format('Y');
+                $month = (int) $targetObj->format('n');
+                $dates = [];
+
+                for ($m = 1; $m <= $month; $m++) {
+                    if ($m === $month) {
+                        $dates[] = $targetObj->format('Y-m-d');
+                    } else {
+                        $dates[] = (new DateTime($year . '-' . str_pad((string) $m, 2, '0', STR_PAD_LEFT) . '-01'))->format('Y-m-t');
+                    }
+                }
+
+                $paramsAvg = [];
+                $placeholders = [];
+                foreach (array_values(array_unique($dates)) as $idx => $date) {
+                    $key = ':avg_date_' . $idx;
+                    $placeholders[] = $key;
+                    $paramsAvg[$key] = $date;
+                }
+
+                if ($korwilRange) {
+                    $paramsAvg[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
+                    $paramsAvg[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
+                } elseif (!$isConsolidated) {
+                    $paramsAvg[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
+                }
+
+                $sqlAvg = "
+                    SELECT tanggal, SUM(saldo_akhir) AS total_aset_produktif
+                    FROM acc_history
+                    WHERE tanggal IN (" . implode(',', $placeholders) . ")
+                      $sqlKantorAcc
+                      AND kode_perk IN ('104', '10601', '10606')
+                    GROUP BY tanggal
+                ";
+                $stmtAvg = $this->pdo->prepare($sqlAvg);
+                $stmtAvg->execute($paramsAvg);
+                $rowsAvg = $stmtAvg->fetchAll(PDO::FETCH_ASSOC);
+                if (!$rowsAvg) {
+                    return 0.0;
+                }
+                $total = 0.0;
+                foreach ($rowsAvg as $row) {
+                    $total += (float) ($row['total_aset_produktif'] ?? 0);
+                }
+                return $total / count($rowsAvg);
+            };
+
+            $avgProduktifCurr = $getAverageAsetProduktif($dateCurrent);
+            $avgProduktifPrevM = $getAverageAsetProduktif($dateLastMonth);
+            $avgProduktifPrevY = $getAverageAsetProduktif($dateLastYear);
+
+            $calculateRasio = function ($data, $date, $avgAsetProduktif = 0) {
+                $dpk = $data['tabungan'] + $data['deposito'];
+                $totalDanaDiterima = $data['simpanan_pihak_ketiga'] + $data['deposito_bank_lain_gt_3_bulan'] + $data['modal_pinjaman'];
+                $labaBerjalan = $data['pendapatan'] - $data['biaya'];
+                $monthNumber = max(1, (int) date('n', strtotime($date)));
+                $labaDisetahunkan = ($labaBerjalan / $monthNumber) * 12;
+                $asetLikuidTerhadapAset = $data['kas'] + $data['ppbl_giro'] + $data['ppbl_tabungan'];
+                $hutangLancar = $data['kewajiban_segera'] + $data['tabungan'] + $data['utang_bunga_deposito'] + $data['simpanan_bank_lain'] + $data['liabilitas_lainnya'];
+                $pendapatanBungaBersih = $data['pend_bunga'] - $data['beban_bunga'];
+                $pendapatanBungaBersihDisetahunkan = ($pendapatanBungaBersih / $monthNumber) * 12;
+                return [
+                    'bopo' => ($data['pend_ops'] > 0) ? ($data['biaya_ops'] / $data['pend_ops']) * 100 : 0,
+                    'ldr' => ($totalDanaDiterima > 0) ? ($data['kredit_baki_debet'] / $totalDanaDiterima) * 100 : 0,
+                    'casa' => ($dpk > 0) ? ($data['tabungan'] / $dpk) * 100 : 0,
+                    'roa' => ($data['aset'] > 0) ? ($labaDisetahunkan / $data['aset']) * 100 : 0,
+                    'roe' => ($data['ekuitas'] > 0) ? ($labaDisetahunkan / $data['ekuitas']) * 100 : 0,
+                    'cash' => ($hutangLancar > 0) ? ($asetLikuidTerhadapAset / $hutangLancar) * 100 : 0,
+                    'aset_likuid' => ($data['aset'] > 0) ? ($asetLikuidTerhadapAset / $data['aset']) * 100 : 0,
+                    'nim' => ($avgAsetProduktif > 0) ? ($pendapatanBungaBersihDisetahunkan / $avgAsetProduktif) * 100 : 0,
+                ];
+            };
+
+            $curr = $dataMap[$dateCurrent];
+            $prev = $dataMap[$dateLastMonth];
+            $dpkCurr = $curr['tabungan'] + $curr['deposito'];
+            $dpkPrev = $prev['tabungan'] + $prev['deposito'];
+            $labaCurr = $curr['pendapatan'] - $curr['biaya'];
+            $labaPrev = $prev['pendapatan'] - $prev['biaya'];
+            $labaSetelahPajak = $labaCurr - ($labaCurr * 0.22);
+
+            $summaryData = [
+                'aset' => $buildNominalSummary('aset'),
+                'kewajiban' => $buildNominalSummary('kewajiban'),
+                'ekuitas' => $buildNominalSummary('ekuitas'),
+                'pendapatan' => $buildNominalSummary('pendapatan'),
+                'biaya' => $buildNominalSummary('biaya'),
+                'laba_rugi' => [
+                    'nominal_aktual' => $labaCurr,
+                    'nominal_bulan_lalu' => $labaPrev,
+                    'nominal_tahun_lalu' => ($dataMap[$dateLastYear]['pendapatan'] ?? 0) - ($dataMap[$dateLastYear]['biaya'] ?? 0),
+                    'growth_mom' => $calculateGrowth($labaCurr, $labaPrev),
+                    'growth_yoy' => $calculateGrowth($labaCurr, (($dataMap[$dateLastYear]['pendapatan'] ?? 0) - ($dataMap[$dateLastYear]['biaya'] ?? 0))),
+                ],
+                'dpk' => [
+                    'nominal_aktual' => $dpkCurr,
+                    'nominal_bulan_lalu' => $dpkPrev,
+                    'nominal_tahun_lalu' => ($dataMap[$dateLastYear]['tabungan'] ?? 0) + ($dataMap[$dateLastYear]['deposito'] ?? 0),
+                    'growth_mom' => $calculateGrowth($dpkCurr, $dpkPrev),
+                    'growth_yoy' => $calculateGrowth($dpkCurr, (($dataMap[$dateLastYear]['tabungan'] ?? 0) + ($dataMap[$dateLastYear]['deposito'] ?? 0))),
+                ],
+                'npl' => [
+                    'nominal_aktual' => $totalNpl,
+                    'nominal_bulan_lalu' => $totalNplPrev,
+                    'nominal_tahun_lalu' => 0,
+                    'growth_mom' => $calculateGrowth($totalNpl, $totalNplPrev),
+                    'growth_yoy' => 0,
+                    'persen_aktual' => ($curr['kredit_baki_debet'] > 0) ? ($totalNpl / $curr['kredit_baki_debet']) * 100 : 0,
+                    'persen_bulan_lalu' => ($prev['kredit_baki_debet'] > 0) ? ($totalNplPrev / $prev['kredit_baki_debet']) * 100 : 0,
+                ],
+            ];
+
+            $rasioCurr = $calculateRasio($curr, $dateCurrent, $avgProduktifCurr);
+            $rasioPrevM = $calculateRasio($prev, $dateLastMonth, $avgProduktifPrevM);
+            $rasioPrevY = $calculateRasio($dataMap[$dateLastYear], $dateLastYear, $avgProduktifPrevY);
+            $rasioData = [];
+            foreach (['bopo', 'ldr', 'casa', 'roa', 'roe', 'cash', 'nim', 'aset_likuid'] as $key) {
+                $rasioData[$key] = [
+                    'persen_aktual' => round($rasioCurr[$key], 2),
+                    'persen_bulan_lalu' => round($rasioPrevM[$key], 2),
+                    'persen_tahun_lalu' => round($rasioPrevY[$key], 2),
+                    'delta_mom' => round($rasioCurr[$key] - $rasioPrevM[$key], 2),
+                    'delta_yoy' => round($rasioCurr[$key] - $rasioPrevY[$key], 2),
+                ];
+            }
+
+            $topParams = [':tanggal' => $dateCurrent];
+            if ($korwilRange) {
+                $topParams[':kw_start'] = str_pad((string) $korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $topParams[':kw_end'] = str_pad((string) $korwilRange[1], 3, '0', STR_PAD_LEFT);
+            } elseif (!$isConsolidated) {
+                $topParams[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
+            }
+            $sqlTop = "
+                SELECT
+                    kode_perk AS kode,
+                    MAX(NULLIF(TRIM(nama_perk), '')) AS nama,
+                    SUM(saldo_akhir) AS total_biaya
+                FROM acc_history
+                WHERE tanggal = :tanggal
+                  $sqlKantorAcc
+                  AND kode_perk LIKE '5%'
+                GROUP BY kode_perk
+                HAVING SUM(saldo_akhir) > 0
+            ";
+            $stmtTop = $this->pdo->prepare($sqlTop);
+            $stmtTop->execute($topParams);
+            $topRows = $stmtTop->fetchAll(PDO::FETCH_ASSOC);
+
+            $allExpenseCodes = array_column($topRows, 'kode');
+            $leafExpenseRows = [];
+            foreach ($topRows as $row) {
+                $kodeStr = (string) ($row['kode'] ?? '');
+                $nama = (string) ($row['nama'] ?? '');
+                if (in_array($kodeStr, ['5', '501', '502'], true)
+                    || strpos($kodeStr, '50101') === 0
+                    || $kodeStr === '50203'
+                    || stripos($nama, 'TAMADES') !== false
+                    || stripos($nama, 'BEBAN BUNGA') !== false
+                    || stripos($nama, 'BEBAN BG') !== false) {
+                    continue;
+                }
+
+                $isParent = false;
+                foreach ($allExpenseCodes as $otherKode) {
+                    $otherStr = (string) $otherKode;
+                    if ($kodeStr !== $otherStr && strpos($otherStr, $kodeStr) === 0) {
+                        $isParent = true;
+                        break;
+                    }
+                }
+
+                if (!$isParent) {
+                    $leafExpenseRows[] = $row;
+                }
+            }
+
+            usort($leafExpenseRows, function($a, $b) {
+                return (float) $b['total_biaya'] <=> (float) $a['total_biaya'];
+            });
+
+            $topBiaya = [];
+            foreach (array_slice($leafExpenseRows, 0, 5) as $row) {
+                $nama = trim((string) ($row['nama'] ?? ''));
+                $topBiaya[] = [
+                    'kode' => $row['kode'],
+                    'nama' => $nama !== '' ? $nama : 'Biaya / Beban Lainnya',
+                    'nominal' => (float) $row['total_biaya'],
+                ];
+            }
+
+            $ckpnKredit = abs($curr['ckpn_kredit']);
+            $scopeLabel = $korwilRange ? ('KORWIL ' . $korwilReq) : strtoupper($kodeKantorReq);
+
+            sendResponse(200, "Berhasil memuat TV Makro Summary (" . $scopeLabel . ")", [
+                'info_kantor' => $scopeLabel,
+                'info_tanggal' => [
+                    'diminta' => $baseDate,
+                    'aktual' => $dateCurrent,
+                    'bulan_lalu' => $dateLastMonth,
+                    'tahun_lalu' => $dateLastYear,
+                    'tersedia' => [
+                        'aktual' => isset($availableDates[$dateCurrent]),
+                        'bulan_lalu' => isset($availableDates[$dateLastMonth]),
+                        'tahun_lalu' => isset($availableDates[$dateLastYear]),
+                    ],
+                ],
+                'makro' => $summaryData,
+                'ringkasan_detail' => [
+                    'dana_masyarakat' => [
+                        'total' => $dpkCurr,
+                        'tabungan' => $curr['tabungan'],
+                        'deposito' => $curr['deposito'],
+                    ],
+                    'ppbl' => $curr['ppbl'],
+                    'kredit_diberikan' => [
+                        'baki_debet' => $curr['kredit_baki_debet'],
+                        'saldo_bank_ead' => $curr['saldo_bank_ead'],
+                    ],
+                    'ckpn' => [
+                        'ckpn_ppbl' => abs($curr['ckpn_ppbl']),
+                    'ckpn_kredit' => $ckpnKredit,
+                    'npl' => $totalNpl,
+                ],
+                    'pendapatan' => $curr['pendapatan'],
+                    'biaya' => $curr['biaya'],
+                    'laba_sebelum_pajak' => $labaCurr,
+                    'laba_setelah_pajak' => $labaSetelahPajak,
+                    'rasio_utama' => [
+                        'kap' => ($curr['kredit'] > 0) ? ($totalNpl / $curr['kredit']) * 100 : 0,
+                        'ckpn_terhadap_ppka' => ($totalNpl > 0) ? ($ckpnKredit / $totalNpl) * 100 : 0,
+                        'npl_baki_debet_gross' => ($curr['kredit_baki_debet'] > 0) ? ($totalNpl / $curr['kredit_baki_debet']) * 100 : 0,
+                        'npl_baki_debet_netto' => ($curr['kredit_baki_debet'] > 0) ? (($totalNpl - $ckpnKredit) / $curr['kredit_baki_debet']) * 100 : 0,
+                        'npl_saldo_bank_gross' => ($curr['saldo_bank_ead'] > 0) ? ($totalNpl / $curr['saldo_bank_ead']) * 100 : 0,
+                    ],
+                ],
+                'kesehatan_rasio' => $rasioData,
+                'perkiraan' => $perkiraanMap,
+                'rumus_rasio' => [
+                    'aset' => "101 + 102 + 103 + 104 + 105 + 10601 + 10602 + 10604 + 10605 + 10606 + 107 + 108 + 109 + 110 + 11102 + 112 + 113 + 116 + 117 + 118 + 119 + 120 + 121" . ($isConsolidated ? " - 210" : ""),
+                    'bopo' => '501 / 401 x 100%',
+                    'ldr' => '10601 / (204 + 20603 + 30106) x 100%',
+                    'casa' => '20401 / (20401 + 20402) x 100%',
+                    'roa' => 'Laba disetahunkan / Aset x 100%',
+                    'roe' => 'Laba disetahunkan / Ekuitas x 100%',
+                    'cash' => '(101 + 10401 + 10402) / (201 + 20401 + 20202 + 205 + 211) x 100%',
+                    'aset_likuid' => '(101 + 10401 + 10402) / Total Aset x 100%',
+                    'nim' => '((40101 - 50101) / bulan x 12) / rata-rata (104 + 10601 + 10606) x 100%',
+                ],
+                'rasio' => [
+                    'bopo_persen' => round($rasioCurr['bopo'], 2),
+                    'ldr_persen' => round($rasioCurr['ldr'], 2),
+                    'casa_persen' => round($rasioCurr['casa'], 2),
+                    'roa_persen' => round($rasioCurr['roa'], 2),
+                    'roe_persen' => round($rasioCurr['roe'], 2),
+                    'cash_ratio_persen' => round($rasioCurr['cash'], 2),
+                    'aset_likuid_persen' => round($rasioCurr['aset_likuid'], 2),
+                    'nim_persen' => round($rasioCurr['nim'], 2),
+                    'coverage_ratio_persen' => ($totalNpl > 0) ? round(($ckpnKredit / $totalNpl) * 100, 2) : 0,
+                    'detail_nominal' => [
+                        'total_kredit' => $curr['kredit_baki_debet'],
+                        'total_dana_diterima' => $curr['simpanan_pihak_ketiga'] + $curr['deposito_bank_lain_gt_3_bulan'] + $curr['modal_pinjaman'],
+                        'total_dpk' => $dpkCurr,
+                        'pend_operasional' => $curr['pend_ops'],
+                        'biaya_operasional' => $curr['biaya_ops'],
+                        'laba_disetahunkan' => ((int) date('n', strtotime($dateCurrent)) > 0) ? ($labaCurr / (int) date('n', strtotime($dateCurrent))) * 12 : $labaCurr,
+                        'total_aset' => $curr['aset'],
+                        'total_ekuitas' => $curr['ekuitas'],
+                        'aset_likuid' => $curr['kas'] + $curr['ppbl_giro'] + $curr['ppbl_tabungan'],
+                        'hutang_lancar' => $curr['kewajiban_segera'] + $curr['tabungan'] + $curr['utang_bunga_deposito'] + $curr['simpanan_bank_lain'] + $curr['liabilitas_lainnya'],
+                        'kas' => $curr['kas'],
+                        'ppbl_giro' => $curr['ppbl_giro'],
+                        'ppbl_tabungan' => $curr['ppbl_tabungan'],
+                        'utang_bunga_deposito' => $curr['utang_bunga_deposito'],
+                        'simpanan_bank_lain' => $curr['simpanan_bank_lain'],
+                        'liabilitas_lainnya' => $curr['liabilitas_lainnya'],
+                        'simpanan_pihak_ketiga' => $curr['simpanan_pihak_ketiga'],
+                        'deposito_bank_lain_gt_3_bulan' => $curr['deposito_bank_lain_gt_3_bulan'],
+                        'modal_pinjaman' => $curr['modal_pinjaman'],
+                        'pendapatan_bunga' => $curr['pend_bunga'],
+                        'beban_bunga' => $curr['beban_bunga'],
+                        'pendapatan_bunga_bersih_disetahunkan' => (($curr['pend_bunga'] - $curr['beban_bunga']) / max(1, (int) date('n', strtotime($dateCurrent)))) * 12,
+                        'rata_aset_produktif' => $avgProduktifCurr,
+                        'kewajiban_segera' => $curr['kewajiban_segera'],
+                        'ckpn_kredit' => $ckpnKredit,
+                        'total_npl' => $totalNpl,
+                    ],
+                ],
+                'top_5_biaya' => $topBiaya,
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, "Gagal memuat TV Makro Summary: " . $e->getMessage(), null);
+        }
+    }
+
     public function apiGetCoaList() 
     {
         try {
-            $coaDict = $this->getCoaDictionary();
+            $coaDict = $this->getCoaDictionaryFromAccHistory();
+            if (empty($coaDict)) {
+                $coaDict = $this->getCoaDictionary();
+            }
             $data = [];
             
             // Ubah format dari ['101' => 'Kas'] menjadi [['kode' => '101', 'nama' => 'Kas'], ...]
@@ -717,11 +2710,53 @@ class LaporanKeuanganController
         }
     }
 
-            /**
+    private function getCoaDictionaryFromAccHistory(?string $tanggal = null): array
+    {
+        if ($tanggal === null || trim((string) $tanggal) === '') {
+            $stmtDate = $this->pdo->query("SELECT MAX(tanggal) FROM acc_history");
+            $tanggal = (string) $stmtDate->fetchColumn();
+        }
+
+        if ($tanggal === '') {
+            return [];
+        }
+
+        $stmt = $this->pdo->prepare("
+            SELECT
+                TRIM(CAST(kode_perk AS CHAR)) AS kode,
+                MAX(NULLIF(TRIM(nama_perk), '')) AS nama
+            FROM acc_history
+            WHERE tanggal = :tanggal
+              AND kode_perk IS NOT NULL
+              AND nama_perk IS NOT NULL
+            GROUP BY TRIM(CAST(kode_perk AS CHAR))
+            ORDER BY TRIM(CAST(kode_perk AS CHAR)) ASC
+        ");
+        $stmt->execute([':tanggal' => $tanggal]);
+
+        $dict = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $kode = trim((string) ($row['kode'] ?? ''));
+            $nama = trim((string) ($row['nama'] ?? ''));
+            if ($kode !== '' && $nama !== '') {
+                $dict[$kode] = $nama;
+            }
+        }
+
+        return $dict;
+    }
+
+    private function isAccHistoryKodePerk($kode): bool
+    {
+        $kode = trim((string) $kode);
+        return $kode !== '' && preg_match('/^[1-5][0-9]*$/', $kode) === 1;
+    }
+
+    /**
      * =================================================================
      * 1. KAMUS COA (Breakdown Nama Perkiraan)
      * =================================================================
-     */
+    */
     private function getCoaDictionary(): array 
     {
         return [

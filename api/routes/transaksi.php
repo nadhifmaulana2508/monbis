@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/TransaksiController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 $controller = new TransaksiController($pdo);
 
@@ -38,6 +38,9 @@ switch ($method) {
 
         } elseif ($input['type'] === 'rekap_device_branchless') {
             $controller->getRekapDeviceBranchless($input);
+
+        } elseif ($input['type'] === 'rekap_branchless_bulanan') {
+            $controller->getRekapBranchlessBulanan($input);
         
         } elseif ($input['type'] === 'detail_device_branchless') {
             $controller->getDetailDeviceBranchless($input);
@@ -60,3 +63,4 @@ switch ($method) {
         sendResponse(405, "Metode tidak diizinkan");
         break;
 }
+

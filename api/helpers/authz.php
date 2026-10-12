@@ -15,9 +15,9 @@ function isBranchVerifier(array $user): bool {
   $kc  = userKC($user);
   if (!$kc || $kc === '000') return false;
   return (
-    str_contains($pos, 'kepala cabang') ||
-    str_contains($pos, 'kabid pemasaran') ||
-    str_contains($pos, 'kasubid remedial')
+    strpos($pos, 'kepala cabang') !== false ||
+    strpos($pos, 'kabid pemasaran') !== false ||
+    strpos($pos, 'kasubid remedial') !== false
   );
 }
 

@@ -1,44 +1,35 @@
 <div class="max-w-full mx-auto px-2 md:px-4 py-4 md:py-5 h-[calc(100vh-80px)] flex flex-col bg-slate-50 font-sans relative" id="SD_root">
-  
-  <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 mb-3 shrink-0">
-    <div class="flex items-center gap-2 md:gap-3">
-      <div class="bg-blue-600 text-white p-1.5 md:p-2 rounded-lg md:rounded-xl shadow-sm flex items-center justify-center">
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="md:w-5 md:h-5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      </div>
-      <div>
-        <h1 class="text-base md:text-xl font-extrabold text-slate-800 tracking-tight leading-none">Search Debitur</h1>
-        <span class="text-[9px] font-bold text-red-600 bg-blue-100  rounded-md">*Create Pipelane + Komitmen</span></span>
-        <div class="flex items-center gap-1.5 mt-0.5">
-          <span class="text-[9px] font-bold text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded-md">NOA: <span id="SD_sumNoa">0</span></span>
-          <span class="text-[9px] font-bold text-emerald-600 bg-emerald-100 px-1.5 py-0.5 rounded-md">BD: <span id="SD_sumBd">0</span></span>
-        </div>
+
+  <section class="sd-report-head">
+    <div class="sd-heading">
+      <span class="sd-title-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path>
+        </svg>
+      </span>
+      <div class="sd-title-copy">
+        <h1>Search Debitur</h1>
+        <p>Pencarian debitur, status jatuh tempo, dan komitmen pipeline kredit.</p>
       </div>
     </div>
-
-    <div class="flex items-end gap-2 md:gap-3 shrink-0 flex-wrap justify-start md:justify-end w-full md:w-auto">
-      
-      <div class="flex flex-col gap-1">
-          <label class="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider ml-1">Closing</label>
-          <input type="date" id="SD_closing_date" class="inp w-[115px] md:w-[130px] cursor-pointer text-slate-700 font-bold" title="Tanggal Closing Bulan Lalu">
-      </div>
-      <div class="flex flex-col gap-1">
-          <label class="text-[10px] font-extrabold text-slate-600 uppercase tracking-wider ml-1">Harian</label>
-          <input type="date" id="SD_harian_date" class="inp w-[115px] md:w-[130px] cursor-pointer text-blue-700 font-bold" title="Tanggal Data Harian">
-      </div>
-
-      <button type="button" onclick="SD_exportExcelAll()" class="h-[32px] px-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 text-xs font-bold" title="Export Excel">
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-        <span class="hidden md:inline">Excel</span>
-      </button>
-      <button id="SD_btnToggleFilter" class="h-[32px] px-3 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 rounded-lg shadow-sm transition flex items-center justify-center gap-1.5 text-xs font-bold" title="Toggle Filter">
-        <svg id="SD_iconToggle" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="transition-transform duration-300"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
-        <span class="hidden md:inline">Filter</span>
+    <div class="sd-head-actions">
+      <button type="button" onclick="SD_exportExcelAll()" class="sd-export-btn" title="Download Excel" aria-label="Download Excel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 20h14"></path></svg>
       </button>
     </div>
-  </div>
+  </section>
 
   <div id="SD_panelFilter" class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm mb-3 shrink-0 transition-all origin-top">
     <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 items-end">
+
+      <div class="field flex flex-col gap-1">
+        <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1">Closing</label>
+        <input type="date" id="SD_closing_date" class="inp w-full cursor-pointer text-slate-700 font-bold" title="Tanggal Closing Bulan Lalu">
+      </div>
+      <div class="field flex flex-col gap-1">
+        <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1">Harian</label>
+        <input type="date" id="SD_harian_date" class="inp w-full cursor-pointer text-blue-700 font-bold" title="Tanggal Data Harian">
+      </div>
       
       <div class="field flex flex-col gap-1">
         <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1">Pencarian</label>
@@ -142,7 +133,9 @@
             <th class="px-3 py-2.5 border-r border-slate-200 w-12 text-center">HMB</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-blue-50/50">Plafon</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-blue-50/50">Nilai CKPN</th>
+            <th class="px-3 py-2.5 border-r border-slate-200 w-28 text-right bg-emerald-50/50">Baki Debet M-1</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-emerald-50/50">Baki Debet</th>
+            <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-cyan-50/50">Saldo Bank</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-orange-50/50">T. Pokok</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-orange-50/50">T. Bunga</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-red-50/50">Totung</th>
@@ -165,7 +158,7 @@
         </thead>
         <tbody id="SD_totalRow" class="sticky top-[33px] font-bold bg-blue-50/95 text-blue-800 border-b-2 border-blue-200 text-[10px] backdrop-blur-sm" style="z-index: 9;"></tbody>
         <tbody id="SD_tbody" class="text-slate-700 divide-y divide-slate-100">
-          <tr><td colspan="36" class="px-4 py-12 text-center text-slate-400 font-medium text-xs">Mencari data debitur otomatis...</td></tr>
+          <tr><td colspan="37" class="px-4 py-12 text-center text-slate-400 font-medium text-xs">Mencari data debitur otomatis...</td></tr>
         </tbody>
       </table>
     </div>
@@ -377,7 +370,22 @@
 <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
 
 <style>
-  .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+  .sd-report-head, .sd-report-head * { box-sizing:border-box; }
+  .sd-report-head { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:15px 18px; margin-bottom:12px; background:#fff; border:1px solid #dbe4ef; border-radius:16px; box-shadow:0 8px 24px rgba(15,23,42,.05); }
+  .sd-heading, .sd-head-actions { display:flex; align-items:center; min-width:0; }
+  .sd-heading { gap:12px; }
+  .sd-title-icon { display:grid; place-items:center; flex:0 0 40px; width:40px; height:40px; border-radius:11px; color:#fff; background:#2563eb; box-shadow:0 6px 14px rgba(37,99,235,.18); }
+  .sd-title-icon svg { width:21px; height:21px; }
+  .sd-title-copy { min-width:0; }
+  .sd-title-copy h1 { margin:0; color:#172033; font-size:20px; line-height:1.2; font-weight:800; letter-spacing:-.02em; }
+  .sd-title-copy p { margin:4px 0 0; overflow:hidden; color:#64748b; font-size:11px; line-height:1.35; text-overflow:ellipsis; white-space:nowrap; }
+  .sd-head-actions { gap:8px; flex:0 0 auto; }
+  .sd-export-btn { display:grid; place-items:center; width:38px; height:38px; padding:0; border:0; border-radius:10px; color:#fff; background:#059669; cursor:pointer; box-shadow:0 5px 12px rgba(5,150,105,.18); transition:background .15s ease, transform .15s ease; }
+  .sd-export-btn:hover { background:#047857; transform:translateY(-1px); }
+  .sd-export-btn svg { width:17px; height:17px; }
+
+  .custom-scrollbar { scrollbar-width:thin; scrollbar-color:#94a3b8 transparent; }
+  .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
@@ -409,6 +417,47 @@
   .animate-slide-up { animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
   @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
   .cursor-help { cursor: help; }
+
+  /* Table shell responsive: identitas tetap freeze, data tetap dapat digeser. */
+  #SD_root { height:calc(100dvh - 64px); min-height:0; overflow:hidden; }
+  #SD_tableContainer { min-height:0; overflow:auto; overscroll-behavior:contain; isolation:isolate; -webkit-overflow-scrolling:touch; }
+  #SD_table { width:max-content; min-width:1450px; table-layout:fixed; }
+  #SD_table thead th { position:sticky; top:0; z-index:10; background:#f5f7fa !important; color:#475569 !important; border-color:#dbe3ec !important; }
+  #SD_totalRow { background:#eef3f8 !important; color:#334155 !important; }
+  #SD_totalRow td { background:#eef3f8 !important; color:#334155 !important; border-color:#d5dee9 !important; }
+  #SD_tbody td { background:#fff; border-color:#edf1f5 !important; background-clip:padding-box; }
+  #SD_tbody tr:nth-child(even) td { background:#fbfcfd; }
+  #SD_tbody tr:hover td { background:#f5f8fb !important; }
+  #SD_tbody tr:hover td.sd-col-kc,
+  #SD_tbody tr:hover td.sd-col-rek,
+  #SD_tbody tr:hover td.sd-col-nas { background:#f5f8fb !important; filter:none; }
+  #SD_table .sd-col-kc,
+  #SD_table .sd-col-rek,
+  #SD_table .sd-col-nas { background-clip:padding-box; }
+  #SD_tableContainer { scrollbar-width:thin; scrollbar-color:#94a3b8 transparent; }
+  #SD_tableContainer::-webkit-scrollbar { width:4px; height:4px; }
+  #SD_tableContainer::-webkit-scrollbar-track { background:#f8fafc; }
+  #SD_tableContainer::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:999px; }
+  #SD_panelFilter { display:none; }
+  @media (max-width:767px) {
+    #SD_root { height:calc(100dvh - 54px); padding:8px; }
+    .sd-report-head { gap:10px; padding:11px 12px; margin-bottom:8px; border-radius:14px; }
+    .sd-heading { gap:9px; }
+    .sd-title-icon { flex-basis:36px; width:36px; height:36px; border-radius:10px; }
+    .sd-title-icon svg { width:19px; height:19px; }
+    .sd-title-copy h1 { font-size:15px; }
+    .sd-title-copy p { margin-top:3px; font-size:9px; }
+    .sd-export-btn { width:36px; height:36px; border-radius:9px; }
+    #SD_table { min-width:1120px; }
+    #SD_table th, #SD_table td { padding:5px 6px; font-size:9px; }
+    #SD_table .sd-col-kc,
+    #SD_table .sd-col-rek { display:none !important; }
+    #SD_table .sd-col-nas { left:0 !important; width:145px; min-width:145px; max-width:145px; }
+    #SD_table thead th.sd-col-nas { z-index:16 !important; }
+    #SD_totalRow { top:30px !important; }
+    #SD_modalKomitmen { padding:8px; }
+    #SD_modalKomitmen > div { max-height:calc(100dvh - 16px); border-radius:14px; }
+  }
 </style>
 
 <script>
@@ -420,6 +469,7 @@
   let tsKankas, tsKecamatan, tsKelurahan, tsModalAO, tsKolek;
   let isUpdatingDependent = false; 
   let searchTimeout = null;
+  let SD_requestController = null;
 
   const cut = (s, n) => { s = String(s || ''); return s.length <= n ? s : (s.slice(0, n).trimEnd() + '…'); };
 
@@ -431,22 +481,55 @@
       return `${year}-${month}-${day}`;
   }
 
-  document.getElementById('SD_btnToggleFilter').addEventListener('click', () => {
-      const panel = document.getElementById('SD_panelFilter');
-      const icon = document.getElementById('SD_iconToggle');
-      if (panel.style.display === 'none') {
-          panel.style.display = 'block';
-          setTimeout(() => { panel.style.opacity = '1'; panel.style.transform = 'translateY(0)'; }, 10);
-          icon.classList.remove('rotate-180');
-      } else {
-          panel.style.opacity = '0';
-          panel.style.transform = 'translateY(-10px)';
-          icon.classList.add('rotate-180');
-          setTimeout(() => { panel.style.display = 'none'; }, 300);
-      }
-  });
+  function SD_mountNavbarFilter() {
+      const target = document.getElementById('searchDebiturNavbarFilterFields');
+      const source = document.getElementById('SD_panelFilter');
+      if (!target || !source || source.dataset.mounted === '1') return;
+
+      const grid = source.firstElementChild;
+      if (!grid) return;
+
+      const closing = document.getElementById('SD_closing_date')?.closest('.flex.flex-col');
+      const harian = document.getElementById('SD_harian_date')?.closest('.flex.flex-col');
+      [closing, harian].filter(Boolean).reverse().forEach(field => {
+          field.classList.add('dashboard-navbar-filter__field');
+          target.prepend(field);
+      });
+
+      Array.from(grid.children).forEach(field => {
+          field.classList.add('dashboard-navbar-filter__field');
+          target.appendChild(field);
+      });
+
+      source.dataset.mounted = '1';
+      source.remove();
+  }
+
+  function SD_bindNavbarFilter() {
+      const panel = document.getElementById('searchDebiturNavbarFilterPanel');
+      const toggle = document.getElementById('searchDebiturNavbarFilterToggle');
+      const close = document.getElementById('searchDebiturNavbarFilterClose');
+      if (!panel || !toggle || toggle.dataset.bound === '1') return;
+      const setOpen = open => {
+          panel.classList.toggle('hidden', !open);
+          panel.classList.toggle('flex', open);
+          toggle.classList.toggle('is-active', open);
+          toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      };
+      toggle.addEventListener('click', event => {
+          event.stopPropagation();
+          setOpen(panel.classList.contains('hidden'));
+      });
+      close?.addEventListener('click', () => setOpen(false));
+      document.addEventListener('click', event => {
+          if (!panel.contains(event.target) && !toggle.contains(event.target)) setOpen(false);
+      });
+      toggle.dataset.bound = '1';
+  }
 
   window.addEventListener('DOMContentLoaded', async () => {
+      SD_mountNavbarFilter();
+      SD_bindNavbarFilter();
       // SET DEFAULT TANGGAL HARIAN & CLOSING (MENGGUNAKAN LOCAL TIME)
       const tglSkrg = new Date();
       const akhirBulanLalu = new Date(tglSkrg.getFullYear(), tglSkrg.getMonth(), 0);
@@ -608,6 +691,12 @@
       const loading = document.getElementById('SD_loading');
       loading.classList.remove('hidden');
 
+      // Jangan biarkan request lama menumpuk saat user mengetik atau mengganti
+      // filter dengan cepat. Request terakhir saja yang boleh mengisi tabel.
+      SD_requestController?.abort();
+      const requestController = new AbortController();
+      SD_requestController = requestController;
+
       const user = (window.getUser && window.getUser()) || JSON.parse(localStorage.getItem('app_user')) || {};
       const uKodeLogin = String(user?.kode || user?.kode_kantor || '000').padStart(3,'0');
 
@@ -625,26 +714,33 @@
       };
 
       try {
-          const res = await fetch('./api/flow_par/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          const res = await fetch('./api/flow_par/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), signal: requestController.signal });
           const json = await res.json();
           if (json.status === 200 && json.data) {
               renderTableSD(json.data.data); renderTotalRowSD(json.data.summary, json.data.data);
               updateSummarySD(json.data.summary); updatePaginationSD(json.data.pagination);
           } else { throw new Error(json.message); }
       } catch(e) {
-          document.getElementById('SD_tbody').innerHTML = `<tr><td colspan="36" class="px-4 py-12 text-center text-red-500 font-bold">${e.message}</td></tr>`;
-      } finally { loading.classList.add('hidden'); }
+          if (e.name === 'AbortError') return;
+          document.getElementById('SD_tbody').innerHTML = `<tr><td colspan="37" class="px-4 py-12 text-center text-red-500 font-bold">${e.message}</td></tr>`;
+      } finally {
+          if (SD_requestController === requestController) {
+              SD_requestController = null;
+              loading.classList.add('hidden');
+          }
+      }
   }
 
   function renderTotalRowSD(sum, dataList) {
       const el = document.getElementById('SD_totalRow');
       if (!sum || dataList.length === 0) { el.innerHTML = ''; return; }
       
-      let totalPlafon = 0, totalCkpn = 0, totalTotung = 0, totalTab = 0, totalTPokok = 0, totalTBunga = 0;
+      let totalPlafon = 0, totalCkpn = 0, totalBdH1 = 0, totalSaldoBankAct = 0, totalTotung = 0, totalTab = 0, totalTPokok = 0, totalTBunga = 0;
       let sumPokokLalu = 0, sumBungaLalu = 0, sumBayarSkrg = 0, sumNomPTP = 0;
 
       dataList.forEach(d => {
           totalPlafon += Number(d.plafon || 0); totalCkpn += Number(d.nilai_ckpn || 0); 
+          totalBdH1 += Number(d.baki_debet_m1 || 0); totalSaldoBankAct += Number(d.saldo_bank_actual || 0);
           totalTotung += Number(d.totung || 0); totalTab += Number(d.saldo_tabungan || 0);
           totalTPokok += Number(d.tunggakan_pokok || 0); totalTBunga += Number(d.tunggakan_bunga || 0);
           sumPokokLalu += Number(d.pokok_lalu || 0); sumBungaLalu += Number(d.bunga_lalu || 0);
@@ -660,7 +756,9 @@
           <td colspan="12" class="border-r text-center opacity-30">-</td>
           <td class="px-3 py-2 border-r text-right bg-blue-100/50">${nf.format(totalPlafon)}</td>
           <td class="px-3 py-2 border-r text-right bg-blue-100/50">${nf.format(totalCkpn)}</td>
+          <td class="px-3 py-2 border-r text-right">${nf.format(totalBdH1)}</td>
           <td class="px-3 py-2 border-r text-right">${nf.format(sum.bd_act || 0)}</td>
+          <td class="px-3 py-2 border-r text-right">${nf.format(totalSaldoBankAct)}</td>
           <td class="px-3 py-2 border-r text-right">${nf.format(totalTPokok)}</td>
           <td class="px-3 py-2 border-r text-right">${nf.format(totalTBunga)}</td>
           <td class="px-3 py-2 border-r text-right text-red-700">${nf.format(totalTotung)}</td>
@@ -686,7 +784,7 @@
   function renderTableSD(list) {
       const tbody = document.getElementById('SD_tbody');
       if (!list || list.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="36" class="px-4 py-12 text-center text-slate-400 font-medium">Debitur tidak ditemukan.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="37" class="px-4 py-12 text-center text-slate-400 font-medium">Debitur tidak ditemukan.</td></tr>`;
           return;
       }
       tbody.innerHTML = list.map(d => {
@@ -727,7 +825,9 @@
           <td class="px-3 py-2 border-r text-center">${d.hmb||'0'}</td>
           <td class="px-3 py-2 border-r text-right text-blue-700 font-bold bg-blue-50/20">${nf.format(d.plafon||0)}</td>
           <td class="px-3 py-2 border-r text-right text-blue-700 font-bold bg-blue-50/20">${nf.format(d.nilai_ckpn||0)}</td>
+          <td class="px-3 py-2 border-r text-right text-emerald-700 font-bold bg-emerald-50/20">${nf.format(d.baki_debet_m1||0)}</td>
           <td class="px-3 py-2 border-r text-right text-emerald-700 font-bold bg-emerald-50/20">${nf.format(d.baki_debet||0)}</td>
+          <td class="px-3 py-2 border-r text-right text-cyan-700 font-bold bg-cyan-50/20">${nf.format(d.saldo_bank_actual||0)}</td>
           <td class="px-3 py-2 border-r text-right text-orange-700 font-bold bg-orange-50/20">${nf.format(d.tunggakan_pokok||0)}</td>
           <td class="px-3 py-2 border-r text-right text-orange-700 font-bold bg-orange-50/20">${nf.format(d.tunggakan_bunga||0)}</td>
           <td class="px-3 py-2 border-r text-right text-red-600 font-bold bg-red-50/20">${nf.format(d.totung||0)}</td>
@@ -753,7 +853,12 @@
       }).join('');
   }
 
-  function updateSummarySD(s) { document.getElementById('SD_sumNoa').innerText = nf.format(s.noa || 0); document.getElementById('SD_sumBd').innerText = nf.format(s.bd_act || 0); }
+  function updateSummarySD(s) {
+      const noa = document.getElementById('SD_sumNoa');
+      const bd = document.getElementById('SD_sumBd');
+      if (noa) noa.innerText = nf.format(s.noa || 0);
+      if (bd) bd.innerText = nf.format(s.bd_act || 0);
+  }
   function updatePaginationSD(p) {
       SD_totalPage = p.total_page || 1; SD_currentPage = p.current_page || 1;
       document.getElementById('SD_pageInfo').innerText = `Total: ${nf.format(p.total_data || 0)} Debitur`;
@@ -764,7 +869,7 @@
   window.SD_changePage = (dir) => { let n = SD_currentPage + dir; if (n >= 1 && n <= SD_totalPage) fetchDataSD(n); };
 
   window.SD_exportExcelAll = async function() {
-      const btn = document.querySelector('button[title="Export Excel"]');
+      const btn = document.querySelector('.sd-export-btn');
       const original = btn.innerHTML;
       btn.innerHTML = `<div class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>`;
       try {
@@ -782,8 +887,8 @@
           const res = await fetch('./api/flow_par/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
           const json = await res.json();
           if (json.status === 200 && json.data?.data) {
-              let table = `<table border="1"><thead><tr><th>KANTOR</th><th>REKENING</th><th>NAMA</th><th>ALAMAT</th><th>KANKAS</th><th>AO KREDIT</th><th>KECAMATAN</th><th>KELURAHAN</th><th>PRODUK</th><th>JATUH TEMPO</th><th>KOLEK AWAL</th><th>KOLEK</th><th>DPD</th><th>HMP</th><th>HMB</th><th>PLAFON</th><th>NILAI CKPN</th><th>BAKI DEBET</th><th>T. POKOK</th><th>T. BUNGA</th><th>TOTUNG</th><th>TABUNGAN</th><th>TGL TRX LALU</th><th>POKOK LALU</th><th>BUNGA LALU</th><th>TGL TRX SKRG</th><th>BAYAR SKRG</th><th>STATUS BAYAR</th><th>PIPELINE</th><th>KODE TINDAKAN</th><th>PLAN AO REMEDIAL</th><th>NOM PTP</th><th>TGL PTP</th><th>STATUS BUCKET</th><th>KETERANGAN</th></tr></thead><tbody>`;
-              json.data.data.forEach(d => { table += `<tr><td>${d.kode_cabang||''}</td><td style="mso-number-format:'\\@'">${d.no_rekening||''}</td><td>${d.nama_nasabah||''}</td><td>${d.alamat||''}</td><td>${d.nama_kankas||''}</td><td>${d.nama_ao||''}</td><td>${d.deskripsi_kode_kecamatan||''}</td><td>${d.deskripsi_kode_kelurahan||''}</td><td>${d.kode_produk||''}</td><td>${d.tgl_jatuh_tempo||''}</td><td>${d.kolek_lalu||''}</td><td>${d.kolek||''}</td><td>${d.dpd||'0'}</td><td>${d.hmp||'0'}</td><td>${d.hmb||'0'}</td><td>${d.plafon||'0'}</td><td>${d.nilai_ckpn||'0'}</td><td>${d.baki_debet||'0'}</td><td>${d.tunggakan_pokok||'0'}</td><td>${d.tunggakan_bunga||'0'}</td><td>${d.totung||'0'}</td><td>${d.saldo_tabungan||'0'}</td><td>${d.tgl_trans_lalu||''}</td><td>${d.pokok_lalu||'0'}</td><td>${d.bunga_lalu||'0'}</td><td>${d.tgl_trans_sekarang||''}</td><td>${d.total_bayar_sekarang||'0'}</td><td>${d.status_bayar_berjalan||'-'}</td><td>${d.pipeline||'-'}</td><td>${d.kode_tindakan||'-'}</td><td>${d.plan_ao_remedial||'-'}</td><td>${d.nom_ptp||'0'}</td><td>${d.komitmen_tgl_ptp||'-'}</td><td>${d.status_bucket||'-'}</td><td>${d.keterangan_komitmen||'-'}</td></tr>`; });
+              let table = `<table border="1"><thead><tr><th>KANTOR</th><th>REKENING</th><th>NAMA</th><th>ALAMAT</th><th>KANKAS</th><th>AO KREDIT</th><th>KECAMATAN</th><th>KELURAHAN</th><th>PRODUK</th><th>JATUH TEMPO</th><th>KOLEK AWAL</th><th>KOLEK</th><th>DPD</th><th>HMP</th><th>HMB</th><th>PLAFON</th><th>NILAI CKPN</th><th>BAKI DEBET M-1</th><th>BAKI DEBET</th><th>SALDO BANK</th><th>T. POKOK</th><th>T. BUNGA</th><th>TOTUNG</th><th>TABUNGAN</th><th>TGL TRX LALU</th><th>POKOK LALU</th><th>BUNGA LALU</th><th>TGL TRX SKRG</th><th>BAYAR SKRG</th><th>STATUS BAYAR</th><th>PIPELINE</th><th>KODE TINDAKAN</th><th>PLAN AO REMEDIAL</th><th>NOM PTP</th><th>TGL PTP</th><th>STATUS BUCKET</th><th>KETERANGAN</th></tr></thead><tbody>`;
+              json.data.data.forEach(d => { table += `<tr><td>${d.kode_cabang||''}</td><td style="mso-number-format:'\\@'">${d.no_rekening||''}</td><td>${d.nama_nasabah||''}</td><td>${d.alamat||''}</td><td>${d.nama_kankas||''}</td><td>${d.nama_ao||''}</td><td>${d.deskripsi_kode_kecamatan||''}</td><td>${d.deskripsi_kode_kelurahan||''}</td><td>${d.kode_produk||''}</td><td>${d.tgl_jatuh_tempo||''}</td><td>${d.kolek_lalu||''}</td><td>${d.kolek||''}</td><td>${d.dpd||'0'}</td><td>${d.hmp||'0'}</td><td>${d.hmb||'0'}</td><td>${d.plafon||'0'}</td><td>${d.nilai_ckpn||'0'}</td><td>${d.baki_debet_m1||'0'}</td><td>${d.baki_debet||'0'}</td><td>${d.saldo_bank_actual||'0'}</td><td>${d.tunggakan_pokok||'0'}</td><td>${d.tunggakan_bunga||'0'}</td><td>${d.totung||'0'}</td><td>${d.saldo_tabungan||'0'}</td><td>${d.tgl_trans_lalu||''}</td><td>${d.pokok_lalu||'0'}</td><td>${d.bunga_lalu||'0'}</td><td>${d.tgl_trans_sekarang||''}</td><td>${d.total_bayar_sekarang||'0'}</td><td>${d.status_bayar_berjalan||'-'}</td><td>${d.pipeline||'-'}</td><td>${d.kode_tindakan||'-'}</td><td>${d.plan_ao_remedial||'-'}</td><td>${d.nom_ptp||'0'}</td><td>${d.komitmen_tgl_ptp||'-'}</td><td>${d.status_bucket||'-'}</td><td>${d.keterangan_komitmen||'-'}</td></tr>`; });
               table += `</tbody></table>`;
               const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
               const a = document.createElement('a'); a.href = URL.createObjectURL(blob);

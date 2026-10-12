@@ -1,0 +1,117 @@
+<?php
+require_once __DIR__ . '/response.php';
+require_once __DIR__ . '/JWT.php';
+
+function getAppAuthToken(): string
+{
+    $header = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+    if ($header === '' && function_exists('getallheaders')) {
+        $headers = getallheaders();
+        $header = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    }
+    if ($header === '') $header = (string)($_COOKIE['sso_token'] ?? '');
+    return trim((string)preg_replace('/^Bearer\s+/i', '', trim($header)));
+}
+
+/**
+ * Ambil secret JWT dari environment aaPanel atau .env project.
+ * SSO_JWT_SECRET harus sama dengan secret yang dipakai oleh API SSO.
+ */
+function getAppAuthSecrets(): array
+{
+    $names = ['SSO_JWT_SECRET', 'JWT_SECRET'];
+    $secrets = [];
+    $env = [];
+    $envFile = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . '.env';
+
+    if (is_file($envFile)) {
+        $parsed = parse_ini_file($envFile, false, INI_SCANNER_RAW);
+        if (is_array($parsed)) $env = $parsed;
+    }
+
+    foreach ($names as $name) {
+        $value = getenv($name);
+        if ($value === false || trim((string)$value) === '') $value = $_ENV[$name] ?? ($env[$name] ?? '');
+        if (trim((string)$value) !== '') $secrets[] = trim((string)$value);
+    }
+
+    // Tetap dukung JWT lokal lama bila secret belum dikonfigurasi.
+    $secrets[] = 'your-secret-key';
+    return array_values(array_unique(array_filter($secrets)));
+}
+
+function verifyAppToken(string $token): ?array
+{
+    foreach (getAppAuthSecrets() as $secret) {
+        $decoded = verifyJWT($token, $secret);
+        if (!is_array($decoded)) continue;
+
+        // Token SSO memakai id_peg, sedangkan aplikasi memakai employee_id.
+        $employeeId = trim((string)($decoded['employee_id'] ?? $decoded['id_peg'] ?? $decoded['id'] ?? ''));
+        if ($employeeId === '') continue;
+        $decoded['employee_id'] = $employeeId;
+        return $decoded;
+    }
+    return null;
+}
+
+function ssoWhoami(string $token): ?array
+{
+    $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'report_dpk_sso_auth';
+    $file = $dir . DIRECTORY_SEPARATOR . hash('sha256', $token) . '.json';
+    if (is_file($file) && time() - filemtime($file) <= 300) {
+        $cached = json_decode((string)file_get_contents($file), true);
+        if (is_array($cached) && !empty($cached['employee_id'])) return $cached;
+    }
+    $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+    $local = strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false;
+    $base = getenv('SSO_API_BASE') ?: ($local ? 'http://localhost/rest_api_sso' : 'https://apisso.bkkjateng.co.id');
+    $url = rtrim($base, '/') . '/api/auth/whoami';
+    $body = false; $status = 0;
+    if (function_exists('curl_init')) {
+        $curl = curl_init($url);
+        curl_setopt_array($curl, [
+            CURLOPT_RETURNTRANSFER=>true, CURLOPT_CONNECTTIMEOUT=>3, CURLOPT_TIMEOUT=>8,
+            CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$token, 'Accept: application/json'],
+        ]);
+        $body = curl_exec($curl);
+        $status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+    } else {
+        $context = stream_context_create(['http'=>[
+            'method'=>'GET','timeout'=>8,'ignore_errors'=>true,
+            'header'=>"Authorization: Bearer {$token}\r\nAccept: application/json\r\n",
+        ]]);
+        $body = @file_get_contents($url, false, $context);
+        if (!empty($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $match)) $status = (int)$match[1];
+    }
+    if ($status !== 200 || !is_string($body)) return null;
+    $json = json_decode($body, true);
+    $user = is_array($json['data'] ?? null) ? $json['data'] : null;
+    if (!$user || empty($user['employee_id'])) return null;
+    if (!is_dir($dir)) @mkdir($dir, 0775, true);
+    @file_put_contents($file, json_encode($user));
+    return $user;
+}
+
+function requireAppAuth(): array
+{
+    // Cookie SSO dapat lebih baru daripada token LocalStorage yang dikirim lewat
+    // Authorization. Coba keduanya agar token lama tidak menutupi sesi yang valid.
+    $cookieToken = trim((string)preg_replace('/^Bearer\s+/i', '', (string)($_COOKIE['sso_token'] ?? '')));
+    $headerToken = getAppAuthToken();
+    $tokens = array_values(array_unique(array_filter([$cookieToken, $headerToken])));
+
+    if (!$tokens) sendResponse(401, 'Token tidak ditemukan. Silakan login kembali.');
+
+    foreach ($tokens as $token) {
+        $local = verifyAppToken($token);
+        if (is_array($local) && !empty($local['employee_id'])) return $local;
+    }
+    foreach ($tokens as $token) {
+        $sso = ssoWhoami($token);
+        if (is_array($sso) && !empty($sso['employee_id'])) return $sso;
+    }
+
+    sendResponse(401, 'Token SSO tidak valid atau sudah kedaluwarsa.');
+}

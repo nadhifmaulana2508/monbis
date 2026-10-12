@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/LapkeuController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 require_once __DIR__ . '/../helpers/response.php';
 
 // Inisialisasi Controller
@@ -24,6 +24,18 @@ switch ($method) {
             // Menampilkan matrix 000-028 + Konsolidasi
             $controller->apiGetNeraca($input);
         } 
+        elseif ($type === 'default_acc_history_date') {
+            $controller->apiGetDefaultAccHistoryDate();
+        }
+        elseif ($type === 'lap_neraca_actual') {
+            $controller->apiGetLapNeracaActual($input);
+        }
+        elseif ($type === 'lap_laba_rugi_actual') {
+            $controller->apiGetLapLabaRugiActual($input);
+        }
+        elseif ($type === 'rekap_lapkeu_actual') {
+            $controller->apiGetRekapLapkeuActual($input);
+        }
         
         // ==========================================
         // ENDPOINT LAPORAN LABA RUGI (4, 5)
@@ -39,11 +51,20 @@ switch ($method) {
         
 
         // 🔥 TAMBAHKAN INI BROKU 🔥
+        } elseif ($type === 'tren_makro_mingguan') {
+            $controller->apiGetTrenMakroMingguan($input);
+
+        } elseif ($type === 'distribusi_makro_kantor') {
+            $controller->apiGetDistribusiMakroKantor($input);
+
         } elseif ($type === 'list_coa') {
             $controller->apiGetCoaList();
 
         } elseif ($type === 'financial_kpi') {
             $controller->apiGetFinancialKPI($input);
+
+        } elseif ($type === 'tv_makro_summary') {
+            $controller->apiGetTvMakroSummary($input);
 
         } elseif ($type === 'summary_perbandingan') {
             $controller->GetSummaryPerbandingan($input);
@@ -65,3 +86,4 @@ switch ($method) {
         sendResponse(405, "Method $method kagak boleh masuk sini!");
         break;
 }
+

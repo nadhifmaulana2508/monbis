@@ -1,6 +1,9 @@
 api/.env
+.env
 data
 api/va
 .htaccess
 docs/*
 !docs/database/
+
+api-tests

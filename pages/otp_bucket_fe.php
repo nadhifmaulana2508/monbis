@@ -88,44 +88,384 @@
       #tableDetailProg th, #tableDetailProg td { padding: 3px 4px; white-space: nowrap; }
       #tableDetailProg thead th { height: 30px; font-size: 8px; }
   }
+  /* ========================================================
+     OTP BUCKET FINAL POLISH - CLEAN, RESPONSIVE, THEMED
+     ======================================================== */
+  :root {
+    --otp-bucket-bg: #f8fafc;
+    --otp-bucket-surface: #ffffff;
+    --otp-bucket-soft: #f8fafc;
+    --otp-bucket-muted-surface: #f1f5f9;
+    --otp-bucket-text: #1e293b;
+    --otp-bucket-muted: #64748b;
+    --otp-bucket-border: #dbe3ee;
+    --otp-bucket-line: #e2e8f0;
+    --otp-bucket-scroll: #94a3b8;
+    --otp-bucket-scroll-track: #eef2f7;
+  }
+
+  :root[data-monbis-theme="dark"] {
+    --otp-bucket-bg: #0f172a;
+    --otp-bucket-surface: #111827;
+    --otp-bucket-soft: #0f172a;
+    --otp-bucket-muted-surface: #1e293b;
+    --otp-bucket-text: #e2e8f0;
+    --otp-bucket-muted: #94a3b8;
+    --otp-bucket-border: #334155;
+    --otp-bucket-line: #263449;
+    --otp-bucket-scroll: #64748b;
+    --otp-bucket-scroll-track: #111827;
+  }
+
+  #otpBucketPage,
+  #otpBucketPage button,
+  #otpBucketPage input,
+  #otpBucketPage select,
+  #modalDetailProg,
+  #modalDetailProg button,
+  #modalDetailProg input,
+  #modalDetailProg select {
+    font-family: Roboto, Arial, system-ui, sans-serif !important;
+  }
+
+  #otpBucketPage {
+    height: calc(100dvh - 72px) !important;
+    min-height: 360px !important;
+    padding: 8px !important;
+    color: var(--otp-bucket-text) !important;
+    background: var(--otp-bucket-bg) !important;
+    color-scheme: light;
+  }
+
+  :root[data-monbis-theme="dark"] #otpBucketPage,
+  :root[data-monbis-theme="dark"] #modalDetailProg { color-scheme: dark; }
+
+  #otpBucketPage .otp-bucket-page-head {
+    min-height: 54px;
+    padding: 9px 12px;
+    border: 1px solid var(--otp-bucket-border);
+    border-radius: 14px;
+    background: var(--otp-bucket-surface);
+    box-shadow: 0 1px 3px rgba(15,23,42,.05);
+  }
+  #otpBucketPage .otp-bucket-page-icon {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #2563eb !important;
+  }
+  #otpBucketPage .otp-bucket-page-subtitle { color: var(--otp-bucket-muted) !important; }
+  #otpBucketPage .otp-bucket-page-subtitle { display: none !important; }
+  #otpBucketPage .otp-bucket-page-head h1 { color: var(--otp-bucket-text) !important; }
+  #otpBucketPage .otp-bucket-page-actions { margin-left: auto; }
+  #otpBucketPage .bucket-kpp-toggle,
+  #otpBucketPage .bucket-view-button,
+  #otpBucketPage .otp-bucket-info-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--otp-bucket-border);
+    border-radius: 9px;
+    background: var(--otp-bucket-surface);
+    color: var(--otp-bucket-text);
+    transition: border-color .15s ease, background-color .15s ease, color .15s ease, transform .15s ease;
+  }
+  #otpBucketPage .bucket-kpp-toggle {
+    height: 36px;
+    gap: 6px;
+    padding: 0 9px;
+    font-size: 10px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  #otpBucketPage .bucket-kpp-toggle input {
+    width: 13px;
+    height: 13px;
+    margin: 0;
+    accent-color: #2563eb;
+  }
+  #otpBucketPage .bucket-view-button {
+    color: #2563eb;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+  }
+  #otpBucketPage .bucket-kpp-toggle:hover,
+  #otpBucketPage .bucket-view-button:hover,
+  #otpBucketPage .otp-bucket-info-button:hover { border-color: #94a3b8; transform: translateY(-1px); }
+  #otpBucketPage .bucket-export-button {
+    background: #059669 !important;
+    border-color: #059669 !important;
+    color: #fff !important;
+  }
+  #otpBucketPage .bucket-export-button:hover { background: #047857 !important; }
+  #otpBucketPage .otp-bucket-info-button {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 900;
+    color: #2563eb;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    cursor: pointer;
+  }
+  #otpBucketPage.is-compact #tabelProgKredit th,
+  #otpBucketPage.is-compact #tabelProgKredit td { padding-top: 4px !important; padding-bottom: 4px !important; }
+
+  .otp-bucket-help-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10050;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .otp-bucket-help-modal.is-open { display: flex; }
+  .otp-bucket-help-backdrop {
+    position: absolute;
+    inset: 0;
+    border: 0;
+    background: rgba(15, 23, 42, .58);
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+  }
+  .otp-bucket-help-card {
+    position: relative;
+    z-index: 1;
+    width: min(540px, calc(100vw - 24px));
+    max-height: calc(100dvh - 32px);
+    overflow: auto;
+    border: 1px solid var(--otp-bucket-border);
+    border-radius: 16px;
+    background: var(--otp-bucket-surface);
+    color: var(--otp-bucket-text);
+    box-shadow: 0 24px 70px rgba(15, 23, 42, .24);
+    font-family: Roboto, Arial, system-ui, sans-serif;
+  }
+  .otp-bucket-help-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--otp-bucket-line);
+  }
+  .otp-bucket-help-title-wrap { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .otp-bucket-help-icon {
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #2563eb;
+    font-size: 16px;
+    font-weight: 900;
+    flex: 0 0 auto;
+  }
+  .otp-bucket-help-title { margin: 0; font-size: 15px; font-weight: 800; line-height: 1.2; }
+  .otp-bucket-help-caption { margin: 3px 0 0; color: var(--otp-bucket-muted); font-size: 10px; line-height: 1.35; }
+  .otp-bucket-help-close {
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--otp-bucket-border);
+    border-radius: 8px;
+    background: var(--otp-bucket-soft);
+    color: var(--otp-bucket-muted);
+    font-size: 19px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .otp-bucket-help-body { padding: 16px 18px 18px; font-size: 12px; line-height: 1.55; }
+  .otp-bucket-help-body p { margin: 0 0 10px; }
+  .otp-bucket-help-list { margin: 0; padding-left: 20px; }
+  .otp-bucket-help-list li { margin: 7px 0; }
+  .otp-bucket-help-note {
+    margin-top: 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--otp-bucket-border);
+    border-radius: 10px;
+    background: var(--otp-bucket-soft);
+    color: var(--otp-bucket-text);
+    font-weight: 700;
+  }
+  @media (max-width: 767px) {
+    #otpBucketPage .otp-bucket-page-actions { gap: 4px; }
+    #otpBucketPage .bucket-kpp-toggle { height: 30px; padding: 0 6px; font-size: 9px; }
+    #otpBucketPage .bucket-view-button,
+    #otpBucketPage .bucket-export-button { width: 30px !important; height: 30px !important; }
+    #otpBucketPage .otp-bucket-info-button { width: 17px; height: 17px; font-size: 10px; }
+    .otp-bucket-help-modal { align-items: flex-end; padding: 0; }
+    .otp-bucket-help-card { width: 100%; max-height: min(88dvh, 620px); border-radius: 16px 16px 0 0; }
+  }
+  #otpBucketPage .bucket-export-button {
+    border: 1px solid var(--otp-bucket-border);
+    background: #059669 !important;
+    color: #fff;
+    box-shadow: 0 5px 12px rgba(15,23,42,.12);
+    transition: transform .15s ease, background .15s ease;
+  }
+  #otpBucketPage .bucket-export-button:hover { background: #047857 !important; transform: translateY(-1px); }
+
+  #otpBucketPage > .flex-1 {
+    min-height: 0 !important;
+    border-color: var(--otp-bucket-border) !important;
+    background: var(--otp-bucket-surface) !important;
+    box-shadow: 0 1px 3px rgba(15,23,42,.05) !important;
+  }
+  #otpBucketPage #progScroller {
+    min-height: 0;
+    flex: 1 1 auto;
+    border-color: var(--otp-bucket-line);
+    background: var(--otp-bucket-surface);
+    scrollbar-width: thin;
+    scrollbar-color: var(--otp-bucket-scroll) var(--otp-bucket-scroll-track);
+    -webkit-overflow-scrolling: touch;
+  }
+  #otpBucketPage #progScroller::-webkit-scrollbar,
+  #modalDetailProg ::-webkit-scrollbar { width: 5px; height: 5px; }
+  #otpBucketPage #progScroller::-webkit-scrollbar-track,
+  #modalDetailProg ::-webkit-scrollbar-track { background: var(--otp-bucket-scroll-track); border-radius: 999px; }
+  #otpBucketPage #progScroller::-webkit-scrollbar-thumb,
+  #modalDetailProg ::-webkit-scrollbar-thumb { background: var(--otp-bucket-scroll); border-radius: 999px; }
+  #otpBucketPage #progScroller::-webkit-scrollbar-button,
+  #modalDetailProg ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+
+  #tabelProgKredit,
+  #tableDetailProg {
+    color: var(--otp-bucket-text) !important;
+    border-color: var(--otp-bucket-line) !important;
+  }
+  #tabelProgKredit thead th,
+  #tableDetailProg thead th {
+    background: var(--otp-bucket-muted-surface) !important;
+    color: var(--otp-bucket-text) !important;
+    border-color: var(--otp-bucket-line) !important;
+    box-shadow: inset -1px 0 0 var(--otp-bucket-line), inset 0 1px 0 var(--otp-bucket-line) !important;
+  }
+  #tabelProgKredit tbody td,
+  #tableDetailProg tbody td {
+    background: var(--otp-bucket-surface) !important;
+    color: var(--otp-bucket-text) !important;
+    border-color: var(--otp-bucket-line) !important;
+  }
+  #tabelProgKredit tbody tr:hover td,
+  #tableDetailProg tbody tr:hover td { background: var(--otp-bucket-soft) !important; }
+  #tabelProgKredit .sticky-total td { background: var(--otp-bucket-muted-surface) !important; color: var(--otp-bucket-text) !important; border-color: var(--otp-bucket-border) !important; }
+  #tabelProgKredit .col-kategori,
+  #tabelProgKredit .sticky-total td.col-kategori { background: var(--otp-bucket-surface) !important; color: var(--otp-bucket-text) !important; }
+  #tabelProgKredit thead .col-kategori { background: var(--otp-bucket-muted-surface) !important; }
+  #tabelProgKredit thead,
+  #tabelProgKredit thead tr,
+  #tabelProgKredit thead th,
+  #tabelProgKredit thead th.col-kategori {
+    background: var(--otp-bucket-muted-surface) !important;
+    color: var(--otp-bucket-text) !important;
+  }
+  #tabelProgKredit #totalProg td,
+  #tabelProgKredit #totalProg td.col-kategori {
+    background: var(--otp-bucket-muted-surface) !important;
+    color: var(--otp-bucket-text) !important;
+    border-color: var(--otp-bucket-line) !important;
+  }
+  #tabelProgKredit #totalProg td[class*="border-b-"] {
+    border-bottom-color: var(--otp-bucket-line) !important;
+  }
+
+  /* Neutral palette: status tetap dibedakan oleh teks/statusnya, bukan warna-warni. */
+  #tabelProgKredit [class*="text-blue-"],
+  #tabelProgKredit [class*="text-emerald-"],
+  #tabelProgKredit [class*="text-teal-"],
+  #tabelProgKredit [class*="text-orange-"],
+  #tabelProgKredit [class*="text-red-"],
+  #tabelProgKredit [class*="text-indigo-"],
+  #tabelProgKredit [class*="text-slate-"],
+  #tableDetailProg [class*="text-blue-"],
+  #tableDetailProg [class*="text-emerald-"],
+  #tableDetailProg [class*="text-teal-"],
+  #tableDetailProg [class*="text-amber-"],
+  #tableDetailProg [class*="text-red-"],
+  #tableDetailProg [class*="text-indigo-"],
+  #tableDetailProg [class*="text-slate-"] { color: var(--otp-bucket-text) !important; }
+  #tableDetailProg [class*="bg-emerald-"],
+  #tableDetailProg [class*="bg-teal-"],
+  #tableDetailProg [class*="bg-amber-"],
+  #tableDetailProg [class*="bg-red-"],
+  #tableDetailProg [class*="bg-indigo-"],
+  #tableDetailProg [class*="bg-slate-"] { background: var(--otp-bucket-muted-surface) !important; color: var(--otp-bucket-text) !important; }
+
+  #modalDetailProg > div:last-child {
+    border: 1px solid var(--otp-bucket-border);
+    background: var(--otp-bucket-surface) !important;
+  }
+  #modalDetailProg .bg-white,
+  #modalDetailProg .bg-slate-50 { background: var(--otp-bucket-surface) !important; }
+  #modalDetailProg .text-slate-500,
+  #modalDetailProg .text-slate-600 { color: var(--otp-bucket-muted) !important; }
+  #modalDetailProg input,
+  #modalDetailProg select { border-color: var(--otp-bucket-border) !important; background: var(--otp-bucket-surface) !important; color: var(--otp-bucket-text) !important; }
+
+  #legacyProgFilter { display: none !important; }
+
+  @media (max-width: 767px) {
+    #otpBucketPage { height: calc(100dvh - 54px) !important; min-height: 320px !important; padding: 5px !important; }
+    #otpBucketPage .otp-bucket-page-head { min-height: 48px; padding: 7px 8px; border-radius: 11px; }
+    #otpBucketPage .otp-bucket-page-head h1 { font-size: 13px !important; gap: 6px !important; }
+    #otpBucketPage .otp-bucket-page-icon { width: 28px; height: 28px; border-radius: 8px; }
+    #otpBucketPage .otp-bucket-page-icon svg { width: 16px; height: 16px; }
+    #otpBucketPage .otp-bucket-page-subtitle { margin-left: 34px; font-size: 7px !important; }
+    #otpBucketPage #progScroller { overflow: auto !important; }
+    #tabelProgKredit { min-width: 860px !important; width: 860px !important; }
+    #tableDetailProg { min-width: 1180px !important; }
+    #modalDetailProg > div:last-child { width: 100%; height: 94dvh; max-height: 94dvh; border-radius: 16px 16px 0 0; }
+  }
 </style>
 
-<div class="max-w-[1600px] mx-auto px-2 sm:px-3 md:px-4 py-3 md:py-4 h-[calc(100vh-64px)] sm:h-[calc(100vh-80px)] md:h-[calc(100vh-120px)] flex flex-col relative z-10">
+<div id="otpBucketPage" class="max-w-[1600px] mx-auto px-2 sm:px-3 md:px-4 py-3 md:py-4 h-[calc(100vh-64px)] sm:h-[calc(100vh-80px)] md:h-[calc(100vh-120px)] flex flex-col relative z-10">
   
-  <div class="flex flex-col xl:flex-row xl:items-end justify-between gap-3 mb-4 shrink-0">
-    <div class="flex items-start justify-between w-full xl:w-auto">
+  <div class="otp-bucket-page-head flex flex-col xl:flex-row xl:items-end justify-between gap-3 mb-4 shrink-0">
+    <div class="flex items-center justify-between w-full">
         <div>
             <h1 class="text-lg md:text-2xl font-bold flex items-center gap-2 text-slate-800">
-                <span class="bg-emerald-600 text-white p-1.5 rounded-lg text-sm shadow-sm">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                <span class="otp-bucket-page-icon bg-slate-700 text-white p-1.5 rounded-lg text-sm shadow-sm">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 19V9"></path><path d="M10 19V5"></path><path d="M16 19v-7"></path><path d="M22 19V3"></path></svg>
                 </span> 
-                <span>Rekap OTP Migration</span>
+                <span id="otpBucketTitle" class="truncate">OTP - ALL</span>
+                <button id="otpBucketHelpButton" type="button" class="otp-bucket-info-button" onclick="toggleOtpBucketHelp()" aria-label="Buka informasi OTP" aria-expanded="false" title="Informasi tindak lanjut OTP">i</button>
             </h1>
-             <p class="text-[8px] md:text-xs text-rose-600 font-bold italic ml-8 md:ml-[42px] leading-tight">
+             <p class="otp-bucket-page-subtitle text-[8px] md:text-xs text-slate-500 font-medium ml-8 md:ml-[42px] leading-tight truncate">
                  *Berdasarkan Tanggal Jatuh Tempo
               </p>
         </div>
 
-        <button id="btnToggleProgFilter" class="xl:hidden flex items-center gap-1.5 px-3 py-1.5 border border-gray-300 rounded-lg bg-white text-xs font-semibold text-slate-700 shadow-sm transition">
-            Filter
-        </button>
+        <div class="otp-bucket-page-actions flex items-center gap-1.5">
+            <button type="button" onclick="exportProgExcel()" class="bucket-export-button btn-icon h-9 w-9 rounded-lg flex items-center justify-center" title="Export Excel Rekap" aria-label="Export Excel Rekap">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 20h14"></path></svg>
+            </button>
+        </div>
     </div>
 
-    <div id="panelFilterProg" class="hidden xl:block bg-white border border-gray-200 rounded-xl p-3 shadow-sm w-full xl:w-auto transition-all">
-        <form id="formFilterProg" class="flex flex-col md:flex-row items-end gap-2 md:gap-3 w-full">
+    <div id="legacyProgFilter" class="hidden bg-white border border-gray-200 rounded-xl p-3 shadow-sm w-full xl:w-auto transition-all">
+        <form id="legacyFormFilterProg" class="flex flex-col md:flex-row items-end gap-2 md:gap-3 w-full">
             <div class="flex flex-col w-full md:w-[120px]">
                 <label class="text-[8px] md:text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">CLOSING (M-1)</label>
-                <input type="date" id="closing_date_otp" class="inp shadow-sm text-slate-700" required>
+                <input type="date" id="legacy_closing_date_otp" class="inp shadow-sm text-slate-700" required>
             </div>
 
             <div class="flex flex-col w-full md:w-[120px]">
                 <label class="text-[8px] md:text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">HARIAN (ACTUAL)</label>
-                <input type="date" id="harian_date_otp" class="inp shadow-sm text-slate-700" required>
+                <input type="date" id="legacy_harian_date_otp" class="inp shadow-sm text-slate-700" required>
             </div>
 
             <div class="flex flex-col w-full md:w-[100px]">
                 <label class="text-[8px] md:text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">BUCKET</label>
-                <select id="type_bucket_otp" class="inp text-slate-700 shadow-sm" onchange="triggerAutoRefresh()">
+                <select id="legacy_type_bucket_otp" class="inp text-slate-700 shadow-sm" onchange="triggerAutoRefresh()">
                     <option value="fe_all">ALL</option>
                     <option value="31-60">31 - 60</option>
                     <option value="61-90">61 - 90</option>
@@ -134,14 +474,14 @@
 
             <div class="flex flex-col w-full md:w-[150px]" id="wrap-cabang">
                 <label class="text-[8px] md:text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">CABANG</label>
-                <select id="opt_kantor_otp" class="inp text-slate-700 shadow-sm truncate" onchange="handleCabangChange()">
+                <select id="legacy_opt_kantor_otp" class="inp text-slate-700 shadow-sm truncate" onchange="handleCabangChange()">
                     <option value="">ALL | SEMUA CABANG</option>
                 </select>
             </div>
 
             <div class="flex flex-col w-full md:w-[130px]">
-                <label id="lbl_sub_otp" class="text-[8px] md:text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">KORWIL</label>
-                <select id="opt_sub_otp" class="inp text-slate-700 shadow-sm truncate" onchange="triggerAutoRefresh()">
+                <label id="legacy_lbl_sub_otp" class="text-[8px] md:text-[9px] font-extrabold text-slate-500 uppercase ml-1 mb-1 tracking-wider">KORWIL</label>
+                <select id="legacy_opt_sub_otp" class="inp text-slate-700 shadow-sm truncate" onchange="triggerAutoRefresh()">
                     <option value="">ALL KORWIL</option>
                     <option value="SEMARANG">SEMARANG</option>
                     <option value="SOLO">SOLO</option>
@@ -188,6 +528,32 @@
         <tbody id="totalProg"></tbody>
         <tbody id="bodyProg"></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<div id="otpBucketHelpModal" class="otp-bucket-help-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="otpBucketHelpTitle">
+  <button type="button" class="otp-bucket-help-backdrop" onclick="toggleOtpBucketHelp(false)" aria-label="Tutup informasi OTP"></button>
+  <div class="otp-bucket-help-card">
+    <div class="otp-bucket-help-head">
+      <div class="otp-bucket-help-title-wrap">
+        <span class="otp-bucket-help-icon" aria-hidden="true">i</span>
+        <div>
+          <h2 id="otpBucketHelpTitle" class="otp-bucket-help-title">Informasi OTP - ALL</h2>
+          <p class="otp-bucket-help-caption">Panduan tindak lanjut AO remedial</p>
+        </div>
+      </div>
+      <button type="button" class="otp-bucket-help-close" onclick="toggleOtpBucketHelp(false)" aria-label="Tutup">&times;</button>
+    </div>
+    <div class="otp-bucket-help-body">
+      <p><strong>Tujuan monitoring:</strong> membantu tim AO remedial menemukan debitur yang perlu segera ditindaklanjuti sebelum masuk atau memburuk ke bucket berikutnya.</p>
+      <ol class="otp-bucket-help-list">
+        <li><strong>BTC (Lancar):</strong> pantau pembayaran debitur yang kembali lancar dan pastikan tidak terlambat pada jatuh tempo berikutnya.</li>
+        <li><strong>Backflow:</strong> prioritaskan konfirmasi pembayaran dan lakukan reminder agar debitur tidak kembali ke bucket tunggakan.</li>
+        <li><strong>Stay:</strong> segera susun rencana kunjungan atau penagihan bersama AO remedial karena debitur masih berada di bucket yang sama.</li>
+        <li><strong>Migrasi:</strong> lakukan eskalasi dan penanganan intensif karena kualitas debitur sudah memburuk ke bucket yang lebih tinggi.</li>
+      </ol>
+      <div class="otp-bucket-help-note">Klik nominal pada setiap status untuk membuka detail debitur, lalu koordinasikan tindak lanjut dengan AO remedial secepatnya.</div>
     </div>
   </div>
 </div>
@@ -289,11 +655,80 @@
   let currentProgPage = 1;
   let currentProgTotalPages = 1;
 
-  document.getElementById('btnToggleProgFilter').addEventListener('click', function() {
-      document.getElementById('panelFilterProg').classList.toggle('hidden');
+  let bucketFilterOpen = false;
+
+  function toggleOtpBucketHelp(open) {
+      const modal = document.getElementById('otpBucketHelpModal');
+      const button = document.getElementById('otpBucketHelpButton');
+      if (!modal) return;
+      const shouldOpen = typeof open === 'boolean' ? open : !modal.classList.contains('is-open');
+      modal.classList.toggle('is-open', shouldOpen);
+      modal.setAttribute('aria-hidden', String(!shouldOpen));
+      button?.setAttribute('aria-expanded', String(shouldOpen));
+      document.body.classList.toggle('otp-bucket-help-open', shouldOpen);
+  }
+
+  function toggleBucketTableDensity() {
+      const page = document.getElementById('otpBucketPage');
+      const button = document.getElementById('btnBucketDensity');
+      if (!page) return;
+      const compact = page.classList.toggle('is-compact');
+      button?.setAttribute('aria-pressed', String(compact));
+      button?.setAttribute('title', compact ? 'Tampilan normal' : 'Tampilan ringkas');
+      button?.setAttribute('aria-label', compact ? 'Tampilan normal' : 'Tampilan ringkas');
+  }
+
+  function updateOtpBucketTitle() {
+      const bucket = document.getElementById('type_bucket_otp')?.value || 'fe_all';
+      const label = bucket === '31-60' ? '31 - 60' : bucket === '61-90' ? '61 - 90' : 'ALL';
+      const title = document.getElementById('otpBucketTitle');
+      const helpTitle = document.getElementById('otpBucketHelpTitle');
+      if (title) title.textContent = `OTP - ${label}`;
+      if (helpTitle) helpTitle.textContent = `Informasi OTP - ${label}`;
+  }
+
+  document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') toggleOtpBucketHelp(false);
   });
 
+  function applyBucketFilterState() {
+      const panel = document.getElementById('otpBucketNavbarFilterPanel');
+      const toggle = document.getElementById('otpBucketNavbarFilterToggle');
+      if (!panel) return;
+      panel.classList.toggle('hidden', !bucketFilterOpen);
+      panel.classList.toggle('flex', bucketFilterOpen);
+      toggle?.classList.toggle('is-active', bucketFilterOpen);
+      toggle?.setAttribute('aria-expanded', String(bucketFilterOpen));
+  }
+
+  function bindBucketNavbarFilter() {
+      const panel = document.getElementById('otpBucketNavbarFilterPanel');
+      const toggle = document.getElementById('otpBucketNavbarFilterToggle');
+      const close = document.getElementById('otpBucketNavbarFilterClose');
+      if (!panel || !toggle || toggle.dataset.bound === '1') return;
+      toggle.dataset.bound = '1';
+      toggle.addEventListener('click', () => {
+          bucketFilterOpen = !bucketFilterOpen;
+          applyBucketFilterState();
+      });
+      close?.addEventListener('click', () => {
+          bucketFilterOpen = false;
+          applyBucketFilterState();
+      });
+      document.addEventListener('click', event => {
+          if (bucketFilterOpen && !panel.contains(event.target) && !toggle.contains(event.target)) {
+              bucketFilterOpen = false;
+              applyBucketFilterState();
+          }
+      });
+  }
+
   window.addEventListener('DOMContentLoaded', async () => {
+    bindBucketNavbarFilter();
+    applyBucketFilterState();
+    const nominal = document.getElementById('opt_nominal_otp_bucket');
+    if (nominal) nominal.value = 'saldo_bank';
+
     const today = new Date();
     document.getElementById('harian_date_otp').value = today.toISOString().split('T')[0];
     
@@ -344,7 +779,10 @@
   }
 
   function triggerAutoRefresh() {
-      if(window.innerWidth < 1280) document.getElementById('panelFilterProg').classList.add('hidden');
+      if(window.innerWidth < 1280) {
+          bucketFilterOpen = false;
+          applyBucketFilterState();
+      }
       fetchProgKredit();
   }
 
@@ -373,13 +811,9 @@
       } catch(err) {}
   }
 
-  document.getElementById('formFilterProg').addEventListener('submit', e => { 
-      e.preventDefault(); 
-      triggerAutoRefresh(); 
-  });
-
   async function fetchProgKredit() {
       const loading = document.getElementById('loadingProg');
+      updateOtpBucketTitle();
       const cabangVal = document.getElementById('opt_kantor_otp').value;
       const subVal = document.getElementById('opt_sub_otp').value;
       
@@ -391,7 +825,9 @@
           type: "otp_fe", 
           closing_date: document.getElementById('closing_date_otp').value,
           harian_date: document.getElementById('harian_date_otp').value,
+          hitung_berdasarkan: document.getElementById('opt_nominal_otp_bucket')?.value === 'baki_debet' ? 'baki_debet' : 'saldo_bank',
           type_bucket: document.getElementById('type_bucket_otp').value,
+          include_127: document.getElementById('chk_127_bucket')?.checked === true,
           kode_kantor: cabangVal,
           korwil: reqKorwil,
           kode_kankas: reqKankas
@@ -574,7 +1010,9 @@
           type: "detail_otp_fe", 
           closing_date: document.getElementById('closing_date_otp').value,
           harian_date: document.getElementById('harian_date_otp').value,
+          hitung_berdasarkan: document.getElementById('opt_nominal_otp_bucket')?.value === 'baki_debet' ? 'baki_debet' : 'saldo_bank',
           type_bucket: typeB,
+          include_127: document.getElementById('chk_127_bucket')?.checked === true,
           kode_kantor: cabangVal,
           korwil: reqKorwil,
           kode_kankas: reqKankas,

@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/KodeController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 $controller = new KodeController($pdo);
 
@@ -24,7 +24,7 @@ switch ($method) {
             $controller->getKodeAOKredit($input);
         }elseif ($input['type'] == 'kode_kankas') { // Tambahkan kondisi ini
             $controller->getKodeKankas($input);
-        }elseif ($input['type'] == "kecamatan" or "kelurahan") { // Tambahkan kondisi ini
+        }elseif (in_array($input['type'], ['kecamatan', 'kelurahan'], true)) { // Tambahkan kondisi ini
             $controller->getListWilayahDropdown($input);
 
         } else {
@@ -36,3 +36,4 @@ switch ($method) {
         sendResponse(405, "Metode tidak diizinkan");
         break;
 }
+

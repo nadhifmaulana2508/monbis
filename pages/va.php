@@ -3,7 +3,7 @@
 
 <style>
   :root { --primary: #2563eb; --bg: #f8fafc; --text: #334155; }
-  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+  body, .font-sans { font-family: 'Roboto', Arial, sans-serif !important; background: var(--bg); color: var(--text); overflow-x: hidden; }
   .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -15,6 +15,25 @@
   .local-loader { position: absolute; inset: 0; background: rgba(255,255,255,0.7); z-index: 50; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(2px); border-radius: inherit; }
   .local-loader.hidden { display: none; }
   .apexcharts-tooltip { z-index: 99999 !important; background: transparent !important; border: none !important; box-shadow: none !important; }
+  .chart-note { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; background: #eff6ff; color: #1d4ed8; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+  .chart-note-dot { width: 7px; height: 7px; border-radius: 9999px; background: #2563eb; box-shadow: 0 0 0 4px rgba(37,99,235,.14); }
+  .narrative-modal { --narrative-accent:#2563eb; --narrative-soft:#eff6ff; position:fixed; inset:0; z-index:20000; display:flex; align-items:center; justify-content:center; padding:12px; background:rgba(15,23,42,.62); backdrop-filter:blur(6px); }
+  .narrative-modal.hidden { display:none; }
+  .narrative-card { display:flex; flex-direction:column; width:min(680px,calc(100vw - 24px)); max-height:min(88dvh,760px); overflow:hidden; border:1px solid #e2e8f0; border-radius:16px; background:#fff; box-shadow:0 28px 75px rgba(15,23,42,.3); }
+  .narrative-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 14px; border-bottom:1px solid #e2e8f0; background:linear-gradient(180deg,#fff,#f8fafc); }
+  .narrative-title { display:flex; align-items:center; min-width:0; gap:9px; }
+  .narrative-title-icon { display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; flex:0 0 34px; border-radius:9px; background:var(--narrative-soft); color:var(--narrative-accent); }
+  .narrative-title h3 { margin:0; color:#0f172a; font-size:16px; font-weight:900; }
+  .narrative-title p { margin:2px 0 0; color:#64748b; font-size:9px; }
+  .narrative-close { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; border:1px solid #fecaca; border-radius:8px; background:#fff1f2; color:#e11d48; cursor:pointer; }
+  .narrative-body { overflow:auto; padding:12px 14px 15px; }
+  .narrative-content { color:#475569; font-size:13px; line-height:1.55; }
+  .narrative-content p { margin:0; color:#0f172a; font-weight:900; }
+  .narrative-content ul { display:grid; gap:7px; margin:10px 0 0; padding-left:19px; }
+  .narrative-content li { padding-left:3px; }
+  .narrative-info-btn { display:inline-flex; align-items:center; justify-content:center; width:21px; height:21px; flex:0 0 21px; border:1px solid #bfdbfe; border-radius:999px; background:#eff6ff; color:#2563eb; font-size:11px; font-weight:950; cursor:pointer; transition:.15s ease; }
+  .narrative-info-btn:hover { background:#dbeafe; transform:translateY(-1px); }
+  @media (max-width:767px) { .narrative-modal { align-items:flex-end; padding:0; } .narrative-card { width:100%; max-height:88dvh; border-right:0; border-bottom:0; border-left:0; border-radius:16px 16px 0 0; } .narrative-head { padding:10px 11px; } .narrative-body { padding:10px 11px 16px; } }
   @media (max-width: 767px) {
     th { padding: 8px 6px; font-size: 10px; }
     td { padding: 8px 6px; font-size: 11px; }
@@ -35,30 +54,28 @@
           </h1>
           <p class="text-[10px] md:text-xs text-gray-500 mt-0.5 font-medium" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
         </div>
-        <button type="button" onclick="openNarrative()" class="w-7 h-7 flex items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 hover:text-blue-600 hover:border-blue-300 transition-colors shadow-sm" title="Narasi Otomatis">
-          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-        </button>
+        <button type="button" onclick="openNarrative()" class="narrative-info-btn" title="Narasi Otomatis" aria-label="Buka narasi otomatis">i</button>
       </div>
-      <button type="button" id="btnFilterToggle" onclick="toggleFilter()" class="md:hidden flex items-center gap-1.5 bg-white border border-gray-200 px-3 py-1.5 rounded-lg text-sm font-bold text-gray-700 shadow-sm hover:bg-gray-50 active:scale-95 transition-transform">
+      <button type="button" id="btnFilterToggle" onclick="toggleFilter()" class="hidden">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
         <span id="filterToggleLabel">Filter</span>
       </button>
     </div>
-    <form id="formFilterGlobal" class="hidden md:flex flex-col md:flex-row items-end gap-2.5 md:gap-3 bg-white p-2.5 md:p-3 rounded-xl shadow-sm border border-gray-200 w-full md:w-auto">
+    <form id="legacyVaFilterForm" class="hidden">
       <div class="flex w-full md:w-auto gap-2 shrink-0">
         <div class="flex flex-col flex-1 min-w-0 md:w-[130px]">
           <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Closing M-1</label>
-          <input type="date" id="closing_date" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-blue-500 transition-colors font-semibold cursor-pointer w-full bg-transparent" required>
+          <input type="date" id="legacy_va_closing_date" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-blue-500 transition-colors font-semibold cursor-pointer w-full bg-transparent" required>
         </div>
         <div class="flex flex-col flex-1 min-w-0 md:w-[130px]">
           <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Harian/Actual</label>
-          <input type="date" id="harian_date" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-blue-500 transition-colors font-semibold cursor-pointer w-full bg-transparent" required>
+          <input type="date" id="legacy_va_harian_date" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-blue-500 transition-colors font-semibold cursor-pointer w-full bg-transparent" required>
         </div>
       </div>
       <div class="flex w-full md:w-auto items-end gap-2 shrink-0 mt-0.5 md:mt-0">
         <div class="flex flex-col flex-1 min-w-0 md:w-[180px]">
           <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Area/Cabang</label>
-          <select id="opt_area" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-blue-500 bg-transparent transition-colors font-bold text-blue-700 cursor-pointer w-full truncate">
+          <select id="legacy_va_opt_area" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-blue-500 bg-transparent transition-colors font-bold text-blue-700 cursor-pointer w-full truncate">
               <option value="KONSOLIDASI" class="font-bold">Konsolidasi</option>
               <optgroup label="Berdasarkan Korwil" class="text-gray-400">
                   <option value="KORWIL_SEMARANG" class="text-gray-700">Korwil Semarang</option>
@@ -66,7 +83,7 @@
                   <option value="KORWIL_BANYUMAS" class="text-gray-700">Korwil Banyumas</option>
                   <option value="KORWIL_PEKALONGAN" class="text-gray-700">Korwil Pekalongan</option>
               </optgroup>
-              <optgroup label="Berdasarkan Cabang" id="opt_cabang_list" class="text-gray-400"></optgroup>
+              <optgroup label="Berdasarkan Cabang" id="legacy_va_opt_cabang_list" class="text-gray-400"></optgroup>
           </select>
         </div>
         <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white w-[34px] md:w-auto h-[32px] md:h-[36px] md:px-5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md active:scale-95 shrink-0 mb-[1px]">
@@ -78,7 +95,7 @@
   </div>
 
   <!-- TAB NAVIGATION -->
-  <div class="flex items-center gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+  <div class="hidden items-center gap-1 bg-gray-100 p-1 rounded-lg w-fit">
     <button onclick="switchView('rekap')" id="tab-rekap" class="flex items-center gap-1.5 px-3 py-2 rounded-md text-xs font-bold transition-all bg-white shadow-sm text-blue-700" title="Rekap Cabang">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
       <span class="hidden md:inline">Rekap</span>
@@ -169,17 +186,17 @@
   </div><!-- end section-detail -->
 
   <!-- Narrative Modal -->
-  <div id="modalNarrative" class="fixed inset-0 z-[9999] hidden flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeNarrative()"></div>
-    <div class="relative bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6">
-      <button onclick="closeNarrative()" class="absolute top-3 right-3 text-gray-400 hover:text-gray-700">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-      </button>
-      <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-        Narasi Otomatis
-      </h3>
-      <div id="narrativeContent" class="text-sm text-gray-700 space-y-2"></div>
+  <div id="modalNarrative" class="narrative-modal hidden" role="dialog" aria-modal="true" aria-labelledby="modalNarrativeTitle">
+    <div class="absolute inset-0" onclick="closeNarrative()"></div>
+    <div class="narrative-card relative">
+      <header class="narrative-head">
+        <div class="narrative-title">
+          <span class="narrative-title-icon" aria-hidden="true"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path></svg></span>
+          <div><h3 id="modalNarrativeTitle">Narasi Otomatis</h3><p>Ringkasan performa Virtual Account berdasarkan data terbaru.</p></div>
+        </div>
+        <button type="button" onclick="closeNarrative()" class="narrative-close" aria-label="Tutup narasi"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+      </header>
+      <div class="narrative-body"><div id="narrativeContent" class="narrative-content"></div></div>
     </div>
   </div>
 </div>
@@ -192,6 +209,27 @@
 
   const nf = new Intl.NumberFormat('id-ID');
   const fmt = n => nf.format(Number(n||0));
+  const fmtCompact = (value, digits = 1) => {
+      const num = Number(value || 0);
+      const abs = Math.abs(num);
+      if (abs >= 1000000000000) return (num / 1000000000000).toFixed(digits) + ' T';
+      if (abs >= 1000000000) return (num / 1000000000).toFixed(digits) + ' M';
+      if (abs >= 1000000) return (num / 1000000).toFixed(digits) + ' Jt';
+      if (abs >= 1000) return (num / 1000).toFixed(digits) + ' Rb';
+      return nf.format(num);
+  };
+  const trimTrailingEmptyMonths = (rows) => {
+      if (!Array.isArray(rows) || rows.length === 0) return [];
+      let lastDataIndex = -1;
+      rows.forEach((row, index) => {
+          const hasValue = Number(row.mandiri_nom || 0) > 0
+              || Number(row.permata_nom || 0) > 0
+              || Number(row.mandiri_trx || 0) > 0
+              || Number(row.permata_trx || 0) > 0;
+          if (hasValue) lastDataIndex = index;
+      });
+      return lastDataIndex >= 0 ? rows.slice(0, lastDataIndex + 1) : rows.slice(0, 1);
+  };
   const esc = (s) => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
   let chartNomObj = null;
@@ -201,20 +239,39 @@
   const hideLoad = (id) => document.getElementById(id)?.classList.add('hidden');
 
   function toggleFilter() {
-      const form = document.getElementById('formFilterGlobal');
-      const label = document.getElementById('filterToggleLabel');
-      if (form.classList.contains('hidden')) {
-          form.classList.remove('hidden');
-          form.classList.add('flex');
-          label.textContent = 'Tutup';
-      } else {
-          form.classList.add('hidden');
-          form.classList.remove('flex');
-          label.textContent = 'Filter';
-      }
+      const panel = document.getElementById('vaNavbarFilterPanel');
+      const toggle = document.getElementById('vaNavbarFilterToggle');
+      if (!panel) return;
+      const open = panel.classList.contains('hidden');
+      panel.classList.toggle('hidden', !open);
+      panel.classList.toggle('flex', open);
+      toggle?.classList.toggle('is-active', open);
+      toggle?.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function bindVaNavbarControls() {
+      const panel = document.getElementById('vaNavbarFilterPanel');
+      const toggle = document.getElementById('vaNavbarFilterToggle');
+      const close = document.getElementById('vaNavbarFilterClose');
+      if (!panel || !toggle) return;
+      const setOpen = open => {
+          panel.classList.toggle('hidden', !open);
+          panel.classList.toggle('flex', open);
+          toggle.classList.toggle('is-active', open);
+          toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+      };
+      toggle.addEventListener('click', event => { event.stopPropagation(); setOpen(panel.classList.contains('hidden')); });
+      close?.addEventListener('click', () => setOpen(false));
+      document.addEventListener('click', event => { if (panel.classList.contains('flex') && !panel.contains(event.target) && !toggle.contains(event.target)) setOpen(false); });
+      document.getElementById('vaViewSelect')?.addEventListener('change', event => switchView(event.target.value));
+      ['closing_date', 'harian_date', 'opt_area'].forEach(id => {
+          document.getElementById(id)?.addEventListener('change', () => runFullSync());
+      });
   }
 
   function switchView(view) {
+      const viewSelect = document.getElementById('vaViewSelect');
+      if (viewSelect) viewSelect.value = view;
       document.getElementById('section-rekap').classList.add('hidden');
       document.getElementById('section-chart').classList.add('hidden');
       document.getElementById('section-detail').classList.add('hidden');
@@ -233,11 +290,20 @@
   }
 
   function openNarrative() {
-      document.getElementById('narrativeContent').innerHTML = generateNarrative();
-      document.getElementById('modalNarrative').classList.remove('hidden');
+    const modal = document.getElementById('modalNarrative');
+    if (!modal) return;
+    // Modal harus keluar dari <main> yang memiliki overflow-y-auto agar overlay
+    // benar-benar menutup viewport, termasuk navbar/header paling atas.
+    if (modal.parentElement !== document.body) document.body.appendChild(modal);
+    document.getElementById('narrativeContent').innerHTML = generateNarrative();
+    modal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
   }
   function closeNarrative() {
-      document.getElementById('modalNarrative').classList.add('hidden');
+    const modal = document.getElementById('modalNarrative');
+    if (!modal) return;
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
   }
   function escNarrative(str) {
       const div = document.createElement('div');
@@ -278,6 +344,7 @@
   }
 
   window.addEventListener('DOMContentLoaded', async () => {
+    bindVaNavbarControls();
     const user = (window.getUser && window.getUser()) || null;
     let uKode = user?.kode ? String(user.kode).padStart(3,'0') : '000';
     if(uKode === '099') uKode = '000';
@@ -326,7 +393,7 @@
       return { kode_kantor, korwil };
   }
 
-  document.getElementById('formFilterGlobal').addEventListener('submit', e => { e.preventDefault(); runFullSync(); });
+  document.getElementById('vaNavbarFilterPanel')?.addEventListener('submit', e => { e.preventDefault(); runFullSync(); });
 
   async function runFullSync() { fetchMonthlyData(); fetchUnifiedBreakdown(); }
 
@@ -336,13 +403,15 @@
   function initCharts() {
       chartNomObj = new ApexCharts(document.querySelector('#chartNominal'), {
           series: [],
-          chart: { type: 'area', height: 280, toolbar: { show: false } },
+          chart: { type: 'area', height: 280, toolbar: { show: false }, zoom: { enabled: false } },
           colors: ['#2563eb', '#f97316'],
           dataLabels: { enabled: false },
-          stroke: { curve: 'smooth', width: 3 },
+          stroke: { curve: 'smooth', width: 3.5, lineCap: 'round' },
+          markers: { size: 4, strokeWidth: 2, hover: { size: 6 }, colors: ['#ffffff', '#ffffff'], strokeColors: ['#2563eb', '#f97316'] },
           fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05, stops: [0, 100] } },
-          xaxis: { categories: [], labels: { style: { fontSize: '10px' } } },
-          yaxis: { labels: { formatter: (val) => val >= 1000000000 ? (val/1000000000).toFixed(1)+' M' : (val >= 1000000 ? (val/1000000).toFixed(0)+' Jt' : nf.format(val)) } },
+          grid: { borderColor: '#dbeafe', strokeDashArray: 4, padding: { bottom: 15, left: 10, right: 12, top: 8 } },
+          xaxis: { categories: [], labels: { style: { fontSize: '10px', fontWeight: 700, colors: '#64748b' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+          yaxis: { labels: { formatter: (val) => fmtCompact(val, val >= 1000000000 ? 1 : 0), style: { fontSize: '10px', fontWeight: 700, colors: ['#94a3b8'] } } },
           legend: { position: 'top', fontSize: '12px', fontWeight: 700 },
           tooltip: { y: { formatter: (val) => 'Rp ' + nf.format(val) } }
       });
@@ -355,8 +424,8 @@
           plotOptions: { bar: { borderRadius: 4, columnWidth: '55%' } },
           dataLabels: { enabled: false },
           stroke: { show: true, width: 2, colors: ['transparent'] },
-          xaxis: { categories: [], labels: { style: { fontSize: '10px' } } },
-          yaxis: { labels: { formatter: (val) => nf.format(val) } },
+          xaxis: { categories: [], labels: { style: { fontSize: '10px', fontWeight: 700, colors: '#64748b' } }, axisBorder: { show: false }, axisTicks: { show: false } },
+          yaxis: { labels: { formatter: (val) => fmtCompact(val, 0), style: { fontSize: '10px', fontWeight: 700, colors: ['#94a3b8'] } } },
           fill: { opacity: 1 },
           legend: { position: 'top', fontSize: '12px', fontWeight: 700 },
           tooltip: { y: { formatter: (val) => nf.format(val) + ' Trx' } }
@@ -397,7 +466,9 @@
               const tfoot = document.getElementById('footerMonthly');
               tbody.innerHTML = '';
 
-              data.monthly.forEach((row, idx) => {
+              const detailRows = trimTrailingEmptyMonths(data.monthly);
+
+              detailRows.forEach((row, idx) => {
                   const totalNom = row.mandiri_nom + row.permata_nom;
                   const totalTrx = row.mandiri_trx + row.permata_trx;
                   tbody.innerHTML += '<tr><td class="text-center text-slate-400 pl-2">' + (idx + 1) + '</td><td class="pl-4 font-bold text-slate-700">' + esc(row.bulan) + '</td><td class="text-right text-blue-700">' + fmt(row.mandiri_nom) + '</td><td class="text-right text-blue-600">' + fmt(row.mandiri_trx) + '</td><td class="text-right text-orange-700">' + fmt(row.permata_nom) + '</td><td class="text-right text-orange-600">' + fmt(row.permata_trx) + '</td><td class="text-right font-black text-slate-800">' + fmt(totalNom) + '</td><td class="text-right font-black text-slate-800 pr-4">' + fmt(totalTrx) + '</td></tr>';
@@ -409,17 +480,18 @@
               tfoot.innerHTML = '<td class="text-center pl-2">-</td><td class="pl-4">TOTAL</td><td class="text-right text-blue-800">' + fmt(t.mandiri_nom) + '</td><td class="text-right text-blue-800">' + fmt(t.mandiri_trx) + '</td><td class="text-right text-orange-800">' + fmt(t.permata_nom) + '</td><td class="text-right text-orange-800">' + fmt(t.permata_trx) + '</td><td class="text-right">' + fmt(grandNom) + '</td><td class="text-right pr-4">' + fmt(grandTrx) + '</td>';
 
               // Update Charts
-              const labels = data.monthly.map(r => r.bulan.substring(0, 3));
-              chartNomObj.updateOptions({ xaxis: { categories: labels } });
+              const chartRows = detailRows;
+              const labels = chartRows.map(r => r.bulan.substring(0, 3));
+              chartNomObj.updateOptions({ xaxis: { categories: labels }, dataLabels: { enabled: labels.length <= 6, offsetY: -10, background: { enabled: true, foreColor: '#0f172a', borderRadius: 8, padding: 6, opacity: 0.88, borderWidth: 1, borderColor: '#dbeafe' }, style: { fontSize: '10px', fontWeight: 900, colors: ['#1d4ed8'] }, formatter: (val) => fmtCompact(val, val >= 1000000000 ? 2 : 1) } });
               chartNomObj.updateSeries([
-                  { name: 'Mandiri', data: data.monthly.map(r => r.mandiri_nom) },
-                  { name: 'Permata', data: data.monthly.map(r => r.permata_nom) }
+                  { name: 'Mandiri', data: chartRows.map(r => r.mandiri_nom) },
+                  { name: 'Permata', data: chartRows.map(r => r.permata_nom) }
               ]);
 
               chartTrxObj.updateOptions({ xaxis: { categories: labels } });
               chartTrxObj.updateSeries([
-                  { name: 'Mandiri', data: data.monthly.map(r => r.mandiri_trx) },
-                  { name: 'Permata', data: data.monthly.map(r => r.permata_trx) }
+                  { name: 'Mandiri', data: chartRows.map(r => r.mandiri_trx) },
+                  { name: 'Permata', data: chartRows.map(r => r.permata_trx) }
               ]);
           } else {
               document.getElementById('bodyMonthly').innerHTML = '<tr><td colspan="8" class="text-center py-6 text-slate-400">Data tidak tersedia.</td></tr>';

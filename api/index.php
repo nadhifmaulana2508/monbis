@@ -1,6 +1,8 @@
 <?php
 
 require_once __DIR__ . '/helpers/response.php';
+require_once __DIR__ . '/helpers/cors.php';
+applyApiCors();
 
 $method = $_SERVER['REQUEST_METHOD'];
 $request = $_GET['request'] ?? '';
@@ -43,6 +45,9 @@ switch ($endpoint) {
     case 'kode':
         require __DIR__ . '/routes/kode.php';
         break;
+    case 'anggota':
+        require __DIR__ . '/routes/anggota.php';
+        break;
     case 'bucket':
         require __DIR__ . '/routes/bucket.php';
         break;
@@ -82,8 +87,41 @@ switch ($endpoint) {
     case 'prospek':
         require __DIR__ . '/routes/prospek.php';
         break;
+    case 'prospek_sync':
+        require __DIR__ . '/routes/prospek_sync.php';
+        break;
     case 'dev_tracking':
         require __DIR__ . '/routes/dev_tracking.php';
+        break;
+    case 'rbb':
+        require __DIR__ . '/routes/rbb.php';
+        break;
+    case 'kinerja_report':
+        require __DIR__ . '/routes/kinerja_report.php';
+        break;
+    case 'rbb_v2':
+        // FE V2 memakai endpoint terpisah sesuai kebutuhan deployment.
+        // Route legacy `rbb` tetap memakai guard SSO.
+        if (!defined('RBB_V2_PUBLIC')) define('RBB_V2_PUBLIC', true);
+        require __DIR__ . '/routes/rbb.php';
+        break;
+    case 'pipelane_monitoring_kredit':
+        require __DIR__ . '/routes/pipelane_monitoring_kredit.php';
+        break;
+    case 'kpi':
+        require __DIR__ . '/routes/kpi.php';
+        break;
+    case 'paparan_settings':
+        require __DIR__ . '/routes/paparan_settings.php';
+        break;
+    case 'event_theme':
+        require __DIR__ . '/routes/event_theme.php';
+        break;
+    case 'chatbot':
+        require __DIR__ . '/routes/chatbot.php';
+        break;
+    case 'maping_ao_remedial':
+        require __DIR__ . '/routes/maping_ao_remedial.php';
         break;
 
     default:

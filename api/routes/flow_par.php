@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/FlowParController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 $controller = new FlowParController($pdo);
 
@@ -10,6 +10,13 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // POST body
 $input = json_decode(file_get_contents("php://input"), true);
+
+// Basis nominal hanya boleh memakai kolom yang memang tersedia.
+// Default sengaja SALDO BANK agar endpoint aman saat dipanggil tanpa filter.
+if (is_array($input) && in_array($input['type'] ?? '', ['Flow Par', 'Flow Par Dashboard', 'Flow Par Dashboard Detail', 'KL Baru'], true)) {
+    $modeHitung = strtolower(trim((string)($input['hitung_berdasarkan'] ?? 'saldo_bank')));
+    $input['hitung_berdasarkan'] = $modeHitung === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+}
 
 switch ($method) {
     case 'POST':
@@ -20,6 +27,12 @@ switch ($method) {
 
         if ($input['type'] === 'Flow Par') {
             $controller->getFlowPar($input);
+
+        } elseif ($input['type'] === 'Flow Par Dashboard') {
+            $controller->getFlowParDashboard($input);
+
+        } elseif ($input['type'] === 'Flow Par Dashboard Detail') {
+            $controller->getFlowParDashboardDetail($input);
 
         } elseif ($input['type'] === 'KL Baru') {
             if (!isset($input['kode_kantor'])) {
@@ -47,3 +60,4 @@ switch ($method) {
         sendResponse(405, "Metode tidak diizinkan");
         break;
 }
+

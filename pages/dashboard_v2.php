@@ -1123,11 +1123,11 @@
     const pTopReal      = fetchWidgetData('test top realisasi');
     const pTopNpl       = fetchWidgetData('test top bottom npl');
     const pDeltaNpl     = fetchWidgetData('test delta npl');
-    const pDeposito     = fetchWidgetData('test perkembangan deposito', true);
-    const pTabungan     = fetchWidgetData('test perkembangan tabungan', true);
+    const pDeposito     = fetchWidgetData('test perkembangan deposito');
+    const pTabungan     = fetchWidgetData('test perkembangan tabungan');
     
-    const pSummaryMakro = fetchWidgetData('summary_perbandingan', true);
-    const pHealthKpi    = fetchWidgetData('financial_kpi', true);
+    const pSummaryMakro = fetchWidgetData('summary_perbandingan');
+    const pHealthKpi    = fetchWidgetData('financial_kpi');
 
     pSaldoBank.then(sb => {
       if(!sb) return;
@@ -1142,7 +1142,7 @@
     pRealProduk.then(rpRaw => {
       if(!rpRaw) return;
       let rp = rpRaw?.realisasi_by_produk || rpRaw || {};
-      let prods = rp.detail_produk || [];
+      let prods = (rp.detail_produk || []).slice(0, 5);
       let grandTotal = rp.grand_total?.total_realisasi || 0;
       document.getElementById('label_total_realisasi_produk').textContent = `Rp ${fmtB(grandTotal)}`;
       renderUniversalList('box_realisasi_produk', prods, 'nama_produk', 'total_realisasi', 'noa_realisasi', 'bg-indigo-400', false, 'NOA');

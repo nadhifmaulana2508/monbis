@@ -1,0 +1,1201 @@
+<script>
+// =========================================================================
+// KONFIGURASI GLOBAL & UTILS
+// =========================================================================
+const API_URL  = './api/kredit/';
+const API_KODE = './api/kode/';
+const API_DATE = './api/date/';
+
+const nfID = new Intl.NumberFormat('id-ID');
+const fmt = n => nfID.format(Math.round(Number(n || 0)));
+const fmtNominal = n => nfID.format(Math.round(Number(n || 0)));
+const fmtCellNominal = n => Number(n || 0) === 0 ? '-' : fmtNominal(n);
+const fmtCellCount = n => Number(n || 0) === 0 ? '-' : fmt(n);
+const fmtGrowth = n => {
+    const value = Math.round(Number(n || 0));
+    if (value === 0) return '-';
+    return value < 0 ? `(${fmtNominal(Math.abs(value))})` : fmtNominal(value);
+};
+const metricCell = (nominal, noa) => `<div class="rkg-metric"><strong>${fmtCellNominal(nominal)}</strong><small>NOA: ${fmtCellCount(noa)}</small></div>`;
+const getNominalClosing = row => Number(row?.nominal_closing ?? row?.saldo_bank_closing ?? row?.portofolio_closing ?? 0);
+const getNominalActual = row => Number(row?.nominal_actual ?? row?.saldo_bank_actual ?? row?.portofolio_harian ?? 0);
+const formatHeaderDate = value => {
+    const parts = String(value || '').split('-');
+    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : (value || '-');
+};
+
+const apiCall = (url, opt = {}) => {
+    return window.apiFetch ? window.apiFetch(url, opt) : fetch(url, opt);
+};
+
+let abortMain;
+let abortDetail;
+let mainRequestSequence = 0;
+
+let rekapDataCache = [];
+let rekapGtCache = null;
+let userKodeGlobal = '000';
+let nominalFieldReal = 'saldo_bank';
+
+let detailDataCache = [];
+let detailAllDataCache = [];
+let detailParamsReal = {};
+let detailPageReal = 1;
+let detailAoOptionsLoaded = false;
+let detailSearchTimer = null;
+
+const DETAIL_PAGE_LIMIT = 50;
+
+let sortCol = '';
+let sortAsc = true;
+
+let sortDetailCol = '';
+let sortDetailAsc = true;
+
+
+// =========================================================================
+// SAFE HELPER
+// =========================================================================
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function escapeJs(value) {
+    return String(value ?? '')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, "\\'")
+        .replace(/"/g, '&quot;')
+        .replace(/\n/g, ' ')
+        .replace(/\r/g, ' ');
+}
+
+function escapeExcel(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
+function toggleFilter(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+    } else {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+    }
+}
+
+function toggleGrowthNavbarFilter() {
+    const panel = document.getElementById('realisasiGrowthNavbarFilterPanel');
+    const toggle = document.getElementById('realisasiGrowthNavbarFilterToggle');
+    if (!panel) return;
+    const hidden = panel.classList.toggle('hidden');
+    panel.classList.toggle('flex', !hidden);
+    toggle?.classList.toggle('is-active', !hidden);
+    toggle?.setAttribute('aria-expanded', String(!hidden));
+}
+
+function closeGrowthNavbarFilter() {
+    const panel = document.getElementById('realisasiGrowthNavbarFilterPanel');
+    const toggle = document.getElementById('realisasiGrowthNavbarFilterToggle');
+    if (!panel) return;
+    panel.classList.add('hidden');
+    panel.classList.remove('flex');
+    toggle?.classList.remove('is-active');
+    toggle?.setAttribute('aria-expanded', 'false');
+}
+
+function bindGrowthNavbarFilters() {
+    const panel = document.getElementById('realisasiGrowthNavbarFilterPanel');
+    const toggle = document.getElementById('realisasiGrowthNavbarFilterToggle');
+    const close = document.getElementById('realisasiGrowthNavbarFilterClose');
+    toggle?.addEventListener('click', toggleGrowthNavbarFilter);
+    close?.addEventListener('click', closeGrowthNavbarFilter);
+    document.addEventListener('click', event => {
+        if (panel && !panel.classList.contains('hidden') && !panel.contains(event.target) && !toggle?.contains(event.target)) {
+            closeGrowthNavbarFilter();
+        }
+    });
+
+    let timer = null;
+    const schedule = () => {
+        clearTimeout(timer);
+        timer = setTimeout(fetchRekap, 160);
+    };
+    document.getElementById('closing_date')?.addEventListener('change', schedule);
+    document.getElementById('harian_date')?.addEventListener('change', () => {
+        syncClosingFromHarianReal();
+        schedule();
+    });
+    document.getElementById('opt_area')?.addEventListener('change', schedule);
+    document.getElementById('realisasiGrowthNominalField')?.addEventListener('change', schedule);
+}
+
+function getCurrentAreaState() {
+    const areaVal = document.getElementById('opt_area')?.value || 'ALL';
+    return { areaVal, subVal: 'ALL' };
+}
+
+function normalizeKodeKantor(value) {
+    if (!value || value === 'ALL' || value === '000') return '000';
+    return String(value).replace('CAB-', '').padStart(3, '0');
+}
+
+function formatLocalDateReal(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
+
+function getPreviousMonthEndReal(dateValue) {
+    if (!dateValue) return '';
+    const [year, month] = String(dateValue).split('-').map(Number);
+    if (!year || !month) return '';
+    return formatLocalDateReal(new Date(year, month - 1, 0));
+}
+
+function syncClosingFromHarianReal() {
+    const harian = document.getElementById('harian_date')?.value || '';
+    const closing = getPreviousMonthEndReal(harian);
+    if (closing) document.getElementById('closing_date').value = closing;
+}
+
+
+// =========================================================================
+// ICON SORT
+// =========================================================================
+const getSortIcon = (col) => {
+    if (col !== sortCol) return ' <span class="opacity-30 text-[8px] ml-1">↕</span>';
+    return sortAsc
+        ? ' <span class="text-blue-600 text-[10px] ml-1">▲</span>'
+        : ' <span class="text-blue-600 text-[10px] ml-1">▼</span>';
+};
+
+const getSortIconDetail = (col) => {
+    if (col !== sortDetailCol) return ' <span class="opacity-30 text-[8px] ml-1">↕</span>';
+    return sortDetailAsc
+        ? ' <span class="text-blue-600 text-[10px] ml-1">▲</span>'
+        : ' <span class="text-blue-600 text-[10px] ml-1">▼</span>';
+};
+
+
+// =========================================================================
+// INIT
+// =========================================================================
+window.addEventListener('DOMContentLoaded', async () => {
+    const user = (window.getUser && window.getUser()) || null;
+
+    userKodeGlobal = user?.kode_kantor || user?.kode || user?.kode_cabang
+        ? String(user.kode_kantor || user.kode || user.kode_cabang).padStart(3, '0')
+        : '000';
+    if (userKodeGlobal === '099') userKodeGlobal = '000';
+
+    const d = await getLastHarianData();
+
+    if (d) {
+        document.getElementById('harian_date').value  = d.last_created;
+        document.getElementById('closing_date').value = getPreviousMonthEndReal(d.last_created) || d.last_closing;
+    } else {
+        const now = new Date();
+        const today = formatLocalDateReal(now);
+        document.getElementById('harian_date').value  = today;
+        document.getElementById('closing_date').value = getPreviousMonthEndReal(today);
+    }
+
+    bindGrowthNavbarFilters();
+    await populateAreaDropdown();
+    updateFilterUI();
+});
+
+async function getLastHarianData() {
+    try {
+        const r = await apiCall(API_DATE);
+        const j = await r.json();
+        return j.data || null;
+    } catch {
+        return null;
+    }
+}
+
+
+// =========================================================================
+// FILTER AREA / CABANG / KANKAS
+// =========================================================================
+async function populateAreaDropdown() {
+    const optArea = document.getElementById('opt_area');
+    if (!optArea) return;
+
+    if (userKodeGlobal !== '000') {
+        optArea.innerHTML = `<option value="CAB-${userKodeGlobal}">CABANG ${userKodeGlobal}</option>`;
+        optArea.value = `CAB-${userKodeGlobal}`;
+        optArea.disabled = true;
+        return;
+    }
+
+    try {
+        const res = await apiCall(API_KODE, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'kode_kantor' })
+        });
+
+        const json = await res.json();
+
+        let html = `
+            <option value="ALL">Konsolidasi</option>
+            <option value="KOR-SEMARANG">Korwil Semarang</option>
+            <option value="KOR-SOLO">Korwil Solo</option>
+            <option value="KOR-BANYUMAS">Korwil Banyumas</option>
+            <option value="KOR-PEKALONGAN">Korwil Pekalongan</option>
+        `;
+
+        (json.data || [])
+            .filter(x => x.kode_kantor && x.kode_kantor !== '000')
+            .sort((a, b) => String(a.kode_kantor).localeCompare(String(b.kode_kantor)))
+            .forEach(it => {
+                const kode = String(it.kode_kantor).padStart(3, '0');
+                html += `<option value="CAB-${kode}">${kode} - ${escapeHtml(it.nama_kantor)}</option>`;
+            });
+
+        optArea.innerHTML = html;
+    } catch (e) {
+        optArea.innerHTML = `<option value="ALL">Error Load Area</option>`;
+    }
+}
+
+async function updateFilterUI() {
+    fetchRekap();
+}
+
+
+// =========================================================================
+// FETCH REKAP
+// =========================================================================
+async function fetchRekap() {
+    const loading = document.getElementById('loadingUtama');
+    const tbody   = document.getElementById('bodyUtama');
+
+    const harian  = document.getElementById('harian_date')?.value || '';
+    const closing = document.getElementById('closing_date')?.value || '';
+    const areaVal = document.getElementById('opt_area')?.value || 'ALL';
+    const nominalField = document.getElementById('realisasiGrowthNominalField')?.value === 'baki_debet'
+        ? 'baki_debet'
+        : 'saldo_bank';
+
+    if (!tbody) return;
+
+    const requestId = ++mainRequestSequence;
+    if (abortMain) abortMain.abort();
+    abortMain = new AbortController();
+
+    loading?.classList.remove('hidden');
+    tbody.innerHTML = `<tr><td colspan="10" class="py-12 text-center text-slate-400 italic">Sedang mengambil data...</td></tr>`;
+
+    rekapDataCache = [];
+    rekapGtCache = null;
+    sortCol = '';
+    sortAsc = true;
+
+    try {
+        let payload = {
+            type: "rekap_realisasi_growth",
+            closing_date: closing,
+            harian_date: harian,
+            nominal_field: nominalField
+        };
+
+        if (areaVal.startsWith('KOR-')) {
+            payload.korwil = areaVal.replace('KOR-', '');
+        } else if (areaVal.startsWith('CAB-')) {
+            payload.kode_kantor = areaVal.replace('CAB-', '');
+        }
+
+        const res = await apiCall(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: abortMain.signal
+        });
+
+        const json = await res.json();
+
+        if (!res.ok || Number(json.status) !== 200) throw new Error(json.message || `HTTP ${res.status}`);
+
+        if (requestId !== mainRequestSequence) return;
+
+        rekapDataCache = Array.isArray(json.data?.data)
+            ? json.data.data
+            : (Array.isArray(json.data) ? json.data : []);
+        rekapGtCache   = json.data?.grand_total || json.grand_total || {};
+        nominalFieldReal = json.data?.meta?.nominal_field === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+        const nominalSelect = document.getElementById('realisasiGrowthNominalField');
+        if (nominalSelect) nominalSelect.value = nominalFieldReal;
+
+        renderHeaderClickable();
+        processAndRenderTable(rekapDataCache, rekapGtCache);
+    } catch (err) {
+        if (err.name !== 'AbortError' && requestId === mainRequestSequence) {
+            tbody.innerHTML = `<tr><td colspan="10" class="py-12 text-center text-red-500 font-bold">Error: ${escapeHtml(err.message)}</td></tr>`;
+        }
+    } finally {
+        if (requestId === mainRequestSequence) loading?.classList.add('hidden');
+    }
+}
+
+
+// =========================================================================
+// HEADER REKAP
+// =========================================================================
+function renderHeaderClickable() {
+    const thead = document.getElementById('headUtama');
+    if (!thead) return;
+
+    const nominalLabel = nominalFieldReal === 'baki_debet' ? 'BAKI DEBET' : 'SALDO BANK';
+    const closingLabel = formatHeaderDate(document.getElementById('closing_date')?.value);
+    const actualLabel = formatHeaderDate(document.getElementById('harian_date')?.value);
+
+    thead.innerHTML = `
+        <tr class="head-lapis-1">
+            <th class="rkg-code-col freeze-col-1 hidden md:table-cell uppercase align-middle border-r border-slate-200 text-center cursor-pointer hover:bg-slate-200 transition" onclick="sortMainData('kode_kantor')">
+                <div class="flex items-center justify-center">KODE${getSortIcon('kode_kantor')}</div>
+            </th>
+
+            <th class="rkg-name-col freeze-col-2 uppercase align-middle border-r border-slate-200 text-left pl-2 cursor-pointer hover:bg-slate-200 transition" onclick="sortMainData('nama_kantor')">
+                <div class="flex items-center">NAMA KANTOR${getSortIcon('nama_kantor')}</div>
+            </th>
+
+            <th class="rkg-balance-col py-1.5 border-b border-r border-slate-200 text-cyan-800 bg-cyan-50/50 cursor-pointer hover:bg-cyan-100 transition" onclick="sortMainData('nominal_closing')">${nominalLabel}<br><span class="font-semibold normal-case">(${closingLabel})</span>${getSortIcon('nominal_closing')}</th>
+            <th class="rkg-amount-col py-1.5 border-b border-r border-slate-200 text-blue-800 bg-blue-50/40 cursor-pointer hover:bg-blue-100 transition" onclick="sortMainData('total_realisasi')">REALISASI<br><span class="font-semibold normal-case">Nominal · NOA</span>${getSortIcon('total_realisasi')}</th>
+            <th class="rkg-amount-col py-1.5 border-b border-r border-slate-200 text-purple-800 bg-purple-50/40 cursor-pointer hover:bg-purple-100 transition" onclick="sortMainData('total_restruck')">KAPITALISASI RESTRUCK<br><span class="font-semibold normal-case">Nominal · NOA</span>${getSortIcon('total_restruck')}</th>
+            <th class="rkg-amount-col py-1.5 border-b border-r border-slate-200 text-emerald-800 bg-emerald-50/40 cursor-pointer hover:bg-emerald-100 transition" onclick="sortMainData('pelunasan')">PELUNASAN<br><span class="font-semibold normal-case">Nominal · NOA</span>${getSortIcon('pelunasan')}</th>
+            <th class="rkg-amount-col py-1.5 border-b border-r border-slate-200 text-sky-800 bg-sky-50/40 cursor-pointer hover:bg-sky-100 transition" onclick="sortMainData('angsuran_murni')">ANGSURAN<br><span class="font-semibold normal-case">Nominal · NOA</span>${getSortIcon('angsuran_murni')}</th>
+            <th class="rkg-balance-col py-1.5 border-b border-r border-slate-200 text-orange-800 bg-orange-50/40 cursor-pointer hover:bg-orange-100 transition" onclick="sortMainData('total_run_off')">RUN OFF${getSortIcon('total_run_off')}</th>
+            <th class="rkg-balance-col py-1.5 border-b border-r border-slate-200 text-cyan-800 bg-cyan-50/50 cursor-pointer hover:bg-cyan-100 transition" onclick="sortMainData('nominal_actual')">${nominalLabel}<br><span class="font-semibold normal-case">(${actualLabel})</span>${getSortIcon('nominal_actual')}</th>
+
+            <th class="rkg-growth-col border-l border-slate-200 align-middle text-right pr-2 text-slate-900 bg-slate-100/70 cursor-pointer hover:bg-slate-200 transition" onclick="sortMainData('growth')">
+                <div class="flex items-center justify-end">GROWTH${getSortIcon('growth')}</div>
+            </th>
+        </tr>
+
+        <tr id="rowTotalAtas" class="mob-row-tot text-[9px] md:text-xs font-extrabold tracking-wide"></tr>
+    `;
+}
+
+
+// =========================================================================
+// SORT REKAP
+// =========================================================================
+window.sortMainData = function(column) {
+    if (!rekapDataCache || rekapDataCache.length === 0) return;
+
+    if (sortCol === column) {
+        sortAsc = !sortAsc;
+    } else {
+        sortCol = column;
+        sortAsc = true;
+    }
+
+    rekapDataCache.sort((a, b) => {
+        let fieldA = a[column];
+        let fieldB = b[column];
+
+        if (!isNaN(parseFloat(fieldA)) && isFinite(fieldA)) {
+            return sortAsc
+                ? parseFloat(fieldA || 0) - parseFloat(fieldB || 0)
+                : parseFloat(fieldB || 0) - parseFloat(fieldA || 0);
+        }
+
+        fieldA = String(fieldA || '').toLowerCase();
+        fieldB = String(fieldB || '').toLowerCase();
+
+        if (fieldA < fieldB) return sortAsc ? -1 : 1;
+        if (fieldA > fieldB) return sortAsc ? 1 : -1;
+        return 0;
+    });
+
+    renderHeaderClickable();
+    processAndRenderTable(rekapDataCache, rekapGtCache);
+};
+
+
+// =========================================================================
+// RENDER REKAP + GRAND TOTAL CLICKABLE
+// =========================================================================
+function processAndRenderTable(rows, gt) {
+    const tbody = document.getElementById('bodyUtama');
+    if (!tbody) return;
+
+    if (!rows || rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="py-12 text-center text-slate-400 italic">Tidak ada transaksi.</td></tr>`;
+        const rowTotal = document.getElementById('rowTotalAtas');
+        if (rowTotal) rowTotal.innerHTML = '';
+        return;
+    }
+
+    let html = '';
+
+    rows.forEach(r => {
+        let nGrowth = parseFloat(r.growth || 0);
+        let gColor = nGrowth >= 0 ? 'text-blue-700 bg-blue-50/20' : 'text-red-600 bg-red-50/20';
+        const nominalClosing = getNominalClosing(r);
+        const nominalActual = getNominalActual(r);
+
+        const curReal = parseInt(r.noa_realisasi || 0) > 0 ? 'cursor-pointer hover:bg-blue-100' : '';
+        const clkReal = parseInt(r.noa_realisasi || 0) > 0
+            ? `onclick="openDetailModal('${escapeJs(r.kode_kantor)}', 110, '${escapeJs(r.nama_kantor)}', '${escapeJs(r.kode_kankas || '')}')"`
+            : '';
+
+        const curRes = parseInt(r.noa_restruck || 0) > 0 ? 'cursor-pointer hover:bg-purple-100' : '';
+        const clkRes = parseInt(r.noa_restruck || 0) > 0
+            ? `onclick="openDetailModal('${escapeJs(r.kode_kantor)}', 109, '${escapeJs(r.nama_kantor)}', '${escapeJs(r.kode_kankas || '')}')"`
+            : '';
+
+        html += `
+            <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[38px] md:h-[42px]">
+                <td class="rkg-code-col freeze-col-1 hidden md:table-cell rkg-num font-mono font-bold text-slate-500 border-r border-slate-100">${escapeHtml(r.kode_kantor || '-')}</td>
+                <td class="rkg-name-col freeze-col-2 rkg-text-left font-bold text-slate-700 truncate pl-2 border-r border-slate-100" title="${escapeHtml(r.nama_kantor)}">${escapeHtml(r.nama_kantor)}</td>
+
+                <td class="rkg-balance-col rkg-amount text-cyan-800 bg-cyan-50/10 font-mono font-bold pr-1.5 border-r border-slate-100" title="${fmt(nominalClosing)}">${fmtCellNominal(nominalClosing)}</td>
+
+                <td class="rkg-amount-col rkg-amount text-blue-800 bg-blue-50/10 font-mono pr-1.5 border-r border-slate-200 transition ${curReal}" ${clkReal} title="${fmt(r.total_realisasi)}">${metricCell(r.total_realisasi, r.noa_realisasi)}</td>
+                <td class="rkg-amount-col rkg-amount text-purple-800 bg-purple-50/10 font-mono pr-1.5 border-r border-slate-200 transition ${curRes}" ${clkRes} title="${fmt(r.total_restruck)}">${metricCell(r.total_restruck, r.noa_restruck)}</td>
+                <td class="rkg-amount-col rkg-amount text-emerald-700 bg-emerald-50/10 font-mono pr-1.5 border-r border-slate-100" title="${fmt(r.pelunasan)}">${metricCell(r.pelunasan, r.noa_pelunasan)}</td>
+                <td class="rkg-amount-col rkg-amount text-sky-700 bg-sky-50/10 font-mono pr-1.5 border-r border-slate-100" title="${fmt(r.angsuran_murni)}">${metricCell(r.angsuran_murni, r.noa_angsuran_murni)}</td>
+                <td class="rkg-balance-col rkg-amount text-orange-700 bg-orange-50/10 font-mono font-bold pr-1.5 border-r border-slate-200" title="${fmt(r.total_run_off)}">${metricCell(r.total_run_off, r.noa_run_off)}</td>
+                <td class="rkg-balance-col rkg-amount text-cyan-800 bg-cyan-50/10 font-mono font-bold pr-1.5 border-r border-slate-200" title="${fmt(nominalActual)}">${fmtCellNominal(nominalActual)}</td>
+                <td class="rkg-growth-col rkg-amount font-mono font-extrabold pr-2 ${gColor}" title="${fmt(nGrowth)}">${fmtGrowth(nGrowth)}</td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+
+    if (!gt) return;
+
+    let gtGrowth = parseFloat(gt.growth || 0);
+    let gtColor = gtGrowth >= 0 ? 'text-blue-800 bg-blue-100/40' : 'text-red-700 bg-red-100/40';
+
+    const gtRealClickable = parseInt(gt.noa_realisasi || 0) > 0 ? 'cursor-pointer hover:bg-blue-200' : '';
+    const gtResClickable  = parseInt(gt.noa_restruck || 0) > 0 ? 'cursor-pointer hover:bg-purple-200' : '';
+
+    const gtRealClick = parseInt(gt.noa_realisasi || 0) > 0
+        ? `onclick="openDetailModal('ALL', 110, 'GRAND TOTAL')"`
+        : '';
+
+    const gtResClick = parseInt(gt.noa_restruck || 0) > 0
+        ? `onclick="openDetailModal('ALL', 109, 'GRAND TOTAL')"`
+        : '';
+
+    const rowTotalAtas = document.getElementById('rowTotalAtas');
+    if (!rowTotalAtas) return;
+
+    const gtNominalClosing = getNominalClosing(gt);
+    const gtNominalActual = getNominalActual(gt);
+
+    rowTotalAtas.innerHTML = `
+        <th class="rkg-code-col freeze-col-1 hidden md:table-cell rkg-num text-blue-900 font-extrabold border-r border-blue-300">ALL</th>
+        <th class="rkg-name-col freeze-col-2 rkg-text-left font-extrabold text-blue-900 pl-2 border-r border-blue-300">GRAND TOTAL</th>
+
+        <th class="rkg-balance-col rkg-amount text-cyan-900 bg-cyan-100/40 font-mono font-bold pr-1.5 border-r border-blue-300" title="${fmt(gtNominalClosing)}">${fmtCellNominal(gtNominalClosing)}</th>
+        <th class="rkg-amount-col rkg-amount text-blue-900 bg-blue-100/30 font-mono font-bold pr-1.5 border-r border-blue-300 transition ${gtRealClickable}" ${gtRealClick} title="${fmt(gt.total_realisasi)}">${metricCell(gt.total_realisasi, gt.noa_realisasi)}</th>
+        <th class="rkg-amount-col rkg-amount text-purple-900 bg-purple-100/30 font-mono font-bold pr-1.5 border-r border-blue-300 transition ${gtResClickable}" ${gtResClick} title="${fmt(gt.total_restruck)}">${metricCell(gt.total_restruck, gt.noa_restruck)}</th>
+        <th class="rkg-amount-col rkg-amount text-emerald-900 bg-emerald-100/30 font-mono font-bold pr-1.5 border-r border-blue-300" title="${fmt(gt.pelunasan)}">${metricCell(gt.pelunasan, gt.noa_pelunasan)}</th>
+        <th class="rkg-amount-col rkg-amount text-sky-900 bg-sky-100/30 font-mono font-bold pr-1.5 border-r border-blue-300" title="${fmt(gt.angsuran_murni)}">${metricCell(gt.angsuran_murni, gt.noa_angsuran_murni)}</th>
+        <th class="rkg-balance-col rkg-amount text-orange-900 bg-orange-100/30 font-mono font-bold pr-1.5 border-r border-blue-300" title="${fmt(gt.total_run_off)}">${metricCell(gt.total_run_off, gt.noa_run_off)}</th>
+        <th class="rkg-balance-col rkg-amount text-cyan-900 bg-cyan-100/40 font-mono font-bold pr-1.5 border-r border-blue-300" title="${fmt(gtNominalActual)}">${fmtCellNominal(gtNominalActual)}</th>
+        <th class="rkg-growth-col rkg-amount font-mono font-black pr-2 ${gtColor}" title="${fmt(gtGrowth)}">${fmtGrowth(gtGrowth)}</th>
+    `;
+}
+
+
+// =========================================================================
+// EXPORT REKAP
+// =========================================================================
+window.exportExcelRekap = function() {
+    if (rekapDataCache.length === 0) return alert("Tidak ada data untuk diexport.");
+
+    let tableRows = '';
+
+    rekapDataCache.forEach(r => {
+        const closing = getNominalClosing(r);
+        const actual = getNominalActual(r);
+        tableRows += `
+            <tr>
+                <td style="mso-number-format:'\\@';">${escapeExcel(r.kode_kantor || '')}</td>
+                <td>${escapeExcel(r.nama_kantor || '')}</td>
+                <td class="count">${escapeExcel(fmtCellCount(r.noa_realisasi))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(r.total_realisasi))}</td>
+                <td class="count">${escapeExcel(fmtCellCount(r.noa_restruck))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(r.total_restruck))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(r.pelunasan))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(r.angsuran_murni))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(r.total_run_off))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(closing))}</td>
+                <td class="amount">${escapeExcel(fmtCellNominal(actual))}</td>
+                <td class="amount">${escapeExcel(fmtGrowth(r.growth))}</td>
+            </tr>
+        `;
+    });
+
+    const html = `
+        <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; }
+                    th { background: #dbeafe; color: #172554; border: 1px solid #94a3b8; padding: 7px; font-weight: bold; white-space: nowrap; }
+                    td { border: 1px solid #cbd5e1; padding: 6px; white-space: nowrap; }
+                    td.count { text-align: center; }
+                    td.amount { text-align: right; }
+                </style>
+            </head>
+            <body>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Kode</th>
+                            <th>Nama Kantor</th>
+                            <th>NOA Realisasi</th>
+                            <th>Nominal Realisasi</th>
+                            <th>NOA Restruck</th>
+                            <th>Nominal Restruck</th>
+                            <th>Pelunasan</th>
+                            <th>Angsuran Murni</th>
+                            <th>Total Run Off</th>
+                            <th>Portofolio Closing</th>
+                            <th>Portofolio Harian</th>
+                            <th>Growth Net</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            </body>
+        </html>
+    `;
+
+    const blob = new Blob(["\ufeff" + html], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const a = document.createElement('a');
+
+    a.href = window.URL.createObjectURL(blob);
+    a.download = `Rekap_Growth_Kredit.xls`;
+    a.click();
+
+    URL.revokeObjectURL(a.href);
+};
+
+
+// =========================================================================
+// MODAL DETAIL
+// =========================================================================
+window.openDetailModal = function(kode_area, kode_trans, nama_area, kode_kankas = '') {
+    const { areaVal } = getCurrentAreaState();
+
+    detailParamsReal = {
+        type: "detail_realisasi_growth",
+        closing_date: document.getElementById('closing_date')?.value || '',
+        harian_date: document.getElementById('harian_date')?.value || '',
+        kode_trans: String(kode_trans)
+    };
+
+    if (areaVal.startsWith('KOR-')) {
+        detailParamsReal.korwil = areaVal.replace('KOR-', '');
+    } else if (areaVal.startsWith('CAB-')) {
+        detailParamsReal.kode_kantor = areaVal.replace('CAB-', '');
+    }
+
+    if (kode_area && kode_area !== 'ALL' && String(kode_area).length === 3) {
+        detailParamsReal.kode_kantor = kode_area;
+        delete detailParamsReal.korwil;
+    }
+
+    if (kode_kankas) {
+        detailParamsReal.kode_kankas = String(kode_kankas);
+    } else {
+        delete detailParamsReal.kode_kankas;
+    }
+
+    detailPageReal = 1;
+    sortDetailCol = '';
+    sortDetailAsc = true;
+    detailAoOptionsLoaded = false;
+    detailDataCache = [];
+    detailAllDataCache = [];
+
+    document.getElementById('modalDetailReal')?.classList.remove('hidden');
+
+    const badge = document.getElementById('badgeBucketDetail');
+
+    if (badge) {
+        if (String(kode_trans) === '110') {
+            badge.innerText = 'REALISASI BARU';
+            badge.className = 'text-[9px] md:text-sm bg-blue-600 text-white px-2 py-0.5 md:px-2.5 rounded-md shadow-sm ml-1 shrink-0';
+        } else {
+            badge.innerText = 'RESTRUKTURISASI';
+            badge.className = 'text-[9px] md:text-sm bg-purple-600 text-white px-2 py-0.5 md:px-2.5 rounded-md shadow-sm ml-1 shrink-0';
+        }
+    }
+
+    const subTitle = document.getElementById('subTitleDetail');
+    if (subTitle) subTitle.innerText = `Area: ${nama_area}`;
+
+    const searchInput = document.getElementById('search_nasabah');
+    if (searchInput) searchInput.value = '';
+
+    const aoSelect = document.getElementById('filter_ao_modal');
+    if (aoSelect) {
+        aoSelect.innerHTML = `<option value="ALL">MEMUAT AO...</option>`;
+        aoSelect.value = 'ALL';
+    }
+
+    fetchDetailReal(true);
+};
+
+function buildDetailPayload(extra = {}) {
+    return {
+        ...detailParamsReal,
+        page: 1,
+        limit: 10000,
+        ...extra
+    };
+}
+
+
+// =========================================================================
+// HELPER DETAIL AO / SEARCH
+// =========================================================================
+function normalizeSearchText(value) {
+    return String(value || '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function getRowAoNama(row) {
+    return String(
+        row.nama_ao ||
+        row.nama_marketing ||
+        row.marketing ||
+        row.ao ||
+        '-'
+    ).trim();
+}
+
+function getRowAoFilterKey(row) {
+    return normalizeSearchText(getRowAoNama(row));
+}
+
+function getRowTglRealisasi(row) {
+    return row.tgl_realisasi || row.tanggal_realisasi || '-';
+}
+
+function getSortValueDetail(row, column) {
+    if (column === 'nama_ao') return getRowAoNama(row);
+    if (column === 'tgl_realisasi') return getRowTglRealisasi(row);
+    return row[column];
+}
+
+function getFilteredDetailRows() {
+    const aoVal = document.getElementById('filter_ao_modal')?.value || 'ALL';
+    const keyword = normalizeSearchText(document.getElementById('search_nasabah')?.value || '');
+
+    return detailAllDataCache.filter(row => {
+        const rowAoKey = getRowAoFilterKey(row);
+
+        const matchAo =
+            aoVal === 'ALL' ||
+            rowAoKey === aoVal;
+
+        const searchText = normalizeSearchText([
+            row.no_rekening,
+            row.nama_nasabah,
+            row.alamat,
+            row.nama_kankas,
+            getRowAoNama(row),
+            getRowTglRealisasi(row),
+            row.plafond
+        ].join(' '));
+
+        const matchSearch =
+            keyword === '' ||
+            searchText.includes(keyword);
+
+        return matchAo && matchSearch;
+    });
+}
+
+
+// =========================================================================
+// LOAD AO OPTION MODAL - AMBIL DARI DATA DETAIL nama_ao
+// =========================================================================
+async function populateAoModalOptions() {
+    const select = document.getElementById('filter_ao_modal');
+    if (!select) return;
+
+    const oldValue = select.value || 'ALL';
+    const mapAo = new Map();
+
+    detailAllDataCache.forEach(row => {
+        const namaAo = getRowAoNama(row);
+        const keyAo = getRowAoFilterKey(row);
+
+        if (
+            namaAo &&
+            namaAo !== '-' &&
+            keyAo &&
+            keyAo !== 'null' &&
+            keyAo !== 'undefined' &&
+            !mapAo.has(keyAo)
+        ) {
+            mapAo.set(keyAo, namaAo);
+        }
+    });
+
+    let html = `<option value="ALL">SEMUA AO</option>`;
+
+    Array.from(mapAo.entries())
+        .sort((a, b) => String(a[1]).localeCompare(String(b[1])))
+        .forEach(([keyAo, namaAo]) => {
+            html += `<option value="${escapeHtml(keyAo)}">${escapeHtml(namaAo)}</option>`;
+        });
+
+    select.innerHTML = html;
+
+    if (oldValue !== 'ALL' && mapAo.has(oldValue)) {
+        select.value = oldValue;
+    } else {
+        select.value = 'ALL';
+    }
+
+    detailAoOptionsLoaded = true;
+}
+
+
+// =========================================================================
+// HEADER DETAIL
+// =========================================================================
+function renderDetailHeaderClickable() {
+    const thead = document.getElementById('headModalDetail');
+    if (!thead) return;
+
+    thead.innerHTML = `
+        <tr>
+            <th class="hidden md:table-cell px-2 md:px-3 py-1.5 md:py-2 border-b border-r border-slate-300 rounded-tl-xl text-left md:text-center w-[115px] cursor-pointer hover:bg-slate-200 transition" onclick="sortDetailData('no_rekening')">
+                <div class="flex justify-start md:justify-center items-center">Rekening${getSortIconDetail('no_rekening')}</div>
+            </th>
+
+            <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 text-left md:text-center w-[165px] md:w-[245px] cursor-pointer hover:bg-slate-200 transition" onclick="sortDetailData('nama_nasabah')">
+                <div class="flex justify-start md:justify-center items-center">Nama Nasabah${getSortIconDetail('nama_nasabah')}</div>
+            </th>
+
+            <th class="hidden sm:table-cell px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[170px] md:w-[245px] text-center cursor-pointer hover:bg-slate-200 transition" onclick="sortDetailData('alamat')">
+                <div class="flex justify-center items-center">Alamat${getSortIconDetail('alamat')}</div>
+            </th>
+
+            <th class="hidden md:table-cell px-2 md:px-3 py-1.5 md:py-2 border-b border-r border-slate-300 w-[105px] md:w-[120px] text-center cursor-pointer hover:bg-slate-200 transition" onclick="sortDetailData('nama_kankas')">
+                <div class="flex justify-center items-center">Kankas${getSortIconDetail('nama_kankas')}</div>
+            </th>
+
+            <th class="hidden md:table-cell px-2 md:px-3 py-1.5 md:py-2 border-b border-r border-slate-300 w-[140px] md:w-[180px] text-center cursor-pointer hover:bg-slate-200 transition" onclick="sortDetailData('nama_ao')">
+                <div class="flex justify-center items-center">AO${getSortIconDetail('nama_ao')}</div>
+            </th>
+
+            <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-r border-slate-300 w-[95px] md:w-[135px] text-center cursor-pointer hover:bg-slate-200 transition" onclick="sortDetailData('tgl_realisasi')">
+                <div class="flex justify-center items-center">Tgl Realisasi${getSortIconDetail('tgl_realisasi')}</div>
+            </th>
+
+            <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-slate-300 w-[100px] md:w-[140px] text-right cursor-pointer hover:bg-slate-200 transition" onclick="sortDetailData('plafond')">
+                <div class="flex justify-end items-center">Plafond${getSortIconDetail('plafond')}</div>
+            </th>
+        </tr>
+    `;
+}
+
+
+// =========================================================================
+// RENDER BODY DETAIL
+// =========================================================================
+function renderTableDetailBody(list) {
+    const tbody = document.getElementById('bodyModalDetail');
+    if (!tbody) return;
+
+    let html = '';
+
+    list.forEach(row => {
+        const alamatPendek = row.alamat && row.alamat.length > 32
+            ? row.alamat.substring(0, 32) + '...'
+            : (row.alamat || '-');
+
+        const tgl = getRowTglRealisasi(row);
+        const namaAo = getRowAoNama(row);
+
+        html += `
+            <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[42px] md:h-[48px] group">
+                <td class="hidden md:table-cell px-2 md:px-3 py-1.5 md:py-2 font-mono text-[9.5px] md:text-[11px] text-slate-500 border-r border-slate-100">
+                    ${escapeHtml(row.no_rekening || '')}
+                </td>
+
+                <td class="px-2 md:px-4 py-1.5 md:py-2 font-bold text-[9.5px] md:text-[11px] text-slate-700 truncate border-r border-slate-100" title="${escapeHtml(row.nama_nasabah || '')}">
+                    <div class="truncate max-w-[150px] md:max-w-none">${escapeHtml(row.nama_nasabah || '-')}</div>
+                    <div class="md:hidden text-[8.5px] text-slate-400 font-mono mt-0.5">${escapeHtml(row.no_rekening || '')}</div>
+                    <div class="md:hidden text-[8.5px] text-blue-600 font-semibold mt-0.5 truncate">${escapeHtml(namaAo)}</div>
+                </td>
+
+                <td class="hidden sm:table-cell px-2 md:px-4 py-1.5 md:py-2 text-slate-500 text-[9.5px] md:text-[11px] border-r border-slate-100 whitespace-nowrap text-center" title="${escapeHtml(row.alamat || '')}">
+                    ${escapeHtml(alamatPendek)}
+                </td>
+
+                <td class="hidden md:table-cell px-2 md:px-3 py-1.5 md:py-2 text-center font-mono text-[9px] md:text-[11px] text-slate-500 border-r border-slate-100 truncate max-w-[100px]" title="${escapeHtml(row.nama_kankas || '')}">
+                    ${escapeHtml(row.nama_kankas || '-')}
+                </td>
+
+                <td class="hidden md:table-cell px-2 md:px-3 py-1.5 md:py-2 text-center text-[9px] md:text-[11px] text-slate-600 border-r border-slate-100 truncate max-w-[170px]" title="${escapeHtml(namaAo)}">
+                    <div class="font-bold truncate">${escapeHtml(namaAo)}</div>
+                </td>
+
+                <td class="px-2 md:px-4 py-1.5 md:py-2 text-center font-mono text-[9.5px] md:text-[11px] text-blue-700 bg-blue-50/30 border-r border-blue-100">
+                    ${escapeHtml(tgl)}
+                </td>
+
+                <td class="px-2 md:px-4 py-1.5 md:py-2 text-right font-medium text-[9.5px] md:text-[12px] text-slate-600 border-slate-100">
+                    ${fmt(row.plafond)}
+                </td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+
+// =========================================================================
+// RENDER FILTERED DETAIL PAGE
+// =========================================================================
+function renderFilteredDetailPage() {
+    let filteredRows = getFilteredDetailRows();
+
+    if (sortDetailCol) {
+        filteredRows.sort((a, b) => {
+            let fieldA = getSortValueDetail(a, sortDetailCol);
+            let fieldB = getSortValueDetail(b, sortDetailCol);
+
+            if (sortDetailCol === 'plafond') {
+                return sortDetailAsc
+                    ? Number(fieldA || 0) - Number(fieldB || 0)
+                    : Number(fieldB || 0) - Number(fieldA || 0);
+            }
+
+            fieldA = String(fieldA || '').toLowerCase();
+            fieldB = String(fieldB || '').toLowerCase();
+
+            if (fieldA < fieldB) return sortDetailAsc ? -1 : 1;
+            if (fieldA > fieldB) return sortDetailAsc ? 1 : -1;
+            return 0;
+        });
+    }
+
+    const totalRecords = filteredRows.length;
+    const totalPages = Math.max(1, Math.ceil(totalRecords / DETAIL_PAGE_LIMIT));
+
+    if (detailPageReal > totalPages) detailPageReal = totalPages;
+    if (detailPageReal < 1) detailPageReal = 1;
+
+    const start = (detailPageReal - 1) * DETAIL_PAGE_LIMIT;
+    const end = start + DETAIL_PAGE_LIMIT;
+
+    detailDataCache = filteredRows.slice(start, end);
+
+    renderDetailHeaderClickable();
+
+    const tbody = document.getElementById('bodyModalDetail');
+    if (!tbody) return;
+
+    if (detailDataCache.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="py-20 text-center text-slate-400 italic text-[10px] md:text-sm">
+                    Tidak ada data detail.
+                </td>
+            </tr>
+        `;
+
+        const pageInfo = document.getElementById('pageInfoDetail');
+        if (pageInfo) pageInfo.innerText = `0 Data`;
+
+        const prev = document.getElementById('btnPrevDetail');
+        const next = document.getElementById('btnNextDetail');
+
+        if (prev) prev.disabled = true;
+        if (next) next.disabled = true;
+
+        return;
+    }
+
+    renderTableDetailBody(detailDataCache);
+
+    const pageInfo = document.getElementById('pageInfoDetail');
+    if (pageInfo) {
+        pageInfo.innerText = `Hal ${detailPageReal} dari ${totalPages} (${fmt(totalRecords)} Data)`;
+    }
+
+    const prev = document.getElementById('btnPrevDetail');
+    const next = document.getElementById('btnNextDetail');
+
+    if (prev) prev.disabled = detailPageReal <= 1;
+    if (next) next.disabled = detailPageReal >= totalPages;
+}
+
+window.renderFilteredDetailPage = renderFilteredDetailPage;
+
+
+// =========================================================================
+// SORT DETAIL
+// =========================================================================
+window.sortDetailData = function(column) {
+    if (!detailAllDataCache || detailAllDataCache.length === 0) return;
+
+    if (sortDetailCol === column) {
+        sortDetailAsc = !sortDetailAsc;
+    } else {
+        sortDetailCol = column;
+        sortDetailAsc = true;
+    }
+
+    renderFilteredDetailPage();
+};
+
+
+// =========================================================================
+// SEARCH DETAIL CLIENT SIDE
+// =========================================================================
+window.filterTableDetail = function() {
+    clearTimeout(detailSearchTimer);
+
+    detailSearchTimer = setTimeout(() => {
+        detailPageReal = 1;
+        renderFilteredDetailPage();
+    }, 200);
+};
+
+
+// =========================================================================
+// FETCH DETAIL
+// =========================================================================
+async function fetchDetailReal(forceReload = false) {
+    const loader = document.getElementById('loadingModal');
+    const tbody  = document.getElementById('bodyModalDetail');
+
+    if (!tbody) return;
+
+    if (!forceReload && detailAllDataCache.length > 0) {
+        renderFilteredDetailPage();
+        return;
+    }
+
+    if (abortDetail) abortDetail.abort();
+    abortDetail = new AbortController();
+
+    loader?.classList.remove('hidden');
+    tbody.innerHTML = '';
+    detailDataCache = [];
+    detailAllDataCache = [];
+
+    try {
+        const payload = buildDetailPayload({
+            page: 1,
+            limit: 10000
+        });
+
+        const res = await apiCall(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: abortDetail.signal
+        });
+
+        const json = await res.json();
+
+        if (json.status !== 200) {
+            throw new Error(json.message || 'Gagal mengambil detail');
+        }
+
+        detailAllDataCache = json.data?.data || json.data || [];
+
+        if (!Array.isArray(detailAllDataCache)) {
+            detailAllDataCache = [];
+        }
+
+        await populateAoModalOptions();
+
+        detailPageReal = 1;
+        renderFilteredDetailPage();
+    } catch (e) {
+        if (e.name === 'AbortError') return;
+
+        renderDetailHeaderClickable();
+
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" class="py-16 text-center text-red-500 font-bold uppercase tracking-widest">
+                    Gagal mengambil detail: ${escapeHtml(e.message || '')}
+                </td>
+            </tr>
+        `;
+
+        const pageInfo = document.getElementById('pageInfoDetail');
+        if (pageInfo) pageInfo.innerText = `0 Data`;
+
+        const prev = document.getElementById('btnPrevDetail');
+        const next = document.getElementById('btnNextDetail');
+
+        if (prev) prev.disabled = true;
+        if (next) next.disabled = true;
+    } finally {
+        loader?.classList.add('hidden');
+    }
+}
+
+
+// =========================================================================
+// PAGINATION DETAIL
+// =========================================================================
+window.changePageDetailReal = function(step) {
+    detailPageReal += step;
+    if (detailPageReal < 1) detailPageReal = 1;
+    renderFilteredDetailPage();
+};
+
+
+// =========================================================================
+// EXPORT DETAIL
+// =========================================================================
+window.exportExcelDetailReal = async function(e) {
+    const btn = e?.target?.closest('button') || document.querySelector('button[onclick^="exportExcelDetailReal"]');
+    const txt = btn ? btn.innerHTML : '';
+
+    if (btn) {
+        btn.innerHTML = `...`;
+        btn.disabled = true;
+    }
+
+    try {
+        const rows = getFilteredDetailRows();
+
+        if (rows.length === 0) {
+            alert("Tidak ada data");
+            return;
+        }
+
+        let tableRows = '';
+
+        rows.forEach((x, i) => {
+            const tgl = getRowTglRealisasi(x);
+            const namaAo = getRowAoNama(x);
+
+            tableRows += `
+                <tr>
+                    <td style="text-align:center;">${i + 1}</td>
+                    <td style="mso-number-format:'\\@';">${escapeExcel(x.no_rekening || '')}</td>
+                    <td>${escapeExcel(x.nama_nasabah || '')}</td>
+                    <td>${escapeExcel(x.alamat || '')}</td>
+                    <td>${escapeExcel(x.nama_kankas || '')}</td>
+                    <td>${escapeExcel(namaAo)}</td>
+                    <td style="mso-number-format:'\\@';">${escapeExcel(tgl)}</td>
+                    <td style="text-align:right;">${Math.round(Number(x.plafond || 0))}</td>
+                </tr>
+            `;
+        });
+
+        const html = `
+            <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <style>
+                        table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; }
+                        th { background: #dbeafe; color: #172554; border: 1px solid #94a3b8; padding: 7px; font-weight: bold; }
+                        td { border: 1px solid #cbd5e1; padding: 6px; }
+                        .title { font-size: 15px; font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <table>
+                        <tr>
+                            <td colspan="8" class="title">Detail Realisasi</td>
+                        </tr>
+                        <tr>
+                            <td colspan="8">
+                                Periode: ${escapeExcel(detailParamsReal.closing_date)} s/d ${escapeExcel(detailParamsReal.harian_date)}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="8">
+                                Filter AO: ${escapeExcel(document.getElementById('filter_ao_modal')?.selectedOptions?.[0]?.text || 'SEMUA AO')}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="8">
+                                Search: ${escapeExcel(document.getElementById('search_nasabah')?.value || '-')}
+                            </td>
+                        </tr>
+                        <tr></tr>
+                        <tr>
+                            <th>No</th>
+                            <th>No Rekening</th>
+                            <th>Nama Nasabah</th>
+                            <th>Alamat</th>
+                            <th>Kankas</th>
+                            <th>AO</th>
+                            <th>Tgl Realisasi</th>
+                            <th>Plafond</th>
+                        </tr>
+                        ${tableRows}
+                    </table>
+                </body>
+            </html>
+        `;
+
+        const blob = new Blob(["\ufeff" + html], {
+            type: "application/vnd.ms-excel;charset=utf-8;"
+        });
+
+        const aoText = document.getElementById('filter_ao_modal')?.selectedOptions?.[0]?.text || 'SEMUA_AO';
+        const safeAo = aoText.replace(/[^\w\s-]/g, '').replace(/\s+/g, '_');
+
+        const a = document.createElement('a');
+        a.href = window.URL.createObjectURL(blob);
+        a.download = `Detail_Realisasi_${detailParamsReal.kode_kantor || 'ALL'}_${safeAo}.xls`;
+        a.click();
+
+        URL.revokeObjectURL(a.href);
+    } catch (e) {
+        alert("Gagal export data.");
+    } finally {
+        if (btn) {
+            btn.innerHTML = txt;
+            btn.disabled = false;
+        }
+    }
+};
+
+
+// =========================================================================
+// CLOSE MODAL
+// =========================================================================
+window.closeModalReal = function() {
+    document.getElementById('modalDetailReal')?.classList.add('hidden');
+};
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModalReal();
+});
+</script>

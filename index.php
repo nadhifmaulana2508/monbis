@@ -10,10 +10,22 @@ if (session_status() === PHP_SESSION_NONE) {
  * Local   : http://localhost/report-dpk
  * Server  : https://domain.com
  */
-define('BASE_APP',
-    (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' .
-    $_SERVER['HTTP_HOST'] .
-    (strpos($_SERVER['HTTP_HOST'], 'localhost') !== false ? '/report-dpk' : '')
+$requestIsHttps = !empty($_SERVER['HTTPS'])
+    && strtolower((string) $_SERVER['HTTPS']) !== 'off';
+$scheme = $requestIsHttps || (int) ($_SERVER['SERVER_PORT'] ?? 80) === 443
+    ? 'https'
+    : 'http';
+$scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
+$appBasePath = str_replace('\\', '/', dirname($scriptName));
+if ($appBasePath === '/' || $appBasePath === '.') {
+    $appBasePath = '';
+} else {
+    $appBasePath = rtrim($appBasePath, '/');
+}
+
+define(
+    'BASE_APP',
+    $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $appBasePath
 );
 
 // =========================
@@ -40,6 +52,24 @@ if (strpos($url, 'api/') === 0) {
     exit;
 }
 
+// V2 memakai router sendiri, tetapi pada beberapa deployment aaPanel
+// URL bersih tetap diteruskan ke router legacy ini. Teruskan prefix /v-2
+// sebelum layout v1 sempat dirender agar URL tetap bersih di browser.
+if (preg_match('#^v-2(?:/(.*))?$#i', $url, $v2Match)) {
+    $v2Route = trim((string)($v2Match[1] ?? ''), '/');
+    $requestPath = (string)(parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?: '');
+    $v2Marker = '/v-2';
+    $v2Position = stripos($requestPath, $v2Marker);
+    $v2Base = $v2Position === false
+        ? '/v-2'
+        : substr($requestPath, 0, $v2Position + strlen($v2Marker));
+    $v2Base = rtrim(str_replace('\\', '/', $v2Base), '/');
+    $_SERVER['SCRIPT_NAME'] = $v2Base . '/index.php';
+    $_GET['v2_route'] = $v2Route;
+    require __DIR__ . '/v-2/index.php';
+    exit;
+}
+
 // =========================
 // CEK STATUS LOGIN (VIA COOKIE SSO)
 // =========================
@@ -59,9 +89,14 @@ if ($url === '') {
 // =========================
 // PROTEKSI HALAMAN (AUTH GUARD)
 // =========================
-// 1. Kalau belum login tapi maksa buka halaman selain login, lempar ke login!
-if (!$isLoggedIn && $page !== 'login') {
-    header("Location: " . BASE_APP . "/login");
+// 1. Kalau belum login tapi maksa buka halaman selain login dan atv_direksi, lempar ke login!
+// (atv_direksi di-whitelist agar bisa diakses langsung lewat URL)
+if (!$isLoggedIn && $page !== 'login' && $page !== 'tv') {
+    $loginUrl = BASE_APP . "/login";
+    if ($page === 'tv_cabang') {
+        $loginUrl .= '?next=tv_cabang';
+    }
+    header("Location: " . $loginUrl);
     exit;
 }
 
@@ -78,8 +113,11 @@ $baseDir = __DIR__;
 // =========================
 include $baseDir . "/views/header.php";
 
-// login tidak pakai navbar
-if ($page !== 'login') {
+// =========================
+// LOAD NAVBAR
+// =========================
+// login dan atv_direksi tidak pakai navbar (tampilan full screen)
+if ($page !== 'login' && $page !== 'tv' && $page !== 'tv_cabang') {
     include $baseDir . "/views/navbar.php";
 }
 

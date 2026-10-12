@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../helpers/guard.php';        // requireAuth()
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 require_once __DIR__ . '/../controllers/CkpnController.php';
 
 $pdo = function_exists('getPDO') ? getPDO() : ($pdo ?? null);
@@ -49,3 +49,4 @@ switch ($method) {
   default:
     sendResponse(405, "Metode tidak diizinkan");
 }
+

@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/DashboardController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 $controller = new DashboardController($pdo);
 
@@ -44,6 +44,10 @@ switch ($method) {
         } elseif ($type === 'test runoff korwil') {
             $data = $controller->getRunOffRealisasi($input);
             sendResponse(200, "Testing Run Off vs Realisasi (Per Korwil)", $data);
+
+        } elseif ($type === 'tv realisasi monitoring') {
+            $data = $controller->getTvRealisasiMonitoring($input);
+            sendResponse(200, "TV Monitoring Realisasi Kredit", $data);
 
         } elseif ($type === 'test flow recovery npl') {
             $data = $controller->getFlowVsRecoveryNPL($input);
@@ -94,3 +98,4 @@ switch ($method) {
         sendResponse(405, "Metode tidak diizinkan");
         break;
 }
+

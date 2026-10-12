@@ -2,7 +2,7 @@
 
 // 1. Load Controller & Database
 require_once __DIR__ . '/../controllers/JatuhTempoController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 // 2. Inisialisasi
 $controller = new JatuhTempoController($pdo);
@@ -34,3 +34,4 @@ switch ($method) {
         sendResponse(405, "Metode tidak diizinkan");
         break;
 }
+

@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../controllers/KreditController.php';
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../controllers/config/database.php';
 
 $controller = new KreditController($pdo);
 
@@ -24,6 +24,10 @@ switch ($method) {
             $controller->getTopRealisasi($input);
         } elseif ($input['type'] === 'detail realisasi ao') {
             $controller->getDetailRealisasiAO($input);
+        } elseif ($input['type'] === 'kelolaan ao be') {
+            $controller->getKelolaanAoBe($input);
+        } elseif ($input['type'] === 'detail kelolaan ao be') {
+            $controller->getDetailKelolaanAoBe($input);
         } elseif ($input['type'] === 'mob_vintage') {
             $controller->getRekapMob6Bulan($input);
         } elseif ($input['type'] === 'detail_mob_debitur') {
@@ -50,6 +54,14 @@ switch ($method) {
             $controller->getRekapProgressKredit($input);
         } elseif ($input['type'] === 'detail_progress_kredit') {
             $controller->getDetailProgressKredit($input);
+        } elseif ($input['type'] === 'produk_kredit') {
+            $controller->getRekapProdukKredit($input);
+        } elseif ($input['type'] === 'detail_produk_kredit') {
+            $controller->getDetailProdukKredit($input);
+        } elseif ($input['type'] === 'npl_breakdown') {
+            $controller->getNplBreakdown($input);
+        } elseif ($input['type'] === 'npl_breakdown_detail') {
+            $controller->getNplBreakdownDetail($input);
         
             
 
@@ -72,3 +84,4 @@ switch ($method) {
         sendResponse(405, "Metode tidak diizinkan");
         break;
 }
+

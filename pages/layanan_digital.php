@@ -3,7 +3,7 @@
 
 <style>
   :root { --primary: #0284c7; --bg: #f8fafc; --text: #334155; }
-  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; }
+  body, .font-sans { font-family: 'Roboto', Arial, sans-serif !important; background: var(--bg); color: var(--text); overflow-x: hidden; }
   
   .inp { 
       box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 0.5rem; padding: 0 0.5rem; 
@@ -45,7 +45,7 @@
   .korwil-card.is-top { border-color: #fbbf24; box-shadow: 0 0 0 2px #fef3c7 inset; }
 
   /* ====== Info Modal ====== */
-  #ldInfoModal { position: fixed; inset: 0; z-index: 9999; display: none; align-items: center; justify-content: center; padding: 1rem; }
+  #ldInfoModal { position: fixed; inset: 0; z-index: 20000; display: none; align-items: center; justify-content: center; padding: 1rem; }
   #ldInfoModal.is-open { display: flex; }
   #ldInfoModal .ld-backdrop { position: absolute; inset: 0; background: rgba(15,23,42,.55); backdrop-filter: blur(2px); }
   #ldInfoModal .ld-dialog { position: relative; background: #fff; width: 100%; max-width: 480px; border-radius: 16px; box-shadow: 0 25px 50px -12px rgba(0,0,0,.35); border: 1px solid #e2e8f0; overflow: hidden; transform: scale(.96); opacity: 0; transition: transform .22s ease, opacity .22s ease; }
@@ -54,14 +54,22 @@
   #ldInfoModal.is-open .ld-progress { animation: ldShrink 6s linear forwards; }
   @keyframes ldShrink { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 
-  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 9999px; color: #64748b; background: #f1f5f9; transition: all .15s; border: 1px solid transparent; }
-  .info-btn:hover { color: #0284c7; background: #e0f2fe; border-color: #bae6fd; }
+  .info-btn { display: inline-flex; align-items: center; justify-content: center; width: 21px; height: 21px; flex: 0 0 21px; border-radius: 999px; color: #2563eb; background: #eff6ff; transition: all .15s; border: 1px solid #bfdbfe; font-size: 11px; font-weight: 950; cursor: pointer; }
+  .info-btn:hover { color: #1d4ed8; background: #dbeafe; border-color: #93c5fd; transform: translateY(-1px); }
 
   /* ====== Slider Navigation ====== */
   .slider-nav-btn { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; color: #64748b; background: #f1f5f9; border: 1px solid #e2e8f0; transition: all .15s; cursor: pointer; }
   .slider-nav-btn:hover { color: #0284c7; background: #e0f2fe; border-color: #bae6fd; }
   .slider-dot { width: 8px; height: 8px; border-radius: 9999px; background: #cbd5e1; transition: all .2s; cursor: pointer; }
   .slider-dot.active { background: #0284c7; width: 20px; border-radius: 4px; }
+  .trend-note { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 9999px; background: #f0f9ff; color: #0369a1; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+  .trend-note-dot { width: 7px; height: 7px; border-radius: 9999px; background: #0ea5e9; box-shadow: 0 0 0 4px rgba(14,165,233,.14); }
+  .break-row-main { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .break-row-sub { display: block; margin-top: 2px; font-size: 10px; font-weight: 700; color: #94a3b8; }
+  .break-growth-chip { display: inline-flex; align-items: center; justify-content: center; min-width: 82px; padding: 5px 8px; border-radius: 9999px; font-size: 11px; font-weight: 900; letter-spacing: .01em; background: #f8fafc; color: #475569; }
+  .break-growth-chip.up { background: #ecfdf5; color: #047857; }
+  .break-growth-chip.down { background: #fef2f2; color: #b91c1c; }
+  .break-growth-chip.flat { background: #f8fafc; color: #64748b; }
 </style>
 
 <div class="max-w-[1600px] mx-auto px-3 md:px-4 py-4 flex flex-col gap-5">
@@ -78,30 +86,30 @@
                 <div class="flex items-center gap-1.5">
                     <h1 class="text-lg sm:text-xl font-bold text-slate-800 truncate">Layanan Digital</h1>
                     <button type="button" onclick="openLdInfoModal()" class="info-btn shrink-0" title="Informasi Dashboard" aria-label="Informasi Dashboard">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        i
                     </button>
                 </div>
                 <p class="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate" id="lbl_periode_aktif">Menunggu data sinkronisasi...</p>
             </div>
             <!-- Mobile: toggle filter -->
-            <button type="button" id="btnToggleFilter" class="xl:hidden shrink-0 w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 ml-auto" aria-label="Toggle Filter">
+            <button type="button" id="btnToggleFilter" class="hidden" aria-label="Toggle Filter">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
             </button>
         </div>
 
         <!-- Right: Filters (1 baris di desktop) -->
-        <div id="filterPanel" class="hidden xl:flex flex-wrap sm:flex-nowrap items-end gap-2 sm:gap-3">
+        <div id="legacyLayananDigitalFilterPanel" class="hidden">
             <div class="flex flex-col w-[calc(50%-4px)] sm:w-auto">
                 <label class="text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-0.5 tracking-wider">CLOSING M-1</label>
-                <input type="date" id="closing_date" class="inp text-slate-700 shadow-sm w-full sm:w-[130px]">
+                <input type="date" id="legacy_ld_closing_date" class="inp text-slate-700 shadow-sm w-full sm:w-[130px]">
             </div>
             <div class="flex flex-col w-[calc(50%-4px)] sm:w-auto">
                 <label class="text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-0.5 tracking-wider">HARIAN / ACTUAL</label>
-                <input type="date" id="harian_date" class="inp text-slate-700 shadow-sm w-full sm:w-[130px]">
+                <input type="date" id="legacy_ld_harian_date" class="inp text-slate-700 shadow-sm w-full sm:w-[130px]">
             </div>
             <div class="flex flex-col w-full sm:w-auto">
                 <label class="text-[9px] sm:text-[10px] font-extrabold text-slate-500 uppercase ml-1 mb-0.5 tracking-wider">AREA / CABANG</label>
-                <select id="opt_area" class="inp text-blue-700 shadow-sm w-full sm:w-[180px]">
+                <select id="legacy_ld_opt_area" class="inp text-blue-700 shadow-sm w-full sm:w-[180px]">
                     <option value="KONSOLIDASI" class="font-bold">Konsolidasi</option>
                     <optgroup label="Berdasarkan Korwil" class="text-slate-400">
                         <option value="KORWIL_SEMARANG" class="text-slate-700">Korwil Semarang</option>
@@ -109,7 +117,7 @@
                         <option value="KORWIL_BANYUMAS" class="text-slate-700">Korwil Banyumas</option>
                         <option value="KORWIL_PEKALONGAN" class="text-slate-700">Korwil Pekalongan</option>
                     </optgroup>
-                    <optgroup label="Berdasarkan Cabang" id="opt_cabang_list" class="text-slate-400"></optgroup>
+                    <optgroup label="Berdasarkan Cabang" id="legacy_ld_opt_cabang_list" class="text-slate-400"></optgroup>
                 </select>
             </div>
         </div>
@@ -206,7 +214,7 @@
       
       <!-- MASTER TABS CHANNEL -->
       <div class="flex justify-center md:justify-start">
-          <div class="flex gap-2 bg-slate-100 border border-slate-200 p-1.5 rounded-xl overflow-x-auto custom-scrollbar">
+          <div class="hidden gap-2 bg-slate-100 border border-slate-200 p-1.5 rounded-xl overflow-x-auto custom-scrollbar">
               <button onclick="changeChannel('VA')" id="tab_VA" class="tab-btn active">Virtual Account (VA)</button>
               <button onclick="changeChannel('BRANCHLESS')" id="tab_BRANCHLESS" class="tab-btn">Branchless</button>
               <button onclick="changeChannel('QRIS')" id="tab_QRIS" class="tab-btn">QRIS Merchant</button>
@@ -219,12 +227,18 @@
               <div id="loadTrend" class="local-loader hidden rounded-xl"><div class="animate-spin h-8 w-8 border-4 border-blue-200 border-t-blue-600 rounded-full"></div></div>
               <div class="flex justify-between items-center mb-2 border-b border-slate-100 pb-2">
                   <h2 class="font-bold text-slate-800 text-sm sm:text-base" id="titleTrend">Tren Transaksi VA</h2>
-                  <select id="trendPeriode" class="inp h-7 sm:h-8 text-[10px] sm:text-[11px] w-[120px] sm:w-[140px]" onchange="fetchTrend()">
-                      <option value="bulanan">6 Bulan Terakhir</option>
-                      <option value="7_hari">7 Hari Terakhir</option>
-                      <option value="30_hari">30 Hari Terakhir</option>
-                      <option value="tahunan">Tahunan</option>
-                  </select>
+                  <div class="flex items-center gap-2">
+                      <div id="trendNote" class="trend-note hidden sm:inline-flex">
+                          <span class="trend-note-dot"></span>
+                          Label 6 Bulan Aktif
+                      </div>
+                      <select id="trendPeriode" class="inp h-7 sm:h-8 text-[10px] sm:text-[11px] w-[120px] sm:w-[140px]" onchange="fetchTrend()">
+                          <option value="bulanan">6 Bulan Terakhir</option>
+                          <option value="7_hari">7 Hari Terakhir</option>
+                          <option value="30_hari">30 Hari Terakhir</option>
+                          <option value="tahunan">Tahunan</option>
+                      </select>
+                  </div>
               </div>
               <div id="chartTrend" class="w-full mt-2 flex-1"></div>
           </div>
@@ -305,7 +319,7 @@
         <div class="flex justify-between items-start px-5 py-4 border-b bg-slate-50">
             <div class="flex items-start gap-3">
                 <span class="bg-blue-100 text-blue-600 p-2 rounded-lg shrink-0">
-                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5"></path><path d="M12 8h.01"></path></svg>
                 </span>
                 <div>
                     <h3 id="ldInfoTitle" class="text-base font-extrabold text-slate-800 leading-tight">Tentang Dashboard Layanan Digital</h3>
@@ -338,6 +352,21 @@
 
   const nf = new Intl.NumberFormat('id-ID');
   const fmt = n => nf.format(Number(n||0));
+  const fmtCompact = (value, digits = 1) => {
+      const num = Number(value || 0);
+      const abs = Math.abs(num);
+      if (abs >= 1000000000000) return (num / 1000000000000).toFixed(digits) + ' T';
+      if (abs >= 1000000000) return (num / 1000000000).toFixed(digits) + ' M';
+      if (abs >= 1000000) return (num / 1000000).toFixed(digits) + ' Jt';
+      if (abs >= 1000) return (num / 1000).toFixed(digits) + ' Rb';
+      return nf.format(num);
+  };
+  const fmtGrowth = (value) => {
+      const num = Number(value || 0);
+      if (num > 0) return { text: '▲ ' + Math.abs(num).toFixed(2) + '%', cls: 'up' };
+      if (num < 0) return { text: '▼ ' + Math.abs(num).toFixed(2) + '%', cls: 'down' };
+      return { text: '0.00%', cls: 'flat' };
+  };
   
   let chartTrendObj = null;
   let chartDonutObj = null;
@@ -413,14 +442,23 @@
   document.getElementById('harian_date').addEventListener('change', () => runFullSync());
   document.getElementById('opt_area').addEventListener('change', () => runFullSync());
 
-  // Mobile filter toggle
-  document.getElementById('btnToggleFilter').addEventListener('click', () => {
-      const panel = document.getElementById('filterPanel');
-      panel.classList.toggle('hidden');
-  });
+  function bindLayananDigitalNavbarControls() {
+      const panel = document.getElementById('layananDigitalNavbarFilterPanel');
+      const toggle = document.getElementById('layananDigitalNavbarFilterToggle');
+      const close = document.getElementById('layananDigitalNavbarFilterClose');
+      if (!panel || !toggle) return;
+      const setOpen = open => { panel.classList.toggle('hidden', !open); panel.classList.toggle('flex', open); toggle.classList.toggle('is-active', open); toggle.setAttribute('aria-expanded', open ? 'true' : 'false'); };
+      toggle.addEventListener('click', event => { event.stopPropagation(); setOpen(panel.classList.contains('hidden')); });
+      close?.addEventListener('click', () => setOpen(false));
+      document.addEventListener('click', event => { if (panel.classList.contains('flex') && !panel.contains(event.target) && !toggle.contains(event.target)) setOpen(false); });
+      document.getElementById('ldChannelSelect')?.addEventListener('change', event => changeChannel(event.target.value));
+  }
+  bindLayananDigitalNavbarControls();
 
   function changeChannel(ch) {
       currentActiveChannel = ch;
+      const select = document.getElementById('ldChannelSelect');
+      if (select) select.value = ch;
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById('tab_' + ch).classList.add('active');
 
@@ -531,15 +569,16 @@
   function initCharts() {
       chartTrendObj = new ApexCharts(document.querySelector("#chartTrend"), {
           series: [], 
-          chart: { type: 'area', height: 340, parentHeightOffset: 0, toolbar: { show: false } },
+          chart: { type: 'area', height: 340, parentHeightOffset: 0, toolbar: { show: false }, zoom: { enabled: false } },
           colors: ['#0284c7'], 
           dataLabels: { enabled: false }, 
           legend: { show: false }, 
-          stroke: { curve: 'smooth', width: 3 },
+          stroke: { curve: 'smooth', width: 3.5, lineCap: 'round' },
+          markers: { size: 4, strokeWidth: 2, hover: { size: 6 }, colors: ['#ffffff'], strokeColors: ['#0284c7'] },
           fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.05, stops: [0, 100] } },
-          grid: { padding: { bottom: 15, left: 10, right: 10 } },
-          xaxis: { categories: [], labels: { style: { fontSize: '10px' }, offsetY: -5 }, tooltip: { enabled: false } },
-          yaxis: { labels: { formatter: (val) => val >= 1000000000 ? (val/1000000000).toFixed(1)+' M' : (val >= 1000000 ? (val/1000000).toFixed(0)+' Jt' : val) } },
+          grid: { borderColor: '#e2e8f0', strokeDashArray: 4, padding: { bottom: 15, left: 10, right: 12, top: 8 } },
+          xaxis: { categories: [], labels: { style: { fontSize: '10px', fontWeight: 700, colors: '#64748b' }, offsetY: -5 }, axisBorder: { show: false }, axisTicks: { show: false }, tooltip: { enabled: false } },
+          yaxis: { labels: { formatter: (val) => fmtCompact(val, val >= 1000000000 ? 1 : 0), style: { fontSize: '10px', fontWeight: 700, colors: ['#94a3b8'] } } },
           tooltip: {
               theme: 'light',
               y: {
@@ -557,10 +596,32 @@
           series: [], 
           chart: { type: 'donut', height: 330, parentHeightOffset: 0 }, 
           labels: [],
-          colors: ['#8b5cf6', '#0ea5e9', '#10b981', '#f59e0b', '#f43f5e', '#64748b'],
-          plotOptions: { donut: { size: '70%' } }, 
+          colors: ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#64748b', '#1d4ed8'],
+          plotOptions: {
+              pie: {
+                  donut: {
+                      size: '70%',
+                      labels: {
+                          show: true,
+                          name: { show: true, fontSize: '12px', fontWeight: 800, color: '#64748b' },
+                          value: { show: true, fontSize: '18px', fontWeight: 900, color: '#0f172a', formatter: (val) => 'Rp ' + fmtCompact(val, 1) },
+                          total: {
+                              show: true,
+                              label: 'Total',
+                              fontSize: '12px',
+                              fontWeight: 800,
+                              color: '#64748b',
+                              formatter: function(w) {
+                                  const total = w.globals.seriesTotals.reduce((sum, item) => sum + item, 0);
+                                  return 'Rp ' + fmtCompact(total, 1);
+                              }
+                          }
+                      }
+                  }
+              }
+          }, 
           dataLabels: { enabled: false }, 
-          legend: { show: true, position: 'bottom', fontSize: '9.5px', fontFamily: 'Inter', offsetY: -5, markers: { width: 8, height: 8, radius: 2 }, itemMargin: { horizontal: 5, vertical: 2 } },
+          legend: { show: true, position: 'bottom', fontSize: '9.5px', fontFamily: 'Roboto', offsetY: -5, markers: { width: 8, height: 8, radius: 2 }, itemMargin: { horizontal: 5, vertical: 2 } },
           tooltip: {
               custom: function({series, seriesIndex, dataPointIndex, w}) {
                   const val = series[seriesIndex];
@@ -583,7 +644,7 @@
           chart: { type: 'bar', height: 300, toolbar: { show: false } },
           colors: ['#0284c7', '#94a3b8'],
           plotOptions: { bar: { horizontal: false, columnWidth: '55%', borderRadius: 4, dataLabels: { position: 'top' } } },
-          dataLabels: { enabled: false },
+          dataLabels: { enabled: true, offsetY: -10, style: { fontSize: '10px', fontWeight: 800, colors: ['#0f172a'] }, formatter: (val) => fmtCompact(val, 1) },
           stroke: { show: true, width: 2, colors: ['transparent'] },
           xaxis: { categories: [], labels: { style: { fontSize: '10px', fontWeight: 700 } } },
           yaxis: { labels: { formatter: (val) => val >= 1000000000 ? (val/1000000000).toFixed(1)+' M' : (val >= 1000000 ? (val/1000000).toFixed(0)+' Jt' : nf.format(val)), style: { fontSize: '10px' } } },
@@ -597,13 +658,58 @@
   async function fetchTrend() {
       showLoad('loadTrend');
       const area = parseAreaValue();
-      const payload = { type: "tren_nominal_va", harian_date: document.getElementById('harian_date').value, kode_kantor: area.kode_kantor, korwil: area.korwil, periode: document.getElementById('trendPeriode').value, channel: currentActiveChannel };
+      const periode = document.getElementById('trendPeriode').value;
+      const isMonthly = periode === 'bulanan';
+      const payload = { type: "tren_nominal_va", harian_date: document.getElementById('harian_date').value, kode_kantor: area.kode_kantor, korwil: area.korwil, periode, channel: currentActiveChannel };
       try {
           const r = await fetch(API_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
           const j = await r.json();
           if(j.status === 200 && j.data && j.data.chart_nominal) {
-              chartTrendObj.updateOptions({ xaxis: { categories: j.data.chart_nominal.labels } });
-              chartTrendObj.updateSeries(j.data.chart_nominal.series);
+              const series = (j.data.chart_nominal.series || []).map((item) => ({ ...item }));
+              chartTrendObj.updateOptions({
+                  xaxis: {
+                      categories: j.data.chart_nominal.labels,
+                      labels: {
+                          rotate: isMonthly ? 0 : -25,
+                          hideOverlappingLabels: false,
+                          style: { fontSize: isMonthly ? '10px' : '9px', fontWeight: 700, colors: '#64748b' }
+                      }
+                  },
+                  markers: {
+                      size: isMonthly ? 5 : 3,
+                      hover: { size: isMonthly ? 7 : 5 }
+                  },
+                  dataLabels: {
+                      enabled: isMonthly,
+                      offsetY: -10,
+                      background: {
+                          enabled: true,
+                          foreColor: '#0f172a',
+                          borderRadius: 8,
+                          padding: 6,
+                          opacity: 0.88,
+                          borderWidth: 1,
+                          borderColor: '#dbeafe'
+                      },
+                      style: {
+                          fontSize: '10px',
+                          fontWeight: 900,
+                          colors: ['#0369a1']
+                      },
+                      formatter: (val) => fmtCompact(val, val >= 1000000000 ? 3 : 1)
+                  },
+                  fill: {
+                      type: 'gradient',
+                      gradient: {
+                          shadeIntensity: 1,
+                          opacityFrom: isMonthly ? 0.22 : 0.3,
+                          opacityTo: 0.04,
+                          stops: [0, 100]
+                      }
+                  }
+              });
+              document.getElementById('trendNote')?.classList.toggle('hidden', !isMonthly);
+              chartTrendObj.updateSeries(series);
           }
       } catch(e){} finally { hideLoad('loadTrend'); }
   }
@@ -674,22 +780,56 @@
               return `<tr class="${bg}"><td class="${pad}">${nama}</td><td class="text-right text-blue-700">${fmt(cN)}</td><td class="text-right text-[10px] text-slate-400">${fmt(pN)}</td><td class="text-center text-[11px] font-bold bg-slate-50/50">${c_gN}</td><td class="text-right text-indigo-700">${fmt(cT)}</td><td class="text-right text-[10px] text-slate-400">${fmt(pT)}</td><td class="text-center text-[11px] font-bold bg-slate-50/50 pr-4">${c_gT}</td></tr>`;
           };
 
+          const renderBreakdownRow = (nama, cN, pN, gN, cT, pT, gT, isBold=false, isChild=false) => {
+              const bg = isBold ? 'bg-slate-50 font-bold' : (isChild ? 'text-slate-600 bg-slate-50/20' : 'font-bold text-slate-700');
+              const pad = isChild ? 'pl-10 relative before:absolute before:w-3 before:h-px before:bg-slate-300 before:left-5 before:top-1/2' : 'pl-4';
+              const gNom = fmtGrowth(gN);
+              const gTrx = fmtGrowth(gT);
+
+              return `<tr class="${bg}">
+                  <td class="${pad}">
+                      <div class="break-row-main">
+                          <span>${nama}</span>
+                          ${isBold ? '<span class="text-[10px] font-black text-slate-400 uppercase tracking-wider">Total</span>' : ''}
+                      </div>
+                  </td>
+                  <td class="text-right text-blue-700">
+                      <div>${fmt(cN)}</div>
+                      <span class="break-row-sub">Rp ${fmtCompact(cN, 1)}</span>
+                  </td>
+                  <td class="text-right text-[10px] text-slate-400">
+                      <div>${fmt(pN)}</div>
+                      <span class="break-row-sub">Rp ${fmtCompact(pN, 1)}</span>
+                  </td>
+                  <td class="text-center bg-slate-50/50"><span class="break-growth-chip ${gNom.cls}">${gNom.text}</span></td>
+                  <td class="text-right text-indigo-700">
+                      <div>${fmt(cT)}</div>
+                      <span class="break-row-sub">${fmtCompact(cT, 1)} trx</span>
+                  </td>
+                  <td class="text-right text-[10px] text-slate-400">
+                      <div>${fmt(pT)}</div>
+                      <span class="break-row-sub">${fmtCompact(pT, 1)} trx</span>
+                  </td>
+                  <td class="text-center bg-slate-50/50 pr-4"><span class="break-growth-chip ${gTrx.cls}">${gTrx.text}</span></td>
+              </tr>`;
+          };
+
           const gt = j.data.grand_total;
-          tbody.innerHTML += rHtml('GRAND TOTAL', gt.curr_nom, gt.prev_nom, gt.growth_nom, gt.curr_trx, gt.prev_trx, gt.growth_trx, true);
+          tbody.innerHTML += renderBreakdownRow('GRAND TOTAL', gt.curr_nom, gt.prev_nom, gt.growth_nom, gt.curr_trx, gt.prev_trx, gt.growth_trx, true);
 
           if (isKonsolidasi) {
               dt.forEach(kw => {
-                  tbody.innerHTML += rHtml(kw.korwil, kw.curr_nom, kw.prev_nom, kw.growth_nom, kw.curr_trx, kw.prev_trx, kw.growth_trx);
+                  tbody.innerHTML += renderBreakdownRow(kw.korwil, kw.curr_nom, kw.prev_nom, kw.growth_nom, kw.curr_trx, kw.prev_trx, kw.growth_trx);
               });
           } else if (isSpecificKorwil) {
               dt.forEach(kw => {
                   kw.cabang.forEach(cb => {
-                      tbody.innerHTML += rHtml(cb.nama, cb.curr_nom, cb.prev_nom, cb.growth_nom, cb.curr_trx, cb.prev_trx, cb.growth_trx);
+                      tbody.innerHTML += renderBreakdownRow(cb.nama, cb.curr_nom, cb.prev_nom, cb.growth_nom, cb.curr_trx, cb.prev_trx, cb.growth_trx);
                   });
               });
           } else {
               dt.forEach(kk => {
-                  tbody.innerHTML += rHtml(kk.nama, kk.curr_nom, kk.prev_nom, kk.growth_nom, kk.curr_trx, kk.prev_trx, kk.growth_trx);
+                  tbody.innerHTML += renderBreakdownRow(kk.nama, kk.curr_nom, kk.prev_nom, kk.growth_nom, kk.curr_trx, kk.prev_trx, kk.growth_trx);
               });
           }
       } catch(e){} finally { hideLoad('loadTable'); }
@@ -815,8 +955,7 @@
           type: "detail_breakdown_transaksi",
           harian_date: document.getElementById('harian_date').value,
           closing_date: document.getElementById('closing_date').value,
-          kode_kantor: "",
-          korwil: "",
+          ...parseAreaValue(),
           channel: ch
       };
       try {
@@ -908,6 +1047,7 @@
           type: "top_bottom_cabang",
           harian_date: document.getElementById('harian_date').value,
           closing_date: document.getElementById('closing_date').value,
+          ...parseAreaValue(),
           channel: ch
       };
       try {

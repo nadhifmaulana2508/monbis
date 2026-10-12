@@ -1,0 +1,23 @@
+RewriteEngine On
+# Canonical URL: migrate old query-tab links to path-based routes.
+RewriteCond %{QUERY_STRING} (^|&)tab=detail(&|$) [NC]
+RewriteCond %{QUERY_STRING} (^|&)category=([^&]+) [NC]
+RewriteRule ^rbb/?$ rbb/detail/%2 [R=302,L,NE,QSD]
+RewriteCond %{QUERY_STRING} (^|&)tab=([^&]+) [NC]
+RewriteRule ^(kpi|rbb)/?$ $1/%2 [R=302,L,NE,QSD]
+
+# These aliases also work when this FE folder is renamed to /rbb or /kpi.
+RewriteRule ^projection/?$ index.php?page=rbb&tab=projection [QSA,L]
+RewriteRule ^aba/?$ index.php?page=rbb&tab=aba [QSA,L]
+RewriteRule ^detail/([^/]+)/?$ index.php?page=rbb&tab=detail&category=$1 [QSA,L]
+RewriteRule ^print/?$ index.php?page=rbb_print [QSA,L]
+RewriteRule ^summary/?$ index.php?page=kpi&tab=summary [QSA,L]
+RewriteRule ^calculate/?$ index.php?page=kpi&tab=calculate [QSA,L]
+RewriteRule ^setting/?$ index.php?page=kpi&tab=setting [QSA,L]
+
+RewriteRule ^$ index.php?page=launcher [QSA,L]
+RewriteRule ^report_npl/?$ index.php?page=collection [QSA,L]
+RewriteRule ^rbb/print/?$ index.php?page=rbb_print [QSA,L]
+RewriteRule ^rbb/detail/([^/]+)/?$ index.php?page=rbb&tab=detail&category=$1 [QSA,L]
+RewriteRule ^(kpi|rbb)/([^/]+)/?$ index.php?page=$1&tab=$2 [QSA,L]
+RewriteRule ^(launcher|kpi|rbb|components|collection|templates|settings)/?$ index.php?page=$1 [QSA,L]

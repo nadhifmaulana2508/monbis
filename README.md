@@ -137,6 +137,10 @@ monbis/
 - API Guard: JWT verify di `middlewares/auth.php` (untuk endpoint yang butuh auth)
 - Frontend Guard: di `index.php` cek cookie sebelum load halaman
 
+### Konfigurasi SSO di aaPanel
+- Tambahkan `SSO_JWT_SECRET` pada `.env` Monbis dengan nilai yang sama seperti secret JWT pada API SSO.
+- Guard akan memvalidasi token SSO secara lokal terlebih dahulu, lalu memakai endpoint `whoami` sebagai fallback.
+
 ---
 
 ## Konsep Domain Penting

@@ -1,58 +1,23 @@
 <div class="max-w-[100vw] lg:max-w-7xl mx-auto px-2 md:px-4 py-4" id="MB_root">
-  
-  <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-3 mb-4">
-    <div class="flex items-center justify-between w-full lg:w-auto shrink-0">
-        <div class="flex items-center gap-3">
-          <h1 id="MB_title" class="font-bold flex items-center gap-2 text-slate-800 text-lg md:text-xl">
-            <span class="bg-blue-600 text-white p-1.5 rounded-lg shadow-sm text-xs">📊</span>
-            <span>Migrasi DPD</span>
-          </h1>
-          <button onclick="MB_showAnalisis()" class="flex items-center gap-1.5 px-2.5 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300 rounded-md text-[10px] font-bold shadow-sm transition">
-              <span class="text-xs">ℹ️</span> Analisis
-          </button>
-        </div>
-        
-        <button type="button" onclick="document.getElementById('MB_formFilter').classList.toggle('hidden'); document.getElementById('MB_formFilter').classList.toggle('flex');" class="lg:hidden h-[28px] px-2.5 bg-white border border-slate-200 text-slate-700 rounded-md flex items-center gap-1 shadow-sm font-bold text-[10px] ml-2 shrink-0">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-            Filter
-        </button>
+  <div id="MB_pageHead" class="mb-page-head flex items-center justify-between gap-3 mb-4 shrink-0">
+    <div class="min-w-0">
+      <h1 id="MB_title" class="font-bold flex items-center gap-2 text-slate-800 text-lg md:text-xl min-w-0">
+        <span class="mb-page-icon bg-blue-600 text-white rounded-lg shadow-sm" aria-hidden="true">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9"></path><path d="M10 19V5"></path><path d="M16 19v-7"></path><path d="M22 19V3"></path></svg>
+        </span>
+        <span class="truncate">Migrasi DPD</span>
+        <button type="button" onclick="MB_showAnalisis()" class="mb-info-button" aria-label="Buka analisis migrasi" title="Analisis migrasi">i</button>
+      </h1>
+      <p class="mb-page-subtitle">Perbandingan pergerakan bucket berdasarkan nominal terpilih</p>
     </div>
-
-    <form id="MB_formFilter" class="hidden lg:flex bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm flex-wrap items-center lg:items-end gap-2 shrink-0 w-full lg:w-auto transition-all">
-      <div class="flex flex-col justify-center px-1 mr-1">
-          <label class="relative inline-flex items-center cursor-pointer mb-1" title="Aktifkan mode Proyeksi">
-            <input type="checkbox" id="MB_isProyeksi" onchange="MB_toggleProyeksi()" class="sr-only peer">
-            <div class="w-8 h-4 bg-slate-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-600"></div>
-            <span class="ml-1.5 text-[9px] font-bold text-indigo-700 uppercase tracking-wider">Proyeksi</span>
-          </label>
-      </div>
-
-      <div class="flex flex-col gap-0.5 flex-1 lg:flex-none lg:w-[110px]">
-        <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1" for="MB_closing">Closing</label>
-        <input type="date" id="MB_closing" onchange="MB_checkDate()" class="w-full border border-slate-300 rounded-md px-2 text-[11px] font-medium h-7 shadow-sm focus:border-blue-500 outline-none cursor-pointer">
-      </div>
-      <div class="flex flex-col gap-0.5 flex-1 lg:flex-none lg:w-[110px]">
-        <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1" for="MB_harian">Act/Proj</label>
-        <input type="date" id="MB_harian" onchange="MB_checkDate()" class="w-full border border-slate-300 rounded-md px-2 text-[11px] font-medium h-7 shadow-sm focus:border-blue-500 outline-none cursor-pointer">
-      </div>
-      <div class="flex flex-col gap-0.5 w-full lg:w-auto lg:min-w-[150px]">
-        <label class="text-[9px] font-bold text-slate-500 uppercase tracking-wider ml-1" for="MB_optKantor">Cabang</label>
-        <select id="MB_optKantor" onchange="MB_checkDate()" class="w-full border border-slate-300 rounded-md px-2 text-[11px] font-medium h-7 shadow-sm focus:border-blue-500 outline-none cursor-pointer">
-          <option value="">Konsolidasi (Semua)</option>
-        </select>
-      </div>
-
-      <div class="flex gap-1 mt-1 lg:mt-auto w-full lg:w-auto justify-end">
-          <button type="button" onclick="MB_exportRekap()" class="h-7 w-8 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md shadow-sm transition flex items-center justify-center shrink-0" title="Export Excel Rekap">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          </button>
-      </div>
-    </form>
-  </div>
-
-  <div class="flex bg-slate-200/60 p-1 rounded-md w-max mb-3 shadow-inner border border-slate-200">
-      <button onclick="MB_switchTab('rekap')" id="btnTabRekap" class="px-4 py-1 text-[11px] md:text-xs font-bold rounded bg-white text-blue-600 shadow-sm transition">Rekap Summary</button>
-      <button onclick="MB_switchTab('migrasi')" id="btnTabMigrasi" class="px-4 py-1 text-[11px] md:text-xs font-bold rounded text-slate-500 hover:text-slate-800 transition">Matriks Migrasi</button>
+    <div class="mb-page-actions flex items-center gap-1.5 shrink-0">
+      <button id="MB_swapViewButton" type="button" onclick="MB_toggleView()" class="mb-swap-button btn-icon" aria-label="Tampilkan matriks migrasi" title="Tampilkan matriks migrasi" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11"></path><path d="m14 3 4 4-4 4"></path><path d="M17 17H6"></path><path d="m10 13-4 4 4 4"></path></svg>
+      </button>
+      <button id="MB_exportRekapButton" type="button" onclick="MB_exportRekap()" class="mb-export-button btn-icon" title="Export Excel Rekap" aria-label="Export Excel Rekap">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 20h14"></path></svg>
+      </button>
+    </div>
   </div>
 
   <div id="MB_loading" class="hidden flex items-center gap-2 text-sm text-blue-600 font-bold mb-3 tracking-wider">
@@ -68,11 +33,11 @@
               <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 border-b pb-1">📊 NPL Closing (M-1)</div>
               <div class="flex justify-between items-end">
                   <div>
-                      <div class="text-[10px] text-slate-400 font-medium">Total OS M-1</div>
+                      <div id="MB_labelTotalM1" class="text-[10px] text-slate-400 font-medium">Total Saldo Bank M-1</div>
                       <div id="stat_os_m1" class="text-sm font-bold text-slate-700">0</div>
                   </div>
                   <div class="text-right">
-                      <div class="text-[10px] text-red-400 font-medium">NPL OS M-1</div>
+                      <div id="MB_labelNplM1" class="text-[10px] text-red-400 font-medium">NPL Saldo Bank M-1</div>
                       <div class="flex items-baseline gap-1 justify-end">
                           <div id="stat_npl_m1" class="text-sm font-bold text-red-600">0</div>
                           <div id="stat_pct_m1" class="text-[10px] font-bold text-red-600 bg-red-50 px-1 rounded">0%</div>
@@ -85,11 +50,11 @@
               <div class="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-2 border-b border-blue-100 pb-1">📈 NPL Actual/Proyeksi</div>
               <div class="flex justify-between items-end">
                   <div>
-                      <div class="text-[10px] text-slate-500 font-medium">Total OS Act</div>
+                      <div id="MB_labelTotalActual" class="text-[10px] text-slate-500 font-medium">Total Saldo Bank Actual</div>
                       <div id="stat_os_act" class="text-sm font-bold text-slate-800">0</div>
                   </div>
                   <div class="text-right">
-                      <div class="text-[10px] text-red-500 font-medium">NPL OS Act</div>
+                      <div id="MB_labelNplActual" class="text-[10px] text-red-500 font-medium">NPL Saldo Bank Actual</div>
                       <div class="flex items-baseline gap-1 justify-end">
                           <div id="stat_npl_act" class="text-sm font-bold text-red-600">0</div>
                           <div id="stat_pct_act" class="text-[10px] font-bold text-white bg-red-500 px-1 rounded shadow-sm">0%</div>
@@ -114,6 +79,11 @@
               </div>
           </div>
 
+      </div>
+
+      <div id="angsuran_category_summary" class="hidden mb-3 rounded-lg border border-blue-200 bg-blue-50/40 px-3 py-2">
+          <div class="mb-1 text-[10px] font-bold uppercase tracking-wider text-blue-700">Angsuran periode — ringkasan per kategori</div>
+          <div id="angsuran_category_summary_content" class="grid grid-cols-1 sm:grid-cols-3 gap-1.5 text-[9px] text-slate-600"></div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -164,7 +134,7 @@
       <h3 class="font-bold text-amber-800 text-sm flex items-center gap-2">💡 Analisis Eksekutif & Rekomendasi</h3>
       <button onclick="document.getElementById('MB_modalAnalisis').classList.add('hidden')" class="text-amber-800 hover:text-red-600 font-bold text-lg leading-none">&times;</button>
     </div>
-    <div class="p-4 text-xs text-amber-900 space-y-3 leading-relaxed" id="MB_narrative_box">
+    <div class="p-4 text-xs text-amber-900 space-y-3 leading-relaxed max-h-[85vh] overflow-y-auto" id="MB_narrative_box">
         </div>
   </div>
 </div>
@@ -183,7 +153,7 @@
         </div>
         <select id="MB_modKankas" onchange="MB_filterDetail()" class="w-20 md:w-28 px-1 h-7 bg-white border border-slate-200 rounded text-[10px] outline-none focus:border-blue-500 text-slate-600 shrink-0"><option value="">Kankas (All)</option></select>
         <select id="MB_modAo" onchange="MB_filterDetail()" class="w-20 md:w-28 px-1 h-7 bg-white border border-slate-200 rounded text-[10px] outline-none focus:border-blue-500 text-slate-600 shrink-0"><option value="">AO (All)</option></select>
-        <button onclick="MB_exportDetail()" class="flex items-center justify-center w-7 h-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-sm transition shrink-0" title="Download Excel">📥</button>
+        <button id="MB_exportDetailBtn" onclick="MB_exportDetail()" class="flex items-center justify-center w-7 h-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-sm transition shrink-0" title="Download seluruh detail Excel">📥</button>
         <button id="MB_modalClose" class="w-7 h-7 flex items-center justify-center rounded bg-red-50 hover:bg-red-500 hover:text-white text-red-500 transition font-bold text-base leading-none shrink-0">&times;</button>
       </div>
     </div>
@@ -279,6 +249,214 @@
   .th-sort:after { content: " ⬍"; font-size: 8px; color: #9ca3af; margin-left: 2px; }
   .th-sort.asc:after { content: " ▲"; color: #2563eb; }
   .th-sort.desc:after { content: " ▼"; color: #2563eb; }
+
+  /* Migrasi DPD final polish: konsisten, responsif, dan mendukung dark/light. */
+  :root {
+    --mb-bg: #f8fafc;
+    --mb-surface: #ffffff;
+    --mb-soft: #f1f5f9;
+    --mb-text: #1e293b;
+    --mb-muted: #64748b;
+    --mb-border: #dbe3ee;
+    --mb-line: #e2e8f0;
+    --mb-scroll: #94a3b8;
+    --mb-scroll-track: #eef2f7;
+    --mb-worse-bg: #fef2f2;
+    --mb-worse-text: #b91c1c;
+    --mb-better-bg: #f0fdf4;
+    --mb-better-text: #15803d;
+  }
+  :root[data-monbis-theme="dark"] {
+    --mb-bg: #0f172a;
+    --mb-surface: #111827;
+    --mb-soft: #1e293b;
+    --mb-text: #e2e8f0;
+    --mb-muted: #94a3b8;
+    --mb-border: #334155;
+    --mb-line: #263449;
+    --mb-scroll: #64748b;
+    --mb-scroll-track: #111827;
+    --mb-worse-bg: #3f1d24;
+    --mb-worse-text: #fca5a5;
+    --mb-better-bg: #123b2a;
+    --mb-better-text: #86efac;
+  }
+
+  #MB_root,
+  #MB_root button,
+  #MB_root input,
+  #MB_root select,
+  #MB_modal,
+  #MB_modal button,
+  #MB_modal input,
+  #MB_modal select {
+    font-family: Roboto, Arial, system-ui, sans-serif !important;
+  }
+  #MB_root {
+    width: 100%;
+    max-width: 1600px !important;
+    min-height: calc(100dvh - 72px);
+    color: var(--mb-text);
+    background: var(--mb-bg);
+    box-sizing: border-box;
+  }
+  #MB_root .mb-page-head {
+    min-height: 58px;
+    padding: 10px 12px;
+    border: 1px solid var(--mb-border);
+    border-radius: 14px;
+    background: var(--mb-surface);
+    box-shadow: 0 1px 3px rgba(15,23,42,.05);
+  }
+  #MB_root .mb-page-icon {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+  }
+  #MB_root #MB_title { color: var(--mb-text) !important; }
+  #MB_root .mb-page-subtitle { margin: 3px 0 0 44px; color: var(--mb-muted); font-size: 10px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #MB_root .mb-info-button,
+  #MB_root .mb-swap-button,
+  #MB_root .mb-export-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--mb-border);
+    border-radius: 9px;
+    transition: transform .15s ease, background-color .15s ease, border-color .15s ease;
+  }
+  #MB_root .mb-info-button {
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border-radius: 999px;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #2563eb;
+    font-size: 11px;
+    font-weight: 900;
+    cursor: pointer;
+  }
+  #MB_root .mb-swap-button {
+    width: 36px;
+    height: 36px;
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #2563eb;
+    cursor: pointer;
+  }
+  #MB_root .mb-export-button {
+    width: 36px;
+    height: 36px;
+    background: #059669 !important;
+    border-color: #059669 !important;
+    color: #fff !important;
+    cursor: pointer;
+    box-shadow: 0 5px 12px rgba(15,23,42,.12);
+  }
+  #MB_root .mb-info-button:hover,
+  #MB_root .mb-swap-button:hover,
+  #MB_root .mb-export-button:hover { transform: translateY(-1px); border-color: #94a3b8; }
+  #MB_root .mb-export-button:hover { background: #047857 !important; }
+
+  #MB_root #MB_loading { color: var(--mb-muted) !important; }
+  #MB_root #view_rekap > .grid > div,
+  #MB_root #angsuran_category_summary,
+  #MB_root #list_perbaikan > div,
+  #MB_root #list_stay > div,
+  #MB_root #list_pemburukan > div {
+    background: var(--mb-surface) !important;
+    border-color: var(--mb-border) !important;
+    color: var(--mb-text);
+  }
+  #MB_root #view_rekap > .grid > div > div:first-child { background: var(--mb-soft) !important; border-color: var(--mb-line) !important; }
+  #MB_root #angsuran_category_summary_content > div { background: var(--mb-surface) !important; border-color: var(--mb-border) !important; color: var(--mb-text) !important; }
+  #MB_root #MB_tblWrap {
+    border-color: var(--mb-border) !important;
+    background: var(--mb-surface) !important;
+    scrollbar-width: thin;
+    scrollbar-color: var(--mb-scroll) var(--mb-scroll-track);
+  }
+  #MB_root #MB_tblWrap::-webkit-scrollbar,
+  #MB_modalTableWrap::-webkit-scrollbar,
+  #MB_modalTotals::-webkit-scrollbar { width: 5px; height: 5px; }
+  #MB_root #MB_tblWrap::-webkit-scrollbar-track,
+  #MB_modalTableWrap::-webkit-scrollbar-track { background: var(--mb-scroll-track); border-radius: 999px; }
+  #MB_root #MB_tblWrap::-webkit-scrollbar-thumb,
+  #MB_modalTableWrap::-webkit-scrollbar-thumb { background: var(--mb-scroll); border-radius: 999px; }
+  #MB_root #MB_table { color: var(--mb-text) !important; }
+  #MB_root #MB_table thead,
+  #MB_root #MB_table thead tr,
+  #MB_root #MB_table thead th,
+  #MB_root #MB_table thead th.sticky-col-1,
+  #MB_root #MB_table thead th.sticky-col-2 {
+    background: var(--mb-soft) !important;
+    color: var(--mb-text) !important;
+    border-color: var(--mb-line) !important;
+  }
+  #MB_root #MB_table tbody td { background: var(--mb-surface) !important; color: var(--mb-text) !important; border-color: var(--mb-line) !important; }
+  #MB_root #MB_table tbody tr:hover td { background: var(--mb-soft) !important; }
+  #MB_root #MB_table #MB_row_total td,
+  #MB_root #MB_table #MB_row_total td.sticky-col-1,
+  #MB_root #MB_table #MB_row_total td.sticky-col-2 {
+    background: var(--mb-soft) !important;
+    color: var(--mb-text) !important;
+    border-color: var(--mb-line) !important;
+  }
+  #MB_root #MB_table #MB_row_realisasi td { background: var(--mb-surface) !important; color: var(--mb-text) !important; border-color: var(--mb-line) !important; }
+  #MB_root #MB_table .flow-worse {
+    background: var(--mb-worse-bg) !important;
+    color: var(--mb-worse-text) !important;
+  }
+  #MB_root #MB_table .flow-worse .num,
+  #MB_root #MB_table .flow-worse .cell-link { color: var(--mb-worse-text) !important; }
+  #MB_root #MB_table .flow-better {
+    background: var(--mb-better-bg) !important;
+    color: var(--mb-better-text) !important;
+  }
+  #MB_root #MB_table .flow-better .num,
+  #MB_root #MB_table .flow-better .cell-link { color: var(--mb-better-text) !important; }
+  #MB_root #MB_table td:not(.flow-worse):not(.flow-better) { background: var(--mb-surface) !important; }
+  #MB_root #MB_table .cell-sub { color: var(--mb-muted) !important; }
+  #MB_root #MB_table .cell-link { color: var(--mb-text) !important; }
+
+  #MB_modalCard,
+  #MB_modalCard > div,
+  #MB_modalTable,
+  #MB_modalTableWrap { background: var(--mb-surface) !important; color: var(--mb-text) !important; border-color: var(--mb-border) !important; }
+  #MB_modalCard input,
+  #MB_modalCard select { background: var(--mb-surface) !important; color: var(--mb-text) !important; border-color: var(--mb-border) !important; }
+  #MB_modalThead th { background: var(--mb-soft) !important; color: var(--mb-text) !important; border-color: var(--mb-line) !important; }
+  #MB_modalThead tr.sticky-total td { background: var(--mb-soft) !important; color: var(--mb-text) !important; border-color: var(--mb-line) !important; }
+  #MB_modalTbody td { background: var(--mb-surface) !important; color: var(--mb-text) !important; border-color: var(--mb-line) !important; }
+  #MB_modalTbody tr:hover td { background: var(--mb-soft) !important; }
+  #MB_modalAnalisis > div,
+  #MB_modalAnalisis > div > div { background: var(--mb-surface) !important; color: var(--mb-text) !important; border-color: var(--mb-border) !important; }
+  #MB_modalAnalisis [class*="text-amber-"],
+  #MB_modalAnalisis [class*="text-red-"],
+  #MB_modalAnalisis [class*="text-emerald-"] { color: var(--mb-text) !important; }
+  #MB_modalAnalisis [class*="border-amber-"] { border-color: var(--mb-line) !important; }
+
+  @media (max-width: 767px) {
+    #MB_root { min-height: calc(100dvh - 54px); padding: 6px !important; }
+    #MB_root .mb-page-head { min-height: 50px; padding: 7px 8px; border-radius: 11px; }
+    #MB_root #MB_title { font-size: 14px !important; gap: 6px !important; }
+    #MB_root .mb-page-icon { width: 29px; height: 29px; border-radius: 8px; }
+    #MB_root .mb-page-icon svg { width: 16px; height: 16px; }
+    #MB_root .mb-page-subtitle { display: none; }
+    #MB_root .mb-info-button { width: 17px; height: 17px; font-size: 10px; }
+    #MB_root .mb-swap-button,
+    #MB_root .mb-export-button { width: 30px; height: 30px; }
+    #MB_root #view_rekap > .grid { grid-template-columns: minmax(0, 1fr) !important; }
+    #MB_root #view_rekap > .grid > div { min-width: 0; }
+    #MB_root #MB_tblWrap { max-height: calc(100dvh - 180px) !important; }
+    #MB_root #MB_table { min-width: 1000px; }
+    #MB_modalCard { width: 100vw !important; height: 96dvh !important; border-radius: 16px 16px 0 0 !important; }
+    #MB_modalTable { min-width: 1550px; }
+  }
 </style>
 
 <script>
@@ -311,7 +489,7 @@
 
   const elClosing = $('#MB_closing');
   const elHarian = $('#MB_harian');
-  const elKantor = $('#MB_optKantor');
+  const elFilter = $('#MB_optFilter');
   
   const elHead = $('#MB_thead');
   const elBody = $('#MB_tbody');
@@ -330,8 +508,55 @@
   let currentDetailPage = 1;
   let currentDetailTotal = 0;
   let currentDetailPerPage = 20;
+  let currentDetailSummary = null;
   let _filterTimer = null;
   let _isInitialDetailLoad = false;
+  let kantorList = [];
+  const MB_KORWIL_RANGES = {
+    SEMARANG: ['001', '007'],
+    SOLO: ['008', '014'],
+    BANYUMAS: ['015', '021'],
+    PEKALONGAN: ['022', '028']
+  };
+
+  function getSelectedWilayah() {
+    const value = elFilter.value || '000';
+    if (MB_KORWIL_RANGES[value]) return { korwil: value, kode: null };
+    if (value !== '000') return { korwil: null, kode: value };
+    return { korwil: null, kode: null };
+  }
+
+  function getSelectedNominalLabel() {
+    return (document.getElementById('MB_nominalField')?.value || 'saldo_bank') === 'saldo_bank' ? 'Saldo Bank' : 'Baki Debet';
+  }
+
+  let mbFilterOpen = false;
+  function applyMbNavbarFilterState() {
+    const panel = document.getElementById('migrasiBucketNavbarFilterPanel');
+    const toggle = document.getElementById('migrasiBucketNavbarFilterToggle');
+    if (!panel) return;
+    panel.classList.toggle('hidden', !mbFilterOpen);
+    panel.classList.toggle('flex', mbFilterOpen);
+    toggle?.classList.toggle('is-active', mbFilterOpen);
+    toggle?.setAttribute('aria-expanded', String(mbFilterOpen));
+  }
+
+  function bindMbNavbarFilter() {
+    const panel = document.getElementById('migrasiBucketNavbarFilterPanel');
+    const toggle = document.getElementById('migrasiBucketNavbarFilterToggle');
+    const close = document.getElementById('migrasiBucketNavbarFilterClose');
+    if (!panel || !toggle || toggle.dataset.bound === '1') return;
+    toggle.dataset.bound = '1';
+    toggle.addEventListener('click', () => { mbFilterOpen = !mbFilterOpen; applyMbNavbarFilterState(); });
+    close?.addEventListener('click', () => { mbFilterOpen = false; applyMbNavbarFilterState(); });
+    document.addEventListener('click', event => {
+      if (mbFilterOpen && !panel.contains(event.target) && !toggle.contains(event.target)) {
+        mbFilterOpen = false;
+        applyMbNavbarFilterState();
+      }
+    });
+    applyMbNavbarFilterState();
+  }
 
   document.getElementById('MB_modalClose').onclick = () => elMod.classList.add('hidden');
   elMod.addEventListener('click', e => { if(!e.target.closest('#MB_modalCard')) elMod.classList.add('hidden'); });
@@ -341,6 +566,9 @@
   let gIsKonsol = true;
 
   (async function init(){
+    bindMbNavbarFilter();
+    const nominal = document.getElementById('MB_nominalField');
+    if (nominal) nominal.value = 'saldo_bank';
     const d = await getLastDates();
     if(d){ elClosing.value=d.last_closing; elHarian.value=d.last_created; }
     await populateKantor();
@@ -348,8 +576,9 @@
     const user = (window.getUser && window.getUser()) || {};
     const kodeLogin = String(user?.kode||'').padStart(3,'0');
     if(kodeLogin && kodeLogin!=='000'){
-      elKantor.value = kodeLogin; elKantor.disabled = true;
-      elKantor.classList.add('bg-slate-100','text-slate-500','cursor-not-allowed');
+      elFilter.value = kodeLogin;
+      elFilter.disabled = true;
+      elFilter.classList.add('bg-slate-100','text-slate-500','cursor-not-allowed');
     }
     MB_autoFetch();
   })();
@@ -363,13 +592,23 @@
 
       if (tab === 'rekap') {
           vRekap.classList.remove('hidden'); vMigrasi.classList.add('hidden');
-          bRekap.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded bg-white text-blue-600 shadow-sm transition";
-          bMigrasi.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded text-slate-500 hover:text-slate-800 transition";
+          if (bRekap) bRekap.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded bg-white text-blue-600 shadow-sm transition";
+          if (bMigrasi) bMigrasi.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded text-slate-500 hover:text-slate-800 transition";
       } else {
           vRekap.classList.add('hidden'); vMigrasi.classList.remove('hidden');
-          bMigrasi.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded bg-white text-blue-600 shadow-sm transition";
-          bRekap.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded text-slate-500 hover:text-slate-800 transition";
+          if (bMigrasi) bMigrasi.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded bg-white text-blue-600 shadow-sm transition";
+          if (bRekap) bRekap.className = "px-4 py-1 text-[11px] md:text-xs font-bold rounded text-slate-500 hover:text-slate-800 transition";
       }
+      const swapButton = document.getElementById('MB_swapViewButton');
+      const showingMatrix = tab !== 'rekap';
+      swapButton?.setAttribute('aria-pressed', String(showingMatrix));
+      swapButton?.setAttribute('title', showingMatrix ? 'Tampilkan rekap summary' : 'Tampilkan matriks migrasi');
+      swapButton?.setAttribute('aria-label', showingMatrix ? 'Tampilkan rekap summary' : 'Tampilkan matriks migrasi');
+  };
+
+  window.MB_toggleView = function() {
+      const showingMatrix = !document.getElementById('view_migrasi')?.classList.contains('hidden');
+      MB_switchTab(showingMatrix ? 'rekap' : 'migrasi');
   };
 
   window.MB_toggleProyeksi = function() {
@@ -400,8 +639,13 @@
 
   window.MB_autoFetch = function() {
       if(elClosing.value && elHarian.value) {
-          fetchBucket(elClosing.value, elHarian.value, elKantor.disabled ? elKantor.value : (elKantor.value || null));
+          const selected = getSelectedWilayah();
+          fetchBucket(elClosing.value, elHarian.value, selected.kode, selected.korwil);
       }
+  };
+
+  window.MB_filterWilayah = function() {
+      MB_autoFetch();
   };
 
   window.MB_showAnalisis = function() {
@@ -410,26 +654,58 @@
 
   async function getLastDates(){ try{ const r=await fetch('./api/date/'); const j=await r.json(); return j.data||null; }catch{ return null; } }
   
-  async function populateKantor(){
+  async function populateKantorLegacy(){
     try{
       const r = await fetch('./api/kode/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_kantor'})});
       const j = await r.json();
       const list = Array.isArray(j.data)?j.data:[];
-      let html = `<option value="">Konsolidasi (Semua)</option>`;
+      let html = `<option value="000">Konsolidasi</option>`;
       list.filter(x=>x.kode_kantor && x.kode_kantor!=='000')
           .sort((a,b)=> String(a.kode_kantor).localeCompare(String(b.kode_kantor)))
           .forEach(it=>{
             const code=String(it.kode_kantor).padStart(3,'0');
             html += `<option value="${code}">${code} — ${it.nama_kantor||it.nama_cabang||''}</option>`;
           });
-      elKantor.innerHTML = html;
+      elFilter.innerHTML = html;
     }catch{
-      elKantor.innerHTML = `<option value="">Konsolidasi (Semua)</option>`;
+      elFilter.innerHTML = `<option value="000">Konsolidasi</option>`;
+    }
+  }
+
+  // Satu dropdown berisi konsolidasi, Korwil, dan cabang.
+  function renderWilayahOptions() {
+      let html = '<option value="000">Konsolidasi</option>';
+      Object.keys(MB_KORWIL_RANGES).forEach(korwil => {
+        const label = korwil.charAt(0) + korwil.slice(1).toLowerCase();
+        html += `<option value="${korwil}">Korwil ${label}</option>`;
+      });
+      kantorList.forEach(item => {
+        html += `<option value="${item.code}">${item.code} - ${item.name}</option>`;
+      });
+      elFilter.innerHTML = html;
+  }
+
+  // Override loader so the master cabang list is cached once and reused.
+  async function populateKantor(){
+    try{
+      const r = await fetch('./api/kode/', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_kantor'})});
+      const j = await r.json();
+      const list = Array.isArray(j.data) ? j.data : [];
+      kantorList = list.filter(x => x.kode_kantor && x.kode_kantor !== '000')
+        .sort((a,b) => String(a.kode_kantor).localeCompare(String(b.kode_kantor)))
+        .map(it => ({
+          code: String(it.kode_kantor).padStart(3, '0'),
+          name: it.nama_kantor || it.nama_cabang || ''
+        }));
+      renderWilayahOptions();
+    } catch {
+      kantorList = [];
+      renderWilayahOptions();
     }
   }
 
   // FETCH UTAMA
-  async function fetchBucket(closing_date, harian_date, kode_kantor){
+  async function fetchBucket(closing_date, harian_date, kode_kantor, korwil){
     if(ABORT) ABORT.abort();
     ABORT = new AbortController();
     gIsKonsol = !kode_kantor;
@@ -441,9 +717,11 @@
           type:'migrasi bucket', 
           closing_date, 
           harian_date,
+          nominal_field: document.getElementById('MB_nominalField')?.value || 'saldo_bank',
           is_proyeksi: document.getElementById('MB_isProyeksi').checked 
       };
       if(kode_kantor) payload.kode_kantor = kode_kantor;
+      if(korwil) payload.korwil = korwil;
 
       const f = (window.apiFetch || fetch);
       const r = await f('./api/kolek/', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload), signal:ABORT.signal });
@@ -486,6 +764,11 @@
   }
 
   function renderBucket(data){
+    const nominalLabel = getSelectedNominalLabel();
+    $('#MB_labelTotalM1').textContent = `Total ${nominalLabel} M-1`;
+    $('#MB_labelNplM1').textContent = `NPL ${nominalLabel} M-1`;
+    $('#MB_labelTotalActual').textContent = `Total ${nominalLabel} Actual`;
+    $('#MB_labelNplActual').textContent = `NPL ${nominalLabel} Actual`;
     const orderTo = (Array.isArray(data.order_to) && data.order_to.length) ? data.order_to : ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O'];
     const matrixArr = Array.isArray(data.matrix) ? data.matrix : [];
     const colTotalsData = data.column_totals || {};
@@ -538,28 +821,41 @@
     renderListCol(details.stay_list, 'list_stay', true);
     renderListCol(details.pemburukan_list, 'list_pemburukan', true);
 
-    // SC/FE/BE Category Breakdown
+    // SC/FE/BE Category Breakdown.
+    // Angsuran adalah agregasi lintas movement, jadi tampilkan sekali di
+    // ringkasan terpisah agar tidak terulang di Perbaikan/Stay/Pemburukan.
     const mCat = data.movement_by_category || {sc:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}, fe:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}, be:{perbaikan:{noa:0,os:0},stay:{noa:0,os:0},pemburukan:{noa:0,os:0}}};
     const angsCat = data.angsuran_by_category || {sc:{noa:0,os:0}, fe:{noa:0,os:0}, be:{noa:0,os:0}};
     const osM1Cat = data.os_m1_per_category || {sc:0, fe:0, be:0};
-    function catBreakdownHtml(catData, angsuranData, osM1PerCat) {
-      function catRow(label, cat, angs, catKey, osM1PerCat) {
-        const denom = osM1PerCat[catKey] || 0;
-        const angsPct = denom > 0 ? ((angs.os / denom) * 100).toFixed(1) : '0.0';
-        return `<div><b>${label}:</b> ${nfID.format(cat.noa)} akun (Rp ${fmtFull(cat.os)}) <span class="text-blue-600">| Angs: Rp ${fmtFull(angs.os)} (${angsPct}%)</span></div>`;
+    function catBreakdownHtml(catData) {
+      function catRow(label, cat) {
+        return `<div><b>${label}:</b> ${nfID.format(cat.noa)} akun (Rp ${fmtFull(cat.os)})</div>`;
       }
       return `<div class="text-[9px] text-slate-500 mt-1 space-y-0.5">
-        ${catRow('SC', catData.sc, angsuranData.sc, 'sc', osM1PerCat)}
-        ${catRow('FE', catData.fe, angsuranData.fe, 'fe', osM1PerCat)}
-        ${catRow('BE', catData.be, angsuranData.be, 'be', osM1PerCat)}
+        ${catRow('SC', catData.sc)}
+        ${catRow('FE', catData.fe)}
+        ${catRow('BE', catData.be)}
       </div>`;
+    }
+    const angsSummary = document.getElementById('angsuran_category_summary');
+    const angsSummaryContent = document.getElementById('angsuran_category_summary_content');
+    if (angsSummary && angsSummaryContent) {
+      angsSummaryContent.innerHTML = ['sc', 'fe', 'be'].map(catKey => {
+        const item = angsCat[catKey] || {noa: 0, os: 0};
+        const denom = getNum(osM1Cat[catKey]);
+        const pct = denom > 0 ? ((getNum(item.os) / denom) * 100).toFixed(1) : '0.0';
+        return `<div class="rounded border border-blue-100 bg-white px-2 py-1">
+          <b class="uppercase text-blue-700">${catKey}</b>: ${nfID.format(getNum(item.noa))} akun · Rp ${fmtFull(item.os)} <span class="text-blue-600">(${pct}% OS M-1)</span>
+        </div>`;
+      }).join('');
+      angsSummary.classList.remove('hidden');
     }
     const elCatBaik = document.getElementById('cat_breakdown_baik');
     const elCatStay = document.getElementById('cat_breakdown_stay');
     const elCatBuruk = document.getElementById('cat_breakdown_buruk');
-    if (elCatBaik) elCatBaik.innerHTML = catBreakdownHtml({sc: mCat.sc.perbaikan, fe: mCat.fe.perbaikan, be: mCat.be.perbaikan}, angsCat, osM1Cat);
-    if (elCatStay) elCatStay.innerHTML = catBreakdownHtml({sc: mCat.sc.stay, fe: mCat.fe.stay, be: mCat.be.stay}, angsCat, osM1Cat);
-    if (elCatBuruk) elCatBuruk.innerHTML = catBreakdownHtml({sc: mCat.sc.pemburukan, fe: mCat.fe.pemburukan, be: mCat.be.pemburukan}, angsCat, osM1Cat);
+    if (elCatBaik) elCatBaik.innerHTML = catBreakdownHtml({sc: mCat.sc.perbaikan, fe: mCat.fe.perbaikan, be: mCat.be.perbaikan});
+    if (elCatStay) elCatStay.innerHTML = catBreakdownHtml({sc: mCat.sc.stay, fe: mCat.fe.stay, be: mCat.be.stay});
+    if (elCatBuruk) elCatBuruk.innerHTML = catBreakdownHtml({sc: mCat.sc.pemburukan, fe: mCat.fe.pemburukan, be: mCat.be.pemburukan});
 
     // GENERATE NARRATIVE (Analisis Modal)
     let narGrowth = '';
@@ -567,6 +863,17 @@
         narGrowth = `<span class="text-red-600 font-bold">⚠️ Pertumbuhan Negatif:</span> Harus segera mendorong <i>growth</i>! Realisasi baru (<b>Rp ${fmtFull(flow.realisasi.os)}</b>) tertinggal dari Run Off / Pelunasan (<b>Rp ${fmtFull(flow.run_off)}</b>). Portofolio menyusut dan berdampak pada pendapatan.`;
     } else {
         narGrowth = `<span class="text-emerald-600 font-bold">✅ Pertumbuhan Positif:</span> Ekspansi berjalan baik. Realisasi baru (<b>Rp ${fmtFull(flow.realisasi.os)}</b>) berhasil melampaui Run Off.`;
+    }
+
+    // Tegaskan nilai growth berdasarkan arus masuk dikurangi run-off.
+    const netGrowthFlow = getNum(flow.realisasi?.os) - getNum(flow.run_off);
+    const netGrowthFlowText = `Rp ${fmtFull(Math.abs(netGrowthFlow))}`;
+    if (netGrowthFlow < 0) {
+      narGrowth = `<span class="text-red-600 font-bold">⚠️ Terjadi growth negatif sebesar ${netGrowthFlowText}:</span> Realisasi baru (<b>Rp ${fmtFull(flow.realisasi.os)}</b>) lebih kecil daripada Run Off / Pelunasan (<b>Rp ${fmtFull(flow.run_off)}</b>). Portofolio menyusut dan berdampak pada pendapatan. Segera dorong pencairan berkualitas dan percepat tindak lanjut debitur.`;
+    } else if (netGrowthFlow > 0) {
+      narGrowth = `<span class="text-emerald-600 font-bold">✅ Terjadi growth positif sebesar ${netGrowthFlowText}:</span> Realisasi baru (<b>Rp ${fmtFull(flow.realisasi.os)}</b>) lebih besar daripada Run Off / Pelunasan (<b>Rp ${fmtFull(flow.run_off)}</b>). Pertumbuhan portofolio berjalan baik, tetap jaga kualitas pencairan.`;
+    } else {
+      narGrowth = `<span class="text-slate-600 font-bold">ℹ️ Growth seimbang (Rp 0):</span> Realisasi baru sama dengan Run Off / Pelunasan. Pertahankan keseimbangan pertumbuhan dan kualitas portofolio.`;
     }
 
     let d_to_e_os = 0;
@@ -586,6 +893,47 @@
     $('#MB_narrative_box').innerHTML = `
         <div class="border-b border-amber-200/50 pb-2"><p>${narGrowth}</p></div>
         <div class="pt-1"><p>${narCkpn}</p></div>
+    `;
+
+    // Tambahkan pengingat posisi yang perlu ditindaklanjuti, bukan hanya
+    // kesimpulan angka.
+    const categoryNames = {sc: 'SC (0-30 hari)', fe: 'FE (31-180 hari)', be: 'BE (>180 hari)'};
+    const categoryKeys = Object.keys(categoryNames);
+    const topBurukCategory = categoryKeys.sort((a, b) =>
+      getNum(mCat[b]?.pemburukan?.os) - getNum(mCat[a]?.pemburukan?.os)
+    )[0];
+    const topBuruk = [...(details.pemburukan_list || [])]
+      .filter(item => getNum(item.os) > 0)
+      .sort((a, b) => getNum(b.os) - getNum(a.os))[0];
+    const nplGrowth = getNum(data.npl_comparison?.delta?.npl_growth);
+    const recommendations = [];
+
+    if (netGrowthFlow < 0) {
+      recommendations.push(`<b>Kejar pertumbuhan:</b> realisasi baru masih di bawah run-off. Prioritaskan pipeline pencairan yang sudah siap agar portofolio tidak terus menyusut.`);
+    } else {
+      recommendations.push(`<b>Jaga pertumbuhan:</b> realisasi sudah menutup run-off. Pastikan kualitas debitur baru tetap terkontrol dan tidak menambah pemburukan.`);
+    }
+    if (m.pemburukan.os > m.perbaikan.os) {
+      recommendations.push(`<b>Fokus kualitas:</b> pemburukan lebih besar daripada perbaikan. Periksa posisi <b>${categoryNames[topBurukCategory]}</b> terlebih dahulu dan buat daftar kunjungan/penagihan berdasarkan saldo terbesar.`);
+    } else {
+      recommendations.push(`<b>Pertahankan recovery:</b> perbaikan masih lebih besar daripada pemburukan. Jangan mengurangi monitoring pada posisi FE dan BE karena pergeseran kecil dapat meningkatkan NPL.`);
+    }
+    if (topBuruk) {
+      recommendations.push(`<b>Posisi paling perlu dicek:</b> bucket <b>${topBuruk.from_bucket} → ${topBuruk.to_bucket}</b> sebesar <b>Rp ${fmtFull(topBuruk.os)}</b>. Buka detailnya lalu susun follow-up untuk akun dengan saldo terbesar.`);
+    }
+    if (d_to_e_os > 0) {
+      recommendations.push(`<b>Peringatan DPD:</b> terdapat perpindahan D → E sebesar <b>Rp ${fmtFull(d_to_e_os)}</b>. Segera lakukan review penyebab tunggakan dan eskalasi sebelum masuk bucket yang lebih berat.`);
+    }
+    if (nplGrowth > 0) {
+      recommendations.push(`<b>Kontrol NPL:</b> NPL naik sebesar <b>Rp ${fmtFull(nplGrowth)}</b> dibanding closing. Minta PIC menjelaskan akun penyumbang terbesar dan target penyelesaiannya.`);
+    }
+    recommendations.push(`<b>Catatan pembacaan:</b> seluruh angka summary memakai basis <b>${nominalLabel}</b>. Detail tetap menyediakan Saldo Bank Actual dan Baki Debet Actual untuk rekonsiliasi.`);
+
+    $('#MB_narrative_box').innerHTML += `
+      <div class="mt-2 border-t border-amber-200/70 pt-2">
+        <div class="font-bold text-amber-800 mb-1">Masukan tindak lanjut / posisi yang perlu diingat</div>
+        <ol class="list-decimal pl-4 space-y-1">${recommendations.map(item => `<li>${item}</li>`).join('')}</ol>
+      </div>
     `;
 
     // MATRIKS RENDER
@@ -622,8 +970,9 @@
 
         let flowCls = '';
         const fi = idxBucket(f), ti = idxBucket(t);
-        if(t==='O') flowCls = 'flow-better';
-        else if(fi>=0 && ti>=0){ flowCls = (ti>fi) ? 'flow-worse' : (ti<fi ? 'flow-better' : ''); }
+        const hasNominal = getNum(c.os) > 0;
+        if(hasNominal && t==='O') flowCls = 'flow-better';
+        else if(hasNominal && fi>=0 && ti>=0){ flowCls = (ti>fi) ? 'flow-worse' : (ti<fi ? 'flow-better' : ''); }
 
         const sub = [];
         if(getNum(c.noa)>0) sub.push(nfID.format(c.noa)+' NOA');
@@ -637,7 +986,7 @@
           <td class="text-left sticky-col-1 col-from font-bold text-slate-700">${DPD_LABEL[f]||f}</td>
           <td class="text-right sticky-col-2 col-6 text-slate-800">${dashHTML(os_m1)}</td>
           ${cellsHtml.join('')}
-          <td class="text-right col-N bg-emerald-50 text-emerald-700">${linkCell(f,'RUNOFF',runoff)}</td>
+          <td class="text-right col-N ${runoff > 0 ? 'flow-better' : ''}">${linkCell(f,'RUNOFF',runoff)}</td>
         </tr>`);
     }
 
@@ -693,16 +1042,19 @@
     currentDetailPage = pg;
     if (!isPaginating) {
       currentDetailTotal = 0;
+      currentDetailSummary = null;
       MB_renderPagination();
     }
     const closing = elClosing.value, harian = elHarian.value;
-    const kode = elKantor.disabled ? elKantor.value : (elKantor.value || null);
+    const selectedWilayah = getSelectedWilayah();
+    const kode = selectedWilayah.kode;
+    const korwil = selectedWilayah.korwil || '';
 
     const fLabel = DPD_LABEL[from_raw] || from_raw;
     const tLabel = DPD_LABEL[to_raw] || to_raw;
 
     elModTitle.innerHTML = `Detail Migrasi <span class="bg-blue-100 text-blue-800 text-[10px] lg:text-xs px-2 py-1 rounded-md font-mono border border-blue-200 ml-1.5 lg:ml-2">${fLabel} ➔ ${tLabel}</span>`;
-    $('#MB_modalSubtitle').textContent = `Posisi: ${closing} vs ${harian}`;
+    $('#MB_modalSubtitle').textContent = `Posisi: ${closing} vs ${harian} • Basis: ${getSelectedNominalLabel()}`;
     
     // Read current filter values from DOM
     const searchVal = document.getElementById('MB_searchDetail')?.value || '';
@@ -731,9 +1083,11 @@
         to_bucket: to_raw,
         page: pg,
         per_page: currentDetailPerPage,
+        nominal_field: document.getElementById('MB_nominalField')?.value || 'saldo_bank',
         is_proyeksi: document.getElementById('MB_isProyeksi').checked
       };
       if(kode) payload.kode_kantor = kode;
+      if(korwil) payload.korwil = korwil;
       if(searchVal) payload.search = searchVal;
       if(kankasVal) payload.kankas = kankasVal;
       if(aoVal) payload.ao_kredit = aoVal;
@@ -752,6 +1106,25 @@
         currentDetailData = Array.isArray(j?.data) ? j.data : [];
         currentDetailTotal = currentDetailData.length;
       }
+
+      // Kartu total harus memakai seluruh hasil filter, bukan hanya 20 baris
+      // pada halaman aktif. Endpoint summary tidak mengembalikan baris detail.
+      if (currentDetailTotal > currentDetailData.length) {
+        try {
+          const summaryPayload = { ...payload, page: 1, per_page: 1, summary_only: true };
+          const summaryResponse = await f('./api/kolek/', {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(summaryPayload),
+            signal:ABORT_DETAIL.signal
+          });
+          const summaryJson = await summaryResponse.json();
+          currentDetailSummary = summaryJson?.data?.summary || null;
+        } catch (summaryError) {
+          if (summaryError?.name === 'AbortError') throw summaryError;
+          currentDetailSummary = null;
+        }
+      }
       
       if(!currentDetailData.length) {
         elModTbody.innerHTML = `<tr><td class="px-4 py-8 text-center text-slate-400">Tidak ada debitur pada kriteria ini.</td></tr>`;
@@ -766,25 +1139,33 @@
 
       // Only populate dropdowns on initial load (no filters active, page 1)
       if (_isInitialDetailLoad) {
-        const uniqueKankas = [...new Set(currentDetailData.map(d => d.kankas).filter(Boolean))].sort();
-        const uniqueAo = [...new Set(currentDetailData.map(d => d.ao_kredit).filter(Boolean))].sort();
+        // Nilai option memakai kode karena backend memfilter berdasarkan kode,
+        // sedangkan label tetap menampilkan nama agar mudah dibaca.
+        const uniqueKankas = [...new Map(currentDetailData
+          .filter(d => d.kankas_kode || d.kankas)
+          .map(d => [String(d.kankas_kode || d.kankas), String(d.kankas || d.kankas_kode)])
+        )].sort((a, b) => a[1].localeCompare(b[1], 'id', {numeric:true}));
+        const uniqueAo = [...new Map(currentDetailData
+          .filter(d => d.ao_kredit_kode || d.ao_kredit)
+          .map(d => [String(d.ao_kredit_kode || d.ao_kredit), String(d.ao_kredit || d.ao_kredit_kode)])
+        )].sort((a, b) => a[1].localeCompare(b[1], 'id', {numeric:true}));
 
         const modKankas = document.getElementById('MB_modKankas');
         if (modKankas) {
             modKankas.innerHTML = '<option value="">Kankas (All)</option>' + 
-                uniqueKankas.map(k => `<option value="${k}">${k}</option>`).join('');
+            uniqueKankas.map(([code, name]) => `<option value="${code}">${name}</option>`).join('');
             modKankas.value = '';
         }
 
         const modAo = document.getElementById('MB_modAo');
         if (modAo) {
             modAo.innerHTML = '<option value="">AO (All)</option>' + 
-                uniqueAo.map(a => `<option value="${a}">${a}</option>`).join('');
+                uniqueAo.map(([code, name]) => `<option value="${code}">${name}</option>`).join('');
             modAo.value = '';
         }
       }
 
-      renderDetailTable(currentDetailData);
+      renderDetailTable(currentDetailData, currentDetailSummary);
       MB_renderPagination();
     }catch(e){
       if(e.name!=='AbortError') elModTbody.innerHTML = `<tr><td class="px-4 py-8 text-center text-red-500 font-bold">Gagal menarik data.</td></tr>`;
@@ -816,14 +1197,16 @@
     MB_openDetail(currentFromRaw, currentToRaw, p);
   };
 
-  function renderDetailTable(list) {
+  function renderDetailTable(list, overallSummary = null) {
       const nf = new Intl.NumberFormat('id-ID');
       const sum = k => list.reduce((s,d)=> s + getNum(d?.[k]), 0);
       
-      const total = {
+      const pageTotal = {
         noa: list.length,
         os_m1: sum('os_m1'),
         os_curr: sum('os_curr'),
+        saldo_bank_actual: sum('saldo_bank_actual'),
+        baki_debet_actual: sum('baki_debet_actual'),
         ckpn_m1: sum('ckpn_m1'),
         ckpn_actual: sum('ckpn_actual'),
         pemulihan: sum('pemulihan_pembentukan'),
@@ -832,12 +1215,28 @@
         tung_p: sum('tunggakan_pokok'),
         tung_b: sum('tunggakan_bunga')
       };
+      const total = overallSummary ? {
+        noa: getNum(overallSummary.noa),
+        os_m1: getNum(overallSummary.os_m1),
+        os_curr: getNum(overallSummary.os_curr),
+        saldo_bank_actual: getNum(overallSummary.saldo_bank_actual),
+        baki_debet_actual: getNum(overallSummary.baki_debet_actual),
+        ckpn_m1: getNum(overallSummary.ckpn_m1),
+        ckpn_actual: getNum(overallSummary.ckpn_actual),
+        pemulihan: getNum(overallSummary.pemulihan),
+        angs_p: getNum(overallSummary.angs_p),
+        angs_b: getNum(overallSummary.angs_b),
+        tung_p: getNum(overallSummary.tung_p),
+        tung_b: getNum(overallSummary.tung_b)
+      } : pageTotal;
 
       elModTotals.innerHTML = `
         <div class="px-2 py-1 bg-blue-50 text-blue-900 border border-blue-100 rounded min-w-[70px]"><span class="block text-[8px] uppercase font-bold text-blue-600">Total NOA</span><b class="text-[10px]">${nf.format(total.noa)}</b></div>
-        <div class="px-2 py-1 bg-white border border-slate-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-slate-500">Total OS M-1</span><b class="text-[10px]">${nf.format(total.os_m1)}</b></div>
+        <div class="px-2 py-1 bg-white border border-slate-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-slate-500">${getSelectedNominalLabel()} M-1</span><b class="text-[10px]">${nf.format(total.os_m1)}</b></div>
         <div class="px-2 py-1 bg-purple-50 text-purple-900 border border-purple-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-purple-600">CKPN M-1</span><b class="text-[10px]">${nf.format(total.ckpn_m1)}</b></div>
-        <div class="px-2 py-1 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-emerald-600">Total OS Actual</span><b class="text-[10px]">${nf.format(total.os_curr)}</b></div>
+        <div class="px-2 py-1 bg-emerald-50 text-emerald-900 border border-emerald-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-emerald-600">${getSelectedNominalLabel()} Actual</span><b class="text-[10px]">${nf.format(total.os_curr)}</b></div>
+        <div class="px-2 py-1 bg-cyan-50 text-cyan-900 border border-cyan-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-cyan-600">Saldo Bank Actual</span><b class="text-[10px]">${nf.format(total.saldo_bank_actual)}</b></div>
+        <div class="px-2 py-1 bg-amber-50 text-amber-900 border border-amber-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-amber-600">Baki Debet Actual</span><b class="text-[10px]">${nf.format(total.baki_debet_actual)}</b></div>
         <div class="px-2 py-1 bg-fuchsia-50 text-fuchsia-900 border border-fuchsia-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-fuchsia-600">CKPN Actual</span><b class="text-[10px]">${nf.format(total.ckpn_actual)}</b></div>
         <div class="px-2 py-1 bg-orange-50 text-orange-900 border border-orange-200 rounded min-w-[100px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-orange-600">+/- CKPN</span><b class="text-[10px]">${nf.format(total.pemulihan)}</b></div>
         <div class="px-2 py-1 bg-white border border-slate-200 rounded min-w-[90px] shadow-sm"><span class="block text-[8px] uppercase font-bold text-slate-500">Angs. Pokok</span><b class="text-[10px]">${nf.format(total.angs_p)}</b></div>
@@ -851,9 +1250,11 @@
         ['ao_kredit','AO Kredit','md','text'],  
         ['alamat','Alamat','lgA','text'],
         ['kolektibilitas','KOL','sm','text'],
-        ['os_m1','OS M-1','md','num'],
+        ['os_m1',`${getSelectedNominalLabel()} M-1`,'md','num'],
         ['ckpn_m1','CKPN M-1','md','num'],
-        ['os_curr','OS Act','md','num'],
+        ['os_curr',`${getSelectedNominalLabel()} Actual`,'md','num'],
+        ['saldo_bank_actual','Saldo Bank Actual','md','num'],
+        ['baki_debet_actual','Baki Debet Actual','md','num'],
         ['ckpn_actual','CKPN Act','md','num'],
         ['pemulihan_pembentukan','+/- CKPN','md','num'],
         ['pd_actual','PD (%)','sm','num'],
@@ -875,8 +1276,8 @@
         let isNum = false;
         if (key==='no_rekening') v = `<span class="hidden md:inline text-slate-700">TOTAL</span>`; 
         else if (key==='nama_nasabah') v = `<span class="md:hidden text-slate-700">TOTAL</span> <span class="text-blue-700 md:ml-1">(${nf.format(total.noa)} Akun)</span>`;
-        else if (['os_m1','os_curr','ckpn_m1','ckpn_actual','pemulihan_pembentukan','angsuran_pokok','angsuran_bunga','tunggakan_pokok','tunggakan_bunga'].includes(key)){
-          const mapKey = ({os_m1:'os_m1',os_curr:'os_curr',ckpn_m1:'ckpn_m1',ckpn_actual:'ckpn_actual',pemulihan_pembentukan:'pemulihan',angsuran_pokok:'angs_p',angsuran_bunga:'angs_b',tunggakan_pokok:'tung_p',tunggakan_bunga:'tung_b'})[key];
+        else if (['os_m1','os_curr','saldo_bank_actual','baki_debet_actual','ckpn_m1','ckpn_actual','pemulihan_pembentukan','angsuran_pokok','angsuran_bunga','tunggakan_pokok','tunggakan_bunga'].includes(key)){
+          const mapKey = ({os_m1:'os_m1',os_curr:'os_curr',saldo_bank_actual:'saldo_bank_actual',baki_debet_actual:'baki_debet_actual',ckpn_m1:'ckpn_m1',ckpn_actual:'ckpn_actual',pemulihan_pembentukan:'pemulihan',angsuran_pokok:'angs_p',angsuran_bunga:'angs_b',tunggakan_pokok:'tung_p',tunggakan_bunga:'tung_b'})[key];
           v = nf.format(total[mapKey]);
           isNum = true;
         }
@@ -998,11 +1399,76 @@
       a.download = `Rekap_Migrasi_Bucket_${elClosing.value}_vs_${elHarian.value}.xls`; a.click();
   };
 
-  window.MB_exportDetail = function() {
-      if(!currentDetailData || currentDetailData.length === 0) {
+  window.MB_exportDetail = async function() {
+      if((!currentDetailData || currentDetailData.length === 0) && currentDetailTotal <= 0) {
           alert("Tidak ada data detail untuk di-download.");
           return;
       }
+
+      const exportButton = document.getElementById('MB_exportDetailBtn');
+      const oldButtonHtml = exportButton ? exportButton.innerHTML : '';
+      if (exportButton) {
+        exportButton.disabled = true;
+        exportButton.innerHTML = '…';
+        exportButton.title = 'Menyiapkan seluruh data...';
+      }
+
+      let exportRows = [];
+      try {
+        const selectedWilayah = getSelectedWilayah();
+        const kode = selectedWilayah.kode;
+        const korwil = selectedWilayah.korwil || '';
+        const payload = {
+          type: 'detail debutir migrasi',
+          closing_date: elClosing.value,
+          harian_date: elHarian.value,
+          from_bucket: currentFromRaw,
+          to_bucket: currentToRaw,
+          page: 1,
+          per_page: 100,
+          export_all: true,
+          nominal_field: document.getElementById('MB_nominalField')?.value || 'saldo_bank',
+          is_proyeksi: document.getElementById('MB_isProyeksi').checked
+        };
+        if (kode) payload.kode_kantor = kode;
+        if (korwil) payload.korwil = korwil;
+        const searchVal = document.getElementById('MB_searchDetail')?.value || '';
+        const kankasVal = document.getElementById('MB_modKankas')?.value || '';
+        const aoVal = document.getElementById('MB_modAo')?.value || '';
+        if (searchVal) payload.search = searchVal;
+        if (kankasVal) payload.kankas = kankasVal;
+        if (aoVal) payload.ao_kredit = aoVal;
+
+        const f = (window.apiFetch || fetch);
+        const response = await f('./api/kolek/', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        if (result?.status && Number(result.status) !== 200) {
+          throw new Error(result.message || 'Gagal mengambil seluruh detail.');
+        }
+        exportRows = Array.isArray(result?.data?.rows)
+          ? result.data.rows
+          : (Array.isArray(result?.data) ? result.data : []);
+      } catch (error) {
+        alert(error?.message || 'Gagal mengambil seluruh data detail untuk export.');
+        return;
+      } finally {
+        if (exportButton) {
+          exportButton.disabled = false;
+          exportButton.innerHTML = oldButtonHtml;
+          exportButton.title = 'Download seluruh detail Excel';
+        }
+      }
+
+      if (exportRows.length === 0) {
+        alert("Tidak ada data detail untuk di-download.");
+        return;
+      }
+
+      const nominalLabel = getSelectedNominalLabel().toUpperCase();
       
       let html = `<table border="1"><thead><tr>
         <th style="background:#f1f5f9">NO REKENING</th>
@@ -1011,9 +1477,11 @@
         <th style="background:#f1f5f9">AO KREDIT</th>
         <th style="background:#f1f5f9">ALAMAT</th>
         <th style="background:#f1f5f9">KOL</th>
-        <th style="background:#fef08a">OS M-1</th>
+        <th style="background:#fef08a">${nominalLabel} M-1</th>
         <th style="background:#fef08a">CKPN M-1</th>
-        <th style="background:#dcfce7">OS ACTUAL</th>
+        <th style="background:#dcfce7">${nominalLabel} ACTUAL</th>
+        <th style="background:#cffafe">SALDO BANK ACTUAL</th>
+        <th style="background:#fef3c7">BAKI DEBET ACTUAL</th>
         <th style="background:#dcfce7">CKPN ACTUAL</th>
         <th style="background:#ffedd5">+/- CKPN</th>
         <th style="background:#f1f5f9">PD (%)</th>
@@ -1030,21 +1498,9 @@
         <th style="background:#f1f5f9">ANGS. BUNGA</th>
       </tr></thead><tbody>`;
 
-      const searchInput = document.getElementById("MB_searchDetail").value.toLowerCase();
-      const kankasInput = document.getElementById("MB_modKankas").value.toLowerCase();
-      const aoInput     = document.getElementById("MB_modAo").value.toLowerCase();
-
-      const filtered = currentDetailData.filter(d => {
-        const rek  = String(d.no_rekening || '').toLowerCase();
-        const nama = String(d.nama_nasabah || '').toLowerCase();
-        const almt = String(d.alamat || '').toLowerCase();
-        const knk  = String(d.kankas || '').toLowerCase();
-        const aok  = String(d.ao_kredit || '').toLowerCase();
-        
-        return (searchInput === '' || rek.includes(searchInput) || nama.includes(searchInput) || almt.includes(searchInput)) &&
-               (kankasInput === '' || knk === kankasInput) &&
-               (aoInput === '' || aok === aoInput);
-      });
+      // Filter sudah diterapkan oleh endpoint pada seluruh dataset, bukan
+      // hanya pada halaman detail yang sedang terbuka.
+      const filtered = exportRows;
 
       filtered.forEach(d => {
           html += `<tr>
@@ -1057,6 +1513,8 @@
               <td>${getNum(d.os_m1)}</td>
               <td>${getNum(d.ckpn_m1)}</td>
               <td>${getNum(d.os_curr)}</td>
+              <td>${getNum(d.saldo_bank_actual)}</td>
+              <td>${getNum(d.baki_debet_actual)}</td>
               <td>${getNum(d.ckpn_actual)}</td>
               <td>${getNum(d.pemulihan_pembentukan)}</td>
               <td>${d.pd_actual!=null ? d.pd_actual : ''}</td>

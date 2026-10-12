@@ -34,10 +34,6 @@
             <label class="text-[9px] md:text-[10px] font-bold text-gray-500 uppercase tracking-wider">Area/Cabang</label>
             <select id="filter_kantor" class="border-b-2 border-transparent hover:border-gray-300 px-1 py-1 text-[10px] md:text-sm outline-none focus:border-blue-500 bg-transparent transition-colors font-bold text-gray-700 cursor-pointer w-full truncate"></select>
           </div>
-          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white w-[34px] md:w-auto h-[32px] md:h-[36px] md:px-5 rounded-lg text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-md transform active:scale-95 shrink-0 mb-[1px]">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="md:hidden"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            <span class="hidden md:inline">Tampilkan</span>
-          </button>
       </div>
 
     </form>
@@ -308,6 +304,7 @@
 
 <style>
   .bar-fill { transition: height 1s cubic-bezier(0.4, 0, 0.2, 1), width 1s ease-in-out; }
+  .custom-scrollbar { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
   .custom-scrollbar::-webkit-scrollbar { width: 4px; }
   .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
   .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
@@ -428,6 +425,17 @@
         document.getElementById('formFilterMaster').classList.add('hidden');
         document.getElementById('formFilterMaster').classList.remove('flex');
     }
+  });
+
+  let dashboardAoFilterTimer = null;
+  function scheduleDashboardAoFilter() {
+    clearTimeout(dashboardAoFilterTimer);
+    dashboardAoFilterTimer = setTimeout(() => {
+      document.getElementById('formFilterMaster')?.requestSubmit();
+    }, 180);
+  }
+  ['filter_closing','filter_harian','filter_kantor'].forEach(id => {
+    document.getElementById(id)?.addEventListener('change', scheduleDashboardAoFilter);
   });
 
   document.getElementById('filter_tren').addEventListener('change', () => { fetchTrenPortofolio(); });
@@ -699,6 +707,8 @@
 
     const labels = dataArray.map(d => d.label); 
     const dataRealisasi = dataArray.map(d => Number(d.total_realisasi) || 0); 
+    const dataRealisasiKredit = dataArray.map(d => Number(d.realisasi_kredit) || 0);
+    const dataRestruckKredit = dataArray.map(d => Number(d.restruck_kredit ?? d.restrukturisasi) || 0);
     const dataRunoff = dataArray.map(d => Number(d.total_runoff) || 0); 
     const dataLunas = dataArray.map(d => Number(d.total_lunas) || 0);
     const dataNoaLunas = dataArray.map(d => Number(d.noa_lunas) || 0);
@@ -782,11 +792,17 @@
               afterBody: function(c) {
                 if (c.length > 0) { 
                   let idx = c[0].dataIndex;
+                  let realisasiKredit = dataRealisasiKredit[idx];
+                  let restruckKredit = dataRestruckKredit[idx];
                   let lunas = dataLunas[idx]; let noaLunas = dataNoaLunas[idx];
                   let angsuran = dataAngsuran[idx]; let noaAngsuran = dataNoaAngsuran[idx];
                   let g = dataGrowth[idx]; 
                   let lines = [];
                   lines.push('------------------------');
+                  lines.push(`Detail Realisasi:`);
+                  lines.push(`  • Realisasi Kredit: Rp ${fmtB(realisasiKredit)}`);
+                  lines.push(`  • Restruck Kredit: Rp ${fmtB(restruckKredit)}`);
+                  lines.push('');
                   lines.push(`Detail Run Off:`);
                   lines.push(`  • Lunas: Rp ${fmtB(lunas)} (${fmt(noaLunas)} NOA)`);
                   lines.push(`  • Angsuran: Rp ${fmtB(angsuran)} (${fmt(noaAngsuran)} NOA)`);
@@ -820,7 +836,7 @@
   // ==========================================
   // 5. FETCH API MODULAR (WIDGET-BASED / PARALEL)
   // ==========================================
-  async function fetchWidgetData(type, isH1 = false) {
+  async function fetchWidgetData(type, isH1 = false, extraPayload = {}) {
     let kantor = document.getElementById('filter_kantor').value;
     let currDate = document.getElementById('filter_harian').value;
     
@@ -834,7 +850,8 @@
       type: type, 
       closing_date: document.getElementById('filter_closing').value, 
       harian_date: currDate,
-      harian_date_realisasi: targetRealisasiDate
+      harian_date_realisasi: targetRealisasiDate,
+      ...extraPayload
     };
     
     if(kantor !== '000') { 
@@ -872,7 +889,7 @@
     const pTopNpl       = fetchWidgetData('test top bottom npl');
     const pDeltaNpl     = fetchWidgetData('test delta npl');
     const pDeposito     = fetchWidgetData('test perkembangan deposito');
-    const pTabungan     = fetchWidgetData('test perkembangan tabungan', true);
+    const pTabungan     = fetchWidgetData('test perkembangan tabungan', true, { include_ao: true });
 
     // WIDGET A: SALDO BANK
     pSaldoBank.then(sb => {
