@@ -325,7 +325,7 @@ Development membutuhkan Node/Vite. Production cukup menyajikan hasil build:
 ```text
 cd kpi-tukin
 npm run build
-kpi-tukin/dist/ -> static root atau document root server
+../kpi/ -> static root atau document root server
 ```
 
 Server production tidak perlu menjalankan Node. Pastikan asset dapat diakses,
@@ -337,7 +337,7 @@ Untuk memindahkan KPI ke repo lain:
 1. salin folder `kpi-tukin/`;
 2. salin environment yang diperlukan, tanpa hardcode domain di feature;
 3. set `VITE_API_BASE_URL` bila domain API berbeda;
-4. build dan deploy `kpi-tukin/dist/`;
+4. build dan commit folder `kpi/`, lalu server cukup melakukan `git pull`;
 5. uji seluruh route `/kpi/*` dan endpoint API.
 
 ## 11. Definition of Done

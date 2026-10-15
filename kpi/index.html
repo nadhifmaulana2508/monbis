@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff" />
+    <title>KPI Tukin | MONBIS</title>
+    <script>
+      (() => {
+        const theme = localStorage.getItem("monbis-theme") || "system";
+        const dark = theme === "dark" || (theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+        document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      })();
+    </script>
+    <script type="module" crossorigin src="/kpi/assets/index-DhxCm4Ow.js"></script>
+    <link rel="stylesheet" crossorigin href="/kpi/assets/index-LyxUNRfb.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

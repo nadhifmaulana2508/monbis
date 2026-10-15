@@ -7,6 +7,10 @@ import { defineConfig } from "vite"
 export default defineConfig(({ mode }) => ({
   base: mode === "production" ? "/kpi/" : "/",
   plugins: [react(), tailwindcss()],
+  build: {
+    outDir: path.resolve(process.cwd(), "../kpi"),
+    emptyOutDir: true,
+  },
   server: {
     port: 5174,
     strictPort: true,

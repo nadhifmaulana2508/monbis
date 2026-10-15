@@ -17,7 +17,7 @@ npm run dev
 Buka:
 
 ```text
-http://localhost:5173/kpi/setting_kpi_jabatan
+http://localhost:5174/kpi/setting_kpi_jabatan
 ```
 
 Route lain:
@@ -49,7 +49,9 @@ MONBIS.
 npm run build
 ```
 
-Deploy isi `dist/` pada route `/kpi/` di MONBIS. Resolver API otomatis memakai
+Build menghasilkan folder `../kpi/` di root repository. Folder `kpi/` ikut
+di-commit agar server cukup melakukan `git pull`; folder tersebut disajikan
+sebagai route `/kpi/` di MONBIS. Resolver API otomatis memakai
 `https://monbis.bkkjateng.co.id/api`, atau dapat diganti dengan
 `VITE_API_BASE_URL`.
 
