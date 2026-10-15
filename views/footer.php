@@ -140,8 +140,11 @@
             if (br) br.textContent = u.branch_name || u.unit_kerja || '-';
             if (acc) acc.textContent = (u.account_handle || u.username || u.email || u.employee_id || u.kode || '-');
 
-            const isDev = (u.role === 'dev' || u.unit_kerja === 'Divisi Operasional' || u.unit_kerja === 'Dewan Komisaris dan Direksi' || u.unit_kerja ===  'Divisi Perencanaan dan Litbang');
-            const isKpiAllowed = isDev || u.unit_kerja === 'Divisi SDM dan Umum';
+            const unitKerja = String(u.unit_kerja || '').trim().toLowerCase();
+            const isBoardUser = unitKerja.includes('dewan komisaris') && unitKerja.includes('direksi');
+            const isDev = (String(u.role || '').toLowerCase() === 'dev' || unitKerja === 'divisi operasional' || isBoardUser || unitKerja === 'divisi perencanaan dan litbang');
+            const isKpiAllowed = !isBoardUser && (isDev || unitKerja === 'divisi sdm dan umum');
+            const isLayananDigitalAllowed = !isBoardUser && isDev;
             if (menuMonevDev) {
                 menuMonevDev.style.setProperty('display', isDev ? 'block' : 'none', 'important');
             }
@@ -149,7 +152,7 @@
                 menuKpiBisnis.style.setProperty('display', isKpiAllowed ? 'block' : 'none', 'important');
             }
             if (menuLayananDigital) {
-                menuLayananDigital.style.setProperty('display', isDev ? 'block' : 'none', 'important');
+                menuLayananDigital.style.setProperty('display', isLayananDigitalAllowed ? 'block' : 'none', 'important');
             }
             if (menuEventAdmin) {
                 const isEventAdmin = monbisResolvePegId(u) === '102-119';
