@@ -5,8 +5,15 @@ api/va
 .htaccess
 docs/*
 !docs/database/
+!docs/prd-refactor-ui.md
+!docs/prd-migrasi-php-react.md
 
 api-tests
+
+# Standalone React KPI Tukin build artifacts
+frontend/
+kpi-tukin/node_modules/
+kpi-tukin/dist/
 
 # Local agent/task metadata and documentation virtual environment
 .agents/
