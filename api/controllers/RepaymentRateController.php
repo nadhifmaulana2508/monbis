@@ -1887,7 +1887,8 @@ class RepaymentRateController {
             }
         };
 
-        $selectColumns = "COALESCE(t2.no_rekening, t1.no_rekening) AS no_rekening,
+        $selectColumns = "COALESCE(t2.kode_cabang, t1.kode_cabang) AS kode_kantor,
+                    COALESCE(t2.no_rekening, t1.no_rekening) AS no_rekening,
                     COALESCE(t2.nama_nasabah, t1.nama_nasabah) AS nama_nasabah,
                     COALESCE(t2.alamat, t1.alamat) AS alamat,
                     COALESCE(t2.hp, t1.hp) AS no_hp,

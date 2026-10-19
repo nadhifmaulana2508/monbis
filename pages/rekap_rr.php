@@ -3,6 +3,7 @@ require_once __DIR__ . '/../components/bootstrap.php';
 mb_ui_assets('.');
 ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
 <style>
   /* Custom Scrollbar */
@@ -1658,6 +1659,67 @@ mb_render_detail_modal([
       maximumFractionDigits: 2
   });
 
+  function rrExcelText(value) {
+      return String(value ?? '').replace(/[\t\r\n]+/g, ' ').trim();
+  }
+
+  function rrNormalizeOfficeCode(value) {
+      const raw = rrExcelText(value);
+      if (!raw || raw === '-' || /^KOR-/i.test(raw)) return '';
+      return /^\d+$/.test(raw) ? raw.padStart(3, '0') : raw;
+  }
+
+  function rrSelectedOfficeCode() {
+      const selected = String(document.getElementById('opt_kantor')?.value || '').trim();
+      return selected && selected !== '000' && !/^KOR-/i.test(selected)
+          ? rrNormalizeOfficeCode(selected)
+          : '';
+  }
+
+  function rrSummaryOfficeCode(row) {
+      // Jika sedang melihat satu kantor, semua breakdown tetap membawa kode
+      // kantor induknya, bukan kode kankas/AO pada r.kode.
+      return rrSelectedOfficeCode()
+          || rrNormalizeOfficeCode(row?.kode_kantor || row?.kode_cabang || row?.kode);
+  }
+
+  function rrDetailOfficeCode(row) {
+      return rrNormalizeOfficeCode(
+          row?.kode_kantor
+          || row?.kode_cabang
+          || currentDetailParams?.kode_kantor
+      );
+  }
+
+  function rrDownloadXlsx(rows, filename, sheetName = 'Data RR') {
+      if (!window.XLSX?.utils || typeof window.XLSX.writeFile !== 'function') {
+          alert('Komponen Excel belum siap. Silakan muat ulang halaman lalu coba lagi.');
+          return false;
+      }
+
+      const worksheet = window.XLSX.utils.aoa_to_sheet(rows);
+      const columnCount = Math.max(1, rows[0]?.length || 1);
+      const lastRow = Math.max(0, rows.length - 1);
+      worksheet['!autofilter'] = {
+          ref: window.XLSX.utils.encode_range({
+              s: { r: 0, c: 0 },
+              e: { r: lastRow, c: columnCount - 1 }
+          })
+      };
+      worksheet['!cols'] = Array.from({ length: columnCount }, (_, columnIndex) => {
+          const width = rows.reduce((max, row) => {
+              const value = String(row?.[columnIndex] ?? '');
+              return Math.max(max, value.length);
+          }, 10);
+          return { wch: Math.min(36, Math.max(12, width + 2)) };
+      });
+
+      const workbook = window.XLSX.utils.book_new();
+      window.XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+      window.XLSX.writeFile(workbook, filename, { bookType: 'xlsx', compression: true });
+      return true;
+  }
+
   function rrPct(v) {
       return `${rrNum(v).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})}%`;
   }
@@ -2268,29 +2330,31 @@ mb_render_detail_modal([
   window.exportExcelRekap = function() {
       if(!rekapDataCache || rekapDataCache.length === 0) return alert("Tidak ada data rekap untuk didownload.");
 
-      let csv = "";
       const nameLabel = rekapMetaCache?.label_nama || (userKodeGlobal === '000' ? 'NAMA KANTOR' : 'NAMA KANKAS');
-      const codeLabel = rekapMetaCache?.label_kode || 'KODE';
-      if (userKodeGlobal === '000') {
-          csv = `${codeLabel}\t${nameLabel}\tM-1 NOMINAL\tM-1 NOA\tM-1 %\tActual NOMINAL\tActual NOA\tActual %\tNominal\tNOA\tDelta RR %\n`;
-      } else {
-          csv = `${nameLabel}\tM-1 NOMINAL\tM-1 NOA\tM-1 %\tActual NOMINAL\tActual NOA\tActual %\tNominal\tNOA\tDelta RR %\n`;
-      }
-      
-      rekapDataCache.forEach(r => {
-          if (userKodeGlobal === '000') {
-              csv += `'${r.kode}\t${r.nama||''}\t`;
-          } else {
-              csv += `${r.nama||''}\t`;
-          }
-          csv += `${Math.round(r.m1_lancar_os)}\t${r.m1_all_noa}\t${rrExportDecimal(r.m1_pct)}%\t${Math.round(r.cur_lancar_os)}\t${r.cur_all_noa}\t${rrExportDecimal(r.cur_pct)}%\t${Math.round(r.delta_os_lancar)}\t${r.delta_noa}\t${rrExportDecimal(r.delta_pct)}%\n`;
-      });
+      const rows = [[
+          'KODE KANTOR', nameLabel, 'M-1 NOMINAL', 'M-1 NOA', 'M-1 %',
+          'ACTUAL NOMINAL', 'ACTUAL NOA', 'ACTUAL %', 'NOMINAL', 'NOA', 'DELTA RR %'
+      ]];
 
-      const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
-      const a = document.createElement('a');
-      a.href = window.URL.createObjectURL(blob);
-      a.download = `Rekap_RR_${userKodeGlobal}_${document.getElementById("harian_date").value}.xls`; 
-      a.click();
+      rekapDataCache.forEach(r => rows.push([
+          rrSummaryOfficeCode(r),
+          rrExcelText(r.nama || ''),
+          Math.round(Number(r.m1_lancar_os) || 0),
+          Number(r.m1_all_noa) || 0,
+          `${rrExportDecimal(r.m1_pct)}%`,
+          Math.round(Number(r.cur_lancar_os) || 0),
+          Number(r.cur_all_noa) || 0,
+          `${rrExportDecimal(r.cur_pct)}%`,
+          Math.round(Number(r.delta_os_lancar) || 0),
+          Number(r.delta_noa) || 0,
+          `${rrExportDecimal(r.delta_pct)}%`
+      ]));
+
+      rrDownloadXlsx(
+          rows,
+          `Rekap_RR_${userKodeGlobal}_${document.getElementById('harian_date').value}.xlsx`,
+          'Rekap RR'
+      );
   }
 
   // ==========================================
@@ -2877,38 +2941,45 @@ mb_render_detail_modal([
           }
           if (rows.length === 0) { alert("Tidak ada data untuk diexport"); return; }
 
-          const cleanCell = (value) => String(value ?? '').replace(/[\t\r\n]+/g, ' ');
-          const lines = [];
+          const rowsForExcel = [];
           if(currentMode === 'NORMAL') {
-              lines.push(`No Rekening\tNama Nasabah\tAlamat\tNo HP\tKankas\tNama AO\tTgl Realisasi\tTgl JT\tStatus Pembayaran\tAngsuran\tTgl Bayar\tPlafond\tTarget (M-1)\tActual (Curr)\tTot Tunggakan\tTabungan\tDPD\tStatus Tagih`);
+              rowsForExcel.push([
+                  'KODE KANTOR', 'NO REKENING', 'NAMA NASABAH', 'ALAMAT', 'NO HP', 'KANKAS',
+                  'NAMA AO', 'TGL REALISASI', 'TGL JT', 'STATUS PEMBAYARAN', 'ANGSURAN',
+                  'TGL BAYAR', 'PLAFOND', 'TARGET (M-1)', 'ACTUAL (CURR)', 'TOT TUNGGAKAN',
+                  'TABUNGAN', 'DPD', 'STATUS TAGIH'
+              ]);
               rows.forEach(r => {
-                  lines.push([
-                      `'${r.no_rekening || ''}`, r.nama_nasabah, r.alamat, `'${r.no_hp || ''}`,
-                      r.kankas, r.nama_ao, r.tgl_realisasi, r.tgl_jatuh_tempo, r.status_pembayaran,
+                  rowsForExcel.push([
+                      rrDetailOfficeCode(r),
+                      rrExcelText(r.no_rekening || ''), rrExcelText(r.nama_nasabah), rrExcelText(r.alamat), rrExcelText(r.no_hp || ''),
+                      rrExcelText(r.kankas), rrExcelText(r.nama_ao), rrExcelText(r.tgl_realisasi), rrExcelText(r.tgl_jatuh_tempo), rrExcelText(r.status_pembayaran),
                       Math.round(Number(r.trx_bulan_ini) || 0), getTglBayarRR(r),
                       Math.round(Number(r.jml_pinjaman) || 0), Math.round(Number(r.os_m1) || 0),
-                      Math.round(Number(r.os_curr) || 0), Math.round(Number(r.totung) || 0), Math.round(Number(r.tabungan) || 0), r.dpd_curr, r.status_ket
-                  ].map(cleanCell).join('\t'));
+                      Math.round(Number(r.os_curr) || 0), Math.round(Number(r.totung) || 0), Math.round(Number(r.tabungan) || 0), Number(r.dpd_curr) || 0, rrExcelText(r.status_ket)
+                  ]);
               });
           } else {
-              lines.push(`Nama Nasabah\tID Nasabah\tAlamat\tNama AO\tRek Lama\tPlafond Lama\tOS Lunas (M-1)\tStatus\tRek Baru\tPlafond Baru\tTgl Realisasi Baru`);
+              rowsForExcel.push([
+                  'KODE KANTOR', 'NAMA NASABAH', 'ID NASABAH', 'ALAMAT', 'NAMA AO', 'REK LAMA',
+                  'PLAFOND LAMA', 'OS LUNAS (M-1)', 'STATUS', 'REK BARU', 'PLAFOND BARU', 'TGL REALISASI BARU'
+              ]);
               rows.forEach(r => {
-                  lines.push([
-                      r.nama_nasabah, `'${r.nasabah_id || ''}`, r.alamat, r.nama_ao, `'${r.no_rekening || ''}`,
+                  rowsForExcel.push([
+                      rrDetailOfficeCode(r),
+                      rrExcelText(r.nama_nasabah), rrExcelText(r.nasabah_id || ''), rrExcelText(r.alamat), rrExcelText(r.nama_ao), rrExcelText(r.no_rekening || ''),
                       Math.round(Number(r.plafon_lama) || 0), Math.round(Number(r.os_lunas) || 0),
-                      r.status_lunas, `'${r.rek_baru || ''}`, Math.round(Number(r.plafond_baru) || 0), r.tgl_baru
-                  ].map(cleanCell).join('\t'));
+                      rrExcelText(r.status_lunas), rrExcelText(r.rek_baru || ''), Math.round(Number(r.plafond_baru) || 0), rrExcelText(r.tgl_baru)
+                  ]);
               });
           }
 
-          const blob = new Blob(['\ufeff', lines.join('\r\n')], { type: 'application/vnd.ms-excel' });
-          const url = window.URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url;
           const exportMode = currentDetailParams.status === 'MIGRASI' ? 'MIGRASI' : currentMode;
-          a.download = `RR_Detail_${exportMode}_${currentDetailParams.tgl_tagih}.xls`;
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+          rrDownloadXlsx(
+              rowsForExcel,
+              `RR_Detail_${exportMode}_${currentDetailParams.tgl_tagih}.xlsx`,
+              'Detail RR'
+          );
 
       } catch(e) { console.error(e); alert("Gagal export data."); } 
       finally { btn.innerHTML = txt; btn.disabled = false; }
