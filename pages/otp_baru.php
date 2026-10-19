@@ -658,6 +658,13 @@
     border-top:3px solid #8b5cf6 !important;
   }
 
+  /* DITAGIH tetap punya penanda merah yang lembut dan mudah dibaca. */
+  #tabelRekapRR:not(.otp-collection-view) thead .otp-group-collect {
+    background:#fff7f7 !important;
+    color:#b45353 !important;
+    border-top-color:#f2a6a6 !important;
+  }
+
   #tabelRekapRR .otp-report-cell,
   #tabelRekapRR .otp-report-total {
     height:auto !important;
@@ -2268,6 +2275,7 @@
     color: var(--otp-ui-text) !important;
     border-color: var(--otp-ui-border) !important;
   }
+  #tabelRekapRR #rowTotalRRAtas:empty { display:none !important; }
   #tabelRekapRR [class*="text-blue-"],
   #tabelRekapRR [class*="text-cyan-"],
   #tabelRekapRR [class*="text-emerald-"],
@@ -2359,7 +2367,16 @@
     #otpPage .otp-mobile-head-actions { max-width: 58%; gap: 4px !important; }
     #otpPage .otp-kpp-toggle { max-width: 58px; overflow: hidden; text-overflow: ellipsis; }
     #otpPage #otpMainPanel { min-height: 0 !important; border-radius: 10px !important; }
-    #otpPage #otpMainScroll { overflow: auto !important; }
+    /* Mobile memakai tabel utama dengan scroll horizontal seperti versi web. */
+    #otpPage #otpMainScroll {
+      display: block !important;
+      flex: 1 1 auto !important;
+      min-height: 0 !important;
+      overflow: auto !important;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+    #otpPage #otpMobileMain { display: none !important; }
     #tabelRekapRR { min-width: 870px !important; width: 870px !important; }
     #tableExportRR { min-width: 1120px !important; }
     #modalDetailRR > .relative,
@@ -2372,6 +2389,199 @@
     #otpPage .otp-title { max-width: 112px !important; }
     #otpPage .otp-mobile-head-actions { max-width: 61%; }
     #tabelRekapRR { min-width: 820px !important; width: 820px !important; }
+  }
+
+  /* Hanya satu tombol swap yang terlihat pada setiap breakpoint. */
+  #otpPage #btnMainViewRR { display: none !important; }
+  #otpPage #btnMainViewRRMobile { display: inline-flex !important; }
+  @media (min-width: 1280px) {
+    #otpPage #btnMainViewRR { display: inline-flex !important; }
+    #otpPage #btnMainViewRRMobile { display: none !important; }
+  }
+
+  /* Total tetap di bawah header dan selalu berada di atas baris data saat scroll. */
+  #tabelRekapRR > thead > tr.sticky-total > th {
+    position: sticky !important;
+    top: var(--otp-head-total-top) !important;
+    z-index: 80 !important;
+    background: var(--otp-ui-surface-muted) !important;
+    isolation: isolate;
+  }
+  #tabelRekapRR > thead > tr.sticky-total > th.otp-report-tgl {
+    left: 0 !important;
+    z-index: 90 !important;
+    background: #eef5ff !important;
+  }
+  /* Satu stacking layer untuk header agar data kanan tidak melintas di atasnya. */
+  #tabelRekapRR {
+    position: relative;
+    isolation: isolate;
+  }
+  #tabelRekapRR > thead {
+    position: relative !important;
+    z-index: 100 !important;
+  }
+  #tabelRekapRR > thead > tr.sticky-total {
+    position: relative !important;
+    z-index: 200 !important;
+  }
+  #tabelRekapRR > thead > tr.sticky-total > th {
+    z-index: 1000 !important;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    background: #f1f5f9 !important;
+    box-shadow: inset 0 -1px 0 #cbd5e1, 0 3px 8px -6px rgba(15,23,42,.8);
+  }
+  #tabelRekapRR > thead > tr.sticky-total > th.otp-report-tgl {
+    z-index: 1100 !important;
+  }
+  /* Mobile browser lebih stabil jika TOTAL menjadi baris pertama tbody. */
+  #tabelRekapRR > tbody > tr.sticky-total > th,
+  #tabelRekapRR > tbody > tr.sticky-total > td {
+    position: sticky !important;
+    top: calc(var(--otp-head-total-top) - 1px) !important;
+    z-index: 1000 !important;
+    background: #f1f5f9 !important;
+    color: var(--otp-ui-text) !important;
+    border-color: var(--otp-ui-border) !important;
+    box-shadow: inset 0 -1px 0 #cbd5e1, 0 3px 8px -6px rgba(15,23,42,.8);
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+  }
+  #tabelRekapRR > tbody > tr.sticky-total > th.otp-report-tgl,
+  #tabelRekapRR > tbody > tr.sticky-total > td.otp-report-tgl {
+    left: 0 !important;
+    z-index: 1100 !important;
+    background: #eef5ff !important;
+  }
+  #tabelRekapRR > tbody {
+    position: relative !important;
+    z-index: 0 !important;
+  }
+  #tabelRekapRR > tbody > tr:not(.otp-total-main-row) > td {
+    position: relative;
+    z-index: 1;
+  }
+  #tabelRekapRR > tbody > tr:not(.otp-total-main-row) > td.sticky.left-0 {
+    position: sticky !important;
+    z-index: 20 !important;
+  }
+
+  @media (max-width: 767px) {
+    #otpMainScroll {
+      position: relative !important;
+      isolation: isolate;
+    }
+    #tabelRekapRR > thead > tr:nth-child(1) > th {
+      z-index: 300 !important;
+      background: #f1f5f9 !important;
+    }
+    #tabelRekapRR > thead > tr:nth-child(2) > th {
+      z-index: 290 !important;
+      background: #f1f5f9 !important;
+    }
+    #tabelRekapRR > thead > tr:nth-child(1) > th.otp-head-tgl,
+    #tabelRekapRR > tbody > tr:not(.otp-total-main-row) > td:first-child {
+      position: sticky !important;
+      left: 0 !important;
+      z-index: 340 !important;
+      background: #f8fafc !important;
+      background-clip: padding-box !important;
+      box-shadow: 3px 0 7px -6px rgba(15,23,42,.8) !important;
+    }
+    #tabelRekapRR > tbody > tr.sticky-total > th {
+      position: sticky !important;
+      top: calc(var(--otp-head-total-top) - 1px) !important;
+      z-index: 280 !important;
+      background: #f1f5f9 !important;
+      background-clip: padding-box !important;
+    }
+    #tabelRekapRR > tbody > tr.sticky-total > th:first-child {
+      left: 0 !important;
+      z-index: 350 !important;
+      background: #eef5ff !important;
+      box-shadow: 3px 0 7px -6px rgba(15,23,42,.8) !important;
+    }
+    #tabelRekapRR > tbody > tr:not(.otp-total-main-row) > td:not(:first-child) {
+      position: relative !important;
+      z-index: 1 !important;
+    }
+  }
+
+  /* Mobile final sticky model: TOTAL tetap berada di THEAD. */
+  @media (max-width: 767px) {
+    #otpMainScroll {
+      position: relative !important;
+      overflow-x: auto !important;
+      overflow-y: auto !important;
+      isolation: auto !important;
+    }
+
+    #tabelRekapRR {
+      position: static !important;
+      isolation: auto !important;
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+    }
+
+    #tabelRekapRR > thead,
+    #tabelRekapRR > tbody {
+      position: static !important;
+      z-index: auto !important;
+    }
+
+    #tabelRekapRR > thead > tr.sticky-total {
+      display: table-row !important;
+    }
+
+    #tabelRekapRR > thead > tr:nth-child(1) > th {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 30 !important;
+      background: #f1f5f9 !important;
+      background-clip: padding-box !important;
+    }
+
+    #tabelRekapRR > thead > tr:nth-child(2) > th {
+      position: sticky !important;
+      top: var(--otp-head-row-1-h) !important;
+      z-index: 29 !important;
+      background: #f1f5f9 !important;
+      background-clip: padding-box !important;
+    }
+
+    #tabelRekapRR > thead > tr.sticky-total > th {
+      position: sticky !important;
+      top: var(--otp-head-total-top) !important;
+      z-index: 40 !important;
+      background: #f1f5f9 !important;
+      background-clip: padding-box !important;
+      box-shadow: inset 0 -1px 0 #cbd5e1, 0 3px 8px -6px rgba(15,23,42,.85) !important;
+    }
+
+    #tabelRekapRR > thead > tr:nth-child(1) > th.otp-head-tgl,
+    #tabelRekapRR > thead > tr.sticky-total > th.otp-report-tgl {
+      left: 0 !important;
+      z-index: 50 !important;
+      background: #eef5ff !important;
+      box-shadow: 3px 0 7px -6px rgba(15,23,42,.9) !important;
+    }
+
+    #tabelRekapRR > tbody > tr:not(.otp-total-main-row) > td {
+      position: static !important;
+      z-index: auto !important;
+    }
+
+    #tabelRekapRR > tbody > tr:not(.otp-total-main-row) > td.otp-report-tgl {
+      position: sticky !important;
+      left: 0 !important;
+      z-index: 20 !important;
+      background: #f8fafc !important;
+      background-clip: padding-box !important;
+      box-shadow: 3px 0 7px -6px rgba(15,23,42,.85) !important;
+    }
   }
 
 </style>
@@ -3846,8 +4056,7 @@
     if(trTotal) trTotal.innerHTML = '';
     rekapDataRaw = [];
     rekapGtRaw = null;
-    const mobileMain = document.getElementById('otpMobileMain');
-    if (isOtpMobile() && mobileMain) { setOtpMainSurfaceRR(true); mobileMain.innerHTML = '<div class="otp-mobile-card-empty">Memuat data OTP...</div>'; }
+    setOtpMainSurfaceRR(false);
     dueSummaryRaw = null;
     mainOtpView = 'otp';
     syncMainViewButtonRR();
@@ -3991,10 +4200,6 @@
   function renderMainCollectionRR() {
       const tb = document.getElementById('bodyRR');
       if (!tb) return;
-      if (isOtpMobile()) {
-          renderCollectionMobileCardsRR();
-          return;
-      }
       renderOtpTemplateSummaryRR(mainCollectionSummary, 'collection');
       setOtpMainSurfaceRR(false);
       const renderRow = (r, isTotal = false) => {
@@ -4038,11 +4243,6 @@
       const colspan = getMainColspanRR();
       tb.innerHTML = '';
       renderOtpTemplateSummaryRR(gt, 'otp');
-
-      if (isOtpMobile()) {
-          renderOtpMobileCardsRR(rows, gt);
-          return;
-      }
       setOtpMainSurfaceRR(false);
 
       if(rows.length === 0){
@@ -4054,7 +4254,7 @@
       if (isOtpMobile()) {
           if(gt && trTotal) {
               trTotal.innerHTML = `
-                  <th class="otp-report-total otp-report-tgl sticky left-0 z-20">TOTAL</th>
+                  <th class="otp-report-total otp-report-tgl">TOTAL</th>
                   <th class="otp-report-total">${mobileMetricRR(gt.target_os, gt.target_noa, "initModalDetail('ALL','ALL')")}</th>
                   <th class="otp-report-total">${mobileMetricRR(gt.lancar_sesuai_os, gt.lancar_sesuai_noa, "initModalDetail('ALL','LANCAR_SESUAI')", 'text-emerald-700')}</th>
                   <th class="otp-report-total">${mobileMetricRR(gt.lancar_lewat_os, gt.lancar_lewat_noa, "initModalDetail('ALL','LANCAR_LEWAT')", 'text-rose-700')}</th>
@@ -4092,7 +4292,7 @@
 
       if(gt && trTotal) {
         trTotal.innerHTML = `
-            <th class="otp-report-total otp-report-tgl sticky left-0 z-20">TOTAL</th>
+            <th class="otp-report-total otp-report-tgl">TOTAL</th>
             <th class="otp-report-total">${compactMetricRR(gt.target_os, gt.target_noa, "initModalDetail('ALL','ALL')")}</th>
             <th class="otp-report-total">${compactMetricRR(gt.lancar_sesuai_os, gt.lancar_sesuai_noa, "initModalDetail('ALL','LANCAR_SESUAI')", 'text-emerald-700')}</th>
             <th class="otp-report-total">${compactMetricRR(gt.lancar_lewat_os, gt.lancar_lewat_noa, "initModalDetail('ALL','LANCAR_LEWAT')", 'text-rose-700')}</th>
