@@ -68,6 +68,112 @@
         return '';
     }
 
+    // RBAC menu terpusat. User tanpa matrix hanya mendapat akses dashboard.
+    window.MonbisRbac = window.MonbisRbac || (() => {
+        const featureKeyFromHref = href => {
+            const raw = String(href || '').split(/[?#]/)[0].replace(/^\.\//, '').replace(/^\/+/, '');
+            const slug = raw.split('/').pop().replace(/\.php$/i, '').trim();
+            return slug ? `page:${slug}` : '';
+        };
+        const getToken = () => {
+            try { const local = localStorage.getItem('dpk_token'); if (local) return local; } catch (error) {}
+            const match = document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : '';
+        };
+        const headers = () => {
+            const token = getToken();
+            return { 'Content-Type': 'application/json', ...(token ? {Authorization:`Bearer ${token}`} : {}) };
+        };
+        const markReady = () => {
+            document.documentElement.classList.remove('monbis-rbac-pending');
+            document.documentElement.classList.add('monbis-rbac-ready');
+        };
+        const can = (user, featureKey, action = 'can_view') => {
+            const rbac = user?.rbac;
+            if (!rbac) return false;
+            if (rbac.admin) return true;
+            return Number(rbac.permissions?.[featureKey]?.[action] || 0) === 1;
+        };
+        const apply = (user, options = {}) => {
+            if (document.documentElement.classList.contains('monbis-rbac-pending') && options.ready !== true) return false;
+            if (window.__RBAC_INITIAL__ && window.__RBAC_INITIAL_READY__ && !window.__RBAC_FRESH_LOADED__ && options.ready !== true) return false;
+            const rbac = user?.rbac;
+            if (!rbac) return false;
+            const rbacMenu = document.getElementById('menuRbacAdmin');
+            if (!rbac?.configured) {
+            if (rbacMenu) rbacMenu.style.setProperty('display', rbac?.admin ? 'flex' : 'none', 'important');
+                markReady();
+                return true;
+            }
+        if (rbacMenu) rbacMenu.style.setProperty('display', rbac.admin ? 'flex' : 'none', 'important');
+            const links = [...document.querySelectorAll('#sidebar nav a[href]')];
+            if (rbac.admin) {
+                links.forEach(link => link.style.removeProperty('display'));
+                document.querySelectorAll('#sidebar nav .accordion-group').forEach(group => group.style.removeProperty('display'));
+                markReady();
+                return true;
+            }
+            links.forEach(link => {
+                const key = featureKeyFromHref(link.getAttribute('href'));
+                if (!key) return;
+                if (can(user, key)) link.style.removeProperty('display');
+                else link.style.setProperty('display', 'none', 'important');
+            });
+            document.querySelectorAll('#sidebar nav .accordion-group').forEach(group => {
+                const visible = [...group.querySelectorAll('a[href]')].some(link => getComputedStyle(link).display !== 'none');
+                group.style.setProperty('display', visible ? 'block' : 'none', 'important');
+            });
+            markReady();
+            return true;
+        };
+        const load = async user => {
+            if (!user || !getToken()) return user;
+
+            // Akses awal sudah dihitung server saat halaman dirender.
+            // Bentuk ulang permission minimal dari payload itu agar halaman
+            // tidak perlu menunggu request RBAC kedua setiap pindah menu.
+            const initial = window.__RBAC_INITIAL__;
+            if (initial && Array.isArray(initial.allowed)) {
+                const permissions = {};
+                initial.allowed.forEach(featureKey => {
+                    permissions[featureKey] = {
+                        can_view: 1,
+                        can_create: 0,
+                        can_update: 0,
+                        can_delete: 0,
+                        can_export: 0
+                    };
+                });
+                user.rbac = {
+                    admin: Boolean(initial.admin),
+                    configured: true,
+                    permissions
+                };
+                window.__USER = user;
+                window.__RBAC_FRESH_LOADED__ = true;
+                apply(user, {ready:true});
+                return user;
+            }
+
+            try {
+                const response = await fetch('./api/index.php?request=rbac', {
+                    method: 'POST', credentials: 'same-origin', headers: headers(), body: JSON.stringify({type:'me'})
+                });
+                const json = await response.json().catch(() => ({}));
+                if (!response.ok || Number(json.status) >= 400 || !json.data) return user;
+                user.rbac = json.data;
+                window.__USER = user;
+                try { localStorage.setItem('dpk_user', JSON.stringify(user)); } catch (error) {}
+                window.__RBAC_FRESH_LOADED__ = true;
+                apply(user, {ready:true});
+            } catch (error) {
+                console.warn('RBAC tidak dapat dimuat:', error);
+            }
+            return user;
+        };
+        return { apply, load, can, featureKeyFromHref };
+    })();
+
     // --- 1. SCRIPT HELPDESK ---
     let isExpanded = false;
     function handleHelpdeskClick() {
@@ -145,6 +251,11 @@
             const isDev = (String(u.role || '').toLowerCase() === 'dev' || unitKerja === 'divisi operasional' || isBoardUser || unitKerja === 'divisi perencanaan dan litbang');
             const isKpiAllowed = !isBoardUser && (isDev || unitKerja === 'divisi sdm dan umum');
             const isLayananDigitalAllowed = !isBoardUser && isDev;
+            if (window.__RBAC_INITIAL__ && !window.__RBAC_FRESH_LOADED__) {
+                window.MonbisRbac?.apply?.(u);
+                window.MonbisTheme?.sync?.(u);
+                return true;
+            }
             if (menuMonevDev) {
                 menuMonevDev.style.setProperty('display', isDev ? 'block' : 'none', 'important');
             }
@@ -163,12 +274,13 @@
                     || monbisResolvePegId(u) === '102-119';
                 menuInputRbb.style.setProperty('display', canAccessRbb ? 'block' : 'none', 'important');
             }
+            window.MonbisRbac?.apply?.(u);
             window.MonbisTheme?.sync?.(u);
             return true;
         }
 
         if (rawUser) {
-            try { window.__USER = JSON.parse(rawUser); paint(window.__USER); } catch(e) {}
+            try { window.__USER = JSON.parse(rawUser); paint(window.__USER); window.MonbisRbac.load(window.__USER); } catch(e) {}
         }
 
         const lastVerified = Number(localStorage.getItem(USER_VERIFIED_KEY) || 0);
@@ -204,6 +316,7 @@
                         window.location.reload();
                     } else {
                         paint(u);
+                        window.MonbisRbac.load(u);
                     }
                 }
             }

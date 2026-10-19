@@ -5,11 +5,18 @@ require_once __DIR__ . '/../helpers/response.php';
 
 class LaporanKeuanganController 
 {
+    private const COREBANK_TAX_CODE = '6';
+
     private PDO $pdo;
 
     public function __construct(PDO $pdo) 
     {
         $this->pdo = $pdo;
+    }
+
+    private function corebankTaxAmount(float $taxBalance, bool $isConsolidated): float
+    {
+        return $isConsolidated ? round($taxBalance, 0, PHP_ROUND_HALF_UP) : 0.0;
     }
 
     private function getKorwilRange(?string $korwil): ?array
@@ -180,10 +187,6 @@ class LaporanKeuanganController
     {
         try {
             $tanggal = trim((string)($input['harian_date'] ?? $input['tanggal'] ?? ''));
-            if ($tanggal === '') {
-                $stmtDate = $this->pdo->query("SELECT MAX(tanggal) FROM acc_history");
-                $tanggal = (string)$stmtDate->fetchColumn();
-            }
 
             $kodeKantorReq = trim((string)($input['kode_kantor'] ?? '000'));
             $korwilReq = strtoupper(trim((string)($input['korwil'] ?? '')));
@@ -193,7 +196,12 @@ class LaporanKeuanganController
                 : '';
             $korwilRange = $this->getKorwilRange($korwilReq);
 
-            $params = [':tanggal' => $tanggal];
+            $params = [];
+            $dateExpression = '(SELECT MAX(tanggal) FROM acc_history)';
+            if ($tanggal !== '') {
+                $dateExpression = ':tanggal';
+                $params[':tanggal'] = $tanggal;
+            }
             $scopeLabel = 'Konsolidasi';
             $sqlKantor = "AND kode_kantor BETWEEN '000' AND '028'";
             $isConsolidated = true;
@@ -224,13 +232,14 @@ class LaporanKeuanganController
 
             $sql = "
                 SELECT
+                    MAX(tanggal) AS effective_tanggal,
                     TRIM(CAST(kode_perk AS CHAR)) AS kode_perk,
                     MAX(NULLIF(TRIM(nama_perk), '')) AS nama_perk,
                     MAX(TRIM(CAST(kode_induk AS CHAR))) AS kode_induk,
                     MIN(COALESCE(level_perk, 0)) AS level_perk,
                     SUM(saldo_akhir) AS saldo
                 FROM acc_history
-                WHERE tanggal = :tanggal
+                WHERE tanggal = $dateExpression
                   $sqlKantor
                   AND kode_perk >= '1'
                   AND kode_perk < '4'
@@ -242,6 +251,9 @@ class LaporanKeuanganController
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute($params);
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if ($tanggal === '' && $rows) {
+                $tanggal = (string)($rows[0]['effective_tanggal'] ?? '');
+            }
 
             $assetRows = [];
             $pasivaRows = [];
@@ -582,11 +594,11 @@ class LaporanKeuanganController
             $kodeKantorReq = trim((string)($input['kode_kantor'] ?? '000'));
             $korwilReq = strtoupper(trim((string)($input['korwil'] ?? '')));
             $korwilRange = $this->getKorwilRange($korwilReq);
+            $isConsolidated = $this->isConsolidatedScope($kodeKantorReq, $korwilRange);
 
             $params = [':tanggal' => $tanggal];
             $scopeLabel = 'Konsolidasi';
             $sqlKantor = "AND kode_kantor BETWEEN '000' AND '028'";
-            $isBranchScope = false;
 
             if ($korwilRange) {
                 $sqlKantor = "AND kode_kantor BETWEEN :kw_start AND :kw_end";
@@ -601,7 +613,6 @@ class LaporanKeuanganController
                 $sqlKantor = "AND kode_kantor = :kode_kantor";
                 $params[':kode_kantor'] = $kodeKantor;
                 $scopeLabel = $kodeKantor;
-                $isBranchScope = true;
             }
 
             $sql = "
@@ -614,8 +625,7 @@ class LaporanKeuanganController
                 FROM acc_history
                 WHERE tanggal = :tanggal
                   $sqlKantor
-                  AND kode_perk >= '4'
-                  AND kode_perk < '6'
+                  AND ((kode_perk >= '4' AND kode_perk < '6') OR kode_perk = '6')
                 GROUP BY TRIM(CAST(kode_perk AS CHAR))
                 HAVING SUM(saldo_akhir) <> 0 OR CHAR_LENGTH(TRIM(CAST(kode_perk AS CHAR))) <= 3
                 ORDER BY TRIM(CAST(kode_perk AS CHAR)) ASC
@@ -629,6 +639,7 @@ class LaporanKeuanganController
             $biayaRows = [];
             $totalPendapatan = 0.0;
             $totalBiaya = 0.0;
+            $pajakCorebank = 0.0;
 
             foreach ($rows as $row) {
                 $kode = trim((string)($row['kode_perk'] ?? ''));
@@ -645,6 +656,11 @@ class LaporanKeuanganController
                     'saldo' => $saldo,
                     'depth' => max(0, min(5, strlen($kode) === 1 ? 0 : (int)floor((strlen($kode) - 1) / 2))),
                 ];
+
+                if ($kode === self::COREBANK_TAX_CODE) {
+                    $pajakCorebank = $saldo;
+                    continue;
+                }
 
                 if (strpos($kode, '4') === 0) {
                     $pendapatanRows[] = $item;
@@ -675,7 +691,7 @@ class LaporanKeuanganController
             }
 
             $labaKotor = $totalPendapatan - $totalBiaya;
-            $pajak = (!$isBranchScope && $labaKotor > 0) ? ($labaKotor * 0.22) : 0.0;
+            $pajak = $this->corebankTaxAmount($pajakCorebank, $isConsolidated);
             $labaBersih = $labaKotor - $pajak;
 
             sendResponse(200, "Berhasil memuat Lap Laba Rugi Actual", [
@@ -683,7 +699,8 @@ class LaporanKeuanganController
                 'kode_kantor' => $kodeKantorReq,
                 'korwil' => $korwilReq,
                 'scope_label' => $scopeLabel,
-                'pajak_dihitung' => !$isBranchScope,
+                'pajak_dihitung' => $isConsolidated,
+                'pajak_sumber' => 'acc_history.kode_perk=6',
                 'pendapatan' => $pendapatanRows,
                 'biaya' => $biayaRows,
                 'totals' => [
@@ -862,6 +879,110 @@ class LaporanKeuanganController
             ]);
         } catch (Exception $e) {
             sendResponse(500, "Gagal memuat Rekap Lapkeu Actual: " . $e->getMessage(), null);
+        }
+    }
+
+    public function apiGetDashboardAccHistoryKpi(array $input)
+    {
+        try {
+            $actualLimit = trim((string)($input['harian_date'] ?? ''));
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $actualLimit)) {
+                $actualLimit = date('Y-m-d');
+            }
+
+            $closingLimit = trim((string)($input['closing_date'] ?? ''));
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $closingLimit)) {
+                $closingLimit = (new DateTimeImmutable($actualLimit))->modify('last day of previous month')->format('Y-m-d');
+            }
+
+            $yearEndLimit = trim((string)($input['year_end_date'] ?? ''));
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $yearEndLimit)) {
+                $yearEndLimit = '2025-12-31';
+            }
+
+            $kodeKantorReq = trim((string)($input['kode_kantor'] ?? '000'));
+            $korwilReq = strtoupper(trim((string)($input['korwil'] ?? '')));
+            $korwilRange = $this->getKorwilRange($korwilReq);
+            $scopeLabel = 'Konsolidasi';
+            $scopeSql = "AND kode_kantor BETWEEN '000' AND '028'";
+            $scopeParams = [];
+
+            if ($korwilRange) {
+                $scopeSql = 'AND kode_kantor BETWEEN :kw_start AND :kw_end';
+                $scopeParams[':kw_start'] = str_pad((string)$korwilRange[0], 3, '0', STR_PAD_LEFT);
+                $scopeParams[':kw_end'] = str_pad((string)$korwilRange[1], 3, '0', STR_PAD_LEFT);
+                $scopeLabel = 'Korwil ' . ucfirst(strtolower($korwilReq));
+            } elseif (strtolower($kodeKantorReq) === 'pusat') {
+                $scopeSql = "AND kode_kantor = '000'";
+                $scopeLabel = 'Pusat';
+            } elseif (!in_array(strtolower($kodeKantorReq), ['000', 'konsolidasi', 'all'], true)) {
+                $scopeSql = 'AND kode_kantor = :kode_kantor';
+                $scopeParams[':kode_kantor'] = str_pad($kodeKantorReq, 3, '0', STR_PAD_LEFT);
+                $scopeLabel = $scopeParams[':kode_kantor'];
+            }
+
+            $dateStmt = $this->pdo->prepare("\n                SELECT\n                    MAX(CASE WHEN tanggal <= :actual_limit THEN tanggal END) AS actual_date,\n                    MAX(CASE WHEN tanggal <= :closing_limit THEN tanggal END) AS closing_date,\n                    MAX(CASE WHEN tanggal <= :year_end_limit THEN tanggal END) AS year_end_date\n                FROM acc_history\n                WHERE 1 = 1\n                  {$scopeSql}\n                  AND kode_perk IN ('204', '4', '5', '6')\n            ");
+            $dateStmt->execute(array_merge([
+                ':actual_limit' => $actualLimit,
+                ':closing_limit' => $closingLimit,
+                ':year_end_limit' => $yearEndLimit
+            ], $scopeParams));
+            $dates = $dateStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+            $actualDate = (string)($dates['actual_date'] ?? '');
+            $closingDate = (string)($dates['closing_date'] ?? '');
+            $yearEndDate = (string)($dates['year_end_date'] ?? '');
+            $dateValues = array_values(array_unique(array_filter([$actualDate, $closingDate, $yearEndDate])));
+            $snapshots = [
+                'actual' => ['tanggal' => $actualDate, 'simpanan' => 0.0, 'pendapatan' => 0.0, 'beban' => 0.0, 'pajak' => 0.0, 'laba_kotor' => 0.0, 'laba_bersih' => 0.0],
+                'closing' => ['tanggal' => $closingDate, 'simpanan' => 0.0, 'pendapatan' => 0.0, 'beban' => 0.0, 'pajak' => 0.0, 'laba_kotor' => 0.0, 'laba_bersih' => 0.0],
+                'year_end' => ['tanggal' => $yearEndDate, 'simpanan' => 0.0, 'pendapatan' => 0.0, 'beban' => 0.0, 'pajak' => 0.0, 'laba_kotor' => 0.0, 'laba_bersih' => 0.0],
+            ];
+
+            if ($dateValues) {
+                $datePlaceholders = [];
+                $metricParams = $scopeParams;
+                foreach ($dateValues as $index => $date) {
+                    $placeholder = ':metric_date_' . $index;
+                    $datePlaceholders[] = $placeholder;
+                    $metricParams[$placeholder] = $date;
+                }
+
+                $metricSql = "\n                    SELECT\n                        tanggal,\n                        COALESCE(SUM(CASE WHEN kode_perk = '204' THEN saldo_akhir ELSE 0 END), 0) AS simpanan,\n                        COALESCE(SUM(CASE WHEN kode_perk = '4' THEN saldo_akhir ELSE 0 END), 0) AS pendapatan,\n                        COALESCE(SUM(CASE WHEN kode_perk = '5' THEN saldo_akhir ELSE 0 END), 0) AS beban,\n                        COALESCE(SUM(CASE WHEN kode_perk = '6' THEN saldo_akhir ELSE 0 END), 0) AS pajak\n                    FROM acc_history\n                    WHERE tanggal IN (" . implode(',', $datePlaceholders) . ")\n                      {$scopeSql}\n                      AND kode_perk IN ('204', '4', '5', '6')\n                    GROUP BY tanggal\n                ";
+                $metricStmt = $this->pdo->prepare($metricSql);
+                $metricStmt->execute($metricParams);
+                $metricsByDate = [];
+                foreach ($metricStmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                    $pendapatan = (float)($row['pendapatan'] ?? 0);
+                    $beban = (float)($row['beban'] ?? 0);
+                    $pajak = (float)($row['pajak'] ?? 0);
+                    $labaKotor = $pendapatan - $beban;
+                    $metricsByDate[(string)$row['tanggal']] = [
+                        'simpanan' => (float)($row['simpanan'] ?? 0),
+                        'pendapatan' => $pendapatan,
+                        'beban' => $beban,
+                        'pajak' => $pajak,
+                        'laba_kotor' => $labaKotor,
+                        'laba_bersih' => $labaKotor - $pajak,
+                    ];
+                }
+
+                foreach ($snapshots as &$snapshot) {
+                    $metric = $metricsByDate[$snapshot['tanggal']] ?? null;
+                    if ($metric) {
+                        $snapshot = array_merge($snapshot, $metric);
+                    }
+                }
+                unset($snapshot);
+            }
+
+            sendResponse(200, 'Berhasil memuat KPI dashboard dari acc_history', [
+                'scope_label' => $scopeLabel,
+                'requested_date' => $actualLimit,
+                'snapshots' => $snapshots,
+            ]);
+        } catch (Exception $e) {
+            sendResponse(500, 'Gagal memuat KPI dashboard dari acc_history: ' . $e->getMessage(), null);
         }
     }
 
@@ -1248,7 +1369,7 @@ class LaporanKeuanganController
                 return $this->pdo->quote((string) $code);
             };
             $asetQuoted = implode(',', array_map($quoteCode, $asetCodes));
-            $trackedCodes = array_merge($asetCodes, ['210', '20401', '20402', '4', '5']);
+            $trackedCodes = array_merge($asetCodes, ['210', '20401', '20402', '4', '5', '6']);
             $trackedQuoted = implode(',', array_map($quoteCode, array_unique($trackedCodes)));
             $assetAdjustmentSql = $isConsolidated
                 ? " - SUM(CASE WHEN kode_perk = '210' THEN saldo_akhir ELSE 0 END)"
@@ -1265,6 +1386,7 @@ class LaporanKeuanganController
                     SUM(CASE WHEN kode_perk IN (20401, 20402) THEN saldo_akhir ELSE 0 END) AS dpk,
                     SUM(CASE WHEN kode_perk = 4 THEN saldo_akhir ELSE 0 END) AS pendapatan,
                     SUM(CASE WHEN kode_perk = 5 THEN saldo_akhir ELSE 0 END) AS beban,
+                    SUM(CASE WHEN kode_perk = 6 THEN saldo_akhir ELSE 0 END) AS pajak,
                     SUM(CASE WHEN kode_perk = 4 THEN saldo_akhir ELSE 0 END)
                     - SUM(CASE WHEN kode_perk = 5 THEN saldo_akhir ELSE 0 END) AS laba_net
                 FROM acc_history
@@ -1290,6 +1412,7 @@ class LaporanKeuanganController
                     'dpk' => (float) ($row['dpk'] ?? 0),
                     'pendapatan' => (float) ($row['pendapatan'] ?? 0),
                     'beban' => (float) ($row['beban'] ?? 0),
+                    'pajak' => (float) ($row['pajak'] ?? 0),
                     'laba_net' => (float) ($row['laba_net'] ?? 0),
                     'npl' => 0,
                     'npl_persen' => 0,
@@ -1320,6 +1443,7 @@ class LaporanKeuanganController
                         'dpk' => 0,
                         'pendapatan' => 0,
                         'beban' => 0,
+                        'pajak' => 0,
                         'laba_net' => 0,
                         'npl' => 0,
                         'npl_persen' => 0,
@@ -1342,6 +1466,7 @@ class LaporanKeuanganController
                 'dpk' => (float) ($closingRow['dpk'] ?? 0),
                 'pendapatan' => (float) ($closingRow['pendapatan'] ?? 0),
                 'beban' => (float) ($closingRow['beban'] ?? 0),
+                'pajak' => (float) ($closingRow['pajak'] ?? 0),
                 'laba_net' => (float) ($closingRow['laba_net'] ?? 0),
                 'npl' => (float) ($closingRow['npl'] ?? 0),
                 'npl_persen' => (float) ($closingRow['npl_persen'] ?? 0),
@@ -1362,6 +1487,7 @@ class LaporanKeuanganController
                     'dpk' => 0,
                     'pendapatan' => 0,
                     'beban' => 0,
+                    'pajak' => 0,
                     'laba_net' => 0,
                     'npl' => 0,
                     'npl_persen' => 0,
@@ -1378,6 +1504,7 @@ class LaporanKeuanganController
                     'dpk' => $weekRow['dpk'],
                     'pendapatan' => $weekRow['pendapatan'],
                     'beban' => $weekRow['beban'],
+                    'pajak' => $weekRow['pajak'],
                     'laba_net' => $weekRow['laba_net'],
                     'npl' => $weekRow['npl'],
                     'npl_persen' => $weekRow['npl_persen'],
@@ -1406,8 +1533,8 @@ class LaporanKeuanganController
                 'laba_net' => $latest['laba_net'],
                 'npl' => $latest['npl'],
                 'npl_persen' => $latest['npl_persen'],
-                'laba_setelah_pajak' => $latest['laba_net'] - ($latest['laba_net'] * 0.22),
-                'pajak_laba' => $latest['laba_net'] * 0.22,
+                'laba_setelah_pajak' => $latest['laba_net'] - $this->corebankTaxAmount((float)($latest['pajak'] ?? 0), $isConsolidated),
+                'pajak_laba' => $this->corebankTaxAmount((float)($latest['pajak'] ?? 0), $isConsolidated),
                 'previous' => [
                     'label' => $previous['label'] ?? null,
                     'tanggal' => $previous['tanggal'] ?? null,
@@ -2216,7 +2343,7 @@ class LaporanKeuanganController
                     $dateCheckParams[':kode_kantor'] = str_pad((string) $kodeKantorReq, 3, '0', STR_PAD_LEFT);
                 }
 
-                $dateCheckStmt = $this->pdo->prepare("SELECT 1 FROM acc_history WHERE tanggal = :snapshot_check_date {$sqlKantorAcc} AND kode_perk IN ('101','104','10601','10606','20401','20402','4','5') LIMIT 1");
+                $dateCheckStmt = $this->pdo->prepare("SELECT 1 FROM acc_history WHERE tanggal = :snapshot_check_date {$sqlKantorAcc} AND kode_perk IN ('101','104','10601','10606','20401','20402','4','5','6') LIMIT 1");
                 $dateCheckStmt->execute($dateCheckParams);
                 if (!$dateCheckStmt->fetchColumn()) {
                     $h7DateObj = clone $baseDateObj;
@@ -2246,7 +2373,7 @@ class LaporanKeuanganController
             $asetIn = implode(',', array_map($quoteCode, $asetCodes));
             $trackedCodes = array_unique(array_merge($asetCodes, [
                 '210', '2', '3', '101', '104', '10401', '10402', '105', '201', '20202', '205', '211', '4', '5', '106', '10601',
-                '10606', '107', '204', '20401', '20402', '20603', '30106', '401', '40101', '501', '50101'
+                '10606', '107', '204', '20401', '20402', '20603', '30106', '401', '40101', '501', '50101', '6'
             ]));
             $trackedIn = implode(',', array_map($quoteCode, $trackedCodes));
             $assetAdjustmentSql = $isConsolidated
@@ -2271,6 +2398,7 @@ class LaporanKeuanganController
                     SUM(CASE WHEN kode_perk = '211' THEN saldo_akhir ELSE 0 END) AS liabilitas_lainnya,
                     SUM(CASE WHEN kode_perk = '4' THEN saldo_akhir ELSE 0 END) AS pendapatan,
                     SUM(CASE WHEN kode_perk = '5' THEN saldo_akhir ELSE 0 END) AS biaya,
+                    SUM(CASE WHEN kode_perk = '6' THEN saldo_akhir ELSE 0 END) AS pajak,
                     SUM(CASE WHEN kode_perk = '106' THEN saldo_akhir ELSE 0 END) AS kredit,
                     SUM(CASE WHEN kode_perk = '10601' THEN saldo_akhir ELSE 0 END) AS kredit_baki_debet,
                     SUM(CASE WHEN kode_perk = '10606' THEN saldo_akhir ELSE 0 END) AS saldo_bank_ead,
@@ -2318,7 +2446,7 @@ class LaporanKeuanganController
                 'aset' => 0, 'kewajiban' => 0, 'ekuitas' => 0, 'kas' => 0, 'ppbl' => 0,
                 'ppbl_giro' => 0, 'ppbl_tabungan' => 0, 'ckpn_ppbl' => 0,
                 'kewajiban_segera' => 0, 'utang_bunga_deposito' => 0, 'simpanan_bank_lain' => 0, 'liabilitas_lainnya' => 0,
-                'pendapatan' => 0, 'biaya' => 0, 'kredit' => 0,
+                'pendapatan' => 0, 'biaya' => 0, 'pajak' => 0, 'kredit' => 0,
                 'kredit_baki_debet' => 0, 'saldo_bank_ead' => 0, 'ckpn_kredit' => 0,
                 'simpanan_pihak_ketiga' => 0, 'tabungan' => 0, 'deposito' => 0,
                 'deposito_bank_lain_gt_3_bulan' => 0, 'modal_pinjaman' => 0,
@@ -2470,7 +2598,8 @@ class LaporanKeuanganController
             $dpkPrev = $prev['tabungan'] + $prev['deposito'];
             $labaCurr = $curr['pendapatan'] - $curr['biaya'];
             $labaPrev = $prev['pendapatan'] - $prev['biaya'];
-            $labaSetelahPajak = $labaCurr - ($labaCurr * 0.22);
+            $pajakCurr = $isConsolidated ? $this->corebankTaxAmount((float)($curr['pajak'] ?? 0), true) : 0.0;
+            $labaSetelahPajak = $labaCurr - $pajakCurr;
 
             $summaryData = [
                 'aset' => $buildNominalSummary('aset'),
@@ -2618,6 +2747,7 @@ class LaporanKeuanganController
                     'pendapatan' => $curr['pendapatan'],
                     'biaya' => $curr['biaya'],
                     'laba_sebelum_pajak' => $labaCurr,
+                    'pajak' => $pajakCurr,
                     'laba_setelah_pajak' => $labaSetelahPajak,
                     'rasio_utama' => [
                         'kap' => ($curr['kredit'] > 0) ? ($totalNpl / $curr['kredit']) * 100 : 0,

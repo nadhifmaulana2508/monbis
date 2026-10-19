@@ -458,6 +458,12 @@ function isExpenseRow(row) {
   return category === 'BEBAN' || /\b(beban|biaya)\b/.test(name);
 }
 
+function rbbLapRowLabel(row) {
+  return String(row?.kode_monbis || '') === '261'
+    ? 'Laba Kotor'
+    : (row?.keterangan || '-');
+}
+
 function rowAssessment(row, yearEnd = false) {
   const target = toNum(yearEnd ? row?.target_rbb_year_end : row?.target_rbb);
   const actual = toNum(row?.realisasi_actual);
@@ -641,7 +647,7 @@ function applyRbbLapLocalFilter() {
 
   rbbLapFilteredRows = rbbLapRows.filter(row => {
     const matchCategory = category === 'ALL' || String(row.kategori || '') === category;
-    const haystack = [row.keterangan,row.kategori,row.kode_perkiraan,row.kode_monbis,row.sandi_lbbpr,row.status_crosscheck]
+    const haystack = [rbbLapRowLabel(row),row.keterangan,row.kategori,row.kode_perkiraan,row.kode_monbis,row.sandi_lbbpr,row.status_crosscheck]
       .map(value => String(value ?? '').toLowerCase()).join(' ');
     return matchCategory && (!keyword || haystack.includes(keyword));
   });
@@ -683,7 +689,7 @@ function renderRbbLapTable() {
       <tr>
         <td class="sticky-code-cell num">${esc(row.kode_monbis || row.id_ref || '-')}</td>
         <td class="sticky-name-cell">
-          <div class="row-name" title="${esc(row.keterangan)}">${esc(row.keterangan || '-')}</div>
+          <div class="row-name" title="${esc(rbbLapRowLabel(row))}">${esc(rbbLapRowLabel(row))}</div>
           <div class="row-meta">${esc(row.kategori || '-')}${row.kode_perkiraan ? ' / ' + esc(row.kode_perkiraan) : ''} &nbsp; <span class="rbb-row-status ${assessment.tone}">${esc(assessment.label)}</span></div>
         </td>
         <td class="text-right num trend-neutral">${tableNom(row.target_rbb)}</td>
@@ -714,7 +720,7 @@ function renderRbbLapMobile() {
       <article class="rbb-mobile-card">
         <div class="rbb-mobile-card-head">
           <div class="rbb-mobile-card-title">
-            <h3 title="${esc(row.keterangan)}">${esc(row.keterangan || '-')}</h3>
+            <h3 title="${esc(rbbLapRowLabel(row))}">${esc(rbbLapRowLabel(row))}</h3>
             <p>${esc(row.kategori || '-')} · Kode ${esc(row.kode_monbis || row.id_ref || '-')} ${row.kode_perkiraan ? '· Akun ' + esc(row.kode_perkiraan) : ''}</p>
           </div>
           <span class="rbb-row-status ${assessment.tone}">${esc(assessment.label)}</span>
@@ -743,11 +749,15 @@ function updateRbbLapQuickInfo() {
 
 function representativeTotalRow() {
   const reportType = document.getElementById('rbbLapJenis')?.value || 'neraca';
+  if (reportType === 'laba_rugi') {
+    const profitRow = rbbLapRows.find(row => String(row.kode_monbis || '') === '261');
+    if (profitRow) return profitRow;
+  }
   const candidates = rbbLapRows.filter(row => {
     const name = String(row.keterangan || '').toLowerCase();
     const code = String(row.kode_perkiraan || '').replace(/\s/g, '');
     if (reportType === 'neraca') return code === '1' || /total\s+aset/.test(name);
-    return String(row.kode_monbis || '') === '261' || /laba.*sebelum pajak|total\s+pendapatan|total\s+beban/.test(name);
+    return /laba.*sebelum pajak|laba\s+kotor|total\s+pendapatan|total\s+beban/.test(name);
   });
   return candidates[0] || rbbLapRows[0] || {};
 }
@@ -863,7 +873,7 @@ function renderRbbLapInfo() {
       <article class="rbb-priority-card">
         <div class="rbb-priority-rank">P${index + 1}</div>
         <div class="rbb-priority-main">
-          <h4>${esc(row.keterangan || '-')} · ${esc(row.kategori || '-')}</h4>
+          <h4>${esc(rbbLapRowLabel(row))} · ${esc(row.kategori || '-')}</h4>
           <p><b>Kondisi:</b> realisasi ${shortRp(row.realisasi_actual)} terhadap RBB ${shortRp(row.target_rbb)}, capaian ${pct(row.pencapaian_persen)}, gap prioritas ${shortRp(item.gap)}.</p>
           <p><b>Keputusan:</b> ${esc(recommendation.action)}</p>
         </div>
@@ -888,7 +898,7 @@ function renderRbbLapInfo() {
   const achievedHtml = achieved.length ? `
     <div class="rbb-insight-table-wrap custom-scrollbar"><table class="rbb-insight-table">
       <thead><tr><th>Akun</th><th>Kategori</th><th class="num">RBB</th><th class="num">Realisasi</th><th class="num">Capaian</th></tr></thead>
-      <tbody>${achieved.map(row => `<tr><td>${esc(row.keterangan || '-')}</td><td>${esc(row.kategori || '-')}</td><td class="num">${shortRp(row.target_rbb)}</td><td class="num">${shortRp(row.realisasi_actual)}</td><td class="num trend-good">${pct(row.pencapaian_persen)}</td></tr>`).join('')}</tbody>
+      <tbody>${achieved.map(row => `<tr><td>${esc(rbbLapRowLabel(row))}</td><td>${esc(row.kategori || '-')}</td><td class="num">${shortRp(row.target_rbb)}</td><td class="num">${shortRp(row.realisasi_actual)}</td><td class="num trend-good">${pct(row.pencapaian_persen)}</td></tr>`).join('')}</tbody>
     </table></div>` : '<p>Belum ada akun yang teridentifikasi telah memenuhi sasaran.</p>';
 
   const mappingHtml = mappingIssues.length

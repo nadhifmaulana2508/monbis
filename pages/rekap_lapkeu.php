@@ -3,41 +3,6 @@
 ?>
 
 <div id="rlPage" class="rl-page">
-  <section class="rl-header">
-    <div class="rl-brand">
-      <div class="rl-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 21h18"/><path d="M7 21V9"/><path d="M12 21V5"/><path d="M17 21v-7"/>
-        </svg>
-      </div>
-      <div class="rl-copy">
-        <div class="rl-title-row">
-          <h1>Rekap Keuangan</h1>
-          <button type="button" class="rl-info-btn" onclick="toggleRlInfo(true)" title="Informasi rekap" aria-label="Informasi rekap">i</button>
-        </div>
-        <p>Ringkasan posisi keuangan dan laba rugi per kantor.</p>
-      </div>
-      <button type="button" id="rlFilterToggle" class="rl-filter-toggle" onclick="toggleRlFilter()" aria-expanded="false" aria-controls="rlFilter">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-        <span>Filter</span>
-      </button>
-    </div>
-
-    <form id="rlFilter" class="rl-filter" onsubmit="event.preventDefault(); fetchRekapLapkeu();">
-      <label class="rl-field rl-date-field">
-        <span>Actual</span>
-        <input id="rlTanggal" type="date" onclick="try{this.showPicker()}catch(e){}">
-      </label>
-      <label class="rl-field rl-office-field">
-        <span>Area / Cabang</span>
-        <select id="rlKantor"></select>
-      </label>
-      <button type="button" class="rl-export" onclick="exportRekapLapkeu()" title="Download Excel" aria-label="Download Excel">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-      </button>
-    </form>
-  </section>
-
   <section class="rl-table-card">
     <div id="rlLoader" class="rl-loader rl-hidden">
       <div class="rl-spinner"></div>
@@ -45,14 +10,25 @@
     </div>
 
     <div class="rl-table-toolbar">
-      <div>
-        <h2>Rekap Per Kantor</h2>
+      <div class="rl-table-heading">
+        <div class="rl-title-row">
+          <h1>Rekap Keuangan</h1>
+          <button type="button" class="rl-info-btn" onclick="toggleRlInfo(true)" title="Informasi rekap" aria-label="Informasi rekap">i</button>
+        </div>
         <p id="rlMeta">-</p>
       </div>
-      <label class="rl-search" aria-label="Cari kantor">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-        <input id="rlSearch" type="search" placeholder="Cari kode / kantor..." autocomplete="off">
-      </label>
+      <div class="rl-toolbar-actions">
+        <label id="rlSearchBox" class="rl-search rl-search-hidden" aria-label="Cari kantor">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <input id="rlSearch" type="search" placeholder="Cari kode / kantor..." autocomplete="off">
+        </label>
+        <button type="button" id="rlSearchToggle" class="rl-toolbar-icon" aria-label="Buka pencarian" title="Buka pencarian" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7.5"/><path d="m16.5 16.5 4 4"/></svg>
+        </button>
+        <button type="button" class="rl-toolbar-icon rl-toolbar-export" onclick="exportRekapLapkeu()" title="Download Excel" aria-label="Download Excel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+        </button>
+      </div>
     </div>
 
     <div class="rl-table-shell">
@@ -179,7 +155,7 @@
   /* ---------- Page ---------- */
   #rlPage.rl-page {
     width:100%;
-    height:calc(100dvh - 60px);
+    height:calc(100dvh - 68px);
     min-height:0;
     display:flex;
     flex-direction:column;
@@ -193,7 +169,7 @@
   #rlPage .rl-header {
     flex:0 0 auto;
     display:grid;
-    grid-template-columns:minmax(260px,1fr) auto;
+    grid-template-columns:minmax(0,1fr);
     align-items:center;
     gap:14px;
     min-width:0;
@@ -402,12 +378,20 @@
     background:linear-gradient(180deg,#fff,#fbfdff);
   }
   #rlPage .rl-table-toolbar > div:first-child { min-width:0; }
-  #rlPage .rl-table-toolbar h2 {
+  #rlPage .rl-table-heading .rl-title-row { gap:6px; }
+  #rlPage .rl-table-heading .rl-title-row h1 {
     margin:0;
-    color:#0f172a;
-    font-size:12px;
-    line-height:1.15;
+    color:#172033;
+    font-size:14px;
+    line-height:1.08;
     font-weight:900;
+    letter-spacing:-.018em;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  #rlPage .rl-table-toolbar h2 {
+    display:none;
   }
   #rlPage .rl-table-toolbar p {
     max-width:520px;
@@ -421,6 +405,47 @@
     white-space:nowrap;
   }
 
+  #rlPage .rl-toolbar-actions {
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:6px;
+    flex:0 0 auto;
+    min-width:0;
+  }
+
+  #rlPage .rl-toolbar-icon {
+    width:32px;
+    height:32px;
+    flex:0 0 32px;
+    display:grid;
+    place-items:center;
+    padding:0;
+    border:1px solid #dbe3ee;
+    border-radius:8px;
+    background:#fff;
+    color:#2563eb;
+    cursor:pointer;
+    transition:.15s ease;
+  }
+  #rlPage .rl-toolbar-icon:hover,
+  #rlPage .rl-toolbar-icon.is-active {
+    border-color:#93c5fd;
+    background:#eff6ff;
+    color:#1d4ed8;
+  }
+  #rlPage .rl-toolbar-icon svg { width:15px; height:15px; }
+  #rlPage .rl-toolbar-icon.rl-toolbar-export {
+    border-color:#059669;
+    background:#059669;
+    color:#fff;
+  }
+  #rlPage .rl-toolbar-icon.rl-toolbar-export:hover {
+    border-color:#047857;
+    background:#047857;
+    color:#fff;
+  }
+
   #rlPage .rl-search {
     position:relative;
     width:min(250px,31vw);
@@ -432,6 +457,8 @@
     border-radius:8px;
     background:#fff;
   }
+  #rlPage .rl-search.rl-search-hidden { display:none; }
+  #rlPage .rl-search.rl-search-open { display:flex; }
   #rlPage .rl-search svg {
     position:absolute;
     left:8px;
@@ -588,26 +615,6 @@
   }
   #rlPage #rlTable tbody tr:nth-child(even) td.rl-sticky-code,
   #rlPage #rlTable tbody tr:nth-child(even) td.rl-sticky-office { background:#fcfdff; }
-
-  #rlPage .rl-office-name {
-    display:block;
-    overflow:hidden;
-    color:#172033;
-    font-size:10px;
-    line-height:1.15;
-    font-weight:850;
-    text-overflow:ellipsis;
-    white-space:nowrap;
-  }
-  #rlPage .rl-office-code {
-    display:block;
-    margin-top:2px;
-    color:#94a3b8;
-    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    font-size:7px;
-    line-height:1;
-    font-weight:750;
-  }
 
   #rlPage #rlTable tbody .rl-total-row td {
     position:-webkit-sticky !important;
@@ -1020,7 +1027,7 @@
   /* ---------- Large desktop ---------- */
   @media (min-width:1440px) {
     #rlPage.rl-page {
-      height:calc(100dvh - 72px);
+      height:calc(100dvh - 68px);
       padding:8px 12px 12px;
     }
     #rlPage .rl-header { padding:10px 12px; }
@@ -1038,26 +1045,16 @@
   /* ---------- Tablet ---------- */
   @media (min-width:768px) and (max-width:1023px) {
     #rlPage.rl-page {
-      height:calc(100dvh - 64px);
+      height:calc(100dvh - 68px);
       padding:6px;
       gap:6px;
     }
     #rlPage .rl-header {
-      grid-template-columns:1fr auto;
+      grid-template-columns:minmax(0,1fr);
       gap:7px;
       padding:8px;
     }
-    #rlPage .rl-filter-toggle { display:inline-flex; }
     #rlPage .rl-brand { width:100%; }
-    #rlPage .rl-filter {
-      grid-column:1 / -1;
-      display:none;
-      grid-template-columns:130px minmax(220px,1fr) 36px;
-      width:100%;
-      padding-top:7px;
-      border-top:1px solid #e2e8f0;
-    }
-    #rlPage .rl-filter.open { display:grid; }
     #rlPage .rl-search { width:220px; }
     #rlPage #rlTable { min-width:900px; }
   }
@@ -1065,7 +1062,7 @@
   /* ---------- Mobile ---------- */
   @media (max-width:767px) {
     #rlPage.rl-page {
-      height:calc(100dvh - 54px);
+      height:calc(100dvh - 56px);
       min-height:0;
       gap:5px;
       padding:4px 4px max(5px,env(safe-area-inset-bottom));
@@ -1100,59 +1097,31 @@
       flex-basis:18px;
       font-size:9px;
     }
-    #rlPage .rl-filter-toggle {
-      display:inline-flex;
-      height:29px;
-      padding:0 8px;
-      font-size:8px;
-    }
-
-    #rlPage .rl-filter {
-      display:none;
-      grid-template-columns:minmax(0,1fr) minmax(0,1fr) 32px;
-      width:100%;
-      gap:5px;
-      padding-top:6px;
-      border-top:1px solid #e2e8f0;
-    }
-    #rlPage .rl-filter.open { display:grid; }
-    #rlPage .rl-field span { font-size:6.5px; }
-    #rlPage .rl-field input,
-    #rlPage .rl-field select {
-      height:31px;
-      padding:0 6px;
-      border-radius:7px;
-      font-size:8.5px;
-    }
-    #rlPage .rl-field select {
-      padding-right:20px;
-      background-position:right 5px center;
-      background-size:10px 10px;
-    }
-    #rlPage .rl-export {
-      width:32px;
-      height:31px;
-      border-radius:7px;
-    }
-    #rlPage .rl-export svg { width:15px; height:15px; }
-
     #rlPage .rl-table-card { border-radius:9px; }
     #rlPage .rl-table-toolbar {
       min-height:auto;
-      display:grid;
-      grid-template-columns:minmax(0,1fr) minmax(115px,40vw);
+      display:flex;
       align-items:center;
       gap:5px;
       padding:6px;
     }
-    #rlPage .rl-table-toolbar h2 { font-size:10px; }
+    #rlPage .rl-table-toolbar > div:first-child { flex:1 1 auto; }
+    #rlPage .rl-table-heading .rl-title-row h1 { font-size:11px; }
     #rlPage .rl-table-toolbar p {
-      max-width:145px;
-      margin-top:2px;
+      max-width:100%;
+      margin-top:0;
       font-size:6.5px;
     }
+    #rlPage .rl-toolbar-actions { gap:5px; }
+    #rlPage .rl-toolbar-icon {
+      width:28px;
+      height:28px;
+      flex-basis:28px;
+      border-radius:7px;
+    }
+    #rlPage .rl-toolbar-icon svg { width:13px; height:13px; }
     #rlPage .rl-search {
-      width:100%;
+      width:min(44vw,190px);
       min-width:0;
       height:28px;
       border-radius:7px;
@@ -1166,18 +1135,22 @@
     #rlPage .rl-table-shell {
       scrollbar-gutter:auto;
       overflow:auto;
+      scrollbar-width:thin;
+      scrollbar-color:#cbd5e1 transparent;
     }
+    #rlPage .rl-table-shell::-webkit-scrollbar { width:4px; height:4px; }
+    #rlPage .rl-table-shell::-webkit-scrollbar-thumb { background:#b8c5d6; border-radius:999px; }
 
-    /* Kode disembunyikan karena sudah ada kecil di bawah Nama Kantor.
-       Nama Kantor menjadi satu-satunya freeze column agar ruang data lega. */
+    /* Kode kolom tetap tersembunyi di mobile; nama kantor menjadi identitas
+       baris yang tetap terlihat saat angka digeser horizontal. */
     #rlPage #rlTable {
       width:100%;
-      min-width:740px;
+      min-width:900px;
       table-layout:fixed;
       font-size:8px;
     }
     #rlPage .rl-col-code { width:0 !important; }
-    #rlPage .rl-col-office { width:126px !important; }
+    #rlPage .rl-col-office { width:160px !important; }
     #rlPage .rl-col-money { width:102px !important; }
 
     #rlPage #rlTable th,
@@ -1197,17 +1170,28 @@
 
     #rlPage #rlTable th.rl-sticky-code,
     #rlPage #rlTable td.rl-sticky-code {
-      display:none !important;
+      display:table-cell !important;
+      visibility:hidden !important;
+      width:0 !important;
+      min-width:0 !important;
+      max-width:0 !important;
+      padding:0 !important;
+      border:0 !important;
+      font-size:0 !important;
+      overflow:hidden !important;
     }
+    #rlPage #rlTable th.rl-sticky-code::after { content:none !important; }
 
     #rlPage #rlTable th.rl-sticky-office,
     #rlPage #rlTable td.rl-sticky-office {
+      display:table-cell !important;
+      visibility:visible !important;
       position:-webkit-sticky !important;
       position:sticky !important;
       left:0 !important;
-      width:126px !important;
-      min-width:126px !important;
-      max-width:126px !important;
+      width:160px !important;
+      min-width:160px !important;
+      max-width:160px !important;
     }
     #rlPage #rlTable th.rl-sticky-office {
       z-index:38;
@@ -1216,17 +1200,18 @@
     }
     #rlPage #rlTable td.rl-sticky-office {
       z-index:22;
+      text-align:left;
       background:#fff;
       box-shadow:5px 0 9px -9px rgba(15,23,42,.9);
+      color:#172033 !important;
+      font-size:9px !important;
+      font-weight:850 !important;
+      line-height:1.2;
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
     #rlPage #rlTable tbody tr:nth-child(even) td.rl-sticky-office { background:#fcfdff; }
-
-    #rlPage .rl-office-name {
-      font-size:8px;
-      line-height:1.1;
-    }
-    #rlPage .rl-office-code { margin-top:2px; font-size:6px; }
-
     #rlPage .rl-table-shell { --rl-head-h:31px; }
     #rlPage #rlTable tbody .rl-total-row td {
       top:var(--rl-head-h) !important;
@@ -1284,16 +1269,15 @@
   }
 
   @media (max-width:380px) {
-    #rlPage .rl-copy p { max-width:170px; }
-    #rlPage .rl-table-toolbar { grid-template-columns:minmax(0,1fr) 112px; }
-    #rlPage #rlTable { min-width:700px; }
+    #rlPage .rl-search { width:132px; }
+    #rlPage #rlTable { min-width:860px; }
     #rlPage #rlTable th.rl-sticky-office,
     #rlPage #rlTable td.rl-sticky-office {
-      width:116px !important;
-      min-width:116px !important;
-      max-width:116px !important;
+      width:145px !important;
+      min-width:145px !important;
+      max-width:145px !important;
     }
-    #rlPage .rl-col-office { width:116px !important; }
+    #rlPage .rl-col-office { width:145px !important; }
     #rlPage .rl-col-money { width:97px !important; }
   }
 </style>
@@ -1312,7 +1296,6 @@
   let rlRaw = null;
   let rlRows = [];
   let rlUser = null;
-  let rlFetchTimer = null;
   let rlSort = { key:'kode_kantor', dir:'asc' };
 
   const $ = (id) => document.getElementById(id);
@@ -1434,12 +1417,7 @@
     select.disabled = false;
   }
 
-  function scheduleFetch(){
-    clearTimeout(rlFetchTimer);
-    rlFetchTimer = setTimeout(fetchRekapLapkeu, 400);
-  }
-
-  async function fetchRekapLapkeu(){
+  async function fetchRekapLapkeu(closeFilter = false){
     const loader = $('rlLoader');
     loader.classList.remove('rl-hidden');
     try {
@@ -1457,6 +1435,7 @@
       $('rlBody').innerHTML = `<tr><td colspan="11" class="rl-empty">${esc(e.message || 'Gagal memuat data')}</td></tr>`;
     } finally {
       loader.classList.add('rl-hidden');
+      if (closeFilter) toggleRlNavbarFilter(false);
     }
   }
 
@@ -1472,14 +1451,13 @@
 
   function rowHtml(row, isTotal){
     const kode = isTotal ? 'TOTAL' : String(row.kode_kantor || '');
-    const name = isTotal ? 'TOTAL' : (row.nama_kantor || '-');
+    const name = isTotal
+      ? 'TOTAL'
+      : (row.nama_kantor || row.nama || row.kantor || `Kantor ${kode}`);
     return `
       <tr class="${isTotal ? 'rl-total-row' : ''}">
         <td class="rl-sticky-code">${esc(kode)}</td>
-        <td class="rl-sticky-office">
-          <span class="rl-office-name">${esc(name)}</span>
-          ${isTotal ? '' : `<span class="rl-office-code">${esc(kode)}</span>`}
-        </td>
+        <td class="rl-sticky-office">${esc(name)}</td>
         ${moneyCell(row.aset)}
         ${moneyCell(row.kredit)}
         ${moneyCell(row.tabungan)}
@@ -1528,7 +1506,7 @@
 
     const bebanRow = summary.beban_terbesar || {};
     const labaMinus = rlRows.filter(row => Number(row?.laba_kotor || 0) < 0).length;
-    $('rlMeta').textContent = `${rlRaw?.scope_label || '-'} · ${rlRaw?.tanggal || '-'} · ${rows.length} kantor${labaMinus ? ` · ${labaMinus} laba minus` : ''}`;
+    $('rlMeta').textContent = `${rlRaw?.scope_label || '-'} | ${rlRaw?.tanggal || '-'} | ${rows.length} kantor${labaMinus ? ` | ${labaMinus} laba minus` : ''}`;
 
     let html = rowHtml({
       kode_kantor:'TOTAL',
@@ -1715,8 +1693,40 @@
     setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 100);
   }
 
+  function toggleRlNavbarFilter(force){
+    const panel = $('rekapLapkeuNavbarFilterPanel');
+    const button = $('rlNavbarFilterToggle');
+    if (!panel) return;
+    const opened = typeof force === 'boolean' ? force : panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', !opened);
+    panel.classList.toggle('flex', opened);
+    button?.classList.toggle('is-active', opened);
+    button?.setAttribute('aria-expanded', opened ? 'true' : 'false');
+  }
+
+  function toggleRlSearch(force){
+    const box = $('rlSearchBox');
+    const button = $('rlSearchToggle');
+    const input = $('rlSearch');
+    if (!box) return;
+    const opened = typeof force === 'boolean' ? force : box.classList.contains('rl-search-hidden');
+    box.classList.toggle('rl-search-hidden', !opened);
+    box.classList.toggle('rl-search-open', opened);
+    button?.classList.toggle('is-active', opened);
+    button?.setAttribute('aria-expanded', opened ? 'true' : 'false');
+    button?.setAttribute('aria-label', opened ? 'Tutup pencarian' : 'Buka pencarian');
+    button?.setAttribute('title', opened ? 'Tutup pencarian' : 'Buka pencarian');
+    if (opened) {
+      window.requestAnimationFrame(() => input?.focus());
+    } else if (input?.value) {
+      input.value = '';
+      renderAll();
+    }
+  }
+
   window.fetchRekapLapkeu = fetchRekapLapkeu;
   window.exportRekapLapkeu = exportRekapLapkeu;
+  window.toggleRlNavbarFilter = toggleRlNavbarFilter;
   window.toggleRlInfo = function(show){
     const modal = $('rlInfoModal');
     if (!modal) return;
@@ -1725,17 +1735,25 @@
     modal.setAttribute('aria-hidden', show ? 'false' : 'true');
     document.documentElement.style.overflow = show ? 'hidden' : '';
   };
-  window.toggleRlFilter = function(){
-    const form = $('rlFilter');
-    const opened = !form.classList.contains('open');
-    form.classList.toggle('open', opened);
-    $('rlFilterToggle')?.setAttribute('aria-expanded', opened ? 'true' : 'false');
-  };
 
   document.addEventListener('DOMContentLoaded', async () => {
+    const navbarFilter = $('rekapLapkeuNavbarFilterPanel');
+    const navbarFilterToggle = $('rlNavbarFilterToggle');
+    const navbarFilterClose = $('rlNavbarFilterClose');
+    navbarFilterToggle?.addEventListener('click', event => {
+      event.stopPropagation();
+      toggleRlNavbarFilter();
+    });
+    navbarFilterClose?.addEventListener('click', () => toggleRlNavbarFilter(false));
+    document.addEventListener('click', event => {
+      if (!navbarFilter || navbarFilter.classList.contains('hidden')) return;
+      if (!navbarFilter.contains(event.target) && !navbarFilterToggle?.contains(event.target)) {
+        toggleRlNavbarFilter(false);
+      }
+    });
+
     await Promise.all([loadDefaultDate(), loadOfficeOptions()]);
-    $('rlTanggal').addEventListener('change', scheduleFetch);
-    $('rlKantor').addEventListener('change', scheduleFetch);
+    $('rlSearchToggle')?.addEventListener('click', () => toggleRlSearch());
     $('rlSearch').addEventListener('input', renderAll);
     document.querySelectorAll('#rlTable th.rl-sortable').forEach(th => {
       th.addEventListener('click', () => {
@@ -1766,6 +1784,8 @@
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !$('rlInfoModal')?.classList.contains('rl-hidden')) toggleRlInfo(false);
+      if (e.key === 'Escape' && !navbarFilter?.classList.contains('hidden')) toggleRlNavbarFilter(false);
+      if (e.key === 'Escape' && $('rlSearchBox')?.classList.contains('rl-search-open')) toggleRlSearch(false);
     });
 
     fetchRekapLapkeu();

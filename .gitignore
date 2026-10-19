@@ -18,3 +18,5 @@ kpi-tukin/dist/
 # Local agent/task metadata and documentation virtual environment
 .agents/
 .venv-docs/
+
+dags

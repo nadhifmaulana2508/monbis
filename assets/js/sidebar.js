@@ -2,8 +2,7 @@
   'use strict';
 
   const BREAKPOINT = 768;
-  const EXPAND_DELAY = 0;
-  const COLLAPSE_DELAY = 35;
+  const COLLAPSE_DELAY = 3000;
 
   const initSidebar = () => {
     const sidebar = document.getElementById('sidebar');
@@ -14,46 +13,58 @@
     const shell = sidebar.closest('.monbis-app-shell');
     const overlay = document.getElementById('sidebarOverlay');
     const toggleButton = document.getElementById('btnToggleSidebar');
-    const content = sidebar.nextElementSibling;
     const groups = [...nav.querySelectorAll(':scope > .accordion-group')];
     const parts = (group) => ({
       button: group?.querySelector(':scope > .accordion-btn'),
       content: group?.querySelector(':scope > .accordion-content')
     });
     const isDesktop = () => window.innerWidth >= BREAKPOINT;
+
     let expanded = false;
     let desktopMode = isDesktop();
-    let expandTimer = 0;
-    let collapseTimer = 0;
+    let closeTimer = 0;
     let openGroup = null;
+
+    const clearCloseTimer = () => {
+      window.clearTimeout(closeTimer);
+      closeTimer = 0;
+    };
+
+    const syncToggleControl = (open) => {
+      const label = open ? 'Tutup sidebar' : 'Buka sidebar';
+      toggleButton?.setAttribute('aria-expanded', open ? 'true' : 'false');
+      toggleButton?.setAttribute('aria-label', label);
+      toggleButton?.setAttribute('title', label);
+      toggleButton?.querySelector('[data-sidebar-toggle-icon="closed"]')?.classList.toggle('hidden', open);
+      toggleButton?.querySelector('[data-sidebar-toggle-icon="open"]')?.classList.toggle('hidden', !open);
+    };
 
     const setExpanded = (value) => {
       const next = Boolean(value) && isDesktop();
-      if (next === expanded) return;
-      expanded = next;
-      sidebar.classList.toggle('is-expanded', expanded);
-      shell?.classList.toggle('sidebar-expanded', expanded);
-      if (content) content.classList.toggle('sidebar-content-shifted', expanded);
-    };
-
-    const scheduleExpanded = (value, delay = 0) => {
-      window.clearTimeout(expandTimer);
-      window.clearTimeout(collapseTimer);
-      if (delay <= 0) {
-        setExpanded(value);
+      if (next === expanded) {
+        syncToggleControl(expanded);
         return;
       }
-      if (value) {
-        expandTimer = window.setTimeout(() => setExpanded(true), delay);
-      } else {
-        collapseTimer = window.setTimeout(() => setExpanded(false), delay);
-      }
+      expanded = next;
+      sidebar.classList.toggle('is-expanded', expanded);
+      sidebar.dataset.sidebarState = expanded ? 'open' : 'closed';
+      shell?.classList.toggle('sidebar-expanded', expanded);
+      syncToggleControl(expanded);
+    };
+
+    const scheduleClose = () => {
+      clearCloseTimer();
+      if (!isDesktop() || !expanded) return;
+      closeTimer = window.setTimeout(() => {
+        closeTimer = 0;
+        if (expanded && !sidebar.matches(':hover')) setExpanded(false);
+      }, COLLAPSE_DELAY);
     };
 
     const setGroupState = (group, open) => {
-      const {button, content: groupContent} = parts(group);
-      if (!button || !groupContent) return;
-      groupContent.classList.toggle('hidden', !open);
+      const {button, content} = parts(group);
+      if (!button || !content) return;
+      content.classList.toggle('hidden', !open);
       button.classList.toggle('is-open', open);
       button.setAttribute('aria-expanded', open ? 'true' : 'false');
       button.querySelector('.caret')?.classList.toggle('rotate-180', open);
@@ -66,10 +77,10 @@
     };
 
     groups.forEach((group, index) => {
-      const {button, content: groupContent} = parts(group);
-      if (!button || !groupContent) return;
-      const contentId = groupContent.id || `sidebar-menu-${index}`;
-      groupContent.id = contentId;
+      const {button, content} = parts(group);
+      if (!button || !content) return;
+      const contentId = content.id || `sidebar-menu-${index}`;
+      content.id = contentId;
       button.type = 'button';
       button.setAttribute('aria-expanded', 'false');
       button.setAttribute('aria-controls', contentId);
@@ -98,8 +109,37 @@
     if (activeGroup) {
       activeGroup.querySelector(':scope > .accordion-btn')?.classList.add('is-active');
       setGroupState(activeGroup, true);
-      if (isDesktop()) setExpanded(false);
     }
+
+    const openMobile = () => {
+      if (isDesktop()) return;
+      sidebar.classList.remove('-translate-x-full');
+      overlay?.classList.remove('hidden');
+      document.body.classList.add('sidebar-mobile-open');
+      syncToggleControl(true);
+    };
+
+    const closeMobile = (force = false) => {
+      if (isDesktop() && !force) return;
+      sidebar.classList.add('-translate-x-full');
+      overlay?.classList.add('hidden');
+      document.body.classList.remove('sidebar-mobile-open');
+      syncToggleControl(false);
+    };
+
+    const toggleSidebar = () => {
+      if (isDesktop()) {
+        clearCloseTimer();
+        if (expanded) setExpanded(false);
+        else {
+          setExpanded(true);
+          scheduleClose();
+        }
+        return;
+      }
+      if (sidebar.classList.contains('-translate-x-full')) openMobile();
+      else closeMobile();
+    };
 
     nav.addEventListener('click', (event) => {
       const button = event.target.closest('.accordion-btn');
@@ -108,9 +148,9 @@
       if (!group) return;
       event.preventDefault();
       event.stopPropagation();
-      if (isDesktop()) setExpanded(true);
-      const groupContent = parts(group).content;
-      const isOpen = Boolean(groupContent && !groupContent.classList.contains('hidden'));
+      if (isDesktop() && !expanded) setExpanded(true);
+      const content = parts(group).content;
+      const isOpen = Boolean(content && !content.classList.contains('hidden'));
       if (isOpen) setGroupState(group, false);
       else {
         closeOpenGroup(group);
@@ -122,71 +162,53 @@
       if (event.target.closest('a[href]') && !isDesktop()) closeMobile();
     });
 
-    const openMobile = () => {
-      if (isDesktop()) return;
-      sidebar.classList.remove('-translate-x-full');
-      overlay?.classList.remove('hidden');
-      document.body.classList.add('sidebar-mobile-open');
-      toggleButton?.setAttribute('aria-expanded', 'true');
-    };
-
-    const closeMobile = (force = false) => {
-      if (isDesktop() && !force) return;
-      sidebar.classList.add('-translate-x-full');
-      overlay?.classList.add('hidden');
-      document.body.classList.remove('sidebar-mobile-open');
-      toggleButton?.setAttribute('aria-expanded', 'false');
-    };
-
-    const toggleMobile = () => {
-      if (sidebar.classList.contains('-translate-x-full')) openMobile();
-      else closeMobile();
-    };
-
-    sidebar.addEventListener('mouseenter', () => {
-      if (isDesktop()) scheduleExpanded(true, EXPAND_DELAY);
-    }, {passive:true});
-    sidebar.addEventListener('mouseleave', () => {
-      if (isDesktop()) scheduleExpanded(false, COLLAPSE_DELAY);
-    }, {passive:true});
+    sidebar.addEventListener('mouseenter', clearCloseTimer, {passive: true});
+    sidebar.addEventListener('mouseleave', scheduleClose, {passive: true});
     sidebar.addEventListener('focusin', () => {
-      if (isDesktop()) scheduleExpanded(true, 0);
-    });
-    sidebar.addEventListener('focusout', (event) => {
-      if (isDesktop() && !sidebar.contains(event.relatedTarget)) scheduleExpanded(false, COLLAPSE_DELAY);
-    });
-    toggleButton?.addEventListener('click', toggleMobile);
-    overlay?.addEventListener('click', closeMobile);
-    toggleButton?.setAttribute('aria-expanded', 'false');
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        if (!isDesktop()) closeMobile();
-        else scheduleExpanded(false, 0);
+      if (isDesktop()) {
+        clearCloseTimer();
+        if (!expanded) setExpanded(true);
       }
     });
+    sidebar.addEventListener('focusout', (event) => {
+      if (isDesktop() && !sidebar.contains(event.relatedTarget)) scheduleClose();
+    });
+    toggleButton?.addEventListener('click', toggleSidebar);
+    overlay?.addEventListener('click', closeMobile);
+    syncToggleControl(false);
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      if (!isDesktop()) closeMobile();
+      else {
+        clearCloseTimer();
+        setExpanded(false);
+      }
+    });
+
     const syncViewportMode = () => {
       const nextDesktopMode = isDesktop();
       if (nextDesktopMode === desktopMode) return;
       desktopMode = nextDesktopMode;
-      window.clearTimeout(expandTimer);
-      window.clearTimeout(collapseTimer);
+      clearCloseTimer();
       if (nextDesktopMode) {
         closeMobile(true);
         setExpanded(false);
       } else {
+        expanded = false;
         sidebar.classList.remove('is-expanded');
         shell?.classList.remove('sidebar-expanded');
-        if (!sidebar.classList.contains('-translate-x-full')) openMobile();
+        syncToggleControl(false);
       }
     };
 
     const mediaQuery = window.matchMedia(`(min-width: ${BREAKPOINT}px)`);
     mediaQuery.addEventListener?.('change', syncViewportMode);
-    window.addEventListener('resize', syncViewportMode, {passive:true});
+    window.addEventListener('resize', syncViewportMode, {passive: true});
   };
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initSidebar, {once:true});
+    document.addEventListener('DOMContentLoaded', initSidebar, {once: true});
   } else {
     initSidebar();
   }

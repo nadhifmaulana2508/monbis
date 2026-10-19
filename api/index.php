@@ -123,6 +123,9 @@ switch ($endpoint) {
     case 'maping_ao_remedial':
         require __DIR__ . '/routes/maping_ao_remedial.php';
         break;
+    case 'rbac':
+        require __DIR__ . '/routes/rbac.php';
+        break;
 
     default:
         sendResponse(404, "Endpoint tidak ditemukan");

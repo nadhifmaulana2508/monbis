@@ -137,6 +137,18 @@ class DashboardController{
     }
 
     /**
+     * Index covering untuk agregasi snapshot dashboard.
+     * Keduanya sudah tersedia di database; hint ini mencegah MySQL memilih
+     * index lama yang tidak membawa kolom nominal sampai ke leaf index.
+     */
+    private function getDashboardNominalIndex($input) {
+        $column = $this->getDashboardNominalColumn($input);
+        return $column === 'baki_debet'
+            ? 'idx_otp_created_scope'
+            : 'idx_otp_created_scope_saldo_bank';
+    }
+
+    /**
      * =================================================================
      * FUNGSI-FUNGSI MODULAR (PECAHAN)
      * =================================================================
@@ -148,13 +160,14 @@ class DashboardController{
         
         $filter = $this->buildFilterQuery($input, 't');
         $nominalColumn = $this->getDashboardNominalColumn($input, 't');
+        $nominalIndex = $this->getDashboardNominalIndex($input);
 
         // Contoh kerangka query (tinggal sesuaikan dengan logic runoff dari sepuh)
         $sql = "
             SELECT 
                 COALESCE(SUM(t.baki_debet), 0) as total_run_off,
                 (SELECT SUM(plafond) FROM nominatif t2 WHERE t2.created = :harian_date AND t2.tgl_realisasi > :closing_date {$filter['sql']}) as total_realisasi
-            FROM nominatif t
+            FROM nominatif t FORCE INDEX ({$nominalIndex})
             WHERE t.created = :closing_date
             {$filter['sql']}
             /* Tambahkan logic runoff_calc di sini seperti di KreditController */
@@ -188,9 +201,12 @@ class DashboardController{
         $harian_date  = $input['harian_date'] ?? date('Y-m-d');
         // Default closing: hari terakhir bulan sebelumnya
         $closing_date = $input['closing_date'] ?? date('Y-m-t', strtotime($harian_date . ' -1 month')); 
+        // Snapshot year-end dikirim oleh dashboard agar tidak perlu request tren tahunan terpisah.
+        $year_end_date = $input['year_end_date'] ?? '1900-01-01';
         
         $filter = $this->buildFilterQuery($input, 't');
         $nominalColumn = $this->getDashboardNominalColumn($input, 't');
+        $nominalIndex = $this->getDashboardNominalIndex($input);
 
         // Tarik data Actual dan Closing sekaligus pakai CASE WHEN dari tabel nominatif
         $sql = "
@@ -199,10 +215,18 @@ class DashboardController{
                 SUM(CASE WHEN t.created = :harian_date_1 THEN COALESCE(t.saldo_bank, 0) ELSE 0 END) AS saldo_bank_curr,
                 
                 -- Data Previous (Closing)
-                SUM(CASE WHEN t.created = :closing_date_1 THEN COALESCE(t.saldo_bank, 0) ELSE 0 END) AS saldo_bank_prev
+                SUM(CASE WHEN t.created = :closing_date_1 THEN COALESCE(t.saldo_bank, 0) ELSE 0 END) AS saldo_bank_prev,
+
+                -- Data Year End
+                SUM(CASE WHEN t.created = :year_end_date_1 THEN COALESCE(t.saldo_bank, 0) ELSE 0 END) AS saldo_bank_year_end,
+
+                -- NPL aktual, closing, dan year-end dalam scan tabel yang sama
+                SUM(CASE WHEN t.created = :harian_date_3 AND t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank, 0) ELSE 0 END) AS npl_amt_curr,
+                SUM(CASE WHEN t.created = :closing_date_3 AND t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank, 0) ELSE 0 END) AS npl_amt_prev,
+                SUM(CASE WHEN t.created = :year_end_date_3 AND t.kolektibilitas IN ('KL','D','M') THEN COALESCE(t.saldo_bank, 0) ELSE 0 END) AS npl_amt_year_end
                 
-            FROM nominatif t
-            WHERE t.created IN (:harian_date_2, :closing_date_2)
+            FROM nominatif t FORCE INDEX ({$nominalIndex})
+            WHERE t.created IN (:harian_date_2, :closing_date_2, :year_end_date_2)
             {$filter['sql']}
         ";
         $sql = str_replace('t.saldo_bank', $nominalColumn, $sql);
@@ -213,9 +237,15 @@ class DashboardController{
             // Bind parameter berulang
             $stmt->bindValue(':harian_date_1', $harian_date);
             $stmt->bindValue(':harian_date_2', $harian_date);
+            $stmt->bindValue(':harian_date_3', $harian_date);
             
             $stmt->bindValue(':closing_date_1', $closing_date);
             $stmt->bindValue(':closing_date_2', $closing_date);
+            $stmt->bindValue(':closing_date_3', $closing_date);
+
+            $stmt->bindValue(':year_end_date_1', $year_end_date);
+            $stmt->bindValue(':year_end_date_2', $year_end_date);
+            $stmt->bindValue(':year_end_date_3', $year_end_date);
             
             // Bind parameter filter (Korwil / Cabang)
             foreach ($filter['params'] as $key => $val) {
@@ -227,11 +257,25 @@ class DashboardController{
 
             $saldo_bank_curr = (float) ($result['saldo_bank_curr'] ?? 0);
             $saldo_bank_prev = (float) ($result['saldo_bank_prev'] ?? 0);
+            $saldo_bank_year_end = (float) ($result['saldo_bank_year_end'] ?? 0);
+            $npl_amt_curr = (float) ($result['npl_amt_curr'] ?? 0);
+            $npl_amt_prev = (float) ($result['npl_amt_prev'] ?? 0);
+            $npl_amt_year_end = (float) ($result['npl_amt_year_end'] ?? 0);
 
             return [
-                'actual'  => $saldo_bank_curr,
-                'closing' => $saldo_bank_prev,
-                'delta'   => $saldo_bank_curr - $saldo_bank_prev
+                'actual'             => $saldo_bank_curr,
+                'closing'            => $saldo_bank_prev,
+                'delta'              => $saldo_bank_curr - $saldo_bank_prev,
+                'year_end'           => $saldo_bank_year_end,
+                'npl_actual'         => $npl_amt_curr,
+                'npl_closing'        => $npl_amt_prev,
+                'npl_year_end'       => $npl_amt_year_end,
+                'npl_persen_actual'  => $saldo_bank_curr > 0 ? ($npl_amt_curr / $saldo_bank_curr) * 100 : 0,
+                'npl_persen_closing' => $saldo_bank_prev > 0 ? ($npl_amt_prev / $saldo_bank_prev) * 100 : 0,
+                'npl_persen_year_end' => $saldo_bank_year_end > 0 ? ($npl_amt_year_end / $saldo_bank_year_end) * 100 : 0,
+                'actual_date'         => $harian_date,
+                'closing_date'        => $closing_date,
+                'year_end_date'       => $year_end_date
             ];
 
         } catch (PDOException $e) {
@@ -605,10 +649,19 @@ class DashboardController{
 
         $harian_date  = $input['harian_date'] ?? date('Y-m-d');
         $closing_date = $input['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
+        $year_end_date = $input['year_end_date'] ?? null;
+        $hasYearEnd = is_string($year_end_date) && $year_end_date !== '';
+        $yearEndSelect = $hasYearEnd
+            ? ",
+                    SUM(CASE WHEN t.created = :year_end_date_1 AND t.hari_menunggak = 0 AND t.kolektibilitas = 'L' THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS baki_lancar_year_end,
+                    SUM(CASE WHEN t.created = :year_end_date_2 THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS baki_total_year_end"
+            : ", 0 AS baki_lancar_year_end, 0 AS baki_total_year_end";
+        $yearEndWhere = $hasYearEnd ? ', :year_end_date_3' : '';
         $kode_kantor  = $input['kode_kantor'] ?? '000';
         
         $filter = $this->buildFilterQuery($input, 't');
         $nominalColumn = $this->getDashboardNominalColumn($input, 't');
+        $nominalIndex = $this->getDashboardNominalIndex($input);
 
         $displayMode = 'PUSAT';
         $filterSql_cabang = "";
@@ -636,10 +689,11 @@ class DashboardController{
                     -- Data Previous (Closing Bulan Lalu), berbasis saldo_bank
                     SUM(CASE WHEN t.created = :closing_date_1 AND t.hari_menunggak = 0 AND t.kolektibilitas = 'L' THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS baki_lancar_prev,
                     SUM(CASE WHEN t.created = :closing_date_2 THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS baki_total_prev
+                    {$yearEndSelect}
                     
-                FROM nominatif t
+                FROM nominatif t FORCE INDEX ({$nominalIndex})
                 LEFT JOIN kankas k ON k.kode_group1 = COALESCE(NULLIF(TRIM(t.kode_group1), ''), CONCAT(t.kode_cabang, '000'))
-                WHERE t.created IN (:harian_date_3, :closing_date_3)
+                WHERE t.created IN (:harian_date_3, :closing_date_3{$yearEndWhere})
                 {$filterSql_cabang}
                 {$filter['sql']}
                 GROUP BY kode_cabang, k.deskripsi_group1
@@ -658,10 +712,11 @@ class DashboardController{
                     -- Data Previous (Closing Bulan Lalu), berbasis saldo_bank
                     SUM(CASE WHEN t.created = :closing_date_1 AND t.hari_menunggak = 0 AND t.kolektibilitas = 'L' THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS baki_lancar_prev,
                     SUM(CASE WHEN t.created = :closing_date_2 THEN COALESCE(t.saldo_bank,0) ELSE 0 END) AS baki_total_prev
+                    {$yearEndSelect}
                     
-                FROM nominatif t
+                FROM nominatif t FORCE INDEX ({$nominalIndex})
                 LEFT JOIN kode_kantor k ON t.kode_cabang = k.kode_kantor
-                WHERE t.created IN (:harian_date_3, :closing_date_3)
+                WHERE t.created IN (:harian_date_3, :closing_date_3{$yearEndWhere})
                 {$filter['sql']}
                 GROUP BY t.kode_cabang, k.nama_kantor
             ";
@@ -679,6 +734,12 @@ class DashboardController{
             $stmt->bindValue(':closing_date_1', $closing_date);
             $stmt->bindValue(':closing_date_2', $closing_date);
             $stmt->bindValue(':closing_date_3', $closing_date);
+
+            if ($hasYearEnd) {
+                $stmt->bindValue(':year_end_date_1', $year_end_date);
+                $stmt->bindValue(':year_end_date_2', $year_end_date);
+                $stmt->bindValue(':year_end_date_3', $year_end_date);
+            }
             
             if ($displayMode === 'CABANG') {
                 $stmt->bindValue(':kode_kantor_master', $kode_kantor);
@@ -700,12 +761,20 @@ class DashboardController{
             $grand_baki_lancar_curr = 0;
             $grand_baki_total_prev  = 0;
             $grand_baki_lancar_prev = 0;
+            $grand_baki_total_year_end  = 0;
+            $grand_baki_lancar_year_end = 0;
 
             foreach ($rows as $r) {
                 $baki_total_curr  = (float) $r['baki_total_curr'];
                 $baki_lancar_curr = (float) $r['baki_lancar_curr'];
                 $baki_total_prev  = (float) $r['baki_total_prev'];
                 $baki_lancar_prev = (float) $r['baki_lancar_prev'];
+                $baki_total_year_end  = (float) ($r['baki_total_year_end'] ?? 0);
+                $baki_lancar_year_end = (float) ($r['baki_lancar_year_end'] ?? 0);
+
+                // Year-end dihitung dari query yang sama agar tidak perlu request RR tahunan terpisah.
+                $grand_baki_total_year_end  += $baki_total_year_end;
+                $grand_baki_lancar_year_end += $baki_lancar_year_end;
 
                 if ($baki_total_curr <= 0) continue;
 
@@ -742,14 +811,20 @@ class DashboardController{
             $grand_rr_curr = $grand_baki_total_curr > 0 ? ($grand_baki_lancar_curr / $grand_baki_total_curr) * 100 : 0;
             $grand_rr_prev = $grand_baki_total_prev > 0 ? ($grand_baki_lancar_prev / $grand_baki_total_prev) * 100 : 0;
             $grand_delta   = $grand_rr_curr - $grand_rr_prev;
+            $grand_rr_year_end = $hasYearEnd && $grand_baki_total_year_end > 0
+                ? ($grand_baki_lancar_year_end / $grand_baki_total_year_end) * 100
+                : null;
 
             $grand_total = [
                 'nama_cabang'    => 'TOTAL KESELURUHAN',
                 'os_total'       => $grand_baki_total_curr,
                 'os_lancar'      => $grand_baki_lancar_curr,
+                'os_total_prev'  => $grand_baki_total_prev,
                 'rr_persen_prev' => round($grand_rr_prev, 2),
                 'rr_persen_curr' => round($grand_rr_curr, 2),
-                'delta_rr'       => round($grand_delta, 2)
+                'delta_rr'       => round($grand_delta, 2),
+                'os_total_year_end' => $hasYearEnd ? $grand_baki_total_year_end : null,
+                'rr_persen_year_end' => $grand_rr_year_end === null ? null : round($grand_rr_year_end, 2)
             ];
 
             // =========================================================
@@ -1080,6 +1155,26 @@ class DashboardController{
             return ['', []];
         };
 
+        $flowFilterFor = static function (string $alias, string $prefix) use ($office, $korwil, $korwilBounds): array {
+            if ($office !== '' && $office !== '000' && strtoupper($office) !== 'ALL') {
+                $kode = ctype_digit($office) ? str_pad($office, 3, '0', STR_PAD_LEFT) : $office;
+                return [
+                    " AND {$alias}.kode_kantor = :{$prefix}_kode_kantor",
+                    [":{$prefix}_kode_kantor" => $kode]
+                ];
+            }
+            if (isset($korwilBounds[$korwil])) {
+                return [
+                    " AND {$alias}.kode_kantor BETWEEN :{$prefix}_korwil_start AND :{$prefix}_korwil_end",
+                    [
+                        ":{$prefix}_korwil_start" => $korwilBounds[$korwil][0],
+                        ":{$prefix}_korwil_end" => $korwilBounds[$korwil][1]
+                    ]
+                ];
+            }
+            return ['', []];
+        };
+
         $baseMonth = new DateTimeImmutable(date('Y-m-01', $harianTs));
         $periods = [];
         for ($i = 5; $i >= 0; $i--) {
@@ -1095,14 +1190,12 @@ class DashboardController{
         $snapshotStart = $baseMonth->modify('-6 months')->format('Y-m-01');
         [$snapshotFilter, $snapshotParams] = $filterFor('n', 'snapshot');
         $snapshotSql = "
-            SELECT DATE_FORMAT(n.created, '%Y-%m') AS month_key,
-                   MAX(n.created) AS snapshot_date
-            FROM nominatif n
+            SELECT DISTINCT n.created AS snapshot_date
+            FROM nominatif n FORCE INDEX (idx_otp_created_rekening_saldo)
             WHERE n.created >= :snapshot_start
               AND n.created <= :snapshot_end
               {$snapshotFilter}
-            GROUP BY DATE_FORMAT(n.created, '%Y-%m')
-            ORDER BY month_key ASC
+            ORDER BY n.created ASC
         ";
 
         try {
@@ -1113,14 +1206,144 @@ class DashboardController{
             ], $snapshotParams));
             $snapshotDates = [];
             foreach ($snapshotStmt->fetchAll(PDO::FETCH_ASSOC) as $snapshot) {
-                $snapshotDates[(string)$snapshot['month_key']] = (string)$snapshot['snapshot_date'];
+                $snapshotDate = (string)$snapshot['snapshot_date'];
+                $snapshotDates[substr($snapshotDate, 0, 7)] = $snapshotDate;
+            }
+
+            [$flowFilter, $flowParams] = $flowFilterFor('s', 'restruck');
+            $restruckSql = "
+                SELECT DATE_FORMAT(s.created, '%Y-%m') AS month_key,
+                       COALESCE(SUM(COALESCE(s.restrukturisasi, 0)), 0) AS restruck_kredit,
+                       COALESCE(SUM(COALESCE(s.noa_restrukturisasi, 0)), 0) AS noa_restruck
+                FROM summary_kredit_harian_update s
+                WHERE s.created >= :restruck_start
+                  AND s.created <= :restruck_end
+                  {$flowFilter}
+                GROUP BY DATE_FORMAT(s.created, '%Y-%m')
+            ";
+            $restruckStmt = $this->pdo->prepare($restruckSql);
+            $restruckStmt->execute(array_merge([
+                ':restruck_start' => $snapshotStart,
+                ':restruck_end' => $harianDate
+            ], $flowParams));
+            $restruckByMonth = [];
+            foreach ($restruckStmt->fetchAll(PDO::FETCH_ASSOC) as $restruckRow) {
+                $restruckByMonth[(string)$restruckRow['month_key']] = [
+                    'restruck_kredit' => (float)($restruckRow['restruck_kredit'] ?? 0),
+                    'noa_restruck' => (int)($restruckRow['noa_restruck'] ?? 0)
+                ];
+            }
+
+            // Semua pasangan snapshot dihitung dalam satu agregasi. Sebelumnya
+            // setiap bulan menjalankan dua self-join besar sehingga chart bisa
+            // menunggu belasan detik saat tabel nominatif sedang padat.
+            $metricsByPeriod = [];
+            $metricPeriods = [];
+            $metricDates = [];
+            foreach ($periods as $period) {
+                $currentDate = $snapshotDates[$period['key']] ?? null;
+                $previousDate = $snapshotDates[$period['previous_key']] ?? null;
+                if ($currentDate === null || $previousDate === null) continue;
+
+                $metricPeriods[$period['key']] = [
+                    'current_date' => $currentDate,
+                    'previous_date' => $previousDate
+                ];
+                $metricDates[$currentDate] = true;
+                $metricDates[$previousDate] = true;
+            }
+
+            if ($metricPeriods) {
+                $metricDatePlaceholders = [];
+                $metricParams = [];
+                $dateIndex = 0;
+                foreach (array_keys($metricDates) as $metricDate) {
+                    $placeholder = ':metric_snapshot_' . $dateIndex++;
+                    $metricDatePlaceholders[] = $placeholder;
+                    $metricParams[$placeholder] = $metricDate;
+                }
+
+                $accountSelect = [];
+                $outerSelect = [];
+                $periodSlots = [];
+                $slot = 0;
+                foreach ($metricPeriods as $periodKey => $metricPeriod) {
+                    $currentPlaceholder = ':metric_current_' . $slot;
+                    $previousPlaceholder = ':metric_previous_' . $slot;
+                    $currentExistsPlaceholder = ':metric_current_exists_' . $slot;
+                    $previousExistsPlaceholder = ':metric_previous_exists_' . $slot;
+                    $metricParams[$currentPlaceholder] = $metricPeriod['current_date'];
+                    $metricParams[$previousPlaceholder] = $metricPeriod['previous_date'];
+                    $metricParams[$currentExistsPlaceholder] = $metricPeriod['current_date'];
+                    $metricParams[$previousExistsPlaceholder] = $metricPeriod['previous_date'];
+
+                    $currentAlias = 'current_total_' . $slot;
+                    $previousAlias = 'previous_total_' . $slot;
+                    $currentExistsAlias = 'current_exists_' . $slot;
+                    $previousExistsAlias = 'previous_exists_' . $slot;
+                    $accountSelect[] = "SUM(CASE WHEN n.created = {$currentPlaceholder} THEN COALESCE(n.saldo_bank, 0) ELSE 0 END) AS {$currentAlias}";
+                    $accountSelect[] = "SUM(CASE WHEN n.created = {$previousPlaceholder} THEN COALESCE(n.saldo_bank, 0) ELSE 0 END) AS {$previousAlias}";
+                    $accountSelect[] = "MAX(CASE WHEN n.created = {$currentExistsPlaceholder} THEN 1 ELSE 0 END) AS {$currentExistsAlias}";
+                    $accountSelect[] = "MAX(CASE WHEN n.created = {$previousExistsPlaceholder} THEN 1 ELSE 0 END) AS {$previousExistsAlias}";
+                    $periodSlots[$periodKey] = [
+                        'current' => $currentAlias,
+                        'previous' => $previousAlias,
+                        'current_exists' => $currentExistsAlias,
+                        'previous_exists' => $previousExistsAlias,
+                        'slot' => $slot
+                    ];
+                    $slot++;
+                }
+
+                $accountSql = "
+                    SELECT n.no_rekening,
+                           " . implode(",\n                           ", $accountSelect) . "
+                    FROM nominatif n FORCE INDEX (idx_otp_created_rekening_saldo)
+                    WHERE n.created IN (" . implode(', ', $metricDatePlaceholders) . ")
+                      {$snapshotFilter}
+                    GROUP BY n.no_rekening
+                ";
+
+                foreach ($periodSlots as $periodKey => $slotData) {
+                    $current = $slotData['current'];
+                    $previous = $slotData['previous'];
+                    $currentExists = $slotData['current_exists'];
+                    $previousExists = $slotData['previous_exists'];
+                    $slot = $slotData['slot'];
+                    $outerSelect[] = "COALESCE(SUM(a.{$current}), 0) AS current_total_{$slot}";
+                    $outerSelect[] = "COALESCE(SUM(a.{$previous}), 0) AS previous_total_{$slot}";
+                    $outerSelect[] = "COALESCE(SUM(CASE WHEN a.{$current} > a.{$previous} THEN a.{$current} - a.{$previous} ELSE 0 END), 0) AS realisasi_{$slot}";
+                    $outerSelect[] = "COALESCE(SUM(CASE WHEN a.{$currentExists} = 1 AND a.{$current} < a.{$previous} THEN a.{$previous} - a.{$current} ELSE 0 END), 0) AS angsuran_{$slot}";
+                    $outerSelect[] = "COALESCE(SUM(CASE WHEN a.{$currentExists} = 1 AND a.{$current} < a.{$previous} THEN 1 ELSE 0 END), 0) AS noa_angsuran_{$slot}";
+                    $outerSelect[] = "COALESCE(SUM(CASE WHEN a.{$currentExists} = 0 THEN a.{$previous} ELSE 0 END), 0) AS pelunasan_{$slot}";
+                    $outerSelect[] = "COALESCE(SUM(CASE WHEN a.{$currentExists} = 0 AND a.{$previousExists} = 1 THEN 1 ELSE 0 END), 0) AS noa_pelunasan_{$slot}";
+                }
+
+                $bulkMetricsSql = "
+                    SELECT " . implode(",\n                           ", $outerSelect) . "
+                    FROM ({$accountSql}) a
+                ";
+                $bulkMetricsStmt = $this->pdo->prepare($bulkMetricsSql);
+                $bulkMetricsStmt->execute(array_merge($metricParams, $snapshotParams));
+                $bulkMetricsRow = $bulkMetricsStmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+                foreach ($periodSlots as $periodKey => $slotData) {
+                    $slot = $slotData['slot'];
+                    $metricsByPeriod[$periodKey] = [
+                        'current_total' => (float)($bulkMetricsRow['current_total_' . $slot] ?? 0),
+                        'previous_total' => (float)($bulkMetricsRow['previous_total_' . $slot] ?? 0),
+                        'realisasi' => (float)($bulkMetricsRow['realisasi_' . $slot] ?? 0),
+                        'angsuran' => (float)($bulkMetricsRow['angsuran_' . $slot] ?? 0),
+                        'noa_angsuran' => (int)($bulkMetricsRow['noa_angsuran_' . $slot] ?? 0),
+                        'pelunasan' => (float)($bulkMetricsRow['pelunasan_' . $slot] ?? 0),
+                        'noa_pelunasan' => (int)($bulkMetricsRow['noa_pelunasan_' . $slot] ?? 0)
+                    ];
+                }
             }
 
             $result = [];
             foreach ($periods as $period) {
-                $currentDate = $snapshotDates[$period['key']] ?? null;
-                $previousDate = $snapshotDates[$period['previous_key']] ?? null;
-                $metrics = [
+                $metrics = $metricsByPeriod[$period['key']] ?? [
                     'current_total' => 0.0,
                     'previous_total' => 0.0,
                     'realisasi' => 0.0,
@@ -1130,92 +1353,23 @@ class DashboardController{
                     'noa_pelunasan' => 0
                 ];
 
-                if ($currentDate !== null && $previousDate !== null) {
-                    [$currentFilterCurrent, $currentParamsCurrent] = $filterFor('c', 'current_current');
-                    [$previousFilterCurrent, $previousParamsCurrent] = $filterFor('p', 'previous_current');
-                    [$currentFilterPrevious, $currentParamsPrevious] = $filterFor('c', 'current_previous');
-                    [$previousFilterPrevious, $previousParamsPrevious] = $filterFor('p', 'previous_previous');
-
-                    $pairSql = "
-                        SELECT
-                            COALESCE(SUM(COALESCE(c.saldo_bank, 0)), 0) AS current_total,
-                            COALESCE(SUM(COALESCE(p.saldo_bank, 0)), 0) AS previous_total,
-                            COALESCE(SUM(CASE
-                                WHEN COALESCE(c.saldo_bank, 0) > COALESCE(p.saldo_bank, 0)
-                                THEN COALESCE(c.saldo_bank, 0) - COALESCE(p.saldo_bank, 0)
-                                ELSE 0 END), 0) AS realisasi,
-                            COALESCE(SUM(CASE
-                                WHEN COALESCE(c.saldo_bank, 0) < COALESCE(p.saldo_bank, 0)
-                                THEN COALESCE(p.saldo_bank, 0) - COALESCE(c.saldo_bank, 0)
-                                ELSE 0 END), 0) AS angsuran,
-                            COALESCE(SUM(CASE
-                                WHEN COALESCE(c.saldo_bank, 0) < COALESCE(p.saldo_bank, 0)
-                                THEN 1 ELSE 0 END), 0) AS noa_angsuran,
-                            0 AS pelunasan,
-                            0 AS noa_pelunasan
-                        FROM nominatif c
-                        LEFT JOIN nominatif p
-                          ON p.created = :previous_date_current
-                         AND p.no_rekening = c.no_rekening
-                         {$previousFilterCurrent}
-                        WHERE c.created = :current_date_current
-                          {$currentFilterCurrent}
-
-                        UNION ALL
-
-                        SELECT
-                            0 AS current_total,
-                            COALESCE(SUM(COALESCE(p.saldo_bank, 0)), 0) AS previous_total,
-                            0 AS realisasi,
-                            0 AS angsuran,
-                            0 AS noa_angsuran,
-                            COALESCE(SUM(COALESCE(p.saldo_bank, 0)), 0) AS pelunasan,
-                            COUNT(*) AS noa_pelunasan
-                        FROM nominatif p
-                        LEFT JOIN nominatif c
-                          ON c.created = :current_date_previous
-                         AND c.no_rekening = p.no_rekening
-                         {$currentFilterPrevious}
-                        WHERE p.created = :previous_date_previous
-                          {$previousFilterPrevious}
-                          AND c.no_rekening IS NULL
-                    ";
-                    $metricsSql = "
-                        SELECT
-                            COALESCE(SUM(x.current_total), 0) AS current_total,
-                            COALESCE(SUM(x.previous_total), 0) AS previous_total,
-                            COALESCE(SUM(x.realisasi), 0) AS realisasi,
-                            COALESCE(SUM(x.angsuran), 0) AS angsuran,
-                            COALESCE(SUM(x.noa_angsuran), 0) AS noa_angsuran,
-                            COALESCE(SUM(x.pelunasan), 0) AS pelunasan,
-                            COALESCE(SUM(x.noa_pelunasan), 0) AS noa_pelunasan
-                        FROM ({$pairSql}) x
-                    ";
-                    $metricsStmt = $this->pdo->prepare($metricsSql);
-                    $metricsStmt->execute(array_merge([
-                        ':previous_date_current' => $previousDate,
-                        ':current_date_current' => $currentDate,
-                        ':current_date_previous' => $currentDate,
-                        ':previous_date_previous' => $previousDate
-                    ], $currentParamsCurrent, $previousParamsCurrent, $currentParamsPrevious, $previousParamsPrevious));
-                    $metrics = array_merge($metrics, $metricsStmt->fetch(PDO::FETCH_ASSOC) ?: []);
-                }
-
                 $currentTotal = (float)$metrics['current_total'];
                 $previousTotal = (float)$metrics['previous_total'];
                 $realisasi = (float)$metrics['realisasi'];
                 $angsuran = (float)$metrics['angsuran'];
                 $pelunasan = (float)$metrics['pelunasan'];
                 $runoff = $angsuran + $pelunasan;
+                $restruckData = $restruckByMonth[$period['key']] ?? [];
+                $restruck = (float)($restruckData['restruck_kredit'] ?? 0);
                 $result[] = [
                     'tanggal' => $period['key'],
                     'label' => $period['label'],
                     'total_realisasi' => $realisasi,
                     'realisasi_kredit' => $realisasi,
-                    'restruck_kredit' => 0.0,
-                    'restrukturisasi' => 0.0,
+                    'restruck_kredit' => $restruck,
+                    'restrukturisasi' => $restruck,
                     'noa_realisasi' => 0,
-                    'noa_restruck' => 0,
+                    'noa_restruck' => (int)($restruckData['noa_restruck'] ?? 0),
                     'total_lunas' => $pelunasan,
                     'noa_lunas' => (int)$metrics['noa_pelunasan'],
                     'total_angsuran' => $angsuran,
@@ -1605,6 +1759,7 @@ class DashboardController{
 
             $kenaikan  = [];
             $penurunan = [];
+            $allNpl    = [];
 
             // Proses perhitungannya di PHP agar lebih ringan
             foreach ($rows as $r) {
@@ -1631,10 +1786,15 @@ class DashboardController{
                 $dataCabang = [
                     'kode_cabang'     => $r['kode_cabang'],
                     'nama_cabang'     => $final_nama,
+                    'npl_amt'        => $npl_curr,
+                    'total_kredit'   => $baki_curr,
+                    'npl_persen'     => round($persen_curr, 2),
                     'npl_persen_prev' => round($persen_prev, 2),
                     'npl_persen_curr' => round($persen_curr, 2),
                     'delta_npl'       => round($delta, 2)
                 ];
+
+                $allNpl[] = $dataCabang;
 
                 // Pisahkan mana yang naik (Memburuk), mana yang turun (Membaik)
                 if ($delta > 0) {
@@ -1674,8 +1834,31 @@ class DashboardController{
                 usort($bottom_penurunan, function($a, $b) { return $b['delta_npl'] <=> $a['delta_npl']; }); // DESC
             }
 
+            // Top/bottom NPL memakai baris agregat yang sama, sehingga tidak perlu
+            // menjalankan query nominatif kedua hanya untuk daftar NPL.
+            if ($displayMode === 'CABANG') {
+                $topNpl = array_values(array_filter($allNpl, function($r) {
+                    return $r['npl_persen'] >= 20;
+                }));
+                $bottomNpl = array_values(array_filter($allNpl, function($r) {
+                    return $r['npl_persen'] < 20;
+                }));
+                usort($topNpl, function($a, $b) { return $a['npl_persen'] <=> $b['npl_persen']; });
+                usort($bottomNpl, function($a, $b) { return $a['npl_persen'] <=> $b['npl_persen']; });
+            } else {
+                usort($allNpl, function($a, $b) { return $b['npl_persen'] <=> $a['npl_persen']; });
+                $topNpl = array_slice($allNpl, 0, 5);
+                $remainingNpl = array_slice($allNpl, 5);
+                usort($remainingNpl, function($a, $b) { return $a['npl_persen'] <=> $b['npl_persen']; });
+                $bottomNpl = array_slice($remainingNpl, 0, 5);
+            }
+
             // Kembalikan Datanya
             return [
+                'top_bottom_npl' => [
+                    'top' => $topNpl,
+                    'bottom' => $bottomNpl
+                ],
                 'top_kenaikan'     => $top_kenaikan,
                 'bottom_kenaikan'  => $bottom_kenaikan,
                 'top_penurunan'    => $top_penurunan,

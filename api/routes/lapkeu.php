@@ -36,6 +36,9 @@ switch ($method) {
         elseif ($type === 'rekap_lapkeu_actual') {
             $controller->apiGetRekapLapkeuActual($input);
         }
+        elseif ($type === 'dashboard_acc_history_kpi') {
+            $controller->apiGetDashboardAccHistoryKpi($input);
+        }
         
         // ==========================================
         // ENDPOINT LAPORAN LABA RUGI (4, 5)

@@ -20,38 +20,8 @@
         </div>
       </div>
 
-      <button type="button" id="lnFilterToggle" class="ln-filter-toggle" onclick="toggleLnFilter()" aria-expanded="false" aria-controls="lnFilter">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h18M7 12h10M10 20h4"/></svg>
-        <span>Filter</span>
-      </button>
-    </div>
-
-    <form id="lnFilter" class="ln-filter" onsubmit="event.preventDefault(); fetchLapNeraca();">
-      <label class="ln-field ln-field-date">
-        <span>Actual</span>
-        <input id="lnTanggal" type="date" onclick="try{this.showPicker()}catch(e){}">
-      </label>
-
-      <label class="ln-field ln-office-field">
-        <span>Area / Cabang</span>
-        <select id="lnKantor"></select>
-      </label>
-
-      <button type="button" class="ln-export" onclick="exportLapNeraca()" title="Download Excel" aria-label="Download Excel">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-      </button>
-    </form>
-  </section>
-
-  <section class="ln-table-card">
-    <div id="lnLoader" class="ln-loader ln-hidden">
-      <div class="ln-spinner"></div>
-      <span>Memuat laba rugi...</span>
-    </div>
-
     <div class="ln-table-toolbar">
       <div class="ln-table-heading">
-        <h2>Laporan Laba Rugi</h2>
         <p id="lnMeta">-</p>
       </div>
 
@@ -60,34 +30,34 @@
           <span class="ln-status-dot"></span>
           <span>Memuat</span>
         </div>
-
-        <label class="ln-level-control" title="Batasi level akun yang terbuka otomatis">
-          <span>Level</span>
-          <select id="lnLevel">
-            <option value="3">3</option>
-            <option value="5" selected>5</option>
-            <option value="7">7</option>
-            <option value="all">All</option>
-          </select>
-        </label>
-
-        <label class="ln-search" aria-label="Cari akun laba rugi">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          <input id="lnSearch" type="search" placeholder="Cari kode / akun..." autocomplete="off">
-        </label>
+        <div class="ln-toolbar-actions">
+          <label id="lnSearchBox" class="ln-search ln-search-hidden" aria-label="Cari akun laba rugi">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input id="lnSearch" type="search" placeholder="Cari kode / akun..." autocomplete="off">
+          </label>
+          <button type="button" id="lnSearchToggle" class="ln-search-toggle" title="Buka pencarian" aria-label="Buka pencarian" aria-expanded="false" aria-controls="lnSearchBox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7.5"></circle><path d="m16.5 16.5 4 4"></path></svg>
+          </button>
+          <button type="button" id="lnMobileSideSwap" class="ln-mobile-side-swap" onclick="swapLnMobileSide()" title="Tampilkan Biaya" aria-label="Tampilkan Biaya">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M7 7h10l-3-3m3 3-3 3"/><path d="M17 17H7l3 3m-3-3 3-3"/>
+            </svg>
+            <span class="ln-visually-hidden">Tukar tampilan pendapatan dan biaya</span>
+          </button>
+          <button type="button" class="ln-export" onclick="exportLapNeraca()" title="Download Excel" aria-label="Download Excel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+          </button>
+        </div>
       </div>
     </div>
 
-    <!-- Mobile: satu sisi per tab agar nyaman dibaca -->
-    <div class="ln-mobile-tabs" role="tablist" aria-label="Sisi laba rugi">
-      <button type="button" id="lnTabPENDAPATAN" class="ln-mobile-tab active" data-side="PENDAPATAN" onclick="setLnMobileSide('PENDAPATAN')" role="tab" aria-selected="true">
-        PENDAPATAN
-        <small id="lnTabPENDAPATANTotal">Rp 0</small>
-      </button>
-      <button type="button" id="lnTabBIAYA" class="ln-mobile-tab" data-side="BIAYA" onclick="setLnMobileSide('BIAYA')" role="tab" aria-selected="false">
-        BIAYA
-        <small id="lnTabBIAYATotal">Rp 0</small>
-      </button>
+    </div>
+  </section>
+
+  <section class="ln-table-card">
+    <div id="lnLoader" class="ln-loader ln-hidden">
+      <div class="ln-spinner"></div>
+      <span>Memuat laba rugi...</span>
     </div>
 
     <!-- Desktop / tablet -->
@@ -135,7 +105,7 @@
           <strong data-ln-profit-tax>Rp 0</strong>
         </div>
 
-        <div class="ln-profit-row ln-profit-net">
+        <div class="ln-profit-row ln-profit-net ln-hidden" data-ln-profit-net-row>
           <span class="ln-profit-code">LR_BERSIH</span>
           <span class="ln-profit-label">LABA RUGI BERSIH</span>
           <strong data-ln-profit-net>Rp 0</strong>
@@ -163,8 +133,13 @@
         </tbody>
       </table>
 
-      <!-- Ringkasan laba berada DI DALAM scroll mobile.
-           User scroll sampai bagian akhir akun, lalu baru melihat laba. -->
+      <!-- Total berada tepat setelah data akun. -->
+      <div id="lnMobileTotalBar" class="ln-mobile-totalbar" aria-live="polite">
+        <span id="lnMobileFootLabel">Total Pendapatan</span>
+        <strong id="lnMobileFootValue">Rp 0</strong>
+      </div>
+
+      <!-- Laba ditampilkan tepat di bawah total pendapatan/biaya. -->
       <div id="lnProfitSummaryMobile" class="ln-profit-summary ln-profit-summary-mobile" aria-live="polite">
         <div class="ln-profit-row ln-profit-gross">
           <span class="ln-profit-code">LR_KOTOR</span>
@@ -178,18 +153,12 @@
           <strong data-ln-profit-tax>Rp 0</strong>
         </div>
 
-        <div class="ln-profit-row ln-profit-net">
+        <div class="ln-profit-row ln-profit-net ln-hidden" data-ln-profit-net-row>
           <span class="ln-profit-code">LR_BERSIH</span>
           <span class="ln-profit-label">LABA RUGI BERSIH</span>
           <strong data-ln-profit-net>Rp 0</strong>
         </div>
       </div>
-    </div>
-
-    <!-- Mobile total tetap di luar scroll agar nominal total sisi aktif selalu terlihat. -->
-    <div id="lnMobileTotalBar" class="ln-mobile-totalbar" aria-live="polite">
-      <span id="lnMobileFootLabel">Total Pendapatan</span>
-      <strong id="lnMobileFootValue">Rp 0</strong>
     </div>
 
   </section>
@@ -205,7 +174,7 @@
         </span>
         <div>
           <h3 id="lnInfoTitle">Informasi Laba Rugi Aktual</h3>
-          <p>Ringkasan pendapatan, biaya, laba kotor, dan laba bersih. Pajak hanya untuk konsolidasi.</p>
+          <p>Ringkasan pendapatan, biaya, dan laba aktual. Pajak hanya untuk konsolidasi.</p>
         </div>
       </div>
       <button type="button" id="lnInfoClose" class="ln-info-close" aria-label="Tutup informasi" title="Tutup">
@@ -269,8 +238,8 @@
 
   .ln-page {
     width:100%;
-    height:calc(100vh - 60px);
-    height:calc(100dvh - 60px);
+    height:calc(100vh - 96px);
+    height:calc(100dvh - 96px);
     min-height:0;
     display:flex;
     flex-direction:column;
@@ -284,9 +253,9 @@
   .ln-header {
     flex:0 0 auto;
     display:grid;
-    grid-template-columns:minmax(250px,1fr) auto;
+    grid-template-columns:minmax(0,1fr);
     align-items:center;
-    gap:14px;
+    gap:8px;
     min-width:0;
     padding:9px 11px;
     border:1px solid var(--ln-line);
@@ -337,6 +306,26 @@
     overflow:hidden;
     text-overflow:ellipsis;
   }
+  .ln-search-toggle {
+    width:28px;
+    height:28px;
+    flex:0 0 28px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    border:1px solid #dbe4f0;
+    border-radius:8px;
+    background:#fff;
+    color:#64748b;
+    cursor:pointer;
+    transition:color .15s ease,background .15s ease,border-color .15s ease,transform .15s ease;
+  }
+  .ln-search-toggle:hover,
+  .ln-search-toggle:focus-visible,
+  .ln-search-toggle.is-active { color:#2563eb; border-color:#93c5fd; background:#eff6ff; }
+  .ln-search-toggle:active { transform:scale(.96); }
+  .ln-search-toggle svg { width:15px; height:15px; }
   .ln-brand-copy p {
     max-width:450px;
     margin:4px 0 0;
@@ -495,16 +484,15 @@
     align-items:center;
     justify-content:space-between;
     gap:10px;
-    min-height:48px;
-    padding:7px 9px;
-    border-bottom:1px solid #e2e8f0;
-    background:linear-gradient(180deg,#fff,#fbfdff);
+    min-height:42px;
+    padding:7px 0 0;
+    border-top:1px solid #e2e8f0;
+    background:transparent;
   }
-  .ln-table-heading { min-width:0; }
-  .ln-table-heading h2 { margin:0; color:#0f172a; font-size:12px; line-height:1.15; font-weight:900; }
+  .ln-table-heading { display:none; }
   .ln-table-heading p {
     max-width:520px;
-    margin:3px 0 0;
+    margin:0;
     color:#94a3b8;
     font-size:8px;
     line-height:1.15;
@@ -514,7 +502,18 @@
     white-space:nowrap;
   }
 
-  .ln-toolbar-right { display:flex; align-items:center; justify-content:flex-end; gap:6px; min-width:0; }
+  .ln-toolbar-right { width:100%; display:flex; align-items:center; justify-content:space-between; gap:6px; min-width:0; }
+  .ln-toolbar-actions { display:flex; align-items:center; justify-content:flex-end; gap:6px; min-width:0; margin-left:auto; }
+  .ln-mobile-side-swap { display:none; }
+  .ln-toolbar-actions > .ln-search-toggle,
+  .ln-toolbar-actions > .ln-mobile-side-swap,
+  .ln-toolbar-actions > .ln-export {
+    width:34px;
+    height:34px;
+    flex:0 0 34px;
+    border-radius:8px;
+  }
+  .ln-toolbar-actions > .ln-search { height:34px; }
   .ln-balance-status {
     height:29px;
     display:inline-flex;
@@ -588,7 +587,17 @@
     transition:transform .16s ease,background .16s ease,border-color .16s ease,color .16s ease;
   }
   .ln-tree-toggle:hover { background:#eff6ff; border-color:#dbeafe; color:#2563eb; }
-  .ln-tree-toggle.is-open { transform:rotate(90deg); color:#2563eb; }
+  .ln-tree-toggle.is-open { color:#2563eb; }
+  .ln-tree-chevron {
+    width:0;
+    height:0;
+    display:block;
+    border-top:4px solid transparent;
+    border-bottom:4px solid transparent;
+    border-left:5px solid currentColor;
+    transition:transform .16s ease;
+  }
+  .ln-tree-toggle.is-open .ln-tree-chevron { transform:rotate(90deg); }
   .ln-tree-toggle-placeholder { width:17px; height:17px; flex:0 0 17px; margin-right:4px; }
   .ln-name-line { display:flex; align-items:center; min-width:0; }
   .ln-name-line .ln-name { min-width:0; flex:1; }
@@ -625,6 +634,21 @@
     font-weight:700;
   }
   .ln-search:focus-within { border-color:#60a5fa; box-shadow:0 0 0 3px rgba(59,130,246,.09); }
+  .ln-search.ln-search-hidden { display:none; }
+  .ln-search.ln-search-open { display:flex; }
+  .ln-toolbar-actions .ln-search { width:clamp(140px,18vw,220px); flex:0 1 auto; }
+
+  .ln-visually-hidden {
+    position:absolute !important;
+    width:1px !important;
+    height:1px !important;
+    padding:0 !important;
+    margin:-1px !important;
+    overflow:hidden !important;
+    clip:rect(0,0,0,0) !important;
+    white-space:nowrap !important;
+    border:0 !important;
+  }
 
   /* Desktop table */
   .ln-table-scroll {
@@ -973,7 +997,7 @@
 
   /* Large desktop */
   @media (min-width:1440px) {
-    .ln-page { height:calc(100dvh - 72px); padding:8px 12px 12px; }
+    .ln-page { height:calc(100dvh - 96px); padding:8px 12px 12px; }
     .ln-header { padding:10px 12px; }
     .ln-filter { grid-template-columns:130px minmax(210px,285px) 37px; }
     .ln-filter input,.ln-filter select,.ln-export { height:36px; }
@@ -984,7 +1008,7 @@
 
   /* Laptop */
   @media (min-width:1024px) and (max-width:1439px) {
-    .ln-page { padding:6px 8px 8px; }
+    .ln-page { height:calc(100dvh - 96px); padding:6px 8px 8px; }
     #lnTable { min-width:900px; }
     #lnTable .ln-col-code { width:7.5%; }
     #lnTable .ln-col-name { width:25.5%; }
@@ -993,18 +1017,8 @@
 
   /* Tablet */
   @media (min-width:768px) and (max-width:1023px) {
-    .ln-page { height:calc(100dvh - 64px); padding:6px; }
-    .ln-header { grid-template-columns:1fr auto; gap:7px; padding:8px; }
-    .ln-filter-toggle { display:inline-flex; }
-    .ln-filter {
-      grid-column:1 / -1;
-      display:none;
-      grid-template-columns:130px minmax(220px,1fr) 36px;
-      width:100%;
-      padding-top:7px;
-      border-top:1px solid #e2e8f0;
-    }
-    .ln-filter.open { display:grid; }
+    .ln-page { height:calc(100dvh - 96px); padding:6px; }
+    .ln-header { grid-template-columns:1fr; gap:7px; padding:8px; }
     #lnTable { min-width:900px; }
     .ln-search { width:220px; }
   }
@@ -1012,8 +1026,8 @@
   /* Mobile */
   @media (max-width:767px) {
     .ln-page {
-      height:calc(100vh - 54px);
-      height:calc(100dvh - 54px);
+      height:calc(100vh - 88px);
+      height:calc(100dvh - 88px);
       min-height:0;
       gap:5px;
       padding:4px 4px max(5px,env(safe-area-inset-bottom));
@@ -1032,83 +1046,61 @@
     .ln-icon svg { width:14px; height:14px; }
     .ln-title-row { gap:5px; }
     .ln-title-row h1 { font-size:12px; }
-    .ln-brand-copy p { max-width:205px; margin-top:2px; font-size:7px; }
+    .ln-brand-copy > p { display:none; }
     .ln-info-btn { width:18px; height:18px; flex-basis:18px; font-size:9px; }
-    .ln-filter-toggle { display:inline-flex; height:29px; padding:0 8px; font-size:8px; }
-
-    .ln-filter {
-      display:none;
-      grid-template-columns:minmax(0,1fr) minmax(0,1fr) 32px;
-      width:100%;
-      gap:5px;
-      padding-top:6px;
-      border-top:1px solid #e2e8f0;
-    }
-    .ln-filter.open { display:grid; }
-    .ln-field > span { font-size:6.5px; }
-    .ln-filter input,.ln-filter select { height:31px; padding:0 6px; border-radius:7px; font-size:8.5px; }
-    .ln-filter select { padding-right:20px; background-position:right 5px center; background-size:10px 10px; }
+    .ln-search-toggle { width:30px; height:30px; flex-basis:30px; border-radius:8px; }
+    .ln-search-toggle svg { width:15px; height:15px; }
+    .ln-table-toolbar { display:grid; grid-template-columns:minmax(0,1fr); }
     .ln-export { width:32px; height:31px; border-radius:7px; }
     .ln-export svg { width:15px; height:15px; }
 
     .ln-table-card { border-radius:9px; }
-    .ln-table-toolbar { min-height:auto; padding:6px; gap:5px; }
-    .ln-table-heading h2 { font-size:10px; }
-    .ln-table-heading p { max-width:125px; margin-top:2px; font-size:6.5px; }
+    .ln-table-toolbar { min-height:auto; padding:6px 0 0; gap:5px; }
+    .ln-table-heading p { max-width:none; font-size:8px; }
     .ln-toolbar-right {
       width:100%;
-      display:grid;
-      grid-template-columns:auto auto minmax(0,1fr);
+      display:flex;
+      justify-content:flex-end;
       gap:4px;
     }
-    .ln-balance-status { height:27px; padding:0 6px; font-size:6.5px; }
-    .ln-level-control { height:28px; padding:0 4px 0 6px; gap:3px; border-radius:7px; }
-    .ln-level-control > span { display:none; }
-    .ln-level-control select { width:44px; height:22px; padding-left:4px; font-size:7px; }
-    .ln-status-dot { width:5px; height:5px; }
-    .ln-search { width:100%; min-width:0; height:28px; border-radius:7px; }
-    .ln-search svg { left:7px; width:11px; height:11px; }
-    .ln-search input { padding-left:23px; font-size:7.5px; }
+    .ln-toolbar-actions { gap:4px; }
+    .ln-balance-status { display:none; }
+    .ln-status-dot { width:6px; height:6px; }
+    .ln-search { width:100%; min-width:0; height:31px; border-radius:7px; }
+    .ln-search svg { left:7px; width:12px; height:12px; }
+    .ln-search input { padding-left:23px; font-size:9px; }
+    .ln-toolbar-actions .ln-search { width:clamp(92px,32vw,150px); }
 
     .ln-desktop-table-wrap { display:none; }
     .ln-mobile-tabs {
       flex:0 0 auto;
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:4px;
-      padding:5px 6px;
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      min-height:48px;
+      padding:2px 6px;
       border-bottom:1px solid #e2e8f0;
       background:#f8fafc;
     }
-    .ln-mobile-tab {
-      min-width:0;
-      height:34px;
+    .ln-mobile-side-swap {
+      width:44px;
+      height:44px;
+      flex:0 0 44px;
       display:flex;
       align-items:center;
-      justify-content:space-between;
-      gap:5px;
-      padding:0 8px;
+      justify-content:center;
+      padding:0;
       border:1px solid #dbe4f0;
-      border-radius:8px;
+      border-radius:10px;
       background:#fff;
       color:#64748b;
-      font-size:8px;
-      font-weight:900;
       cursor:pointer;
+      transition:color .15s ease,background .15s ease,border-color .15s ease,transform .15s ease;
     }
-    .ln-mobile-tab small {
-      min-width:0;
-      overflow:hidden;
-      color:#94a3b8;
-      font-family:"JetBrains Mono",ui-monospace,monospace;
-      font-size:6.5px;
-      font-weight:800;
-      text-overflow:ellipsis;
-      white-space:nowrap;
-    }
-    .ln-mobile-tab.active[data-side="PENDAPATAN"] { color:#4338ca; border-color:#c7d2fe; background:#eef2ff; }
-    .ln-mobile-tab.active[data-side="BIAYA"] { color:#047857; border-color:#a7f3d0; background:#ecfdf5; }
-    .ln-mobile-tab.active small { color:inherit; }
+    .ln-mobile-side-swap:hover,
+    .ln-mobile-side-swap:focus-visible { color:#2563eb; border-color:#93c5fd; background:#eff6ff; }
+    .ln-mobile-side-swap:active { transform:scale(.96); }
+    .ln-mobile-side-swap svg { width:18px; height:18px; }
 
     .ln-mobile-table-wrap {
       flex:1 1 0;
@@ -1134,45 +1126,45 @@
       position:sticky;
       top:0;
       z-index:20;
-      height:30px;
-      padding:4px 5px;
+      height:34px;
+      padding:5px 6px;
       border-right:1px solid #edf2f7;
       border-bottom:1px solid #cbd5e1;
       background:#f8fafc;
       color:#64748b;
-      font-size:6.5px;
+      font-size:8px;
       font-weight:900;
       letter-spacing:.045em;
       text-transform:uppercase;
     }
     #lnMobileTable td {
-      min-height:34px;
-      padding:5px;
+      min-height:38px;
+      padding:6px;
       border-right:1px solid #f1f5f9;
       border-bottom:1px solid #edf2f7;
       background:#fff;
       vertical-align:middle;
     }
     #lnMobileTable tbody tr:hover td { background:#f8fafc; }
-    #lnMobileTable .ln-code { font-size:7px; letter-spacing:-.02em; }
+    #lnMobileTable .ln-code { font-size:8.5px; letter-spacing:-.02em; }
     #lnMobileTable .ln-tree-toggle { width:14px; height:14px; flex-basis:14px; margin-right:2px; border-radius:4px; font-size:6px; }
     #lnMobileTable .ln-tree-toggle-placeholder { width:14px; height:14px; flex-basis:14px; margin-right:2px; }
     #lnMobileTable .ln-name {
       display:-webkit-box;
       overflow:hidden;
-      font-size:8px;
+      font-size:9.5px;
       line-height:1.18;
       white-space:normal;
       -webkit-line-clamp:2;
       -webkit-box-orient:vertical;
       overflow-wrap:anywhere;
     }
-    #lnMobileTable .ln-depth-0 .ln-name { font-size:8.8px; }
-    #lnMobileTable .ln-depth-1 .ln-name { font-size:8.4px; }
-    #lnMobileTable .ln-money { font-size:7.8px; letter-spacing:-.04em; }
+    #lnMobileTable .ln-depth-0 .ln-name { font-size:10.5px; }
+    #lnMobileTable .ln-depth-1 .ln-name { font-size:10px; }
+    #lnMobileTable .ln-money { font-size:9px; letter-spacing:-.04em; }
     .ln-mobile-totalbar {
-      position:relative;
-      z-index:26;
+      position:static;
+      z-index:auto;
       flex:0 0 auto;
       min-height:38px;
       display:grid;
@@ -1183,14 +1175,14 @@
       border-top:1px solid #cbd5e1;
       background:#eef2ff;
       color:#3730a3;
-      box-shadow:0 -7px 18px -16px rgba(15,23,42,.75);
+      box-shadow:none;
     }
     .ln-mobile-totalbar span {
       min-width:0;
       overflow:hidden;
       text-overflow:ellipsis;
       white-space:nowrap;
-      font-size:7px;
+      font-size:8.5px;
       font-weight:900;
       letter-spacing:.04em;
       text-transform:uppercase;
@@ -1199,7 +1191,7 @@
       min-width:0;
       text-align:right;
       font-family:"JetBrains Mono",ui-monospace,monospace;
-      font-size:8.5px;
+      font-size:10px;
       font-weight:900;
       letter-spacing:-.03em;
       white-space:nowrap;
@@ -1207,31 +1199,27 @@
     .ln-mobile-totalbar.ln-mobile-passive { background:#ecfdf5; color:#047857; }
 
     .ln-profit-summary-desktop { display:none !important; }
-    .ln-profit-summary-mobile {
-      display:block !important;
-      margin-top:0;
-      border-top:1px solid #cbd5e1;
-    }
+    .ln-profit-summary-mobile { display:block !important; }
 
     .ln-profit-row {
       grid-template-columns:64px minmax(0,1fr) 112px;
-      min-height:31px;
+      min-height:36px;
     }
     .ln-profit-row > * { padding:6px 7px; }
     .ln-profit-code {
-      font-size:6px;
+      font-size:7px;
       letter-spacing:-.01em;
       overflow:hidden;
       text-overflow:ellipsis;
     }
     .ln-profit-label {
-      font-size:7px;
+      font-size:8.5px;
       white-space:nowrap;
       overflow:hidden;
       text-overflow:ellipsis;
     }
     .ln-profit-row strong {
-      font-size:7.6px;
+      font-size:9px;
       letter-spacing:-.035em;
     }
     .ln-profit-net { min-height:34px; }
@@ -1270,25 +1258,28 @@
 
   @media (max-width:380px) {
     .ln-brand-copy p { max-width:170px; }
-    .ln-table-heading p { max-width:96px; }
-    .ln-search { width:112px; }
+    .ln-table-heading p { max-width:150px; }
+    .ln-search { width:100%; }
     .ln-balance-status { padding:0 5px; }
     #lnMobileTable .ln-mobile-code-col { width:52px; }
     #lnMobileTable .ln-mobile-money-col { width:102px; }
-    #lnMobileTable .ln-money { font-size:7.2px; }
+    #lnMobileTable .ln-money { font-size:8.5px; }
     .ln-profit-row { grid-template-columns:58px minmax(0,1fr) 104px; }
     .ln-profit-row > * { padding-left:5px; padding-right:5px; }
-    .ln-profit-code { font-size:5.7px; }
-    .ln-profit-label { font-size:6.6px; }
-    .ln-profit-row strong { font-size:7px; }
+    .ln-profit-code { font-size:6.5px; }
+    .ln-profit-label { font-size:8px; }
+    .ln-profit-row strong { font-size:8.5px; }
   }
 </style>
 
 <script>
   const LN_API_LAP = './api/lapkeu';
   const LN_API_KODE = './api/kode/';
+  const LN_OFFICE_CACHE_KEY = 'lap_laba_rugi_office_options_v1';
+  const LN_RESPONSE_CACHE_TTL = 15000;
   let lnRaw = null;
-  let lnFetchTimer = null;
+  let lnFetchController = null;
+  const lnResponseCache = new Map();
   let lnMobileSide = 'PENDAPATAN';
   let lnLevelMode = '5';
   const lnTreeState = {
@@ -1303,14 +1294,35 @@
     { value:'KW_PEKALONGAN', label:'Korwil Pekalongan' },
   ];
 
-  function toggleLnFilter(force) {
-    const form = document.getElementById('lnFilter');
-    const btn = document.getElementById('lnFilterToggle');
-    if (!form) return;
-    const open = typeof force === 'boolean' ? force : !form.classList.contains('open');
-    form.classList.toggle('open', open);
-    btn?.classList.toggle('active', open);
-    btn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+  function toggleLnNavbarFilter(force) {
+    const panel = document.getElementById('lapLabaRugiNavbarFilterPanel');
+    const button = document.getElementById('lnNavbarFilterToggle');
+    if (!panel) return;
+    const open = typeof force === 'boolean' ? force : panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', !open);
+    panel.classList.toggle('flex', open);
+    button?.classList.toggle('is-active', open);
+    button?.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function toggleLnSearch(force) {
+    const box = document.getElementById('lnSearchBox');
+    const button = document.getElementById('lnSearchToggle');
+    const input = document.getElementById('lnSearch');
+    if (!box) return;
+    const open = typeof force === 'boolean' ? force : box.classList.contains('ln-search-hidden');
+    box.classList.toggle('ln-search-hidden', !open);
+    box.classList.toggle('ln-search-open', open);
+    button?.classList.toggle('is-active', open);
+    button?.setAttribute('aria-expanded', open ? 'true' : 'false');
+    button?.setAttribute('aria-label', open ? 'Tutup pencarian' : 'Buka pencarian');
+    button?.setAttribute('title', open ? 'Tutup pencarian' : 'Buka pencarian');
+    if (open) {
+      window.requestAnimationFrame(() => input?.focus());
+    } else if (input?.value) {
+      input.value = '';
+      renderLapNeraca();
+    }
   }
 
   function safeLn(text) {
@@ -1335,25 +1347,6 @@
     return `${sign}Rp ${fmtLn(abs)}`;
   }
 
-  function scheduleLapNeraca(delay = 350) {
-    clearTimeout(lnFetchTimer);
-    lnFetchTimer = setTimeout(fetchLapNeraca, delay);
-  }
-
-  async function loadLnDefaultDate() {
-    try {
-      const res = await fetch(LN_API_LAP, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({type:'default_acc_history_date'})
-      });
-      const json = await res.json();
-      return json?.data?.last_created || new Date().toISOString().slice(0,10);
-    } catch (e) {
-      return new Date().toISOString().slice(0,10);
-    }
-  }
-
   async function populateLnKantor() {
     const select = document.getElementById('lnKantor');
     const user = (window.getUser && window.getUser()) || null;
@@ -1361,15 +1354,27 @@
 
     let list = [];
     try {
-      const res = await fetch(LN_API_KODE, {
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({type:'kode_kantor'})
-      });
-      const json = await res.json();
-      list = Array.isArray(json.data) ? json.data : [];
-    } catch (e) {
-      list = [];
+      const cached = JSON.parse(sessionStorage.getItem(LN_OFFICE_CACHE_KEY) || 'null');
+      if (Array.isArray(cached?.data) && Number(cached?.savedAt || 0) > Date.now() - 86400000) {
+        list = cached.data;
+      }
+    } catch (e) {}
+
+    if (!list.length) {
+      try {
+        const res = await fetch(LN_API_KODE, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({type:'kode_kantor'})
+        });
+        const json = await res.json();
+        list = Array.isArray(json.data) ? json.data : [];
+        if (list.length) {
+          try { sessionStorage.setItem(LN_OFFICE_CACHE_KEY, JSON.stringify({savedAt:Date.now(), data:list})); } catch (e) {}
+        }
+      } catch (e) {
+        list = [];
+      }
     }
 
     if (userKode !== '000') {
@@ -1392,13 +1397,14 @@
         html += `<option value="${kode}">${kode} - ${safeLn(item.nama_kantor || 'Cabang')}</option>`;
       });
     select.innerHTML = html;
+    window.MonbisGlobalAreaFilter?.restore?.();
   }
 
   function getLnPayload() {
-    const kantorValue = document.getElementById('lnKantor').value || '000';
+    const kantorValue = document.getElementById('lnKantor')?.value || '000';
     const payload = {
       type:'lap_laba_rugi_actual',
-      harian_date:document.getElementById('lnTanggal').value,
+      harian_date:document.getElementById('lnTanggal')?.value || '',
       kode_kantor:kantorValue,
       korwil:''
     };
@@ -1410,9 +1416,11 @@
     return payload;
   }
 
-  // Pajak hanya digunakan saat user memilih "000 - Konsolidasi".
-  // Pusat, Korwil, dan Cabang tidak menampilkan pengurang pajak.
+  // Ikuti flag scope dari backend agar perhitungan dan tampilan pajak konsisten.
   function isLnConsolidation() {
+    if (lnRaw && typeof lnRaw.pajak_dihitung === 'boolean') {
+      return lnRaw.pajak_dihitung;
+    }
     return (document.getElementById('lnKantor')?.value || '') === '000';
   }
 
@@ -1427,6 +1435,22 @@
       : labaKotor;
 
     return { pendapatan, biaya, labaKotor, pajak, labaBersih, consolidation };
+  }
+
+  function applyLnResponse(data) {
+    lnRaw = data || {};
+    lnRaw.PENDAPATAN = Array.isArray(lnRaw.pendapatan) ? lnRaw.pendapatan : [];
+    lnRaw.BIAYA = Array.isArray(lnRaw.biaya) ? lnRaw.biaya : [];
+    lnRaw.totals = lnRaw.totals || {};
+    lnRaw.totals.PENDAPATAN = Number(lnRaw.totals.pendapatan || 0);
+    lnRaw.totals.BIAYA = Number(lnRaw.totals.biaya || 0);
+    lnRaw.totals.LABA_KOTOR = Number(lnRaw.totals.laba_kotor || 0);
+    lnRaw.totals.PAJAK = Number(lnRaw.totals.pajak || 0);
+    lnRaw.totals.LABA_BERSIH = Number(lnRaw.totals.laba_bersih || 0);
+    const dateInput = document.getElementById('lnTanggal');
+    if (dateInput && lnRaw.tanggal) dateInput.value = lnRaw.tanggal;
+    rebuildLnTrees(true);
+    renderLapNeraca();
   }
 
   function renderLnProfitSummary() {
@@ -1445,46 +1469,58 @@
     document.querySelectorAll('[data-ln-profit-tax-row]').forEach(row => {
       row.classList.toggle('ln-hidden', !consolidation);
     });
+    document.querySelectorAll('[data-ln-profit-net-row]').forEach(row => {
+      row.classList.toggle('ln-hidden', !consolidation);
+    });
   }
 
-  async function fetchLapNeraca() {
+  async function fetchLapNeraca(closeFilter = false) {
     const loader = document.getElementById('lnLoader');
     const body = document.getElementById('lnBody');
     const mobileBody = document.getElementById('lnMobileBody');
+    const controller = new AbortController();
+    const payload = getLnPayload();
+    const cacheKey = JSON.stringify(payload);
+    const cached = lnResponseCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      applyLnResponse(cached.data);
+      if (closeFilter) toggleLnNavbarFilter(false);
+      return;
+    }
+
+    lnFetchController?.abort();
+    lnFetchController = controller;
     loader?.classList.remove('ln-hidden');
 
     try {
       const res = await fetch(LN_API_LAP, {
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify(getLnPayload())
+        body:JSON.stringify(payload),
+        signal:controller.signal
       });
       const json = await res.json();
       if (!res.ok || Number(json.status) !== 200) {
         throw new Error(json.message || 'Gagal memuat data');
       }
-      lnRaw = json.data || {};
-      lnRaw.PENDAPATAN = Array.isArray(lnRaw.pendapatan) ? lnRaw.pendapatan : [];
-      lnRaw.BIAYA = Array.isArray(lnRaw.biaya) ? lnRaw.biaya : [];
-      lnRaw.totals = lnRaw.totals || {};
-      lnRaw.totals.PENDAPATAN = Number(lnRaw.totals.pendapatan || 0);
-      lnRaw.totals.BIAYA = Number(lnRaw.totals.biaya || 0);
-      lnRaw.totals.LABA_KOTOR = Number(lnRaw.totals.laba_kotor || 0);
-      lnRaw.totals.PAJAK = Number(lnRaw.totals.pajak || 0);
-      lnRaw.totals.LABA_BERSIH = Number(lnRaw.totals.laba_bersih || 0);
-      rebuildLnTrees(true);
-      renderLapNeraca();
+      lnResponseCache.set(cacheKey, {data:json.data || {}, expiresAt:Date.now() + LN_RESPONSE_CACHE_TTL});
+      applyLnResponse(json.data || {});
     } catch (e) {
+      if (e?.name === 'AbortError') return;
       console.error(e);
       lnRaw = null;
       if (body) body.innerHTML = `<tr><td colspan="6" class="ln-empty">Gagal memuat data laba rugi.</td></tr>`;
       if (mobileBody) mobileBody.innerHTML = `<tr><td colspan="3" class="ln-empty">Gagal memuat data laba rugi.</td></tr>`;
       updateLnBalanceStatus(null);
     } finally {
-      loader?.classList.add('ln-hidden');
-      if (window.innerWidth < 1024) toggleLnFilter(false);
+      if (lnFetchController === controller) {
+        lnFetchController = null;
+        loader?.classList.add('ln-hidden');
+        if (closeFilter) toggleLnNavbarFilter(false);
+      }
     }
   }
+  window.fetchLapNeraca = fetchLapNeraca;
 
   function rowMatchesSearch(row, query) {
     if (!query) return true;
@@ -1592,7 +1628,7 @@
     const code = lnCode(row);
     if (!code || !lnHasChildren(side, code)) return '<span class="ln-tree-toggle-placeholder" aria-hidden="true"></span>';
     const open = lnIsExpanded(side, code);
-    return `<button type="button" class="ln-tree-toggle ${open ? 'is-open' : ''}" onclick="event.stopPropagation();toggleLnNode('${side}','${safeLn(code)}')" title="${open ? 'Tutup' : 'Buka'} breakdown ${safeLn(code)}" aria-label="${open ? 'Tutup' : 'Buka'} breakdown ${safeLn(code)}" aria-expanded="${open ? 'true' : 'false'}">▶</button>`;
+    return `<button type="button" class="ln-tree-toggle ${open ? 'is-open' : ''}" onclick="event.stopPropagation();toggleLnNode('${side}','${safeLn(code)}')" title="${open ? 'Tutup' : 'Buka'} breakdown ${safeLn(code)}" aria-label="${open ? 'Tutup' : 'Buka'} breakdown ${safeLn(code)}" aria-expanded="${open ? 'true' : 'false'}"><span class="ln-tree-chevron" aria-hidden="true"></span></button>`;
   }
 
   function renderSide(row, side) {
@@ -1644,14 +1680,16 @@
 
   function setLnMobileSide(side) {
     lnMobileSide = side === 'BIAYA' ? 'BIAYA' : 'PENDAPATAN';
-    const PENDAPATANBtn = document.getElementById('lnTabPENDAPATAN');
-    const BIAYABtn = document.getElementById('lnTabBIAYA');
-    PENDAPATANBtn?.classList.toggle('active', lnMobileSide === 'PENDAPATAN');
-    BIAYABtn?.classList.toggle('active', lnMobileSide === 'BIAYA');
-    PENDAPATANBtn?.setAttribute('aria-selected', lnMobileSide === 'PENDAPATAN' ? 'true' : 'false');
-    BIAYABtn?.setAttribute('aria-selected', lnMobileSide === 'BIAYA' ? 'true' : 'false');
+    const nextSide = lnMobileSide === 'BIAYA' ? 'Pendapatan' : 'Biaya';
+    const swapButton = document.getElementById('lnMobileSideSwap');
+    swapButton?.setAttribute('title', `Tampilkan ${nextSide}`);
+    swapButton?.setAttribute('aria-label', `Tampilkan ${nextSide}`);
     renderLnMobileTable();
     document.querySelector('.ln-mobile-table-wrap')?.scrollTo({top:0,left:0,behavior:'auto'});
+  }
+
+  function swapLnMobileSide() {
+    setLnMobileSide(lnMobileSide === 'BIAYA' ? 'PENDAPATAN' : 'BIAYA');
   }
 
   function updateLnBalanceStatus(labaKotor) {
@@ -1704,8 +1742,6 @@
 
     document.getElementById('lnFootPendapatan').textContent = fmtLnRp(totalPENDAPATAN);
     document.getElementById('lnFootBiaya').textContent = fmtLnRp(totalBIAYA);
-    document.getElementById('lnTabPENDAPATANTotal').textContent = fmtLnShort(totalPENDAPATAN);
-    document.getElementById('lnTabBIAYATotal').textContent = fmtLnShort(totalBIAYA);
     const levelLabel = lnLevelMode === 'all' ? 'All' : `≤ ${lnLevelMode} digit`;
     document.getElementById('lnMeta').textContent = `${lnRaw?.scope_label || '-'} · Posisi ${lnRaw?.tanggal || '-'} · Level ${levelLabel} · ${PENDAPATANRows} akun PENDAPATAN · ${BIAYARows} akun BIAYA`;
 
@@ -1749,14 +1785,16 @@
           <div class="ln-info-stat-value red">${fmtLnRp(pajak)}</div>
         </div>
       ` : ''}
-      <div class="ln-info-stat">
-        <div class="ln-info-stat-label">Laba Bersih</div>
-        <div class="ln-info-stat-value ${labaBersih >= 0 ? 'green' : 'red'}">${fmtLnRp(labaBersih)}</div>
-      </div>
+      ${consolidation ? `
+        <div class="ln-info-stat">
+          <div class="ln-info-stat-label">Laba Bersih</div>
+          <div class="ln-info-stat-value ${labaBersih >= 0 ? 'green' : 'red'}">${fmtLnRp(labaBersih)}</div>
+        </div>
+      ` : ''}
     `;
 
     if (hasProfit) {
-      condition.innerHTML = `<b>Laba kotor ${fmtLnRp(labaKotor)}.</b> ${consolidation ? `Konsolidasi memperhitungkan pajak sebesar ${fmtLnRp(pajak)}, sehingga laba bersih menjadi ${fmtLnRp(labaBersih)}.` : `Scope ${safeLn(lnRaw?.scope_label || 'terpilih')} tidak menggunakan pengurang pajak; laba bersih mengikuti laba kotor sebesar ${fmtLnRp(labaBersih)}.`}`;
+      condition.innerHTML = `<b>Laba kotor ${fmtLnRp(labaKotor)}.</b> ${consolidation ? `Konsolidasi memperhitungkan pajak sebesar ${fmtLnRp(pajak)}, sehingga laba bersih menjadi ${fmtLnRp(labaBersih)}.` : `Scope ${safeLn(lnRaw?.scope_label || 'terpilih')} menampilkan laba kotor sebelum pajak sebesar ${fmtLnRp(labaKotor)}.`}`;
     } else {
       condition.innerHTML = `<b>Posisi rugi/impas ${fmtLnRp(labaKotor)}.</b> Perlu cek pendapatan utama dan beban terbesar pada ${safeLn(lnRaw?.scope_label || 'scope terpilih')}.`;
     }
@@ -1794,7 +1832,10 @@
     if (consolidation) {
       html += `<tr><td><b>PAJAK</b></td><td colspan="4"><b>PAJAK</b></td><td>${Math.round(pajak)}</td></tr>`;
     }
-    html += `<tr><td><b>LR_BERSIH</b></td><td colspan="4"><b>LABA RUGI BERSIH</b></td><td>${Math.round(labaBersih)}</td></tr></tbody></table>`;
+    if (consolidation) {
+      html += `<tr><td><b>LR_BERSIH</b></td><td colspan="4"><b>LABA RUGI BERSIH</b></td><td>${Math.round(labaBersih)}</td></tr>`;
+    }
+    html += `</tbody></table>`;
     const blob = new Blob([html], {type:'application/vnd.ms-excel'});
     const a = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -1807,11 +1848,23 @@
   }
 
   window.addEventListener('DOMContentLoaded', async () => {
-    await populateLnKantor();
-    document.getElementById('lnTanggal').value = await loadLnDefaultDate();
+    const navbarFilter = document.getElementById('lapLabaRugiNavbarFilterPanel');
+    const navbarFilterToggle = document.getElementById('lnNavbarFilterToggle');
+    const navbarFilterClose = document.getElementById('lnNavbarFilterClose');
+    navbarFilterToggle?.addEventListener('click', event => {
+      event.stopPropagation();
+      toggleLnNavbarFilter();
+    });
+    navbarFilterClose?.addEventListener('click', () => toggleLnNavbarFilter(false));
+    document.addEventListener('click', event => {
+      if (!navbarFilter || navbarFilter.classList.contains('hidden')) return;
+      if (!navbarFilter.contains(event.target) && !navbarFilterToggle?.contains(event.target)) {
+        toggleLnNavbarFilter(false);
+      }
+    });
 
-    document.getElementById('lnTanggal')?.addEventListener('change', () => scheduleLapNeraca(350));
-    document.getElementById('lnKantor')?.addEventListener('change', () => scheduleLapNeraca(350));
+    document.getElementById('lnSearchToggle')?.addEventListener('click', () => toggleLnSearch());
+    await populateLnKantor();
     const levelSelect = document.getElementById('lnLevel');
     if (levelSelect) {
       lnLevelMode = levelSelect.value || '5';
@@ -1832,6 +1885,7 @@
 
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape' && document.getElementById('lnInfoModal')?.classList.contains('open')) closeLnInfo();
+      if (e.key === 'Escape' && document.getElementById('lnSearchBox')?.classList.contains('ln-search-open')) toggleLnSearch(false);
     });
 
     fetchLapNeraca();

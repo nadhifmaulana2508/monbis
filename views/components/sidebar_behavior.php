@@ -246,42 +246,124 @@ define('MONBIS_SIDEBAR_BEHAVIOR_LOADED', true);
     #mainNavbar { box-shadow:0 6px 20px rgba(15,23,42,.08) !important; }
   }
 
-  /* Move the desktop content column with the sidebar so nothing is hidden underneath it. */
+  /* Keep the desktop sidebar in the flex layout so content never sits underneath it. */
   @media (min-width:768px) {
     .monbis-app-shell { position:relative; }
     .monbis-app-shell > #sidebar {
-      position:absolute !important;
-      inset:0 auto 0 0;
+      position:relative !important;
+      inset:auto;
+      flex:0 0 78px !important;
       width:78px !important;
-      overflow:visible !important;
-      transition:width .18s cubic-bezier(.22,.61,.36,1) !important;
-      will-change:width;
+      overflow:hidden !important;
+      transition:flex-basis .24s cubic-bezier(.22,.61,.36,1), width .24s cubic-bezier(.22,.61,.36,1) !important;
+      will-change:flex-basis, width;
     }
     .monbis-app-shell > #sidebar.is-expanded {
+      flex-basis:278px !important;
       width:278px !important;
+      overflow:visible !important;
     }
     .monbis-app-shell > #sidebar + div {
-      flex:0 0 calc(100% - 78px);
-      width:calc(100% - 78px);
-      margin-left:78px;
-      transition:width .18s cubic-bezier(.22,.61,.36,1), margin-left .18s cubic-bezier(.22,.61,.36,1);
-      will-change:width, margin-left;
+      flex:1 1 auto;
+      width:auto;
+      margin-left:0;
+      min-width:0;
+      transition:none;
+      will-change:auto;
     }
     .monbis-app-shell > #sidebar.is-expanded + div {
-      flex-basis:calc(100% - 278px);
-      width:calc(100% - 278px);
-      margin-left:278px;
+      flex:1 1 auto;
+      width:auto;
+      margin-left:0;
     }
-    /* The older navbar stylesheet still contains hover rules; the state class owns them now. */
+    /* The older navbar stylesheet still contains hover rules; explicit state owns them now. */
     .monbis-app-shell > #sidebar:not(.is-expanded):hover,
     .monbis-app-shell > #sidebar:not(.is-expanded):focus-within {
+      flex-basis:78px !important;
       width:78px !important;
+      overflow:hidden !important;
     }
-    .monbis-app-shell > #sidebar:not(.is-expanded):hover + div,
-    .monbis-app-shell > #sidebar:not(.is-expanded):focus-within + div {
-      flex-basis:calc(100% - 78px);
-      width:calc(100% - 78px);
-      margin-left:78px;
+    .monbis-app-shell > #sidebar:not(.is-expanded) nav {
+      overflow-y:auto;
+    }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .accordion-content {
+      display:none !important;
+    }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .accordion-btn,
+    .monbis-app-shell > #sidebar:not(.is-expanded) nav > a {
+      justify-content:center;
+      padding-left:10px !important;
+      padding-right:10px !important;
+    }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .accordion-btn > div {
+      width:100%;
+      justify-content:center;
+    }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .accordion-btn > div > span,
+    .monbis-app-shell > #sidebar:not(.is-expanded) nav > a > span,
+    .monbis-app-shell > #sidebar:not(.is-expanded) .caret {
+      width:0;
+      margin-left:0 !important;
+      overflow:hidden;
+      opacity:0 !important;
+    }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .accordion-btn > .caret {
+      display:none;
+    }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .monbis-sidebar-promo {
+      min-height:54px;
+      border-radius:16px;
+    }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .monbis-sidebar-promo__inner {
+      min-height:54px;
+      justify-content:center;
+      padding:10px;
+    }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .monbis-sidebar-promo__text {
+      display:none;
+    }
+    .monbis-app-shell > #sidebar:not(.is-expanded) > .h-16 .monbis-logo--icon {
+      display:block;
+    }
+    .monbis-app-shell > #sidebar:not(.is-expanded) > .h-16 .monbis-logo--wordmark {
+      display:none;
+    }
+    .monbis-app-shell > #sidebar.is-expanded nav {
+      overflow-y:auto;
+    }
+    .monbis-app-shell > #sidebar.is-expanded .accordion-btn,
+    .monbis-app-shell > #sidebar.is-expanded nav > a {
+      justify-content:flex-start;
+      padding-left:12px !important;
+      padding-right:12px !important;
+    }
+    .monbis-app-shell > #sidebar.is-expanded .accordion-btn > div {
+      width:auto;
+      justify-content:flex-start;
+    }
+    .monbis-app-shell > #sidebar.is-expanded .accordion-btn > div > span,
+    .monbis-app-shell > #sidebar.is-expanded nav > a > span,
+    .monbis-app-shell > #sidebar.is-expanded .caret {
+      width:auto;
+      margin-left:.75rem !important;
+      overflow:visible;
+      opacity:1 !important;
+    }
+    .monbis-app-shell > #sidebar.is-expanded .accordion-btn > .caret {
+      display:block;
+      margin-left:auto !important;
+    }
+    .monbis-app-shell > #sidebar.is-expanded > .h-16 .monbis-logo--icon { display:none; }
+    .monbis-app-shell > #sidebar.is-expanded > .h-16 .monbis-logo--wordmark {
+      display:block;
+      width:180px;
+      height:auto;
+      max-height:50px;
+      padding:0;
+      border-radius:0;
+      background:transparent;
+      box-shadow:none;
+      object-fit:contain;
     }
   }
 
@@ -293,4 +375,4 @@ define('MONBIS_SIDEBAR_BEHAVIOR_LOADED', true);
     }
   }
 </style>
-<script src="./assets/js/sidebar.js?v=1" defer></script>
+<script src="./assets/js/sidebar.js?v=4" defer></script>

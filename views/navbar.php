@@ -1,3 +1,30 @@
+<?php
+$rbacInitialPayload = null;
+if (is_array($rbacInitialAccess ?? null)) {
+    $rbacAllowedKeys = [];
+    foreach (($rbacInitialAccess['permissions'] ?? []) as $featureKey => $permission) {
+        if ((int)($permission['can_view'] ?? 0) === 1) {
+            $rbacAllowedKeys[] = (string)$featureKey;
+        }
+    }
+    $rbacInitialPayload = [
+        'admin' => !empty($rbacInitialAccess['admin']),
+        'allowed' => $rbacAllowedKeys,
+    ];
+}
+?>
+<style id="monbisRbacPreloadStyle">
+  /* Jangan tampilkan menu sebelum permission terbaru selesai dimuat. */
+  html.monbis-rbac-pending #sidebar nav > a,
+  html.monbis-rbac-pending #sidebar nav > .accordion-group {
+    visibility:hidden !important;
+    pointer-events:none !important;
+  }
+</style>
+<script>
+  window.__RBAC_INITIAL__ = <?= json_encode($rbacInitialPayload, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+  document.documentElement.classList.toggle('monbis-rbac-pending', !window.__RBAC_INITIAL__);
+</script>
 <style id="monbisGlobalThemeStyle">
   :root[data-monbis-theme="dark"] body { background:#0f172a; color:#e5e7eb; }
   :root[data-monbis-theme="dark"] .bg-slate-50 { background-color:#0b1220 !important; }
@@ -58,6 +85,27 @@
   .dashboard-navbar-filter__submit:hover { background:#1d4ed8; }
   .dashboard-navbar-filter__submit,
   .npl-navbar-filter-panel__submit { display:none !important; }
+  .dashboard-navbar-filter__actions { display:flex; justify-content:flex-end; align-items:center; gap:8px; }
+  .dashboard-navbar-filter__head-actions { display:flex; align-items:center; justify-content:flex-end; gap:6px; }
+  #formFilterMaster .dashboard-navbar-filter__fields { grid-template-columns:repeat(4, minmax(0, 1fr)); }
+  #formFilterMaster .dashboard-navbar-filter__head-actions .dashboard-navbar-filter__submit { display:inline-flex !important; width:36px; min-width:36px; min-height:36px; padding:0; }
+  #formFilterMaster .dashboard-navbar-filter__submit svg { width:17px; height:17px; }
+  #lapLabaRugiNavbarFilterPanel { width:min(620px, calc(100vw - 24px)); }
+  #lapLabaRugiNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:minmax(0,1fr) minmax(0,1.25fr) minmax(110px,.7fr); }
+  #lapLabaRugiNavbarFilterPanel .dashboard-navbar-filter__submit { display:inline-flex !important; width:36px; min-width:36px; min-height:36px; padding:0; }
+  #lapLabaRugiNavbarFilterPanel .dashboard-navbar-filter__submit svg { width:17px; height:17px; }
+  #rekapLapkeuNavbarFilterPanel { width:min(520px, calc(100vw - 24px)); }
+  #rekapLapkeuNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); }
+  #rekapLapkeuNavbarFilterPanel .dashboard-navbar-filter__submit { display:inline-flex !important; width:36px; min-width:36px; min-height:36px; padding:0; }
+  #rekapLapkeuNavbarFilterPanel .dashboard-navbar-filter__submit svg { width:17px; height:17px; }
+  #ikhtisarNavbarFilterPanel { width:min(520px, calc(100vw - 24px)); }
+  #ikhtisarNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); }
+  #ikhtisarNavbarFilterPanel .dashboard-navbar-filter__submit { display:inline-flex !important; width:36px; min-width:36px; min-height:36px; padding:0; }
+  #ikhtisarNavbarFilterPanel .dashboard-navbar-filter__submit svg { width:17px; height:17px; }
+  #raportCabangNavbarFilterPanel { width:min(520px, calc(100vw - 24px)); }
+  #raportCabangNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); }
+  #raportCabangNavbarFilterPanel .dashboard-navbar-filter__submit { display:inline-flex !important; width:36px; min-width:36px; min-height:36px; padding:0; }
+  #raportCabangNavbarFilterPanel .dashboard-navbar-filter__submit svg { width:17px; height:17px; }
   @keyframes dashboardFilterIn { from { opacity:0; transform:translateY(-5px) scale(.99); } to { opacity:1; transform:translateY(0) scale(1); } }
   :root[data-monbis-theme="dark"] .dashboard-navbar-filter-toggle { background:#0b1220; border-color:#475569; color:#cbd5e1; }
   :root[data-monbis-theme="dark"] .dashboard-navbar-filter-toggle.is-active { color:#bfdbfe; border-color:#60a5fa; background:#172554; }
@@ -72,6 +120,13 @@
     .dashboard-navbar-filter { right:8px; width:calc(100vw - 16px); padding:13px; }
     .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
     .dashboard-navbar-filter__submit { width:100%; }
+    #formFilterMaster .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    #lapLabaRugiNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    #rekapLapkeuNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    #ikhtisarNavbarFilterPanel { right:8px; width:calc(100vw - 16px); }
+    #ikhtisarNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    #raportCabangNavbarFilterPanel { right:8px; width:calc(100vw - 16px); }
+    #raportCabangNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
   }
   @media (max-width:420px) {
     .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:7px; }
@@ -552,78 +607,6 @@
     from { opacity:0; transform:translateY(-4px); }
     to { opacity:1; transform:translateY(0); }
   }
-  @media (min-width:768px) {
-    #sidebar {
-      width:78px !important;
-      overflow:hidden;
-    }
-    #sidebar:hover {
-      width:278px !important;
-      overflow:visible;
-    }
-    #sidebar:focus-within {
-      width:278px !important;
-      overflow:visible;
-    }
-    #sidebar:not(:hover):not(:focus-within) nav {
-      overflow-y:hidden;
-    }
-    #sidebar:not(:hover):not(:focus-within) .accordion-content {
-      display:none !important;
-    }
-    #sidebar:not(:hover):not(:focus-within) .accordion-btn,
-    #sidebar:not(:hover):not(:focus-within) nav > a {
-      justify-content:center;
-      padding-left:10px !important;
-      padding-right:10px !important;
-    }
-    #sidebar:not(:hover):not(:focus-within) .accordion-btn > div {
-      width:100%;
-      justify-content:center;
-    }
-    #sidebar:not(:hover):not(:focus-within) .accordion-btn > div > span,
-    #sidebar:not(:hover):not(:focus-within) nav > a > span {
-      width:0;
-      margin-left:0 !important;
-      overflow:hidden;
-      opacity:0 !important;
-    }
-    #sidebar:not(:hover):not(:focus-within) .accordion-btn > .caret {
-      display:none;
-    }
-    #sidebar:not(:hover):not(:focus-within) .monbis-sidebar-promo {
-      min-height:54px;
-      border-radius:16px;
-    }
-    #sidebar:not(:hover):not(:focus-within) .monbis-sidebar-promo__inner {
-      min-height:54px;
-      justify-content:center;
-      padding:10px;
-    }
-    #sidebar:not(:hover):not(:focus-within) .monbis-sidebar-promo__text {
-      display:none;
-    }
-    #sidebar:hover > .h-16 .monbis-logo--icon,
-    #sidebar:focus-within > .h-16 .monbis-logo--icon { display:none; }
-    #sidebar:hover > .h-16 .monbis-logo--wordmark,
-    #sidebar:focus-within > .h-16 .monbis-logo--wordmark {
-      display:block;
-      width:180px;
-      height:auto;
-      max-height:50px;
-      padding:0;
-      border-radius:0;
-      background:transparent;
-      box-shadow:none;
-      object-fit:contain;
-    }
-    :root[data-monbis-theme="dark"] #sidebar:hover > .h-16 .monbis-logo--wordmark,
-    :root[data-monbis-theme="dark"] #sidebar:focus-within > .h-16 .monbis-logo--wordmark {
-      padding:4px 8px;
-      border-radius:10px;
-      background:#ffffff;
-    }
-  }
   #sidebar .accordion-btn,
   #sidebar nav a,
   #sidebar .text-slate-700,
@@ -641,6 +624,8 @@
     color:var(--monbis-event-accent) !important;
   }
   #mainNavbar {
+    display:flex !important;
+    flex:0 0 68px;
     min-height:68px;
     background:
       linear-gradient(135deg, color-mix(in srgb, var(--monbis-event-header-bg) 92%, white), rgba(255,255,255,.92)) !important;
@@ -811,6 +796,8 @@
       bottom:0;
     }
     #mainNavbar {
+      display:flex !important;
+      flex:0 0 56px;
       min-height:56px;
       height:56px !important;
       padding-left:10px !important;
@@ -822,6 +809,16 @@
       padding:7px;
       border:1px solid rgba(148,163,184,.25);
       background:rgba(255,255,255,.45);
+    }
+    #btnToggleSidebar [data-sidebar-toggle-icon="closed"],
+    #btnToggleSidebar [data-sidebar-toggle-icon="open"] {
+      display:none !important;
+    }
+    #btnToggleSidebar [data-sidebar-toggle-icon="mobile"] {
+      display:block !important;
+    }
+    #mobileMonbisLogo {
+      display:none !important;
     }
     #mainNavbar .md\:hidden span {
       max-width:84px;
@@ -1176,8 +1173,17 @@
       const reportMenu = document.getElementById('menuMonevDev');
       const menuInputRbb = document.getElementById('menuInputRbb');
       const adminMenu = document.getElementById('menuEventAdmin');
+      const rbacMenu = document.getElementById('menuRbacAdmin');
       const paparanRbbMenu = document.getElementById('menuPaparanRbb');
       const user = readUser();
+      if (window.__RBAC_INITIAL__ && !window.__RBAC_FRESH_LOADED__) return !!user;
+      if (user?.rbac?.configured && !user?.rbac?.admin) {
+        [menu, reportMenu, menuInputRbb, adminMenu, paparanRbbMenu, rbacMenu].forEach(node => {
+          if (node) node.style.removeProperty('display');
+        });
+        window.MonbisRbac?.apply?.(user);
+        return !!user;
+      }
       const operational = !!user && isOperasional(user);
       const headOfficePe = !!user && isHeadOfficePe(user);
       if (reportMenu) {
@@ -1200,6 +1206,10 @@
         paparanRbbMenu.style.display = operational ? '' : 'none';
       }
       if (adminMenu) adminMenu.style.setProperty('display', user && resolvePegId(user) === '102-119' ? 'block' : 'none', 'important');
+      if (rbacMenu) {
+        const role = String(user?.role || '').toLowerCase();
+      rbacMenu.style.setProperty('display', role === 'dev' || resolvePegId(user) === '102-119' ? 'flex' : 'none', 'important');
+      }
       return !!user;
     }
 
@@ -1221,9 +1231,9 @@
   <!-- z-[90] di atas tabel, di bawah sidebar -->
   <div id="sidebarOverlay" class="fixed inset-0 bg-slate-900/50 z-[90] hidden md:hidden"></div>
 
-  <!-- ================= 1. SIDEBAR (Slide Mobile & Hover Desktop) ================= -->
+  <!-- ================= 1. SIDEBAR (Slide Mobile & Explicit Desktop State) ================= -->
   <!-- z-[100] Jalan Tengah: Menang telak dari Tabel, tapi tetap di bawah Modal aplikasi (z-1050) -->
-  <aside id="sidebar" class="absolute md:relative z-[100] h-full flex flex-col bg-white border-r border-slate-200 shrink-0 transition-all duration-300 ease-in-out -translate-x-full md:translate-x-0 w-64 md:w-[4.5rem] md:hover:w-64 group">
+  <aside id="sidebar" class="absolute md:relative z-[100] h-full flex flex-col bg-white border-r border-slate-200 shrink-0 transition-all duration-300 ease-in-out -translate-x-full md:translate-x-0 w-64 md:w-[4.5rem]">
     
     <!-- Bagian Logo (Di Sidebar) -->
     <div class="h-16 flex items-center px-4 border-b border-slate-200 shrink-0 whitespace-nowrap">
@@ -1240,11 +1250,12 @@
         <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Dashboard</span>
       </a>
 
+
       <!-- Parent Pemasaran -->
       <div class="accordion-group">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
-            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20a8 8 0 100-16 8 8 0 000 16zM12 7v5l3 2M5 19l3-3m11 3l-3-3"></path></svg>
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 11l18-5v12L3 13v-2zM6 14l2 5h3l-2-5M5 11v2"></path></svg>
             <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Pemasaran</span>
           </div>
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -1266,7 +1277,7 @@
       <div class="accordion-group">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
-            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 4a5 5 0 100 10 5 5 0 000-10zm0 3a2 2 0 100 4 2 2 0 000-4zm0 2l5-5"></path></svg>
             <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Monitoring</span>
           </div>
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -1407,7 +1418,7 @@
       <div id="menuKpiBisnis" class="accordion-group" style="display: none;">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
-            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" d="M4 19V5m0 14h16M8 16v-4m4 4V8m4 8v-7"></path></svg>
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3z"></path></svg>
             <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">KPI Bisnis</span>
           </div>
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -1434,6 +1445,12 @@
           <a href="event_theme_admin" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Setting Event</a>
         </div>
       </div>
+
+      <!-- Menu tunggal Matrix Akses Menu; dibuat sama seperti Dashboard agar label tidak terpotong saat sidebar collapsed. -->
+      <a id="menuRbacAdmin" href="setting_rbac" class="flex items-center px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap" style="display: none;">
+        <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5h16M4 12h16M4 19h16M8 5v0M12 12v0M16 19v0"></path></svg>
+        <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Matrik Menu</span>
+      </a>
     </nav>
     <div id="monbisSidebarPromo" class="monbis-sidebar-promo" role="button" tabindex="0" aria-label="Buka Asisten Data">
       <div class="monbis-sidebar-promo__inner">
@@ -1449,6 +1466,36 @@
     </div>
   </aside>
 
+  <script>
+    (function () {
+      const initial = window.__RBAC_INITIAL__;
+      if (!initial) return;
+      const allowed = new Set(initial.allowed || []);
+      const featureKeyFromHref = href => {
+        const raw = String(href || '').split(/[?#]/)[0].replace(/^\.\//, '').replace(/^\/+/, '');
+        const slug = raw.split('/').pop().replace(/\.php$/i, '').trim();
+        return slug ? `page:${slug}` : '';
+      };
+      const links = [...document.querySelectorAll('#sidebar nav a[href]')];
+      if (initial.admin) {
+        links.forEach(link => link.style.removeProperty('display'));
+        document.querySelectorAll('#sidebar nav .accordion-group').forEach(group => group.style.removeProperty('display'));
+      } else {
+        links.forEach(link => {
+          const key = featureKeyFromHref(link.getAttribute('href'));
+          if (key && !allowed.has(key)) link.style.setProperty('display', 'none', 'important');
+        });
+        document.querySelectorAll('#sidebar nav .accordion-group').forEach(group => {
+          const visible = [...group.querySelectorAll('a[href]')].some(link => getComputedStyle(link).display !== 'none');
+          group.style.setProperty('display', visible ? 'block' : 'none', 'important');
+        });
+      }
+      window.__RBAC_INITIAL_READY__ = true;
+      document.documentElement.classList.remove('monbis-rbac-pending');
+      document.documentElement.classList.add('monbis-rbac-ready');
+    })();
+  </script>
+
   <!-- ================= KONTEN KANAN ================= -->
   <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
     
@@ -1456,13 +1503,15 @@
     <!-- z-[80] biar Navbar Header aman nutupin konten, tapi di bawah Overlay & Sidebar -->
     <header id="mainNavbar" class="relative h-16 bg-white border-b border-slate-200 flex items-center px-4 sm:px-6 z-[80] shadow-sm shrink-0">
       
-      <!-- Tombol Hamburger Mobile -->
-      <button id="btnToggleSidebar" class="md:hidden text-slate-500 hover:text-slate-800 focus:outline-none mr-3">
-        <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+      <!-- Tombol buka/tutup sidebar -->
+      <button id="btnToggleSidebar" type="button" class="text-slate-500 hover:text-slate-800 focus:outline-none mr-3" aria-label="Buka sidebar" title="Buka sidebar" aria-expanded="false" aria-controls="sidebar">
+        <svg data-sidebar-toggle-icon="closed" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path stroke-linecap="round" d="M9 5v14"></path></svg>
+        <svg data-sidebar-toggle-icon="open" class="hidden w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path stroke-linecap="round" d="M15 5v14M17 9l-3 3 3 3"></path></svg>
+        <svg data-sidebar-toggle-icon="mobile" class="hidden w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
       </button>
 
       <!-- Logo Monbis Mobile -->
-      <div class="flex items-center md:hidden">
+      <div id="mobileMonbisLogo" class="flex items-center md:hidden">
         <img src="./img/monbis-icon.webp?v=1" class="h-8 w-8 object-contain mr-2" alt="Monbis">
       </div>
 
@@ -1480,9 +1529,14 @@
             <span class="dashboard-navbar-filter__eyebrow">Filter</span>
             <strong class="dashboard-navbar-filter__title">Atur filter halaman</strong>
           </div>
-          <button type="button" id="btnCloseFilter" class="dashboard-navbar-filter__close" aria-label="Tutup filter" title="Tutup filter">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg>
-          </button>
+          <div class="dashboard-navbar-filter__head-actions">
+            <button type="submit" id="btnApplyDashboardFilter" class="dashboard-navbar-filter__submit" aria-label="Cari dan terapkan filter" title="Cari dan terapkan filter">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg>
+            </button>
+            <button type="button" id="btnCloseFilter" class="dashboard-navbar-filter__close" aria-label="Tutup filter" title="Tutup filter">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
         </div>
         <div class="dashboard-navbar-filter__fields">
           <div class="dashboard-navbar-filter__field">
@@ -1503,6 +1557,131 @@
           <div class="dashboard-navbar-filter__field">
             <label for="filter_kantor">Area / Cabang</label>
             <select id="filter_kantor" data-monbis-global-area></select>
+          </div>
+        </div>
+      </form>
+      <?php endif; ?>
+
+      <?php if (($page ?? '') === 'lap_laba_rugi'): ?>
+      <form id="lapLabaRugiNavbarFilterPanel" class="dashboard-navbar-filter hidden flex-col" aria-label="Filter laporan laba rugi" onsubmit="event.preventDefault(); window.fetchLapNeraca?.(true);">
+        <div class="dashboard-navbar-filter__head">
+          <div>
+            <span class="dashboard-navbar-filter__eyebrow">Filter</span>
+            <strong class="dashboard-navbar-filter__title">Atur filter laba rugi</strong>
+          </div>
+          <div class="dashboard-navbar-filter__head-actions">
+            <button type="submit" id="lnNavbarFilterSubmit" class="dashboard-navbar-filter__submit" aria-label="Cari dan terapkan filter" title="Cari dan terapkan filter">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg>
+            </button>
+            <button type="button" id="lnNavbarFilterClose" class="dashboard-navbar-filter__close" aria-label="Tutup filter laba rugi" title="Tutup filter laba rugi">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="dashboard-navbar-filter__fields">
+          <div class="dashboard-navbar-filter__field">
+            <label for="lnTanggal">Harian / Actual</label>
+            <input id="lnTanggal" type="date" onclick="this.showPicker && this.showPicker()">
+          </div>
+          <div class="dashboard-navbar-filter__field">
+            <label for="lnKantor">Area / Cabang</label>
+            <select id="lnKantor" data-monbis-global-area><option value="000">000 - Konsolidasi</option></select>
+          </div>
+          <div class="dashboard-navbar-filter__field">
+            <label for="lnLevel">Level Akun</label>
+            <select id="lnLevel">
+              <option value="3">3</option>
+              <option value="5" selected>5</option>
+              <option value="7">7</option>
+              <option value="all">Semua</option>
+            </select>
+          </div>
+        </div>
+      </form>
+      <?php endif; ?>
+
+      <?php if (($page ?? '') === 'rekap_lapkeu'): ?>
+      <form id="rekapLapkeuNavbarFilterPanel" class="dashboard-navbar-filter hidden flex-col" aria-label="Filter rekap keuangan" onsubmit="event.preventDefault(); window.fetchRekapLapkeu?.(true);">
+        <div class="dashboard-navbar-filter__head">
+          <div>
+            <span class="dashboard-navbar-filter__eyebrow">Filter</span>
+            <strong class="dashboard-navbar-filter__title">Atur filter rekap keuangan</strong>
+          </div>
+          <div class="dashboard-navbar-filter__head-actions">
+            <button type="submit" id="rlNavbarFilterSubmit" class="dashboard-navbar-filter__submit" aria-label="Cari dan terapkan filter" title="Cari dan terapkan filter">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg>
+            </button>
+            <button type="button" id="rlNavbarFilterClose" class="dashboard-navbar-filter__close" aria-label="Tutup filter rekap keuangan" title="Tutup filter rekap keuangan">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="dashboard-navbar-filter__fields">
+          <div class="dashboard-navbar-filter__field">
+            <label for="rlTanggal">Harian / Actual</label>
+            <input id="rlTanggal" type="date" onclick="this.showPicker && this.showPicker()">
+          </div>
+          <div class="dashboard-navbar-filter__field">
+            <label for="rlKantor">Area / Cabang</label>
+            <select id="rlKantor" data-monbis-global-area></select>
+          </div>
+        </div>
+      </form>
+      <?php endif; ?>
+
+      <?php if (($page ?? '') === 'ikhtisar'): ?>
+      <form id="ikhtisarNavbarFilterPanel" class="dashboard-navbar-filter hidden flex-col" aria-label="Filter ikhtisar" onsubmit="event.preventDefault(); window.fetchIkhtisar?.(true);">
+        <div class="dashboard-navbar-filter__head">
+          <div>
+            <span class="dashboard-navbar-filter__eyebrow">Filter</span>
+            <strong class="dashboard-navbar-filter__title">Atur filter ikhtisar</strong>
+          </div>
+          <div class="dashboard-navbar-filter__head-actions">
+            <button type="submit" id="ikhtisarNavbarFilterSubmit" class="dashboard-navbar-filter__submit" aria-label="Cari dan terapkan filter ikhtisar" title="Cari dan terapkan filter ikhtisar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg>
+            </button>
+            <button type="button" id="ikhtisarNavbarFilterClose" class="dashboard-navbar-filter__close" aria-label="Tutup filter ikhtisar" title="Tutup filter ikhtisar">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="dashboard-navbar-filter__fields">
+          <div class="dashboard-navbar-filter__field">
+            <label for="ikhtisarDate">Harian / Actual</label>
+            <input id="ikhtisarDate" type="date" onclick="this.showPicker && this.showPicker()">
+          </div>
+          <div class="dashboard-navbar-filter__field">
+            <label for="ikhtisarOffice">Area / Cabang</label>
+            <select id="ikhtisarOffice" data-monbis-global-area><option value="000">Konsolidasi</option></select>
+          </div>
+        </div>
+      </form>
+      <?php endif; ?>
+
+      <?php if (($page ?? '') === 'raport_cabang'): ?>
+      <form id="raportCabangNavbarFilterPanel" class="dashboard-navbar-filter hidden flex-col" aria-label="Filter raport cabang" onsubmit="event.preventDefault(); window.loadRaportCabang?.(); window.toggleRcNavbarFilter?.(false);">
+        <div class="dashboard-navbar-filter__head">
+          <div>
+            <span class="dashboard-navbar-filter__eyebrow">Filter</span>
+            <strong class="dashboard-navbar-filter__title">Atur filter raport cabang</strong>
+          </div>
+          <div class="dashboard-navbar-filter__head-actions">
+            <button type="submit" id="raportCabangNavbarFilterSubmit" class="dashboard-navbar-filter__submit" aria-label="Cari dan terapkan filter raport cabang" title="Cari dan terapkan filter raport cabang">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg>
+            </button>
+            <button type="button" id="raportCabangNavbarFilterClose" class="dashboard-navbar-filter__close" aria-label="Tutup filter raport cabang" title="Tutup filter raport cabang">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="dashboard-navbar-filter__fields">
+          <div class="dashboard-navbar-filter__field">
+            <label for="rcDate">Periode</label>
+            <input id="rcDate" type="date" onclick="this.showPicker && this.showPicker()">
+          </div>
+          <div class="dashboard-navbar-filter__field">
+            <label for="rcOffice">Kantor / Korwil</label>
+            <select id="rcOffice" data-monbis-global-area><option value="000">Konsolidasi</option></select>
           </div>
         </div>
       </form>
@@ -2288,6 +2467,26 @@
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
         </button>
         <?php endif; ?>
+        <?php if (($page ?? '') === 'lap_laba_rugi'): ?>
+        <button type="button" id="lnNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter laba rugi" title="Buka filter laba rugi" aria-expanded="false" aria-controls="lapLabaRugiNavbarFilterPanel">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+        </button>
+        <?php endif; ?>
+        <?php if (($page ?? '') === 'rekap_lapkeu'): ?>
+        <button type="button" id="rlNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter rekap keuangan" title="Buka filter rekap keuangan" aria-expanded="false" aria-controls="rekapLapkeuNavbarFilterPanel">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+        </button>
+        <?php endif; ?>
+        <?php if (($page ?? '') === 'ikhtisar'): ?>
+        <button type="button" id="ikhtisarNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter ikhtisar" title="Buka filter ikhtisar" aria-expanded="false" aria-controls="ikhtisarNavbarFilterPanel">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+        </button>
+        <?php endif; ?>
+        <?php if (($page ?? '') === 'raport_cabang'): ?>
+        <button type="button" id="raportCabangNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter raport cabang" title="Buka filter raport cabang" aria-expanded="false" aria-controls="raportCabangNavbarFilterPanel">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+        </button>
+        <?php endif; ?>
         <?php if (($page ?? '') === 'npl'): ?>
         <button type="button" id="mkNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Monitoring Kredit" title="Buka filter Monitoring Kredit" aria-expanded="false" aria-controls="nplNavbarFilterPanel">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
@@ -2413,11 +2612,6 @@
           <svg class="monbis-theme-icon-sun w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364-1.414 1.414M7.05 16.95l-1.414 1.414m12.728 0-1.414-1.414M7.05 7.05 5.636 5.636M12 8a4 4 0 100 8 4 4 0 000-8z"></path></svg>
         </button>
 
-        <button class="relative text-slate-500 hover:text-slate-800 transition-colors">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
-          <span class="absolute top-0 right-0 block h-2.5 w-2.5 rounded-full ring-2 ring-white bg-red-500"></span>
-        </button>
-        
         <div class="h-8 border-l border-slate-200"></div>
         
         <div class="relative flex items-center gap-3">

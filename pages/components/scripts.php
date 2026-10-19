@@ -38,6 +38,45 @@
 
   const KPI_YEAR_END_DATE = '2025-12-31';
   const KPI_YEAR_END_LABEL = 'Yearly';
+  const getDashboardClosingDate = () => document.getElementById('filter_closing')?.value || '';
+  const formatDashboardDate = value => {
+    const parts = String(value || '').split('-');
+    return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : '-';
+  };
+  function updateDashboardFilterSummary() {
+    const summary = document.getElementById('dashboardFilterSummary');
+    if (!summary) return;
+
+    const closing = formatDashboardDate(document.getElementById('filter_closing')?.value);
+    const actual = formatDashboardDate(document.getElementById('filter_harian')?.value);
+    const nominal = document.getElementById('filter_nominal')?.selectedOptions?.[0]?.textContent?.trim() || '-';
+    const office = document.getElementById('filter_kantor')?.selectedOptions?.[0]?.textContent?.trim() || 'Konsolidasi';
+    summary.textContent = `M-1 ${closing} · Actual ${actual} · ${nominal} · ${office}`;
+  }
+  function getDashboardTabunganDate() {
+    const selectedDate = document.getElementById('filter_harian')?.value || '';
+    if (!selectedDate) return '';
+    return selectedDate === getTodayRealtime() ? getH1Date(selectedDate) : selectedDate;
+  }
+  function updateDashboardSimpananDate() {
+    const selectedDate = formatDashboardDate(document.getElementById('filter_harian')?.value);
+    const tabunganDate = formatDashboardDate(getDashboardTabunganDate());
+    document.querySelectorAll('[data-simpanan-date="summary"], [data-simpanan-date="deposito"]').forEach(el => {
+      el.textContent = selectedDate === '-' ? 'Actual -' : selectedDate;
+    });
+    document.querySelectorAll('[data-simpanan-date="tabungan"]').forEach(el => {
+      el.textContent = tabunganDate === '-' ? 'Actual -' : tabunganDate;
+    });
+  }
+  const getMonthComparisonLabel = date => {
+    const selectedDate = String(date || '').trim();
+    return selectedDate && initialClosingDate && selectedDate !== initialClosingDate
+      ? selectedDate
+      : 'Monthly';
+  };
+  const getMonthComparisonTitle = label => label === 'Monthly'
+    ? 'Perbandingan bulanan'
+    : `Perbandingan tanggal ${label}`;
 
   function renderKpiYearEndComparison(value, current, isPercent = false, invertGoodBad = false) {
     if (value === null || value === undefined || !Number.isFinite(Number(value))) return '';
@@ -56,8 +95,12 @@
 
   let chartTrenInstance = null;
   let chartRunoffInstance = null; 
-  let initialHarianDate = null; 
+  let initialHarianDate = null;
+  let initialClosingDate = null;
   let trenPortoDataGlobal = [];
+  let dashboardLoadVersion = 0;
+  let dashboardChartTimer = null;
+  let dashboardRequestController = null;
 
   function getDashboardChartTheme() {
     const dark = document.documentElement.getAttribute('data-monbis-theme') === 'dark';
@@ -80,6 +123,10 @@
   }
 
   const apiCall = (url, opt={}) => (window.apiFetch ? window.apiFetch(url, opt) : fetch(url, opt));
+  const dashboardApiCall = (url, opt = {}) => apiCall(url, {
+    ...opt,
+    ...(dashboardRequestController ? { signal: dashboardRequestController.signal } : {})
+  });
   const DASHBOARD_CHART_FONT = "'Roboto', Arial, sans-serif";
   if (typeof Chart !== 'undefined' && Chart.defaults?.font) {
     Chart.defaults.font.family = DASHBOARD_CHART_FONT;
@@ -91,11 +138,10 @@
   }
 
   function updateDashboardNominalLabels() {
-    const label = getDashboardNominalMode() === 'baki_debet' ? 'Baki Debet' : 'Saldo Bank';
     const saldoLabel = document.querySelector('.kpi-card--saldo p');
     const nplLabel = document.querySelector('.kpi-card--npl p');
-    if (saldoLabel) saldoLabel.textContent = label;
-    if (nplLabel) nplLabel.textContent = `Total NPL (${label})`;
+    if (saldoLabel) saldoLabel.textContent = 'Kredit';
+    if (nplLabel) nplLabel.textContent = 'NPL';
   }
 
   function syncDashboardRunoffPeriodFilter() {
@@ -135,14 +181,16 @@
       this.setAttribute('aria-expanded', String(!filterForm.classList.contains('hidden')));
   });
 
-  document.getElementById('btnCloseFilter')?.addEventListener('click', function() {
+  function closeDashboardFilter() {
       const filterForm = document.getElementById('formFilterMaster');
       const filterToggle = document.getElementById('btnToggleFilter');
       filterForm.classList.add('hidden');
       filterForm.classList.remove('flex');
       filterToggle?.classList.remove('is-active');
       filterToggle?.setAttribute('aria-expanded', 'false');
-  });
+  }
+
+  document.getElementById('btnCloseFilter')?.addEventListener('click', closeDashboardFilter);
 
   async function getLastHarianData() {
     try { const r = await apiCall('./api/date/'); const j = await r.json(); return j.data || null; } catch { return null; }
@@ -169,9 +217,7 @@
     syncDashboardRunoffPeriodFilter();
     const user = (window.getUser && window.getUser()) || null;
     const uKode = (user?.kode ? String(user.kode).padStart(3,'0') : null);
-    await populateKantorOptions(uKode);
-
-    const d = await getLastHarianData(); 
+    const [d] = await Promise.all([getLastHarianData(), populateKantorOptions(uKode)]);
     if(d) {
       document.getElementById('filter_closing').value = d.last_closing;
       document.getElementById('filter_harian').value  = d.last_created;
@@ -180,40 +226,28 @@
       document.getElementById('filter_harian').value = '2026-03-28';
     }
 
+    initialClosingDate = document.getElementById('filter_closing').value;
     initialHarianDate = document.getElementById('filter_harian').value;
+    updateDashboardFilterSummary();
 
     fetchDashboardUtama();
-    Promise.all([fetchTrenPortofolio(), fetchTrenRunoff()]);
+    scheduleDashboardCharts();
   });
 
   document.getElementById('formFilterMaster').addEventListener('submit', e => {
     e.preventDefault();
     updateDashboardNominalLabels();
+    syncDashboardRunoffPeriodFilter();
+    updateDashboardFilterSummary();
+    updateDashboardSimpananDate();
     fetchDashboardUtama();
-    Promise.all([fetchTrenPortofolio(), fetchTrenRunoff()]);
+    scheduleDashboardCharts();
     if(window.innerWidth < 1024) {
         document.getElementById('formFilterMaster').classList.add('hidden');
         document.getElementById('formFilterMaster').classList.remove('flex');
         document.getElementById('btnToggleFilter')?.classList.remove('is-active');
         document.getElementById('btnToggleFilter')?.setAttribute('aria-expanded', 'false');
     }
-  });
-
-  let dashboardFilterTimer = null;
-  function scheduleDashboardFilter() {
-    clearTimeout(dashboardFilterTimer);
-    dashboardFilterTimer = setTimeout(() => {
-      document.getElementById('formFilterMaster')?.requestSubmit();
-    }, 180);
-  }
-
-  document.getElementById('filter_nominal')?.addEventListener('change', () => {
-    updateDashboardNominalLabels();
-    syncDashboardRunoffPeriodFilter();
-    scheduleDashboardFilter();
-  });
-  ['filter_closing','filter_harian','filter_kantor'].forEach(id => {
-    document.getElementById(id)?.addEventListener('change', scheduleDashboardFilter);
   });
 
   document.getElementById('filter_tren').addEventListener('change', () => { fetchTrenPortofolio(); });
@@ -226,8 +260,9 @@
   // CHART 1: TREN PORTOFOLIO
   // ==========================================
   async function fetchTrenPortofolio() {
+    const requestVersion = dashboardLoadVersion;
     const loadingChart = document.getElementById('loadingChartTren'); 
-    loadingChart.classList.remove('hidden');
+    if (loadingChart) loadingChart.classList.remove('hidden');
     let kantor = document.getElementById('filter_kantor').value;
     
     const payload = { 
@@ -245,15 +280,17 @@
     }
 
     try {
-      const res = await apiCall('./api/dashboard/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await dashboardApiCall('./api/dashboard/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const json = await res.json(); 
+      if (requestVersion !== dashboardLoadVersion) return;
       trenPortoDataGlobal = Array.isArray(json.data) ? json.data : (json.data?.tren_portofolio || []);
       renderChartPortofolio();
     } catch(e) {
+      if (requestVersion !== dashboardLoadVersion) return;
       trenPortoDataGlobal = [];
       renderChartPortofolio();
     } finally { 
-      loadingChart.classList.add('hidden'); 
+      if (requestVersion === dashboardLoadVersion && loadingChart) loadingChart.classList.add('hidden');
     }
   }
 
@@ -421,12 +458,20 @@
     });
   }
 
+  function scheduleDashboardCharts() {
+    clearTimeout(dashboardChartTimer);
+    dashboardChartTimer = setTimeout(() => {
+      Promise.all([fetchTrenPortofolio(), fetchTrenRunoff()]);
+    }, 80);
+  }
+
   // ==========================================
   // CHART 2: TREN RUN OFF
   // ==========================================
   async function fetchTrenRunoff(isRetry = false, targetDateOverride = null) {
+    const requestVersion = dashboardLoadVersion;
     const loadingChart = document.getElementById('loadingChartRunoff');
-    if (!isRetry) loadingChart.classList.remove('hidden');
+    if (!isRetry && loadingChart) loadingChart.classList.remove('hidden');
 
     let kantor = document.getElementById('filter_kantor').value;
     let currFilterDate = document.getElementById('filter_harian').value;
@@ -449,8 +494,9 @@
     }
 
     try {
-      let res = await apiCall('./api/dashboard/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      let res = await dashboardApiCall('./api/dashboard/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       let json = await res.json();
+      if (requestVersion !== dashboardLoadVersion) return;
       let dataToRender = Array.isArray(json.data) ? json.data : (json.data?.tren_runoff_realisasi || []);
       let isAllZero = dataToRender.length > 0 && dataToRender.every(d => d.total_realisasi === 0 && d.total_runoff === 0);
 
@@ -459,9 +505,10 @@
       }
       renderChartRunoff(dataToRender);
     } catch(e) { 
+      if (requestVersion !== dashboardLoadVersion) return;
       renderChartRunoff([]);
     } finally {
-      if (!isRetry) loadingChart.classList.add('hidden');
+      if (requestVersion === dashboardLoadVersion && !isRetry && loadingChart) loadingChart.classList.add('hidden');
     }
   }
 
@@ -608,6 +655,7 @@
       hitung_berdasarkan: getDashboardNominalMode()
     };
     if (options.periode) payload.periode = options.periode;
+    if (options.year_end_date) payload.year_end_date = options.year_end_date;
     
     if(kantor !== '000') { 
         if(['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'].includes(kantor)) payload.korwil = kantor; 
@@ -615,50 +663,235 @@
     }
 
     try {
-      const res = await apiCall('./api/dashboard/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const res = await dashboardApiCall('./api/dashboard/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       const json = await res.json();
+      if (!res.ok || Number(json.status) !== 200) return null;
       return json.data || null;
     } catch(e) { return null; }
   }
 
+  async function fetchLabaSebelumPajak() {
+    const kantor = document.getElementById('filter_kantor').value;
+    const payload = {
+      type: 'lap_laba_rugi_actual',
+      harian_date: document.getElementById('filter_harian').value,
+      kode_kantor: '000',
+      korwil: ''
+    };
+    const korwil = {
+      SEMARANG: 'SEMARANG',
+      SOLO: 'SOLO',
+      BANYUMAS: 'BANYUMAS',
+      PEKALONGAN: 'PEKALONGAN',
+      KW_SEMARANG: 'SEMARANG',
+      KW_SOLO: 'SOLO',
+      KW_BANYUMAS: 'BANYUMAS',
+      KW_PEKALONGAN: 'PEKALONGAN'
+    }[kantor];
+
+    if (korwil) {
+      payload.korwil = korwil;
+    } else {
+      payload.kode_kantor = kantor || '000';
+    }
+
+    try {
+      const res = await dashboardApiCall('./api/lapkeu/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (!res.ok || Number(json.status) !== 200) return null;
+      return json.data || null;
+    } catch(e) {
+      return null;
+    }
+  }
+
+  async function fetchDashboardAccHistoryKpi() {
+    const kantor = document.getElementById('filter_kantor').value;
+    const payload = {
+      type: 'dashboard_acc_history_kpi',
+      harian_date: document.getElementById('filter_harian').value,
+      closing_date: document.getElementById('filter_closing').value,
+      year_end_date: KPI_YEAR_END_DATE,
+      kode_kantor: '000'
+    };
+    const korwil = {
+      SEMARANG: 'SEMARANG',
+      SOLO: 'SOLO',
+      BANYUMAS: 'BANYUMAS',
+      PEKALONGAN: 'PEKALONGAN',
+      KW_SEMARANG: 'SEMARANG',
+      KW_SOLO: 'SOLO',
+      KW_BANYUMAS: 'BANYUMAS',
+      KW_PEKALONGAN: 'PEKALONGAN'
+    }[kantor];
+
+    if (korwil) {
+      payload.korwil = korwil;
+    } else {
+      payload.kode_kantor = kantor || '000';
+    }
+
+    try {
+      const res = await dashboardApiCall('./api/lapkeu/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (!res.ok || Number(json.status) !== 200) return null;
+      return json.data || null;
+    } catch(e) {
+      return null;
+    }
+  }
+
+  function setDashboardKpiLoading() {
+    const spinner = '<span class="kpi-loading-spinner" role="status" aria-label="Memuat data"></span>';
+    ['kpi_os', 'kpi_saldobank', 'kpi_npl', 'kpi_rr', 'kpi_dpk', 'kpi_laba'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = spinner;
+    });
+    ['kpi_os_pill', 'kpi_saldobank_pill', 'kpi_npl_pill', 'kpi_rr_pill', 'kpi_dpk_pill', 'kpi_laba_pill'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = '';
+    });
+    ['kpi_dpk_date', 'kpi_laba_date'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = 'Actual -';
+    });
+  }
+
+  function setDashboardCompareLoading() {
+    const loading = `
+      <div class="flex h-full min-h-[120px] items-center justify-center gap-2 text-[10px] font-bold text-gray-400">
+        <span class="kpi-loading-spinner" role="status" aria-label="Memuat data"></span>
+        <span>Memuat data...</span>
+      </div>`;
+    ['box_runoff_realisasi', 'box_flow_recovery'].forEach(id => {
+      const box = document.getElementById(id);
+      if (box) box.innerHTML = loading;
+    });
+  }
+
   function fetchDashboardUtama() {
+    const loadVersion = ++dashboardLoadVersion;
+    if (dashboardRequestController) dashboardRequestController.abort();
+    dashboardRequestController = new AbortController();
     document.getElementById('loadingDash').classList.add('hidden'); 
     document.getElementById('contentDash').classList.remove('hidden');
+    setDashboardCompareLoading();
+    updateDashboardSimpananDate();
+    setDashboardKpiLoading();
 
     let kantorMode = document.getElementById('filter_kantor').value;
 
-    const pSaldoBank    = fetchWidgetData('saldo_bank');
+    const pSaldoBank    = fetchWidgetData('saldo_bank', false, { year_end_date: KPI_YEAR_END_DATE });
+    const pAccHistoryKpi = fetchDashboardAccHistoryKpi();
+    // Rumus lama Laba: endpoint lap_laba_rugi_actual, sekarang digantikan satu query acc_history.
+    // const pLaba = fetchLabaSebelumPajak();
     const pRealProduk   = fetchWidgetData('realisasi_by_produk');
-    const pTrenNpl      = fetchWidgetData('test tren npl');
-    const pRrCabang     = fetchWidgetData('test rr cabang');
+    const pRrCabang     = fetchWidgetData('test rr cabang', false, { year_end_date: KPI_YEAR_END_DATE });
     const pRunoffKorwil = fetchWidgetData('test runoff korwil');
     const pFlowKorwil   = fetchWidgetData('test flow recovery npl');
     const pTopReal      = fetchWidgetData('test top realisasi');
-    const pTopNpl       = fetchWidgetData('test top bottom npl');
     const pDeltaNpl     = fetchWidgetData('test delta npl');
-    const pDeposito     = fetchWidgetData('test perkembangan deposito', true);
-    const pTabungan     = fetchWidgetData('test perkembangan tabungan', true);
-    // Snapshot pembanding tetap memakai response endpoint yang sama.
-    const pYearEndTrend = fetchWidgetData('test tren npl', false, { periode: 'tahunan' });
-    const pYearEndRr = fetchWidgetData('test rr cabang', false, { closing_date: KPI_YEAR_END_DATE });
-    const pDepositoYearEnd = fetchWidgetData('test perkembangan deposito', false, { closing_date: KPI_YEAR_END_DATE });
-    const pTabunganYearEnd = fetchWidgetData('test perkembangan tabungan', false, { closing_date: KPI_YEAR_END_DATE });
+    const simpananDate  = document.getElementById('filter_harian').value;
+    const tabunganDate  = getDashboardTabunganDate();
+    const pDeposito     = fetchWidgetData('test perkembangan deposito', false, { harian_date: simpananDate });
+    const pTabungan     = fetchWidgetData('test perkembangan tabungan', false, { harian_date: tabunganDate });
+    // Rumus lama Simpanan: nominatif_deposito + nominatif_tabungan.
+    // const pDepositoYearEnd = fetchWidgetData('test perkembangan deposito', false, { closing_date: KPI_YEAR_END_DATE });
+    // const pTabunganYearEnd = fetchWidgetData('test perkembangan tabungan', false, { closing_date: KPI_YEAR_END_DATE });
+    // Rumus lama KPI Simpanan, dipertahankan sebagai referensi tetapi tidak dijalankan:
+    // const dpkCurr = (depG.saldo_curr || 0) + (tabG.saldo_curr || 0);
+    // const dpkPrev = (depG.saldo_prev || 0) + (tabG.saldo_prev || 0);
+    // const dpkYearEnd = (depYearG.saldo_prev || 0) + (tabYearG.saldo_prev || 0);
+    // Rumus lama Laba: const labaSebelumPajak = Number(totals.laba_kotor ?? (pendapatan - biaya));
 
-    const yearEndTrendPromise = pYearEndTrend.then(getTrendRows).then(rows => rows.find(row => row?.tanggal === KPI_YEAR_END_DATE) || null);
-    const yearEndRrPromise = pYearEndRr.then(raw => (raw?.repayment_rate || raw || {}).grand_total || null);
-
-    Promise.all([pSaldoBank, yearEndTrendPromise]).then(([sb, yearEndTrend]) => {
+    pSaldoBank.then(sb => {
+      if (loadVersion !== dashboardLoadVersion) return;
       if(!sb) return;
+      const comparisonLabel = getMonthComparisonLabel(sb.closing_date || getDashboardClosingDate());
+      const comparisonTitle = getMonthComparisonTitle(comparisonLabel);
       document.getElementById('kpi_saldobank').textContent = `Rp ${fmtB(sb.actual)}`;
       document.getElementById('kpi_saldobank_pill').innerHTML = `
         <div class="kpi-compare-row kpi-compare-row--month">
-            <div class="kpi-compare-badge kpi-compare-badge--month" title="Pembanding closing bulan sebelumnya">Monthly <span>Rp ${fmtB(sb.closing)}</span></div>
+            <div class="kpi-compare-badge kpi-compare-badge--month" title="${comparisonTitle}">${comparisonLabel} <span>Rp ${fmtB(sb.closing)}</span></div>
             <div class="whitespace-nowrap">${getDeltaHTML(sb.delta, false, false, true)}</div>
         </div>
-        ${renderKpiYearEndComparison(yearEndTrend?.total_kredit ?? yearEndTrend?.total_baki_debet, sb.actual, false, false)}`;
+        ${renderKpiYearEndComparison(sb.year_end, sb.actual, false, false)}`;
+
+      const nplActual = Number(sb.npl_actual || 0);
+      const nplClosing = Number(sb.npl_closing || 0);
+      const nplActualPct = Number(sb.npl_persen_actual || 0);
+      const nplClosingPct = Number(sb.npl_persen_closing || 0);
+      document.getElementById('kpi_npl').textContent = `Rp ${fmtB(nplActual)}`;
+      document.getElementById('kpi_npl_pill').innerHTML = `
+        <div class="kpi-compare-row kpi-compare-row--month">
+          <div class="kpi-compare-badge kpi-compare-badge--month" title="${comparisonTitle}">${comparisonLabel} <span>${pct(nplClosingPct)}</span></div>
+          <div class="whitespace-nowrap">${getDeltaHTML(nplActualPct - nplClosingPct, true, true, true)}</div>
+          <div class="kpi-status-badge kpi-status-badge--negative kpi-status-badge--right">Act <span>${nplActualPct.toFixed(2)}</span></div>
+        </div>
+        ${renderKpiYearEndComparison(sb.npl_persen_year_end, nplActualPct, true, true)}`;
+    });
+
+    pAccHistoryKpi.then(financialRaw => {
+      if (loadVersion !== dashboardLoadVersion) return;
+      const dpkCard = document.getElementById('kpi_dpk');
+      const dpkDate = document.getElementById('kpi_dpk_date');
+      const dpkPill = document.getElementById('kpi_dpk_pill');
+      const labaCard = document.getElementById('kpi_laba');
+      const labaDate = document.getElementById('kpi_laba_date');
+      const labaPill = document.getElementById('kpi_laba_pill');
+      const actual = financialRaw?.snapshots?.actual;
+      const closing = financialRaw?.snapshots?.closing;
+      const yearEnd = financialRaw?.snapshots?.year_end;
+
+      if (!dpkCard || !dpkDate || !dpkPill || !labaCard || !labaDate || !labaPill) return;
+      if (!actual?.tanggal) {
+        dpkCard.textContent = 'Tidak tersedia';
+        dpkDate.textContent = 'Actual -';
+        dpkPill.innerHTML = '<span class="kpi-status-badge kpi-status-badge--negative">Data simpanan gagal dimuat</span>';
+        labaCard.textContent = 'Tidak tersedia';
+        labaDate.textContent = 'Actual -';
+        labaPill.innerHTML = '<span class="kpi-status-badge kpi-status-badge--negative">Data laba gagal dimuat</span>';
+        return;
+      }
+
+      const simpanan = Number(actual.simpanan || 0);
+      const simpananClosing = closing?.tanggal ? Number(closing.simpanan || 0) : null;
+      const simpananYearEnd = yearEnd?.tanggal ? Number(yearEnd.simpanan || 0) : null;
+      const comparisonLabel = getMonthComparisonLabel(getDashboardClosingDate());
+      const comparisonTitle = getMonthComparisonTitle(comparisonLabel);
+      const labaSebelumPajak = Number(actual.laba_kotor || 0);
+      const labaClosing = closing?.tanggal ? Number(closing.laba_kotor || 0) : null;
+      const labaYearEnd = yearEnd?.tanggal ? Number(yearEnd.laba_kotor || 0) : null;
+
+      dpkCard.textContent = `Rp ${fmtB(simpanan)}`;
+      dpkDate.textContent = `Actual ${actual.tanggal}`;
+      dpkPill.innerHTML = `
+        <div class="kpi-compare-row kpi-compare-row--month">
+          <div class="kpi-compare-badge kpi-compare-badge--month" title="Saldo acc_history kode 204, ${comparisonTitle.toLowerCase()}">${comparisonLabel} <span>${simpananClosing === null ? '-' : `Rp ${fmtB(simpananClosing)}`}</span></div>
+          <div class="whitespace-nowrap">${simpananClosing === null ? '<span class="text-gray-400 font-bold text-[9px] md:text-[11px]">Pembanding belum tersedia</span>' : getDeltaHTML(simpanan - simpananClosing, false, false, true)}</div>
+        </div>
+        ${renderKpiYearEndComparison(simpananYearEnd, simpanan, false, false)}`;
+
+      labaCard.textContent = `Rp ${fmtB(labaSebelumPajak)}`;
+      labaDate.textContent = `Actual ${actual.tanggal}`;
+      labaPill.innerHTML = `
+        <div class="kpi-compare-row kpi-compare-row--month">
+          <div class="kpi-compare-badge kpi-compare-badge--month" title="${comparisonTitle}">${comparisonLabel} <span>${labaClosing === null ? '-' : `Rp ${fmtB(labaClosing)}`}</span></div>
+          <div class="whitespace-nowrap">${labaClosing === null ? '<span class="text-gray-400 font-bold text-[9px] md:text-[11px]">Pembanding belum tersedia</span>' : getDeltaHTML(labaSebelumPajak - labaClosing, false, false, true)}</div>
+        </div>
+        ${renderKpiYearEndComparison(labaYearEnd, labaSebelumPajak, false, false)}`;
     });
 
     pRealProduk.then(rpRaw => {
+      if (loadVersion !== dashboardLoadVersion) return;
       if(!rpRaw) return;
       let rp = rpRaw?.realisasi_by_produk || rpRaw || {};
       let prods = (rp.detail_produk || []).slice(0, 5);
@@ -667,47 +900,43 @@
       renderUniversalList('box_realisasi_produk', prods, 'nama_produk', 'total_realisasi', 'noa_realisasi', 'bg-indigo-400', false, 'NOA');
     });
 
-    Promise.all([pTrenNpl, pRrCabang, yearEndTrendPromise, yearEndRrPromise]).then(([tNplRaw, rrRaw, yearEndTrend, yearEndRr]) => {
-      let tNpl = getTrendRows(tNplRaw);
+    pRrCabang.then(rrRaw => {
+      if (loadVersion !== dashboardLoadVersion) return;
       let rrData = rrRaw?.repayment_rate || rrRaw || {};
-      
-      let osPrev = 0;
-      if(tNpl && tNpl.length > 0) {
-        const last = tNpl[tNpl.length - 1]; const prev = tNpl.length > 1 ? tNpl[tNpl.length - 2] : last; 
-        osPrev = prev.total_baki_debet || prev.osc_total || 0; 
-        
-        document.getElementById('kpi_npl').textContent = `Rp ${fmtB(last.npl_amt || last.osc_npl)}`;
-        document.getElementById('kpi_npl_pill').innerHTML = `
-            <div class="kpi-compare-row kpi-compare-row--month">
-                <div class="kpi-compare-badge kpi-compare-badge--month" title="Pembanding closing bulan sebelumnya">Monthly <span>${pct(prev.npl_persen)}</span></div>
-                <div class="whitespace-nowrap">${getDeltaHTML(last.npl_persen - prev.npl_persen, true, true, true)}</div>
-                <div class="kpi-status-badge kpi-status-badge--negative kpi-status-badge--right">Act <span>${pct(last.npl_persen)}</span></div>
-            </div>
-            ${renderKpiYearEndComparison(yearEndTrend?.npl_persen, last.npl_persen, true, true)}`;
-      }
 
       if(rrData && rrData.grand_total) {
-        const rrG = rrData.grand_total; let osCurr = rrG.os_total || 0;
+        const rrG = rrData.grand_total;
+        const comparisonLabel = getMonthComparisonLabel(getDashboardClosingDate());
+        const comparisonTitle = getMonthComparisonTitle(comparisonLabel);
+        let osCurr = rrG.os_total || 0;
+        let osPrev = rrG.os_total_prev || 0;
         
         document.getElementById('kpi_os').textContent = `Rp ${fmtB(osCurr)}`;
         document.getElementById('kpi_os_pill').innerHTML = `
           <div class="flex items-center gap-1.5 md:gap-2">
-              <div class="kpi-compare-badge kpi-compare-badge--month" title="Pembanding closing bulan sebelumnya">Monthly <span>Rp ${fmtB(osPrev)}</span></div>
+              <div class="kpi-compare-badge kpi-compare-badge--month" title="${comparisonTitle}">${comparisonLabel} <span>Rp ${fmtB(osPrev)}</span></div>
               <div class="whitespace-nowrap">${getDeltaHTML(osCurr - osPrev, false, false, true)}</div>
-          </div>`;
+          </div>
+          ${renderKpiYearEndComparison(rrG.os_total_year_end, osCurr, false, false)}`;
 
         document.getElementById('kpi_rr').textContent = `Rp ${fmtB(rrG.os_lancar)}`;
         document.getElementById('kpi_rr_pill').innerHTML = `
           <div class="kpi-compare-row kpi-compare-row--month">
-              <div class="kpi-compare-badge kpi-compare-badge--month" title="Pembanding closing bulan sebelumnya">Monthly <span>${pct(rrG.rr_persen_prev)}</span></div>
+              <div class="kpi-compare-badge kpi-compare-badge--month" title="${comparisonTitle}">${comparisonLabel} <span>${pct(rrG.rr_persen_prev)}</span></div>
               <div class="whitespace-nowrap">${getDeltaHTML(rrG.delta_rr, true, false, true)}</div>
-              <div class="kpi-status-badge kpi-status-badge--positive kpi-status-badge--right">Act <span>${pct(rrG.rr_persen_curr)}</span></div>
+              <div class="kpi-status-badge kpi-status-badge--positive kpi-status-badge--right">Act <span>${Number(rrG.rr_persen_curr || 0).toFixed(2)}</span></div>
           </div>
-          ${renderKpiYearEndComparison(yearEndRr?.rr_persen_prev, rrG.rr_persen_curr, true, false)}`;
+          ${renderKpiYearEndComparison(rrG.rr_persen_year_end, rrG.rr_persen_curr, true, false)}`;
+      } else {
+        document.getElementById('kpi_os').textContent = 'Tidak tersedia';
+        document.getElementById('kpi_rr').textContent = 'Tidak tersedia';
+        document.getElementById('kpi_os_pill').innerHTML = '<span class="kpi-status-badge kpi-status-badge--negative">Data OS gagal dimuat</span>';
+        document.getElementById('kpi_rr_pill').innerHTML = '<span class="kpi-status-badge kpi-status-badge--negative">Data RR gagal dimuat</span>';
       }
     });
 
     Promise.all([pRunoffKorwil, pFlowKorwil]).then(([roRaw, flowRaw]) => {
+      if (loadVersion !== dashboardLoadVersion) return;
       let ro = roRaw?.runoff_vs_realisasi || roRaw || null;
       let flow = flowRaw?.flow_vs_recovery_npl || flowRaw || null;
       let isSpecificBranch = (kantorMode !== '000' && !['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'].includes(kantorMode));
@@ -728,7 +957,7 @@
             runoffData.unshift(totalData); // Pindah total ke paling atas
         }
         renderKorwilCompare('box_runoff_realisasi', runoffData, 'realisasi', 'total_runoff', 'bg-green-400', 'bg-red-400');
-      }
+      } else renderKorwilCompare('box_runoff_realisasi', [], 'realisasi', 'total_runoff', 'bg-green-400', 'bg-red-400');
 
       if(flow && flow.detail_korwil) {
         let flowData = [...flow.detail_korwil];
@@ -738,14 +967,15 @@
              flowData.unshift(totalData); // Pindah total ke paling atas
         }
         renderKorwilCompare('box_flow_recovery', flowData, 'flow_npl', 'total_recovery', 'bg-red-400', 'bg-green-400');
-      }
+      } else renderKorwilCompare('box_flow_recovery', [], 'flow_npl', 'total_recovery', 'bg-red-400', 'bg-green-400');
     });
 
     // 🔥 FIX: VARIABEL DALAM PROMISE.ALL HARUS DIDEKLARASIKAN!
-    Promise.all([pTopReal, pTopNpl, pDeltaNpl, pRrCabang]).then(([realRaw, nplRaw, deltaRaw, rrRaw]) => {
+    Promise.all([pTopReal, pDeltaNpl, pRrCabang]).then(([realRaw, deltaRaw, rrRaw]) => {
+      if (loadVersion !== dashboardLoadVersion) return;
       let real = realRaw?.top_bottom_realisasi || realRaw || {};
-      let npl = nplRaw?.top_bottom_npl || nplRaw || {};
       let delta = deltaRaw?.kenaikan_penurunan_npl || deltaRaw || {};
+      let npl = deltaRaw?.top_bottom_npl || { top: deltaRaw?.top_npl || [], bottom: deltaRaw?.bottom_npl || [] };
       let rr = rrRaw?.repayment_rate || rrRaw || {};
 
       if(real.top_cabang) {
@@ -793,25 +1023,12 @@
       document.getElementById('dynamic_insights').innerHTML = html;
     });
 
-    Promise.all([pDeposito, pTabungan, pDepositoYearEnd, pTabunganYearEnd]).then(([depRaw, tabRaw, depYearRaw, tabYearRaw]) => {
+    Promise.all([pDeposito, pTabungan]).then(([depRaw, tabRaw]) => {
+      if (loadVersion !== dashboardLoadVersion) return;
       let dep = depRaw?.perkembangan_deposito || depRaw || {};
       let tab = tabRaw?.perkembangan_tabungan || tabRaw || {};
-      let depYear = depYearRaw?.perkembangan_deposito || depYearRaw || {};
-      let tabYear = tabYearRaw?.perkembangan_tabungan || tabYearRaw || {};
 
       const depG = dep.grand_total || {}; const tabG = tab.grand_total || {};
-      const dpkCurr = (depG.saldo_curr||0) + (tabG.saldo_curr||0); 
-      const dpkPrev = (depG.saldo_prev||0) + (tabG.saldo_prev||0);
-      const depYearG = depYear.grand_total || {}; const tabYearG = tabYear.grand_total || {};
-      const dpkYearEnd = (depYearG.saldo_prev||0) + (tabYearG.saldo_prev||0);
-      
-      document.getElementById('kpi_dpk').textContent = `Rp ${fmtB(dpkCurr)}`;
-      document.getElementById('kpi_dpk_pill').innerHTML = `
-        <div class="kpi-compare-row kpi-compare-row--month">
-            <div class="kpi-compare-badge kpi-compare-badge--month" title="Pembanding closing bulan sebelumnya">Monthly <span>Rp ${fmtB(dpkPrev)}</span></div>
-            <div class="whitespace-nowrap">${getDeltaHTML(dpkCurr - dpkPrev, false, false, true)}</div>
-        </div>
-        ${renderKpiYearEndComparison(dpkYearEnd, dpkCurr, false, false)}`;
 
       if(Object.keys(dep).length > 0) {
         renderUniversalList('list_dep_saldo_top', dep.top_saldo, 'nama_cabang', 'saldo_curr', 'noa_curr', 'bg-yellow-500', false, 'Rek');
@@ -849,7 +1066,10 @@
     box.style.overflowX = 'hidden';
     box.style.overscrollBehavior = 'contain';
 
-    if(!dataArray || !dataArray.length) return;
+    if(!dataArray || !dataArray.length) {
+      box.innerHTML = '<p class="text-[10px] md:text-[11px] text-gray-400 italic py-2 text-center">Data tidak tersedia.</p>';
+      return;
+    }
     let maxVal = Math.max(...dataArray.flatMap(o => [Number(o[keyA]), Number(o[keyB])])); if(maxVal === 0) maxVal = 1;
     dataArray.forEach(k => {
       let vA = Number(k[keyA]); let vB = Number(k[keyB]); let pctA = (vA / maxVal) * 100; let pctB = (vB / maxVal) * 100;

@@ -2603,12 +2603,51 @@ class RbbController
                 foreach (['target_rbb', 'realisasi_actual', 'selisih', 'pencapaian_persen'] as $key) {
                     $row[$key] = (float)($row[$key] ?? 0);
                 }
-                $summary['target_rbb'] += $row['target_rbb'];
-                $summary['realisasi_actual'] += $row['realisasi_actual'];
-                $summary['selisih'] += $row['selisih'];
-                $summary['jumlah_pos']++;
             }
             unset($row);
+
+            if ($jenis === 'laba_rugi') {
+                // Ringkasan laba harus mengambil satu baris laba kotor saja.
+                // Menjumlahkan seluruh baris akan menggandakan parent, detail,
+                // pendapatan, beban, dan baris formula 259/260/261 sekaligus.
+                $profitRow = null;
+                foreach ($rows as $row) {
+                    if ((string)($row['kode_monbis'] ?? '') === '261') {
+                        $profitRow = $row;
+                        break;
+                    }
+                }
+
+                if ($profitRow !== null) {
+                    $summary['target_rbb'] = (float)$profitRow['target_rbb'];
+                    $summary['realisasi_actual'] = (float)$profitRow['realisasi_actual'];
+                    $summary['selisih'] = (float)$profitRow['selisih'];
+                    $summary['jumlah_pos'] = 1;
+                } else {
+                    // Fallback saat baris formula 261 tersaring cross-check:
+                    // laba tetap dihitung dari total pendapatan dikurangi total beban.
+                    $incomeRow = null;
+                    $expenseRow = null;
+                    foreach ($rows as $row) {
+                        $accountCode = (string)($row['kode_perkiraan'] ?? '');
+                        if ($accountCode === '4') $incomeRow = $row;
+                        if ($accountCode === '5') $expenseRow = $row;
+                    }
+                    if ($incomeRow !== null && $expenseRow !== null) {
+                        $summary['target_rbb'] = (float)$incomeRow['target_rbb'] - (float)$expenseRow['target_rbb'];
+                        $summary['realisasi_actual'] = (float)$incomeRow['realisasi_actual'] - (float)$expenseRow['realisasi_actual'];
+                        $summary['selisih'] = $summary['realisasi_actual'] - $summary['target_rbb'];
+                        $summary['jumlah_pos'] = 1;
+                    }
+                }
+            } else {
+                foreach ($rows as $row) {
+                    $summary['target_rbb'] += $row['target_rbb'];
+                    $summary['realisasi_actual'] += $row['realisasi_actual'];
+                    $summary['selisih'] += $row['selisih'];
+                    $summary['jumlah_pos']++;
+                }
+            }
 
             $summary['pencapaian_persen'] = $summary['target_rbb'] == 0.0
                 ? 0.0
@@ -2627,7 +2666,10 @@ class RbbController
                     'include_missing' => $includeMissing,
                     'scope' => $scopeLabel,
                     'kode_kantor' => $scope['kode_kantor'],
-                    'korwil' => $scope['korwil']
+                    'korwil' => $scope['korwil'],
+                    'laba_formula' => $jenis === 'laba_rugi'
+                        ? 'Laba kotor = akun 4 (pendapatan) - akun 5 (beban) dari acc_history'
+                        : null,
                 ],
                 'summary' => $summary,
                 'category_summary' => $categorySummary,
@@ -2918,16 +2960,18 @@ class RbbController
         };
 
         if ($jenis === 'laba_rugi') {
-            $pendapatan = $this->sumLapkeuRbbRows($rows, function ($row) {
+            // Gunakan total induk akun 4 dan 5 agar sama dengan menu laporan
+            // laba rugi/rekap lapkeu yang membaca acc_history secara langsung.
+            $pendapatan = $byPerk['4'] ?? $this->sumLapkeuRbbRows($rows, function ($row) {
                 return in_array((string)($row['kode_perkiraan'] ?? ''), ['401', '402'], true);
             });
-            $beban = $this->sumLapkeuRbbRows($rows, function ($row) {
+            $beban = $byPerk['5'] ?? $this->sumLapkeuRbbRows($rows, function ($row) {
                 return in_array((string)($row['kode_perkiraan'] ?? ''), ['501', '502'], true);
             });
             return [
                 $make('pendapatan', 'Pendapatan', $pendapatan, $this->countLapkeuRbbRows($rows, 'PENDAPATAN'), 'green', 'Total pendapatan operasional dan non operasional'),
                 $make('biaya', 'Biaya', $beban, $this->countLapkeuRbbRows($rows, 'BEBAN'), 'orange', 'Total beban operasional dan non operasional'),
-                $make('laba', 'Laba Rugi Berjalan', $byCode['261'] ?? $byPerk['kode monbis 259 + 260'] ?? null, 1, 'blue', 'Surplus berjalan sebelum pajak')
+                $make('laba', 'Laba Kotor', $byCode['261'] ?? $byPerk['kode monbis 259 + 260'] ?? null, 1, 'blue', 'Pendapatan akun 4 dikurangi beban akun 5 dari acc_history')
             ];
         }
 
@@ -3212,10 +3256,14 @@ class RbbController
                     COALESCE(SUM(CASE WHEN kode_perkiraan = '501' THEN realisasi_actual ELSE 0 END),0) AS beban_operasional,
                     COALESCE(SUM(CASE WHEN kode_perkiraan = '402' THEN realisasi_actual ELSE 0 END),0) AS pendapatan_non_operasional,
                     COALESCE(SUM(CASE WHEN kode_perkiraan = '502' THEN realisasi_actual ELSE 0 END),0) AS beban_non_operasional,
+                    COALESCE(SUM(CASE WHEN kode_perkiraan = '4' THEN realisasi_actual ELSE 0 END),0) AS pendapatan_total,
+                    COALESCE(SUM(CASE WHEN kode_perkiraan = '5' THEN realisasi_actual ELSE 0 END),0) AS beban_total,
                     MAX(CASE WHEN kode_perkiraan = '401' AND jumlah_data > 0 THEN 1 ELSE 0 END) AS akun_401_ada,
                     MAX(CASE WHEN kode_perkiraan = '501' AND jumlah_data > 0 THEN 1 ELSE 0 END) AS akun_501_ada,
                     MAX(CASE WHEN kode_perkiraan = '402' AND jumlah_data > 0 THEN 1 ELSE 0 END) AS akun_402_ada,
-                    MAX(CASE WHEN kode_perkiraan = '502' AND jumlah_data > 0 THEN 1 ELSE 0 END) AS akun_502_ada
+                    MAX(CASE WHEN kode_perkiraan = '502' AND jumlah_data > 0 THEN 1 ELSE 0 END) AS akun_502_ada,
+                    MAX(CASE WHEN kode_perkiraan = '4' AND jumlah_data > 0 THEN 1 ELSE 0 END) AS akun_4_ada,
+                    MAX(CASE WHEN kode_perkiraan = '5' AND jumlah_data > 0 THEN 1 ELSE 0 END) AS akun_5_ada
                 FROM realisasi_per_akun
             ),
             formula_laba_rugi AS (
@@ -3228,8 +3276,8 @@ class RbbController
                 FROM sumber_formula sf
                 UNION ALL
                 SELECT '261' AS kode_monbis,
-                    (sf.pendapatan_operasional - sf.beban_operasional) + (sf.pendapatan_non_operasional - sf.beban_non_operasional) AS realisasi_actual,
-                    CASE WHEN sf.akun_401_ada = 1 AND sf.akun_501_ada = 1 AND sf.akun_402_ada = 1 AND sf.akun_502_ada = 1 THEN 'OK' ELSE 'SUMBER FORMULA BELUM LENGKAP' END AS status_formula
+                    sf.pendapatan_total - sf.beban_total AS realisasi_actual,
+                    CASE WHEN sf.akun_4_ada = 1 AND sf.akun_5_ada = 1 THEN 'OK' ELSE 'SUMBER FORMULA BELUM LENGKAP' END AS status_formula
                 FROM sumber_formula sf
             ),
             hasil AS (

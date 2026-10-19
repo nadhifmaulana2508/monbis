@@ -494,10 +494,18 @@ class RbbKinerjaReportController
     {
         $columns = [];
         $nullChecks = [];
-        foreach ($scope['target_codes'] as $code) {
-            $column = 'r.' . chr(96) . str_pad((string)$code, 3, '0', STR_PAD_LEFT) . chr(96);
+        if ($scope['type'] === 'consolidated') {
+            // RBB konsolidasi sudah disimpan pada kolom 000. Jangan menjumlahkan
+            // kolom cabang karena target tersebut bisa berbeda dari target pusat.
+            $column = 'r.`000`';
             $nullChecks[] = $column . ' IS NULL';
             $columns[] = 'COALESCE(' . $column . ',0)';
+        } else {
+            foreach ($scope['target_codes'] as $code) {
+                $column = 'r.' . chr(96) . str_pad((string)$code, 3, '0', STR_PAD_LEFT) . chr(96);
+                $nullChecks[] = $column . ' IS NULL';
+                $columns[] = 'COALESCE(' . $column . ',0)';
+            }
         }
         $targetExpression = implode(' + ', $columns);
         $targetHasValue = 'NOT (' . implode(' AND ', $nullChecks) . ')';

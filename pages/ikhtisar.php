@@ -17,19 +17,9 @@
       </div>
     </div>
 
-    <form id="ikhtisarFilter" class="ikhtisar-filter" onsubmit="event.preventDefault(); fetchIkhtisar();">
-      <label>
-        <span>Actual Harian</span>
-        <input id="ikhtisarDate" type="date" onclick="this.showPicker && this.showPicker()">
-      </label>
-      <label class="ikhtisar-office-field">
-        <span>Area / Cabang</span>
-        <select id="ikhtisarOffice"><option value="000">Konsolidasi</option></select>
-      </label>
-      <button class="ikhtisar-export" type="button" onclick="exportIkhtisarExcel()" title="Export Ikhtisar ke Excel" aria-label="Export Ikhtisar ke Excel">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-      </button>
-    </form>
+    <button class="ikhtisar-export" type="button" onclick="exportIkhtisarExcel()" title="Export Ikhtisar ke Excel" aria-label="Export Ikhtisar ke Excel">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+    </button>
   </section>
 
   <section class="ikhtisar-workspace">
@@ -138,8 +128,24 @@
   .ikhtisar-heading{display:flex;align-items:center;gap:12px;min-width:0}.ikhtisar-icon{display:grid;place-items:center;width:42px;height:42px;flex:0 0 auto;border-radius:11px;background:#2563eb;color:#fff;box-shadow:0 7px 15px rgba(37,99,235,.18)}.ikhtisar-icon svg{width:22px;height:22px}.ikhtisar-kicker{margin-bottom:2px;color:#2e7f9c;font-size:9px;font-weight:950;letter-spacing:.13em}.ikhtisar-heading h1{margin:0;color:#102f4b;font-size:21px;line-height:1.15;font-weight:950;letter-spacing:-.03em}.ikhtisar-heading p{margin:3px 0 0;color:#708397;font-size:10px;font-weight:650}.ikhtisar-filter{display:flex;align-items:end;gap:8px;flex:0 0 auto}.ikhtisar-filter label{display:flex;flex-direction:column;gap:4px;min-width:145px}.ikhtisar-filter label span{padding-left:2px;color:#49637a;font-size:8px;font-weight:950;letter-spacing:.07em;text-transform:uppercase}.ikhtisar-filter input,.ikhtisar-filter select{width:100%;height:36px;padding:0 10px;border:1px solid #c7d8e6;border-radius:9px;outline:0;background:#fff;color:#153956;font-size:10px;font-weight:850}.ikhtisar-filter input:focus,.ikhtisar-filter select:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.1)}.ikhtisar-export{display:grid;place-items:center;width:40px;height:36px;border:0;border-radius:9px;background:#079669;color:#fff;cursor:pointer;box-shadow:0 5px 12px rgba(5,150,105,.18)}.ikhtisar-export:hover{background:#047857;transform:translateY(-1px)}.ikhtisar-export svg{width:18px;height:18px}
   .ikhtisar-workspace{position:relative;margin-top:12px;overflow:hidden;border:1px solid #d7e2ec;border-radius:16px;background:#fff;box-shadow:0 4px 16px rgba(15,60,91,.05)}.ikhtisar-toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 16px;border-bottom:1px solid #dce7ee;background:#fbfdfe}.ikhtisar-toolbar-title{color:#123c5b;font-size:13px;font-weight:950}.ikhtisar-toolbar-note{margin-top:2px;color:#7790a1;font-size:9px}.ikhtisar-toolbar-note b{color:#397d93}.ikhtisar-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end}.ikhtisar-meta>span{display:inline-flex;align-items:center;min-height:23px;padding:3px 8px;border:1px solid #dbe5ec;border-radius:999px;color:#587287;font-size:8px;font-weight:900;white-space:nowrap}.ikhtisar-status{background:#ecfdf5;border-color:#b7ead7!important;color:#047857!important}.ikhtisar-status.error{background:#fff1f2;border-color:#fecdd3!important;color:#be123c!important}.ikhtisar-loading{position:absolute;inset:54px 0 0;z-index:5;display:flex;align-items:center;justify-content:center;gap:9px;background:rgba(255,255,255,.62);backdrop-filter:blur(1px);pointer-events:none;color:#236681;font-size:10px;font-weight:900}.ikhtisar-loading.hidden{display:none}.ikhtisar-spinner{width:22px;height:22px;border:3px solid #c8e5eb;border-top-color:#1d7891;border-radius:50%;animation:ikSpin .75s linear infinite}@keyframes ikSpin{to{transform:rotate(360deg)}}
   .ikhtisar-table-shell{width:100%;overflow:auto}.ikhtisar-table-shell::-webkit-scrollbar{height:10px}.ikhtisar-table-shell::-webkit-scrollbar-thumb{background:#b7cbd6;border-radius:999px}.ikhtisar-table-shell::-webkit-scrollbar-track{background:#f4f8fa}.ikhtisar-formula-row{display:none!important}#ikhtisarTable{width:100%;min-width:900px;border-collapse:separate;border-spacing:0;table-layout:fixed;color:#17344e}#ikhtisarTable .ikhtisar-col-name{width:31%}#ikhtisarTable .ikhtisar-col-money{width:15%}#ikhtisarTable .ikhtisar-col-percent{width:12%}#ikhtisarTable th,#ikhtisarTable td{border-right:1px solid #d3dfe6;border-bottom:1px solid #d3dfe6}#ikhtisarTable thead th{height:27px;padding:4px 8px;background:#3099ae;color:#fff;font-size:10px;line-height:1.1;font-weight:950;text-align:center;white-space:nowrap}#ikhtisarTable thead tr:nth-child(2) th{background:#dff2f4;color:#1c6177}#ikhtisarTable thead tr:nth-child(3) th{height:21px;padding:3px;background:#e7e8e9;color:#314b5e;font-size:9px;font-weight:800}#ikhtisarTable thead th:first-child{border-left:1px solid #d3dfe6}#ikhtisarTable tbody td{height:27px;padding:4px 10px;background:#fff;font-size:11px;line-height:1.05;vertical-align:middle}#ikhtisarTable tbody tr:nth-child(even) td{background:#fbfcfd}#ikhtisarTable tbody td:first-child{border-left:1px solid #d3dfe6}#ikhtisarTable tbody tr:hover td{background:#f1f8fa}.ikhtisar-name{font-weight:750;text-align:left}.ikhtisar-name.main{font-weight:950;color:#132b42}.ikhtisar-name.ratio{padding-left:24px;font-weight:650}.ikhtisar-name.subheading{font-weight:950;color:#1a2e40}.ikhtisar-code{display:inline-block;min-width:24px;margin-right:4px;color:#628096;font-size:9px;font-weight:900}.ikhtisar-value{text-align:right;font-variant-numeric:tabular-nums;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px!important;font-weight:750}.ikhtisar-value.actual{color:#173f5a;font-weight:900}.ikhtisar-value.ratio{color:#1c6177}.ikhtisar-value.empty{color:#9cafbb}.ikhtisar-percent{text-align:right;font-variant-numeric:tabular-nums;font-family:"JetBrains Mono",ui-monospace,monospace;font-size:10px!important}.ikhtisar-total td{background:#eef8fa!important;font-weight:950;border-top:1px solid #acd7df}.ikhtisar-section td{background:#f7fafb!important;color:#17344e}.ikhtisar-section .ikhtisar-name{font-weight:950}.ikhtisar-footnote{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;color:#7890a0;font-size:9px}.ikhtisar-footnote b{color:#42657b}.ikhtisar-footnote span:last-child{white-space:nowrap}
-  @media(max-width:900px){#ikhtisarPage{padding:10px}.ikhtisar-header{align-items:flex-start;flex-direction:column}.ikhtisar-filter{width:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 40px}.ikhtisar-filter label{min-width:0}.ikhtisar-toolbar{align-items:flex-start;flex-direction:column}.ikhtisar-meta{justify-content:flex-start}.ikhtisar-loading{inset:99px 0 0}}
-  @media(max-width:560px){.ikhtisar-heading h1{font-size:19px}.ikhtisar-heading p{max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ikhtisar-filter{grid-template-columns:1fr 40px}.ikhtisar-office-field{grid-column:1/-1;grid-row:1}.ikhtisar-filter label:first-child{grid-column:1}.ikhtisar-export{grid-column:2;grid-row:2}.ikhtisar-toolbar{padding:11px}.ikhtisar-footnote{align-items:flex-start;flex-direction:column;gap:4px}}
+  #ikhtisarPage{height:calc(100dvh - 64px);min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  #ikhtisarPage .ikhtisar-header{flex:0 0 auto}
+  #ikhtisarPage .ikhtisar-workspace{min-height:0;flex:1 1 auto;display:flex;flex-direction:column}
+  #ikhtisarPage .ikhtisar-tab-panel:not([hidden]){min-height:0;flex:1 1 auto;display:flex;flex-direction:column}
+  #ikhtisarPage .ikhtisar-table-shell{min-height:0;flex:1 1 auto;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#94aebb #f4f8fa}
+  #ikhtisarPage .ikhtisar-table-shell::-webkit-scrollbar{width:6px;height:6px}
+  #ikhtisarPage .ikhtisar-table-shell::-webkit-scrollbar-thumb{background:#94aebb;border-radius:999px}
+  #ikhtisarTable thead th,#ikhtisarDetailTable thead th{position:sticky;top:0;z-index:20}
+  #ikhtisarTable thead tr:nth-child(2) th,#ikhtisarDetailTable thead tr:nth-child(2) th{top:27px;z-index:19}
+  #ikhtisarTable thead th:first-child,#ikhtisarDetailTable thead th:first-child{left:0;z-index:40;box-shadow:2px 0 0 rgba(148,174,187,.55)}
+  #ikhtisarTable tbody td:first-child,#ikhtisarDetailTable tbody td:first-child{position:sticky;left:0;z-index:10;box-shadow:2px 0 0 rgba(226,232,240,.9)}
+  #ikhtisarTable tbody tr:nth-child(even) td:first-child,#ikhtisarDetailTable tbody tr:nth-child(even) td:first-child{background:#fbfcfd}
+  #ikhtisarTable tbody tr:hover td:first-child,#ikhtisarDetailTable tbody tr:hover td:first-child{background:#f1f8fa}
+  #ikhtisarPage .ikhtisar-footnote{flex:0 0 auto}
+  @media(max-width:900px){#ikhtisarPage{padding:10px}.ikhtisar-header{padding:11px 12px}.ikhtisar-toolbar{align-items:flex-start;flex-direction:column}.ikhtisar-meta{justify-content:flex-start}.ikhtisar-loading{inset:99px 0 0}#ikhtisarTable,#ikhtisarDetailTable{min-width:820px}#ikhtisarTable .ikhtisar-col-name,#ikhtisarDetailTable .ikhtisar-col-name{width:190px}#ikhtisarTable .ikhtisar-col-money,#ikhtisarDetailTable .ikhtisar-col-money{width:145px}#ikhtisarTable .ikhtisar-col-percent,#ikhtisarDetailTable .ikhtisar-col-percent{width:90px}}
+  @media(max-width:767px){#ikhtisarPage{height:calc(100dvh - 60px);padding:7px}.ikhtisar-header{border-radius:12px;padding:9px 10px}.ikhtisar-heading{gap:8px}.ikhtisar-icon{width:34px;height:34px;border-radius:9px}.ikhtisar-icon svg{width:18px;height:18px}.ikhtisar-kicker{font-size:7px}.ikhtisar-heading h1{font-size:17px}.ikhtisar-heading p{max-width:210px;font-size:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ikhtisar-export{width:36px;height:36px;border-radius:9px}.ikhtisar-workspace{margin-top:8px;border-radius:12px}.ikhtisar-tabs{padding:5px 6px 0;overflow-x:auto;scrollbar-width:none}.ikhtisar-tabs::-webkit-scrollbar{display:none}.ikhtisar-tab{min-height:36px;padding:7px 11px;font-size:9px;white-space:nowrap}.ikhtisar-toolbar{gap:7px;padding:9px}.ikhtisar-toolbar-title{font-size:11px}.ikhtisar-toolbar-note{display:none}.ikhtisar-meta{gap:5px}.ikhtisar-meta>span{min-height:21px;padding:3px 6px;font-size:7px}.ikhtisar-table-shell{flex-basis:0}.ikhtisar-table-shell::-webkit-scrollbar{width:5px;height:5px}#ikhtisarTable thead tr:nth-child(2) th,#ikhtisarDetailTable thead tr:nth-child(2) th{top:27px}#ikhtisarTable thead th,#ikhtisarDetailTable thead th{padding:5px 7px;font-size:8px}#ikhtisarTable tbody td,#ikhtisarDetailTable tbody td{height:30px;padding:5px 7px;font-size:9px}.ikhtisar-code{font-size:8px}.ikhtisar-value,.ikhtisar-percent{font-size:8px!important}.ikhtisar-name.ratio{padding-left:14px}.ikhtisar-footnote{align-items:flex-start;flex-direction:column;gap:3px;padding:6px 8px;font-size:8px}}
+  @media(max-width:767px){#ikhtisarTable,#ikhtisarDetailTable{min-width:760px!important}#ikhtisarTable .ikhtisar-col-name,#ikhtisarDetailTable .ikhtisar-col-name{width:132px!important}#ikhtisarTable .ikhtisar-col-money,#ikhtisarDetailTable .ikhtisar-col-money{width:132px!important}#ikhtisarTable .ikhtisar-col-percent,#ikhtisarDetailTable .ikhtisar-col-percent{width:82px!important}#ikhtisarTable .ikhtisar-name,#ikhtisarDetailTable .ikhtisar-name{overflow-wrap:anywhere}#ikhtisarTable .ikhtisar-code,#ikhtisarDetailTable .ikhtisar-code{min-width:20px;margin-right:2px}}
+  @media(max-width:420px){#ikhtisarTable,#ikhtisarDetailTable{min-width:700px!important}#ikhtisarTable .ikhtisar-col-name,#ikhtisarDetailTable .ikhtisar-col-name{width:116px!important}#ikhtisarTable .ikhtisar-col-money,#ikhtisarDetailTable .ikhtisar-col-money{width:120px!important}#ikhtisarTable .ikhtisar-col-percent,#ikhtisarDetailTable .ikhtisar-col-percent{width:76px!important}}
   .ikhtisar-tabs{display:flex;gap:5px;padding:8px 12px 0;border-bottom:1px solid #dce7ee;background:#fbfdfe}.ikhtisar-tab{padding:8px 13px;border:1px solid transparent;border-radius:9px 9px 0 0;background:transparent;color:#6d8798;font-size:10px;font-weight:950;cursor:pointer}.ikhtisar-tab:hover{color:#1f6b86;background:#f0f8fa}.ikhtisar-tab.active{border-color:#cfe1e8;border-bottom-color:#fff;background:#fff;color:#0f3c5b}.ikhtisar-tab-panel[hidden]{display:none}.ikhtisar-tab-panel .ikhtisar-table-shell{border-top:0}#ikhtisarDetailTable{width:100%;min-width:900px;border-collapse:separate;border-spacing:0;table-layout:fixed;color:#17344e}#ikhtisarDetailTable .ikhtisar-col-name{width:31%}#ikhtisarDetailTable .ikhtisar-col-money{width:15%}#ikhtisarDetailTable .ikhtisar-col-percent{width:12%}#ikhtisarDetailTable th,#ikhtisarDetailTable td{border-right:1px solid #d3dfe6;border-bottom:1px solid #d3dfe6}#ikhtisarDetailTable thead th{height:27px;padding:4px 8px;background:#3099ae;color:#fff;font-size:10px;line-height:1.1;font-weight:950;text-align:center;white-space:nowrap}#ikhtisarDetailTable thead tr:nth-child(2) th{background:#dff2f4;color:#1c6177}#ikhtisarDetailTable thead tr:nth-child(3) th{height:21px;padding:3px;background:#e7e8e9;color:#314b5e;font-size:9px;font-weight:800}#ikhtisarDetailTable thead th:first-child,#ikhtisarDetailTable tbody td:first-child{border-left:1px solid #d3dfe6}#ikhtisarDetailTable tbody td{height:27px;padding:4px 10px;background:#fff;font-size:11px;line-height:1.05;vertical-align:middle}#ikhtisarDetailTable tbody tr:nth-child(even) td{background:#fbfcfd}#ikhtisarDetailTable tbody tr:hover td{background:#f1f8fa}.ikhtisar-detail-group td{background:#eef8fa!important;font-weight:950;border-top:1px solid #acd7df}.ikhtisar-detail-category td{background:#f7fafb!important;color:#17344e}.ikhtisar-detail-category .ikhtisar-name{font-weight:950}.ikhtisar-detail-child .ikhtisar-name{padding-left:24px}.ikhtisar-noa{color:#1c6177;font-size:10px!important;font-weight:800}
 </style>
 
@@ -368,6 +374,18 @@ function ikUserKode() {
   return kode === '099' ? '000' : kode;
 }
 
+function toggleIkhtisarNavbarFilter(force) {
+  const panel = document.getElementById('ikhtisarNavbarFilterPanel');
+  const button = document.getElementById('ikhtisarNavbarFilterToggle');
+  if (!panel) return;
+  const open = typeof force === 'boolean' ? force : panel.classList.contains('hidden');
+  panel.classList.toggle('hidden', !open);
+  panel.classList.toggle('flex', open);
+  button?.classList.toggle('is-active', open);
+  button?.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+window.toggleIkhtisarNavbarFilter = toggleIkhtisarNavbarFilter;
+
 async function loadIkhtisarDate() {
   const input = document.getElementById('ikhtisarDate');
   try { const res = await ikhtisarFetch('./api/date/', {cache:'no-store'}); const json = await res.json(); const data = json.data || json || {}; input.value = data.last_created || data.harian_date || new Date().toISOString().slice(0,10); }
@@ -468,7 +486,7 @@ function renderIkhtisar() {
   }).join('');
 }
 
-async function fetchIkhtisar() {
+async function fetchIkhtisar(closeFilter = false) {
   const loader = document.getElementById('ikhtisarLoading');
   const status = document.getElementById('ikhtisarStatus');
   const requestId = ++ikhtisarRequestId;
@@ -516,9 +534,12 @@ async function fetchIkhtisar() {
     if (requestId === ikhtisarRequestId) {
       loader.classList.add('hidden');
       ikhtisarAbortController = null;
+      if (closeFilter) toggleIkhtisarNavbarFilter(false);
     }
   }
 }
+
+window.fetchIkhtisar = fetchIkhtisar;
 
 function exportIkhtisarExcel() {
   const table = document.getElementById(ikhtisarActiveTab === 'summary' ? 'ikhtisarTable' : 'ikhtisarDetailTable');
@@ -539,10 +560,23 @@ function exportIkhtisarExcel() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+  const navbarFilter = document.getElementById('ikhtisarNavbarFilterPanel');
+  const navbarFilterToggle = document.getElementById('ikhtisarNavbarFilterToggle');
+  const navbarFilterClose = document.getElementById('ikhtisarNavbarFilterClose');
+  navbarFilterToggle?.addEventListener('click', event => {
+    event.stopPropagation();
+    toggleIkhtisarNavbarFilter();
+  });
+  navbarFilterClose?.addEventListener('click', () => toggleIkhtisarNavbarFilter(false));
+  document.addEventListener('click', event => {
+    if (!navbarFilter || navbarFilter.classList.contains('hidden')) return;
+    if (!navbarFilter.contains(event.target) && !navbarFilterToggle?.contains(event.target)) toggleIkhtisarNavbarFilter(false);
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') toggleIkhtisarNavbarFilter(false);
+  });
   await Promise.all([loadIkhtisarDate(), loadIkhtisarOffice()]);
   document.querySelectorAll('[data-ikhtisar-tab]').forEach(button => button.addEventListener('click', () => setIkhtisarTab(button.dataset.ikhtisarTab)));
-  document.getElementById('ikhtisarDate')?.addEventListener('change', fetchIkhtisar);
-  document.getElementById('ikhtisarOffice')?.addEventListener('change', fetchIkhtisar);
   fetchIkhtisar();
 });
 </script>

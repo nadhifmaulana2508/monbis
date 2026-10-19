@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../middlewares/auth.php';
+require_once __DIR__ . '/../helpers/rbac.php';
 // require_once __DIR__ . '/../config/database.php';
 
 class AuthController {
@@ -91,6 +92,8 @@ class AuthController {
         if (empty($user)) {
             sendResponse(404, "User tidak ditemukan");
         }
+
+        $user['rbac'] = rbacEffectivePermissions($this->pdo, $user);
 
         header('Cache-Control: private, max-age=300');
         sendResponse(200, "Data user berhasil diambil", $user);
