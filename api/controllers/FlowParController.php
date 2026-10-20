@@ -539,6 +539,10 @@ class FlowParController {
         $totung      = (isset($input['totung']) && $input['totung'] !== '') ? (float)$input['totung'] : null;
         $modeHitung  = strtolower(trim((string)($input['hitung_berdasarkan'] ?? 'baki_debet')));
         $nominalColumn = $modeHitung === 'saldo_bank' ? 'saldo_bank' : 'baki_debet';
+        // Detail ini hanya diperlukan untuk export. Pada tabel utama kolomnya
+        // sedang disembunyikan, jadi jangan hitung VA dan angsuran per halaman.
+        $includeHiddenDetails = !array_key_exists('include_hidden_details', $input)
+            || filter_var($input['include_hidden_details'], FILTER_VALIDATE_BOOLEAN);
         
         $h_input = $input['harian_date'] ?? '';
         $c_input = $input['closing_date'] ?? '';
@@ -745,23 +749,12 @@ class FlowParController {
             // Filter/sort/limit dilakukan di snapshot inti terlebih dahulu.
             // Lookup tabel dimensi baru dilakukan untuk baris halaman yang tampil.
             if (!$needs_trx_filter) {
-                $trxJoinOuter = str_replace(
-                    'ON act.no_rekening = trx.no_rekening',
-                    'ON base.no_rekening = trx.no_rekening',
-                    $trx_join
-                );
                 $sqlData = "
                     SELECT
                         base.*,
                         COALESCE(tb.saldo_akhir, 0) AS saldo_tabungan,
                         kas.deskripsi_group1 AS nama_kankas,
-                        ao.nama_ao,
-                        trx.tgl_trans_sekarang,
-                        trx.total_bayar_sekarang,
-                        trx.tgl_trans_lalu,
-                        trx.pokok_lalu,
-                        trx.bunga_lalu,
-                        $statusCase
+                        ao.nama_ao
                     FROM (
                         SELECT
                             $baseColumns
@@ -772,7 +765,6 @@ class FlowParController {
                         LIMIT $limit OFFSET $offset
                     ) base
                     $outerDimensions
-                    $trxJoinOuter
                     ORDER BY base.nominal_basis DESC, base.no_rekening ASC
                 ";
             } else {
@@ -812,38 +804,113 @@ class FlowParController {
                 static fn($row) => trim((string)($row['no_rekening'] ?? '')),
                 $data
             ))));
-            $vaMap = [];
-            foreach (array_chunk($pageAccounts, 500) as $accountChunk) {
-                $placeholders = implode(',', array_fill(0, count($accountChunk), '?'));
-                $vaSql = "SELECT no_rekening,
-                                 MAX(va_mandiri) AS va_mandiri,
-                                 MAX(va_permata) AS va_permata
-                          FROM nominatif_proyeksi_va
-                          WHERE created = ? AND no_rekening IN ({$placeholders})
-                          GROUP BY no_rekening";
-                $vaStmt = $this->pdo->prepare($vaSql);
-                $vaStmt->execute(array_merge([date('Y-m-t', strtotime($harian_date))], $accountChunk));
-                while ($vaRow = $vaStmt->fetch(PDO::FETCH_ASSOC)) {
-                    $vaMap[trim((string)$vaRow['no_rekening'])] = $vaRow;
+
+            // Ambil transaksi hanya untuk rekening pada halaman aktif. Sebelumnya
+            // agregasi satu bulan penuh dijalankan sebelum LIMIT sehingga konsolidasi
+            // tetap berat walaupun tabel sudah menggunakan pagination.
+            if (!$needs_trx_filter && $pageAccounts) {
+                $trxMap = [];
+                foreach (array_chunk($pageAccounts, 500) as $accountChunk) {
+                    $placeholders = implode(',', array_fill(0, count($accountChunk), '?'));
+                    $trxPageSql = "SELECT
+                                      no_rekening,
+                                      MAX(CASE WHEN tgl_trans >= ? AND tgl_trans < ? THEN tgl_trans END) AS tgl_trans_sekarang,
+                                      SUM(CASE WHEN tgl_trans >= ? AND tgl_trans < ? THEN (COALESCE(angsuran_pokok, 0) + COALESCE(angsuran_bunga, 0) - COALESCE(diskon_bunga, 0)) ELSE 0 END) AS total_bayar_sekarang,
+                                      MAX(CASE WHEN tgl_trans >= ? AND tgl_trans < ? THEN tgl_trans END) AS tgl_trans_lalu,
+                                      SUM(CASE WHEN tgl_trans >= ? AND tgl_trans < ? THEN COALESCE(angsuran_pokok, 0) ELSE 0 END) AS pokok_lalu,
+                                      SUM(CASE WHEN tgl_trans >= ? AND tgl_trans < ? THEN (COALESCE(angsuran_bunga, 0) - COALESCE(diskon_bunga, 0)) ELSE 0 END) AS bunga_lalu
+                                   FROM transaksi_kredit
+                                   WHERE no_rekening IN ({$placeholders})
+                                     AND tgl_trans >= ? AND tgl_trans < ?
+                                   GROUP BY no_rekening";
+                    $trxPageStmt = $this->pdo->prepare($trxPageSql);
+                    $trxPageParams = [
+                        $month_start, $next_month_start, $month_start, $next_month_start,
+                        $prev_month_start, $month_start, $prev_month_start, $month_start,
+                        $prev_month_start, $month_start,
+                    ];
+                    $trxPageParams = array_merge($trxPageParams, $accountChunk, [$prev_month_start, $next_month_start]);
+                    $trxPageStmt->execute($trxPageParams);
+                    while ($trxRow = $trxPageStmt->fetch(PDO::FETCH_ASSOC)) {
+                        $trxMap[trim((string)$trxRow['no_rekening'])] = $trxRow;
+                    }
                 }
+
+                $dayOfHarian = (int)date('j', strtotime($harian_date));
+                $jtWindowStart = strtotime('-15 days', strtotime(date('Y-m-t', strtotime($harian_date . ' -1 month'))));
+                $harianMonthEnd = strtotime(date('Y-m-t', strtotime($harian_date)));
+                foreach ($data as &$row) {
+                    $trxRow = $trxMap[trim((string)($row['no_rekening'] ?? ''))] ?? [];
+                    $row['tgl_trans_sekarang'] = $trxRow['tgl_trans_sekarang'] ?? null;
+                    $row['total_bayar_sekarang'] = $trxRow['total_bayar_sekarang'] ?? null;
+                    $row['tgl_trans_lalu'] = $trxRow['tgl_trans_lalu'] ?? null;
+                    $row['pokok_lalu'] = $trxRow['pokok_lalu'] ?? null;
+                    $row['bunga_lalu'] = $trxRow['bunga_lalu'] ?? null;
+
+                    $jtDay = !empty($row['tgl_jatuh_tempo']) ? (int)date('j', strtotime((string)$row['tgl_jatuh_tempo'])) : 0;
+                    $paidThisMonth = (float)($row['total_bayar_sekarang'] ?? 0);
+                    $row['status_bayar_berjalan'] = '-';
+                    if ((int)$row['has_harian'] === 0 && (int)$row['has_closing'] === 1) {
+                        $row['status_bayar_berjalan'] = 'Lunas';
+                    } elseif ((int)$row['has_closing'] === 0) {
+                        $row['status_bayar_berjalan'] = 'Realisasi Baru';
+                    } elseif ((float)$row['baki_debet'] > (float)$row['baki_debet_m1']) {
+                        $row['status_bayar_berjalan'] = 'Restruktur';
+                    } elseif (in_array($row['kolek_lalu'], ['L', 'DP'], true) && in_array($row['kolek'], ['KL', 'D', 'M'], true)) {
+                        $row['status_bayar_berjalan'] = 'Flow Par';
+                    } elseif (in_array($row['kolek_lalu'], ['KL', 'D', 'M'], true) && ((int)$row['has_harian'] === 0 || in_array($row['kolek'], ['L', 'DP'], true) || (float)$row['baki_debet'] < (float)$row['baki_debet_m1'])) {
+                        $row['status_bayar_berjalan'] = 'Recovery NPL';
+                    } elseif ($jtDay > 0 && strtotime((string)$row['tgl_jatuh_tempo']) >= $jtWindowStart && strtotime((string)$row['tgl_jatuh_tempo']) <= $harianMonthEnd && in_array($row['kolek_lalu'], ['L', 'DP'], true) && (float)$row['baki_debet'] > 0) {
+                        $row['status_bayar_berjalan'] = 'JT Potensi NPL';
+                    } elseif ((int)$row['dpd'] === 0 && $row['kolek'] === 'L' && $paidThisMonth > 0 && $row['tgl_trans_sekarang'] && $jtDay > 0 && (int)date('j', strtotime((string)$row['tgl_trans_sekarang'])) <= $jtDay) {
+                        $row['status_bayar_berjalan'] = 'OTP (Sesuai JT)';
+                    } elseif ((int)$row['dpd'] === 0 && $row['kolek'] === 'L' && $paidThisMonth > 0 && $row['tgl_trans_sekarang'] && $jtDay > 0 && (int)date('j', strtotime((string)$row['tgl_trans_sekarang'])) > $jtDay) {
+                        $row['status_bayar_berjalan'] = 'OTP (Tidak Sesuai JT)';
+                    } elseif ($paidThisMonth > 0 && (float)$row['totung'] > 0) {
+                        $row['status_bayar_berjalan'] = 'Byr, Ada Tunggakan';
+                    } elseif ((int)$row['dpd'] === 0 && $row['kolek'] === 'L' && $paidThisMonth <= 0 && $jtDay > 0 && $dayOfHarian <= $jtDay) {
+                        $row['status_bayar_berjalan'] = 'Blm Byr, Belum JT';
+                    } elseif ($paidThisMonth <= 0 && $jtDay > 0 && $dayOfHarian > $jtDay) {
+                        $row['status_bayar_berjalan'] = 'Blm Byr, Lewat JT';
+                    }
+                }
+                unset($row);
             }
-            $billPeriod = date('Y-m-01', strtotime($harian_date));
-            foreach ($data as &$row) {
-                $bill = LoanInstallmentHelper::calculateMonthlyBill([
-                    'jml_pinjaman' => $row['plafon'] ?? 0,
-                    'jml_angsuran' => $row['jml_angsuran'] ?? 0,
-                    'suku_bunga_per_tahun' => $row['suku_bunga_per_tahun'] ?? 0,
-                    'type_kredit' => $row['type_kredit'] ?? '',
-                    'tgl_realisasi' => $row['tgl_realisasi'] ?? null,
-                ], $billPeriod);
-                $row['kewajiban_angsuran_pokok'] = $bill['pokok'];
-                $row['kewajiban_angsuran_bunga'] = $bill['bunga'];
-                $row['kewajiban_angsuran'] = $bill['total'];
-                $va = $vaMap[trim((string)($row['no_rekening'] ?? ''))] ?? [];
-                $row['va_mandiri'] = $va['va_mandiri'] ?? null;
-                $row['va_permata'] = $va['va_permata'] ?? null;
+
+            if ($includeHiddenDetails) {
+                $vaMap = [];
+                foreach (array_chunk($pageAccounts, 500) as $accountChunk) {
+                    $placeholders = implode(',', array_fill(0, count($accountChunk), '?'));
+                    $vaSql = "SELECT no_rekening,
+                                     MAX(va_mandiri) AS va_mandiri,
+                                     MAX(va_permata) AS va_permata
+                              FROM nominatif_proyeksi_va
+                              WHERE created = ? AND no_rekening IN ({$placeholders})
+                              GROUP BY no_rekening";
+                    $vaStmt = $this->pdo->prepare($vaSql);
+                    $vaStmt->execute(array_merge([date('Y-m-t', strtotime($harian_date))], $accountChunk));
+                    while ($vaRow = $vaStmt->fetch(PDO::FETCH_ASSOC)) {
+                        $vaMap[trim((string)$vaRow['no_rekening'])] = $vaRow;
+                    }
+                }
+                $billPeriod = date('Y-m-01', strtotime($harian_date));
+                foreach ($data as &$row) {
+                    $bill = LoanInstallmentHelper::calculateMonthlyBill([
+                        'jml_pinjaman' => $row['plafon'] ?? 0,
+                        'jml_angsuran' => $row['jml_angsuran'] ?? 0,
+                        'suku_bunga_per_tahun' => $row['suku_bunga_per_tahun'] ?? 0,
+                        'type_kredit' => $row['type_kredit'] ?? '',
+                        'tgl_realisasi' => $row['tgl_realisasi'] ?? null,
+                    ], $billPeriod);
+                    $row['kewajiban_angsuran_pokok'] = $bill['pokok'];
+                    $row['kewajiban_angsuran_bunga'] = $bill['bunga'];
+                    $row['kewajiban_angsuran'] = $bill['total'];
+                    $va = $vaMap[trim((string)($row['no_rekening'] ?? ''))] ?? [];
+                    $row['va_mandiri'] = $va['va_mandiri'] ?? null;
+                    $row['va_permata'] = $va['va_permata'] ?? null;
+                }
+                unset($row);
             }
-            unset($row);
 
             // Metadata window dihasilkan bersamaan dengan query halaman. Fallback
             // tetap tersedia untuk halaman kosong agar total pagination tetap benar.

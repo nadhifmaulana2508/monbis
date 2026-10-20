@@ -3,7 +3,7 @@
   <section class="sd-report-head">
     <div class="sd-heading">
       <span class="sd-title-icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path>
         </svg>
       </span>
@@ -14,19 +14,19 @@
     <div class="sd-head-actions">
       <div class="sd-search-wrap">
         <button type="button" id="SD_searchToggle" class="sd-search-trigger" aria-label="Buka pencarian" aria-expanded="false" title="Cari debitur">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path>
           </svg>
         </button>
         <label id="SD_searchPanel" class="sd-head-search" for="SD_search">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path>
         </svg>
         <input id="SD_search" type="search" placeholder="Cari nama / rekening..." autocomplete="off" aria-label="Cari nama atau nomor rekening">
         </label>
       </div>
       <button type="button" onclick="SD_exportExcelAll()" class="sd-export-btn" title="Download Excel" aria-label="Download Excel">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 20h14"></path></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 20h14"></path></svg>
       </button>
     </div>
   </section>
@@ -123,11 +123,6 @@
   </div>
 
   <div class="flex-1 min-h-0 relative flex flex-col bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden z-[1]">
-    <div id="SD_loading" class="hidden absolute inset-0 bg-white/80 z-50 flex flex-col items-center justify-center text-blue-600 backdrop-blur-sm">
-       <div class="animate-spin h-10 w-10 border-4 border-blue-200 border-t-blue-600 rounded-full mb-3"></div>
-       <span class="text-[10px] font-bold tracking-widest uppercase">Memuat Data...</span>
-    </div>
-
     <div class="flex-1 overflow-auto custom-scrollbar relative" id="SD_tableContainer">
       <table id="SD_table" class="min-w-full text-left text-[11px] table-fixed border-collapse">
         <thead class="bg-slate-50 text-slate-600 uppercase text-[9px] tracking-wider sticky top-0 shadow-sm border-b border-slate-200" style="z-index: 10;">
@@ -155,11 +150,11 @@
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-orange-50/50">T. Pokok</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-orange-50/50">T. Bunga</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-red-50/50">Totung</th>
-            <th class="px-3 py-2.5 border-r border-slate-200 w-28 text-right bg-indigo-50/50">Kew. Angsuran</th>
-            <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-indigo-50/50">Kew. Pokok</th>
-            <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-indigo-50/50">Kew. Bunga</th>
-            <th class="px-3 py-2.5 border-r border-slate-200 w-36 text-center bg-indigo-50/50">VA Mandiri</th>
-            <th class="px-3 py-2.5 border-r border-slate-200 w-36 text-center bg-indigo-50/50">VA Permata</th>
+            <th class="sd-temporary-hidden px-3 py-2.5 border-r border-slate-200 w-28 text-right bg-indigo-50/50">Kew. Angsuran</th>
+            <th class="sd-temporary-hidden px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-indigo-50/50">Kew. Pokok</th>
+            <th class="sd-temporary-hidden px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-indigo-50/50">Kew. Bunga</th>
+            <th class="sd-temporary-hidden px-3 py-2.5 border-r border-slate-200 w-36 text-center bg-indigo-50/50">VA Mandiri</th>
+            <th class="sd-temporary-hidden px-3 py-2.5 border-r border-slate-200 w-36 text-center bg-indigo-50/50">VA Permata</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right">Tabungan</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-20 text-center bg-slate-100">Tgl Trx Lalu</th>
             <th class="px-3 py-2.5 border-r border-slate-200 w-24 text-right bg-slate-100">Pokok Lalu</th>
@@ -402,18 +397,20 @@
   .sd-title-copy p { margin:4px 0 0; overflow:hidden; color:#64748b; font-size:11px; line-height:1.35; text-overflow:ellipsis; white-space:nowrap; }
   .sd-head-actions { position:relative; gap:8px; flex:0 0 auto; justify-content:flex-end; }
   .sd-search-wrap { position:relative; }
+  /* Lock header SVG geometry before the stylesheet finishes loading. */
+  .sd-report-head svg { display:block; flex:0 0 auto; }
   .sd-search-trigger { display:grid; place-items:center; width:38px; height:38px; padding:0; color:#2563eb; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; cursor:pointer; transition:background .15s ease, border-color .15s ease, transform .15s ease; }
   .sd-search-trigger:hover, .sd-search-trigger[aria-expanded="true"] { background:#dbeafe; border-color:#93c5fd; transform:translateY(-1px); }
-  .sd-search-trigger svg { width:17px; height:17px; }
+  .sd-search-trigger svg { width:17px !important; height:17px !important; }
   .sd-head-search { position:absolute; z-index:40; top:calc(100% + 8px); right:0; display:none; align-items:center; gap:7px; width:min(320px, calc(100vw - 32px)); height:38px; padding:0 10px; color:#94a3b8; background:#fff; border:1px solid #bfdbfe; border-radius:10px; box-shadow:0 12px 28px rgba(15,23,42,.14); }
   .sd-head-search.is-open { display:flex; }
   .sd-head-search:focus-within { border-color:#93c5fd; box-shadow:0 0 0 3px rgba(59,130,246,.12); }
-  .sd-head-search svg { flex:0 0 16px; width:16px; height:16px; }
+  .sd-head-search svg { flex:0 0 16px; width:16px !important; height:16px !important; }
   .sd-head-search input { width:100%; min-width:0; height:100%; padding:0; color:#172033; background:transparent; border:0; outline:0; font:600 11px/1.2 inherit; }
   .sd-head-search input::placeholder { color:#94a3b8; font-weight:500; }
   .sd-export-btn { display:grid; place-items:center; width:38px; height:38px; padding:0; border:0; border-radius:10px; color:#fff; background:#059669; cursor:pointer; box-shadow:0 5px 12px rgba(5,150,105,.18); transition:background .15s ease, transform .15s ease; }
   .sd-export-btn:hover { background:#047857; transform:translateY(-1px); }
-  .sd-export-btn svg { width:17px; height:17px; }
+  .sd-export-btn svg { width:17px !important; height:17px !important; }
 
   .custom-scrollbar { scrollbar-width:thin; scrollbar-color:#94a3b8 transparent; }
   .custom-scrollbar::-webkit-scrollbar { height: 4px; width: 4px; }
@@ -467,9 +464,6 @@
   #SD_table .sd-col-kc,
   #SD_table .sd-col-rek,
   #SD_table .sd-col-nas { background-clip:padding-box; }
-  #SD_table .sd-selected-nominal,
-  #SD_totalRow .sd-selected-nominal { background:#eaf2ff !important; color:#1d4ed8 !important; box-shadow:inset 0 -2px 0 #60a5fa !important; }
-  #SD_table thead .sd-selected-nominal { color:#1e40af !important; }
   #SD_table .sd-hidden-nominal,
   #SD_totalRow .sd-hidden-nominal { display:none !important; }
   #SD_tableContainer { scrollbar-width:thin; scrollbar-color:#94a3b8 transparent; }
@@ -637,20 +631,21 @@
           placeholder: "Pilih / Ketik Nama AO..." 
       });
 
-      await populateKantorSD();
+      const kantorReady = populateKantorSD();
       const user = (window.getUser && window.getUser()) || JSON.parse(localStorage.getItem('app_user')) || {};
       const uKode = String(user?.kode || user?.kode_kantor || '').padStart(3,'0');
       
       const optKantor = document.getElementById('SD_optKantor');
       if (uKode !== '000' && uKode !== '00') {
+          await kantorReady;
           optKantor.value = uKode; optKantor.disabled = true;
           optKantor.classList.add('bg-slate-100', 'cursor-not-allowed', 'text-slate-400');
       }
       
-      await loadFiltersKankasKecKel(optKantor.value);
       attachAutoSearchEvents();
       SD_syncNominalBasisUI();
       fetchDataSD(1);
+      void loadFiltersKankasKecKel(optKantor.value);
   });
 
   function triggerAutoSearch() {
@@ -723,11 +718,9 @@
   function SD_syncNominalBasisUI() {
       const basis = document.getElementById('SD_nominal_field')?.value === 'saldo_bank' ? 'saldo_bank' : 'baki_debet';
       document.querySelectorAll('#SD_table .sd-baki-debet-col, #SD_totalRow .sd-baki-debet-col').forEach(el => {
-          el.classList.toggle('sd-selected-nominal', basis === 'baki_debet');
           el.classList.toggle('sd-hidden-nominal', basis !== 'baki_debet');
       });
       document.querySelectorAll('#SD_table .sd-saldo-bank-col, #SD_totalRow .sd-saldo-bank-col').forEach(el => {
-          el.classList.toggle('sd-selected-nominal', basis === 'saldo_bank');
           el.classList.toggle('sd-hidden-nominal', basis !== 'saldo_bank');
       });
   }
@@ -785,8 +778,6 @@
 
   async function fetchDataSD(pageTarget) {
       SD_currentPage = pageTarget;
-      const loading = document.getElementById('SD_loading');
-      loading.classList.remove('hidden');
 
       // Jangan biarkan request lama menumpuk saat user mengetik atau mengganti
       // filter dengan cepat. Request terakhir saja yang boleh mengisi tabel.
@@ -808,7 +799,7 @@
           harian_date: document.getElementById('SD_harian_date').value,
           closing_date: document.getElementById('SD_closing_date').value,
           kode_group1: tsKankas.getValue(), kecamatan: tsKecamatan.getValue(), kelurahan: tsKelurahan.getValue(),
-          page: SD_currentPage, limit: SD_limit
+          page: SD_currentPage, limit: SD_limit, include_hidden_details: false
       };
 
       try {
@@ -824,7 +815,6 @@
       } finally {
           if (SD_requestController === requestController) {
               SD_requestController = null;
-              loading.classList.add('hidden');
           }
       }
   }
@@ -864,11 +854,11 @@
           <td class="px-3 py-2 border-r text-right">${nf.format(totalTPokok)}</td>
           <td class="px-3 py-2 border-r text-right">${nf.format(totalTBunga)}</td>
           <td class="px-3 py-2 border-r text-right text-red-700">${nf.format(totalTotung)}</td>
-          <td class="px-3 py-2 border-r text-right text-indigo-700">${nf.format(totalKewajiban)}</td>
-          <td class="px-3 py-2 border-r text-right text-indigo-700">${nf.format(totalKewajibanPokok)}</td>
-          <td class="px-3 py-2 border-r text-right text-indigo-700">${nf.format(totalKewajibanBunga)}</td>
-          <td class="px-3 py-2 border-r text-center text-slate-500">-</td>
-          <td class="px-3 py-2 border-r text-center text-slate-500">-</td>
+          <td class="sd-temporary-hidden px-3 py-2 border-r text-right text-indigo-700">${nf.format(totalKewajiban)}</td>
+          <td class="sd-temporary-hidden px-3 py-2 border-r text-right text-indigo-700">${nf.format(totalKewajibanPokok)}</td>
+          <td class="sd-temporary-hidden px-3 py-2 border-r text-right text-indigo-700">${nf.format(totalKewajibanBunga)}</td>
+          <td class="sd-temporary-hidden px-3 py-2 border-r text-center text-slate-500">-</td>
+          <td class="sd-temporary-hidden px-3 py-2 border-r text-center text-slate-500">-</td>
           <td class="px-3 py-2 border-r text-right">${nf.format(totalTab)}</td>
           <td class="px-3 py-2 border-r text-center bg-slate-100/50">-</td>
           <td class="px-3 py-2 border-r text-right bg-slate-100/50">${nf.format(sumPokokLalu)}</td>
@@ -938,11 +928,11 @@
           <td class="px-3 py-2 border-r text-right text-orange-700 font-bold bg-orange-50/20">${nf.format(d.tunggakan_pokok||0)}</td>
           <td class="px-3 py-2 border-r text-right text-orange-700 font-bold bg-orange-50/20">${nf.format(d.tunggakan_bunga||0)}</td>
           <td class="px-3 py-2 border-r text-right text-red-600 font-bold bg-red-50/20">${nf.format(d.totung||0)}</td>
-          <td class="px-3 py-2 border-r text-right text-indigo-700 font-bold bg-indigo-50/20">${nf.format(d.kewajiban_angsuran||0)}</td>
-          <td class="px-3 py-2 border-r text-right text-indigo-700 bg-indigo-50/20">${nf.format(d.kewajiban_angsuran_pokok||0)}</td>
-          <td class="px-3 py-2 border-r text-right text-indigo-700 bg-indigo-50/20">${nf.format(d.kewajiban_angsuran_bunga||0)}</td>
-          <td class="px-3 py-2 border-r text-center text-slate-600 font-mono text-[9px] bg-indigo-50/20 truncate" title="${d.va_mandiri||''}">${d.va_mandiri||'-'}</td>
-          <td class="px-3 py-2 border-r text-center text-slate-600 font-mono text-[9px] bg-indigo-50/20 truncate" title="${d.va_permata||''}">${d.va_permata||'-'}</td>
+          <td class="sd-temporary-hidden px-3 py-2 border-r text-right text-indigo-700 font-bold bg-indigo-50/20">${nf.format(d.kewajiban_angsuran||0)}</td>
+          <td class="sd-temporary-hidden px-3 py-2 border-r text-right text-indigo-700 bg-indigo-50/20">${nf.format(d.kewajiban_angsuran_pokok||0)}</td>
+          <td class="sd-temporary-hidden px-3 py-2 border-r text-right text-indigo-700 bg-indigo-50/20">${nf.format(d.kewajiban_angsuran_bunga||0)}</td>
+          <td class="sd-temporary-hidden px-3 py-2 border-r text-center text-slate-600 font-mono text-[9px] bg-indigo-50/20 truncate" title="${d.va_mandiri||''}">${d.va_mandiri||'-'}</td>
+          <td class="sd-temporary-hidden px-3 py-2 border-r text-center text-slate-600 font-mono text-[9px] bg-indigo-50/20 truncate" title="${d.va_permata||''}">${d.va_permata||'-'}</td>
           <td class="px-3 py-2 border-r text-right text-slate-600">${nf.format(d.saldo_tabungan||0)}</td>
           
           <td class="px-3 py-2 border-r text-center text-slate-500 bg-slate-50/50">${d.tgl_trans_lalu||'-'}</td>
@@ -995,7 +985,7 @@
               hitung_berdasarkan: document.getElementById('SD_nominal_field').value,
               harian_date: document.getElementById('SD_harian_date').value, closing_date: document.getElementById('SD_closing_date').value,
               kode_group1: tsKankas.getValue(), kecamatan: tsKecamatan.getValue(), kelurahan: tsKelurahan.getValue(),
-              page: 1, limit: 1000000
+              page: 1, limit: 1000000, include_hidden_details: true
           };
           const res = await fetch('./api/flow_par/', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
           const json = await res.json();
