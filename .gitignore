@@ -15,6 +15,9 @@ frontend/
 kpi-tukin/node_modules/
 kpi-tukin/dist/
 
+# Standalone React RBB Bisnis build artifacts
+rbb-bisnis/node_modules/
+
 # Local agent/task metadata and documentation virtual environment
 .agents/
 .venv-docs/

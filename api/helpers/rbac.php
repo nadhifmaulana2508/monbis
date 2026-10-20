@@ -303,15 +303,57 @@ function rbacNormalizeEmployeeId($value): string
     return trim((string)$value);
 }
 
+function rbacSimpegPdo(): PDO
+{
+    static $simpegPdo = null;
+    if ($simpegPdo instanceof PDO) {
+        return $simpegPdo;
+    }
+
+    require_once __DIR__ . '/../controllers/config/database_simpeg.php';
+    if (!($pdoSimpeg instanceof PDO)) {
+        throw new RuntimeException('Koneksi database Simpeg belum tersedia.');
+    }
+
+    $simpegPdo = $pdoSimpeg;
+    return $simpegPdo;
+}
+
+function rbacSimpegActiveEmployeeFromSql(): string
+{
+    return "FROM tb_jabatan j
+        INNER JOIN tb_pegawai p ON j.id_peg = p.id_peg
+        INNER JOIN tb_master_jabatan mj
+            ON CAST(j.kode_jabatan AS CHAR) = CAST(mj.kode_jabatan AS CHAR)
+        LEFT JOIN tb_kantor k ON j.unit_kerja = k.kode_kantor_detail
+        WHERE j.status_jab = 'Aktif'
+          AND p.status_aktif = '1'";
+}
+
 function rbacFindUserByEmployeeId(PDO $pdo, $employeeId): ?array
 {
     $employeeId = rbacNormalizeEmployeeId($employeeId);
     if ($employeeId === '') {
         return null;
     }
-    $stmt = $pdo->prepare("SELECT id, kode, employee_id, full_name, job_position,
-        branch_name, unit_kerja, level, group_jabatan, role
-        FROM users WHERE employee_id = :employee_id LIMIT 1");
+
+    $simpeg = rbacSimpegPdo();
+    $stmt = $simpeg->prepare("SELECT
+        j.id_peg AS employee_id,
+        COALESCE(NULLIF(TRIM(k.kode_cabang), ''), '*') AS kode,
+        p.nama AS full_name,
+        COALESCE(k.nama_kantor, '') AS branch_name,
+        COALESCE(mj.nama_unit_kerja, '') AS unit_kerja,
+        COALESCE(mj.nama_jabatan, '') AS job_position,
+        COALESCE(mj.level, '') AS level,
+        COALESCE(mj.group_jabatan, '') AS group_jabatan,
+        p.status_kepeg,
+        p.status_aktif,
+        j.status_jab
+        " . rbacSimpegActiveEmployeeFromSql() . "
+        AND j.id_peg = :employee_id
+        ORDER BY j.tmt_jabatan DESC, j.id_jab DESC
+        LIMIT 1");
     $stmt->execute(['employee_id' => $employeeId]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     return $user ?: null;

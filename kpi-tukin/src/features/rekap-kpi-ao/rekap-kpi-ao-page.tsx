@@ -61,7 +61,7 @@ export function RekapKpiAoPage() {
     <KpiPanel title="Report tahunan" actions={<div className="flex rounded-md border border-[var(--line)] p-0.5 text-xs">{([["summary", "Rekap AO"], ["breakdown", "Breakdown"], ["tukin", "Faktor Tukin"]] as const).map(([value, label]) => <button key={value} className={`rounded px-2.5 py-1.5 ${tab === value ? "bg-[var(--ink)] text-[var(--surface)]" : "text-[var(--muted)] hover:bg-[var(--surface-subtle)]"}`} onClick={() => setTab(value)}>{label}</button>)}</div>}>
       <KpiState loading={loading && !data} error={error} empty={!data && !loading ? "Belum ada data rekap untuk filter ini." : undefined}>{data && tab === "summary" && <SummaryTable rows={filteredRows} />}{data && tab === "breakdown" && <BreakdownTable rows={data.indicator_breakdown} />}{data && tab === "tukin" && <TukinTable rows={data.tukin_rules} />}</KpiState>
     </KpiPanel>
-    <KpiModal open={infoOpen} title="Rekap KPI AO" description="Data berasal dari penilaian yang sudah digenerate di MONBIS." onClose={() => setInfoOpen(false)}><p className="text-sm leading-6 text-[var(--muted)]">Pada konsolidasi, backend membatasi daftar ke lima AO terbaik agar halaman tetap ringan. Pilih kantor untuk melihat seluruh hasil kantor tersebut.</p></KpiModal>
+    <KpiModal open={infoOpen} title="Rekap KPI AO" description="Data berasal dari penilaian yang sudah digenerate." onClose={() => setInfoOpen(false)}><p className="text-sm leading-6 text-[var(--muted)]">Pada konsolidasi, backend membatasi daftar ke lima AO terbaik agar halaman tetap ringan. Pilih kantor untuk melihat seluruh hasil kantor tersebut.</p></KpiModal>
   </KpiPage>
 }
 

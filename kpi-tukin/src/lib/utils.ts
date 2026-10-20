@@ -21,6 +21,12 @@ export function formatTarget(value: unknown, unit: string) {
   const number = Number(value)
   if (!Number.isFinite(number)) return "-"
   if (unit === "RUPIAH") {
+    const absolute = Math.abs(number)
+    const compact = (divider: number, suffix: string) => `Rp ${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(number / divider)} ${suffix}`
+    if (absolute >= 1_000_000_000_000) return compact(1_000_000_000_000, "T")
+    if (absolute >= 1_000_000_000) return compact(1_000_000_000, "M")
+    if (absolute >= 1_000_000) return compact(1_000_000, "Jt")
+    if (absolute >= 1_000) return compact(1_000, "Rb")
     return `Rp ${new Intl.NumberFormat("id-ID", { maximumFractionDigits: 0 }).format(number)}`
   }
   if (unit === "PERSEN") {

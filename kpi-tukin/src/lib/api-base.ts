@@ -1,17 +1,24 @@
 import { getToken } from "@/lib/utils"
 
 const LOCAL_API = "http://localhost/report-dpk/api"
+const REMOTE_API = "https://monbis.bkkjateng.co.id/api"
 
 function isMonbisHost() {
   const hostname = window.location.hostname
   return hostname === "monbis.bkkjateng.co.id" || hostname.endsWith(".monbis.bkkjateng.co.id")
 }
 
+function isLocalHost() {
+  const hostname = window.location.hostname
+  return hostname === "localhost" || hostname === "127.0.0.1"
+}
+
 function configuredApiBase() {
   const value = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "")
   if (value) return value
   if (import.meta.env.DEV) return "/api"
-  return isMonbisHost() ? "/api" : LOCAL_API
+  if (isLocalHost()) return LOCAL_API
+  return isMonbisHost() ? "/api" : REMOTE_API
 }
 
 export function apiUrl(path: string) {
@@ -43,7 +50,7 @@ export async function getApi<T>(path: string, signal?: AbortSignal) {
   const headers: Record<string, string> = { Accept: "application/json" }
   if (token) headers.Authorization = /^Bearer\s/i.test(token) ? token : `Bearer ${token}`
   const response = await fetch(apiUrl(path), { credentials: "include", headers, signal })
-  return parseApiResponse<T>(response, "Data MONBIS gagal dimuat")
+  return parseApiResponse<T>(response, "Data gagal dimuat")
 }
 
 export async function postApi<T>(path: string, payload: Record<string, unknown>, signal?: AbortSignal) {
@@ -57,7 +64,7 @@ export async function postApi<T>(path: string, payload: Record<string, unknown>,
     body: JSON.stringify(payload),
     signal,
   })
-  return parseApiResponse<T>(response, "Data MONBIS gagal dimuat")
+  return parseApiResponse<T>(response, "Data gagal dimuat")
 }
 
 export async function postKpi<T>(payload: Record<string, unknown>, signal?: AbortSignal): Promise<T> {

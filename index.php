@@ -7,14 +7,38 @@ if (session_status() === PHP_SESSION_NONE) {
  * =========================
  * BASE APP (AUTO)
  * =========================
- * Local   : http://localhost/report-dpk
- * Server  : https://domain.com
+ * Local      : http://localhost/report-dpk/
+ * Development: https://dev.monbis.bkkjateng.co.id/
+ * Production : https://monbis.bkkjateng.co.id/
+ *
+ * URL dibentuk dari host aktif agar source code yang sama dapat dipakai
+ * di ketiga environment tanpa mengganti URL secara manual.
  */
+$httpHost = strtolower((string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
+$hostOnly = preg_replace('/:\d+$/', '', $httpHost) ?: $httpHost;
+$forwardedProto = strtolower(trim(explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''))[0] ?? ''));
 $requestIsHttps = !empty($_SERVER['HTTPS'])
     && strtolower((string) $_SERVER['HTTPS']) !== 'off';
-$scheme = $requestIsHttps || (int) ($_SERVER['SERVER_PORT'] ?? 80) === 443
-    ? 'https'
-    : 'http';
+
+// Gunakan if/elseif agar tetap kompatibel dengan PHP 7.x di server Dev.
+if (in_array($hostOnly, ['localhost', '127.0.0.1', '::1'], true)) {
+    $knownEnvironment = 'local';
+} elseif ($hostOnly === 'dev.monbis.bkkjateng.co.id') {
+    $knownEnvironment = 'development';
+} elseif ($hostOnly === 'monbis.bkkjateng.co.id') {
+    $knownEnvironment = 'production';
+} else {
+    $knownEnvironment = 'custom';
+}
+
+$scheme = in_array($forwardedProto, ['http', 'https'], true)
+    ? $forwardedProto
+    : ($requestIsHttps || (int) ($_SERVER['SERVER_PORT'] ?? 80) === 443 ? 'https' : 'http');
+
+// Domain Dev dan Production selalu dipublikasikan melalui HTTPS.
+if (in_array($knownEnvironment, ['development', 'production'], true)) {
+    $scheme = 'https';
+}
 $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
 $appBasePath = str_replace('\\', '/', dirname($scriptName));
 if ($appBasePath === '/' || $appBasePath === '.') {
@@ -25,8 +49,11 @@ if ($appBasePath === '/' || $appBasePath === '.') {
 
 define(
     'BASE_APP',
-    $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . $appBasePath
+    $scheme . '://' . $httpHost . $appBasePath
 );
+define('APP_ENV', $knownEnvironment);
+define('APP_HOST', $hostOnly);
+define('APP_SCHEME', $scheme);
 
 // =========================
 // AMBIL URL DARI REWRITE

@@ -67,8 +67,8 @@ export function userOfficeCode(user: MonbisUser | null) {
 }
 
 export function userInitials(user: MonbisUser | null) {
-  const name = String(user?.full_name || "MONBIS").trim()
-  return name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "M"
+  const name = String(user?.full_name || "Pengguna").trim()
+  return name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "P"
 }
 
 declare global {

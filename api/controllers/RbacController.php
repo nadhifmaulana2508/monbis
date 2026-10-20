@@ -33,14 +33,32 @@ class RbacController
     public function bootstrap(): void
     {
         $this->admin();
-        $roles = $this->pdo->query("SELECT job_position, COALESCE(group_jabatan, '') AS group_jabatan,
-            COALESCE(kode, '*') AS kode FROM users WHERE job_position IS NOT NULL AND job_position <> ''
-            GROUP BY job_position, group_jabatan, kode ORDER BY job_position, group_jabatan, kode")->fetchAll(PDO::FETCH_ASSOC);
-        $divisions = $this->pdo->query("SELECT DISTINCT TRIM(unit_kerja) AS unit_kerja
-            FROM users WHERE unit_kerja IS NOT NULL AND TRIM(unit_kerja) <> ''
+        $simpeg = rbacSimpegPdo();
+        $activeEmployeeFrom = rbacSimpegActiveEmployeeFromSql();
+
+        $roles = $simpeg->query("SELECT DISTINCT
+            COALESCE(NULLIF(TRIM(mj.nama_jabatan), ''), '') AS job_position,
+            COALESCE(mj.group_jabatan, '') AS group_jabatan,
+            COALESCE(NULLIF(TRIM(k.kode_cabang), ''), '*') AS kode
+            {$activeEmployeeFrom}
+            AND mj.nama_jabatan IS NOT NULL AND TRIM(mj.nama_jabatan) <> ''
+            ORDER BY job_position, group_jabatan, kode")->fetchAll(PDO::FETCH_ASSOC);
+
+        $divisions = $simpeg->query("SELECT DISTINCT TRIM(mj.nama_unit_kerja) AS unit_kerja
+            {$activeEmployeeFrom}
+            AND mj.nama_unit_kerja IS NOT NULL AND TRIM(mj.nama_unit_kerja) <> ''
             ORDER BY unit_kerja")->fetchAll(PDO::FETCH_ASSOC);
-        $users = $this->pdo->query("SELECT employee_id, full_name, job_position, group_jabatan, kode,
-            branch_name, unit_kerja FROM users WHERE employee_id IS NOT NULL AND employee_id <> ''
+
+        $users = $simpeg->query("SELECT DISTINCT
+            j.id_peg AS employee_id,
+            p.nama AS full_name,
+            COALESCE(mj.nama_jabatan, '') AS job_position,
+            COALESCE(mj.group_jabatan, '') AS group_jabatan,
+            COALESCE(NULLIF(TRIM(k.kode_cabang), ''), '*') AS kode,
+            COALESCE(k.nama_kantor, '') AS branch_name,
+            COALESCE(mj.nama_unit_kerja, '') AS unit_kerja
+            {$activeEmployeeFrom}
+            AND j.id_peg IS NOT NULL AND j.id_peg <> ''
             ORDER BY full_name, employee_id")->fetchAll(PDO::FETCH_ASSOC);
         sendResponse(200, 'Master RBAC berhasil dimuat.', [
             'menus' => rbacMenuRows($this->pdo),

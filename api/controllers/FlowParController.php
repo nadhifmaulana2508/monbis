@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../helpers/response.php';
+require_once __DIR__ . '/../helpers/LoanInstallmentHelper.php';
 
 class FlowParController {
     private $pdo;
@@ -536,6 +537,8 @@ class FlowParController {
         $kecamatan   = $input['kecamatan'] ?? '';
         $status_jt   = $input['status_jt'] ?? ''; 
         $totung      = (isset($input['totung']) && $input['totung'] !== '') ? (float)$input['totung'] : null;
+        $modeHitung  = strtolower(trim((string)($input['hitung_berdasarkan'] ?? 'baki_debet')));
+        $nominalColumn = $modeHitung === 'saldo_bank' ? 'saldo_bank' : 'baki_debet';
         
         $h_input = $input['harian_date'] ?? '';
         $c_input = $input['closing_date'] ?? '';
@@ -691,6 +694,7 @@ class FlowParController {
                 COALESCE(n.tgl_jatuh_tempo, c.tgl_jatuh_tempo) AS tgl_jatuh_tempo,
                 COALESCE(c.baki_debet, 0) AS baki_debet_m1,
                 COALESCE(n.baki_debet, 0) AS baki_debet,
+                COALESCE(n.{$nominalColumn}, 0) AS nominal_basis,
                 COALESCE(n.saldo_bank, 0) AS saldo_bank_actual,
                 COALESCE(n.tunggakan_pokok, 0) AS tunggakan_pokok,
                 COALESCE(n.tunggakan_bunga, 0) AS tunggakan_bunga,
@@ -700,6 +704,9 @@ class FlowParController {
                 COALESCE(n.deskripsi_kode_kelurahan, c.deskripsi_kode_kelurahan) AS deskripsi_kode_kelurahan,
                 COALESCE(n.deskripsi_kode_kecamatan, c.deskripsi_kode_kecamatan) AS deskripsi_kode_kecamatan,
                 COALESCE(n.jml_pinjaman, c.jml_pinjaman) AS plafon,
+                COALESCE(n.jml_angsuran, c.jml_angsuran) AS jml_angsuran,
+                COALESCE(n.suku_bunga_per_tahun, c.suku_bunga_per_tahun) AS suku_bunga_per_tahun,
+                COALESCE(n.type_kredit, c.type_kredit) AS type_kredit,
                 COALESCE(n.tgl_realisasi, c.tgl_realisasi) AS tgl_realisasi,
                 COALESCE(n.nilai_ckpn, c.nilai_ckpn) AS nilai_ckpn,
                 c.kolektibilitas AS kolek_lalu,
@@ -708,7 +715,7 @@ class FlowParController {
             ";
             $windowSummaryColumns = $useWindowSummary ? ",
                             COUNT(*) OVER() AS __total_data,
-                            SUM(COALESCE(n.baki_debet, 0)) OVER() AS __sum_bd" : "";
+                            SUM(COALESCE(n.{$nominalColumn}, 0)) OVER() AS __sum_bd" : "";
 
             $outerDimensions = "
                 LEFT JOIN tabungan tb ON base.norek_tabungan = tb.no_rekening
@@ -761,12 +768,12 @@ class FlowParController {
                             $windowSummaryColumns
                         $from_join_core
                         $where
-                        ORDER BY n.baki_debet DESC, n.no_rekening ASC
+                        ORDER BY nominal_basis DESC, n.no_rekening ASC
                         LIMIT $limit OFFSET $offset
                     ) base
                     $outerDimensions
                     $trxJoinOuter
-                    ORDER BY base.baki_debet DESC, base.no_rekening ASC
+                    ORDER BY base.nominal_basis DESC, base.no_rekening ASC
                 ";
             } else {
                 $sqlData = "
@@ -787,7 +794,7 @@ class FlowParController {
                         $from_join_core
                         $trx_join
                         $where
-                        ORDER BY n.baki_debet DESC, n.no_rekening ASC
+                        ORDER BY nominal_basis DESC, n.no_rekening ASC
                         LIMIT $limit OFFSET $offset
                     ) base
                     $outerDimensions
@@ -799,6 +806,45 @@ class FlowParController {
             $stmtData->execute();
             $data = $stmtData->fetchAll(PDO::FETCH_ASSOC);
 
+            // Detail tambahan hanya dihitung untuk baris halaman yang tampil agar
+            // pencarian tetap ringan. VA memakai snapshot proyeksi akhir bulan actual.
+            $pageAccounts = array_values(array_unique(array_filter(array_map(
+                static fn($row) => trim((string)($row['no_rekening'] ?? '')),
+                $data
+            ))));
+            $vaMap = [];
+            foreach (array_chunk($pageAccounts, 500) as $accountChunk) {
+                $placeholders = implode(',', array_fill(0, count($accountChunk), '?'));
+                $vaSql = "SELECT no_rekening,
+                                 MAX(va_mandiri) AS va_mandiri,
+                                 MAX(va_permata) AS va_permata
+                          FROM nominatif_proyeksi_va
+                          WHERE created = ? AND no_rekening IN ({$placeholders})
+                          GROUP BY no_rekening";
+                $vaStmt = $this->pdo->prepare($vaSql);
+                $vaStmt->execute(array_merge([date('Y-m-t', strtotime($harian_date))], $accountChunk));
+                while ($vaRow = $vaStmt->fetch(PDO::FETCH_ASSOC)) {
+                    $vaMap[trim((string)$vaRow['no_rekening'])] = $vaRow;
+                }
+            }
+            $billPeriod = date('Y-m-01', strtotime($harian_date));
+            foreach ($data as &$row) {
+                $bill = LoanInstallmentHelper::calculateMonthlyBill([
+                    'jml_pinjaman' => $row['plafon'] ?? 0,
+                    'jml_angsuran' => $row['jml_angsuran'] ?? 0,
+                    'suku_bunga_per_tahun' => $row['suku_bunga_per_tahun'] ?? 0,
+                    'type_kredit' => $row['type_kredit'] ?? '',
+                    'tgl_realisasi' => $row['tgl_realisasi'] ?? null,
+                ], $billPeriod);
+                $row['kewajiban_angsuran_pokok'] = $bill['pokok'];
+                $row['kewajiban_angsuran_bunga'] = $bill['bunga'];
+                $row['kewajiban_angsuran'] = $bill['total'];
+                $va = $vaMap[trim((string)($row['no_rekening'] ?? ''))] ?? [];
+                $row['va_mandiri'] = $va['va_mandiri'] ?? null;
+                $row['va_permata'] = $va['va_permata'] ?? null;
+            }
+            unset($row);
+
             // Metadata window dihasilkan bersamaan dengan query halaman. Fallback
             // tetap tersedia untuk halaman kosong agar total pagination tetap benar.
             if (!empty($data) && array_key_exists('__total_data', $data[0])) {
@@ -809,7 +855,7 @@ class FlowParController {
                 }
                 unset($row);
             } else {
-                $sqlSum = "SELECT COUNT(*) as total_data, SUM(COALESCE(n.baki_debet, 0)) AS sum_bd $from_join $where";
+                $sqlSum = "SELECT COUNT(*) as total_data, SUM(COALESCE(n.{$nominalColumn}, 0)) AS sum_bd $from_join $where";
                 $stmtSum = $this->pdo->prepare($sqlSum);
                 foreach ($params as $key => $val) { $stmtSum->bindValue($key, $val); }
                 $stmtSum->execute();
@@ -819,7 +865,11 @@ class FlowParController {
             $totalPages = ceil($totalData / $limit);
 
             sendResponse(200, "Sukses", [
-                'summary' => ['noa' => $totalData, 'bd_act' => $summary['sum_bd'] ?? 0],
+                'summary' => [
+                    'noa' => $totalData,
+                    'bd_act' => $summary['sum_bd'] ?? 0,
+                    'nominal_basis' => $nominalColumn,
+                ],
                 'pagination' => [
                     'total_data'   => $totalData,
                     'total_page'   => $totalPages,

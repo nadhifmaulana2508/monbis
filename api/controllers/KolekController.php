@@ -543,7 +543,9 @@ class KolekController {
         $loadSnapshot = function (string $date) use ($kantor, $bounds, $nominalField): array {
           $sql = "SELECT no_rekening, nama_nasabah, kode_cabang, kolektibilitas,
                          COALESCE(hari_menunggak, 0) AS hari_menunggak,
-                         tgl_jatuh_tempo, COALESCE({$nominalField}, 0) AS nominal
+                         tgl_jatuh_tempo, tgl_realisasi, jml_pinjaman, jml_angsuran,
+                         suku_bunga_per_tahun, type_kredit,
+                         COALESCE({$nominalField}, 0) AS nominal
                   FROM nominatif
                   WHERE created = ? AND kolektibilitas IN ('L','DP','KL','D','M')";
           $params = [$date];
@@ -568,6 +570,11 @@ class KolekController {
               'kol'=>(string)($row['kolektibilitas'] ?? ''),
               'dpd'=>(int)($row['hari_menunggak'] ?? 0),
               'tgl_jatuh_tempo'=>$row['tgl_jatuh_tempo'] ?? null,
+              'tgl_realisasi'=>$row['tgl_realisasi'] ?? null,
+              'jml_pinjaman'=>$row['jml_pinjaman'] ?? 0,
+              'jml_angsuran'=>$row['jml_angsuran'] ?? 0,
+              'suku_bunga_per_tahun'=>$row['suku_bunga_per_tahun'] ?? 0,
+              'type_kredit'=>$row['type_kredit'] ?? '',
               'nominal'=>(float)($row['nominal'] ?? 0)
             ];
           }
@@ -611,10 +618,12 @@ class KolekController {
         $SRC = ['L','DP','KL','D','M'];
         $DST = ['L','DP','KL','D','M','LUNAS'];
         $detailRows = [];
-        $appendDetail = function ($closingRow, $actualRow, string $source, string $target) use (&$detailRows): void {
+        $appendDetail = function ($closingRow, $actualRow, string $source, string $target) use (&$detailRows, $harian): void {
           $closingNominal = (float)($closingRow['nominal'] ?? 0);
           $actualNominal = (float)($actualRow['nominal'] ?? 0);
           $delta = $actualNominal - $closingNominal;
+          $loan = is_array($actualRow) && !empty($actualRow['no_rekening']) ? $actualRow : $closingRow;
+          $bill = LoanInstallmentHelper::calculateMonthlyBill($loan, date('Y-m-01', strtotime($harian)));
           $detailRows[] = [
             'no_rekening'=>(string)($actualRow['no_rekening'] ?? $closingRow['no_rekening'] ?? ''),
             'nama_nasabah'=>(string)($actualRow['nama_nasabah'] ?? $closingRow['nama_nasabah'] ?? ''),
@@ -626,6 +635,9 @@ class KolekController {
             'selisih'=>$delta,
             'angsuran'=>$delta < 0 ? abs($delta) : 0.0,
             'restruck'=>$delta > 0 ? $delta : 0.0,
+            'kewajiban_angsuran_pokok'=>$bill['pokok'],
+            'kewajiban_angsuran_bunga'=>$bill['bunga'],
+            'kewajiban_angsuran'=>$bill['total'],
             'hari_menunggak_m1'=>(int)($closingRow['dpd'] ?? 0),
             'hari_menunggak_actual'=>(int)($actualRow['dpd'] ?? 0),
             'tgl_jatuh_tempo'=>$actualRow['tgl_jatuh_tempo'] ?? $closingRow['tgl_jatuh_tempo'] ?? null
@@ -835,6 +847,37 @@ class KolekController {
         $totals['run_off_delta'] = $totals['run_off_total'] - $previousRunOff['total'];
         $totals['run_off_prev_closing'] = $previousClosing;
         $totals['run_off_prev_harian'] = $previousHarian;
+
+        // VA berasal dari snapshot proyeksi akhir bulan pada periode actual.
+        // Detail migrasi saja yang memerlukan lookup ini agar ringkasan utama tetap ringan.
+        if ($detailType === 'migration' && $detailRows) {
+          $vaMap = [];
+          $vaPosition = date('Y-m-t', strtotime($harian));
+          $detailAccounts = array_values(array_unique(array_filter(array_map(
+            static fn($row) => trim((string)($row['no_rekening'] ?? '')),
+            $detailRows
+          ))));
+          foreach (array_chunk($detailAccounts, 500) as $accountChunk) {
+            $placeholders = implode(',', array_fill(0, count($accountChunk), '?'));
+            $vaSql = "SELECT no_rekening,
+                             MAX(va_mandiri) AS va_mandiri,
+                             MAX(va_permata) AS va_permata
+                      FROM nominatif_proyeksi_va
+                      WHERE created = ? AND no_rekening IN ({$placeholders})
+                      GROUP BY no_rekening";
+            $vaStmt = $this->pdo->prepare($vaSql);
+            $vaStmt->execute(array_merge([$vaPosition], $accountChunk));
+            while ($vaRow = $vaStmt->fetch(PDO::FETCH_ASSOC)) {
+              $vaMap[trim((string)$vaRow['no_rekening'])] = $vaRow;
+            }
+          }
+          foreach ($detailRows as &$detailRow) {
+            $va = $vaMap[trim((string)($detailRow['no_rekening'] ?? ''))] ?? [];
+            $detailRow['va_mandiri'] = $va['va_mandiri'] ?? null;
+            $detailRow['va_permata'] = $va['va_permata'] ?? null;
+          }
+          unset($detailRow);
+        }
 
         foreach ($DST as $dst) {
           $totals['actual'][$dst]['pct'] = $totals['m1_os'] > 0

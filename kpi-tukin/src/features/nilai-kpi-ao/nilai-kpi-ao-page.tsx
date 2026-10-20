@@ -75,9 +75,9 @@ export function NilaiKpiAoPage({ mode = "single" }: Props) {
   }, [refreshDirectory])
 
   const selectedAo = useMemo(() => directory?.ao.find((item) => item.kode_ao === aoCode), [aoCode, directory])
-  const offices = directory?.kantor || []
-  const jobs = directory?.jabatan || []
-  const closingDates = directory?.closing_dates || []
+  const offices = useMemo(() => directory?.kantor ?? [], [directory?.kantor])
+  const jobs = useMemo(() => directory?.jabatan ?? [], [directory?.jabatan])
+  const closingDates = useMemo(() => directory?.closing_dates ?? [], [directory?.closing_dates])
   const availableAo = useMemo(() => {
     const rows = directory?.ao || []
     return office ? rows.filter((item) => String(item.kode_kantor) === String(office)) : rows
@@ -195,7 +195,7 @@ export function NilaiKpiAoPage({ mode = "single" }: Props) {
   }
 
   const title = bulk ? "Generate KPI AO" : "Nilai KPI AO"
-  return <KpiPage title={title} description={bulk ? "Generate penilaian KPI per AO dan seluruh closing yang tersedia. Perhitungan tetap diproses oleh API MONBIS." : "Hitung dan lihat detail penilaian satu AO untuk satu periode closing."} actions={<><Button variant="ghost" size="icon" aria-label="Tentang halaman" onClick={() => setInfoOpen(true)}><Info size={16} /></Button><Button variant="outline" size="sm" onClick={() => refreshDirectory()} disabled={loading}><RefreshCw size={14} className={loading ? "animate-spin" : undefined} /> Muat ulang</Button></>}>
+  return <KpiPage title={title} description={bulk ? "Generate penilaian KPI per AO dan seluruh closing yang tersedia." : "Hitung dan lihat detail penilaian satu AO untuk satu periode closing."} actions={<><Button variant="ghost" size="icon" aria-label="Tentang halaman" onClick={() => setInfoOpen(true)}><Info size={16} /></Button><Button variant="outline" size="sm" onClick={() => refreshDirectory()} disabled={loading}><RefreshCw size={14} className={loading ? "animate-spin" : undefined} /> Muat ulang</Button></>}> 
     {error && <p className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">{error}</p>}
 
     {bulk ? <BulkPanel rows={bulkRows} running={running} onRun={runBulk} office={office} /> : <>
@@ -204,8 +204,8 @@ export function NilaiKpiAoPage({ mode = "single" }: Props) {
         <KpiState loading={loadingDetail} error={error && !loading ? error : ""} empty={!details.length ? "Pilih jabatan, kantor, AO, dan closing. Detail yang sudah tersimpan akan dimuat otomatis." : undefined}>{<DetailTable rows={filteredDetails} rules={directory?.tukin_rules || []} />}</KpiState>
       </KpiPanel>
     </>}
-    <KpiModal open={infoOpen} title={title} description="Perhitungan KPI tetap berada di backend MONBIS." onClose={() => setInfoOpen(false)}><div className="space-y-3 text-sm leading-6 text-[var(--muted)]"><p>{bulk ? "Mode ini menjalankan calculate untuk setiap AO dan closing pada kantor yang dipilih." : "Mode ini memuat evaluation dan detail setelah AO serta closing dipilih."}</p><ul className="list-disc space-y-1 pl-5"><li>React hanya mengatur filter, request, dan tampilan.</li><li>Nilai, skor, bobot, risk gate, dan faktor Tukin berasal dari API.</li><li>AO Dana dan AO Remedial mengikuti status sumber data yang dikembalikan backend.</li></ul></div></KpiModal>
-    <KpiModal open={singleConfirmOpen} title="Generate ulang penilaian?" description={`Nilai untuk closing ${closing} sudah tersedia.`} onClose={() => setSingleConfirmOpen(false)}><div className="space-y-5"><p className="text-sm leading-6 text-[var(--muted)]">Generate ulang akan meminta MONBIS menghitung kembali nilai AO terpilih untuk memperbarui hasil yang tersimpan.</p><div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setSingleConfirmOpen(false)}>Batal</Button><Button onClick={() => { setSingleConfirmOpen(false); void executeSingle() }}>Generate ulang</Button></div></div></KpiModal>
+    <KpiModal open={infoOpen} title={title} description="Perhitungan KPI tetap berada di layanan backend." onClose={() => setInfoOpen(false)}><div className="space-y-3 text-sm leading-6 text-[var(--muted)]"><p>{bulk ? "Mode ini menjalankan calculate untuk setiap AO dan closing pada kantor yang dipilih." : "Mode ini memuat evaluation dan detail setelah AO serta closing dipilih."}</p><ul className="list-disc space-y-1 pl-5"><li>React hanya mengatur filter, request, dan tampilan.</li><li>Nilai, skor, bobot, risk gate, dan faktor Tukin berasal dari API.</li><li>AO Dana dan AO Remedial mengikuti status sumber data yang dikembalikan backend.</li></ul></div></KpiModal>
+    <KpiModal open={singleConfirmOpen} title="Generate ulang penilaian?" description={`Nilai untuk closing ${closing} sudah tersedia.`} onClose={() => setSingleConfirmOpen(false)}><div className="space-y-5"><p className="text-sm leading-6 text-[var(--muted)]">Generate ulang akan menghitung kembali nilai AO terpilih untuk memperbarui hasil yang tersimpan.</p><div className="flex justify-end gap-2"><Button variant="outline" onClick={() => setSingleConfirmOpen(false)}>Batal</Button><Button onClick={() => { setSingleConfirmOpen(false); void executeSingle() }}>Generate ulang</Button></div></div></KpiModal>
     <KpiModal open={Boolean(bulkConfirm)} title="Periode sudah tersedia" description={bulkConfirm ? `${bulkConfirm.existingCount} dari ${bulkConfirm.work.length} periode sudah pernah digenerate.` : undefined} onClose={() => setBulkConfirm(null)}><div className="space-y-5"><p className="text-sm leading-6 text-[var(--muted)]">Pilih apakah hanya periode yang belum ada yang diproses, atau seluruh periode dihitung ulang.</p><div className="flex flex-wrap justify-end gap-2"><Button variant="outline" onClick={() => setBulkConfirm(null)}>Batal</Button><Button variant="subtle" disabled={!bulkConfirm?.pending.length} onClick={() => { const next = bulkConfirm?.pending || []; setBulkConfirm(null); void executeBulk(next) }}>Hanya yang belum ada</Button><Button onClick={() => { const next = bulkConfirm?.work || []; setBulkConfirm(null); void executeBulk(next) }}>Generate ulang semua</Button></div></div></KpiModal>
   </KpiPage>
 }

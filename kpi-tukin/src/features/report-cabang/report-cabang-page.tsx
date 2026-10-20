@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react"
 import { Download, Info } from "lucide-react"
 
 import { useKpiToolbar } from "@/components/app/kpi-shell"
@@ -6,7 +6,7 @@ import { KpiField, KpiModal, KpiPage, KpiPanel, KpiSelect, KpiState } from "@/co
 import { loadKpiReport, loadReportDate, loadReportEmployeeSummary, loadReportOffices } from "@/features/kpi-data"
 import type { KpiReport, KpiReportRow, ReportOffice } from "@/features/kpi-types"
 import { userOfficeCode } from "@/lib/auth"
-import { formatNumber } from "@/lib/utils"
+import { formatNumber, formatTarget } from "@/lib/utils"
 
 const monthLabels = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
 const korwilOptions = [["SEMARANG", "Korwil Semarang"], ["SOLO", "Korwil Solo"], ["BANYUMAS", "Korwil Banyumas"], ["PEKALONGAN", "Korwil Pekalongan"]] as const
@@ -17,7 +17,7 @@ function reportValue(value: number | null | undefined, format?: string, signed =
   const number = numeric(value)
   if (number === null) return "-"
   const prefix = signed && number > 0 ? "+" : ""
-  return `${prefix}${format === "ratio" ? `${formatNumber(number)}%` : formatNumber(number)}`
+  return `${prefix}${format === "ratio" ? `${formatNumber(number)}%` : format === "nominal" ? formatTarget(number, "RUPIAH") : formatNumber(number)}`
 }
 
 function addSdmRows(report: KpiReport, employeeCount: number | null) {
@@ -137,17 +137,17 @@ export function ReportCabangPage() {
   const exportCurrent = () => { if (data && rows.length) downloadExcel(data, rows, office, date) }
   const latestDate = data?.meta?.latest_actual_date || date || "-"
 
-  return <KpiPage title="Report Cabang" description="Perbandingan closing bulanan terhadap RBB dan posisi akhir tahun dari API MONBIS." actions={<><button className="inline-flex size-9 items-center justify-center rounded-md text-[var(--muted)] hover:bg-[var(--surface-subtle)]" aria-label="Tentang report cabang" onClick={() => setInfoOpen(true)}><Info size={16} /></button><button className="inline-flex h-9 items-center gap-2 rounded-md bg-[var(--accent)] px-3 text-sm font-medium text-white hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-50" disabled={!rows.length || loading} onClick={exportCurrent}><Download size={14} /> <span className="hidden sm:inline">Export Excel</span><span className="sm:hidden">Excel</span></button></>}>
+  return <KpiPage title="Report Cabang" description="Perbandingan closing bulanan terhadap RBB dan posisi akhir tahun." actions={<><button className="inline-flex size-9 items-center justify-center rounded-md text-[var(--muted)] hover:bg-[var(--surface-subtle)]" aria-label="Tentang report cabang" onClick={() => setInfoOpen(true)}><Info size={16} /></button><button className="inline-flex h-9 items-center gap-2 rounded-md bg-[var(--accent)] px-3 text-sm font-medium text-white hover:bg-[var(--accent-strong)] disabled:cursor-not-allowed disabled:opacity-50" disabled={!rows.length || loading} onClick={exportCurrent}><Download size={14} /> <span className="hidden sm:inline">Export Excel</span><span className="sm:hidden">Excel</span></button></>}> 
     <KpiPanel title={data?.meta?.scope_label || "Raport kinerja"} description={`Closing terakhir ${latestDate} · Tanggal actual ${data?.meta?.harian_date || date || "-"}`}>
       <KpiState loading={booting || loading} error={error} empty={!rows.length && !loading ? "Belum ada data report untuk filter ini." : undefined} onRetry={load}>
         <div className="max-h-[calc(100dvh-270px)] overflow-auto overscroll-contain">
           <table className="w-full min-w-[1480px] border-separate border-spacing-0 text-sm tabular-nums">
             <thead className="sticky top-0 z-10 bg-[var(--surface)] text-left text-xs text-[var(--muted)]"><tr><th className="sticky left-0 z-20 min-w-64 border-b border-[var(--line)] bg-[var(--surface)] px-4 py-3 font-medium">Indikator kinerja</th><th className="border-b border-[var(--line)] px-3 py-3 font-medium">Tahun lalu</th><th className="border-b border-[var(--line)] px-3 py-3 font-medium">RBB {data?.meta?.year || ""}</th>{monthLabels.map((month) => <th key={month} className="border-b border-[var(--line)] px-3 py-3 text-right font-medium">{month}</th>)}<th className="border-b border-[var(--line)] px-3 py-3 text-right font-medium">Delta bulan</th><th className="border-b border-[var(--line)] px-3 py-3 text-right font-medium">% bulan</th><th className="border-b border-[var(--line)] px-3 py-3 text-right font-medium">Delta tahun</th><th className="border-b border-[var(--line)] px-3 py-3 text-right font-medium">% tahun</th></tr></thead>
-            <tbody>{Object.entries(sections).map(([section, sectionRows]) => <>{<tr key={`${section}-heading`}><th colSpan={19} className="border-b border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 py-2 text-left text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">{section}</th></tr>}{sectionRows.map((row) => <tr key={row.key || row.label} className="group hover:bg-[var(--surface-subtle)]"><td className="sticky left-0 z-[1] border-b border-[var(--line-soft)] bg-[var(--surface)] px-4 py-3 font-medium group-hover:bg-[var(--surface-subtle)]">{row.label || "-"}</td><td className="border-b border-[var(--line-soft)] px-3 py-3">{reportValue(row.previous, row.format)}</td><td className="border-b border-[var(--line-soft)] px-3 py-3">{reportValue(row.year_target, row.format)}</td>{monthLabels.map((_, index) => <td key={index} className="border-b border-[var(--line-soft)] px-3 py-3 text-right">{reportValue(row.monthly?.[index], row.format)}</td>)}<td className="border-b border-[var(--line-soft)] px-3 py-3 text-right">{reportValue(row.current_delta, row.format, true)}</td><td className="border-b border-[var(--line-soft)] px-3 py-3 text-right">{reportValue(row.current_achievement, "ratio")}</td><td className="border-b border-[var(--line-soft)] px-3 py-3 text-right">{reportValue(row.year_delta, row.format, true)}</td><td className="border-b border-[var(--line-soft)] px-3 py-3 text-right">{reportValue(row.year_achievement, "ratio")}</td></tr>)}</>)}</tbody>
+            <tbody>{Object.entries(sections).map(([section, sectionRows]) => <Fragment key={section}><tr><th colSpan={19} className="border-b border-[var(--line-soft)] bg-[var(--surface-subtle)] px-4 py-2 text-left text-xs font-semibold uppercase tracking-[0.12em] text-[var(--muted)]">{section}</th></tr>{sectionRows.map((row) => <tr key={row.key || row.label} className="group hover:bg-[var(--surface-subtle)]"><td className="sticky left-0 z-[1] border-b border-[var(--line-soft)] bg-[var(--surface)] px-4 py-3 font-medium group-hover:bg-[var(--surface-subtle)]">{row.label || "-"}</td><td className="border-b border-[var(--line-soft)] px-3 py-3">{reportValue(row.previous, row.format)}</td><td className="border-b border-[var(--line-soft)] px-3 py-3">{reportValue(row.year_target, row.format)}</td>{monthLabels.map((_, index) => <td key={index} className="border-b border-[var(--line-soft)] px-3 py-3 text-right">{reportValue(row.monthly?.[index], row.format)}</td>)}<td className="border-b border-[var(--line-soft)] px-3 py-3 text-right">{reportValue(row.current_delta, row.format, true)}</td><td className="border-b border-[var(--line-soft)] px-3 py-3 text-right">{reportValue(row.current_achievement, "ratio")}</td><td className="border-b border-[var(--line-soft)] px-3 py-3 text-right">{reportValue(row.year_delta, row.format, true)}</td><td className="border-b border-[var(--line-soft)] px-3 py-3 text-right">{reportValue(row.year_achievement, "ratio")}</td></tr>)}</Fragment>)}</tbody>
           </table>
         </div>
       </KpiState>
     </KpiPanel>
-    <KpiModal open={infoOpen} title="Report Cabang" description="Perhitungan tetap berasal dari API MONBIS." onClose={() => setInfoOpen(false)}><p className="text-sm leading-6 text-[var(--muted)]">React mengambil dan menampilkan response report tahunan, termasuk closing bulanan, RBB, pencapaian, Korwil, dan ringkasan SDM. Rumus bisnis tidak dihitung ulang di browser.</p></KpiModal>
+    <KpiModal open={infoOpen} title="Report Cabang" description="Perhitungan berasal dari layanan backend." onClose={() => setInfoOpen(false)}><p className="text-sm leading-6 text-[var(--muted)]">React mengambil dan menampilkan response report tahunan, termasuk closing bulanan, RBB, pencapaian, Korwil, dan ringkasan SDM. Rumus bisnis tidak dihitung ulang di browser.</p></KpiModal>
   </KpiPage>
 }

@@ -52,8 +52,8 @@ export function KpiSelect({ label, value, onChange, children, className, disable
   return <KpiField label={label} className={className}><select disabled={disabled} value={value} onChange={(event) => onChange(event.target.value)} className="h-9 min-w-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-2.5 text-sm text-[var(--ink)] outline-none focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)] disabled:opacity-50">{children}</select></KpiField>
 }
 
-export function KpiInput({ label, value, onChange, placeholder, type = "text", className }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; type?: string; className?: string }) {
-  return <KpiField label={label} className={className}><input type={type} value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="h-9 min-w-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-2.5 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]" /></KpiField>
+export function KpiInput({ label, value, onChange, placeholder, type = "text", className, onFocus, onBlur }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; type?: string; className?: string; onFocus?: () => void; onBlur?: () => void }) {
+  return <KpiField label={label} className={className}><input type={type} value={value} onChange={(event) => onChange(event.target.value)} onFocus={onFocus} onBlur={onBlur} placeholder={placeholder} className="h-9 min-w-0 rounded-md border border-[var(--line)] bg-[var(--surface)] px-2.5 text-sm text-[var(--ink)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--ring)]" /></KpiField>
 }
 
 export function KpiMetric({ label, value, detail, tone = "default" }: { label: string; value: ReactNode; detail?: ReactNode; tone?: "default" | "accent" | "success" | "warning" }) {
@@ -61,7 +61,7 @@ export function KpiMetric({ label, value, detail, tone = "default" }: { label: s
 }
 
 export function KpiState({ loading, error, empty, onRetry, children }: { loading?: boolean; error?: string; empty?: string; onRetry?: () => void; children: ReactNode }) {
-  if (loading) return <div className="grid min-h-52 place-items-center gap-2 px-6 text-center text-sm text-[var(--muted)]"><LoaderCircle size={18} className="animate-spin text-[var(--accent)]" /><span>Mengambil data dari MONBIS...</span></div>
+  if (loading) return <div className="grid min-h-52 place-items-center gap-2 px-6 text-center text-sm text-[var(--muted)]"><LoaderCircle size={18} className="animate-spin text-[var(--accent)]" /><span>Mengambil data...</span></div>
   if (error) return <div className="grid min-h-52 place-items-center gap-3 px-6 text-center"><AlertCircle size={20} className="text-red-600 dark:text-red-400" /><p className="max-w-lg text-sm text-red-600 dark:text-red-400">{error}</p>{onRetry && <Button variant="outline" size="sm" onClick={onRetry}>Coba lagi</Button>}</div>
   if (empty) return <div className="grid min-h-52 place-items-center px-6 text-center text-sm text-[var(--muted)]">{empty}</div>
   return <>{children}</>

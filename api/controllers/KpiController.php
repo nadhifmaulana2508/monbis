@@ -224,7 +224,7 @@ final class KpiController
         }
         if (!$indikator) {$this->json(422,'Indikator KPI belum aktif');return;}
         $scoreRows=$this->pdo->prepare("SELECT indikator_id,skor,min_indeks,max_indeks,predikat FROM kpi_parameter_skor_jabatan WHERE jabatan_id=:jab AND aktif=1 ORDER BY indikator_id,skor");$scoreRows->execute([':jab'=>$jab]);$scoreRows=$scoreRows->fetchAll(PDO::FETCH_ASSOC);$scoreByIndicator=[];foreach($scoreRows as $scoreRow){$scoreByIndicator[(int)($scoreRow['indikator_id']??0)][]=$scoreRow;}
-        $scoreFor=static function(int $indikatorId,float $value,array $ranges,bool $isCount=false,bool $isLower=false): int {
+        $scoreFor=static function(int $indikatorId,float $value,array $ranges,bool $isCount=false,bool $isLower=false,bool $discreteCount=false,bool $inclusiveUpper=false): int {
             $items=array_values($ranges[$indikatorId]??[]);
             if(!$items)return 0;
             $matches=static function(float $current,float $min,float $max,int $score): bool {
@@ -234,8 +234,23 @@ final class KpiController
             if($isCount){
                 foreach($items as $range){
                     $min=(float)$range['min_indeks'];$max=(float)$range['max_indeks'];$score=(int)$range['skor'];
+                    if($discreteCount){
+                        if($score===0 && $value<=$max)return $score;
+                        if($max>=999){if($value>$min-1)return $score;continue;}
+                        if($value>$min-1&&$value<=$max-1)return $score;
+                        continue;
+                    }
                     if(abs($max-$min)<0.0000001&&abs($value-$min)<0.0000001)return $score;
                     if($value>=$min&&($max>=999||$value<=$max))return $score;
+                }
+                return 0;
+            }
+            if($inclusiveUpper){
+                foreach($items as $range){
+                    $min=(float)$range['min_indeks'];$max=(float)$range['max_indeks'];$score=(int)$range['skor'];
+                    if($score===0 && $value<$max)return $score;
+                    if($max>=999){if($value>=$min)return $score;continue;}
+                    if($value>=$min&&$value<=$max)return $score;
                 }
                 return 0;
             }
@@ -320,16 +335,53 @@ final class KpiController
                 ORDER BY (tahun=0) DESC, (id_peg IS NULL) DESC, (kode_kantor IS NULL) DESC, id ASC");
             $targetSt->execute([':jab'=>$jab,':tahun'=>(int)date('Y',strtotime($closing)),':bulan'=>(int)date('n',strtotime($closing)),':idpeg'=>(string)($ao['id_peg']?:$ao['kode_group2']),':kantor'=>$ao['kode_kantor']]);$targets=[];foreach($targetSt as $t){$targets[(int)$t['indikator_id']] = (float)$t['target'];}
             $ready=true;$weighted=0;$details=[];$gate='NORMAL';
-            foreach($indikator as $i){$key=$i['formula_key'];$target=$targets[(int)$i['id']]??0;if($target<=0&&$key==='REALISASI_KREDIT'&&!empty($input['target_realisasi']))$target=(float)$input['target_realisasi'];if($target<=0&&$key==='NOA_REALISASI'&&!empty($input['target_noa']))$target=(float)$input['target_noa'];if($target<=0&&$key==='MOB_6')$target=0.05;if($target<=0&&$key==='REPAYMENT_RATE')$target=0.65;if($target<=0&&$key==='EARLY_RUN_OFF')$target=0.01;if($target<=0&&$key==='PIPELINE')$target=1.0;if($dummyMode&&$target<=0)$target=(float)($dummyTargets[$key]??(strtoupper((string)$i['unit'])==='PERSEN'?1:1));$real=$actual[$key]??null;$note='';$score=0;$idx=0;$value100=0;$dummyIndex=null;
-                if($dummyMode){foreach($scoreByIndicator[(int)$i['id']]??[] as $dummyRange){if((int)$dummyRange['skor']===3){$dummyMin=(float)$dummyRange['min_indeks'];$dummyMax=(float)$dummyRange['max_indeks'];$dummyIndex=$dummyMax>=999?$dummyMin+0.25:($dummyMin+$dummyMax)/2;break;}}if($dummyIndex===null||$dummyIndex<=0)$dummyIndex=0.80;$real=strtoupper((string)$i['arah'])==='LOWER'?$target/$dummyIndex:$target*$dummyIndex;$note='DUMMY - sumber data real '.$selectedJabatan['nama'].' belum tersedia';}
-                if($dummyMode){$idx=(float)$dummyIndex;}
-                elseif($real===null){$ready=false;$note='Sumber data indikator belum dikonfigurasi';}
-                elseif($target<=0){$ready=false;$note='Target periode belum diisi';}
-                else{if($key==='MOB_6'){$idx=(float)$real;$score=$real<=0.05?5:($real<=0.06?4:($real<=0.07?3:($real<=0.08?2:1)));$note='OS menunggak MOB 1–6 / total OS MOB 1–6';}elseif($key==='EARLY_RUN_OFF'){$idx=(float)$real;$score=$real<=0.01?5:($real<=0.0125?4:($real<=0.015?3:($real<=0.02?2:1)));$note='OS pelunasan murni / OS DPD 0 closing sebelumnya; refinancing/top-up dikecualikan';}elseif($key==='PIPELINE'){$idx=(float)$real;$score=min(5,(int)$real+1);$note='NOA pipeline yang cair/realisasi pada periode berjalan';}else{$idx=strtoupper($i['arah'])==='LOWER'?($real==0?1.5:min($target/$real,1.5)):min($real/$target,1.5);foreach($scoreRows as $s){if($idx>=(float)$s['min_indeks']&&$idx<(float)$s['max_indeks']||((int)$s['skor']===5&&$idx>=(float)$s['min_indeks'])){$score=(int)$s['skor'];break;}}}$weighted=(float)$i['bobot']*$score;$value100=min((float)$i['bobot']*100,$weighted/5*100);}
-                // Repayment Rate pada skema AO Kredit memakai persentase DPD 0
-                // langsung (40%-80%), bukan rasio terhadap target default 65%.
-                if ($key==='REPAYMENT_RATE' && $real!==null) $idx=(float)$real;
-                $isCount=in_array(strtoupper((string)($i['unit']??'')),['NOA','JUMLAH'],true);$isLower=strtoupper((string)($i['arah']??''))==='LOWER';$scoreBasis=$isCount?(float)$real:(float)$idx;$score=$scoreFor((int)$i['id'],$scoreBasis,$scoreByIndicator,$isCount,$isLower);$weighted=(float)$i['bobot']*$score;$value100=min((float)$i['bobot']*100,$weighted/5*100);$details[]=['indikator'=>$i,'target'=>$target,'realisasi'=>$real,'indeks'=>$idx,'skor'=>$score,'nilai_tertimbang'=>$weighted,'nilai_100'=>$value100,'os_mob_menunggak'=>$key==='MOB_6'?(float)($actual['OS_MOB_MENUNGGAK']??0):0,'os_mob_total'=>$key==='MOB_6'?(float)($actual['OS_MOB_TOTAL']??0):0,'os_dpd0'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_DPD0']??0):0,'os_kelolaan'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_KELOLAAN']??0):0,'os_run_off'=>$key==='EARLY_RUN_OFF'?(float)($actual['OS_RUN_OFF']??0):0,'os_dpd0_m1'=>$key==='EARLY_RUN_OFF'?(float)($actual['OS_DPD0_M1']??0):0,'catatan'=>$note];
+            foreach($indikator as $i){
+                $key=(string)$i['formula_key'];
+                $target=$targets[(int)$i['id']]??0;
+                if($target<=0&&$key==='REALISASI_KREDIT'&&!empty($input['target_realisasi']))$target=(float)$input['target_realisasi'];
+                if($target<=0&&$key==='NOA_REALISASI'&&!empty($input['target_noa']))$target=(float)$input['target_noa'];
+                if($dummyMode&&$target<=0)$target=(float)($dummyTargets[$key]??(strtoupper((string)$i['unit'])==='PERSEN'?1:1));
+                $real=$actual[$key]??null;
+                $note=(string)($actual[$key.'_NOTE']??'');
+                $score=0;$idx=0;$value100=0;$dummyIndex=null;
+
+                if($dummyMode){
+                    foreach($scoreByIndicator[(int)$i['id']]??[] as $dummyRange){
+                        if((int)$dummyRange['skor']===3){
+                            $dummyMin=(float)$dummyRange['min_indeks'];
+                            $dummyMax=(float)$dummyRange['max_indeks'];
+                            $dummyIndex=$dummyMax>=999?$dummyMin+0.25:($dummyMin+$dummyMax)/2;
+                            break;
+                        }
+                    }
+                    if($dummyIndex===null||$dummyIndex<=0)$dummyIndex=0.80;
+                    $real=strtoupper((string)$i['arah'])==='LOWER'?$target/$dummyIndex:$target*$dummyIndex;
+                    $idx=(float)$dummyIndex;
+                    $note='DUMMY - sumber data real '.$selectedJabatan['nama'].' belum tersedia';
+                }elseif($real===null){
+                    $ready=false;
+                    $note=$note!==''?$note:'Sumber data indikator belum dikonfigurasi';
+                }else{
+                    if($key==='REALISASI_KREDIT'){
+                        if($target<=0){$ready=false;$note='Target periode belum diisi';$idx=0;}
+                        else $idx=(float)$real/$target;
+                    }elseif(in_array(strtoupper((string)($i['unit']??'')),['PERSEN','NOA','JUMLAH'],true)||in_array($key,['GROWTH_KREDIT','GROWTH_NOA','FLOW_DPK'],true)){
+                        $idx=(float)$real;
+                    }elseif($target>0){
+                        $idx=(float)$real/$target;
+                    }else{
+                        $ready=false;
+                        $note='Target periode belum diisi';
+                    }
+                }
+
+                $isCount=in_array(strtoupper((string)($i['unit']??'')),['NOA','JUMLAH'],true);
+                $isLower=strtoupper((string)($i['arah']??''))==='LOWER';
+                $scoreBasis=$isCount?(float)($real??0):(float)$idx;
+                $score=$scoreFor((int)$i['id'],$scoreBasis,$scoreByIndicator,$isCount,$isLower,$key==='GROWTH_NOA',$key==='GROWTH_KREDIT');
+                $weighted=(float)$i['bobot']*$score;
+                $value100=min((float)$i['bobot']*100,$weighted/5*100);
+                $details[]=['indikator'=>$i,'target'=>$target,'realisasi'=>$real,'indeks'=>$idx,'skor'=>$score,'nilai_tertimbang'=>$weighted,'nilai_100'=>$value100,'os_mob_menunggak'=>0,'os_mob_total'=>0,'os_dpd0'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_DPD0']??0):0,'os_kelolaan'=>$key==='REPAYMENT_RATE'?(float)($actual['OS_KELOLAAN']??0):0,'os_run_off'=>0,'os_dpd0_m1'=>0,'catatan'=>$note];
             }
             $base=$ready?array_sum(array_column($details,'nilai_100')):0;$factor=(float)($risk[$gate]??1);$final=$base*$factor;$partial=(bool)$selectedCodes;$status=$ready&&!$partial&&!$dummyMode?'DISETUJUI':'DRAFT';
             $this->pdo->beginTransaction();try{
@@ -344,19 +396,97 @@ final class KpiController
 
     private function actualMetrics(string $kodeAo,string $closing,string $prev): array
     {
-        $st=$this->pdo->prepare("SELECT COALESCE(SUM(t.realisasi_pokok),0) total_realisasi,COUNT(DISTINCT t.no_rekening) total_noa,COUNT(DISTINCT t.no_rekening) pipeline_noa,COUNT(DISTINCT CASE WHEN UPPER(TRIM(COALESCE(t.baru_lama,''))) IN ('BARU','NASABAH BARU','NEW','NEW CIF') THEN t.no_rekening END) noa_baru FROM update_realisasi_kredit t WHERE t.tanggal_realisasi>:prev AND t.tanggal_realisasi<=:closing AND t.kode_trans=110 AND t.kode_group2=:ao");$st->execute([':prev'=>$prev,':closing'=>$closing,':ao'=>$kodeAo]);$r=$st->fetch(PDO::FETCH_ASSOC)?:[];
-        // Samakan dengan mob.php: MOB 1-6 berarti enam bulan penuh sebelum
-        // bulan snapshot. Contoh closing Agustus: realisasi Februari-Juli.
-        $mobEnd=date('Y-m-d',strtotime(date('Y-m-01',strtotime($closing)).' -1 day'));
-        $mobStart=date('Y-m-01',strtotime(date('Y-m-01',strtotime($mobEnd)).' -5 month'));
-        $n=$this->pdo->prepare("SELECT COALESCE(SUM(baki_debet),0) total_os,COALESCE(SUM(CASE WHEN COALESCE(hari_menunggak,0)=0 THEN baki_debet ELSE 0 END),0) lancar_os,COALESCE(SUM(baki_debet),0) mob_os,COALESCE(SUM(CASE WHEN COALESCE(hari_menunggak,0)>0 THEN baki_debet ELSE 0 END),0) mob_bad_os,COALESCE(SUM(CASE WHEN kolektibilitas IN ('KL','D','M') THEN baki_debet ELSE 0 END),0) vintage_npl_os FROM nominatif WHERE created=:closing AND kode_group2=:ao AND tgl_realisasi BETWEEN :mob_start AND :mob_end");
-        $n->execute([':closing'=>$closing,':ao'=>$kodeAo,':mob_start'=>$mobStart,':mob_end'=>$mobEnd]);
-        $x=$n->fetch(PDO::FETCH_ASSOC)?:[];$mob=(float)($x['mob_os']??0);
-        $current=$this->pdo->prepare("SELECT COALESCE(SUM(baki_debet),0) total_os,COALESCE(SUM(CASE WHEN UPPER(TRIM(CAST(kolektibilitas AS CHAR))) IN ('L','1') AND COALESCE(hari_menunggak,0)=0 THEN baki_debet ELSE 0 END),0) os_dpd0 FROM nominatif WHERE created=:current_closing AND kode_group2=:current_ao");
-        $current->execute([':current_closing'=>$closing,':current_ao'=>$kodeAo]);$currentRow=$current->fetch(PDO::FETCH_ASSOC)?:[];$totalCurrent=(float)($currentRow['total_os']??0);
-        $runOff=$this->pdo->prepare("SELECT COALESCE(SUM(CASE WHEN n.no_rekening IS NULL OR n.baki_debet<=0 THEN c.baki_debet ELSE 0 END),0) os_run_off,COALESCE(SUM(c.baki_debet),0) os_dpd0_m1 FROM nominatif c LEFT JOIN nominatif n ON n.no_rekening=c.no_rekening AND n.created=:run_closing WHERE c.created=:run_prev AND c.kode_group2=:run_ao AND c.kolektibilitas IN ('L','1') AND COALESCE(c.hari_menunggak,0)=0 AND c.baki_debet>0 AND NOT EXISTS (SELECT 1 FROM nominatif nx WHERE nx.created=:run_closing2 AND nx.nasabah_id=c.nasabah_id AND nx.no_rekening<>c.no_rekening AND nx.tgl_realisasi>:run_prev2 AND nx.tgl_realisasi<=:run_closing3)");
-        $runOff->execute([':run_closing'=>$closing,':run_prev'=>$prev,':run_ao'=>$kodeAo,':run_closing2'=>$closing,':run_prev2'=>$prev,':run_closing3'=>$closing]);$runRow=$runOff->fetch(PDO::FETCH_ASSOC)?:[];$osDpd0M1=(float)($runRow['os_dpd0_m1']??0);$osRunOff=(float)($runRow['os_run_off']??0);
-        return ['REALISASI_KREDIT'=>(float)($r['total_realisasi']??0),'NOA_REALISASI'=>(float)($r['noa_baru']??0),'NOA_TOTAL'=>(float)($r['total_noa']??0),'PIPELINE'=>(float)($r['pipeline_noa']??0),'REPAYMENT_RATE'=>$totalCurrent>0?(float)$currentRow['os_dpd0']/$totalCurrent:0,'OS_DPD0'=>(float)($currentRow['os_dpd0']??0),'OS_KELOLAAN'=>$totalCurrent,'MOB_6'=>$mob>0?(float)$x['mob_bad_os']/$mob:0,'OS_MOB_MENUNGGAK'=>(float)($x['mob_bad_os']??0),'OS_MOB_TOTAL'=>$mob,'EARLY_RUN_OFF'=>$osDpd0M1>0?$osRunOff/$osDpd0M1:0,'OS_RUN_OFF'=>$osRunOff,'OS_DPD0_M1'=>$osDpd0M1,'NPL_VINTAGE'=>$mob>0?(float)$x['vintage_npl_os']/$mob:0];
+        $st=$this->pdo->prepare("SELECT COALESCE(SUM(t.realisasi_pokok),0) total_realisasi,
+                                        COUNT(DISTINCT t.no_rekening) total_noa,
+                                        COUNT(DISTINCT t.no_rekening) pipeline_noa,
+                                        COUNT(DISTINCT CASE WHEN UPPER(TRIM(COALESCE(t.baru_lama,''))) IN ('BARU','NASABAH BARU','NEW','NEW CIF') THEN t.no_rekening END) noa_baru
+                                 FROM update_realisasi_kredit t
+                                 WHERE t.tanggal_realisasi>:prev
+                                   AND t.tanggal_realisasi<=:closing
+                                   AND t.kode_trans=110
+                                   AND t.kode_group2=:ao");
+        $st->execute([':prev'=>$prev,':closing'=>$closing,':ao'=>$kodeAo]);
+        $r=$st->fetch(PDO::FETCH_ASSOC)?:[];
+
+        // Semua metrik kelolaan memakai dua snapshot saja: closing bulan lalu
+        // sebagai baseline dan actual closing sebagai pembanding. Data cleansing
+        // di tengah bulan tidak ikut terbaca oleh query ini.
+        $previous=$this->pdo->prepare("SELECT COALESCE(SUM(CASE WHEN COALESCE(baki_debet,0)>0 THEN baki_debet ELSE 0 END),0) total_os,
+                                              COUNT(DISTINCT CASE WHEN COALESCE(baki_debet,0)>0 THEN no_rekening END) total_noa
+                                       FROM nominatif
+                                       WHERE created=:prev AND kode_group2=:ao");
+        $previous->execute([':prev'=>$prev,':ao'=>$kodeAo]);
+        $previousRow=$previous->fetch(PDO::FETCH_ASSOC)?:[];
+        $previousOs=(float)($previousRow['total_os']??0);
+        $previousNoa=(int)($previousRow['total_noa']??0);
+
+        $current=$this->pdo->prepare("SELECT COALESCE(SUM(CASE WHEN COALESCE(baki_debet,0)>0 THEN baki_debet ELSE 0 END),0) total_os,
+                                            COUNT(DISTINCT CASE WHEN COALESCE(baki_debet,0)>0 THEN no_rekening END) total_noa,
+                                            COALESCE(SUM(CASE WHEN UPPER(TRIM(CAST(kolektibilitas AS CHAR))) IN ('L','1')
+                                                               AND COALESCE(hari_menunggak,0)=0
+                                                              THEN baki_debet ELSE 0 END),0) os_dpd0
+                                     FROM nominatif
+                                     WHERE created=:closing AND kode_group2=:ao");
+        $current->execute([':closing'=>$closing,':ao'=>$kodeAo]);
+        $currentRow=$current->fetch(PDO::FETCH_ASSOC)?:[];
+        $currentOs=(float)($currentRow['total_os']??0);
+        $currentNoa=(int)($currentRow['total_noa']??0);
+        $osDpd0=(float)($currentRow['os_dpd0']??0);
+
+        // Meniru matriks migrasi bucket: populasi hanya rekening yang ada pada
+        // closing M-1 dan berada di bucket 0-30. Flow dihitung dari baki debet
+        // actual closing yang sudah berada di hari menunggak 31+.
+        $flow=$this->pdo->prepare("SELECT
+                                      COALESCE(SUM(CASE WHEN c.no_rekening IS NOT NULL
+                                                          AND COALESCE(c.baki_debet,0)>0
+                                                          AND COALESCE(c.hari_menunggak,0)>30
+                                                        THEN c.baki_debet ELSE 0 END),0) flow_os,
+                                      COALESCE(SUM(p.baki_debet),0) base_os
+                                   FROM (
+                                      SELECT no_rekening,MAX(baki_debet) baki_debet,MAX(hari_menunggak) hari_menunggak
+                                      FROM nominatif
+                                      WHERE created=:flow_prev_a AND kode_group2=:flow_ao_a
+                                        AND no_rekening IS NOT NULL
+                                      GROUP BY no_rekening
+                                   ) p
+                                   LEFT JOIN (
+                                      SELECT no_rekening,MAX(baki_debet) baki_debet,MAX(hari_menunggak) hari_menunggak
+                                      FROM nominatif
+                                      WHERE created=:flow_current AND no_rekening IS NOT NULL
+                                      GROUP BY no_rekening
+                                   ) c ON c.no_rekening=p.no_rekening
+                                   WHERE p.baki_debet>0 AND COALESCE(p.hari_menunggak,0) BETWEEN 0 AND 30");
+        $flow->execute([':flow_prev_a'=>$prev,':flow_ao_a'=>$kodeAo,':flow_current'=>$closing]);
+        $flowRow=$flow->fetch(PDO::FETCH_ASSOC)?:[];
+        $flowOs=(float)($flowRow['flow_os']??0);
+        $flowBase=(float)($flowRow['base_os']??0);
+        $growthKredit=$currentOs-$previousOs;
+        $growthNoa=$currentNoa-$previousNoa;
+        $flowDpk=$flowBase>0?$flowOs/$flowBase:0;
+        $money=static function(float $value): string {
+            $absolute=abs($value);
+            if($absolute>=1000000000000)return 'Rp '.number_format($value/1000000000000,2,',','.').' T';
+            if($absolute>=1000000000)return 'Rp '.number_format($value/1000000000,2,',','.').' M';
+            if($absolute>=1000000)return 'Rp '.number_format($value/1000000,2,',','.').' Jt';
+            if($absolute>=1000)return 'Rp '.number_format($value/1000,2,',','.').' Rb';
+            return 'Rp '.number_format($value,0,',','.');
+        };
+
+        return [
+            'REALISASI_KREDIT'=>(float)($r['total_realisasi']??0),
+            'NOA_REALISASI'=>(float)($r['noa_baru']??0),
+            'NOA_TOTAL'=>(float)($r['total_noa']??0),
+            'PIPELINE'=>(float)($r['pipeline_noa']??0),
+            'GROWTH_KREDIT'=>$growthKredit,
+            'GROWTH_KREDIT_NOTE'=>'Baki debet M-1 '.$money($previousOs).' · actual '.$money($currentOs),
+            'GROWTH_NOA'=>(float)$growthNoa,
+            'GROWTH_NOA_NOTE'=>'NOA M-1 '.number_format($previousNoa,0,',','.').' · actual '.number_format($currentNoa,0,',','.'),
+            'REPAYMENT_RATE'=>$currentOs>0?$osDpd0/$currentOs:0,
+            'FLOW_DPK'=>$flowDpk,
+            'FLOW_DPK_NOTE'=>'Flow 31+ '.$money($flowOs).' / baseline bucket 0-30 '.$money($flowBase),
+            'OS_DPD0'=>$osDpd0,
+            'OS_KELOLAAN'=>$currentOs
+        ];
     }
 
     public function setting(array $input, array $user): void

@@ -648,6 +648,17 @@
   const API_DATE = './api/date/';
   const nf = new Intl.NumberFormat('id-ID');
   const fmt = n => nf.format(Math.round(Number(n||0)));
+  const pipelineOfficeCode = row => row?.kode_cabang ?? row?.kode_kantor ?? row?.group_code ?? '';
+  const pipelineOfficeRank = value => {
+      const match = String(value ?? '').match(/\d+/);
+      return match ? Number(match[0]) : Number.MAX_SAFE_INTEGER;
+  };
+  const comparePipelineOfficeCode = (left, right) => {
+      const leftCode = pipelineOfficeCode(left);
+      const rightCode = pipelineOfficeCode(right);
+      return pipelineOfficeRank(leftCode) - pipelineOfficeRank(rightCode)
+          || String(leftCode).localeCompare(String(rightCode), undefined, { numeric:true, sensitivity:'base' });
+  };
 
   let state = { cabang:'', kankas:'', ao:'', status:'', breakdown:'CABANG', kolektibilitas:['L'], page:1, limit:20, totalPages:1 };
   let abortRekap;
@@ -751,7 +762,7 @@
               html += `<option value="KOR-${korwil}">Korwil ${korwil[0]}${korwil.slice(1).toLowerCase()}</option>`;
           });
           list.filter(item => String(item.kode_kantor || '') !== '000')
-              .sort((a, b) => String(a.kode_kantor).localeCompare(String(b.kode_kantor)))
+              .sort((a, b) => Number(a.kode_kantor) - Number(b.kode_kantor))
               .forEach(item => {
                   const codeItem = String(item.kode_kantor).padStart(3, '0');
                   html += `<option value="CAB-${codeItem}">${codeItem} - ${item.nama_kantor || `Cabang ${codeItem}`}</option>`;
@@ -927,6 +938,7 @@
           if (reqCabang) {
               rows = rows.filter(r => String(r.kode_cabang).padStart(3, '0') === reqCabang);
           }
+          rows.sort(comparePipelineOfficeCode);
 
           if(rows.length === 0) {
               tb.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-20 text-slate-400 italic text-base">Tidak ada data.</td></tr>`;

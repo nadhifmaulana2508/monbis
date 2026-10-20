@@ -1672,7 +1672,7 @@
     }
     if (mkDetailMode === 'migration') {
       body.innerHTML = `<table class="mk-recovery-table">
-        <thead><tr><th>REKENING</th><th>NAMA NASABAH</th><th>CABANG</th><th>KOLEK M-1</th><th>KOLEK ACTUAL</th><th class="num">NOMINAL M-1</th><th class="num">NOMINAL ACTUAL</th><th class="num">SELISIH</th><th>DPD ACTUAL</th><th>TGL JATUH TEMPO</th></tr></thead>
+        <thead><tr><th>REKENING</th><th>NAMA NASABAH</th><th>CABANG</th><th>KOLEK M-1</th><th>KOLEK ACTUAL</th><th class="num">NOMINAL M-1</th><th class="num">NOMINAL ACTUAL</th><th class="num">SELISIH</th><th class="num">KEWAJIBAN ANGSURAN</th><th>VA MANDIRI</th><th>VA PERMATA</th><th>DPD ACTUAL</th><th>TGL JATUH TEMPO</th></tr></thead>
         <tbody>${rows.map(row => `<tr>
           <td>${mkEscape(row.no_rekening || '-')}</td>
           <td><span class="mk-recovery-name" title="${mkEscape(row.nama_nasabah || '-')}">${mkEscape(row.nama_nasabah || '-')}</span></td>
@@ -1682,6 +1682,9 @@
           <td class="num">${mkFmt(row.nominal_closing)}</td>
           <td class="num"><span class="mk-recovery-amount">${mkFmt(row.nominal_actual)}</span></td>
           <td class="num">${mkFmt(row.selisih)}</td>
+          <td class="num"><span class="mk-recovery-amount">${mkFmt(row.kewajiban_angsuran)}</span><small class="mk-recovery-sub">P ${mkFmt(row.kewajiban_angsuran_pokok)} / B ${mkFmt(row.kewajiban_angsuran_bunga)}</small></td>
+          <td class="mk-code">${mkEscape(row.va_mandiri || '-')}</td>
+          <td class="mk-code">${mkEscape(row.va_permata || '-')}</td>
           <td>${mkFmt(row.hari_menunggak_actual)}</td>
           <td>${mkRecoveryDate(row.tgl_jatuh_tempo)}</td>
         </tr>`).join('')}</tbody>

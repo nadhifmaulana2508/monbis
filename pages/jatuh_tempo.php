@@ -760,6 +760,17 @@
   const fmt  = n => nfID.format(Math.round(Number(n||0)));
   const escapeJT = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
   const apiCall = (url, opt={}) => (window.apiFetch ? window.apiFetch(url,opt) : fetch(url,opt));
+  const jtOfficeCode = row => row?.kode_kantor ?? row?.kode_cabang ?? row?.group_code ?? '';
+  const jtOfficeRank = value => {
+      const match = String(value ?? '').match(/\d+/);
+      return match ? Number(match[0]) : Number.MAX_SAFE_INTEGER;
+  };
+  const compareJTOfficeCode = (left, right) => {
+      const leftCode = jtOfficeCode(left);
+      const rightCode = jtOfficeCode(right);
+      return jtOfficeRank(leftCode) - jtOfficeRank(rightCode)
+          || String(leftCode).localeCompare(String(rightCode), undefined, { numeric:true, sensitivity:'base' });
+  };
 
   let abortJT;
   let currentDetailParams = {};
@@ -962,7 +973,7 @@
           const list = Array.isArray(json.data) ? json.data : [];
           let html = '<option value="ALL">Konsolidasi</option>';
           ['SEMARANG','SOLO','BANYUMAS','PEKALONGAN'].forEach(korwil => { html += `<option value="KOR-${korwil}">Korwil ${korwil[0]}${korwil.slice(1).toLowerCase()}</option>`; });
-          list.filter(item => String(item.kode_kantor || '') !== '000').sort((a,b) => String(a.kode_kantor).localeCompare(String(b.kode_kantor))).forEach(item => {
+          list.filter(item => String(item.kode_kantor || '') !== '000').sort((a,b) => Number(a.kode_kantor) - Number(b.kode_kantor)).forEach(item => {
               const codeItem = String(item.kode_kantor).padStart(3, '0');
               html += `<option value="CAB-${codeItem}">${codeItem} - ${item.nama_kantor || `Cabang ${codeItem}`}</option>`;
           });
@@ -1106,6 +1117,7 @@
           currentJTBreakdown = String(meta.applied || currentJTBreakdown || 'CABANG').toUpperCase();
           setupHeaderJT(userKodeGlobal, currentJTBreakdown);
           let rows = json.data.rekap_per_cabang || [];
+          rows.sort(compareJTOfficeCode);
           rekapDataCache = rows;
           renderTableJT(rows, userKodeGlobal);
 

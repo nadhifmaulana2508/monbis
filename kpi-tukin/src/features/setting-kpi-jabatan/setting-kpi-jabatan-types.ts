@@ -1,3 +1,5 @@
+import type { KpiTukinRule } from "@/features/kpi-types"
+
 export type KpiJobCode = "AO_KREDIT" | "AO_DANA" | "AO_REMEDIAL"
 export type KpiUnit = "" | "RUPIAH" | "NOA" | "PERSEN" | "JUMLAH"
 
@@ -29,11 +31,11 @@ export type KpiScoreParameter = {
   id: number
   jabatan_kode: KpiJobCode
   indikator_id: number
-  skor: number
-  min_indeks: number
-  max_indeks: number
+  skor: number | string
+  min_indeks: number | string
+  max_indeks: number | string
   predikat: string
-  aktif: number
+  aktif: number | string
   unit?: string
 }
 
@@ -41,5 +43,6 @@ export type SettingKpiResponse = {
   jabatan: KpiJob[]
   indikator: KpiIndicator[]
   parameter_skor: KpiScoreParameter[]
+  tukin_rules: KpiTukinRule[]
   can_manage?: boolean
 }
