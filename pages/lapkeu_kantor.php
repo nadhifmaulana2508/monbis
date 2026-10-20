@@ -3399,7 +3399,7 @@
             </span>
             <div class="min-w-0">
               <div id="financialToolbarTitle" class="financial-toolbar-title">Neraca Keuangan</div>
-              <div id="financialToolbarMeta" class="financial-toolbar-meta">0 akun · Klik kelompok untuk membuka detail</div>
+              <div id="financialToolbarMeta" class="financial-toolbar-meta">0 akun · Klik induk untuk membuka detail</div>
             </div>
           </div>
           <div class="financial-toolbar-actions">
@@ -3916,7 +3916,7 @@
     if (toolbarTitle) toolbarTitle.textContent = title;
     if (search) search.value = '';
     const levelLabel = financialLevelMode === 'all' ? 'All' : `<= ${financialLevelMode} digit`;
-    if (toolbarMeta) toolbarMeta.textContent = `${currentFinancialRows.length} akun · Level ${levelLabel} · Klik kelompok untuk membuka breakdown`;
+    if (toolbarMeta) toolbarMeta.textContent = `${currentFinancialRows.length} akun · Level ${levelLabel} · Klik induk untuk membuka breakdown`;
 
     tbody.innerHTML = currentFinancialRows.map((d, index) => {
       const kode = String(d?.kode_perk ?? '').trim();
@@ -3945,7 +3945,7 @@
         ? '<span class="caret rotate" aria-hidden="true">▶</span>'
         : '<span class="caret" aria-hidden="true" style="visibility:hidden">▶</span>';
       const resolvedParentIcon = parentOpen ? parentIcon : parentIcon.replace('caret rotate', 'caret');
-      const parentBadge = parent ? '<span class="financial-parent-badge">Kelompok</span>' : '';
+      const parentBadge = parent ? '<span class="financial-parent-badge">Induk</span>' : '';
       const treePath = (meta.path || [kode]).join('>');
       const rowCode = kode || `__row_${index}`;
 
@@ -4818,12 +4818,12 @@
       'Actual adalah posisi berjalan sampai tanggal harian; Closing adalah posisi akhir bulan sebelumnya.',
       'Pendapatan dan laba yang naik umumnya positif, sedangkan beban, biaya, CKPN, dan kerugian yang naik perlu dianalisis lebih lanjut.',
       'Perubahan laba harus dibaca bersama pendapatan bunga, biaya dana, pendapatan nonbunga, beban operasional, CKPN, dan pajak.',
-      'Gunakan fitur buka kelompok untuk menelusuri akun turunan yang membentuk perubahan pada akun induk.'
+      'Gunakan fitur buka induk untuk menelusuri akun turunan yang membentuk perubahan pada akun induk.'
     ] : [
       'Actual adalah posisi neraca berjalan; Closing adalah posisi akhir bulan sebelumnya.',
       'Pertumbuhan aset atau kredit tidak otomatis baik apabila DPK, likuiditas, NPL, atau modal memburuk.',
       'Penurunan tabungan/deposito perlu dipisahkan antara transaksi normal, deposan besar, dan perpindahan antarproduk.',
-      'Perubahan akun induk dapat mengandung akun turunan; gunakan fitur buka kelompok untuk menemukan sumber perubahan.'
+      'Perubahan akun induk dapat mengandung akun turunan; gunakan fitur buka induk untuk menemukan sumber perubahan.'
     ];
 
     const decisionItems = buildFinancialDecisionItems(rows, isIncome, topMoves);
@@ -5460,8 +5460,8 @@
       const ekuitas = getVal('3');
       container.innerHTML = [
         overviewCard('Aset Gabungan', aset, null, 'blue', '', 'Total aset bersih'),
-        overviewCard('Kewajiban', kewajiban, null, 'purple', '', 'Kelompok rekening 2'),
-        overviewCard('Ekuitas', ekuitas, null, 'orange', '', 'Kelompok rekening 3')
+        overviewCard('Kewajiban', kewajiban, null, 'purple', '', 'Induk rekening 2'),
+        overviewCard('Ekuitas', ekuitas, null, 'orange', '', 'Induk rekening 3')
       ].join('');
       return;
     }
@@ -5470,8 +5470,8 @@
     const biaya = getVal('5');
     const laba = pendapatan - biaya;
     container.innerHTML = [
-      overviewCard('Pendapatan', pendapatan, null, 'green', '', 'Kelompok rekening 4'),
-      overviewCard('Biaya', biaya, null, 'orange', '', 'Kelompok rekening 5'),
+      overviewCard('Pendapatan', pendapatan, null, 'green', '', 'Induk rekening 4'),
+      overviewCard('Biaya', biaya, null, 'orange', '', 'Induk rekening 5'),
       overviewCard('Laba Rugi Berjalan', laba, null, laba >= 0 ? 'blue' : 'purple', '', laba >= 0 ? 'Surplus berjalan' : 'Defisit berjalan')
     ].join('');
   }
