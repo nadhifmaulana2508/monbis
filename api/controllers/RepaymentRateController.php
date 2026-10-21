@@ -174,7 +174,7 @@ class RepaymentRateController {
                 'closing' => $closing, 'harian' => $harian, 'kantor' => $kc,
                 'korwil' => $korwil, 'kankas' => $kankas, 'ao' => $ao,
                  'dpd' => $dpdBucket, 'include_127' => $include127, 'saldo' => $saldoCol,
-                 'split_lancar_due' => 1,
+                 'split_lancar_due' => 2,
             ]);
             $cachedReport = $this->getReportCache($reportCacheKey, filter_var($b['refresh'] ?? false, FILTER_VALIDATE_BOOLEAN));
             if ($cachedReport !== null) $this->send(200, "Sukses Rekap RR (cache)", $cachedReport);
@@ -461,6 +461,9 @@ class RepaymentRateController {
                     $bakiDebetPaid = (float)($paidRow['baki_debet'] ?? 0);
                     $fieldPrefix = $bucket === 'sesuai' ? 'angsuran_sesuai' : ($bucket === 'lewat' ? 'angsuran_lewat' : 'angsuran_tanpa_tanggal');
 
+                    // Nilai angsuran utama sudah dihitung sekali dari selisih
+                    // target closing dan saldo aktual di fastRows. Query ini
+                    // hanya membagi nilai tersebut ke bucket tanggal bayar.
                     $report[$tglPaid][$fieldPrefix] += $angsuranPaid;
                     $report[$tglPaid][$fieldPrefix . '_noa'] += $noaPaid;
                     $report[$tglPaid][$fieldPrefix . '_baki_debet'] += $bakiDebetPaid;
@@ -2243,8 +2246,13 @@ class RepaymentRateController {
             }
         }
 
-        // 🔥 FIX: Logika Tanggal
-        $daysStr = implode(',', $this->getDueDaysForRequest($harian, $tglTagih));
+        // Rekap utama menampilkan seluruh tanggal dalam bulan. Saat detail
+        // dibuka dengan Tgl ALL, jangan batasi ke tanggal harian karena itu
+        // membuat total pelunasan detail lebih kecil dari total rekap.
+        $detailDueDays = strtoupper((string)$tglTagih) === 'ALL'
+            ? range(1, 31)
+            : $this->getDueDaysForRequest($harian, $tglTagih);
+        $daysStr = implode(',', $detailDueDays);
 
         $baseQuery = "FROM nominatif t1 
                       LEFT JOIN nominatif t2 ON t1.no_rekening = t2.no_rekening 
