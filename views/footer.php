@@ -101,11 +101,11 @@
             if (!rbac) return false;
             const rbacMenu = document.getElementById('menuRbacAdmin');
             if (!rbac?.configured) {
-            if (rbacMenu) rbacMenu.style.setProperty('display', rbac?.admin ? 'flex' : 'none', 'important');
+            if (rbacMenu) rbacMenu.style.setProperty('display', rbac?.admin || can(user, 'page:setting_rbac') ? 'flex' : 'none', 'important');
                 markReady();
                 return true;
             }
-        if (rbacMenu) rbacMenu.style.setProperty('display', rbac.admin ? 'flex' : 'none', 'important');
+        if (rbacMenu) rbacMenu.style.setProperty('display', rbac.admin || can(user, 'page:setting_rbac') ? 'flex' : 'none', 'important');
             const links = [...document.querySelectorAll('#sidebar nav a[href]')];
             if (rbac.admin) {
                 links.forEach(link => link.style.removeProperty('display'));

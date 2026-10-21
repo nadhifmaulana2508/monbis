@@ -145,7 +145,7 @@ if ($isLoggedIn && !in_array($page, ['login', 'tv', 'tv_cabang'], true)) {
         if ($rbacInitialUser) {
             $rbacInitialAccess = rbacEffectivePermissions($pdo, $rbacInitialUser);
             $rbacPageAccess = $page === 'setting_rbac'
-                ? rbacIsAdmin($rbacInitialUser)
+                ? rbacCanManageMatrix($pdo, $rbacInitialUser)
                 : rbacIsAdmin($rbacInitialUser)
                     || !empty($rbacInitialAccess['permissions']['page:' . trim($page)]['can_view']);
         } else {

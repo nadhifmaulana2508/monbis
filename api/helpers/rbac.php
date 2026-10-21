@@ -422,7 +422,7 @@ function rbacRequireUser(PDO $pdo): array
 function rbacRequireAdmin(PDO $pdo): array
 {
     $user = rbacRequireUser($pdo);
-    if (!rbacIsAdmin($user)) {
+    if (!rbacCanManageMatrix($pdo, $user)) {
         sendResponse(403, 'Anda tidak memiliki hak untuk mengatur akses menu.');
     }
     return $user;
@@ -562,6 +562,16 @@ function rbacCanAccessPage(PDO $pdo, array $user, string $page): bool
     return !empty($access['permissions'][$key]['can_view']);
 }
 
+function rbacCanManageMatrix(PDO $pdo, array $user): bool
+{
+    if (rbacIsAdmin($user)) {
+        return true;
+    }
+
+    $access = rbacEffectivePermissions($pdo, $user);
+    return !empty($access['permissions']['page:setting_rbac']['can_view']);
+}
+
 function rbacUserFromCookie(PDO $pdo): ?array
 {
     $token = trim((string)($_COOKIE['sso_token'] ?? ''));
@@ -580,7 +590,7 @@ function rbacAccessFromCookie(PDO $pdo, string $page): ?bool
         return null;
     }
     if (trim($page) === 'setting_rbac') {
-        return rbacIsAdmin($user);
+        return rbacCanManageMatrix($pdo, $user);
     }
     return rbacCanAccessPage($pdo, $user, $page);
 }

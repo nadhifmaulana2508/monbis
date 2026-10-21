@@ -1208,7 +1208,8 @@ if (is_array($rbacInitialAccess ?? null)) {
       if (adminMenu) adminMenu.style.setProperty('display', user && resolvePegId(user) === '102-119' ? 'block' : 'none', 'important');
       if (rbacMenu) {
         const role = String(user?.role || '').toLowerCase();
-      rbacMenu.style.setProperty('display', role === 'dev' || resolvePegId(user) === '102-119' ? 'flex' : 'none', 'important');
+      const canManageRbac = user?.rbac?.admin || window.MonbisRbac?.can?.(user, 'page:setting_rbac') || role === 'dev' || resolvePegId(user) === '102-119';
+      rbacMenu.style.setProperty('display', canManageRbac ? 'flex' : 'none', 'important');
       }
       return !!user;
     }
