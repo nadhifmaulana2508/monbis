@@ -152,16 +152,10 @@ function rbacEnsureSchema(PDO $pdo): void
            AND table_name IN ({$tableList})"
     )->fetchAll(PDO::FETCH_COLUMN);
     if (count(array_intersect($requiredTables, $existingTables)) === count($requiredTables)) {
-        $hasCatalog = (bool)$pdo->query("SELECT 1 FROM rbac_menu LIMIT 1")->fetchColumn();
-        // Fitur khusus yang dikelola di Matrix harus sudah tersinkron sebelum
-        // jalur cepat dipakai. Jika belum ada, lanjutkan ke sinkronisasi katalog.
-        $requiredFeatureKeys = ['page:update_flowpar', 'page:tv_cabang', 'page:tv'];
-        $featurePlaceholders = implode(',', array_fill(0, count($requiredFeatureKeys), '?'));
-        $featureCheck = $pdo->prepare("SELECT COUNT(DISTINCT feature_key)
-            FROM rbac_menu WHERE feature_key IN ({$featurePlaceholders})");
-        $featureCheck->execute($requiredFeatureKeys);
-        $hasRequiredFeatures = (int)$featureCheck->fetchColumn() === count($requiredFeatureKeys);
-        if ($hasCatalog && $hasRequiredFeatures) {
+        $catalogKeys = array_column(rbacFeatureCatalog(), 'feature_key');
+        $existingFeatureKeys = $pdo->query("SELECT feature_key FROM rbac_menu")->fetchAll(PDO::FETCH_COLUMN);
+        $missingFeatureKeys = array_diff($catalogKeys, $existingFeatureKeys);
+        if (!$missingFeatureKeys) {
             $ready[$connectionKey] = true;
             return;
         }
