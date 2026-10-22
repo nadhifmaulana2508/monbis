@@ -654,14 +654,20 @@ function rbacPermissionRowsForUsers(PDO $pdo, array $employeeIds): array
     if (!$employeeIds) {
         return [];
     }
-    $placeholders = implode(',', array_fill(0, count($employeeIds), '?'));
-    $stmt = $pdo->prepare("SELECT up.employee_id, m.feature_key, up.can_view,
-        up.can_create, up.can_update, up.can_delete, up.can_export
-        FROM rbac_user_permission up
-        INNER JOIN rbac_menu m ON m.id = up.menu_id
-        WHERE up.employee_id IN ({$placeholders}) AND up.is_active = 1");
-    $stmt->execute($employeeIds);
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $user = rbacFindUserByEmployeeId($pdo, $employeeIds[0]);
+    if (!$user) {
+        return [];
+    }
+
+    $effective = rbacEffectivePermissions($pdo, $user);
+    $rows = [];
+    foreach ($effective['permissions'] as $featureKey => $permission) {
+        $rows[] = array_merge(
+            ['employee_id' => $employeeIds[0], 'feature_key' => $featureKey],
+            $permission
+        );
+    }
+    return $rows;
 }
 
 function rbacSaveRole(PDO $pdo, array $input, array $actor): void
