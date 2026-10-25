@@ -15,11 +15,15 @@ frontend/
 kpi-tukin/node_modules/
 kpi-tukin/dist/
 
-# Standalone React RBB Bisnis build artifacts
-rbb-bisnis/node_modules/
+# Standalone React RBB work (local only for now)
+rbb/
+rbb-bisnis/
 
 # Local agent/task metadata and documentation virtual environment
 .agents/
 .venv-docs/
 
 dags
+
+# Local anti-slop rules and prompt context
+.anti-slop/

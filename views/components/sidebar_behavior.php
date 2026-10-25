@@ -25,6 +25,8 @@ define('MONBIS_SIDEBAR_BEHAVIOR_LOADED', true);
     pointer-events:none;
   }
   #sidebar {
+    min-height:0;
+    overflow:hidden !important;
     background:
       radial-gradient(circle at 15% 4%, rgba(52,171,190,.18), transparent 24%),
       linear-gradient(180deg, #103f56 0%, #0c334b 52%, #09283d 100%) !important;
@@ -77,7 +79,21 @@ define('MONBIS_SIDEBAR_BEHAVIOR_LOADED', true);
     background:rgba(113,211,221,.22);
     box-shadow:inset 0 0 0 1px rgba(161,232,237,.16);
   }
-  #sidebar nav { overscroll-behavior:contain; }
+  #sidebar nav {
+    min-height:0;
+    flex:1 1 auto;
+    overflow-x:hidden;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(100,116,139,.55) transparent;
+  }
+  #sidebar nav::-webkit-scrollbar { display:block; width:4px; height:4px; }
+  #sidebar nav::-webkit-scrollbar-track { background:transparent; }
+  #sidebar nav::-webkit-scrollbar-thumb { border-radius:999px; background:rgba(100,116,139,.48); }
+  #sidebar nav::-webkit-scrollbar-thumb:hover { background:rgba(37,99,235,.7); }
+  #sidebar > .h-16,
+  #sidebar > .monbis-sidebar-promo { flex:0 0 auto; }
   #sidebar .accordion-btn,
   #sidebar nav > a { min-height:44px; }
   #sidebar .accordion-btn.is-active {
@@ -261,7 +277,7 @@ define('MONBIS_SIDEBAR_BEHAVIOR_LOADED', true);
     .monbis-app-shell > #sidebar.is-expanded {
       flex-basis:278px !important;
       width:278px !important;
-      overflow:visible !important;
+      overflow:hidden !important;
     }
     .monbis-app-shell > #sidebar + div {
       flex:1 1 auto;
@@ -328,9 +344,7 @@ define('MONBIS_SIDEBAR_BEHAVIOR_LOADED', true);
     .monbis-app-shell > #sidebar:not(.is-expanded) > .h-16 .monbis-logo--wordmark {
       display:none;
     }
-    .monbis-app-shell > #sidebar.is-expanded nav {
-      overflow-y:auto;
-    }
+    .monbis-app-shell > #sidebar.is-expanded nav { min-height:0; overflow-y:auto; }
     .monbis-app-shell > #sidebar.is-expanded .accordion-btn,
     .monbis-app-shell > #sidebar.is-expanded nav > a {
       justify-content:flex-start;
@@ -373,6 +387,266 @@ define('MONBIS_SIDEBAR_BEHAVIOR_LOADED', true);
       transition:transform .2s ease !important;
       will-change:transform;
     }
+  }
+
+  /* shadcn/Vercel navigation surface: compact, quiet, and predictable. */
+  #sidebar {
+    --nav-surface:#ffffff;
+    --nav-border:#e5e7eb;
+    --nav-text:#111827;
+    --nav-muted:#64748b;
+    --nav-hover:#f8fafc;
+    --nav-active:#eff6ff;
+    --nav-active-text:#2563eb;
+    --nav-subline:#e5e7eb;
+    background:var(--nav-surface) !important;
+    border-right:1px solid var(--nav-border) !important;
+    box-shadow:none !important;
+    color:var(--nav-text) !important;
+  }
+  :root[data-monbis-theme="dark"] #sidebar {
+    --nav-surface:#0f172a;
+    --nav-border:#1e293b;
+    --nav-text:#e5e7eb;
+    --nav-muted:#94a3b8;
+    --nav-hover:#172033;
+    --nav-active:#172554;
+    --nav-active-text:#93c5fd;
+    --nav-subline:#334155;
+  }
+  #sidebar > .h-16 {
+    height:56px;
+    min-height:56px;
+    padding:0 12px;
+    background:var(--nav-surface) !important;
+    border-bottom:1px solid var(--nav-border) !important;
+  }
+  #sidebar > .h-16 .monbis-logo--icon {
+    width:30px;
+    height:30px;
+    padding:3px;
+    border-radius:8px;
+    background:transparent;
+    box-shadow:none;
+  }
+  #sidebar > .h-16 .monbis-logo--wordmark {
+    width:148px;
+    max-height:34px;
+    padding:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+  }
+  #sidebar nav {
+    padding:8px !important;
+    gap:2px;
+    scrollbar-color:#cbd5e1 transparent;
+  }
+  :root[data-monbis-theme="dark"] #sidebar nav { scrollbar-color:#475569 transparent; }
+  #sidebar .accordion-group { margin:1px 0; }
+  #sidebar .accordion-btn,
+  #sidebar nav > a {
+    min-height:36px;
+    padding:0 9px !important;
+    border:1px solid transparent;
+    border-radius:7px !important;
+    color:var(--nav-text) !important;
+    font-size:13px;
+    font-weight:600 !important;
+    letter-spacing:-.01em;
+    box-shadow:none !important;
+    transform:none !important;
+    transition:background-color .15s ease, color .15s ease, border-color .15s ease;
+  }
+  #sidebar .accordion-btn:hover,
+  #sidebar nav > a:hover {
+    background:var(--nav-hover) !important;
+    border-color:var(--nav-border) !important;
+    color:var(--nav-text) !important;
+  }
+  #sidebar nav > a.is-active,
+  #sidebar nav > a.bg-blue-50,
+  #sidebar .accordion-btn.is-active,
+  #sidebar .accordion-btn.is-open {
+    background:var(--nav-active) !important;
+    border-color:color-mix(in srgb, var(--nav-active-text) 20%, var(--nav-border)) !important;
+    color:var(--nav-active-text) !important;
+    box-shadow:none !important;
+  }
+  #sidebar .accordion-btn > div > svg {
+    stroke-linecap:round;
+    stroke-linejoin:round;
+  }
+  #sidebar .accordion-btn > div > svg,
+  #sidebar nav > a > svg {
+    width:20px !important;
+    height:20px !important;
+    padding:3px;
+    border-radius:6px;
+    color:var(--nav-muted) !important;
+    background:transparent !important;
+    box-shadow:none !important;
+  }
+  #sidebar .accordion-btn:hover > div > svg,
+  #sidebar nav > a:hover > svg,
+  #sidebar .accordion-btn.is-active > div > svg,
+  #sidebar nav > a.is-active > svg,
+  #sidebar nav > a.bg-blue-50 > svg {
+    color:var(--nav-active-text) !important;
+    background:transparent !important;
+    box-shadow:none !important;
+  }
+  #sidebar nav > a.is-active::before,
+  #sidebar nav > a.bg-blue-50::before,
+  #sidebar .accordion-btn.is-active::before {
+    left:0;
+    top:8px;
+    bottom:8px;
+    width:2px;
+    border-radius:999px;
+    background:var(--nav-active-text);
+    box-shadow:none;
+  }
+  #sidebar .accordion-content {
+    margin:2px 0 5px 12px !important;
+    padding:3px 0 3px 16px !important;
+    border-left:1px solid var(--nav-subline) !important;
+    border-radius:0;
+    background:transparent !important;
+  }
+  #sidebar .accordion-content a {
+    min-height:30px;
+    padding:6px 8px !important;
+    border-radius:6px !important;
+    color:var(--nav-muted) !important;
+    font-size:12px !important;
+    font-weight:500;
+  }
+  #sidebar .accordion-content a:hover,
+  #sidebar .accordion-content a.is-active {
+    background:var(--nav-hover) !important;
+    color:var(--nav-active-text) !important;
+    transform:none;
+  }
+  #sidebar .monbis-sidebar-promo {
+    min-height:64px;
+    margin:8px;
+    border:1px solid var(--nav-border);
+    border-radius:10px;
+    background:var(--nav-hover) !important;
+    box-shadow:none !important;
+  }
+  #sidebar .monbis-sidebar-promo__inner {
+    min-height:64px;
+    padding:10px;
+    background:transparent !important;
+  }
+  #sidebar .monbis-sidebar-promo__spark {
+    width:28px;
+    height:28px;
+    border-radius:8px;
+    box-shadow:none;
+  }
+  #sidebar .monbis-sidebar-promo__text strong { color:var(--nav-text) !important; font-size:11px; }
+  #sidebar .monbis-sidebar-promo__text span { color:var(--nav-muted) !important; font-size:9px; }
+
+  #mainNavbar {
+    height:56px !important;
+    min-height:56px !important;
+    flex-basis:56px !important;
+    padding:0 16px !important;
+    background:var(--nav-surface, #ffffff) !important;
+    border-bottom:1px solid var(--nav-border, #e5e7eb) !important;
+    box-shadow:none !important;
+    backdrop-filter:none !important;
+  }
+  :root[data-monbis-theme="dark"] #mainNavbar {
+    --nav-surface:#0f172a;
+    --nav-border:#1e293b;
+  }
+  #mainNavbar::after { display:none; }
+  #mainNavbar #btnToggleSidebar,
+  #mainNavbar .monbis-theme-toggle,
+  #mainNavbar .dashboard-navbar-filter-toggle {
+    width:32px;
+    height:32px;
+    min-height:32px;
+    padding:0;
+    border:1px solid #e5e7eb;
+    border-radius:7px;
+    background:transparent;
+    color:#64748b;
+    box-shadow:none;
+    transform:none;
+  }
+  #mainNavbar #btnToggleSidebar { margin-right:8px !important; }
+  #mainNavbar #btnToggleSidebar:hover,
+  #mainNavbar .monbis-theme-toggle:hover,
+  #mainNavbar .dashboard-navbar-filter-toggle:hover,
+  #mainNavbar .dashboard-navbar-filter-toggle.is-active {
+    background:#f8fafc;
+    border-color:#d1d5db;
+    color:#2563eb !important;
+    box-shadow:none;
+    transform:none;
+  }
+  :root[data-monbis-theme="dark"] #mainNavbar #btnToggleSidebar,
+  :root[data-monbis-theme="dark"] #mainNavbar .monbis-theme-toggle,
+  :root[data-monbis-theme="dark"] #mainNavbar .dashboard-navbar-filter-toggle {
+    border-color:#334155;
+    color:#94a3b8;
+  }
+  :root[data-monbis-theme="dark"] #mainNavbar #btnToggleSidebar:hover,
+  :root[data-monbis-theme="dark"] #mainNavbar .monbis-theme-toggle:hover,
+  :root[data-monbis-theme="dark"] #mainNavbar .dashboard-navbar-filter-toggle:hover,
+  :root[data-monbis-theme="dark"] #mainNavbar .dashboard-navbar-filter-toggle.is-active {
+    background:#172033;
+    border-color:#475569;
+    color:#93c5fd !important;
+  }
+  #mainNavbar .border-l { height:20px; border-color:#e5e7eb !important; }
+  #navUserName { font-size:12px !important; font-weight:600 !important; }
+  #navBranch { font-size:10px !important; color:#64748b !important; }
+  :root[data-monbis-theme="dark"] #navBranch { color:#94a3b8 !important; }
+  #btnProfileMenu {
+    width:32px !important;
+    height:32px !important;
+    border-radius:8px !important;
+    border:1px solid #e5e7eb !important;
+    background:#f8fafc !important;
+    color:#475569 !important;
+    box-shadow:none !important;
+  }
+  #btnProfileMenu:hover { background:#f1f5f9 !important; box-shadow:none !important; transform:none; }
+  :root[data-monbis-theme="dark"] #btnProfileMenu {
+    border-color:#334155 !important;
+    background:#172033 !important;
+    color:#cbd5e1 !important;
+  }
+  :root[data-monbis-theme="dark"] #btnProfileMenu:hover { background:#1e293b !important; }
+  #dropdownProfileMenu {
+    width:192px !important;
+    margin-top:6px;
+    border:1px solid #e5e7eb !important;
+    border-radius:8px !important;
+    box-shadow:0 10px 30px rgba(15,23,42,.12) !important;
+  }
+  #dropdownProfileMenu a { padding:8px 10px !important; font-size:12px !important; }
+  @media (min-width:768px) {
+    .monbis-app-shell > #sidebar { flex-basis:64px !important; width:64px !important; }
+    .monbis-app-shell > #sidebar.is-expanded { flex-basis:264px !important; width:264px !important; }
+    .monbis-app-shell > #sidebar:not(.is-expanded):hover,
+    .monbis-app-shell > #sidebar:not(.is-expanded):focus-within { flex-basis:64px !important; width:64px !important; }
+  }
+  @media (max-width:767px) {
+    #mainNavbar { padding:0 10px !important; }
+    #sidebar { width:min(88vw, 288px) !important; border-radius:0 14px 14px 0; }
+    #sidebar > .h-16 { padding:0 12px; }
+    #sidebar > .h-16 .monbis-logo--icon { display:none; }
+    #sidebar > .h-16 .monbis-logo--wordmark { display:block; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    #sidebar *, #mainNavbar * { transition-duration:0.01ms !important; animation-duration:0.01ms !important; }
   }
 </style>
 <script src="./assets/js/sidebar.js?v=4" defer></script>

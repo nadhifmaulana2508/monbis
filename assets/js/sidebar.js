@@ -24,6 +24,7 @@
     let desktopMode = isDesktop();
     let closeTimer = 0;
     let openGroup = null;
+    const groupScrollPositions = new WeakMap();
 
     const clearCloseTimer = () => {
       window.clearTimeout(closeTimer);
@@ -72,6 +73,43 @@
       else if (openGroup === group) openGroup = null;
     };
 
+    const revealOpenGroup = (group, behavior = 'smooth') => {
+      const {content} = parts(group);
+      if (!content || content.classList.contains('hidden')) return;
+
+      window.requestAnimationFrame(() => {
+        const navRect = nav.getBoundingClientRect();
+        const groupRect = group.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        const visibleTop = navRect.top + 12;
+        const visibleBottom = navRect.bottom - 12;
+        const groupTop = Math.min(groupRect.top, contentRect.top);
+        const groupBottom = Math.max(groupRect.bottom, contentRect.bottom);
+        const groupCenter = (groupTop + groupBottom) / 2;
+        const navCenter = (visibleTop + visibleBottom) / 2;
+        let offset = 0;
+
+        if (groupBottom > visibleBottom) {
+          offset = groupBottom - visibleBottom;
+        } else if (groupTop < visibleTop) {
+          offset = groupTop - visibleTop;
+        } else if (Math.abs(groupCenter - navCenter) > 28) {
+          offset = groupCenter - navCenter;
+        }
+
+        if (Math.abs(offset) > 1) {
+          nav.scrollBy({top: offset, behavior});
+        }
+      });
+    };
+
+    const restoreGroupScroll = (group) => {
+      if (!groupScrollPositions.has(group)) return;
+      const scrollTop = groupScrollPositions.get(group);
+      nav.scrollTo({top: scrollTop, behavior:'smooth'});
+      groupScrollPositions.delete(group);
+    };
+
     const closeOpenGroup = (except = null) => {
       if (openGroup && openGroup !== except) setGroupState(openGroup, false);
     };
@@ -109,6 +147,7 @@
     if (activeGroup) {
       activeGroup.querySelector(':scope > .accordion-btn')?.classList.add('is-active');
       setGroupState(activeGroup, true);
+      revealOpenGroup(activeGroup, 'auto');
     }
 
     const openMobile = () => {
@@ -151,10 +190,15 @@
       if (isDesktop() && !expanded) setExpanded(true);
       const content = parts(group).content;
       const isOpen = Boolean(content && !content.classList.contains('hidden'));
-      if (isOpen) setGroupState(group, false);
+      if (isOpen) {
+        setGroupState(group, false);
+        restoreGroupScroll(group);
+      }
       else {
+        groupScrollPositions.set(group, nav.scrollTop);
         closeOpenGroup(group);
         setGroupState(group, true);
+        revealOpenGroup(group);
       }
     });
 

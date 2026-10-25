@@ -37,15 +37,21 @@ mb_ui_assets('.');
         </label>
         <label class="rbac-field rbac-field--small">
           <span>Kantor</span>
-          <select id="rbacOfficeSelect" disabled>
-            <option value="*">Semua kantor</option>
-          </select>
+          <div class="rbac-combobox" id="rbacOfficeCombo">
+            <input id="rbacOfficeSearch" class="rbac-combobox__input" type="search" placeholder="Cari kantor..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="rbacOfficeOptions" disabled>
+            <select id="rbacOfficeSelect" hidden aria-hidden="true"><option value="*">Semua kantor</option></select>
+            <div id="rbacOfficeOptions" class="rbac-combobox__options" role="listbox" hidden></div>
+          </div>
         </label>
       </div>
       <div class="rbac-toolbar__fields rbac-division-fields" hidden>
         <label class="rbac-field rbac-field--wide">
           <span>Divisi</span>
-          <select id="rbacDivisionSelect" disabled></select>
+          <div class="rbac-combobox" id="rbacDivisionCombo">
+            <input id="rbacDivisionSearch" class="rbac-combobox__input" type="search" placeholder="Cari divisi..." autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="rbacDivisionOptions" disabled>
+            <select id="rbacDivisionSelect" hidden aria-hidden="true"></select>
+            <div id="rbacDivisionOptions" class="rbac-combobox__options" role="listbox" hidden></div>
+          </div>
         </label>
       </div>
       <div class="rbac-toolbar__fields rbac-user-fields" hidden>
@@ -102,8 +108,7 @@ mb_ui_assets('.');
 (() => {
   const API = './api/index.php?request=rbac';
   const el = id => document.getElementById(id);
-  const state = { mode:'role', menus:[], roles:[], roleOptions:[], divisions:[], users:[], selectedUsers:new Set(), currentKeys:new Set(), roleMatrix:null, userMatrix:null };
-  const MATRIX_VISIBLE_FEATURES = new Set(['page:update_flowpar', 'page:tv_cabang', 'page:tv']);
+  const state = { mode:'role', menus:[], roles:[], roleOptions:[], offices:[], divisions:[], divisionOptions:[], users:[], selectedUsers:new Set(), currentKeys:new Set(), roleMatrix:null, userMatrix:null };
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
   const token = () => { try { const local = localStorage.getItem('dpk_token'); if (local) return local; } catch (error) {} const match = document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/); return match ? decodeURIComponent(match[1]) : ''; };
   const headers = () => { const value = token(); return { 'Content-Type':'application/json', ...(value ? {Authorization:`Bearer ${value}`} : {}) }; };
@@ -125,10 +130,7 @@ mb_ui_assets('.');
   const selectedRole = () => { const role = state.roles.find(item => `${item.job_position}|${item.group_jabatan}` === el('rbacRoleSelect').value); return role || state.roles[0] || {job_position:'',group_jabatan:'',kode:'*'}; };
   const selectedUserIds = () => [...state.selectedUsers];
   const featureKeys = () => [...el('rbacFeatureBody').querySelectorAll('input[data-feature-key]:checked')].map(input => input.dataset.featureKey);
-  const isVisibleMatrixFeature = menu => {
-    const moduleName = String(menu.module_name || '').trim().toLowerCase();
-    return moduleName !== 'lainnya' || MATRIX_VISIBLE_FEATURES.has(String(menu.feature_key || '').trim().toLowerCase());
-  };
+  const isVisibleMatrixFeature = () => true;
 
   async function post(body) {
     const response = await fetch(API, {method:'POST', credentials:'same-origin', headers:headers(), body:JSON.stringify(body)});
@@ -176,10 +178,95 @@ mb_ui_assets('.');
     renderRoleOptions();
   }
 
+  const officeLabel = item => item.kode === '*' ? 'Semua kantor' : `${item.branch_name || 'Kantor'} (${item.kode})`;
+
+  function renderOfficeOptions(query = '', open = false) {
+    const options = el('rbacOfficeOptions');
+    const normalizedQuery = String(query || '').trim().toLowerCase();
+    const filtered = state.offices.filter(item => !normalizedQuery || officeLabel(item).toLowerCase().includes(normalizedQuery));
+    options.innerHTML = filtered.length
+      ? filtered.map(item => `<button type="button" class="rbac-combobox__option" role="option" data-office-value="${escapeHtml(item.kode)}">${escapeHtml(officeLabel(item))}</button>`).join('')
+      : '<div class="rbac-combobox__empty">Kantor tidak ditemukan.</div>';
+    options.hidden = !open;
+    el('rbacOfficeSearch').setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function chooseOffice(value) {
+    const option = state.offices.find(item => item.kode === value);
+    if (!option) return;
+    el('rbacOfficeSelect').value = option.kode;
+    el('rbacOfficeSearch').value = officeLabel(option);
+    renderOfficeOptions('', false);
+    loadScopeMatrix();
+  }
+
+  function renderOffices() {
+    const select = el('rbacOfficeSelect');
+    select.innerHTML = state.offices.map(item => `<option value="${escapeHtml(item.kode)}">${escapeHtml(officeLabel(item))}</option>`).join('');
+    select.disabled = !state.offices.length;
+    const selected = state.offices[0];
+    if (selected) {
+      select.value = selected.kode;
+      el('rbacOfficeSearch').value = officeLabel(selected);
+    }
+    el('rbacOfficeSearch').disabled = !state.offices.length;
+    renderOfficeOptions();
+  }
+
+  const divisionLabel = item => String(item.unit_kerja || '');
+
+  function renderDivisionOptions(query = '', open = false) {
+    const options = el('rbacDivisionOptions');
+    const normalizedQuery = String(query || '').trim().toLowerCase();
+    const filtered = state.divisionOptions.filter(item => !normalizedQuery || divisionLabel(item).toLowerCase().includes(normalizedQuery));
+    options.innerHTML = filtered.length
+      ? filtered.map(item => `<button type="button" class="rbac-combobox__option" role="option" data-division-value="${escapeHtml(item.unit_kerja)}">${escapeHtml(divisionLabel(item))}</button>`).join('')
+      : '<div class="rbac-combobox__empty">Divisi tidak ditemukan.</div>';
+    options.hidden = !open;
+    el('rbacDivisionSearch').setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function chooseDivision(value) {
+    const option = state.divisionOptions.find(item => item.unit_kerja === value);
+    if (!option) return;
+    el('rbacDivisionSelect').value = option.unit_kerja;
+    el('rbacDivisionSearch').value = divisionLabel(option);
+    renderDivisionOptions('', false);
+    loadScopeMatrix();
+  }
+
   function renderDivisions() {
     const select = el('rbacDivisionSelect');
-    select.innerHTML = state.divisions.map(item => `<option value="${escapeHtml(item.unit_kerja)}">${escapeHtml(item.unit_kerja)}</option>`).join('');
-    select.disabled = !state.divisions.length;
+    state.divisionOptions = [...new Map(state.divisions.map(item => [item.unit_kerja, item])).values()];
+    select.innerHTML = state.divisionOptions.map(item => `<option value="${escapeHtml(item.unit_kerja)}">${escapeHtml(item.unit_kerja)}</option>`).join('');
+    select.disabled = !state.divisionOptions.length;
+    const selected = state.divisionOptions[0];
+    if (selected) {
+      select.value = selected.unit_kerja;
+      el('rbacDivisionSearch').value = divisionLabel(selected);
+    }
+    el('rbacDivisionSearch').disabled = !state.divisionOptions.length;
+    renderDivisionOptions();
+  }
+
+  function bindComboSearch({inputId, optionsId, comboId, render, choose, selectedValue, label}) {
+    const input = el(inputId);
+    input.addEventListener('focus', () => { input.select(); render('', true); });
+    input.addEventListener('input', () => render(input.value, true));
+    input.addEventListener('keydown', event => {
+      if (event.key === 'Escape') { input.value = label(selectedValue()); render('', false); }
+      if (event.key === 'Enter') {
+        const first = el(optionsId).querySelector('[data-office-value], [data-division-value]');
+        if (first) { event.preventDefault(); choose(first.dataset.officeValue ?? first.dataset.divisionValue); }
+      }
+    });
+    el(optionsId).addEventListener('mousedown', event => {
+      const option = event.target.closest('[data-office-value], [data-division-value]');
+      if (!option) return;
+      event.preventDefault();
+      choose(option.dataset.officeValue ?? option.dataset.divisionValue);
+    });
+    input.dataset.comboId = comboId;
   }
 
   function renderUsers() {
@@ -329,9 +416,10 @@ mb_ui_assets('.');
       const data = await post({type:'bootstrap'});
       state.menus = data.menus || [];
       state.roles = data.roles || [];
+      state.offices = data.offices || [...new Map(state.roles.map(item => [item.kode || '*', {kode:item.kode || '*', branch_name:item.branch_name || ''}])).values()];
       state.divisions = data.divisions || [];
       state.users = data.users || [];
-      renderRoles(); renderDivisions(); renderUsers(); renderMatrix([]); await loadMatrix();
+      renderRoles(); renderOffices(); renderDivisions(); renderUsers(); renderMatrix([]); await loadMatrix();
     } catch (error) { setState(error.message, 'error'); showToast(error.message, 'error'); el('rbacFeatureBody').innerHTML = `<tr><td colspan="3" class="rbac-empty">${escapeHtml(error.message)}</td></tr>`; el('rbacSave').disabled = true; }
   }
 
@@ -356,11 +444,29 @@ mb_ui_assets('.');
     event.preventDefault();
     chooseRole(option.dataset.roleValue);
   });
+  bindComboSearch({
+    inputId:'rbacOfficeSearch',
+    optionsId:'rbacOfficeOptions',
+    comboId:'rbacOfficeCombo',
+    render:renderOfficeOptions,
+    choose:chooseOffice,
+    selectedValue:() => state.offices.find(item => item.kode === el('rbacOfficeSelect').value) || state.offices[0] || {kode:'*'},
+    label:officeLabel,
+  });
+  bindComboSearch({
+    inputId:'rbacDivisionSearch',
+    optionsId:'rbacDivisionOptions',
+    comboId:'rbacDivisionCombo',
+    render:renderDivisionOptions,
+    choose:chooseDivision,
+    selectedValue:() => state.divisionOptions.find(item => item.unit_kerja === el('rbacDivisionSelect').value) || state.divisionOptions[0] || {unit_kerja:''},
+    label:divisionLabel,
+  });
   document.addEventListener('click', event => {
     if (!el('rbacRoleCombo').contains(event.target)) renderRoleOptions('', false);
+    if (!el('rbacOfficeCombo').contains(event.target)) renderOfficeOptions('', false);
+    if (!el('rbacDivisionCombo').contains(event.target)) renderDivisionOptions('', false);
   });
-  el('rbacOfficeSelect').addEventListener('change', loadScopeMatrix);
-  el('rbacDivisionSelect').addEventListener('change', loadScopeMatrix);
   el('rbacUserSearch').addEventListener('input', renderUsers);
   el('rbacUserList').addEventListener('change', event => { const input = event.target.closest('input[data-user-id]'); if (!input) return; const id = input.dataset.userId; if (input.checked) state.selectedUsers.add(id); else state.selectedUsers.delete(id); updateSelectionInfo(); loadUserMatrix(); });
   el('rbacToggleUsers').addEventListener('click', () => { const query = String(el('rbacUserSearch').value || '').trim().toLowerCase(); state.users.filter(user => !query || [user.employee_id,user.full_name,user.job_position,user.branch_name].some(value => String(value || '').toLowerCase().includes(query))).forEach(user => state.selectedUsers.add(String(user.employee_id))); renderUsers(); loadUserMatrix(); });

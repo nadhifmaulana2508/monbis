@@ -1205,12 +1205,18 @@ if (is_array($rbacInitialAccess ?? null)) {
       if (paparanRbbMenu) {
         paparanRbbMenu.style.display = operational ? '' : 'none';
       }
-      if (adminMenu) adminMenu.style.setProperty('display', user && resolvePegId(user) === '102-119' ? 'block' : 'none', 'important');
-      if (rbacMenu) {
-        const role = String(user?.role || '').toLowerCase();
-      const canManageRbac = user?.rbac?.admin || window.MonbisRbac?.can?.(user, 'page:setting_rbac') || role === 'dev' || resolvePegId(user) === '102-119';
-      rbacMenu.style.setProperty('display', canManageRbac ? 'flex' : 'none', 'important');
+      const role = String(user?.role || '').toLowerCase();
+      const canManageRbac = !!user && (
+        user?.rbac?.admin ||
+        window.MonbisRbac?.can?.(user, 'page:setting_rbac') ||
+        role === 'dev' ||
+        resolvePegId(user) === '102-119'
+      );
+      if (adminMenu) {
+        const canSeeAdmin = !!user && (resolvePegId(user) === '102-119' || canManageRbac);
+        adminMenu.style.setProperty('display', canSeeAdmin ? 'block' : 'none', 'important');
       }
+      if (rbacMenu) rbacMenu.style.setProperty('display', canManageRbac ? 'flex' : 'none', 'important');
       return !!user;
     }
 
@@ -1243,11 +1249,11 @@ if (is_array($rbacInitialAccess ?? null)) {
     </div>
 
     <!-- Navigasi Menu -->
-    <nav class="flex-1 overflow-y-auto overflow-x-hidden py-4 px-2 space-y-1 custom-scrollbar">
+    <nav class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-4 px-2 space-y-1 custom-scrollbar" aria-label="Navigasi utama">
       
       <!-- Menu Single -->
       <a href="dashboard" class="flex items-center px-3 py-2.5 text-blue-600 bg-blue-50 rounded-lg font-medium transition-colors whitespace-nowrap">
-        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5.5A1.5 1.5 0 015.5 4h13A1.5 1.5 0 0120 5.5v13a1.5 1.5 0 01-1.5 1.5h-13A1.5 1.5 0 014 18.5v-13zM8 16V9m4 7v-4m4 4V7"></path></svg>
+            <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2" stroke-width="1.8"></rect><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 16v-4m4 4V8m4 8v-6"></path></svg>
         <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Dashboard</span>
       </a>
 
@@ -1256,7 +1262,7 @@ if (is_array($rbacInitialAccess ?? null)) {
       <div class="accordion-group">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
-            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 11l18-5v12L3 13v-2zM6 14l2 5h3l-2-5M5 11v2"></path></svg>
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 12h15M13 6l6 6-6 6"></path><path stroke-linecap="round" stroke-width="1.8" d="M4 6v12"></path></svg>
             <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Pemasaran</span>
           </div>
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -1278,7 +1284,7 @@ if (is_array($rbacInitialAccess ?? null)) {
       <div class="accordion-group">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
-            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3a9 9 0 100 18 9 9 0 000-18zm0 4a5 5 0 100 10 5 5 0 000-10zm0 3a2 2 0 100 4 2 2 0 000-4zm0 2l5-5"></path></svg>
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke-width="1.8"></circle><circle cx="12" cy="12" r="3" stroke-width="1.8"></circle><path stroke-linecap="round" stroke-width="1.8" d="m17.5 6.5-3 3"></path></svg>
             <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Monitoring</span>
           </div>
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -1315,7 +1321,7 @@ if (is_array($rbacInitialAccess ?? null)) {
       <div class="accordion-group">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
-            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16v13H4z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16l-2-3H6L4 7Zm4 5h8"></path></svg>
             <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Collection</span>
           </div>
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -1336,7 +1342,7 @@ if (is_array($rbacInitialAccess ?? null)) {
       <div id="menuMonevDev" class="accordion-group" style="display: none;">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
-            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 3.5h8l4 4V20H6z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 3.5V8h4M9 13h6m-6 3h4"></path></svg>
             <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Laporan</span>
           </div>
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -1360,7 +1366,7 @@ if (is_array($rbacInitialAccess ?? null)) {
       <div id="menuLayananDigital" class="accordion-group" style="display: none;">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
-            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="2" stroke-width="1.8"></rect><path stroke-linecap="round" stroke-width="1.8" d="M10 6h4m-2 12h.01"></path></svg>
             <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Layanan Digital</span>
           </div>
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -1377,7 +1383,7 @@ if (is_array($rbacInitialAccess ?? null)) {
       <div id="menuDevReport" class="accordion-group" style="display: none;">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
-            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20h4M4 7h16M5 7l2 13h10l2-13M9 7V4h6v3"></path></svg>
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M5 5h14v14H5z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="m8 15 2.5-3 2 2 2.5-4 2 5"></path></svg>
             <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Dev Report</span>
           </div>
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -1400,7 +1406,7 @@ if (is_array($rbacInitialAccess ?? null)) {
       <div id="menuInputRbb" class="accordion-group" style="display: none;">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
-            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 19V5m0 14h16M8 16v-4m4 4V8m4 8v-7"></path></svg>
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 19V5m0 14h16"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M8 16v-4m4 4V8m4 8v-7"></path></svg>
             <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Input RBB</span>
           </div>
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -1419,7 +1425,7 @@ if (is_array($rbacInitialAccess ?? null)) {
       <div id="menuKpiBisnis" class="accordion-group" style="display: none;">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
-            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3l2.7 5.5 6.1.9-4.4 4.3 1 6.1-5.4-2.9-5.4 2.9 1-6.1-4.4-4.3 6.1-.9L12 3z"></path></svg>
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 4v3m0 10v3M4 12h3m10 0h3"></path><circle cx="12" cy="12" r="5" stroke-width="1.8"></circle><path stroke-linecap="round" stroke-width="1.8" d="m12 9 1.5 3-1.5 1"></path></svg>
             <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">KPI Bisnis</span>
           </div>
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -1433,25 +1439,20 @@ if (is_array($rbacInitialAccess ?? null)) {
         </div>
       </div>
 
-      <!-- Parent Admin Event (Khusus id_peg 102-119) -->
+      <!-- Parent Admin: pengaturan event dan matrix akses menu -->
       <div id="menuEventAdmin" class="accordion-group" style="display: none;">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
-            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4h10a2 2 0 012 2v3.5a2 2 0 01-.586 1.414l-5.5 5.5a2 2 0 01-2.828 0l-4.5-4.5A2 2 0 015 10.5V6a2 2 0 012-2z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8h.01M4 20h16"></path></svg>
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 7h16M4 12h16M4 17h16"></path><circle cx="9" cy="7" r="2"></circle><circle cx="15" cy="12" r="2"></circle><circle cx="11" cy="17" r="2"></circle></svg>
             <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Admin</span>
           </div>
           <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
         </button>
         <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
           <a href="event_theme_admin" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Setting Event</a>
+          <a id="menuRbacAdmin" href="setting_rbac" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50" style="display: none;">Matrix Menu</a>
         </div>
       </div>
-
-      <!-- Menu tunggal Matrix Akses Menu; dibuat sama seperti Dashboard agar label tidak terpotong saat sidebar collapsed. -->
-      <a id="menuRbacAdmin" href="setting_rbac" class="flex items-center px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap" style="display: none;">
-        <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M4 5h16M4 12h16M4 19h16M8 5v0M12 12v0M16 19v0"></path></svg>
-        <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Matrik Menu</span>
-      </a>
     </nav>
     <div id="monbisSidebarPromo" class="monbis-sidebar-promo" role="button" tabindex="0" aria-label="Buka Asisten Data">
       <div class="monbis-sidebar-promo__inner">
@@ -1484,6 +1485,9 @@ if (is_array($rbacInitialAccess ?? null)) {
       } else {
         links.forEach(link => {
           const key = featureKeyFromHref(link.getAttribute('href'));
+          if (link.id === 'menuRbacAdmin' && allowed.has(key)) {
+            link.style.removeProperty('display');
+          }
           if (key && !allowed.has(key)) link.style.setProperty('display', 'none', 'important');
         });
         document.querySelectorAll('#sidebar nav .accordion-group').forEach(group => {

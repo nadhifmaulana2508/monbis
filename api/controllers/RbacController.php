@@ -39,10 +39,26 @@ class RbacController
         $roles = $simpeg->query("SELECT DISTINCT
             COALESCE(NULLIF(TRIM(mj.nama_jabatan), ''), '') AS job_position,
             COALESCE(mj.group_jabatan, '') AS group_jabatan,
-            COALESCE(NULLIF(TRIM(k.kode_cabang), ''), '*') AS kode
+            COALESCE(NULLIF(TRIM(k.kode_cabang), ''), '*') AS kode,
+            COALESCE(NULLIF(TRIM(k.nama_kantor), ''), '') AS branch_name
             {$activeEmployeeFrom}
             AND mj.nama_jabatan IS NOT NULL AND TRIM(mj.nama_jabatan) <> ''
             ORDER BY job_position, group_jabatan, kode")->fetchAll(PDO::FETCH_ASSOC);
+
+        $offices = [];
+        foreach ($roles as $role) {
+            $code = trim((string)($role['kode'] ?? '*')) ?: '*';
+            $offices[$code] = [
+                'kode' => $code,
+                'branch_name' => trim((string)($role['branch_name'] ?? '')),
+            ];
+        }
+        $offices['*'] = ['kode' => '*', 'branch_name' => ''];
+        uasort($offices, static function (array $left, array $right): int {
+            if ($left['kode'] === '*') return -1;
+            if ($right['kode'] === '*') return 1;
+            return strnatcasecmp($left['branch_name'] . ' ' . $left['kode'], $right['branch_name'] . ' ' . $right['kode']);
+        });
 
         $divisions = $simpeg->query("SELECT DISTINCT TRIM(mj.nama_unit_kerja) AS unit_kerja
             {$activeEmployeeFrom}
@@ -63,6 +79,7 @@ class RbacController
         sendResponse(200, 'Master RBAC berhasil dimuat.', [
             'menus' => rbacMenuRows($this->pdo),
             'roles' => $roles,
+            'offices' => array_values($offices),
             'divisions' => $divisions,
             'users' => $users,
         ]);
