@@ -253,7 +253,7 @@ mb_ui_assets('.');
         });
         return `<Worksheet ss:Name="${xml(sheet.name)}"><Table>${table}</Table></Worksheet>`;
       }).join('');
-      const workbook = `<?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="Default"><NumberFormat ss:Format="#,##0"/></Style></Styles>${worksheets}</Workbook>`;
+      const workbook = '<' + `?xml version="1.0"?><Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"><Styles><Style ss:ID="Default"><NumberFormat ss:Format="#,##0"/></Style></Styles>${worksheets}</Workbook>`;
     const link = document.createElement('a');
       link.href = URL.createObjectURL(new Blob([workbook],{type:'application/vnd.ms-excel;charset=utf-8'}));
       link.download = `Gambaran_Kredit_Cabang_Jan-Sep_${selectedYear}.xls`;

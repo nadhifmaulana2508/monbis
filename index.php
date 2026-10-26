@@ -79,6 +79,51 @@ if (strpos($url, 'api/') === 0) {
     exit;
 }
 
+// Fallback untuk hosting yang belum memuat aturan rewrite khusus React V2.
+// Asset tetap dilayani dari dist, sedangkan route client-side memakai index.html.
+if (preg_match('#^v2-react(?:/(.*))?$#i', $url, $v2ReactMatch)) {
+    $distRoot = realpath(__DIR__ . '/monbis-v2/dist');
+    if ($distRoot === false || !is_file($distRoot . DIRECTORY_SEPARATOR . 'index.html')) {
+        http_response_code(503);
+        echo 'Build React V2 belum tersedia. Jalankan build monbis-v2 terlebih dahulu.';
+        exit;
+    }
+
+    $relativePath = str_replace('\\', '/', rawurldecode((string) ($v2ReactMatch[1] ?? '')));
+    $isAssetRequest = $relativePath !== ''
+        && (strpos($relativePath, 'assets/') === 0 || preg_match('/\.[a-z0-9]{2,5}$/i', $relativePath));
+    $filePath = $relativePath === '' ? false : realpath($distRoot . DIRECTORY_SEPARATOR . $relativePath);
+    $distPrefix = rtrim($distRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    $isInsideDist = $filePath !== false && strpos($filePath, $distPrefix) === 0;
+
+    if ($isAssetRequest) {
+        if (!$isInsideDist || !is_file($filePath)) {
+            http_response_code(404);
+            exit;
+        }
+
+        $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+        $contentTypes = [
+            'css' => 'text/css; charset=utf-8',
+            'html' => 'text/html; charset=utf-8',
+            'ico' => 'image/x-icon',
+            'js' => 'application/javascript; charset=utf-8',
+            'json' => 'application/json; charset=utf-8',
+            'png' => 'image/png',
+            'svg' => 'image/svg+xml',
+            'txt' => 'text/plain; charset=utf-8',
+            'woff' => 'font/woff',
+            'woff2' => 'font/woff2',
+        ];
+        header('Content-Type: ' . ($contentTypes[$extension] ?? 'application/octet-stream'));
+        readfile($filePath);
+        exit;
+    }
+
+    readfile($distRoot . DIRECTORY_SEPARATOR . 'index.html');
+    exit;
+}
+
 // V2 memakai router sendiri, tetapi pada beberapa deployment aaPanel
 // URL bersih tetap diteruskan ke router legacy ini. Teruskan prefix /v-2
 // sebelum layout v1 sempat dirender agar URL tetap bersih di browser.
