@@ -1,5 +1,8 @@
 # Standardisasi Report Monbis
 
+Panduan ini khusus report PHP yang memakai komponen `mb_*`. Untuk migrasi menu ke
+frontend React MONBIS V2, gunakan [`monbis-v2/issue.md`](monbis-v2/issue.md).
+
 Dokumen ini adalah checklist migrasi halaman report lama ke komponen bersama.
 Tujuannya: setiap report memakai font, header, filter, tabel, modal detail, dark mode,
 dan responsif yang sama dari `assets/` dan `components/`.

@@ -71,6 +71,7 @@ Jika memperbaiki routing:
 
 - Utamakan UI minimal, padat, bersih, responsif, dan mudah dipindai.
 - Gunakan komponen shadcn yang sudah ada/pola yang konsisten. Hindari membuat komponen baru hanya untuk satu tombol, dialog, tabel, atau select.
+- Saat memindahkan menu/report ke frontend React `monbis-v2/`, baca dan ikuti `monbis-v2/issue.md`; dokumen ini berbeda dari `issue.md` untuk report PHP dan `issue_monbis_v2.md` untuk frontend PHP `v-2/`.
 - Gunakan button/icon yang jelas, state loading/error/empty, focus keyboard, dan label yang dapat dipahami.
 - Tabel panjang harus punya header sticky yang benar, kolom identitas penting sticky bila diperlukan, overflow horizontal/vertikal yang terkendali, dan scrollbar tipis.
 - Jangan membuat modal, input, card, atau header terlalu besar hingga menutup judul atau menghabiskan area kerja.

@@ -2,6 +2,10 @@
 
 Frontend React baru untuk migrasi halaman MONBIS secara bertahap.
 
+Panduan wajib saat memindahkan menu lama ke frontend ini: [issue.md](./issue.md).
+Dokumen itu khusus React `monbis-v2/`; jangan tertukar dengan `../issue.md` (report
+PHP `mb_*`) atau `../issue_monbis_v2.md` (frontend PHP `v-2/`).
+
 Fondasi ini memakai komponen UI yang sudah tersedia di project `frontend`, Tailwind CSS, dan konfigurasi shadcn. Halaman PHP tidak dipindahkan sekaligus supaya setiap migrasi bisa divalidasi dari data API, route, permission RBAC, loading, error, empty state, dan responsive layout.
 
 ## Menjalankan lokal

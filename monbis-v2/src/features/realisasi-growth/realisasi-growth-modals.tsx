@@ -2,13 +2,17 @@ import { useMemo } from "react"
 import {
   ChevronLeft,
   ChevronRight,
-  FileSearch,
-  Info,
+  Download,
   LoaderCircle,
-  X,
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { DetailSearchToggle } from "@/components/report-detail-filters"
+import { ReportDetailLayer } from "@/components/report-detail-layer"
+import { ReportModalCloseButton } from "@/components/report-modal-close-button"
+import { ReportInfoDialog } from "@/components/report-info-dialog"
+import { downloadDetailExcel } from "@/lib/download-detail-excel"
 
 import {
   formatDateLabel,
@@ -51,38 +55,15 @@ export function SummaryModal({
   ]
 
   return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-foreground/35 p-4 backdrop-blur-[2px]">
-      <button type="button" aria-label="Tutup ringkasan" className="absolute inset-0 cursor-default" onClick={onClose} />
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="summary-title"
-        aria-describedby="summary-description"
-        className="relative flex max-h-[min(90vh,680px)] w-full max-w-2xl flex-col overflow-hidden rounded-xl border bg-background shadow-2xl"
-      >
-        <header className="flex items-start justify-between gap-3 border-b bg-muted/20 px-4 py-3 sm:px-6 sm:py-4">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Info className="size-4" aria-hidden="true" />
-            </span>
-            <div className="min-w-0">
-              <h2 id="summary-title" className="truncate text-base font-semibold tracking-tight sm:text-lg">
-                Ringkasan Realisasi Kredit &amp; Growth
-              </h2>
-              <p id="summary-description" className="mt-0.5 text-xs text-muted-foreground">
-                Ringkasan performa dan tiga kantor dengan perubahan terbesar.
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {filters.nominalField === "saldo_bank" ? "Saldo bank" : "Baki debet"} | Closing {formatDateLabel(filters.closingDate)} | Actual {formatDateLabel(filters.actualDate)}
-              </p>
-            </div>
-          </div>
-          <Button type="button" variant="ghost" size="icon" className="size-9 shrink-0" aria-label="Tutup ringkasan" onClick={onClose}>
-            <X aria-hidden="true" />
-          </Button>
-        </header>
-
-        <div className="min-h-0 overflow-hidden p-4 sm:p-6">
+    <ReportInfoDialog
+      open
+      title="Ringkasan Realisasi Kredit & Growth"
+      description="Ringkasan performa dan tiga kantor dengan perubahan terbesar."
+      meta={`${filters.nominalField === "saldo_bank" ? "Saldo bank" : "Baki debet"} | Closing ${formatDateLabel(filters.closingDate)} | Actual ${formatDateLabel(filters.actualDate)}`}
+      onClose={onClose}
+      className="max-w-2xl"
+    >
+        <div className="overflow-hidden">
           <div className="mb-3 rounded-lg border bg-muted/50 px-3 py-2.5 text-sm">
             <span className="font-semibold">{numberFormat.format(rows.length)} kantor</span>
             <span className="text-muted-foreground"> | Ringkasan berdasarkan filter aktif.</span>
@@ -136,11 +117,9 @@ export function SummaryModal({
             </p>
           )}
         </div>
-      </section>
-    </div>
+    </ReportInfoDialog>
   )
 }
-
 export function DetailModal({
   areaLabel,
   detailType,
@@ -180,7 +159,7 @@ export function DetailModal({
   }, [rows, search])
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/35 p-0 sm:items-center sm:p-4">
+    <ReportDetailLayer className="flex items-end justify-center bg-foreground/35 p-0 sm:items-center sm:p-4">
       <button type="button" aria-label="Tutup detail" className="absolute inset-0 cursor-default" onClick={onClose} />
       <section role="dialog" aria-modal="true" aria-labelledby="detail-title" className="relative flex h-[min(92vh,760px)] w-full max-w-6xl flex-col overflow-hidden rounded-t-xl border bg-background shadow-xl sm:rounded-xl">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-6">
@@ -189,12 +168,10 @@ export function DetailModal({
             <h2 id="detail-title" className="truncate text-base font-semibold tracking-tight">Detail {detailType}</h2>
           </div>
           <div className="flex items-center gap-2">
-            <DetailSearch value={search} onChange={onSearch} className="hidden sm:block" />
-            <Button type="button" variant="ghost" size="icon" className="size-11" aria-label="Tutup detail" onClick={onClose}>
-              <X aria-hidden="true" />
-            </Button>
+            <DetailSearchToggle value={search} onChange={onSearch} />
+            <Button type="button" variant="signalGreen" size="icon-lg" aria-label="Export detail Excel" title="Export detail Excel" disabled={visibleRows.length === 0} onClick={() => downloadDetailExcel(visibleRows, [["Rekening", "no_rekening"], ["Nama nasabah", "nama_nasabah"], ["Kankas", "nama_kankas"], ["AO", "nama_ao"], ["Tanggal realisasi", "tgl_realisasi"], ["Plafond", "plafond"]], `Detail_Realisasi_${areaLabel.replaceAll(" ", "_")}`, [0])}><Download className="size-4" aria-hidden="true" /></Button>
+            <ReportModalCloseButton label="Tutup detail" onClick={onClose} />
           </div>
-          <DetailSearch value={search} onChange={onSearch} className="w-full sm:hidden" />
         </header>
 
         <div className="min-h-0 flex-1 overflow-auto p-3 sm:p-5">
@@ -208,7 +185,8 @@ export function DetailModal({
           ) : visibleRows.length === 0 ? (
             <div className="flex h-full min-h-40 items-center justify-center text-sm text-muted-foreground">Tidak ada data detail.</div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border">
+            <>
+            <div className="hidden overflow-x-auto rounded-lg border sm:block">
               <table className="min-w-[760px] w-full border-collapse text-sm">
                 <thead className="sticky top-0 bg-muted/95 text-left text-xs font-semibold text-muted-foreground">
                   <tr>
@@ -234,6 +212,10 @@ export function DetailModal({
                 </tbody>
               </table>
             </div>
+            <div className="grid gap-2 sm:hidden">
+              {visibleRows.map((row, index) => <Card key={`${row.no_rekening}-${index}`} size="sm"><CardContent className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs"><div className="col-span-2 min-w-0"><p className="font-mono text-[0.68rem] text-muted-foreground">{row.no_rekening || "-"}</p><p className="truncate font-semibold">{row.nama_nasabah || "-"}</p></div><div><p className="text-muted-foreground">Tanggal realisasi</p><p>{row.tgl_realisasi || "-"}</p></div><div className="text-right"><p className="text-muted-foreground">Plafond</p><p className="font-medium tabular-nums">{formatNominal(row.plafond)}</p></div><div className="col-span-2 truncate text-muted-foreground">{[row.nama_kankas, row.nama_ao].filter(Boolean).join(" · ") || "-"}</div></CardContent></Card>)}
+            </div>
+            </>
           )}
         </div>
 
@@ -251,29 +233,6 @@ export function DetailModal({
           </div>
         </footer>
       </section>
-    </div>
-  )
-}
-
-function DetailSearch({
-  value,
-  onChange,
-  className,
-}: {
-  value: string
-  onChange: (value: string) => void
-  className?: string
-}) {
-  return (
-    <div className={cn("relative", className)}>
-      <FileSearch className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder="Cari rekening atau nama"
-        aria-label="Cari data detail"
-        className="h-10 w-full rounded-lg border bg-muted/25 pl-9 pr-3 text-sm outline-none focus-visible:ring-3 focus-visible:ring-ring/50 sm:h-9 sm:w-56"
-      />
-    </div>
+    </ReportDetailLayer>
   )
 }

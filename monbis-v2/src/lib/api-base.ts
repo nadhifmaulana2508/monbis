@@ -9,15 +9,14 @@ export function getApiBaseUrl() {
   const configured = import.meta.env.VITE_API_BASE_URL?.trim()
   if (configured) return trimTrailingSlash(configured)
 
-  if (import.meta.env.DEV) return "/api"
-
   const hostname = typeof window === "undefined"
     ? "localhost"
     : window.location.hostname.toLowerCase()
 
-  return hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1"
-    ? LOCAL_API_BASE_URL
-    : PRODUCTION_API_BASE_URL
+  const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1"
+  if (import.meta.env.DEV || (import.meta.env.PROD && isLocalHost && window.location.port === "4173")) return "/api"
+
+  return isLocalHost ? LOCAL_API_BASE_URL : PRODUCTION_API_BASE_URL
 }
 
 export function apiEndpoint(request: string) {

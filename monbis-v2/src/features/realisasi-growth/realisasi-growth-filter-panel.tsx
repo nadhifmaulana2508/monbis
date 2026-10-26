@@ -1,6 +1,7 @@
 import { CalendarDays, Filter } from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import { SearchableSelect } from "@/components/searchable-select"
 
 import { previousMonthEnd } from "./realisasi-growth-data"
 import type { AreaOption, Filters, NominalField } from "./realisasi-growth-types"
@@ -11,7 +12,7 @@ type RealisasiGrowthFilterPanelProps = {
   onChange: (next: Partial<Filters>) => void
 }
 
-const fieldClassName = "h-10 rounded-lg border bg-background px-3 text-sm font-medium text-foreground outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+const fieldClassName = "h-8 rounded-lg border bg-background px-2 text-xs font-medium text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
 
 export function RealisasiGrowthFilterPanel({
   filters,
@@ -19,8 +20,8 @@ export function RealisasiGrowthFilterPanel({
   onChange,
 }: RealisasiGrowthFilterPanelProps) {
   return (
-    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
+    <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+      <label className="grid min-w-0 gap-1 text-[0.68rem] font-medium text-muted-foreground">
         <span className="flex items-center gap-1.5"><CalendarDays className="size-3.5" aria-hidden="true" />Closing (M-1)</span>
         <input
           type="date"
@@ -29,7 +30,7 @@ export function RealisasiGrowthFilterPanel({
           className={fieldClassName}
         />
       </label>
-      <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
+      <label className="grid min-w-0 gap-1 text-[0.68rem] font-medium text-muted-foreground">
         <span className="flex items-center gap-1.5"><CalendarDays className="size-3.5" aria-hidden="true" />Harian / actual</span>
         <input
           type="date"
@@ -41,17 +42,11 @@ export function RealisasiGrowthFilterPanel({
           className={fieldClassName}
         />
       </label>
-      <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
+      <label className="grid min-w-0 gap-1 text-[0.68rem] font-medium text-muted-foreground">
         <span className="flex items-center gap-1.5"><Filter className="size-3.5" aria-hidden="true" />Area / cabang</span>
-        <select
-          value={filters.area}
-          onChange={(event) => onChange({ area: event.target.value })}
-          className={cn(fieldClassName, "cursor-pointer")}
-        >
-          {areas.map((area) => <option key={area.value} value={area.value}>{area.label}</option>)}
-        </select>
+        <SearchableSelect value={filters.area} onChange={(value) => onChange({ area: value })} placeholder="Pilih area" options={areas} />
       </label>
-      <label className="grid gap-1.5 text-xs font-medium text-muted-foreground">
+      <label className="grid min-w-0 gap-1 text-[0.68rem] font-medium text-muted-foreground">
         <span>Hitung berdasarkan</span>
         <select
           value={filters.nominalField}

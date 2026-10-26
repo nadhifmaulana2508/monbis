@@ -3269,6 +3269,129 @@ class KreditController {
     }
 
     /**
+     * Gambaran kredit per kantor memakai lima kode produk hasil perampingan.
+     */
+    public function getGambaranKreditCabang($input = null) {
+        $b = is_array($input) ? $input : [];
+        $harian = trim((string)($b['harian_date'] ?? ''));
+        $parsedDate = DateTime::createFromFormat('!Y-m-d', $harian);
+        if (!$parsedDate || $parsedDate->format('Y-m-d') !== $harian) {
+            return sendResponse(400, 'Tanggal nominatif tidak valid.', null);
+        }
+        if (!empty($b['resolve_latest_on_or_before'])) {
+            try {
+                $dateStmt = $this->pdo->prepare("SELECT DATE(MAX(created)) FROM nominatif WHERE created < DATE_ADD(:harian, INTERVAL 1 DAY)");
+                $dateStmt->execute([':harian' => $harian]);
+                $latestAvailableDate = (string)$dateStmt->fetchColumn();
+                if ($latestAvailableDate !== '') $harian = $latestAvailableDate;
+            } catch (PDOException $e) {
+                error_log('Error resolving Gambaran Kredit Cabang snapshot date: ' . $e->getMessage());
+                return sendResponse(500, 'Gagal menentukan tanggal snapshot terakhir.', null);
+            }
+        }
+
+        $productCodes = ['135', '136', '137', '138', '139'];
+        $nplCondition = "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) IN ('KL','D','M')";
+        $productSums = [];
+        foreach ($productCodes as $code) {
+            $productSums[] = "SUM(CASE WHEN x.kode_produk_laporan = '{$code}' THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS kredit_produk_{$code}";
+            $productSums[] = "COUNT(DISTINCT CASE WHEN x.kode_produk_laporan = '{$code}' THEN x.no_rekening END) AS noa_produk_{$code}";
+            $productSums[] = "SUM(CASE WHEN x.kode_produk_laporan = '{$code}' AND {$nplCondition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS npl_produk_{$code}";
+        }
+
+        $metrics = [
+            "COUNT(DISTINCT x.no_rekening) AS noa_total",
+            "SUM(COALESCE(x.baki_debet,0)) AS kredit_total",
+            "SUM(COALESCE(x.saldo_bank,0)) AS ead_total",
+            "SUM(CASE WHEN {$nplCondition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS kredit_npl",
+            "COUNT(DISTINCT CASE WHEN {$nplCondition} THEN x.no_rekening END) AS noa_npl",
+        ];
+        $metrics = array_merge($metrics, $productSums);
+
+        $dpdBuckets = [
+            '0' => 'COALESCE(x.hari_menunggak,0) = 0',
+            '1_7' => 'x.hari_menunggak BETWEEN 1 AND 7',
+            '8_30' => 'x.hari_menunggak BETWEEN 8 AND 30',
+            '31_60' => 'x.hari_menunggak BETWEEN 31 AND 60',
+            '61_90' => 'x.hari_menunggak BETWEEN 61 AND 90',
+            '91_plus' => 'x.hari_menunggak > 90',
+        ];
+        foreach ($dpdBuckets as $key => $condition) {
+            $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS kredit_dpd_{$key}";
+            $metrics[] = "COUNT(DISTINCT CASE WHEN {$condition} THEN x.no_rekening END) AS noa_dpd_{$key}";
+            $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.saldo_bank,0) ELSE 0 END) AS ead_dpd_{$key}";
+            $metrics[] = "SUM(CASE WHEN {$condition} AND COALESCE(x.jml_pinjaman,0) <= 2000000000 THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_dpd_{$key}";
+            $metrics[] = "SUM(CASE WHEN {$condition} AND COALESCE(x.jml_pinjaman,0) > 2000000000 THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_individual_dpd_{$key}";
+        }
+
+        $kolekConditions = [
+            'l' => "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) IN ('L','1')",
+            'dp' => "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) IN ('DP','DPK','2')",
+            'kl' => "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) = 'KL'",
+            'd' => "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) = 'D'",
+            'm' => "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) = 'M'",
+        ];
+        foreach ($kolekConditions as $key => $condition) {
+            $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS kredit_kolek_{$key}";
+            $metrics[] = "COUNT(DISTINCT CASE WHEN {$condition} THEN x.no_rekening END) AS noa_kolek_{$key}";
+            $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.saldo_bank,0) ELSE 0 END) AS ead_kolek_{$key}";
+            $metrics[] = "SUM(CASE WHEN {$condition} AND COALESCE(x.jml_pinjaman,0) <= 2000000000 THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_kolek_{$key}";
+            $metrics[] = "SUM(CASE WHEN {$condition} AND COALESCE(x.jml_pinjaman,0) > 2000000000 THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_individual_kolek_{$key}";
+        }
+        $metrics[] = "SUM(CASE WHEN COALESCE(x.jml_pinjaman,0) <= 2000000000 THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_total";
+        $metrics[] = "SUM(CASE WHEN COALESCE(x.jml_pinjaman,0) > 2000000000 THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_individual_total";
+
+        $sql = "SELECT x.kode_cabang, ".implode(",\n", $metrics)."
+            FROM (
+                SELECT n.kode_cabang, n.no_rekening, n.kolektibilitas, n.hari_menunggak,
+                       n.baki_debet, n.saldo_bank, n.jml_pinjaman, n.nilai_ckpn,
+                       COALESCE(NULLIF(TRIM(CAST(pk.kode_baru AS CHAR)), ''), CAST(n.kode_produk AS CHAR)) AS kode_produk_laporan
+                FROM nominatif n
+                LEFT JOIN produk_kredit pk ON CAST(pk.kode_produk AS CHAR) = CAST(n.kode_produk AS CHAR)
+                WHERE n.created = :harian
+                  AND n.kode_cabang BETWEEN '001' AND '028'
+                  AND COALESCE(n.baki_debet,0) > 0
+            ) x
+            WHERE x.kode_produk_laporan IN ('135','136','137','138','139')
+            GROUP BY x.kode_cabang
+            ORDER BY x.kode_cabang";
+
+        try {
+            $stmt = $this->pdo->prepare($sql);
+            $stmt->execute([':harian' => $harian]);
+            $byOffice = [];
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+                $code = str_pad((string)$row['kode_cabang'], 3, '0', STR_PAD_LEFT);
+                unset($row['kode_cabang']);
+                foreach ($row as $key => $value) $row[$key] = (float)$value;
+                $byOffice[$code] = $row;
+            }
+
+            $officeStmt = $this->pdo->query("SELECT LPAD(CAST(kode_kantor AS CHAR),3,'0') AS kode_kantor, nama_kantor FROM kode_kantor WHERE LPAD(CAST(kode_kantor AS CHAR),3,'0') BETWEEN '001' AND '028' ORDER BY kode_kantor");
+            $offices = [];
+            foreach ($officeStmt->fetchAll(PDO::FETCH_ASSOC) as $office) {
+                $code = (string)$office['kode_kantor'];
+                $offices[] = ['kode_kantor' => $code, 'nama_kantor' => $office['nama_kantor'], 'metrics' => $byOffice[$code] ?? []];
+            }
+
+            return sendResponse(200, 'Berhasil mengambil gambaran kredit cabang.', [
+                'harian_date' => $harian,
+                'produk' => [
+                    ['kode_produk' => '135', 'nama_produk' => 'BKK Mikro'],
+                    ['kode_produk' => '136', 'nama_produk' => 'BKK Agrari'],
+                    ['kode_produk' => '137', 'nama_produk' => 'BKK Joglo'],
+                    ['kode_produk' => '138', 'nama_produk' => 'BKK Migunani'],
+                    ['kode_produk' => '139', 'nama_produk' => 'BKK Makaryo'],
+                ],
+                'offices' => $offices,
+            ]);
+        } catch (PDOException $e) {
+            error_log('Error getGambaranKreditCabang: ' . $e->getMessage());
+            return sendResponse(500, 'Gagal mengambil gambaran kredit cabang.', null);
+        }
+    }
+
+    /**
      * REKAP PORTOFOLIO BERDASARKAN PRODUK LAPORAN.
      * Produk lama otomatis diarahkan ke kode_baru mulai tanggal efektif SK.
      */

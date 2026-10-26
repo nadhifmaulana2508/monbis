@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { ArrowLeftRight, Download, Info, LoaderCircle } from "lucide-react"
+import { ArrowLeftRight, Info, LoaderCircle } from "lucide-react"
 
 import { AppShell } from "@/components/app/app-shell"
+import { ReportExportMenu } from "@/components/report-export-menu"
 import { Button } from "@/components/ui/button"
 import { appRoutes } from "@/lib/routes"
 
@@ -18,7 +19,7 @@ import {
   requestJtJson,
 } from "./jatuh-tempo-data"
 import { JatuhTempoFilterPanel } from "./jatuh-tempo-filter-panel"
-import { JatuhTempoDetailModal, JatuhTempoInfoPopover } from "./jatuh-tempo-modals"
+import { JatuhTempoDetailModal, JatuhTempoInfoModal } from "./jatuh-tempo-modals"
 import { JatuhTempoTable } from "./jatuh-tempo-table"
 import { jtAreaDefaults } from "./jatuh-tempo-types"
 import type {
@@ -63,6 +64,7 @@ export function JatuhTempoPage() {
   const [kankasOptions, setKankasOptions] = useState<JtKankasOption[]>([])
   const [aoOptions, setAoOptions] = useState<JtAoOption[]>([])
   const detailAbortRef = useRef<AbortController | null>(null)
+  const tableExportRef = useRef<HTMLTableElement>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -136,7 +138,8 @@ export function JatuhTempoPage() {
           setBreakdown(applied)
           return
         }
-        setRows(response.data?.rekap_per_cabang || [])
+        const reportRows = [...(response.data?.rekap_per_cabang || [])].sort(compareJtOfficeCode)
+        setRows(reportRows)
         setGrandTotal(response.data?.grand_total || null)
       } catch (caught) {
         if (!controller.signal.aborted) {
@@ -154,15 +157,14 @@ export function JatuhTempoPage() {
   }, [breakdown, filters, ready, userCode])
 
   useEffect(() => {
-    if (!detail && !infoOpen) return undefined
+    if (!detail) return undefined
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return
-      if (detail) setDetail(null)
-      else setInfoOpen(false)
+      setDetail(null)
     }
     window.addEventListener("keydown", onKeyDown)
     return () => window.removeEventListener("keydown", onKeyDown)
-  }, [detail, infoOpen])
+  }, [detail])
 
   const handleFilterChange = (next: Partial<JtFilters>) => {
     setFilters((current) => {
@@ -274,8 +276,6 @@ export function JatuhTempoPage() {
   }
 
   const branch = filters.area.startsWith("CAB-")
-  const areaLabel = areas.find((area) => area.value === filters.area)?.label || (branch ? filters.area : "Konsolidasi")
-
   const filterPanel = (
     <JatuhTempoFilterPanel
       filters={filters}
@@ -294,28 +294,28 @@ export function JatuhTempoPage() {
       navbarContent={filterPanel}
       showPageTitle={false}
     >
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1700px] flex-col px-3 py-4 sm:px-5 sm:py-5 lg:px-7">
+      <div className="density-page mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background">
-          <header className="relative flex shrink-0 flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-5">
-            <div className="flex min-w-0 items-center gap-2">
+          <header className="relative flex shrink-0 flex-nowrap items-center justify-between gap-2 border-b px-4 py-2.5 sm:gap-3 sm:px-5">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h1 className="truncate text-sm font-semibold tracking-tight sm:text-base">Jatuh Tempo Kredit</h1>
                   <Button type="button" variant="ghost" size="icon-sm" className="shrink-0 rounded-full text-primary" aria-label="Buka informasi Jatuh Tempo Kredit" aria-expanded={infoOpen} onClick={() => setInfoOpen((value) => !value)}><Info className="size-4" aria-hidden="true" /></Button>
                 </div>
-                <p className="hidden truncate text-xs text-muted-foreground sm:block">{areaLabel} · {filters.nominalField === "baki_debet" ? "Baki debet" : "Saldo bank"} · {formatJtDate(filters.closingDate)} → {formatJtDate(filters.actualDate)}</p>
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              <span className="hidden text-xs text-muted-foreground md:inline">{loading ? "Mengambil data..." : `${jtNumberFormat.format(rows.length)} kelompok`}</span>
+            <div className="flex min-w-0 shrink-0 items-center gap-2 text-xs text-muted-foreground sm:gap-3">
+              <span className="hidden max-w-[26rem] truncate lg:inline">{filters.nominalField === "baki_debet" ? "Baki debet" : "Saldo bank"} | Closing {formatJtDate(filters.closingDate)} | Actual {formatJtDate(filters.actualDate)}</span>
+              <span className="hidden text-xs text-muted-foreground md:inline">{loading ? "Mengambil data..." : `${jtNumberFormat.format(rows.length)} kantor`}</span>
               {branch && (
                 <Button type="button" variant="outline" size="sm" className="min-h-9" aria-label={`Ganti breakdown, saat ini ${breakdown === "AO" ? "AO kredit" : "Kankas"}`} title={`Saat ini ${breakdown === "AO" ? "AO kredit" : "Kankas"}`} onClick={() => { autoBreakdownArea.current = ""; setBreakdown((value) => value === "AO" ? "KANKAS" : "AO") }}>
                   <ArrowLeftRight data-icon="inline-start" aria-hidden="true" /><span className="hidden sm:inline">{breakdown === "AO" ? "AO kredit" : "Kankas"}</span>
                 </Button>
               )}
-              <Button type="button" variant="signalGreen" size="icon-lg" aria-label="Export rekap Excel" title="Export rekap Excel" disabled={loading || rows.length === 0} onClick={() => downloadJtRekapExcel(rows, filters, breakdown)}><Download aria-hidden="true" /></Button>
+              <ReportExportMenu target={tableExportRef} filename={`Rekap_JatuhTempo_${filters.year}`} disabled={loading || rows.length === 0} onExportExcel={() => downloadJtRekapExcel(rows, filters, breakdown)} />
             </div>
-            <JatuhTempoInfoPopover open={infoOpen} onClose={() => setInfoOpen(false)} />
+            <JatuhTempoInfoModal open={infoOpen} onClose={() => setInfoOpen(false)} />
           </header>
 
           <div className="relative min-h-0 flex-1 overflow-auto report-table-scroll">
@@ -331,7 +331,7 @@ export function JatuhTempoPage() {
             ) : rows.length === 0 && !loading ? (
               <div className="flex min-h-56 items-center justify-center px-4 text-sm text-muted-foreground">Tidak ada data pada filter ini.</div>
             ) : (
-              <JatuhTempoTable rows={rows} grandTotal={grandTotal} breakdown={breakdown} onDetail={openDetail} />
+              <JatuhTempoTable rows={rows} grandTotal={grandTotal} breakdown={breakdown} onDetail={openDetail} tableRef={tableExportRef} />
             )}
           </div>
         </section>
@@ -361,4 +361,14 @@ export function JatuhTempoPage() {
       </div>
     </AppShell>
   )
+}
+
+function compareJtOfficeCode(left: JtReportRow, right: JtReportRow) {
+  const leftCode = String(left.kode_kantor || "")
+  const rightCode = String(right.kode_kantor || "")
+  const leftNumber = Number(leftCode)
+  const rightNumber = Number(rightCode)
+
+  if (Number.isFinite(leftNumber) && Number.isFinite(rightNumber)) return leftNumber - rightNumber
+  return leftCode.localeCompare(rightCode, "id", { numeric: true, sensitivity: "base" })
 }

@@ -60,12 +60,56 @@ html,
 body,
 #root {
   height: 100%;
+  --ui-page-padding-y: 1.25rem;
+  --ui-page-padding-x: 1rem;
+}
+
+@media (min-width: 640px) {
+  #root {
+    --ui-page-padding-y: 1.5rem;
+    --ui-page-padding-x: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  #root {
+    --ui-page-padding-x: 2rem;
+  }
+}
+
+html[data-ui-density="compact"] #root {
+  --ui-page-padding-y: 0.75rem;
+  --ui-page-padding-x: 0.75rem;
+}
+
+html[data-ui-density="spacious"] #root {
+  --ui-page-padding-y: 1.75rem;
+  --ui-page-padding-x: 2.25rem;
+}
+
+html[data-ui-font-scale="small"] #root {
+  font-size: 93.75%;
+}
+
+html[data-ui-font-scale="large"] #root {
+  font-size: 106.25%;
+}
+
+.density-page {
+  padding-block: var(--ui-page-padding-y) !important;
+  padding-inline: var(--ui-page-padding-x) !important;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   overflow: hidden;
+}
+
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
 }
 
 .report-table-scroll {
@@ -93,6 +137,11 @@ body {
   background-color: color-mix(in oklch, var(--foreground), transparent 52%);
 }
 
+.report-table-surface {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
 .report-sticky-code,
 .report-sticky-name {
   position: sticky !important;
@@ -111,18 +160,169 @@ body {
     min-width: 900px;
   }
 
+  .report-table-scroll > div > table:not(.report-keep-first-col-mobile) col:first-child,
+  .report-table-scroll > div > table:not(.report-keep-first-col-mobile) thead th:first-child,
+  .report-table-scroll > div > table:not(.report-keep-first-col-mobile) tbody td:first-child,
   .report-code-col {
     display: none;
   }
 
+  .report-table-scroll > div > table:not(.report-keep-first-col-mobile) thead th:nth-child(2),
+  .report-table-scroll > div > table:not(.report-keep-first-col-mobile) tbody td:nth-child(2),
   .report-name-col {
+    position: sticky !important;
+    left: 0 !important;
     width: 7rem !important;
     min-width: 7rem !important;
+    max-width: 7rem !important;
   }
 
   .report-sticky-name {
     left: 0 !important;
   }
+
+  .report-table-scroll > div > table.report-keep-first-col-mobile .flow-par-mobile-name {
+    display: table-cell !important;
+    position: sticky !important;
+    left: 0 !important;
+    width: 10rem !important;
+    min-width: 10rem !important;
+    max-width: 10rem !important;
+    box-shadow: 1px 0 var(--border);
+  }
+
+  .report-table-scroll > div > table.report-keep-first-col-mobile thead .flow-par-mobile-name {
+    z-index: 60 !important;
+    background: var(--muted) !important;
+  }
+
+  .report-table-scroll > div > table.report-keep-first-col-mobile tbody tr:first-child .flow-par-mobile-name {
+    z-index: 55 !important;
+    background: var(--muted) !important;
+  }
+
+  .report-table-scroll > div > table.report-keep-first-col-mobile tbody tr:not(:first-child) .flow-par-mobile-name {
+    z-index: 30 !important;
+    background: var(--background) !important;
+  }
+}
+
+/* Shared sticky layers for report grids. Explicit classes avoid row-position guesses. */
+.report-table-scroll > div > table {
+  isolation: isolate;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.report-table-scroll > div > table thead {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 3rem;
+  background: var(--muted);
+}
+
+.report-table-scroll > div > table thead th {
+  height: 3rem;
+  background: var(--muted);
+}
+
+[aria-labelledby="potensi-detail-title"] table {
+  table-layout: fixed;
+  min-width: 1720px;
+}
+
+[aria-labelledby="potensi-detail-title"] table th:nth-child(2),
+[aria-labelledby="potensi-detail-title"] table td:nth-child(2) {
+  width: 35ch !important;
+  min-width: 35ch !important;
+  max-width: 35ch !important;
+}
+
+[aria-labelledby="potensi-detail-title"] table th:nth-child(3),
+[aria-labelledby="potensi-detail-title"] table td:nth-child(3) {
+  width: 9rem;
+  min-width: 9rem;
+}
+
+[aria-labelledby="potensi-detail-title"] table th:nth-child(4),
+[aria-labelledby="potensi-detail-title"] table td:nth-child(4) {
+  width: 7rem;
+  min-width: 7rem;
+}
+
+[aria-labelledby="potensi-detail-title"] table th:nth-child(10),
+[aria-labelledby="potensi-detail-title"] table td:nth-child(10) {
+  width: 8rem;
+  min-width: 8rem;
+}
+
+[aria-labelledby="potensi-detail-title"] table th:nth-child(3),
+[aria-labelledby="potensi-detail-title"] table th:nth-child(4),
+[aria-labelledby="potensi-detail-title"] table th:nth-child(10),
+[aria-labelledby="potensi-detail-title"] table td:nth-child(3),
+[aria-labelledby="potensi-detail-title"] table td:nth-child(4),
+[aria-labelledby="potensi-detail-title"] table td:nth-child(10) {
+  white-space: nowrap;
+}
+
+.report-table-scroll > div > table tbody > tr:first-child > td {
+  position: sticky;
+  top: 3rem;
+  z-index: 30;
+  background: var(--muted) !important;
+}
+
+.report-table-scroll > div > table tbody > tr:first-child > td:first-child,
+.report-table-scroll > div > table tbody > tr:first-child > td:nth-child(2) {
+  z-index: 35;
+}
+
+.report-table-scroll > div > table tbody > tr:not(:first-child) > td {
+  background-color: var(--background);
+}
+
+.report-table-scroll > div > table tbody > tr:not(:first-child) > td:first-child,
+.report-table-scroll > div > table tbody > tr:not(:first-child) > td:nth-child(2) {
+  z-index: 20;
+  background-color: var(--background) !important;
+}
+
+.report-table-scroll > div > table tbody > tr:not(:first-child):hover > td:first-child,
+.report-table-scroll > div > table tbody > tr:not(:first-child):hover > td:nth-child(2) {
+  background-color: var(--muted) !important;
+}
+
+.update-commitment-table thead th:first-child,
+.update-commitment-table tbody tr:first-child td:first-child,
+.update-commitment-table tbody tr:not(:first-child) td:first-child {
+  position: sticky !important;
+  left: 0 !important;
+  width: 270px;
+  min-width: 270px;
+  max-width: 270px;
+  box-shadow: 1px 0 var(--border);
+}
+
+.update-commitment-table thead th:first-child {
+  top: 0;
+  z-index: 70 !important;
+  background-color: var(--muted) !important;
+}
+
+.update-commitment-table tbody tr:first-child td:first-child {
+  top: 3rem;
+  z-index: 60 !important;
+  background-color: var(--muted) !important;
+}
+
+.update-commitment-table tbody tr:not(:first-child) td:first-child {
+  z-index: 30 !important;
+  background-color: var(--background) !important;
+}
+
+.update-commitment-table tbody tr:not(:first-child):hover td:first-child {
+  background-color: var(--muted);
 }
 
 button,

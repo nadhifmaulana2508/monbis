@@ -90,14 +90,6 @@ export function formatDateLabel(value: string) {
   return year && month && day ? `${day}/${month}/${year}` : value
 }
 
-export function escapeSpreadsheet(value: unknown) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-}
-
 export function rowNumber(row: ReportRow, key: string) {
   return Number(row[key] ?? 0)
 }

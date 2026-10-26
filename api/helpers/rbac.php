@@ -63,6 +63,7 @@ function rbacFeatureCatalog(): array
         ['report_otp', 'Report OTP', 'Dev Report'],
         ['pipelane_monitoring_kredit', 'Monitoring Pipeline Kredit', 'Dev Report'],
         ['prospek', 'Pipeline Prospek', 'Dev Report'],
+        ['gambaran_kredit_cabang', 'Gambaran Kredit Cabang', 'Dev Report'],
         ['input_rbb', 'Proyeksi RBB', 'Input RBB'],
         ['input_rbb_aba', 'Input RBB ABA', 'Input RBB'],
         ['input_rbb_detail', 'Input RBB Detail', 'Input RBB'],

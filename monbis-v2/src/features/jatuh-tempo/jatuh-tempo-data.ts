@@ -9,6 +9,7 @@ import type {
   JtReportRow,
 } from "./jatuh-tempo-types"
 import { apiEndpoint } from "@/lib/api-base"
+import { downloadReportExcel } from "@/lib/download-report-excel"
 
 declare global {
   interface Window {
@@ -196,63 +197,37 @@ export function buildJtDetailPayload(
   return payload
 }
 
-export function escapeSpreadsheet(value: unknown) {
-  return String(value ?? "")
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-}
-
 export function downloadJtDetailExcel(rows: JtDetailRow[], filters: JtFilters, code: string) {
   if (rows.length === 0) return false
   const sortedRows = [...rows].sort((left, right) => String(left.tgl_jatuh_tempo || "").localeCompare(String(right.tgl_jatuh_tempo || "")))
-  const header = "No Rekening\tNama Nasabah\tNama Produk\tAlamat\tNo HP\tKankas\tNama AO\tPlafond Lama\tSisa Baki Debet\tTgl JT\tStatus\tPlafond Baru\tTgl Realisasi Baru\n"
-  const body = sortedRows.map((row) => {
+  const headers = ["No Rekening", "Nama Nasabah", "Nama Produk", "Alamat", "No HP", "Kankas", "Nama AO", "Plafond Lama", "Sisa Baki Debet", "Tanggal Jatuh Tempo", "Status", "Plafond Baru", "Tanggal Realisasi Baru"]
+  const values = sortedRows.map((row) => {
     const clear = isJtClear(row)
     const sisa = clear ? 0 : Math.round(Number(row.baki_debet_lama || 0))
-    return `'${row.no_rekening_lama || "-"}\t${row.nama_nasabah || "-"}\t${row.nama_produk || (row.kode_produk ? `PRODUK ${row.kode_produk}` : "-")}\t${row.alamat || "-"}\t'${row.no_hp || "-"}\t${row.nama_kankas || row.kankas || "-"}\t${row.nama_ao || "-"}\t${Math.round(Number(row.plafond_lama || 0))}\t${sisa}\t${row.tgl_jatuh_tempo || "-"}\t${row.keterangan_status || "-"}\t${Math.round(Number(row.plafond_baru || 0))}\t${row.tgl_realisasi_baru || "-"}\n`
-  }).join("")
-  const blob = new Blob([header + body], { type: "application/vnd.ms-excel;charset=utf-8" })
-  const url = window.URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.href = url
-  link.download = `Detail_JT_${code || "ALL"}_${filters.month}.xls`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  window.URL.revokeObjectURL(url)
-  return true
+    return [String(row.no_rekening_lama || "-"), row.nama_nasabah || "-", row.nama_produk || (row.kode_produk ? `PRODUK ${row.kode_produk}` : "-"), row.alamat || "-", String(row.no_hp || "-"), row.nama_kankas || row.kankas || "-", row.nama_ao || "-", Math.round(Number(row.plafond_lama || 0)), sisa, row.tgl_jatuh_tempo || "-", row.keterangan_status || "-", Math.round(Number(row.plafond_baru || 0)), row.tgl_realisasi_baru || "-"]
+  })
+  return downloadReportExcel(`Detail_JT_${code || "ALL"}_${filters.month}`, headers, values, [0, 4])
 }
 
 export function downloadJtRekapExcel(rows: JtReportRow[], filters: JtFilters, breakdown: JtBreakdown) {
   if (rows.length === 0) return false
   const label = breakdown === "AO" ? "AO Kredit" : breakdown === "KANKAS" ? "Kankas" : "Nama Kantor"
-  const header = `Kode\t${label}\tPotensi Kredit NOA\tPotensi Kredit Plafon\tRefinancing NOA\tRefinancing Plafon\tLunas NOA\tLunas Plafon\tBelum Lunas Sisa (${getJtNominalLabel(filters.nominalField)})\tBelum Lunas NOA\tBelum Lunas Plafon\t%\n`
-  const body = rows.map((row) => [
-    `'${row.kode_kantor || ""}`,
+  const headers = ["Kode", label, "Potensi Kredit NOA", "Potensi Kredit Plafon", "Refinancing NOA", "Refinancing Plafon", "Lunas (Prospek) NOA", "Lunas (Prospek) Plafon", `Belum Lunas Sisa ${getJtNominalLabel(filters.nominalField)}`, "Belum Lunas NOA", "Belum Lunas Plafon", "Refinancing (%)"]
+  const values = rows.map((row) => [
+    String(row.kode_kantor || ""),
     row.group_label || row.nama_kantor || "",
-    row.noa_potensi || 0,
+    Number(row.noa_potensi || 0),
     Math.round(Number(row.plafon_potensi || 0)),
-    row.noa_refinancing || 0,
+    Number(row.noa_refinancing || 0),
     Math.round(Number(row.plafon_refinancing || 0)),
-    row.noa_lunas || 0,
+    Number(row.noa_lunas || 0),
     Math.round(Number(row.plafon_lunas || 0)),
     Math.round(Number(row.sisa_belum_lunas || 0)),
-    row.noa_belum_lunas || 0,
+    Number(row.noa_belum_lunas || 0),
     Math.round(Number(row.plafon_belum_lunas || 0)),
-    Number(row.persentase || 0).toFixed(2).replace(".", ",") + "%",
-  ].join("\t") + "\n").join("")
-  const blob = new Blob([header + body], { type: "application/vnd.ms-excel;charset=utf-8" })
-  const url = window.URL.createObjectURL(blob)
-  const link = document.createElement("a")
-  link.href = url
-  link.download = `Rekap_JatuhTempo_${filters.year}.xls`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  window.URL.revokeObjectURL(url)
-  return true
+    Number(row.persentase || 0),
+  ])
+  return downloadReportExcel(`Rekap_JatuhTempo_${filters.year}`, headers, values, [0])
 }
 
 export function formatJtMoney(value: unknown) {

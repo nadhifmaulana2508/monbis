@@ -56,6 +56,8 @@ switch ($method) {
             $controller->getDetailProgressKredit($input);
         } elseif ($input['type'] === 'produk_kredit') {
             $controller->getRekapProdukKredit($input);
+        } elseif ($input['type'] === 'gambaran_kredit_cabang') {
+            $controller->getGambaranKreditCabang($input);
         } elseif ($input['type'] === 'detail_produk_kredit') {
             $controller->getDetailProdukKredit($input);
         } elseif ($input['type'] === 'npl_breakdown') {

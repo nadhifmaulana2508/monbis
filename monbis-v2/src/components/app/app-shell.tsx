@@ -1,9 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useLayoutEffect, useState, type ReactNode } from "react"
 import type { LucideIcon } from "lucide-react"
 import {
   BarChart3,
-  CalendarClock,
   ChevronRight,
+  Landmark,
   Menu,
   Moon,
   PanelLeftClose,
@@ -11,11 +11,20 @@ import {
   SlidersHorizontal,
   Sun,
   X,
+  UserRound,
 } from "lucide-react"
 
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { appRoutes } from "@/lib/routes"
+import { ProfileSettingsModal } from "./profile-settings-modal"
+import {
+  defaultPreferences,
+  getCurrentUser,
+  loadAppearancePreferences,
+  saveAppearancePreferences,
+  type AppearancePreferences,
+} from "@/lib/user-preferences"
 
 type NavItem = {
   label: string
@@ -52,38 +61,67 @@ function themeLabel(theme: ThemeMode) {
   return theme === "system" ? "Sistem" : theme === "light" ? "Terang" : "Gelap"
 }
 
+function applyTheme(theme: ThemeMode, systemDark: boolean) {
+  const isDark = theme === "dark" || (theme === "system" && systemDark)
+  document.documentElement.classList.toggle("dark", isDark)
+  document.documentElement.style.colorScheme = isDark ? "dark" : "light"
+}
+
 const navGroups: NavGroup[] = [
   {
-    label: "KPI Bisnis",
+    label: "Laporan kredit",
     hideLabel: true,
-    items: [
-      {
-        label: "KPI Bisnis",
-        icon: BarChart3,
-        children: [
-          { label: "Setting KPI Jabatan", href: "/pages/setting_kpi_jabatan.php" },
-          { label: "Nilai KPI AO", href: "/pages/hitung_kpi_ao.php" },
-          { label: "Generate KPI AO", href: "/pages/generate_kpi_ao.php" },
-          { label: "Rekap KPI AO", href: "/pages/rekap_kpi_ao.php" },
-          { label: "Report Cabang", href: "/pages/raport_cabang.php" },
-        ],
-      },
-    ],
+    items: [{
+      label: "Laporan Kredit",
+      icon: BarChart3,
+      children: [
+        {
+          label: "Realisasi kredit",
+          href: appRoutes.realisasiGrowth,
+        },
+        {
+          label: "Jatuh tempo kredit",
+          href: appRoutes.jatuhTempo,
+        },
+          {
+            label: "Pipeline Kredit",
+            href: appRoutes.pipelineKredit,
+          },
+        {
+          label: "NPL",
+          href: appRoutes.npl,
+        },
+        {
+          label: "RBB Realisasi Kredit",
+          href: appRoutes.rbbRealisasiKredit,
+        },
+        {
+          label: "Repayment Rate",
+          href: appRoutes.repaymentRate,
+        },
+        {
+          label: "Recovery NPL",
+          href: appRoutes.recoveryNpl,
+        },
+        {
+          label: "Potensi NPL",
+          href: appRoutes.potensiNpl,
+        },
+        {
+          label: "Flow PAR",
+          href: appRoutes.flowPar,
+        },
+      ],
+    }],
   },
   {
-    label: "Laporan kredit",
-    items: [
-      {
-        label: "Realisasi kredit",
-        href: appRoutes.realisasiGrowth,
-        icon: BarChart3,
-      },
-      {
-        label: "Jatuh tempo kredit",
-        href: appRoutes.jatuhTempo,
-        icon: CalendarClock,
-      },
-    ],
+    label: "Laporan keuangan",
+    hideLabel: true,
+    items: [{
+      label: "Laporan Keuangan",
+      icon: Landmark,
+      children: [{ label: "Laba Rugi", href: appRoutes.labaRugi }],
+    }],
   },
 ]
 
@@ -96,20 +134,18 @@ function Navigation({
   compact: boolean
   onNavigate?: () => void
 }) {
-  const [openItems, setOpenItems] = useState<string[]>(() => (
+  const [openItem, setOpenItem] = useState<string | null>(() => (
     navGroups.flatMap((group) => group.items)
       .filter((item) => item.label === "KPI Bisnis" || item.children?.some((child) => child.href === activeHref))
-      .map((item) => item.label)
+      .map((item) => item.label)[0] || null
   ))
 
   const toggleItem = (label: string) => {
-    setOpenItems((current) => current.includes(label)
-      ? current.filter((item) => item !== label)
-      : [...current, label])
+    setOpenItem((current) => current === label ? null : label)
   }
 
   return (
-    <nav aria-label="Navigasi utama" className="space-y-5">
+    <nav aria-label="Navigasi utama" className="space-y-3 sm:space-y-5">
       {navGroups.map((group) => (
         <div key={group.label}>
           {!group.hideLabel && (
@@ -126,7 +162,7 @@ function Navigation({
             {group.items.map((item) => {
               const Icon = item.icon
               const hasChildren = Boolean(item.children?.length)
-              const isOpen = openItems.includes(item.label)
+              const isOpen = openItem === item.label
               const isActive = item.href === activeHref || item.children?.some((child) => child.href === activeHref)
 
               return (
@@ -139,7 +175,7 @@ function Navigation({
                       title={compact ? item.label : undefined}
                       onClick={() => !compact && toggleItem(item.label)}
                       className={cn(
-                        "group flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+                        "group flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm font-medium text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 sm:min-h-11",
                         compact && "justify-center px-0",
                         isActive && "bg-muted text-foreground",
                       )}
@@ -154,7 +190,7 @@ function Navigation({
                       aria-current={isActive ? "page" : undefined}
                       onClick={onNavigate}
                       className={cn(
-                        "group flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+                        "group flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 sm:min-h-11",
                         compact && "justify-center px-0",
                         isActive && "bg-muted text-foreground hover:bg-muted",
                       )}
@@ -176,11 +212,11 @@ function Navigation({
                             aria-current={childActive ? "page" : undefined}
                             onClick={onNavigate}
                             className={cn(
-                              "flex min-h-10 items-center rounded-lg px-3 text-sm font-medium text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50",
+                              "flex min-h-9 min-w-0 items-center rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 sm:min-h-10",
                               childActive && "bg-muted text-foreground hover:bg-muted",
                             )}
                           >
-                            <span className="truncate">{child.label}</span>
+                            <span className="min-w-0 whitespace-normal leading-5">{child.label}</span>
                           </a>
                         ) : null
                       })}
@@ -237,7 +273,7 @@ function Sidebar({
       aria-label="Navigasi MONBIS"
       className={cn(
         "flex h-full min-h-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground",
-        mobile ? "w-[min(86vw,320px)] shadow-xl" : compact ? "w-[76px]" : "w-64",
+        mobile ? "w-[min(90vw,320px)] shadow-xl" : compact ? "w-[76px]" : "w-64",
       )}
     >
       <div
@@ -261,7 +297,7 @@ function Sidebar({
         )}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
+      <div className="min-h-0 flex-1 overscroll-contain overflow-y-auto px-2.5 py-4 sm:px-3 sm:py-5">
         <Navigation
           activeHref={activeHref}
           compact={compact && !mobile}
@@ -286,7 +322,10 @@ export function AppShell({
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [navbarFilterOpen, setNavbarFilterOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
   const [theme, setTheme] = useState<ThemeMode>(getStoredTheme)
+  const [currentUser] = useState(getCurrentUser)
+  const [appearance, setAppearance] = useState<AppearancePreferences>(() => loadAppearancePreferences(getCurrentUser().key))
   const [systemDark, setSystemDark] = useState(() => (
     typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches
   ))
@@ -299,12 +338,26 @@ export function AppShell({
     return () => media.removeEventListener("change", syncSystemTheme)
   }, [])
 
-  useEffect(() => {
-    const isDark = theme === "dark" || (theme === "system" && systemDark)
-    document.documentElement.classList.toggle("dark", isDark)
-    document.documentElement.style.colorScheme = isDark ? "dark" : "light"
+  useLayoutEffect(() => {
+    applyTheme(theme, systemDark)
     window.localStorage.setItem("monbis-theme", theme)
   }, [systemDark, theme])
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.dataset.uiDensity = appearance.density
+    root.dataset.uiFontScale = appearance.fontScale
+    saveAppearancePreferences(currentUser.key, appearance)
+  }, [appearance, currentUser.key])
+
+  useEffect(() => {
+    if (!profileOpen) return undefined
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setProfileOpen(false)
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [profileOpen])
 
   useEffect(() => {
     if (!mobileOpen) {
@@ -328,11 +381,11 @@ export function AppShell({
   }, [mobileOpen])
 
   return (
-    <div className="flex h-screen h-dvh min-h-0 overflow-hidden bg-muted/35 text-foreground">
+    <div className="density-app flex h-[100dvh] min-h-0 overflow-hidden bg-muted/35 text-foreground">
       <div className="flex h-full min-h-0 w-full">
         <div
           className={cn(
-            "hidden h-full shrink-0 border-sidebar-border transition-[width] duration-150 lg:block",
+            "relative z-40 hidden h-full shrink-0 border-sidebar-border transition-[width] duration-150 lg:block",
             collapsed ? "w-[76px]" : "w-64",
           )}
         >
@@ -340,7 +393,7 @@ export function AppShell({
         </div>
 
         {mobileOpen && (
-          <div className="fixed inset-0 z-40 lg:hidden">
+          <div className="fixed inset-0 z-[60] lg:hidden">
             <button
               type="button"
               aria-label="Tutup menu navigasi"
@@ -359,14 +412,14 @@ export function AppShell({
         )}
 
         <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
-          <header className="z-30 shrink-0 border-b border-border/80 bg-background/95 backdrop-blur-sm">
-            <div className="flex min-h-16 items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+          <header id="monbis-app-navbar" className="relative z-50 shrink-0 border-b border-border/80 bg-background/95 backdrop-blur-sm">
+            <div className="flex min-h-14 items-center justify-between gap-2 px-3 sm:min-h-16 sm:gap-3 sm:px-6 lg:px-8">
               <div className="flex min-w-0 items-center gap-2">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="size-11 lg:hidden"
+                  className="size-10 lg:hidden sm:size-11"
                   aria-label="Buka menu navigasi"
                   aria-expanded={mobileOpen}
                   onClick={() => setMobileOpen(true)}
@@ -377,7 +430,7 @@ export function AppShell({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="hidden size-11 lg:inline-flex"
+                  className="hidden size-10 lg:inline-flex sm:size-11"
                   aria-label={collapsed ? "Bentangkan sidebar" : "Ciutkan sidebar"}
                   aria-expanded={!collapsed}
                   onClick={() => setCollapsed((value) => !value)}
@@ -391,7 +444,7 @@ export function AppShell({
                 {showPageTitle && (
                   <div className="min-w-0">
                     <p className="hidden truncate text-xs font-medium text-muted-foreground sm:block">
-                      MONBIS / Laporan kredit
+                      {`MONBIS / ${activeHref === appRoutes.labaRugi ? "Laporan Keuangan" : "Laporan kredit"}`}
                     </p>
                     <h1 className="truncate text-sm font-semibold tracking-tight sm:text-base">
                       {title}
@@ -408,7 +461,15 @@ export function AppShell({
                   className="size-11 sm:size-8"
                   aria-label={`Aktifkan tema ${theme === "dark" || (theme === "system" && systemDark) ? "terang" : "gelap"}`}
                   title={`Tema saat ini: ${themeLabel(theme)} · Klik untuk mengganti`}
-                  onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
+                  onClick={() => setTheme((current) => {
+                    const next = current === "dark" ? "light" : "dark"
+                    document.documentElement.classList.add("theme-switching")
+                    applyTheme(next, systemDark)
+                    window.requestAnimationFrame(() => {
+                      window.requestAnimationFrame(() => document.documentElement.classList.remove("theme-switching"))
+                    })
+                    return next
+                  })}
                 >
                   {theme === "dark" || (theme === "system" && systemDark) ? <Moon aria-hidden="true" /> : <Sun aria-hidden="true" />}
                 </Button>
@@ -426,6 +487,17 @@ export function AppShell({
                     Filter
                   </Button>
                 )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="size-11 sm:size-8"
+                  aria-label={`Buka profil ${currentUser.name}`}
+                  title={`Profil ${currentUser.name}`}
+                  onClick={() => setProfileOpen(true)}
+                >
+                  <UserRound aria-hidden="true" />
+                </Button>
                 <a
                   href={legacyHref || activeHref}
                   className={cn(buttonVariants({ variant: "signalGray", size: "sm" }), "hidden sm:inline-flex")}
@@ -435,7 +507,7 @@ export function AppShell({
               </div>
             </div>
             {navbarContent && navbarFilterOpen && (
-              <div id="navbar-filter-panel" className="border-t bg-muted/20 px-4 py-4 sm:px-6 lg:px-8">
+              <div id="navbar-filter-panel" className="border-t bg-muted/20 px-4 py-2.5 sm:px-6 sm:py-3 lg:px-8">
                 <div className="mx-auto max-w-[1600px]">{navbarContent}</div>
               </div>
             )}
@@ -446,9 +518,17 @@ export function AppShell({
             )}
           </header>
 
-          <main className="min-h-0 min-w-0 flex-1 overflow-hidden">{children}</main>
+          <main className="relative z-0 min-h-0 min-w-0 flex-1 overflow-hidden">{children}</main>
         </div>
       </div>
+      <ProfileSettingsModal
+        open={profileOpen}
+        user={currentUser}
+        preferences={appearance}
+        onChange={setAppearance}
+        onReset={() => setAppearance(defaultPreferences)}
+        onClose={() => setProfileOpen(false)}
+      />
     </div>
   )
 }

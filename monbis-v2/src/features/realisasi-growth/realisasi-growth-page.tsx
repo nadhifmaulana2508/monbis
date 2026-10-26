@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { Download, Info, LoaderCircle } from "lucide-react"
+import { Info, LoaderCircle } from "lucide-react"
 
 import { AppShell } from "@/components/app/app-shell"
+import { ReportExportMenu } from "@/components/report-export-menu"
 import { Button } from "@/components/ui/button"
+import { downloadReportExcel } from "@/lib/download-report-excel"
 import { appRoutes } from "@/lib/routes"
 
 import { DetailModal, SummaryModal } from "./realisasi-growth-modals"
-import { requestJson, defaultFilters, escapeSpreadsheet, formatDateLabel, previousMonthEnd, rowNumber, sortRows } from "./realisasi-growth-data"
+import { requestJson, defaultFilters, formatDateLabel, previousMonthEnd, rowNumber, sortRows } from "./realisasi-growth-data"
 import { RealisasiGrowthFilterPanel } from "./realisasi-growth-filter-panel"
 import { RealisasiGrowthTable } from "./realisasi-growth-table"
 import { areaDefaults } from "./realisasi-growth-types"
@@ -29,7 +31,7 @@ export function RealisasiGrowthPage() {
   const [reloadKey, setReloadKey] = useState(0)
   const [rows, setRows] = useState<ReportRow[]>([])
   const [grandTotal, setGrandTotal] = useState<ReportRow | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>("kode_kantor")
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc")
@@ -43,15 +45,25 @@ export function RealisasiGrowthPage() {
   const [detailTotalPages, setDetailTotalPages] = useState(1)
   const [detailTotalRecords, setDetailTotalRecords] = useState(0)
   const detailAbortRef = useRef<AbortController | null>(null)
+  const tableExportRef = useRef<HTMLTableElement>(null)
 
   useEffect(() => {
     const controller = new AbortController()
 
     const loadDefaults = async () => {
-      try {
-        const dateResponse = await requestJson<{ last_created?: string; last_closing?: string }>("date", {
+      const [dateResult, areaResult] = await Promise.allSettled([
+        requestJson<{ last_created?: string; last_closing?: string }>("date", { signal: controller.signal }),
+        requestJson<Array<{ kode_kantor?: string; nama_kantor?: string }>>("kode", {
+          method: "POST",
+          body: JSON.stringify({ type: "kode_kantor" }),
           signal: controller.signal,
-        })
+        }),
+      ])
+
+      if (controller.signal.aborted) return
+
+      if (dateResult.status === "fulfilled") {
+        const dateResponse = dateResult.value
         const lastCreated = dateResponse.data?.last_created
         if (lastCreated) {
           setFilters((current) => ({
@@ -60,16 +72,10 @@ export function RealisasiGrowthPage() {
             closingDate: dateResponse.data?.last_closing || previousMonthEnd(lastCreated),
           }))
         }
-      } catch {
-        // Tanggal lokal tetap dipakai jika endpoint default belum tersedia.
       }
 
-      try {
-        const areaResponse = await requestJson<Array<{ kode_kantor?: string; nama_kantor?: string }>>("kode", {
-          method: "POST",
-          body: JSON.stringify({ type: "kode_kantor" }),
-          signal: controller.signal,
-        })
+      if (areaResult.status === "fulfilled") {
+        const areaResponse = areaResult.value
         const loadedAreas = (areaResponse.data || [])
           .filter((area) => area.kode_kantor && area.kode_kantor !== "000")
           .map((area) => ({
@@ -77,11 +83,9 @@ export function RealisasiGrowthPage() {
             label: `${String(area.kode_kantor).padStart(3, "0")} - ${area.nama_kantor || "Tanpa nama"}`,
           }))
         if (loadedAreas.length > 0) setAreas([...areaDefaults, ...loadedAreas])
-      } catch {
-        // Opsi area bawaan tetap dapat dipakai saat master kantor gagal dimuat.
-      } finally {
-        if (!controller.signal.aborted) setDefaultsReady(true)
       }
+
+      setDefaultsReady(true)
     }
 
     void loadDefaults()
@@ -225,42 +229,25 @@ export function RealisasiGrowthPage() {
 
   const handleExport = () => {
     if (rows.length === 0) return
-    const headers = ["Kode", "Nama Kantor", "Saldo Closing", "Realisasi", "Restrukturisasi", "Pelunasan", "Angsuran", "Run Off", "Saldo Actual", "Growth"]
+    const headers = ["Kode", "Nama Kantor", "Saldo Closing", "Realisasi", "Realisasi NOA", "Restrukturisasi", "Restrukturisasi NOA", "Pelunasan", "Pelunasan NOA", "Angsuran", "Angsuran NOA", "Run Off", "Run Off NOA", "Saldo Actual", "Growth"]
     const values = rows.map((row) => [
-      row.kode_kantor || "",
+      String(row.kode_kantor || ""),
       row.nama_kantor || "",
       rowNumber(row, "nominal_closing"),
       rowNumber(row, "total_realisasi"),
+      Number(row.noa_realisasi || 0),
       rowNumber(row, "total_restruck"),
+      Number(row.noa_restruck || 0),
       rowNumber(row, "pelunasan"),
+      Number(row.noa_pelunasan || 0),
       rowNumber(row, "angsuran_murni"),
+      Number(row.noa_angsuran_murni || 0),
       rowNumber(row, "total_run_off"),
+      Number(row.noa_run_off || 0),
       rowNumber(row, "nominal_actual"),
       rowNumber(row, "growth"),
     ])
-    const tableRows = values
-      .map((line) => `<tr>${line.map((value) => `<td>${escapeSpreadsheet(value)}</td>`).join("")}</tr>`)
-      .join("")
-    const workbook = `
-      <html>
-        <head>
-          <meta charset="UTF-8" />
-          <style>
-            table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 11px; }
-            th, td { border: 1px solid #cbd5e1; padding: 6px; white-space: nowrap; }
-            th { background: #e2e8f0; font-weight: 700; }
-            td { mso-number-format: "0"; }
-          </style>
-        </head>
-        <body><table><thead><tr>${headers.map((header) => `<th>${escapeSpreadsheet(header)}</th>`).join("")}</tr></thead><tbody>${tableRows}</tbody></table></body>
-      </html>
-    `
-    const url = URL.createObjectURL(new Blob([`\ufeff${workbook}`], { type: "application/vnd.ms-excel;charset=utf-8" }))
-    const link = document.createElement("a")
-    link.href = url
-    link.download = "realisasi-kredit-growth.xls"
-    link.click()
-    URL.revokeObjectURL(url)
+    downloadReportExcel("Realisasi_Kredit_Growth", headers, values, [0])
   }
 
   const filterPanel = (
@@ -280,7 +267,7 @@ export function RealisasiGrowthPage() {
       navbarContent={filterPanel}
       showPageTitle={false}
     >
-      <div className="mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
+      <div className="density-page mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
         <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background">
           <div className="flex shrink-0 flex-nowrap items-center justify-between gap-2 border-b px-4 py-2.5 sm:gap-3 sm:px-5">
             <div className="flex min-w-0 flex-1 items-center gap-1.5">
@@ -302,10 +289,7 @@ export function RealisasiGrowthPage() {
                 {filters.nominalField === "saldo_bank" ? "Saldo bank" : "Baki debet"} | Closing {formatDateLabel(filters.closingDate)} | Actual {formatDateLabel(filters.actualDate)}
               </span>
               <span className="hidden sm:inline">{loading ? "Mengambil data..." : `${rows.length.toLocaleString("id-ID")} kantor`}</span>
-              <Button type="button" variant="signalGreen" size="sm" className="size-10 min-h-10 shrink-0 px-2 sm:size-auto sm:min-h-7 sm:px-3" aria-label="Export Excel" title="Export Excel" onClick={handleExport} disabled={loading || rows.length === 0}>
-                <Download data-icon="inline-start" aria-hidden="true" />
-                <span className="hidden sm:inline">Export Excel</span>
-              </Button>
+              <ReportExportMenu target={tableExportRef} filename="Realisasi_Kredit_Growth" onExportExcel={handleExport} disabled={loading || rows.length === 0} />
             </div>
           </div>
 
@@ -332,6 +316,7 @@ export function RealisasiGrowthPage() {
                 sortDirection={sortDirection}
                 onSort={handleSort}
                 onDetail={openDetail}
+                tableRef={tableExportRef}
               />
             )}
           </div>
