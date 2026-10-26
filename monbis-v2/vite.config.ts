@@ -12,7 +12,8 @@ const apiProxy = {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/v2-react/' : '/',
   plugins: [react(), tailwindcss()],
   server: { proxy: apiProxy },
   preview: { host: 'localhost', port: 4173, strictPort: true, proxy: apiProxy },
@@ -21,4 +22,4 @@ export default defineConfig({
       '@': path.resolve(process.cwd(), 'src'),
     },
   },
-})
+}))

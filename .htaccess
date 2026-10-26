@@ -1,4 +1,9 @@
 RewriteEngine On
+# Serve the React V2 build at /v2-react while keeping its client-side routes
+# out of the legacy PHP router. Static assets are read from the Vite dist folder.
+RewriteRule ^v2-react/(.*\.(?:js|css|svg|ico|png|jpg|jpeg|webp|woff2?|ttf|txt|json))$ monbis-v2/dist/$1 [END,NC]
+RewriteRule ^v2-react(?:/.*)?$ monbis-v2/dist/index.html [END]
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 # FE modules have their own router. Keep both the local subfolder path

@@ -1,13 +1,16 @@
+const routeBase = import.meta.env.BASE_URL.replace(/\/+$/, "")
+const route = (path: string) => `${routeBase}${path}`
+
 export const appRoutes = {
-  realisasiGrowth: "/realisasi-kredit-growth",
-  jatuhTempo: "/jatuh-tempo",
-  pipelineKredit: "/pipeline-kredit",
-  npl: "/npl",
-  rbbRealisasiKredit: "/rbb-realisasi-kredit",
-  repaymentRate: "/repayment-rate",
-  recoveryNpl: "/recovery-npl",
-  potensiNpl: "/potensi-npl",
-  updateKomitmenFlow: "/update-komitmen-flow",
-  flowPar: "/flow-par",
-  labaRugi: "/laba-rugi",
+  realisasiGrowth: route("/realisasi-kredit-growth"),
+  jatuhTempo: route("/jatuh-tempo"),
+  pipelineKredit: route("/pipeline-kredit"),
+  npl: route("/npl"),
+  rbbRealisasiKredit: route("/rbb-realisasi-kredit"),
+  repaymentRate: route("/repayment-rate"),
+  recoveryNpl: route("/recovery-npl"),
+  potensiNpl: route("/potensi-npl"),
+  updateKomitmenFlow: route("/update-komitmen-flow"),
+  flowPar: route("/flow-par"),
+  labaRugi: route("/laba-rugi"),
 } as const

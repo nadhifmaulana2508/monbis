@@ -1,5 +1,4 @@
 const LOCAL_API_BASE_URL = "http://localhost/report-dpk/api"
-const PRODUCTION_API_BASE_URL = "https://monbis.bkkjateng.co.id/api"
 
 function trimTrailingSlash(value: string) {
   return value.replace(/\/+$/, "")
@@ -16,7 +15,7 @@ export function getApiBaseUrl() {
   const isLocalHost = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "::1"
   if (import.meta.env.DEV || (import.meta.env.PROD && isLocalHost && window.location.port === "4173")) return "/api"
 
-  return isLocalHost ? LOCAL_API_BASE_URL : PRODUCTION_API_BASE_URL
+  return isLocalHost ? LOCAL_API_BASE_URL : `${window.location.origin}/api`
 }
 
 export function apiEndpoint(request: string) {

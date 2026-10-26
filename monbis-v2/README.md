@@ -15,6 +15,12 @@ npm install
 npm run dev
 ```
 
+Dev server lokal tetap memakai route root, misalnya `http://localhost:5173/pipeline-kredit`.
+Build deployment memakai base `/v2-react/`, sehingga route production menjadi
+`https://monbis.bkkjateng.co.id/v2-react/pipeline-kredit` dan route dev menjadi
+`https://dev.monbis.bkkjateng.co.id/v2-react/pipeline-kredit`. Apache perlu menyajikan
+file dari `dist/` serta mengarahkan deep link `/v2-react/*` ke `dist/index.html`.
+
 ## Verifikasi
 
 ```bash

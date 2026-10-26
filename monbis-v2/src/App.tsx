@@ -17,10 +17,12 @@ const LabaRugiPage = lazy(() => import("@/features/laba-rugi/laba-rugi-page").th
 
 function App() {
   const pathname = window.location.pathname
-  const activePath = pathname === "/" ? appRoutes.realisasiGrowth : pathname
+  const appRoot = import.meta.env.BASE_URL
+  const isAppRoot = pathname === "/" || pathname === appRoot || pathname === appRoot.replace(/\/$/, "")
+  const activePath = isAppRoot ? appRoutes.realisasiGrowth : pathname
 
   useEffect(() => {
-    if (pathname === "/") {
+    if (isAppRoot) {
       window.history.replaceState(null, "", appRoutes.realisasiGrowth)
     }
     const routeTitle = new Map<string, string>([
@@ -38,7 +40,7 @@ function App() {
     ])
     document.title = `${routeTitle.get(activePath) || "MONBIS"} | MONBIS`
     document.querySelector('meta[name="description"]')?.setAttribute("content", `Laporan ${routeTitle.get(activePath) || "bisnis"} MONBIS.`)
-  }, [activePath, pathname])
+  }, [activePath, isAppRoot])
 
   const page = pathname === appRoutes.jatuhTempo ? <JatuhTempoPage />
     : pathname === appRoutes.pipelineKredit ? <PipelineKreditPage />
