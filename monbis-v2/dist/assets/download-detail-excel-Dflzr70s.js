@@ -1,0 +1,1 @@
+import{t as e}from"./download-report-excel-D8Dfx8oj.js";function t(t,n,r,i=[]){let a=n.flatMap(([,e],t)=>/(^no_rekening|^rekening|^kode|^no_hp)/i.test(String(e))?[t]:[]);e(r,n.map(([e])=>e),t.map(e=>n.map(([,t])=>e[t])),[...new Set([...i,...a])])}export{t};
