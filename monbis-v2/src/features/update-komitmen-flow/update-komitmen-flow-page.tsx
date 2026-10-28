@@ -11,7 +11,6 @@ import { appRoutes } from "@/lib/routes"
 import {
   normalizeUpdateFlowRows,
   requestUpdateFlow,
-  updateFlowAccess,
   updateFlowCommitmentOptions,
   updateFlowDate,
   updateFlowHasCommitment,
@@ -19,7 +18,6 @@ import {
   updateFlowMoney,
   updateFlowNumber,
   updateFlowPayload,
-  updateFlowUser,
   type UpdateFlowRequest,
   type UpdateFlowRow,
 } from "./update-komitmen-flow-data"
@@ -114,7 +112,7 @@ function UpdateCommitmentDialog({ form, request, saving, error, onChange, onClos
 export function UpdateKomitmenFlowPage() {
   const [request] = useState<UpdateFlowRequest | null>(readStoredRequest)
   const source = commitmentSource(request)
-  const [access, setAccess] = useState<boolean | null>(() => request ? null : false)
+  const [access] = useState<boolean>(() => Boolean(request))
   const [rows, setRows] = useState<UpdateFlowRow[]>([])
   const [loading, setLoading] = useState(Boolean(request))
   const [error, setError] = useState<string | null>(() => request ? null : "Parameter halaman tidak ditemukan. Buka kembali halaman ini dari detail Flow PAR atau Potensi NPL.")
@@ -128,15 +126,6 @@ export function UpdateKomitmenFlowPage() {
   const [toast, setToast] = useState<{ message: string; variant: "success" | "error" } | null>(null)
   const [reloadKey, setReloadKey] = useState(0)
   const saveAbort = useRef<AbortController | null>(null)
-
-  useEffect(() => {
-    const controller = new AbortController()
-    if (!request) return () => controller.abort()
-    void requestUpdateFlow<Record<string, unknown>>("rbac", { method: "POST", body: JSON.stringify({ type: "me" }), signal: controller.signal })
-      .then((result) => { if (!controller.signal.aborted) { const allowed = updateFlowAccess(result.data || null, source, updateFlowUser()); setAccess(allowed); if (!allowed) setLoading(false) } })
-      .catch((reason: unknown) => { if (!controller.signal.aborted) { setAccess(import.meta.env.DEV); setLoading(false); if (!import.meta.env.DEV) setError(reason instanceof Error ? reason.message : "Hak akses belum dapat diverifikasi.") } })
-    return () => controller.abort()
-  }, [request, source])
 
   useEffect(() => {
     if (!request || access !== true) return undefined

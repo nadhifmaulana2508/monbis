@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite"
 import { defineConfig } from "vite"
 
 export default defineConfig(({ mode }) => ({
-  base: mode === "production" ? "/kpi/" : "/",
+  base: mode === "production" ? "/kpi/" : mode === "xampp" ? "/report-dpk/kpi/" : "/",
   plugins: [react(), tailwindcss()],
   build: {
     outDir: path.resolve(process.cwd(), "../kpi"),

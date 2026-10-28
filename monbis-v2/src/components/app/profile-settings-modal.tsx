@@ -1,4 +1,4 @@
-import { Monitor, Type, UserRound, X } from "lucide-react"
+import { LogOut, Monitor, Type, UserRound, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import type { AppearancePreferences, CurrentUser, FontScale, UiDensity } from "@/lib/user-preferences"
@@ -9,10 +9,11 @@ type ProfileSettingsModalProps = {
   preferences: AppearancePreferences
   onChange: (preferences: AppearancePreferences) => void
   onReset: () => void
+  onLogout: () => void
   onClose: () => void
 }
 
-export function ProfileSettingsModal({ open, user, preferences, onChange, onReset, onClose }: ProfileSettingsModalProps) {
+export function ProfileSettingsModal({ open, user, preferences, onChange, onReset, onLogout, onClose }: ProfileSettingsModalProps) {
   if (!open) return null
 
   return (
@@ -64,9 +65,9 @@ export function ProfileSettingsModal({ open, user, preferences, onChange, onRese
           </div>
         </div>
 
-        <footer className="flex items-center justify-between gap-3 border-t px-4 py-3 sm:px-6">
+        <footer className="flex flex-wrap items-center justify-between gap-2 border-t px-4 py-3 sm:px-6">
           <Button type="button" variant="ghost" size="sm" onClick={onReset}>Kembalikan default</Button>
-          <Button type="button" variant="outline" size="sm" onClick={onClose}>Selesai</Button>
+          <div className="flex items-center gap-2"><Button type="button" variant="outline" size="sm" onClick={onLogout}><LogOut aria-hidden="true" />Keluar</Button><Button type="button" variant="outline" size="sm" onClick={onClose}>Selesai</Button></div>
         </footer>
       </section>
     </div>

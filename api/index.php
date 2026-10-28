@@ -9,6 +9,13 @@ $request = $_GET['request'] ?? '';
 $segments = explode('/', trim($request, '/'));
 
 $endpoint = $segments[0] ?? ''; // ex: 'catalog'
+if ($endpoint !== '' && $endpoint !== 'auth') {
+    // Semua API selain endpoint autentikasi wajib melewati verifikasi SSO.
+    require_once __DIR__ . '/helpers/sso_guard.php';
+    $user = requireAppAuth();
+}
+if (!defined('API_ROUTER_ENTRY')) define('API_ROUTER_ENTRY', true);
+
 switch ($endpoint) {
     case '':
         sendResponse(200, "API is running");
@@ -100,9 +107,7 @@ switch ($endpoint) {
         require __DIR__ . '/routes/kinerja_report.php';
         break;
     case 'rbb_v2':
-        // FE V2 memakai endpoint terpisah sesuai kebutuhan deployment.
-        // Route legacy `rbb` tetap memakai guard SSO.
-        if (!defined('RBB_V2_PUBLIC')) define('RBB_V2_PUBLIC', true);
+        // RBB V2 tetap memakai autentikasi SSO seperti API laporan lain.
         require __DIR__ . '/routes/rbb.php';
         break;
     case 'pipelane_monitoring_kredit':

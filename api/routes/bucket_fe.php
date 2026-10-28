@@ -1,4 +1,5 @@
 <?php
+if (!defined('API_ROUTER_ENTRY')) { http_response_code(404); exit; }
 
 // 1. Load Controller & Database
 require_once __DIR__ . '/../controllers/BucketFeController.php';

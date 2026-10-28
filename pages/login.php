@@ -129,11 +129,31 @@ require_once __DIR__ . '/../components/login-showcase.php';
     return '';
   }
   const BASE_APP = window.BASE_APP || location.origin + getBasePath();
+  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const requestedNextPage = new URLSearchParams(window.location.search).get('next');
   const postLoginPage = requestedNextPage === 'tv_cabang' ? 'tv_cabang' : 'dashboard';
+
+  function getSafePostLoginTarget() {
+    if (!requestedNextPage || requestedNextPage === 'tv_cabang') return '';
+    try {
+      const target = new URL(requestedNextPage, location.origin);
+      const basePath = getBasePath();
+      const allowedPrefixes = ['/v2-react/', '/kpi/', `${basePath}/v2-react/`, `${basePath}/kpi/`]
+        .map((prefix) => prefix.replace(/\/{2,}/g, '/'));
+      const sameOrigin = target.origin === location.origin;
+      const localHost = ['localhost', '127.0.0.1'].includes(target.hostname);
+      const localVite = isLocal && localHost && target.protocol === 'http:'
+        && [['5173', ['/','/realisasi-kredit-growth','/jatuh-tempo','/pipeline-kredit','/npl','/rbb-realisasi-kredit','/repayment-rate','/recovery-npl','/potensi-npl','/update-komitmen-flow','/flow-par','/laba-rugi']], ['5174', ['/kpi/setting_kpi_jabatan','/kpi/nilai_kpi_ao','/kpi/generate_kpi_ao','/kpi/rekap_kpi_ao','/kpi/report_cabang']]]
+          .some(([port, paths]) => target.port === port && paths.includes(target.pathname));
+      const appPath = allowedPrefixes.some((prefix) => target.pathname.startsWith(prefix) || target.pathname === prefix.slice(0, -1));
+      return ((sameOrigin && appPath) || localVite) ? target.href : '';
+    } catch {
+      return '';
+    }
+  }
+  const safePostLoginTarget = getSafePostLoginTarget();
   
   // 1. DETEKSI ENVIRONMENT 
-  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const API_SSO_BASE = isLocal ? 'http://localhost/rest_api_sso' : 'https://apisso.bkkjateng.co.id';
   
   const API_LOGIN = `${API_SSO_BASE}/api/auth/login`;
@@ -231,7 +251,7 @@ require_once __DIR__ . '/../components/login-showcase.php';
         }
 
         try { sessionStorage.setItem('monbis_login_announcement_pending', '1'); } catch (error) {}
-        location.href = `${BASE_APP}/${postLoginPage}`;
+        location.href = safePostLoginTarget || `${BASE_APP}/${postLoginPage}`;
 
     } catch (error) {
         errMsg.textContent = error.message.includes("Failed to fetch") 

@@ -1,4 +1,5 @@
 <?php
+if (!defined('API_ROUTER_ENTRY')) { http_response_code(404); exit; }
 
 require_once __DIR__ . '/../controllers/HapusBukuController.php';
 require_once __DIR__ . '/../controllers/config/database.php';

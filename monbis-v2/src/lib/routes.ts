@@ -2,6 +2,7 @@ const routeBase = import.meta.env.BASE_URL.replace(/\/+$/, "")
 const route = (path: string) => `${routeBase}${path}`
 
 export const appRoutes = {
+  loginMonbisV2: route("/login-monbis-v2"),
   realisasiGrowth: route("/realisasi-kredit-growth"),
   jatuhTempo: route("/jatuh-tempo"),
   pipelineKredit: route("/pipeline-kredit"),

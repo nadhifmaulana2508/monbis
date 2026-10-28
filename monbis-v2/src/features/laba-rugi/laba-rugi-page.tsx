@@ -5,7 +5,7 @@ import { ReportExportMenu } from "@/components/report-export-menu"
 import { ReportInfoDialog } from "@/components/report-info-dialog"
 import { Button } from "@/components/ui/button"
 import { appRoutes } from "@/lib/routes"
-import { exportLabaRugi, labaRugiAccess, labaRugiAreas, labaRugiPayload, labaRugiUser, labaRugiUserCode, requestLabaRugi, type LabaRugiData } from "./laba-rugi-data"
+import { exportLabaRugi, labaRugiAreas, labaRugiPayload, labaRugiUser, labaRugiUserCode, requestLabaRugi, type LabaRugiData } from "./laba-rugi-data"
 import { LabaRugiFilterPanel } from "./laba-rugi-filter-panel"
 import { LabaRugiTable } from "./laba-rugi-table"
 
@@ -14,10 +14,10 @@ type Filters = { date: string; area: string; level: string }
 
 export function LabaRugiPage() {
   const userCode = labaRugiUserCode(labaRugiUser())
+  const access = useMemo(() => true, [])
   const [filters, setFilters] = useState<Filters>({ date: "", area: userCode === "000" ? "000" : userCode, level: "5" })
   const [offices, setOffices] = useState<Office[]>([])
   const [defaultsReady, setDefaultsReady] = useState(false)
-  const [access, setAccess] = useState<boolean | null>(null)
   const [data, setData] = useState<LabaRugiData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -30,17 +30,10 @@ export function LabaRugiPage() {
   useEffect(() => {
     const controller = new AbortController()
     void Promise.allSettled([
-      requestLabaRugi<Record<string, unknown>>("rbac", { method: "POST", body: JSON.stringify({ type: "me" }), signal: controller.signal }),
       requestLabaRugi<{ last_created?: string }>("lapkeu", { method: "POST", body: JSON.stringify({ type: "default_acc_history_date" }), signal: controller.signal }),
       requestLabaRugi<Office[]>("kode", { method: "POST", body: JSON.stringify({ type: "kode_kantor" }), signal: controller.signal }),
-    ]).then(([permission, dateResult, officesResult]) => {
+    ]).then(([dateResult, officesResult]) => {
       if (controller.signal.aborted) return
-      if (permission.status === "fulfilled") {
-        const allowed = labaRugiAccess(permission.value.data || null)
-        setAccess(allowed)
-        if (!allowed) setLoading(false)
-      } else if (import.meta.env.DEV) setAccess(true)
-      else { setAccess(false); setLoading(false); setError(permission.reason instanceof Error ? permission.reason.message : "Hak akses Laba Rugi belum dapat diverifikasi.") }
 
       const date = dateResult.status === "fulfilled" ? dateResult.value.data?.last_created || "" : ""
       setFilters((current) => ({ ...current, date }))
@@ -51,7 +44,7 @@ export function LabaRugiPage() {
   }, [])
 
   useEffect(() => {
-    if (!defaultsReady || access !== true) return undefined
+    if (!defaultsReady) return undefined
     const controller = new AbortController()
     void requestLabaRugi<LabaRugiData>("lapkeu", {
       method: "POST",
@@ -65,7 +58,7 @@ export function LabaRugiPage() {
       if (!controller.signal.aborted) setLoading(false)
     })
     return () => controller.abort()
-  }, [access, defaultsReady, filters.area, filters.date, reloadKey])
+  }, [defaultsReady, filters.area, filters.date, reloadKey])
 
   const areas = useMemo(() => labaRugiAreas(offices, userCode), [offices, userCode])
   const areaLabel = areas.find((option) => option.value === filters.area)?.label || filters.area

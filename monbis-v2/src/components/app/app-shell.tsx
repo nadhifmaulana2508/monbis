@@ -17,6 +17,7 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { appRoutes } from "@/lib/routes"
+import { clearMonbisSession } from "@/lib/monbis-auth"
 import { ProfileSettingsModal } from "./profile-settings-modal"
 import {
   defaultPreferences,
@@ -527,6 +528,10 @@ export function AppShell({
         preferences={appearance}
         onChange={setAppearance}
         onReset={() => setAppearance(defaultPreferences)}
+        onLogout={() => {
+          clearMonbisSession()
+          window.location.replace(`${appRoutes.loginMonbisV2}?next=${encodeURIComponent(`${window.location.pathname}${window.location.search}`)}`)
+        }}
         onClose={() => setProfileOpen(false)}
       />
     </div>

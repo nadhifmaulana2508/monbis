@@ -8,7 +8,7 @@ import type { SearchableOption } from "@/components/searchable-select"
 import { Button } from "@/components/ui/button"
 import { appRoutes } from "@/lib/routes"
 import { RepaymentRateFilterPanel } from "./repayment-rate-filter-panel"
-import { detailExport, exportRr, requestRr, rrAccess, rrDateLabel, rrOfficeCode, sortRrRows, type RrFilters, type RrOffice, type RrRow, type RrSort } from "./repayment-rate-data"
+import { detailExport, exportRr, requestRr, rrDateLabel, rrOfficeCode, sortRrRows, type RrFilters, type RrOffice, type RrRow, type RrSort } from "./repayment-rate-data"
 import { RepaymentRateDetailModal } from "./repayment-rate-modals"
 import { RepaymentRateTable } from "./repayment-rate-table"
 
@@ -28,10 +28,10 @@ function previousMonthEnd(date: string) {
 
 export function RepaymentRatePage() {
   const userCode = rrOfficeCode()
+  const access = useMemo(() => true, [])
   const [filters, setFilters] = useState<RrFilters>(() => ({ actualDate: localDate(), closingDate: previousMonthEnd(localDate()), nominalField: "saldo_bank", area: userCode === "000" ? "000" : userCode, breakdown: "KANKAS" }))
   const [offices, setOffices] = useState<RrOffice[]>([])
   const [defaultsReady, setDefaultsReady] = useState(false)
-  const [access, setAccess] = useState<boolean | null>(null)
   const [rows, setRows] = useState<RrRow[]>([])
   const [total, setTotal] = useState<RrRow | null>(null)
   const [meta, setMeta] = useState<Record<string, unknown>>({})
@@ -58,14 +58,10 @@ export function RepaymentRatePage() {
   useEffect(() => {
     const controller = new AbortController()
     void Promise.allSettled([
-      requestRr<Record<string, unknown>>("rbac", { method: "POST", body: JSON.stringify({ type: "me" }), signal: controller.signal }),
       requestRr<{ last_created?: string; last_closing?: string }>("date", { signal: controller.signal }),
       requestRr<RrOffice[]>("kode", { method: "POST", body: JSON.stringify({ type: "kode_kantor" }), signal: controller.signal }),
-    ]).then(([permission, date, office]) => {
+    ]).then(([date, office]) => {
       if (controller.signal.aborted) return
-      if (permission.status === "fulfilled") setAccess(rrAccess(permission.value.data || null))
-      else if (import.meta.env.DEV) setAccess(true)
-      else { setAccess(false); setError(permission.reason instanceof Error ? permission.reason.message : "Hak akses belum dapat diverifikasi.") }
       const officeList = office.status === "fulfilled" && Array.isArray(office.value.data) ? office.value.data : []
       setOffices(officeList)
       if (date.status === "fulfilled" && date.value.data?.last_created) {
@@ -78,7 +74,7 @@ export function RepaymentRatePage() {
   }, [])
 
   useEffect(() => {
-    if (!defaultsReady || access !== true) return undefined
+    if (!defaultsReady) return undefined
     const controller = new AbortController()
     const body: Record<string, string | null> = {
       type: "rr", closing_date: filters.closingDate, harian_date: filters.actualDate,
@@ -97,7 +93,7 @@ export function RepaymentRatePage() {
       .catch((caught: unknown) => { if (!controller.signal.aborted) { setRows([]); setTotal(null); setError(caught instanceof Error ? caught.message : "Data Repayment Rate gagal dimuat.") } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
-  }, [access, defaultsReady, filters])
+  }, [defaultsReady, filters])
 
   useEffect(() => {
     if (!detail) return undefined

@@ -10,7 +10,7 @@ import { SearchableSelect, type SearchableOption } from "@/components/searchable
 import { Button } from "@/components/ui/button"
 import { appRoutes } from "@/lib/routes"
 
-import { exportNpl, formatNplMoney, formatNplPercent, hasNplAccess, nplCode, nplName, nplNumber, nplPayload, nplSortRows, requestNplJson, userOfficeCode, type NplFilters, type NplOffice, type NplRow, type NplSort, type NplView } from "./npl-data"
+import { exportNpl, formatNplMoney, formatNplPercent, nplCode, nplName, nplNumber, nplPayload, nplSortRows, requestNplJson, userOfficeCode, type NplFilters, type NplOffice, type NplRow, type NplSort, type NplView } from "./npl-data"
 
 const korwilOptions: SearchableOption[] = [
   { value: "KOR-SEMARANG", label: "Korwil Semarang" },
@@ -103,6 +103,7 @@ function NplTable({ rows, total, view, sort, onSort, tableRef }: { rows: NplRow[
 
 export function NplPage() {
   const userCode = userOfficeCode()
+  const access = useMemo(() => true, [])
   const [filters, setFilters] = useState(() => initialFilters(userCode))
   const [view, setView] = useState<NplView>("kolek")
   const [offices, setOffices] = useState<NplOffice[]>([])
@@ -112,18 +113,13 @@ export function NplPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [infoOpen, setInfoOpen] = useState(false)
-  const [access, setAccess] = useState<boolean | null>(null)
   const tableRef = useRef<HTMLTableElement>(null)
 
   useEffect(() => {
     let active = true
     const abort = new AbortController()
     const load = async () => {
-      for (let attempt = 0; attempt < 15 && !window.getUser?.(); attempt += 1) await new Promise((resolve) => window.setTimeout(resolve, 200))
-      const user = (window.getUser?.() as Record<string, unknown> | null) || null
       if (!active) return
-      setAccess(hasNplAccess(user))
-      if (user && !hasNplAccess(user)) { setLoading(false); return }
       try {
         const [dateResult, officeResult] = await Promise.all([
           requestNplJson<{ last_created?: string; last_closing?: string }>("date", { signal: abort.signal }),
@@ -141,7 +137,7 @@ export function NplPage() {
   }, [])
 
   useEffect(() => {
-    if (access !== true || !filters.actualDate || (view === "npl" && !filters.closingDate)) return undefined
+    if (!filters.actualDate || (view === "npl" && !filters.closingDate)) return undefined
     const controller = new AbortController()
     const timer = window.setTimeout(() => {
       setLoading(true); setError(null)
@@ -151,7 +147,7 @@ export function NplPage() {
         .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     }, 180)
     return () => { window.clearTimeout(timer); controller.abort() }
-  }, [access, filters, view])
+  }, [filters, view])
 
   const allowedOffices = userCode === "000" ? offices : offices.filter((office) => String(office.kode_kantor || "").padStart(3, "0") === userCode)
   if (userCode !== "000" && allowedOffices.length === 0) allowedOffices.push({ kode_kantor: userCode, nama_kantor: "Cabang" })

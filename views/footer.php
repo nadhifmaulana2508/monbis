@@ -345,6 +345,9 @@
 
     // --- 6. EVENT THEME NAVBAR & SIDEBAR ---
     (function () {
+        // Theme navbar/sidebar hanya diperlukan setelah sesi login terverifikasi.
+        if (!<?= !empty($isLoggedIn) ? 'true' : 'false' ?>) return;
+
         const API_EVENT_ACTIVE = './api/event_theme/active';
         const root = document.documentElement;
         let currentTheme = null;

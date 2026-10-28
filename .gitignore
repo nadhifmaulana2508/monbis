@@ -4,6 +4,7 @@ data
 api/va
 .htaccess
 docs/*
+!docs/.htaccess
 !docs/database/
 !docs/prd-refactor-ui.md
 !docs/prd-migrasi-php-react.md

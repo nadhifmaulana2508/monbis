@@ -385,22 +385,8 @@ function rbacVerifyToken(string $token): ?array
     if ($token === '') {
         return null;
     }
-    require_once __DIR__ . '/JWT.php';
-    $secrets = [];
-    $configured = getenv('JWT_SECRET');
-    if ($configured !== false && trim($configured) !== '') {
-        $secrets[] = trim($configured);
-    }
-    // Token SSO Monbis saat ini memakai secret ini di rest_api_sso.
-    $secrets[] = 'SSO_BKK_SECRET_2026';
-    $secrets[] = 'your-secret-key';
-    foreach (array_unique($secrets) as $secret) {
-        $payload = verifyJWT($token, $secret);
-        if (is_array($payload)) {
-            return $payload;
-        }
-    }
-    return null;
+    require_once __DIR__ . '/sso_guard.php';
+    return ssoWhoami($token);
 }
 
 function rbacRequireUser(PDO $pdo): array

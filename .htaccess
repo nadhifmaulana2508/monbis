@@ -1,14 +1,24 @@
 RewriteEngine On
+# Jangan sajikan dotfile (mis. .env dan .git) sebagai file statis.
+RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,END,NC]
+# Source PHP internal hanya boleh dimuat oleh front controller.
+RewriteRule ^(?:pages|views|components|api/(?:controllers|helpers|middlewares|routes)|v-2/(?:pages|components))(?:/|$) - [F,END,NC]
+RewriteRule ^v-2/config\.php$ - [F,END,NC]
+RewriteRule ^(?:debug|tmp_kpi_activate)\.php$ - [F,END,NC]
+RewriteRule ^img/_component_demo\.php$ - [F,END,NC]
+
 # Serve the React V2 build at /v2-react while keeping its client-side routes
 # out of the legacy PHP router. Static assets are read from the Vite dist folder.
 RewriteRule ^v2-react/(.*\.(?:js|css|svg|ico|png|jpg|jpeg|webp|woff2?|ttf|txt|json))$ monbis-v2/dist/$1 [END,NC]
-RewriteRule ^v2-react(?:/.*)?$ monbis-v2/dist/index.html [END]
+RewriteRule ^v2-react(?:/(.*))?$ index.php?url=v2-react/$1 [QSA,L]
+
+# Route root KPI through PHP auth guard; existing files under /kpi (assets) remain static.
+RewriteRule ^kpi/?$ index.php?url=kpi [QSA,L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 # FE modules have their own router. Keep both the local subfolder path
-# (/report-dpk/v-2) and aaPanel production paths (/v-2, /rbb, /kpi)
-# out of the legacy Monbis router.
-RewriteCond %{REQUEST_URI} !^/(?:[^/]+/)?(?:v-2|rbb|kpi|goRbb|simpeg)(?:/|$) [NC]
+# (/report-dpk/v-2) and other standalone modules out of the legacy Monbis router.
+RewriteCond %{REQUEST_URI} !^/(?:[^/]+/)?(?:v-2|rbb|goRbb|simpeg)(?:/|$) [NC]
 
 RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]

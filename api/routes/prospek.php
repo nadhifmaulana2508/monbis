@@ -1,4 +1,5 @@
 <?php
+if (!defined('API_ROUTER_ENTRY')) { http_response_code(404); exit; }
 
 // =============================================================
 // ROUTER KHUSUS: REPAYMENT RATE (RR) - FIXED

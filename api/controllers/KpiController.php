@@ -626,6 +626,8 @@ final class KpiController
                 'tukin_persen'=>$avg===null?null:$tukin($avg/20)['persen']
             ];
         }
+        $breakdown=[];
+        if(!empty($input['include_breakdown'])){
         $breakdownSql="SELECT p.id AS penilaian_id,p.bulan,p.closing_date,p.id_peg,p.nama_ao,
                               LPAD(CAST(ao.kode_kantor AS CHAR),3,'0') AS kode_kantor,
                               i.kode,i.nama,i.kelompok,i.unit,i.formula_key,i.bobot,i.input_pa,
@@ -658,6 +660,7 @@ final class KpiController
                 $breakdown,
                 static fn(array $item): bool => isset($visibleAoKeys[(string)$item['id_peg']])
             ));
+        }
         }
         $this->json(200,'Rekap KPI tahunan berhasil dimuat',[
             'year'=>$year,'kode_ao'=>$ao,'kode_kantor'=>$kantor,

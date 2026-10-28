@@ -1,34 +1,20 @@
 <?php
+if (!defined('API_ROUTER_ENTRY')) { http_response_code(404); exit; }
+require_once __DIR__ . '/../helpers/response.php';
+require_once __DIR__ . '/../helpers/sso_guard.php';
 
-require_once __DIR__ . '/../controllers/AuthController.php';
-require_once __DIR__ . '/../controllers/config/database.php';
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$request = trim((string)($_GET['request'] ?? ''), '/');
+$endpoint = explode('/', $request)[1] ?? '';
 
-$authController = new AuthController($pdo);
-$method = $_SERVER['REQUEST_METHOD'];
-$uri = trim($_GET['request'] ?? '', '/');
-$endpoint = explode('/', $uri)[1] ?? '';
-
-switch ($endpoint) {
-    case 'login':
-        if ($method === 'POST') {
-            $data = json_decode(file_get_contents("php://input"), true);
-            $authController->login($data);
-        } else {
-            sendResponse(405, "Metode tidak diizinkan");
-        }
-        break;
-
-    case 'whoami':
-        if ($method === 'GET') {
-            $headers = getallheaders();
-            $token = $headers['Authorization'] ?? '';
-            $authController->whoami($token);
-        } else {
-            sendResponse(405, "Metode tidak diizinkan");
-        }
-        break;
-
-    default:
-        sendResponse(404, "Auth endpoint tidak ditemukan");
+if ($endpoint === 'login') {
+    // Login lokal lama dinonaktifkan. Aplikasi menggunakan endpoint SSO resmi.
+    sendResponse(410, 'Gunakan layanan autentikasi SSO MONBIS.');
 }
 
+if ($endpoint === 'whoami' && $method === 'GET') {
+    $user = requireAppAuth();
+    sendResponse(200, 'Data user berhasil diambil', $user);
+}
+
+sendResponse(404, 'Auth endpoint tidak ditemukan');

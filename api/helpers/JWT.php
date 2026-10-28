@@ -8,7 +8,10 @@ function base64UrlDecode($data) {
     return base64_decode(strtr($data, '-_', '+/'));
 }
 
-function generateJWT($payload, $secret = 'your-secret-key') {
+function generateJWT($payload, $secret) {
+    if (!is_string($secret) || trim($secret) === '') {
+        throw new InvalidArgumentException('JWT secret must be configured.');
+    }
     $header = ['alg' => 'HS256', 'typ' => 'JWT'];
     $headerEncoded = base64UrlEncode(json_encode($header));
     $payloadEncoded = base64UrlEncode(json_encode($payload));
@@ -19,7 +22,8 @@ function generateJWT($payload, $secret = 'your-secret-key') {
     return "$headerEncoded.$payloadEncoded.$signatureEncoded";
 }
 
-function verifyJWT($jwt, $secret = 'your-secret-key') {
+function verifyJWT($jwt, $secret) {
+    if (!is_string($secret) || trim($secret) === '') return false;
     $parts = explode('.', $jwt);
 
     if (count($parts) !== 3) return false;

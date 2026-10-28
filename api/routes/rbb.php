@@ -1,4 +1,5 @@
 <?php
+if (!defined('API_ROUTER_ENTRY')) { http_response_code(404); exit; }
 
 // =============================================================
 // ROUTER KHUSUS: REPAYMENT RATE (RR) - FIXED
@@ -35,9 +36,6 @@ if (!is_array($input)) {
 }
 
 $rbbAuth = static function (): array {
-    if (defined('RBB_V2_PUBLIC') && RBB_V2_PUBLIC) {
-        return ['employee_id' => '102-119'];
-    }
     require_once __DIR__ . '/../helpers/sso_guard.php';
     return requireAppAuth();
 };

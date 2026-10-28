@@ -20,7 +20,9 @@ export function RekapKpiAoPage() {
   const [directory, setDirectory] = useState<Awaited<ReturnType<typeof loadKpiDirectory>> | null>(null)
   const [data, setData] = useState<AnnualKpiResponse | null>(null)
   const [tab, setTab] = useState<"summary" | "breakdown" | "tukin">("summary")
+  const [breakdownLoadedFor, setBreakdownLoadedFor] = useState("")
   const [loading, setLoading] = useState(true)
+  const [reloadKey, setReloadKey] = useState(0)
   const [error, setError] = useState("")
   const [infoOpen, setInfoOpen] = useState(false)
 
@@ -41,11 +43,25 @@ export function RekapKpiAoPage() {
   useEffect(() => {
     const controller = new AbortController()
     setLoading(true)
+    setBreakdownLoadedFor("")
     loadAnnualKpi({ year: Number(year), jabatan_kode: job, kode_kantor: office, kode_ao: ao }, controller.signal).then(setData).catch((reason) => {
       if (!(reason instanceof DOMException && reason.name === "AbortError")) setError(reason instanceof Error ? reason.message : "Rekap KPI gagal dimuat")
     }).finally(() => setLoading(false))
     return () => controller.abort()
-  }, [ao, job, office, year])
+  }, [ao, job, office, reloadKey, year])
+
+  const filterKey = `${year}|${job}|${office}|${ao}`
+  useEffect(() => {
+    if (tab !== "breakdown" || !data || breakdownLoadedFor === filterKey) return
+    const controller = new AbortController()
+    loadAnnualKpi({ year: Number(year), jabatan_kode: job, kode_kantor: office, kode_ao: ao, include_breakdown: true }, controller.signal).then((result) => {
+      setData((current) => current ? { ...current, indicator_breakdown: result.indicator_breakdown } : result)
+      setBreakdownLoadedFor(filterKey)
+    }).catch((reason) => {
+      if (!(reason instanceof DOMException && reason.name === "AbortError")) setError(reason instanceof Error ? reason.message : "Breakdown KPI gagal dimuat")
+    })
+    return () => controller.abort()
+  }, [ao, breakdownLoadedFor, data, filterKey, job, office, tab, year])
 
   const filteredAo = useMemo(() => (directory?.ao || []).filter((item) => !office || item.kode_kantor === office), [directory?.ao, office])
   const filteredRows = useMemo(() => (data?.ao || []).filter((row) => !query.trim() || `${row.nama_ao} ${row.kode_ao} ${row.kode_kantor}`.toLowerCase().includes(query.trim().toLowerCase())), [data?.ao, query])
@@ -56,10 +72,10 @@ export function RekapKpiAoPage() {
     return () => setToolbar(null)
   }, [ao, directory, filteredAo, job, query, setToolbar, year, office])
 
-  return <KpiPage title="Rekap KPI AO" description="Rekap penilaian tahunan dari seluruh periode yang sudah digenerate. Filter berada di navbar agar pola antar halaman tetap konsisten." actions={<><button className="inline-flex size-9 items-center justify-center rounded-md text-[var(--muted)] hover:bg-[var(--surface-subtle)]" aria-label="Tentang rekap KPI" onClick={() => setInfoOpen(true)}><Info size={16} /></button><button className="inline-flex size-9 items-center justify-center rounded-md border border-[var(--line)] text-[var(--muted)] hover:bg-[var(--surface-subtle)]" aria-label="Muat ulang" onClick={() => setData(null)}><RefreshCw size={15} /></button></>}>
+  return <KpiPage title="Rekap KPI AO" description="Rekap penilaian tahunan dari seluruh periode yang sudah digenerate. Filter berada di navbar agar pola antar halaman tetap konsisten." actions={<><button className="inline-flex size-9 items-center justify-center rounded-md text-[var(--muted)] hover:bg-[var(--surface-subtle)]" aria-label="Tentang rekap KPI" onClick={() => setInfoOpen(true)}><Info size={16} /></button><button className="inline-flex size-9 items-center justify-center rounded-md border border-[var(--line)] text-[var(--muted)] hover:bg-[var(--surface-subtle)]" aria-label="Muat ulang" onClick={() => { setData(null); setReloadKey((value) => value + 1) }}><RefreshCw size={15} /></button></>}>
     <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><KpiMetric label="AO dinilai" value={formatNumber(data?.ao.length || 0, 0)} detail={data?.is_konsolidasi && data.total_ao > (data.ao.length || 0) ? `Top ${data.ao.length} dari ${data.total_ao} AO terbaik` : "Sudah memiliki penilaian"} /><KpiMetric label="Periode terisi" value={data?.months.filter((item) => item.terisi > 0).length || 0} detail="Hanya bulan yang sudah digenerate" /><KpiMetric label="Rata-rata nilai" value={avg == null ? "-" : `${formatNumber(avg)} / 100`} tone="success" detail="Nilai berbobot" /><KpiMetric label="Mode rekap" value={data?.is_konsolidasi ? "Konsolidasi" : (office || "Semua kantor")} detail={data?.is_konsolidasi ? "Top 5 nilai terbaik" : "Filter kantor aktif"} /></section>
     <KpiPanel title="Report tahunan" actions={<div className="flex rounded-md border border-[var(--line)] p-0.5 text-xs">{([["summary", "Rekap AO"], ["breakdown", "Breakdown"], ["tukin", "Faktor Tukin"]] as const).map(([value, label]) => <button key={value} className={`rounded px-2.5 py-1.5 ${tab === value ? "bg-[var(--ink)] text-[var(--surface)]" : "text-[var(--muted)] hover:bg-[var(--surface-subtle)]"}`} onClick={() => setTab(value)}>{label}</button>)}</div>}>
-      <KpiState loading={loading && !data} error={error} empty={!data && !loading ? "Belum ada data rekap untuk filter ini." : undefined}>{data && tab === "summary" && <SummaryTable rows={filteredRows} />}{data && tab === "breakdown" && <BreakdownTable rows={data.indicator_breakdown} />}{data && tab === "tukin" && <TukinTable rows={data.tukin_rules} />}</KpiState>
+      <KpiState loading={(loading && !data) || (tab === "breakdown" && breakdownLoadedFor !== filterKey)} error={error} empty={!data && !loading ? "Belum ada data rekap untuk filter ini." : undefined}>{data && tab === "summary" && <SummaryTable rows={filteredRows} />}{data && tab === "breakdown" && breakdownLoadedFor === filterKey && <BreakdownTable rows={data.indicator_breakdown} />}{data && tab === "tukin" && <TukinTable rows={data.tukin_rules} />}</KpiState>
     </KpiPanel>
     <KpiModal open={infoOpen} title="Rekap KPI AO" description="Data berasal dari penilaian yang sudah digenerate." onClose={() => setInfoOpen(false)}><p className="text-sm leading-6 text-[var(--muted)]">Pada konsolidasi, backend membatasi daftar ke lima AO terbaik agar halaman tetap ringan. Pilih kantor untuk melihat seluruh hasil kantor tersebut.</p></KpiModal>
   </KpiPage>

@@ -1,4 +1,5 @@
 <?php
+if (!defined('API_ROUTER_ENTRY')) { http_response_code(404); exit; }
 // File Location: api/pipelane/index.php
 
 // 1. Load Dependencies (Mundur 2 folder ke root api)

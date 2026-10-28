@@ -39,6 +39,45 @@ function ssoBaseUrl() {
   return isLocal ? "http://localhost/rest_api_sso" : "https://apisso.bkkjateng.co.id"
 }
 
+export async function loginWithMonbis(employeeId: string, password: string) {
+  const response = await fetch(`${ssoBaseUrl()}/api/auth/login`, {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify({ id_peg: employeeId.trim(), password, app: "monbis" }),
+    cache: "no-store",
+  })
+  const payload = await response.json().catch(() => ({})) as {
+    status?: number | string
+    message?: string
+    data?: { token?: string }
+  }
+  const token = payload.data?.token
+  if (!response.ok || Number(payload.status) !== 200 || !token) {
+    throw new Error(payload.message || "ID pegawai atau password belum sesuai.")
+  }
+
+  const whoami = await fetch(`${ssoBaseUrl()}/api/auth/whoami`, {
+    headers: { Accept: "application/json", Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  })
+  const identity = await whoami.json().catch(() => ({})) as { status?: number | string; data?: MonbisUser }
+  if (!whoami.ok || Number(identity.status) !== 200 || !identity.data) {
+    throw new Error("Login berhasil, tetapi data pegawai belum dapat diverifikasi.")
+  }
+
+  const secure = window.location.protocol === "https:" ? "; Secure" : ""
+  const localHost = ["localhost", "127.0.0.1", "::1"].includes(window.location.hostname)
+  const domain = localHost ? "" : "; domain=.bkkjateng.co.id"
+  document.cookie = `sso_token=${encodeURIComponent(token)}; max-age=86400; path=/${domain}; SameSite=Lax${secure}`
+  try {
+    localStorage.setItem("dpk_token", token)
+    localStorage.setItem("dpk_user", JSON.stringify(identity.data))
+    localStorage.setItem("dpk_user_verified_at", String(Date.now()))
+  } catch { /* Cookie remains the primary session source. */ }
+  window.__USER = identity.data
+  return identity.data
+}
+
 export async function loadCurrentUser(signal?: AbortSignal) {
   const stored = readStoredUser()
   const token = getToken()
@@ -57,6 +96,26 @@ export async function loadCurrentUser(signal?: AbortSignal) {
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") throw error
     return stored
+  }
+}
+
+export async function validateKpiSession(signal?: AbortSignal) {
+  const token = getToken()
+  if (!token) return null
+
+  try {
+    const response = await fetch(`${ssoBaseUrl()}/api/auth/whoami`, {
+      headers: { Accept: "application/json", Authorization: /^Bearer\s/i.test(token) ? token : `Bearer ${token}` },
+      cache: "no-store",
+      signal,
+    })
+    const payload = await response.json().catch(() => ({})) as { status?: number | string; data?: MonbisUser }
+    if (!response.ok || Number(payload.status) !== 200 || !payload.data || typeof payload.data !== "object") return null
+    try { localStorage.setItem("dpk_user", JSON.stringify(payload.data)) } catch { /* Storage is optional. */ }
+    return payload.data
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") throw error
+    return null
   }
 }
 

@@ -10,12 +10,50 @@ export type RbbPayload = { data?: RbbRow[]; monthly_breakdown?: RbbRow[]; grand_
 export type Envelope<T> = { status: number | string; message?: string; data?: T }
 
 declare global {
-  interface Window { apiFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> }
+  interface Window {
+    apiFetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>
+    getUser?: () => { kode?: string; kode_kantor?: string } | null
+    AUTH_TOKEN?: string
+  }
+}
+
+function authToken() {
+  const configured = String(window.AUTH_TOKEN || "").trim()
+  if (configured) return configured
+  try {
+    const stored = String(localStorage.getItem("dpk_token") || "").trim()
+    if (stored) return stored
+  } catch { /* Storage may be unavailable in restricted browser contexts. */ }
+  const cookie = document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/)
+  if (!cookie) return ""
+  try { return decodeURIComponent(cookie[1]) } catch { return cookie[1] }
+}
+
+export function rbbUser() {
+  const current = window.getUser?.()
+  if (current) return current as Record<string, unknown>
+  for (const key of ["dpk_user", "app_user", "user"]) {
+    try {
+      const value = localStorage.getItem(key)
+      if (value) return JSON.parse(value) as Record<string, unknown>
+    } catch { /* Ignore malformed cached profile; RBAC remains authoritative. */ }
+  }
+  return null
 }
 
 export async function requestRbb<T>(request: string, options: RequestInit = {}) {
   const fetcher = window.apiFetch?.bind(window) || fetch
-  const response = await fetcher(apiEndpoint(request), { ...options, headers: { Accept: "application/json", ...(options.body ? { "Content-Type": "application/json" } : {}), ...options.headers } })
+  const token = authToken()
+  const response = await fetcher(apiEndpoint(request), {
+    ...options,
+    credentials: "same-origin",
+    headers: {
+      Accept: "application/json",
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(token ? { Authorization: /^Bearer\s/i.test(token) ? token : `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  })
   let payload: Envelope<T>
   try { payload = await response.json() as Envelope<T> } catch { throw new Error(`API ${request} tidak mengembalikan JSON (${response.status})`) }
   if (!response.ok || Number(payload.status) !== 200) throw new Error(payload.message || `Request gagal (${response.status})`)
@@ -23,8 +61,8 @@ export async function requestRbb<T>(request: string, options: RequestInit = {}) 
 }
 
 export function officeCode() {
-  const user = window.getUser?.()
-  const raw = user?.kode ?? user?.kode_kantor ?? (user as Record<string, unknown> | null)?.branch_code ?? (user as Record<string, unknown> | null)?.kode_cabang ?? ""
+  const user = rbbUser() as Record<string, unknown> | null
+  const raw = user?.kode ?? user?.kode_kantor ?? user?.branch_code ?? user?.kode_cabang ?? ""
   if (!raw) return "000"
   const code = String(raw).replace(/\D/g, "").padStart(3, "0").slice(-3)
   return code === "099" ? "000" : code

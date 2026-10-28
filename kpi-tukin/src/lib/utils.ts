@@ -36,18 +36,16 @@ export function formatTarget(value: unknown, unit: string) {
 }
 
 export function getToken() {
+  const match = document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/)
+  if (match) {
+    try { return decodeURIComponent(match[1]) } catch { return match[1] }
+  }
+
   try {
     const direct = String(window.AUTH_TOKEN || localStorage.getItem("dpk_token") || "").trim()
     if (direct) return direct
   } catch {
     // Cookie authentication remains available when storage is restricted.
   }
-
-  const match = document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/)
-  if (!match) return ""
-  try {
-    return decodeURIComponent(match[1])
-  } catch {
-    return match[1]
-  }
+  return ""
 }

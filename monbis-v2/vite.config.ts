@@ -12,8 +12,12 @@ const apiProxy = {
 }
 
 // https://vite.dev/config/
-export default defineConfig(({ command }) => ({
-  base: command === 'build' ? '/v2-react/' : '/',
+export default defineConfig(({ command, mode }) => ({
+  base: command !== 'build'
+    ? '/'
+    : mode === 'xampp'
+      ? '/report-dpk/v2-react/'
+      : '/v2-react/',
   plugins: [react(), tailwindcss()],
   server: { proxy: apiProxy },
   preview: { host: 'localhost', port: 4173, strictPort: true, proxy: apiProxy },

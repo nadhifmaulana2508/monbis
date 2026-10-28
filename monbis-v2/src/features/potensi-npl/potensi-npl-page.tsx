@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { appRoutes } from "@/lib/routes"
 import { PotensiNplFilterPanel } from "./potensi-npl-filter-panel"
 import { PotensiNplDetailModal } from "./potensi-npl-detail-modal"
-import { exportPotensi, potensiAccess, potensiAreas, potensiMainPayload, potensiName, potensiNumber, potensiSortRows, potensiUser, potensiUserCode, requestPotensi, type PotensiDetailFilters, type PotensiFilters, type PotensiOffice, type PotensiRow, type PotensiSort } from "./potensi-npl-data"
+import { exportPotensi, potensiAreas, potensiMainPayload, potensiName, potensiNumber, potensiSortRows, potensiUser, potensiUserCode, requestPotensi, type PotensiDetailFilters, type PotensiFilters, type PotensiOffice, type PotensiRow, type PotensiSort } from "./potensi-npl-data"
 import { PotensiNplTable } from "./potensi-npl-table"
 
 type Selection = { office: string; kankas?: string; label: string; status: string }
@@ -18,10 +18,10 @@ const emptyDetailFilters = (status = "ALL", kankas = ""): PotensiDetailFilters =
 
 export function PotensiNplPage() {
   const userCode = potensiUserCode(potensiUser())
+  const access = useMemo(() => true, [])
   const [filters, setFilters] = useState<PotensiFilters>({ closingDate: "", actualDate: "", nominalField: "saldo_bank", area: userCode === "000" ? "" : userCode })
   const [offices, setOffices] = useState<PotensiOffice[]>([])
   const [defaultsReady, setDefaultsReady] = useState(false)
-  const [access, setAccess] = useState<boolean | null>(null)
   const [rows, setRows] = useState<PotensiRow[]>([])
   const [total, setTotal] = useState<PotensiRow | null>(null)
   const [sort, setSort] = useState<PotensiSort>({ column: "kode_cabang", direction: "asc" })
@@ -45,14 +45,10 @@ export function PotensiNplPage() {
   useEffect(() => {
     const controller = new AbortController()
     void Promise.allSettled([
-      requestPotensi<Record<string, unknown>>("rbac", { method: "POST", body: JSON.stringify({ type: "me" }), signal: controller.signal }),
       requestPotensi<{ last_created?: string; last_closing?: string }>("date", { signal: controller.signal }),
       requestPotensi<PotensiOffice[]>("kode", { method: "POST", body: JSON.stringify({ type: "kode_kantor" }), signal: controller.signal }),
-    ]).then(([permission, date, office]) => {
+    ]).then(([date, office]) => {
       if (controller.signal.aborted) return
-      if (permission.status === "fulfilled") { const permitted = potensiAccess(permission.value.data || null); setAccess(permitted); if (!permitted) setLoading(false) }
-      else if (import.meta.env.DEV) setAccess(true)
-      else { setAccess(false); setLoading(false); setError(permission.reason instanceof Error ? permission.reason.message : "Hak akses Potensi NPL belum dapat diverifikasi.") }
       setOffices(office.status === "fulfilled" && Array.isArray(office.value.data) ? office.value.data : [])
       if (date.status === "fulfilled") {
         const actualDate = date.value.data?.last_created || today()
@@ -64,7 +60,7 @@ export function PotensiNplPage() {
   }, [])
 
   useEffect(() => {
-    if (!defaultsReady || access !== true || !filters.actualDate || !filters.closingDate) return undefined
+    if (!defaultsReady || !filters.actualDate || !filters.closingDate) return undefined
     const controller = new AbortController()
     void requestPotensi<{ data?: PotensiRow[]; grand_total?: PotensiRow }>("npl", { method: "POST", body: JSON.stringify(potensiMainPayload(filters)), signal: controller.signal })
       .then((response) => {
@@ -76,7 +72,7 @@ export function PotensiNplPage() {
       .catch((reason: unknown) => { if (!controller.signal.aborted) { setRows([]); setTotal(null); setError(reason instanceof Error ? reason.message : "Data Potensi NPL belum dapat dimuat.") } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
-  }, [access, defaultsReady, filters])
+  }, [defaultsReady, filters])
 
   useEffect(() => {
     if (!selection || access !== true) return undefined

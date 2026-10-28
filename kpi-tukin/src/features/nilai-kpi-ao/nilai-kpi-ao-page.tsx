@@ -50,7 +50,7 @@ export function NilaiKpiAoPage({ mode = "single" }: Props) {
   const [bulkConfirm, setBulkConfirm] = useState<{ work: BulkWorkItem[]; pending: BulkWorkItem[]; existingCount: number } | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
-  const refreshDirectory = useCallback(async (nextOffice = office) => {
+  const refreshDirectory = useCallback(async (nextOffice = "") => {
     abortRef.current?.abort()
     const controller = new AbortController()
     abortRef.current = controller
@@ -67,7 +67,7 @@ export function NilaiKpiAoPage({ mode = "single" }: Props) {
     } finally {
       if (abortRef.current === controller) setLoading(false)
     }
-  }, [job, office, year])
+  }, [job, year])
 
   useEffect(() => {
     refreshDirectory()
@@ -119,8 +119,7 @@ export function NilaiKpiAoPage({ mode = "single" }: Props) {
     setEvaluation(null)
     setDetails([])
     if (!value) {
-      if (job === "AO_KREDIT") return
-      await refreshDirectory(value)
+      if (job !== "AO_KREDIT") setDirectory((current) => current ? { ...current, ao: [] } : current)
       return
     }
     try {
@@ -129,7 +128,7 @@ export function NilaiKpiAoPage({ mode = "single" }: Props) {
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Daftar AO gagal dimuat")
     }
-  }, [job, refreshDirectory])
+  }, [job])
 
   useEffect(() => {
     setToolbar(<div className="flex min-w-max items-end gap-2"><KpiSelect label="Jabatan" value={job} onChange={(value) => { setJob(value as KpiJobCode); setOffice(""); setAoCode("") }}>{(jobs.length ? jobs : [{ kode: "AO_KREDIT", nama: "AO Kredit" }]).map((item) => <option key={item.kode} value={item.kode}>{item.nama}</option>)}</KpiSelect><KpiInput label="Tahun" type="number" value={year} onChange={setYear} className="w-20" /><KpiSelect label="Kantor" value={office} onChange={handleOfficeChange}><option value="">{bulk || job !== "AO_KREDIT" ? "Pilih kantor" : "Semua kantor"}</option>{offices.map((item) => <option key={item.kode_kantor} value={item.kode_kantor}>{item.kode_kantor} · {item.nama_kantor}</option>)}</KpiSelect><KpiSelect label="AO" value={aoCode} onChange={setAoCode} disabled={!availableAo.length}><option value="">{availableAo.length ? "Pilih AO" : "Belum tersedia"}</option>{availableAo.map((item) => <option key={`${item.kode_ao}-${item.id_peg || ""}`} value={item.kode_ao}>{item.nama_ao}</option>)}</KpiSelect>{!bulk && <KpiSelect label="Closing" value={closing} onChange={setClosing}><option value="">Pilih closing</option>{closingDates.map((date) => <option key={date} value={date}>{date}</option>)}</KpiSelect>} {!bulk && <KpiField label="Cari"><span className="relative"><Search size={14} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--muted)]" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Cari indikator" className="h-9 w-44 rounded-md border border-[var(--line)] bg-[var(--surface)] pl-8 pr-2 text-sm outline-none focus:border-[var(--accent)]" /></span></KpiField>}</div>)

@@ -7,7 +7,7 @@ import { ReportInfoDialog } from "@/components/report-info-dialog"
 import { Button } from "@/components/ui/button"
 import { appRoutes } from "@/lib/routes"
 import type { SearchableOption } from "@/components/searchable-select"
-import { dateLabel, exportRbb, officeCode, rbbAccess, requestRbb, sortRbbRows, type Office, type RbbFilters, type RbbPayload, type RbbRow, type RbbSort } from "./rbb-realisasi-kredit-data"
+import { dateLabel, exportRbb, officeCode, requestRbb, sortRbbRows, type Office, type RbbFilters, type RbbPayload, type RbbRow, type RbbSort } from "./rbb-realisasi-kredit-data"
 import { RbbRealisasiKreditFilterPanel } from "./rbb-realisasi-kredit-filter-panel"
 import { RbbRealisasiKreditTable } from "./rbb-realisasi-kredit-table"
 
@@ -20,10 +20,10 @@ const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStar
 
 export function RbbRealisasiKreditPage() {
   const userCode = officeCode()
+  const access = useMemo(() => true, [])
   const [filters, setFilters] = useState<RbbFilters>({ actualDate: localDate, area: userCode === "000" ? "000" : userCode, compareMode: "auto" })
   const [offices, setOffices] = useState<Office[]>([])
   const [defaultsReady, setDefaultsReady] = useState(false)
-  const [access, setAccess] = useState<boolean | null>(null)
   const [rows, setRows] = useState<RbbRow[]>([])
   const [monthlyRows, setMonthlyRows] = useState<RbbRow[]>([])
   const [grandTotal, setGrandTotal] = useState<RbbRow | null>(null)
@@ -37,17 +37,10 @@ export function RbbRealisasiKreditPage() {
   useEffect(() => {
     const controller = new AbortController()
     void Promise.allSettled([
-      requestRbb<Record<string, unknown>>("rbac", { method: "POST", body: JSON.stringify({ type: "me" }), signal: controller.signal }),
       requestRbb<{ last_created?: string }>("date", { signal: controller.signal }),
       requestRbb<Office[]>("kode", { method: "POST", body: JSON.stringify({ type: "kode_kantor" }), signal: controller.signal }),
-    ]).then(([permissionResult, dateResult, officeResult]) => {
+    ]).then(([dateResult, officeResult]) => {
       if (controller.signal.aborted) return
-      if (permissionResult.status === "fulfilled") setAccess(rbbAccess(permissionResult.value.data || null))
-      else if (import.meta.env.DEV) setAccess(true)
-      else {
-        setAccess(false)
-        setError(permissionResult.reason instanceof Error ? permissionResult.reason.message : "Hak akses belum dapat diverifikasi.")
-      }
       const loadedOffices = officeResult.status === "fulfilled" && Array.isArray(officeResult.value.data) ? officeResult.value.data : []
       setOffices(loadedOffices)
       setFilters((current) => ({ ...current, actualDate: dateResult.status === "fulfilled" ? dateResult.value.data?.last_created || current.actualDate : current.actualDate, area: userCode === "000" ? current.area : userCode }))
@@ -57,7 +50,7 @@ export function RbbRealisasiKreditPage() {
   }, [userCode])
 
   useEffect(() => {
-    if (!defaultsReady || access !== true) return undefined
+    if (!defaultsReady) return undefined
     const controller = new AbortController()
     const body: Record<string, string> = { type: "realisasi_rbb_bulan_berjalan", harian_date: filters.actualDate, compare_mode: filters.compareMode }
     if (["SEMARANG", "SOLO", "BANYUMAS", "PEKALONGAN"].includes(filters.area)) body.korwil = filters.area
@@ -77,7 +70,7 @@ export function RbbRealisasiKreditPage() {
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
-  }, [access, defaultsReady, filters])
+  }, [defaultsReady, filters])
 
   const monthly = monthlyRows.length > 0
   const history = meta.compare_mode === "history"

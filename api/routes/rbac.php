@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+if (!defined('API_ROUTER_ENTRY')) { http_response_code(404); exit; }
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../controllers/config/database.php';

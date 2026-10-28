@@ -1,4 +1,7 @@
 RewriteEngine On
+# File implementasi V2 hanya boleh dimuat oleh index.php internal.
+RewriteRule ^(?:pages|components|config\.php)(?:/|$) - [F,END,NC]
+
 # Canonical URL: migrate old query-tab links to path-based routes.
 RewriteCond %{QUERY_STRING} (^|&)tab=detail(&|$) [NC]
 RewriteCond %{QUERY_STRING} (^|&)category=([^&]+) [NC]

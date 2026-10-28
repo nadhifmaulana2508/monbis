@@ -38,6 +38,7 @@ export function reportEndpoint() {
 }
 
 async function parseApiResponse<T>(response: Response, fallbackMessage: string) {
+  if (response.status === 401) window.dispatchEvent(new CustomEvent("monbis:session-expired"))
   const json = await response.json().catch(() => ({})) as { status?: number; message?: string; data?: T }
   if (!response.ok || Number(json.status) !== 200) {
     throw new Error(json.message || fallbackMessage)

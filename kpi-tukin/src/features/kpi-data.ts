@@ -30,7 +30,7 @@ export function saveKpiScore(input: { id: number; min_indeks: number; max_indeks
   return postKpi<Record<string, never>>({ type: "save_score", ...input }, signal)
 }
 
-export function loadAnnualKpi(input: { year: number; jabatan_kode: KpiJobCode; kode_kantor?: string; kode_ao?: string }, signal?: AbortSignal) {
+export function loadAnnualKpi(input: { year: number; jabatan_kode: KpiJobCode; kode_kantor?: string; kode_ao?: string; include_breakdown?: boolean }, signal?: AbortSignal) {
   return postKpi<AnnualKpiResponse>({ type: "annual", ...input }, signal)
 }
 

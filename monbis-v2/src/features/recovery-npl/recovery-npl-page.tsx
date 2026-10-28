@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { appRoutes } from "@/lib/routes"
 import { RecoveryNplFilterPanel } from "./recovery-npl-filter-panel"
 import { RecoveryNplDetailModal } from "./recovery-npl-modals"
-import { recoveryAccess, recoveryAreas, recoveryCurrentUser, recoveryDetailPayload, recoveryMainPayload, recoveryName, recoveryNumber, recoveryPercent, recoveryRatio, recoverySortRows, recoveryUserCode, requestRecovery, exportRecovery, type RecoveryDetailType, type RecoveryFilters, type RecoveryOffice, type RecoveryRow, type RecoverySort } from "./recovery-npl-data"
+import { recoveryAreas, recoveryCurrentUser, recoveryDetailPayload, recoveryMainPayload, recoveryName, recoveryNumber, recoveryPercent, recoveryRatio, recoverySortRows, recoveryUserCode, requestRecovery, exportRecovery, type RecoveryDetailType, type RecoveryFilters, type RecoveryOffice, type RecoveryRow, type RecoverySort } from "./recovery-npl-data"
 import { RecoveryNplTable } from "./recovery-npl-table"
 
 function localDate() {
@@ -21,10 +21,10 @@ type DetailSelection = { row: RecoveryRow; type: RecoveryDetailType }
 
 export function RecoveryNplPage() {
   const userCode = recoveryUserCode(recoveryCurrentUser())
+  const access = useMemo(() => true, [])
   const [filters, setFilters] = useState<RecoveryFilters>({ closingDate: localDate(), actualDate: localDate(), nominalField: "saldo_bank", area: userCode === "000" ? "ALL" : `CAB-${userCode}` })
   const [offices, setOffices] = useState<RecoveryOffice[]>([])
   const [defaultsReady, setDefaultsReady] = useState(false)
-  const [access, setAccess] = useState<boolean | null>(null)
   const [rows, setRows] = useState<RecoveryRow[]>([])
   const [total, setTotal] = useState<RecoveryRow | null>(null)
   const [sort, setSort] = useState<RecoverySort>({ column: "kode_cabang", direction: "asc" })
@@ -42,21 +42,10 @@ export function RecoveryNplPage() {
   useEffect(() => {
     const controller = new AbortController()
     void Promise.allSettled([
-      requestRecovery<Record<string, unknown>>("rbac", { method: "POST", body: JSON.stringify({ type: "me" }), signal: controller.signal }),
       requestRecovery<{ last_created?: string; last_closing?: string }>("date", { signal: controller.signal }),
       requestRecovery<RecoveryOffice[]>("kode", { method: "POST", body: JSON.stringify({ type: "kode_kantor" }), signal: controller.signal }),
-    ]).then(([permission, date, office]) => {
+    ]).then(([date, office]) => {
       if (controller.signal.aborted) return
-      if (permission.status === "fulfilled") {
-        const permitted = recoveryAccess(permission.value.data || null)
-        setAccess(permitted)
-        if (!permitted) setLoading(false)
-      } else if (import.meta.env.DEV) setAccess(true)
-      else {
-        setAccess(false)
-        setLoading(false)
-        setError(permission.reason instanceof Error ? permission.reason.message : "Hak akses Recovery NPL belum dapat diverifikasi.")
-      }
       setOffices(office.status === "fulfilled" && Array.isArray(office.value.data) ? office.value.data : [])
       if (date.status === "fulfilled" && date.value.data?.last_created) {
         const actualDate = date.value.data.last_created
@@ -68,7 +57,7 @@ export function RecoveryNplPage() {
   }, [])
 
   useEffect(() => {
-    if (!defaultsReady || access !== true || !filters.closingDate || !filters.actualDate) return undefined
+    if (!defaultsReady || !filters.closingDate || !filters.actualDate) return undefined
     const controller = new AbortController()
     void requestRecovery<RecoveryRow[]>("npl", { method: "POST", body: JSON.stringify(recoveryMainPayload(filters)), signal: controller.signal })
       .then((response) => {
@@ -83,7 +72,7 @@ export function RecoveryNplPage() {
       .catch((reason: unknown) => { if (!controller.signal.aborted) { setRows([]); setTotal(null); setError(reason instanceof Error ? reason.message : "Data Recovery NPL belum dapat dimuat.") } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
-  }, [access, defaultsReady, filters])
+  }, [defaultsReady, filters])
 
   useEffect(() => {
     if (!detail) return undefined

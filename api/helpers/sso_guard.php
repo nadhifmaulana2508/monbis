@@ -35,8 +35,6 @@ function getAppAuthSecrets(): array
         if (trim((string)$value) !== '') $secrets[] = trim((string)$value);
     }
 
-    // Tetap dukung JWT lokal lama bila secret belum dikonfigurasi.
-    $secrets[] = 'your-secret-key';
     return array_values(array_unique(array_filter($secrets)));
 }
 

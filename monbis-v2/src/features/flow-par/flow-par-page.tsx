@@ -8,18 +8,18 @@ import { Button } from "@/components/ui/button"
 import { appRoutes } from "@/lib/routes"
 import { FlowParDetailModal } from "./flow-par-detail-modal"
 import { FlowParFilterPanel } from "./flow-par-filter-panel"
-import { exportFlowPar, flowParAccess, flowParAreas, flowParCurrentUser, flowParPayload, flowParSortRows, flowParUserCode, requestFlowPar, type FlowParDetailSelection, type FlowParFilters, type FlowParOffice, type FlowParRow, type FlowParSort } from "./flow-par-data"
+import { exportFlowPar, flowParAreas, flowParCurrentUser, flowParPayload, flowParSortRows, flowParUserCode, requestFlowPar, type FlowParDetailSelection, type FlowParFilters, type FlowParOffice, type FlowParRow, type FlowParSort } from "./flow-par-data"
 import { FlowParTable } from "./flow-par-table"
 
 function localDate() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}` }
 
 export function FlowParPage() {
   const userCode = flowParUserCode(flowParCurrentUser())
+  const access = useMemo(() => true, [])
   const today = localDate()
   const [filters, setFilters] = useState<FlowParFilters>({ closingDate: today, actualDate: today, nominalField: "saldo_bank", area: userCode === "000" ? "ALL" : `CAB-${userCode}` })
   const [offices, setOffices] = useState<FlowParOffice[]>([])
   const [defaultsReady, setDefaultsReady] = useState(false)
-  const [access, setAccess] = useState<boolean | null>(null)
   const [rows, setRows] = useState<FlowParRow[]>([])
   const [total, setTotal] = useState<FlowParRow | null>(null)
   const [loading, setLoading] = useState(true)
@@ -33,17 +33,10 @@ export function FlowParPage() {
   useEffect(() => {
     const controller = new AbortController()
     void Promise.allSettled([
-      requestFlowPar<Record<string, unknown>>("rbac", { method: "POST", body: JSON.stringify({ type: "me" }), signal: controller.signal }),
       requestFlowPar<{ last_created?: string; last_closing?: string }>("date", { signal: controller.signal }),
       requestFlowPar<FlowParOffice[]>("kode", { method: "POST", body: JSON.stringify({ type: "kode_kantor" }), signal: controller.signal }),
-    ]).then(([permission, dates, office]) => {
+    ]).then(([dates, office]) => {
       if (controller.signal.aborted) return
-      if (permission.status === "fulfilled") {
-        const allowed = flowParAccess(permission.value.data || null)
-        setAccess(allowed)
-        if (!allowed) setLoading(false)
-      } else if (import.meta.env.DEV) setAccess(true)
-      else { setAccess(false); setLoading(false); setError(permission.reason instanceof Error ? permission.reason.message : "Hak akses Flow PAR belum dapat diverifikasi.") }
       setOffices(office.status === "fulfilled" && Array.isArray(office.value.data) ? office.value.data : [])
       if (dates.status === "fulfilled" && dates.value.data?.last_created) {
         const actualDate = dates.value.data.last_created
@@ -55,14 +48,14 @@ export function FlowParPage() {
   }, [])
 
   useEffect(() => {
-    if (!defaultsReady || access !== true || !filters.closingDate || !filters.actualDate) return undefined
+    if (!defaultsReady || !filters.closingDate || !filters.actualDate) return undefined
     const controller = new AbortController()
     void requestFlowPar<{ data?: FlowParRow[]; grand_total?: FlowParRow }>("flow_par", { method: "POST", body: JSON.stringify(flowParPayload(filters)), signal: controller.signal })
       .then((result) => { if (!controller.signal.aborted) { setRows(Array.isArray(result.data?.data) ? result.data.data : []); setTotal(result.data?.grand_total || null); setError(null) } })
       .catch((reason: unknown) => { if (!controller.signal.aborted) { setRows([]); setTotal(null); setError(reason instanceof Error ? reason.message : "Data Flow PAR gagal dimuat.") } })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
-  }, [access, defaultsReady, filters])
+  }, [defaultsReady, filters])
 
   const areas = useMemo<SearchableOption[]>(() => flowParAreas(offices, userCode), [offices, userCode])
   const areaLabel = areas.find((item) => item.value === filters.area)?.label || filters.area
@@ -70,7 +63,7 @@ export function FlowParPage() {
   const updateFilters = (next: Partial<FlowParFilters>) => { setDetail(null); setLoading(true); setRows([]); setTotal(null); setError(null); setSort({ column: "", direction: "asc" }); setFilters((current) => ({ ...current, ...next })) }
   const onSort = (column: string) => setSort((current) => ({ column, direction: current.column === column ? current.direction === "asc" ? "desc" : "asc" : "asc" }))
   const closeDetail = useCallback(() => setDetail(null), [])
-  const navbarFilters = <FlowParFilterPanel filters={filters} areas={areas} disabled={access === false || userCode !== "000"} onChange={updateFilters} />
+  const navbarFilters = <FlowParFilterPanel filters={filters} areas={areas} disabled={userCode !== "000"} onChange={updateFilters} />
   const context = `${filters.nominalField === "baki_debet" ? "Baki Debet" : "Saldo Bank"} | Closing ${filters.closingDate} | Actual ${filters.actualDate} | ${areaLabel}`
 
   return <AppShell title="Flow PAR" description="Rekap debitur yang berpindah ke kolektibilitas KL." activeHref={appRoutes.flowPar} legacyHref="/flow_par" navbarContent={navbarFilters} showPageTitle={false}>
