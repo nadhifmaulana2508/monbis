@@ -987,6 +987,9 @@
 
 <script>
     (function () {
+        // Notifikasi hanya diambil setelah sesi Monbis terverifikasi.
+        if (!<?= !empty($isLoggedIn) ? 'true' : 'false' ?>) return;
+
         const API = './api/event_theme/notification';
         const PENDING_KEY = 'monbis_login_announcement_pending';
         const modal = document.getElementById('monbisAnnouncementModal');
