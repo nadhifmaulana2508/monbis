@@ -1377,52 +1377,29 @@ class KreditController {
 
             /*
             * =========================
-            * COUNT TOTAL AO
+            * DATA REKAP AO + TRANSAKSI
             * =========================
+            * AO master tetap ditampilkan meski belum punya realisasi, sementara
+            * kode AO dari transaksi juga dimasukkan meski belum terdaftar di
+            * ao_kredit. Dengan begitu grand total mengikuti seluruh transaksi.
             */
-            $sqlCount = "
-                SELECT COUNT(*) AS total
-                FROM ao_kredit ao
-                LEFT JOIN kode_kantor kk
-                    ON LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = kk.kode_kantor
-                {$aoWhereSql}
-            ";
-
-            $stmtCount = $this->pdo->prepare($sqlCount);
-
-            foreach ($aoParams as $key => $val) {
-                $stmtCount->bindValue($key, $val);
-            }
-
-            $stmtCount->execute();
-            $totalData = (int)($stmtCount->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
-
-            /*
-            * =========================
-            * QUERY UTAMA REKAP AO
-            * =========================
-            * Catatan:
-            * - Alias subquery pakai rls, bukan real, supaya aman di MariaDB.
-            * - AO belum realisasi tetap muncul karena FROM utama dari ao_kredit.
-            */
-            $sqlBase = "
-                SELECT
-                    LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') AS kode_kantor,
-                    COALESCE(kk.nama_kantor, LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0')) AS nama_kantor,
-
-                    ao.kode_group2 AS kode_ao,
-                    COALESCE(ao.nama_ao, ao.kode_group2) AS nama_ao,
-
-                    COALESCE(rls.total_noa, 0) AS total_noa,
-                    COALESCE(rls.total_realisasi, 0) AS total_realisasi
-                FROM ao_kredit ao
-                LEFT JOIN kode_kantor kk
-                    ON LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = kk.kode_kantor
-                LEFT JOIN (
+            $sqlCte = "
+                WITH ao_master AS (
                     SELECT
-                        LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') AS kode_kantor,
-                        COALESCE(n.kode_group2, t1.kode_group2) AS kode_ao,
-                        COUNT(DISTINCT t1.no_rekening) AS total_noa,
+                        LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') AS kode_kantor,
+                        ao.kode_group2 AS kode_ao,
+                        MAX(NULLIF(TRIM(ao.nama_ao), '')) AS nama_ao
+                    FROM ao_kredit ao
+                    {$aoWhereSql}
+                    GROUP BY LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0'), ao.kode_group2
+                ), realisasi_ao AS (
+                    SELECT
+                        COALESCE(
+                            LPAD(CAST(n.kode_cabang AS CHAR), 3, '0'),
+                            LPAD(CAST(t1.kode_kantor AS CHAR), 3, '0')
+                        ) AS kode_kantor,
+                        COALESCE(NULLIF(TRIM(n.kode_group2), ''), NULLIF(TRIM(t1.kode_group2), '')) AS kode_ao,
+                        COUNT(*) AS total_noa,
                         COALESCE(SUM(t1.realisasi_pokok), 0) AS total_realisasi
                     FROM update_realisasi_kredit t1
                     LEFT JOIN nominatif n
@@ -1430,39 +1407,64 @@ class KreditController {
                         AND DATE(n.created) = :posisi_date
                     WHERE {$trxWhereSql}
                     GROUP BY
-                        LPAD(CAST(n.kode_cabang AS CHAR), 3, '0'),
-                        COALESCE(n.kode_group2, t1.kode_group2)
-                ) rls
-                    ON rls.kode_ao = ao.kode_group2
-                    AND rls.kode_kantor = LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0')
-                {$aoWhereSql}
+                        COALESCE(
+                            LPAD(CAST(n.kode_cabang AS CHAR), 3, '0'),
+                            LPAD(CAST(t1.kode_kantor AS CHAR), 3, '0')
+                        ),
+                        COALESCE(NULLIF(TRIM(n.kode_group2), ''), NULLIF(TRIM(t1.kode_group2), ''))
+                ), daftar_ao AS (
+                    SELECT kode_kantor, kode_ao FROM ao_master
+                    UNION
+                    SELECT kode_kantor, kode_ao FROM realisasi_ao
+                )
+            ";
+
+            $bindTopRealisasiParams = function ($stmt) use ($harian_date, $closing_date, $trxParams, $aoParams) {
+                $stmt->bindValue(':posisi_date', $harian_date);
+                $stmt->bindValue(':closing_date', $closing_date);
+                $stmt->bindValue(':harian_date', $harian_date);
+                foreach ($trxParams as $key => $val) $stmt->bindValue($key, $val);
+                foreach ($aoParams as $key => $val) $stmt->bindValue($key, $val);
+            };
+
+            $stmtCount = $this->pdo->prepare($sqlCte . " SELECT COUNT(*) AS total FROM daftar_ao");
+            $bindTopRealisasiParams($stmtCount);
+            $stmtCount->execute();
+            $totalData = (int)($stmtCount->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+            $sqlBase = $sqlCte . "
+                SELECT
+                    d.kode_kantor,
+                    COALESCE(kk.nama_kantor, d.kode_kantor) AS nama_kantor,
+                    d.kode_ao,
+                    COALESCE(NULLIF(a.nama_ao, ''), d.kode_ao) AS nama_ao,
+                    CASE WHEN a.kode_ao IS NULL THEN 0 ELSE 1 END AS is_ao_master,
+                    COALESCE(r.total_noa, 0) AS total_noa,
+                    COALESCE(r.total_realisasi, 0) AS total_realisasi
+                FROM daftar_ao d
+                LEFT JOIN ao_master a
+                    ON a.kode_kantor = d.kode_kantor AND a.kode_ao = d.kode_ao
+                LEFT JOIN realisasi_ao r
+                    ON r.kode_kantor <=> d.kode_kantor AND r.kode_ao <=> d.kode_ao
+                LEFT JOIN kode_kantor kk ON kk.kode_kantor = d.kode_kantor
             ";
 
             /*
             * GRAND TOTAL harus dihitung dari seluruh AO sesuai filter aktif,
             * bukan hanya 10 baris yang sedang tampil pada pagination.
             */
-            $sqlSummary = "
+            $sqlSummary = $sqlCte . "
                 SELECT
                     COUNT(*) AS total_ao,
-                    COALESCE(SUM(all_ao.total_noa), 0) AS total_noa,
-                    COALESCE(SUM(all_ao.total_realisasi), 0) AS total_realisasi
-                FROM ({$sqlBase}) all_ao
+                    COALESCE(SUM(r.total_noa), 0) AS total_noa,
+                    COALESCE(SUM(r.total_realisasi), 0) AS total_realisasi
+                FROM daftar_ao d
+                LEFT JOIN realisasi_ao r
+                    ON r.kode_kantor <=> d.kode_kantor AND r.kode_ao <=> d.kode_ao
             ";
 
             $stmtSummary = $this->pdo->prepare($sqlSummary);
-            $stmtSummary->bindValue(':posisi_date', $harian_date);
-            $stmtSummary->bindValue(':closing_date', $closing_date);
-            $stmtSummary->bindValue(':harian_date', $harian_date);
-
-            foreach ($trxParams as $key => $val) {
-                $stmtSummary->bindValue($key, $val);
-            }
-
-            foreach ($aoParams as $key => $val) {
-                $stmtSummary->bindValue($key, $val);
-            }
-
+            $bindTopRealisasiParams($stmtSummary);
             $stmtSummary->execute();
             $summaryRow = $stmtSummary->fetch(PDO::FETCH_ASSOC) ?: [];
             $summary = [
@@ -1482,19 +1484,7 @@ class KreditController {
             }
 
             $stmt = $this->pdo->prepare($sql);
-
-            $stmt->bindValue(':posisi_date', $harian_date);
-            $stmt->bindValue(':closing_date', $closing_date);
-            $stmt->bindValue(':harian_date', $harian_date);
-
-            foreach ($trxParams as $key => $val) {
-                $stmt->bindValue($key, $val);
-            }
-
-            foreach ($aoParams as $key => $val) {
-                $stmt->bindValue($key, $val);
-            }
-
+            $bindTopRealisasiParams($stmt);
             $stmt->execute();
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

@@ -722,7 +722,9 @@
       const kodeKantor = row.kode_kantor || row.kode_cabang || "-";
       const namaKantor = row.nama_kantor || row.nama_cabang || "CABANG";
       const kodeAO = row.kode_ao || row.kode_group2 || "";
-      const namaAO = row.nama_ao || kodeAO || "TANPA AO";
+      const aoTerdaftar = Number(row.is_ao_master ?? 1) === 1;
+      const namaAO = aoTerdaftar ? (row.nama_ao || kodeAO || "TANPA AO") : (kodeAO || "TANPA AO");
+      const kodeAOInline = aoTerdaftar && kodeAO ? `<span>${escapeExcel(kodeAO)}</span>` : "";
 
       tbody.insertAdjacentHTML("beforeend", `
         <tr class="transition hover:bg-blue-50/40">
@@ -751,7 +753,7 @@
             </button>
 
             <div class="mt-0.5 flex items-center gap-1 font-mono text-[9px] font-bold text-slate-400">
-              <span>${kodeAO}</span>
+              ${kodeAOInline}
               <span class="md:hidden">•</span>
               <span class="max-w-[80px] truncate md:hidden" title="${escapeAttr(namaKantor)}">${namaKantor}</span>
             </div>
