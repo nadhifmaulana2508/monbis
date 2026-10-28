@@ -22,17 +22,23 @@ function getAppAuthSecrets(): array
 {
     $names = ['SSO_JWT_SECRET', 'JWT_SECRET'];
     $secrets = [];
-    $env = [];
-    $envFile = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . '.env';
+    $envFiles = [
+        dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env',
+        dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . '.env',
+    ];
+    $envValues = [];
 
-    if (is_file($envFile)) {
+    foreach ($envFiles as $envFile) {
+        if (!is_file($envFile) || !is_readable($envFile)) continue;
         $parsed = parse_ini_file($envFile, false, INI_SCANNER_RAW);
-        if (is_array($parsed)) $env = $parsed;
+        if (is_array($parsed)) $envValues = array_merge($envValues, $parsed);
     }
 
     foreach ($names as $name) {
         $value = getenv($name);
-        if ($value === false || trim((string)$value) === '') $value = $_ENV[$name] ?? ($env[$name] ?? '');
+        if ($value === false || trim((string)$value) === '') {
+            $value = $_ENV[$name] ?? ($envValues[$name] ?? '');
+        }
         if (trim((string)$value) !== '') $secrets[] = trim((string)$value);
     }
 
