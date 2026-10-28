@@ -86,7 +86,10 @@ function ssoWhoami(string $token): ?array
     if ($status !== 200 || !is_string($body)) return null;
     $json = json_decode($body, true);
     $user = is_array($json['data'] ?? null) ? $json['data'] : null;
-    if (!$user || empty($user['employee_id'])) return null;
+    if (!$user) return null;
+    $employeeId = trim((string)($user['employee_id'] ?? $user['id_peg'] ?? $user['id'] ?? ''));
+    if ($employeeId === '') return null;
+    $user['employee_id'] = $employeeId;
     if (!is_dir($dir)) @mkdir($dir, 0775, true);
     @file_put_contents($file, json_encode($user));
     return $user;
