@@ -65,7 +65,7 @@ function ssoWhoami(string $token): ?array
     $local = strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false;
     $base = getenv('SSO_API_BASE') ?: ($local ? 'http://localhost/rest_api_sso' : 'https://apisso.bkkjateng.co.id');
     $url = rtrim($base, '/') . '/api/auth/whoami';
-    $body = false; $status = 0;
+    $body = false; $status = 0; $curlErrorNumber = 0; $curlErrorMessage = '';
     if (function_exists('curl_init')) {
         $curl = curl_init($url);
         curl_setopt_array($curl, [
@@ -74,6 +74,8 @@ function ssoWhoami(string $token): ?array
         ]);
         $body = curl_exec($curl);
         $status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curlErrorNumber = curl_errno($curl);
+        $curlErrorMessage = curl_error($curl);
         curl_close($curl);
     } else {
         $context = stream_context_create(['http'=>[
@@ -83,12 +85,26 @@ function ssoWhoami(string $token): ?array
         $body = @file_get_contents($url, false, $context);
         if (!empty($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $match)) $status = (int)$match[1];
     }
-    if ($status !== 200 || !is_string($body)) return null;
+    if ($status !== 200 || !is_string($body)) {
+        error_log(sprintf(
+            'Monbis SSO whoami failed: http=%d curl_errno=%d curl_error=%s',
+            $status,
+            $curlErrorNumber,
+            $curlErrorMessage !== '' ? $curlErrorMessage : 'none'
+        ));
+        return null;
+    }
     $json = json_decode($body, true);
     $user = is_array($json['data'] ?? null) ? $json['data'] : null;
-    if (!$user) return null;
+    if (!$user) {
+        error_log('Monbis SSO whoami returned an invalid response payload.');
+        return null;
+    }
     $employeeId = trim((string)($user['employee_id'] ?? $user['id_peg'] ?? $user['id'] ?? ''));
-    if ($employeeId === '') return null;
+    if ($employeeId === '') {
+        error_log('Monbis SSO whoami response is missing an employee ID.');
+        return null;
+    }
     $user['employee_id'] = $employeeId;
     if (!is_dir($dir)) @mkdir($dir, 0775, true);
     @file_put_contents($file, json_encode($user));
