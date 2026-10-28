@@ -1087,8 +1087,7 @@
           hintAO.className = "text-[9px] font-bold ml-1 italic text-slate-500";
 
           try {
-              const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-              const ssoApiUrl = isLocalhost ? 'http://localhost/rest_api_sso/api/ao/list' : 'https://apisso.bkkjateng.co.id/api/ao/list';
+              const ssoApiUrl = `${window.MONBIS_CONFIG?.ssoApiBase || 'https://apisso.bkkjateng.co.id'}/api/ao/list`;
 
               // TANPA TOKEN UNTUK REMEDIAL SSO
               const resRem = await fetch(`${ssoApiUrl}?tipe=remedial&kode_cabang=${kode_cabang}`);

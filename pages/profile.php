@@ -193,8 +193,7 @@
   // ==========================================
   // CONFIG & UTILS
   // ==========================================
-  const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const API_SSO_BASE = isLocal ? 'http://localhost/rest_api_sso' : 'https://apisso.bkkjateng.co.id';
+  const API_SSO_BASE = window.MONBIS_CONFIG?.ssoApiBase || 'https://apisso.bkkjateng.co.id';
   
   const API_UPDATE_PROFILE = `${API_SSO_BASE}/api/auth/update-profile`;
   const API_CHANGE_PASS    = `${API_SSO_BASE}/api/auth/change-password`;

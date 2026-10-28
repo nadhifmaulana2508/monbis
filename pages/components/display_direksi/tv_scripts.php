@@ -429,8 +429,7 @@
             const token = localStorage.getItem('dpk_token');
             if(token) {
                 try {
-                    const isLocalHost = ['localhost', '127.0.0.1'].includes(window.location.hostname);
-                    const ssoBase = isLocalHost ? 'http://localhost/rest_api_sso' : 'https://apisso.bkkjateng.co.id';
+                    const ssoBase = window.MONBIS_CONFIG?.ssoApiBase || 'https://apisso.bkkjateng.co.id';
                     const response = await fetch(`${ssoBase}/api/auth/whoami`, {
                         headers: { Authorization: `Bearer ${token}` }
                     });

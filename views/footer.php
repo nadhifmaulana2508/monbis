@@ -220,7 +220,7 @@
         if (isLoginPage) return;
 
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const API_SSO_BASE = isLocal ? 'http://localhost/rest_api_sso' : 'https://apisso.bkkjateng.co.id';
+        const API_SSO_BASE = window.MONBIS_CONFIG?.ssoApiBase || 'https://apisso.bkkjateng.co.id';
         const API_WHOAMI = `${API_SSO_BASE}/api/auth/whoami`;
 
         let token = null;

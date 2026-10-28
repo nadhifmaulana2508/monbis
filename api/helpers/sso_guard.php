@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/response.php';
 require_once __DIR__ . '/JWT.php';
+require_once __DIR__ . '/sso_config.php';
 
 function getAppAuthToken(): string
 {
@@ -61,9 +62,7 @@ function ssoWhoami(string $token): ?array
         $cached = json_decode((string)file_get_contents($file), true);
         if (is_array($cached) && !empty($cached['employee_id'])) return $cached;
     }
-    $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
-    $local = strpos($host, 'localhost') !== false || strpos($host, '127.0.0.1') !== false;
-    $base = getenv('SSO_API_BASE') ?: ($local ? 'http://localhost/rest_api_sso' : 'https://apisso.bkkjateng.co.id');
+    $base = getSsoApiBase();
     $url = rtrim($base, '/') . '/api/auth/whoami';
     $body = false; $status = 0; $curlErrorNumber = 0; $curlErrorMessage = '';
     if (function_exists('curl_init')) {

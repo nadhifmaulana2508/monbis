@@ -55,6 +55,8 @@ define('APP_ENV', $knownEnvironment);
 define('APP_HOST', $hostOnly);
 define('APP_SCHEME', $scheme);
 
+require_once __DIR__ . '/api/helpers/sso_config.php';
+
 // =========================
 // AMBIL URL DARI REWRITE
 // =========================

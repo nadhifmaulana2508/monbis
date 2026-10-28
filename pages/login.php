@@ -154,7 +154,7 @@ require_once __DIR__ . '/../components/login-showcase.php';
   const safePostLoginTarget = getSafePostLoginTarget();
   
   // 1. DETEKSI ENVIRONMENT 
-  const API_SSO_BASE = isLocal ? 'http://localhost/rest_api_sso' : 'https://apisso.bkkjateng.co.id';
+  const API_SSO_BASE = window.MONBIS_CONFIG?.ssoApiBase || 'https://apisso.bkkjateng.co.id';
   
   const API_LOGIN = `${API_SSO_BASE}/api/auth/login`;
   const API_WHOAMI = `${API_SSO_BASE}/api/auth/whoami`;
