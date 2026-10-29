@@ -426,21 +426,17 @@
     async function resolveTvCabangAccess() {
         let user = readTvLoggedUser();
         if(!user) {
-            const token = localStorage.getItem('dpk_token');
-            if(token) {
-                try {
-                    const ssoBase = window.MONBIS_CONFIG?.ssoApiBase || 'https://apisso.bkkjateng.co.id';
-                    const response = await fetch(`${ssoBase}/api/auth/whoami`, {
-                        headers: { Authorization: `Bearer ${token}` }
-                    });
-                    const result = await response.json();
-                    if(response.ok && result?.data) {
-                        user = result.data;
-                        localStorage.setItem('dpk_user', JSON.stringify(user));
-                    }
-                } catch(error) {
-                    console.error('Gagal memulihkan profil user TV Cabang', error);
+            try {
+                const response = await fetch(`${window.BASE_APP || ''}/api/auth/whoami`, {
+                    credentials: 'same-origin'
+                });
+                const result = await response.json();
+                if(response.ok && result?.data) {
+                    user = result.data;
+                    localStorage.setItem('dpk_user', JSON.stringify(user));
                 }
+            } catch(error) {
+                console.error('Gagal memulihkan profil user TV Cabang', error);
             }
         }
 

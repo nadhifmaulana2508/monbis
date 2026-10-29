@@ -10,28 +10,24 @@ function getAppAuthToken(): string
         $headers = getallheaders();
         $header = $headers['Authorization'] ?? $headers['authorization'] ?? '';
     }
-    if ($header === '') $header = (string)($_COOKIE['sso_token'] ?? '');
+    if ($header === '') $header = (string)($_COOKIE['monbis_session'] ?? ($_COOKIE['sso_token'] ?? ''));
     return trim((string)preg_replace('/^Bearer\s+/i', '', trim($header)));
 }
 
 /**
- * Ambil secret JWT dari environment aaPanel atau .env project.
+ * Ambil secret JWT dari environment aaPanel atau api/.env.
  * SSO_JWT_SECRET harus sama dengan secret yang dipakai oleh API SSO.
  */
 function getAppAuthSecrets(): array
 {
     $names = ['SSO_JWT_SECRET', 'JWT_SECRET'];
     $secrets = [];
-    $envFiles = [
-        dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env',
-        dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . '.env',
-    ];
     $envValues = [];
+    $envFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
 
-    foreach ($envFiles as $envFile) {
-        if (!is_file($envFile) || !is_readable($envFile)) continue;
+    if (is_file($envFile) && is_readable($envFile)) {
         $parsed = parse_ini_file($envFile, false, INI_SCANNER_RAW);
-        if (is_array($parsed)) $envValues = array_merge($envValues, $parsed);
+        if (is_array($parsed)) $envValues = $parsed;
     }
 
     foreach ($names as $name) {
@@ -58,6 +54,27 @@ function verifyAppToken(string $token): ?array
         return $decoded;
     }
     return null;
+}
+
+function refreshAppSessionCookie(string $token): void
+{
+    if (headers_sent() || $token === '') return;
+    $appBaseUrl = getCurrentAppBaseUrl();
+    $appPath = (string)(parse_url($appBaseUrl, PHP_URL_PATH) ?? '/');
+    $cookiePath = $appPath === '' ? '/' : rtrim($appPath, '/') . '/';
+    $forwardedProto = strtolower(trim(explode(',', (string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''))[0] ?? ''));
+    $secure = strtolower((string)parse_url($appBaseUrl, PHP_URL_SCHEME)) === 'https'
+        || $forwardedProto === 'https'
+        || (!empty($_SERVER['HTTPS']) && strtolower((string)$_SERVER['HTTPS']) !== 'off')
+        || (int)($_SERVER['SERVER_PORT'] ?? 0) === 443;
+
+    setcookie('monbis_session', $token, [
+        'expires' => time() + 7200,
+        'path' => $cookiePath,
+        'secure' => $secure,
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
 }
 
 function ssoWhoami(string $token): ?array
@@ -118,21 +135,28 @@ function ssoWhoami(string $token): ?array
 
 function requireAppAuth(): array
 {
-    // Cookie SSO dapat lebih baru daripada token LocalStorage yang dikirim lewat
-    // Authorization. Coba keduanya agar token lama tidak menutupi sesi yang valid.
-    $cookieToken = trim((string)preg_replace('/^Bearer\s+/i', '', (string)($_COOKIE['sso_token'] ?? '')));
+    // Cookie HttpOnly Monbis menjadi sumber autentikasi utama; cookie/header lama
+    // tetap menjadi fallback selama masa migrasi.
+    $cookieToken = trim((string)preg_replace('/^Bearer\s+/i', '', (string)($_COOKIE['monbis_session'] ?? '')));
+    $legacyCookieToken = trim((string)preg_replace('/^Bearer\s+/i', '', (string)($_COOKIE['sso_token'] ?? '')));
     $headerToken = getAppAuthToken();
-    $tokens = array_values(array_unique(array_filter([$cookieToken, $headerToken])));
+    $tokens = array_values(array_unique(array_filter([$cookieToken, $legacyCookieToken, $headerToken])));
 
     if (!$tokens) sendResponse(401, 'Token tidak ditemukan. Silakan login kembali.');
 
     foreach ($tokens as $token) {
         $local = verifyAppToken($token);
-        if (is_array($local) && !empty($local['employee_id'])) return $local;
+        if (is_array($local) && !empty($local['employee_id'])) {
+            refreshAppSessionCookie($token);
+            return $local;
+        }
     }
     foreach ($tokens as $token) {
         $sso = ssoWhoami($token);
-        if (is_array($sso) && !empty($sso['employee_id'])) return $sso;
+        if (is_array($sso) && !empty($sso['employee_id'])) {
+            refreshAppSessionCookie($token);
+            return $sso;
+        }
     }
 
     sendResponse(401, 'Token SSO tidak valid atau sudah kedaluwarsa.');

@@ -228,7 +228,6 @@
   // Helpers
   const $ = s => document.querySelector(s);
   const ctx = $('#canvas').getContext('2d');
-  const token = ()=> (window.AUTH_TOKEN || localStorage.getItem('dpk_token') || '').trim();
   const fmtRp = n => Number(n||0).toLocaleString('id-ID');
   const nowWIB = ()=>{
     const d=new Date(), p=v=>String(v).padStart(2,'0');
@@ -256,7 +255,6 @@
     };
     try{
       const headers = { 'Content-Type':'application/json' };
-      const t = token(); if(t) headers['Authorization'] = t;
 
       const res = await fetch(API_URL, { method:'POST', headers, body: JSON.stringify(body) });
       const j = await res.json().catch(()=> ({}));
@@ -502,7 +500,6 @@
   // ================== SIMPAN (type: create_kunjungan) - multipart ==================
   $('#btnSimpan').addEventListener('click', async () => {
     try {
-      const t = token();
       const fd = new FormData();
 
       fd.append('type', 'create_kunjungan');
@@ -547,13 +544,11 @@
       if (!fd.get('kode_tindakan')) throw new Error('Pilih kode tindakan');
       if (!fd.get('jenis_tindakan')) throw new Error('Pilih jenis tindakan');
 
-      const headers = t ? { 'Authorization': t } : {};
-
       // tampilkan loading agar user tahu sedang disimpan
       $('#btnSimpan').disabled = true;
       $('#btnSimpan').textContent = 'Menyimpan...';
 
-      const res = await fetch(API_URL, { method: 'POST', headers, body: fd });
+      const res = await fetch(API_URL, { method: 'POST', credentials: 'same-origin', body: fd });
       const j = await res.json().catch(() => ({}));
 
       if (!res.ok) throw new Error(j?.message || ('HTTP ' + res.status));

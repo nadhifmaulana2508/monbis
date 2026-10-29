@@ -110,8 +110,7 @@ mb_ui_assets('.');
   const el = id => document.getElementById(id);
   const state = { mode:'role', menus:[], roles:[], roleOptions:[], offices:[], divisions:[], divisionOptions:[], users:[], selectedUsers:new Set(), currentKeys:new Set(), roleMatrix:null, userMatrix:null };
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
-  const token = () => { try { const local = localStorage.getItem('dpk_token'); if (local) return local; } catch (error) {} const match = document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/); return match ? decodeURIComponent(match[1]) : ''; };
-  const headers = () => { const value = token(); return { 'Content-Type':'application/json', ...(value ? {Authorization:`Bearer ${value}`} : {}) }; };
+  const headers = () => ({ 'Content-Type':'application/json' });
   const setState = (text, status = '') => { const node = el('rbacState'); node.textContent = text; node.dataset.state = status; };
   const showToast = (message, type = 'info') => {
     const region = el('rbacToastRegion');

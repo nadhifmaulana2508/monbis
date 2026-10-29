@@ -74,8 +74,7 @@ function formatWeight(v){return new Intl.NumberFormat('id-ID',{maximumFractionDi
 function parseWeight(value){let s=String(value??'').trim().replace(',','.');if(s.endsWith('%'))return (parseFloat(s.slice(0,-1))||0)/100;const n=parseFloat(s);return Number.isFinite(n)?(n>1?n/100:n):0}
 function bindTargetFormatting(){document.querySelectorAll('#settingKpiBody [data-field="target"]').forEach(input=>{input.addEventListener('focus',()=>{input.value=String(num(input.dataset.raw))});input.addEventListener('blur',()=>{const value=parseTarget(input.value,input.dataset.unit);input.dataset.raw=String(value);input.value=formatTarget(value,input.dataset.unit)})})}
 let rows=[],scoreRows=[];
-function kpiToken(){let token='';try{token=String(window.AUTH_TOKEN||localStorage.getItem('dpk_token')||'').trim()}catch(error){}if(!token){const match=document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/);if(match)try{token=decodeURIComponent(match[1])}catch(error){token=match[1]}}return token}
-function kpiHeaders(extra={}){const headers=Object.assign({'Content-Type':'application/json'},extra),token=kpiToken();if(token)headers.Authorization=/^Bearer\s/i.test(token)?token:`Bearer ${token}`;return headers}
+function kpiHeaders(extra={}){return Object.assign({'Content-Type':'application/json'},extra)}
 window.MonbisKpiHeaders=kpiHeaders;
 async function post(body){const r=await fetch(API,{method:'POST',credentials:'same-origin',headers:kpiHeaders(),body:JSON.stringify(body)});const j=await r.json();if(!r.ok||Number(j.status)!==200)throw Error(j.message||'Gagal memuat setting');return j.data||{}}
 function rangeText(x){const min=num(x.min_indeks),max=num(x.max_indeks);if(min===0)return '<'+fmt(max*100)+'%';if(max>=999)return '>='+fmt(min*100)+'%';return '>='+fmt(min*100)+'% - <'+fmt(max*100)+'%'}

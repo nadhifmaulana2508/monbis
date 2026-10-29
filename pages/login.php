@@ -156,8 +156,7 @@ require_once __DIR__ . '/../components/login-showcase.php';
   // 1. DETEKSI ENVIRONMENT 
   const API_SSO_BASE = window.MONBIS_CONFIG?.ssoApiBase || 'https://apisso.bkkjateng.co.id';
   
-  const API_LOGIN = `${API_SSO_BASE}/api/auth/login`;
-  const API_WHOAMI = `${API_SSO_BASE}/api/auth/whoami`;
+  const API_LOGIN = `${BASE_APP}/api/auth/login`;
   
   // 🔥 API SSO RESET PASSWORD 🔥
   const API_FORGOT = `${API_SSO_BASE}/api/auth/forgot-password`;
@@ -168,22 +167,6 @@ require_once __DIR__ . '/../components/login-showcase.php';
   let tempOtpToken = "";
   let tempResetToken = "";
 
-  // 2. FUNGSI SET COOKIE SSO
-  function setSSOCookie(name, value, days) {
-      let expires = "";
-      if (days) {
-          const date = new Date();
-          date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-          expires = "; expires=" + date.toUTCString();
-      }
-      const domainStr = isLocal ? "" : "domain=.bkkjateng.co.id;";
-      document.cookie = name + "=" + (value || "")  + expires + "; path=/; " + domainStr + " SameSite=Lax"; 
-  }
-
-  const saveToken = (t) => {
-      localStorage.setItem('dpk_token', t); 
-      setSSOCookie('sso_token', t, 1);      
-  };
   const saveUser = (u) => localStorage.setItem('dpk_user', JSON.stringify(u));
   
   // Toggle Password
@@ -224,31 +207,17 @@ require_once __DIR__ . '/../components/login-showcase.php';
         }
         if (!res.ok) throw new Error('Layanan login sedang tidak dapat digunakan. Silakan coba lagi beberapa saat.');
 
-        if (json?.status !== 200 || !json?.data?.token) {
+        if (json?.status !== 200 || !json?.data?.employee_id) {
             throw new Error(invalidLoginMessage);
         }
 
-        saveToken(json.data.token);
-        
-        try {
-            const r2 = await fetch(API_WHOAMI, { 
-                headers: { 'Authorization': `Bearer ${json.data.token}` }
-            });
-            if (r2.ok) {
-                const j2 = await r2.json();
-                if(j2?.data) {
-                    let userData = j2.data;
-                    if (userData.job_position === "Divisi Operasional" || userData.unit_kerja === "Divisi Operasional") {
-                        userData.role = "dev";
-                    } else {
-                        userData.role = "user"; 
-                    }
-                    saveUser(userData);
-                }
-            }
-        } catch (err) {
-            console.error("Error mengambil data user (whoami):", err);
-        }
+        const userData = json.data;
+        userData.role = userData.job_position === 'Divisi Operasional' || userData.unit_kerja === 'Divisi Operasional'
+          ? 'dev'
+          : 'user';
+        localStorage.removeItem('dpk_token');
+        localStorage.setItem('monbis_last_activity_at', String(Date.now()));
+        saveUser(userData);
 
         try { sessionStorage.setItem('monbis_login_announcement_pending', '1'); } catch (error) {}
         location.href = safePostLoginTarget || `${BASE_APP}/${postLoginPage}`;

@@ -4,18 +4,6 @@ if (!defined('API_ROUTER_ENTRY')) { http_response_code(404); exit; }
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../controllers/ProspekSyncController.php';
 
-function prospek_sync_find_project_root($startDir)
-{
-    $dir = $startDir;
-    for ($i = 0; $i < 6; $i++) {
-        if (is_file($dir . '/.env')) return $dir;
-        $parent = dirname($dir);
-        if ($parent === $dir) break;
-        $dir = $parent;
-    }
-    return dirname($startDir, 2);
-}
-
 function prospek_sync_env_value($env, $key, $default = null)
 {
     if (array_key_exists($key, $env)) return $env[$key];
@@ -25,8 +13,7 @@ function prospek_sync_env_value($env, $key, $default = null)
 
 function prospek_sync_create_pdo()
 {
-    $root = prospek_sync_find_project_root(__DIR__);
-    $envFile = $root . '/.env';
+    $envFile = dirname(__DIR__) . '/.env';
     if (!is_file($envFile)) {
         sendResponse(500, 'File .env tidak ditemukan untuk koneksi Prospek.');
     }

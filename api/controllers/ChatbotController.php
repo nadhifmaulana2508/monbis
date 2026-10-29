@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../helpers/response.php';
+require_once __DIR__ . '/../helpers/sso_config.php';
 
 class ChatbotController
 {
@@ -215,7 +216,7 @@ class ChatbotController
             $headers = array(
                 'Content-Type: application/json',
                 'Authorization: Bearer ' . $apiKey,
-                'HTTP-Referer: http://localhost/report-dpk',
+                'HTTP-Referer: ' . getCurrentAppBaseUrl(),
                 'X-Title: Monbis Asisten Data'
             );
         } else {

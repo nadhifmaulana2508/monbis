@@ -4,23 +4,7 @@ declare(strict_types=1);
 // response helper
 require_once __DIR__ . '/../../helpers/response.php';
 
-/**
- * Cari project root dengan mendeteksi file .env ke atas max 6 level.
- * Default fallback: 2 level di atas (api/config -> project root).
- */
-function findProjectRoot(string $startDir): string {
-  $dir = $startDir;
-  for ($i = 0; $i < 6; $i++) {
-    if (is_file($dir . '/.env')) return $dir;
-    $parent = dirname($dir);
-    if ($parent === $dir) break;
-    $dir = $parent;
-  }
-  return dirname($startDir, 2);
-}
-
-$PROJECT_ROOT = findProjectRoot(__DIR__);
-$envFile      = $PROJECT_ROOT . '/.env';
+$envFile = dirname(__DIR__, 2) . '/.env';
 
 /** Load .env sebagai array; error → balas JSON dan exit */
 function loadEnv(string $file): array {

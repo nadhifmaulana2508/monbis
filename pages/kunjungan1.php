@@ -225,7 +225,6 @@
 <script>
 (() => {
   // ====== KONFIG KEY LOCALSTORAGE
-  const TOKEN_KEY = 'dpk_token';
   const USER_KEY  = 'dpk_user';
 
   // ====== Ambil user dari LS / JWT ======
@@ -236,30 +235,6 @@
       return raw ? JSON.parse(raw) : null;
     } catch { return null; }
   }
-  function parseJwt(token) {
-    try {
-      const parts = String(token).split('.');
-      if (parts.length < 2) return null;
-      const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-      const json = decodeURIComponent(atob(b64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
-      return JSON.parse(json);
-    } catch { return null; }
-  }
-  function getUserFallbackFromJWT() {
-    const t = (localStorage.getItem(TOKEN_KEY) || '').trim();
-    if (!t) return null;
-    const p = parseJwt(t) || {};
-    // map klaim yang umum → field yang dipakai navbar
-    return {
-      full_name   : p.full_name || p.name || p.nama || null,
-      branch_name : p.branch_name || p.branch || p.cabang || null,
-      employee_id : p.employee_id || p.emp_id || p.nik || null,
-      id          : p.sub || p.user_id || null,
-      kode        : p.kode || p.branch_code || null,
-      account_handle: p.handle || p.username || p.email || null
-    };
-  }
-
   // ====== Cat ke Navbar (aman bila elems muncul belakangan) ======
   function paintUser(u) {
     if (!u) return false;
@@ -288,12 +263,8 @@
     return touched;
   }
 
-  // 1) coba langsung pakai dpk_user
+  // Gunakan profil pegawai yang disimpan setelah login; token tidak dibaca JavaScript.
   let user = getUserFromLS();
-  if (!user) {
-    // 2) fallback decode JWT (FE-only)
-    user = getUserFallbackFromJWT();
-  }
 
   // 3) jika elemen belum ada (karena navbar dirender belakangan), tunggu & retry
   function tryPaint() { return paintUser(user); }

@@ -555,7 +555,7 @@ function rbacCanManageMatrix(PDO $pdo, array $user): bool
 
 function rbacUserFromCookie(PDO $pdo): ?array
 {
-    $token = trim((string)($_COOKIE['sso_token'] ?? ''));
+    $token = trim((string)($_COOKIE['monbis_session'] ?? ($_COOKIE['sso_token'] ?? '')));
     $payload = rbacVerifyToken($token);
     if (!$payload) {
         return null;

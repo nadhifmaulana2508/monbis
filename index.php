@@ -3,42 +3,43 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/api/helpers/sso_config.php';
+
 /**
  * =========================
- * BASE APP (AUTO)
+ * BASE APP (CONFIGURED PER ENVIRONMENT)
  * =========================
- * Local      : http://localhost/report-dpk/
- * Development: https://dev.monbis.bkkjateng.co.id/
- * Production : https://monbis.bkkjateng.co.id/
- *
- * URL dibentuk dari host aktif agar source code yang sama dapat dipakai
- * di ketiga environment tanpa mengganti URL secara manual.
+ * URL sumbernya api/.env; host request menentukan URL yang dipakai.
  */
 $httpHost = strtolower((string) ($_SERVER['HTTP_HOST'] ?? 'localhost'));
 $hostOnly = preg_replace('/:\d+$/', '', $httpHost) ?: $httpHost;
+$appUrls = getAppEnvironmentUrls();
+$knownEnvironment = 'custom';
+$configuredBaseUrl = null;
+$localHosts = ['localhost', '127.0.0.1', '::1'];
+foreach ($appUrls as $environment => $configuredUrl) {
+    $configuredHost = strtolower((string) (parse_url($configuredUrl, PHP_URL_HOST) ?? ''));
+    $hostMatches = $configuredHost !== '' && $hostOnly === $configuredHost;
+    if (!$hostMatches && $environment === 'local') {
+        $hostMatches = in_array($hostOnly, $localHosts, true) && in_array($configuredHost, $localHosts, true);
+    }
+    if ($hostMatches) {
+        $knownEnvironment = $environment;
+        $configuredBaseUrl = $configuredUrl;
+        break;
+    }
+}
+if ($knownEnvironment === 'custom' && in_array($hostOnly, $localHosts, true)) {
+    $knownEnvironment = 'local';
+}
 $forwardedProto = strtolower(trim(explode(',', (string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''))[0] ?? ''));
 $requestIsHttps = !empty($_SERVER['HTTPS'])
     && strtolower((string) $_SERVER['HTTPS']) !== 'off';
-
-// Gunakan if/elseif agar tetap kompatibel dengan PHP 7.x di server Dev.
-if (in_array($hostOnly, ['localhost', '127.0.0.1', '::1'], true)) {
-    $knownEnvironment = 'local';
-} elseif ($hostOnly === 'dev.monbis.bkkjateng.co.id') {
-    $knownEnvironment = 'development';
-} elseif ($hostOnly === 'monbis.bkkjateng.co.id') {
-    $knownEnvironment = 'production';
-} else {
-    $knownEnvironment = 'custom';
-}
 
 $scheme = in_array($forwardedProto, ['http', 'https'], true)
     ? $forwardedProto
     : ($requestIsHttps || (int) ($_SERVER['SERVER_PORT'] ?? 80) === 443 ? 'https' : 'http');
 
-// Domain Dev dan Production selalu dipublikasikan melalui HTTPS.
-if (in_array($knownEnvironment, ['development', 'production'], true)) {
-    $scheme = 'https';
-}
 $scriptName = str_replace('\\', '/', (string) ($_SERVER['SCRIPT_NAME'] ?? ''));
 $appBasePath = str_replace('\\', '/', dirname($scriptName));
 if ($appBasePath === '/' || $appBasePath === '.') {
@@ -47,15 +48,13 @@ if ($appBasePath === '/' || $appBasePath === '.') {
     $appBasePath = rtrim($appBasePath, '/');
 }
 
-define(
-    'BASE_APP',
-    $scheme . '://' . $httpHost . $appBasePath
-);
+$baseApp = $configuredBaseUrl ?: $scheme . '://' . $httpHost . $appBasePath;
+$baseParts = parse_url($baseApp);
+$scheme = strtolower((string) ($baseParts['scheme'] ?? $scheme));
+define('BASE_APP', rtrim($baseApp, '/'));
 define('APP_ENV', $knownEnvironment);
 define('APP_HOST', $hostOnly);
 define('APP_SCHEME', $scheme);
-
-require_once __DIR__ . '/api/helpers/sso_config.php';
 
 // =========================
 // AMBIL URL DARI REWRITE
@@ -83,18 +82,21 @@ if (strpos($url, 'api/') === 0) {
 
 // Validasi sesi browser di server; keberadaan cookie saja bukan bukti login.
 $webAuthUser = null;
-$webToken = trim((string) preg_replace('/^Bearer\s+/i', '', (string) ($_COOKIE['sso_token'] ?? '')));
+$webToken = trim((string) preg_replace('/^Bearer\s+/i', '', (string) ($_COOKIE['monbis_session'] ?? ($_COOKIE['sso_token'] ?? ''))));
 if ($webToken !== '') {
     require_once __DIR__ . '/api/helpers/sso_guard.php';
     $webAuthUser = verifyAppToken($webToken) ?? ssoWhoami($webToken);
 }
 $isLoggedIn = is_array($webAuthUser) && !empty($webAuthUser['employee_id']);
+if ($isLoggedIn) {
+    refreshAppSessionCookie($webToken);
+}
 
 // Sajikan dokumen internal hanya melalui jalur yang memverifikasi token SSO.
 // docs/.htaccess mengarahkan file fisik ke sini agar Apache tidak melewati guard.
 if (preg_match('#^docs(?:/(.*))?$#i', $url, $docsMatch)) {
     require_once __DIR__ . '/api/helpers/sso_guard.php';
-    $docsToken = trim((string)preg_replace('/^Bearer\\s+/i', '', (string)($_COOKIE['sso_token'] ?? '')));
+    $docsToken = trim((string)preg_replace('/^Bearer\\s+/i', '', (string)($_COOKIE['monbis_session'] ?? ($_COOKIE['sso_token'] ?? ''))));
     if ($docsToken === '') sendResponse(401, 'Token tidak ditemukan. Silakan login kembali.');
     // Jangan memakai fallback secret JWT lokal di jalur dokumen. Minta SSO
     // memvalidasi token agar token buatan tidak dapat membuka file internal.

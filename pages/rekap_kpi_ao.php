@@ -108,7 +108,7 @@ mb_render_report_page([
 </style>
 <script>
 (() => {
-    const kpiHeaders=(extra={})=>{let token='';try{token=String(window.AUTH_TOKEN||localStorage.getItem('dpk_token')||'').trim()}catch(error){}if(!token){const match=document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/);if(match)try{token=decodeURIComponent(match[1])}catch(error){token=match[1]}}const headers=Object.assign({'Content-Type':'application/json'},extra);if(token)headers.Authorization=/^Bearer\s/i.test(token)?token:`Bearer ${token}`;return headers};
+    const kpiHeaders=(extra={})=>Object.assign({'Content-Type':'application/json'},extra);
     const API='./api/index.php?request=kpi';
     const state={boot:null};
     const months=['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];

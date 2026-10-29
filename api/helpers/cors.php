@@ -8,9 +8,9 @@ function applyApiCors(): void
 
     $allowedRaw = getenv('CORS_ALLOWED_ORIGINS') ?: '';
     if ($allowedRaw === '') {
-        $rootEnv = dirname(__DIR__, 2) . '/.env';
-        if (is_file($rootEnv)) {
-            $env = parse_ini_file($rootEnv, false, INI_SCANNER_RAW);
+        $apiEnv = dirname(__DIR__) . '/.env';
+        if (is_file($apiEnv)) {
+            $env = parse_ini_file($apiEnv, false, INI_SCANNER_RAW);
             if (is_array($env)) $allowedRaw = (string)($env['CORS_ALLOWED_ORIGINS'] ?? '');
         }
     }

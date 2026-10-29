@@ -12,6 +12,7 @@
       ssoApiBase: <?= json_encode(function_exists('getSsoApiBase') ? getSsoApiBase() : 'https://apisso.bkkjateng.co.id', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
     });
     window.BASE_APP = window.MONBIS_CONFIG.baseUrl;
+    try { localStorage.removeItem('dpk_token'); } catch (error) {}
   </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

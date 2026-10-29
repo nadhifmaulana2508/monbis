@@ -193,17 +193,11 @@
   // ==========================================
   // CONFIG & UTILS
   // ==========================================
-  const API_SSO_BASE = window.MONBIS_CONFIG?.ssoApiBase || 'https://apisso.bkkjateng.co.id';
-  
-  const API_UPDATE_PROFILE = `${API_SSO_BASE}/api/auth/update-profile`;
-  const API_CHANGE_PASS    = `${API_SSO_BASE}/api/auth/change-password`;
+  const BASE_APP = window.BASE_APP || '';
+  const API_UPDATE_PROFILE = `${BASE_APP}/api/auth/update-profile`;
+  const API_CHANGE_PASS    = `${BASE_APP}/api/auth/change-password`;
 
-  const token = localStorage.getItem('dpk_token');
   let user = JSON.parse(localStorage.getItem('dpk_user')) || {};
-
-  if (!token) {
-      window.location.href = '/login'; 
-  }
 
   // ==========================================
   // RENDER SEMUA DATA DARI JSON
@@ -271,10 +265,8 @@
       try {
           const res = await fetch(API_UPDATE_PROFILE, {
               method: 'POST',
-              headers: { 
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}` 
-              },
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email: emailVal, telp: telpVal })
           });
           
@@ -321,10 +313,8 @@
       try {
           const res = await fetch(API_CHANGE_PASS, {
               method: 'POST',
-              headers: { 
-                  'Content-Type': 'application/json',
-                  'Authorization': `Bearer ${token}` 
-              },
+              credentials: 'same-origin',
+              headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ old_password: oldPass, new_password: newPass })
           });
           

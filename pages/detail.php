@@ -88,7 +88,8 @@ function formatRupiah($angka, $prefix = 'Rp') {
             exit;
         }
 
-        $response = @file_get_contents(BASE_URL . "/api/asset/detail/?id=$id");
+        $detailUrl = rtrim(BASE_APP, '/') . '/api/asset/detail/?' . http_build_query(['id' => $id]);
+        $response = @file_get_contents($detailUrl);
         if (!$response) {
             echo "Gagal mengambil data asset.";
             exit;

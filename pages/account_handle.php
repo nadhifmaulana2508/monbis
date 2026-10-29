@@ -235,13 +235,8 @@
   const CREATE_URL  = './kunjungan';
   const HISTORY_URL = './history_kunjungan_user';
 
-  // ========= Authorization fallback (tanpa "Bearer") =========
-  const FALLBACK_AUTH = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTUwLCJlbXBsb3llZV9pZCI6Ik8tMTExLTAwNiIsImlhdCI6MTc2MTU3NjMxMywiZXhwIjoxNzYxNTk0MzEzfQ.hX_yz3Q7qPDhR_DBCWIPmp7BOuL7GiVn1fumiEKZAB4';
-
   // ========= Helpers =========
   const fmt = n => Number(n||0).toLocaleString('id-ID');
-  const getStoredToken = () =>
-    (window.AUTH_TOKEN || localStorage.getItem('dpk_token') || '').trim();
 
   // Ambil kode_kantor dari state app (ganti sumber jika perlu)
   function getKodeKantor() {
@@ -322,7 +317,6 @@
 
     try{
       const headers = { 'Content-Type':'application/json' };
-      headers['Authorization'] = getStoredToken() || FALLBACK_AUTH; // TANPA "Bearer"
 
       const body = {
         kode_kantor: getKodeKantor(),

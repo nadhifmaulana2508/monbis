@@ -97,14 +97,13 @@
 monbis/
 ├── index.php                 # Router utama (frontend)
 ├── .htaccess                 # URL Rewrite
-├── .env                      # Konfigurasi DB (tidak di-commit)
-│
 ├── api/
+│   ├── .env                  # Konfigurasi runtime tunggal (tidak di-commit)
 │   ├── index.php             # API Router (dispatch endpoint)
 │   ├── .htaccess             # Rewrite API
 │   ├── config/
 │   │   ├── database.php      # Koneksi PDO MySQL
-│   │   └── config.php        # (Kosong, config via .env)
+│   │   └── config.php        # (Kosong, config via api/.env)
 │   ├── controllers/          # Business logic per modul
 │   ├── routes/               # Routing per endpoint (type-based dispatch)
 │   ├── helpers/              # JWT, Response, Upload, CKPN Utils
@@ -138,7 +137,7 @@ monbis/
 - Frontend Guard: di `index.php` cek cookie sebelum load halaman
 
 ### Konfigurasi SSO di aaPanel
-- Tambahkan `SSO_JWT_SECRET` pada `.env` Monbis dengan nilai yang sama seperti secret JWT pada API SSO.
+- Jika validasi JWT lokal digunakan, atur `SSO_JWT_SECRET` pada `api/.env` dengan nilai yang sama seperti secret JWT pada API SSO.
 - Guard akan memvalidasi token SSO secara lokal terlebih dahulu, lalu memakai endpoint `whoami` sebagai fallback.
 
 ---
@@ -408,9 +407,9 @@ docs/database/dev_tracking.sql
 
 ### Hal yang Perlu Diperhatikan
 1. **File Duplikat** - Banyak file `*copy.php` dan `*copy 2.php` di pages/ dan helpers/. Ini WIP yang belum dirapikan.
-2. **JWT Secret Hardcoded** - `'your-secret-key'` di auth.php & JWT.php. Untuk production harus pindah ke `.env`.
+2. **JWT Secret Hardcoded** - `'your-secret-key'` di auth.php & JWT.php. Untuk production harus pindah ke `api/.env`.
 3. **Login Fallback** - Password hardcoded `bkkjtg123` di AuthController (hanya untuk dev).
-4. **Config** - `api/config/config.php` kosong. Semua konfigurasi via `.env` di `database.php`.
+4. **Config** - `api/config/config.php` kosong. Semua konfigurasi via `api/.env`.
 5. **Menu Dev Only** - Menu "Laporan" disembunyikan dengan `display:none`, hanya tampil jika user role dev.
 
 ### Quick Start (Local Development)
@@ -418,9 +417,9 @@ docs/database/dev_tracking.sql
 # 1. Clone repo
 git clone https://github.com/nadhifmaulana2508/monbis.git
 
-# 2. Copy & edit env
-cp .env.example .env
-# Edit: DB_HOST, DB_NAME, DB_USER, DB_PASS
+# 2. Siapkan konfigurasi runtime tunggal
+cp api/.env.example api/.env
+# Lengkapi konfigurasi database dan SSO sesuai environment
 
 # 3. Import database
 mysql -u root -p < docs/database/dev_tracking.sql

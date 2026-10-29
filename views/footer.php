@@ -75,15 +75,7 @@
             const slug = raw.split('/').pop().replace(/\.php$/i, '').trim();
             return slug ? `page:${slug}` : '';
         };
-        const getToken = () => {
-            try { const local = localStorage.getItem('dpk_token'); if (local) return local; } catch (error) {}
-            const match = document.cookie.match(/(?:^|;\s*)sso_token=([^;]+)/);
-            return match ? decodeURIComponent(match[1]) : '';
-        };
-        const headers = () => {
-            const token = getToken();
-            return { 'Content-Type': 'application/json', ...(token ? {Authorization:`Bearer ${token}`} : {}) };
-        };
+        const headers = () => ({ 'Content-Type': 'application/json' });
         const markReady = () => {
             document.documentElement.classList.remove('monbis-rbac-pending');
             document.documentElement.classList.add('monbis-rbac-ready');
@@ -127,7 +119,7 @@
             return true;
         };
         const load = async user => {
-            if (!user || !getToken()) return user;
+            if (!user) return user;
 
             // Akses awal sudah dihitung server saat halaman dirender.
             // Bentuk ulang permission minimal dari payload itu agar halaman
@@ -214,25 +206,12 @@
 
     // --- 3. SCRIPT RENDER USER & ROLE (SSO SYNC AUTO-FETCH) ---
     (async () => {
-        const TOKEN_KEY = 'dpk_token', USER_KEY = 'dpk_user', USER_VERIFIED_KEY = 'dpk_user_verified_at';
+        const USER_KEY = 'dpk_user', USER_VERIFIED_KEY = 'dpk_user_verified_at';
         const WHOAMI_REFRESH_MS = 5 * 60 * 1000;
         const isLoginPage = <?= json_encode(($page ?? '') === 'login') ?>;
         if (isLoginPage) return;
 
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const API_SSO_BASE = window.MONBIS_CONFIG?.ssoApiBase || 'https://apisso.bkkjateng.co.id';
-        const API_WHOAMI = `${API_SSO_BASE}/api/auth/whoami`;
-
-        let token = null;
-        const match = document.cookie.match(new RegExp('(^| )sso_token=([^;]+)'));
-        if (match) token = match[2];
-        if (!token) token = (localStorage.getItem(TOKEN_KEY) || '').trim();
-
-        if (!token) return;
-
-        // Deteksi apakah user baru menyebrang dari IMS (Ada cookie tapi LocalStorage kosong)
         const rawUser = localStorage.getItem(USER_KEY);
-        const isCrossingFromSSO = !rawUser && match; 
 
         function paint(u) {
             if (!u) return false;
@@ -287,16 +266,14 @@
         }
 
         const lastVerified = Number(localStorage.getItem(USER_VERIFIED_KEY) || 0);
-        const needVerify = !rawUser || !lastVerified || (Date.now() - lastVerified > WHOAMI_REFRESH_MS) || isCrossingFromSSO;
+        const needVerify = !rawUser || !lastVerified || (Date.now() - lastVerified > WHOAMI_REFRESH_MS);
         if (!needVerify) return;
 
         try {
-            const res = await fetch(API_WHOAMI, {
+            const res = await fetch(`${window.BASE_APP || ''}/api/auth/whoami`, {
                 method: 'GET',
-                headers: {
-                    'Authorization': token.startsWith('Bearer') ? token : `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' }
             });
 
             if (res.ok) {
@@ -310,17 +287,10 @@
 
                     // Daftarkan ke Global agar script lain bisa akses kodenya
                     window.__USER = u;
-                    localStorage.setItem(TOKEN_KEY, token);
                     localStorage.setItem(USER_KEY, JSON.stringify(u));
                     localStorage.setItem(USER_VERIFIED_KEY, String(Date.now()));
-                    
-                    if (isCrossingFromSSO) {
-                        // SOLUSI RACE CONDITION: Muat ulang halaman sekali saja agar semua script bisa pakai LocalStorage yang baru disave
-                        window.location.reload();
-                    } else {
-                        paint(u);
-                        window.MonbisRbac.load(u);
-                    }
+                    paint(u);
+                    window.MonbisRbac.load(u);
                 }
             }
         } catch (error) {
@@ -329,22 +299,126 @@
     })();
 
     // --- 5. FUNGSI LOGOUT SSO ---
-    function logoutSSO(e) {
+    async function logoutSSO(e) {
         if(e) e.preventDefault();
-        
+        const baseApp = window.BASE_APP || window.location.origin + (window.location.pathname.startsWith('/report-dpk') ? '/report-dpk' : '');
+        try {
+            const response = await fetch(`${baseApp}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: '{}'
+            });
+            if (!response.ok) throw new Error(`Logout gagal (HTTP ${response.status})`);
+        } catch (error) {
+            console.error('Sesi Monbis gagal diakhiri:', error);
+            return;
+        }
         localStorage.removeItem('dpk_token');
         localStorage.removeItem('dpk_user');
         localStorage.removeItem('dpk_user_verified_at');
-        
-        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        document.cookie = "sso_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        if(!isLocal) {
-            document.cookie = "sso_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=.bkkjateng.co.id;";
-        }
-        
-        const baseApp = window.BASE_APP || window.location.origin + (window.location.pathname.startsWith('/report-dpk') ? '/report-dpk' : '');
+        localStorage.removeItem('monbis_last_activity_at');
         window.location.href = baseApp + '/login';
     }
+
+    // Sesi browser berakhir setelah dua jam tanpa aktivitas; timestamp dibagi antar-tab.
+    (() => {
+        if (!<?= !empty($isLoggedIn) ? 'true' : 'false' ?>) return;
+
+        const IDLE_LIMIT_MS = 2 * 60 * 60 * 1000;
+        const ACTIVITY_KEY = 'monbis_last_activity_at';
+        const baseApp = window.BASE_APP || window.location.origin + (window.location.pathname.startsWith('/report-dpk') ? '/report-dpk' : '');
+        let lastActivity = Number(localStorage.getItem(ACTIVITY_KEY) || 0);
+        let lastSavedAt = 0;
+        let timer = null;
+        let ending = false;
+
+        const now = () => Date.now();
+        const saveActivity = timestamp => {
+            lastActivity = timestamp;
+            if (timestamp - lastSavedAt >= 15000) {
+                try { localStorage.setItem(ACTIVITY_KEY, String(timestamp)); } catch (error) {}
+                lastSavedAt = timestamp;
+            }
+        };
+        const endSession = async () => {
+            if (ending) return;
+            ending = true;
+            clearTimeout(timer);
+            try {
+                await fetch(`${baseApp}/api/auth/logout`, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: '{}'
+                });
+            } catch (error) {
+                console.warn('Cookie sesi akan kedaluwarsa di server jika logout tidak terjangkau.');
+            }
+            localStorage.removeItem('dpk_user');
+            localStorage.removeItem('dpk_user_verified_at');
+            localStorage.removeItem(ACTIVITY_KEY);
+            window.location.replace(`${baseApp}/login`);
+        };
+        const schedule = () => {
+            clearTimeout(timer);
+            const remaining = IDLE_LIMIT_MS - (now() - lastActivity);
+            if (remaining <= 0) {
+                endSession();
+                return;
+            }
+            timer = setTimeout(endSession, remaining);
+        };
+        const recordActivity = () => {
+            const timestamp = now();
+            if (timestamp - lastActivity >= IDLE_LIMIT_MS) {
+                endSession();
+                return;
+            }
+            saveActivity(timestamp);
+            schedule();
+        };
+
+        if (!lastActivity) {
+            lastActivity = now();
+            try { localStorage.setItem(ACTIVITY_KEY, String(lastActivity)); } catch (error) {}
+            lastSavedAt = lastActivity;
+        }
+        schedule();
+        ['pointerdown', 'keydown', 'touchstart', 'scroll', 'click'].forEach(eventName => {
+            document.addEventListener(eventName, recordActivity, { passive: true });
+        });
+        window.addEventListener('focus', recordActivity);
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') recordActivity();
+        });
+        window.addEventListener('storage', event => {
+            if (event.key !== ACTIVITY_KEY) return;
+            if (!event.newValue) {
+                endSession();
+                return;
+            }
+            const sharedActivity = Number(event.newValue);
+            if (Number.isFinite(sharedActivity) && sharedActivity > lastActivity) {
+                lastActivity = sharedActivity;
+                schedule();
+            }
+        });
+
+        window.setInterval(async () => {
+            if (now() - lastActivity >= IDLE_LIMIT_MS) {
+                endSession();
+                return;
+            }
+            try {
+                const response = await fetch(`${baseApp}/api/auth/keepalive`, {
+                    credentials: 'same-origin',
+                    cache: 'no-store'
+                });
+                if (response.status === 401) endSession();
+            } catch (error) {}
+        }, 5 * 60 * 1000);
+    })();
 
     // --- 6. EVENT THEME NAVBAR & SIDEBAR ---
     (function () {

@@ -165,7 +165,6 @@
     } catch { return s; }
   };
 
-  const getStoredToken = () => (window.AUTH_TOKEN || localStorage.getItem('dpk_token') || '').trim();
   const getKodeKantor = () => (window.NavAuth?.branchCode || localStorage.getItem('kode_kantor') || '001').toString().padStart(3,'0');
 
   let targetNoRekening = document.getElementById('target_no_rekening')?.value;
@@ -213,7 +212,6 @@
 
     try {
       const headers = { 'Content-Type':'application/json' };
-      // headers['Authorization'] = 'Bearer ' + getStoredToken(); 
 
       const body = {
         kode_kantor: getKodeKantor(),
