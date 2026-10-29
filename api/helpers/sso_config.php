@@ -109,6 +109,12 @@ function getSsoApiBase(): string
         && !empty($parts['host'])
         && !isset($parts['user'])
         && !isset($parts['pass']);
+    $candidateHost = strtolower((string)($parts['host'] ?? ''));
+    $requestHost = strtolower((string)preg_replace('/:\\d+$/', '', (string)($_SERVER['HTTP_HOST'] ?? '')));
+    if ($valid && $requestHost !== '' && hash_equals($requestHost, $candidateHost)) {
+        error_log('SSO_API_BASE points to the current Monbis host; using the default SSO host.');
+        $valid = false;
+    }
     if ($valid && strtolower((string)$parts['scheme']) === 'http') {
         $valid = in_array(strtolower((string)$parts['host']), ['localhost', '127.0.0.1', '::1'], true);
     }
