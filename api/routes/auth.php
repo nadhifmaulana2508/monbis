@@ -36,6 +36,7 @@ if ($endpoint === 'login' && $method === 'POST') {
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_TIMEOUT => 15,
+            CURLOPT_RESOLVE => getSsoCurlResolveEntries(),
             CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json'],
             CURLOPT_POSTFIELDS => $payload,
@@ -158,6 +159,7 @@ if (in_array($endpoint, ['update-profile', 'change-password'], true) && $method 
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_TIMEOUT => 15,
+            CURLOPT_RESOLVE => getSsoCurlResolveEntries(),
             CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => [
                 'Content-Type: application/json',

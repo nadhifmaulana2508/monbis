@@ -92,6 +92,7 @@ function ssoWhoami(string $token): ?array
         $curl = curl_init($url);
         curl_setopt_array($curl, [
             CURLOPT_RETURNTRANSFER=>true, CURLOPT_CONNECTTIMEOUT=>3, CURLOPT_TIMEOUT=>8,
+            CURLOPT_RESOLVE=>getSsoCurlResolveEntries(),
             CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$token, 'Accept: application/json'],
         ]);
         $body = curl_exec($curl);

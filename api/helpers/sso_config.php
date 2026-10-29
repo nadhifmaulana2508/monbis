@@ -128,3 +128,32 @@ function getSsoApiBase(): string
     $resolved = $valid ? $candidate : 'https://apisso.bkkjateng.co.id';
     return $resolved;
 }
+
+/**
+ * Optional internal address for reaching the SSO virtual host without routing
+ * through this server's public IP. TLS still uses the hostname in the URL.
+ */
+function getSsoCurlResolveEntries(): array
+{
+    $connectIp = getenv('SSO_API_CONNECT_IP');
+    if ($connectIp === false || trim((string)$connectIp) === '') {
+        $connectIp = $_ENV['SSO_API_CONNECT_IP'] ?? '';
+    }
+    if (trim((string)$connectIp) === '') {
+        $envFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
+        if (is_file($envFile) && is_readable($envFile)) {
+            $values = parse_ini_file($envFile, false, INI_SCANNER_RAW);
+            if (is_array($values)) $connectIp = $values['SSO_API_CONNECT_IP'] ?? '';
+        }
+    }
+
+    $connectIp = trim(trim((string)$connectIp), " \t\n\r\0\x0B\"'");
+    if ($connectIp === '' || filter_var($connectIp, FILTER_VALIDATE_IP) === false) return [];
+
+    $parts = parse_url(getSsoApiBase());
+    if (!is_array($parts) || empty($parts['host'])) return [];
+    $host = strtolower((string)$parts['host']);
+    $port = (int)($parts['port'] ?? (strtolower((string)$parts['scheme']) === 'https' ? 443 : 80));
+    $address = filter_var($connectIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? '[' . $connectIp . ']' : $connectIp;
+    return [$host . ':' . $port . ':' . $address];
+}
