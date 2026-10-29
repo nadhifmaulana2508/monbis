@@ -113,6 +113,12 @@ function getSsoApiBase(): string
         $valid = in_array(strtolower((string)$parts['host']), ['localhost', '127.0.0.1', '::1'], true);
     }
 
+    if ($valid) {
+        // Terima base URL SSO dalam bentuk host atau host/api. Pemanggil
+        // menambahkan /api/auth/... sehingga suffix /api harus dinormalkan.
+        $candidate = preg_replace('#/api/?$#i', '', $candidate) ?: $candidate;
+    }
+
     $resolved = $valid ? $candidate : 'https://apisso.bkkjateng.co.id';
     return $resolved;
 }

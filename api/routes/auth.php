@@ -28,6 +28,8 @@ if ($endpoint === 'login' && $method === 'POST') {
     $payload = json_encode(['id_peg' => $employeeId, 'password' => $password, 'app' => 'monbis']);
     $body = false;
     $status = 0;
+    $curlErrorNumber = 0;
+    $curlErrorMessage = '';
     if (function_exists('curl_init')) {
         $curl = curl_init($loginUrl);
         curl_setopt_array($curl, [
@@ -40,6 +42,8 @@ if ($endpoint === 'login' && $method === 'POST') {
         ]);
         $body = curl_exec($curl);
         $status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $curlErrorNumber = curl_errno($curl);
+        $curlErrorMessage = curl_error($curl);
         curl_close($curl);
     } else {
         $context = stream_context_create(['http' => [
@@ -58,6 +62,14 @@ if ($endpoint === 'login' && $method === 'POST') {
     $loginData = is_string($body) ? json_decode($body, true) : null;
     $token = trim((string)($loginData['data']['token'] ?? ''));
     if ($status !== 200 || (int)($loginData['status'] ?? 0) !== 200 || $token === '') {
+        error_log(sprintf(
+            'Monbis SSO login failed: http=%d curl_errno=%d curl_error=%s response_status=%s token_present=%s',
+            $status,
+            $curlErrorNumber,
+            $curlErrorMessage !== '' ? $curlErrorMessage : 'none',
+            isset($loginData['status']) ? (string)$loginData['status'] : 'missing',
+            $token !== '' ? 'yes' : 'no'
+        ));
         $publicStatus = $status === 401 ? 401 : 502;
         sendResponse($publicStatus, $publicStatus === 401
             ? 'ID pegawai atau password tidak sesuai.'
