@@ -3310,8 +3310,8 @@ class KreditController {
             $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS kredit_dpd_{$key}";
             $metrics[] = "COUNT(DISTINCT CASE WHEN {$condition} THEN x.no_rekening END) AS noa_dpd_{$key}";
             $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.saldo_bank,0) ELSE 0 END) AS ead_dpd_{$key}";
-            $metrics[] = "SUM(CASE WHEN {$condition} AND COALESCE(x.jml_pinjaman,0) <= 3000000000 THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_dpd_{$key}";
-            $metrics[] = "SUM(CASE WHEN {$condition} AND COALESCE(x.jml_pinjaman,0) > 3000000000 THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_individual_dpd_{$key}";
+            $metrics[] = "SUM(CASE WHEN {$condition} AND UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'COLLECTIVE' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_dpd_{$key}";
+            $metrics[] = "SUM(CASE WHEN {$condition} AND UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'INDIVIDUAL' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_individual_dpd_{$key}";
         }
 
         $kolekConditions = [
@@ -3325,16 +3325,16 @@ class KreditController {
             $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS kredit_kolek_{$key}";
             $metrics[] = "COUNT(DISTINCT CASE WHEN {$condition} THEN x.no_rekening END) AS noa_kolek_{$key}";
             $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.saldo_bank,0) ELSE 0 END) AS ead_kolek_{$key}";
-            $metrics[] = "SUM(CASE WHEN {$condition} AND COALESCE(x.jml_pinjaman,0) <= 3000000000 THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_kolek_{$key}";
-            $metrics[] = "SUM(CASE WHEN {$condition} AND COALESCE(x.jml_pinjaman,0) > 3000000000 THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_individual_kolek_{$key}";
+            $metrics[] = "SUM(CASE WHEN {$condition} AND UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'COLLECTIVE' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_kolek_{$key}";
+            $metrics[] = "SUM(CASE WHEN {$condition} AND UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'INDIVIDUAL' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_individual_kolek_{$key}";
         }
-        $metrics[] = "SUM(CASE WHEN COALESCE(x.jml_pinjaman,0) <= 3000000000 THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_total";
-        $metrics[] = "SUM(CASE WHEN COALESCE(x.jml_pinjaman,0) > 3000000000 THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_individual_total";
+        $metrics[] = "SUM(CASE WHEN UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'COLLECTIVE' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_total";
+        $metrics[] = "SUM(CASE WHEN UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'INDIVIDUAL' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_individual_total";
 
         $sql = "SELECT x.kode_cabang, ".implode(",\n", $metrics)."
             FROM (
                 SELECT n.kode_cabang, n.no_rekening, n.kolektibilitas, n.hari_menunggak,
-                       n.baki_debet, n.saldo_bank, n.jml_pinjaman, n.nilai_ckpn,
+                       n.baki_debet, n.saldo_bank, n.jml_pinjaman, n.nilai_ckpn, n.metode_hitung_ckpn,
                        COALESCE(NULLIF(TRIM(CAST(pk.kode_baru AS CHAR)), ''), CAST(n.kode_produk AS CHAR)) AS kode_produk_laporan
                 FROM nominatif n
                 LEFT JOIN produk_kredit pk ON CAST(pk.kode_produk AS CHAR) = CAST(n.kode_produk AS CHAR)
