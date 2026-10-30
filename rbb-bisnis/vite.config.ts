@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => ({
         target: "http://localhost",
         changeOrigin: true,
         rewrite: (requestPath) => requestPath.replace(/^\/api/, "/report-dpk/api"),
+        cookiePathRewrite: { "/report-dpk/": "/", "/report-dpk": "/" },
       },
     },
   },

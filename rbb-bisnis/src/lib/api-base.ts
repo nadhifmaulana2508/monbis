@@ -1,5 +1,3 @@
-import { getToken } from "@/lib/utils"
-
 const LOCAL_API = "http://localhost/report-dpk/api"
 
 function isMonbisHost() {
@@ -29,14 +27,10 @@ async function parseApiResponse<T>(response: Response, fallbackMessage: string) 
 }
 
 export async function postApi<T>(path: string, payload: Record<string, unknown>, signal?: AbortSignal) {
-  const token = getToken()
-  const headers: Record<string, string> = { "Content-Type": "application/json", Accept: "application/json" }
-  if (token) headers.Authorization = /^Bearer\s/i.test(token) ? token : `Bearer ${token}`
-
   const response = await fetch(apiUrl(path), {
     method: "POST",
     credentials: "include",
-    headers,
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
     body: JSON.stringify(payload),
     signal,
   })

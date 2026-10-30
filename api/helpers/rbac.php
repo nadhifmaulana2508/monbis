@@ -20,6 +20,9 @@ function rbacFeatureCatalog(): array
     $known = [
         ['dashboard', 'Dashboard', 'Utama'],
         ['tv', 'TV', 'Lainnya'],
+        ['tv_cabang', 'TV Cabang', 'Lainnya'],
+        ['profile', 'Profile', 'Lainnya'],
+        ['update_flowpar', 'Update Flow PAR', 'Lainnya'],
         ['realisasi_kredit_growth', 'Realisasi Kredit', 'Pemasaran'],
         ['realisasi_ao', 'Realisasi Kredit AO', 'Pemasaran'],
         ['realisasi_rbb', 'Produksi vs RBB', 'Pemasaran'],
@@ -74,11 +77,9 @@ function rbacFeatureCatalog(): array
         ['raport_cabang', 'Raport Cabang', 'KPI Bisnis'],
         ['event_theme_admin', 'Setting Event', 'Admin'],
         ['setting_rbac', 'Matrix Akses Menu', 'Admin'],
-        ['tv_cabang', 'TV Cabang', 'Lainnya'],
     ];
 
     $catalog = [];
-    $seen = [];
     $order = 10;
     foreach ($known as $item) {
         [$slug, $label, $module] = $item;
@@ -89,39 +90,18 @@ function rbacFeatureCatalog(): array
             'module_name' => $module,
             'sort_order' => $order,
         ];
-        $seen[$slug] = true;
-        $order += 10;
-    }
-
-    // Tambahkan page root lain agar menu internal/fitur baru tetap dapat
-    // dikelola dari matrix tanpa perlu mengubah kode RBAC lagi.
-    $pageDir = dirname(__DIR__, 2) . '/pages';
-    $files = glob($pageDir . '/*.php') ?: [];
-    sort($files, SORT_STRING);
-    foreach ($files as $file) {
-        $slug = pathinfo($file, PATHINFO_FILENAME);
-        if (isset($seen[$slug])) {
-            continue;
-        }
-        if (preg_match('/(?:^|\s)(copy|lama|ori|sebelum|oke|demo|play|zzzz)(?:\s|$)|_(?:copy|lama|ori|impl)$/i', $slug)) {
-            continue;
-        }
-        if (preg_match('/^(login|tv|home)(?:_|$)/i', $slug)) {
-            continue;
-        }
-        $label = ucwords(str_replace('_', ' ', $slug));
-        $catalog[] = [
-            'feature_key' => 'page:' . $slug,
-            'page_slug' => $slug,
-            'feature_label' => $label,
-            'module_name' => 'Lainnya',
-            'sort_order' => $order,
-        ];
-        $seen[$slug] = true;
         $order += 10;
     }
 
     return $catalog;
+}
+
+function rbacRetireUnusedOtherMenu(PDO $pdo): void
+{
+    $pdo->exec("UPDATE rbac_menu
+        SET is_active = 0
+        WHERE module_name = 'Lainnya'
+          AND feature_key NOT IN ('page:profile', 'page:tv', 'page:tv_cabang', 'page:update_flowpar')");
 }
 
 function rbacEnsureSchema(PDO $pdo): void
@@ -153,6 +133,7 @@ function rbacEnsureSchema(PDO $pdo): void
            AND table_name IN ({$tableList})"
     )->fetchAll(PDO::FETCH_COLUMN);
     if (count(array_intersect($requiredTables, $existingTables)) === count($requiredTables)) {
+        rbacRetireUnusedOtherMenu($pdo);
         $catalogKeys = array_column(rbacFeatureCatalog(), 'feature_key');
         $existingFeatureKeys = $pdo->query("SELECT feature_key FROM rbac_menu")->fetchAll(PDO::FETCH_COLUMN);
         $missingFeatureKeys = array_diff($catalogKeys, $existingFeatureKeys);
@@ -276,10 +257,12 @@ function rbacEnsureSchema(PDO $pdo): void
           feature_label = VALUES(feature_label),
           page_slug = VALUES(page_slug),
           module_name = VALUES(module_name),
-          sort_order = VALUES(sort_order)");
+          sort_order = VALUES(sort_order),
+          is_active = 1");
     foreach (rbacFeatureCatalog() as $feature) {
         $insert->execute($feature);
     }
+    rbacRetireUnusedOtherMenu($pdo);
 
     $ready[$connectionKey] = true;
 }
@@ -391,8 +374,14 @@ function rbacVerifyToken(string $token): ?array
 
 function rbacRequireUser(PDO $pdo): array
 {
-    $payload = rbacVerifyToken(rbacTokenFromRequest());
-    $employeeId = $payload['employee_id'] ?? ($payload['id_peg'] ?? '');
+    // api/index.php sudah memvalidasi sesi dari cookie HttpOnly atau header
+    // Authorization sebelum route RBAC dipanggil. Gunakan identitas itu dulu;
+    // token parser di bawah hanya fallback untuk pemanggilan lama di luar router.
+    $payload = $GLOBALS['user'] ?? null;
+    if (!is_array($payload) || empty($payload['employee_id'] ?? $payload['id_peg'] ?? $payload['id'] ?? '')) {
+        $payload = rbacVerifyToken(rbacTokenFromRequest());
+    }
+    $employeeId = $payload['employee_id'] ?? ($payload['id_peg'] ?? ($payload['id'] ?? ''));
     $user = rbacFindUserByEmployeeId($pdo, $employeeId);
     if (!$user) {
         sendResponse(401, 'Sesi pengguna tidak valid atau data pegawai tidak ditemukan.');
@@ -599,7 +588,7 @@ function rbacMenuRows(PDO $pdo): array
 {
     rbacEnsureSchema($pdo);
     return $pdo->query("SELECT id, feature_key, feature_label, page_slug, module_name,
-        sort_order, is_active FROM rbac_menu ORDER BY sort_order, feature_label")->fetchAll(PDO::FETCH_ASSOC);
+        sort_order, is_active FROM rbac_menu WHERE is_active = 1 ORDER BY sort_order, feature_label")->fetchAll(PDO::FETCH_ASSOC);
 }
 
 function rbacPermissionRowsForRole(PDO $pdo, array $scope): array
