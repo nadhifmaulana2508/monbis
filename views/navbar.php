@@ -106,6 +106,8 @@ if (is_array($rbacInitialAccess ?? null)) {
   #raportCabangNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); }
   #raportCabangNavbarFilterPanel .dashboard-navbar-filter__submit { display:inline-flex !important; width:36px; min-width:36px; min-height:36px; padding:0; }
   #raportCabangNavbarFilterPanel .dashboard-navbar-filter__submit svg { width:17px; height:17px; }
+  #gambaranKreditNavbarFilterPanel { width:min(440px, calc(100vw - 24px)); }
+  #gambaranKreditNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
   @keyframes dashboardFilterIn { from { opacity:0; transform:translateY(-5px) scale(.99); } to { opacity:1; transform:translateY(0) scale(1); } }
   :root[data-monbis-theme="dark"] .dashboard-navbar-filter-toggle { background:#0b1220; border-color:#475569; color:#cbd5e1; }
   :root[data-monbis-theme="dark"] .dashboard-navbar-filter-toggle.is-active { color:#bfdbfe; border-color:#60a5fa; background:#172554; }
@@ -127,6 +129,7 @@ if (is_array($rbacInitialAccess ?? null)) {
     #ikhtisarNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
     #raportCabangNavbarFilterPanel { right:8px; width:calc(100vw - 16px); }
     #raportCabangNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    #gambaranKreditNavbarFilterPanel { right:8px; width:calc(100vw - 16px); }
   }
   @media (max-width:420px) {
     .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:7px; }
@@ -2186,6 +2189,30 @@ if (is_array($rbacInitialAccess ?? null)) {
       </form>
       <?php endif; ?>
 
+      <?php if (($page ?? '') === 'gambaran_kredit_cabang'): ?>
+      <div id="gambaranKreditNavbarFilterPanel" class="dashboard-navbar-filter hidden flex-col" aria-label="Filter Gambaran Kredit Cabang">
+        <div class="dashboard-navbar-filter__head">
+          <div>
+            <span class="dashboard-navbar-filter__eyebrow">Filter</span>
+            <strong class="dashboard-navbar-filter__title">Atur periode dan cabang</strong>
+          </div>
+          <button type="button" id="gambaranKreditNavbarFilterClose" class="dashboard-navbar-filter__close" aria-label="Tutup filter" title="Tutup filter">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+          </button>
+        </div>
+        <div class="dashboard-navbar-filter__fields">
+          <div class="dashboard-navbar-filter__field">
+            <label for="gkcDate">Bulan nominatif</label>
+            <input id="gkcDate" type="month">
+          </div>
+          <div class="dashboard-navbar-filter__field">
+            <label for="gkcOffice">Cabang</label>
+            <select id="gkcOffice" aria-label="Filter cabang"><option value="">Semua cabang</option></select>
+          </div>
+        </div>
+      </div>
+      <?php endif; ?>
+
       <?php if (($page ?? '') === 'recovery_npl'): ?>
       <form id="recoveryNplNavbarFilterPanel" class="dashboard-navbar-filter hidden flex-col" aria-label="Filter Recovery NPL" onsubmit="event.preventDefault(); fetchRecoveryData();">
         <div class="dashboard-navbar-filter__head">
@@ -2556,6 +2583,11 @@ if (is_array($rbacInitialAccess ?? null)) {
         <?php if (($page ?? '') === 'actual_kredit'): ?>
         <button type="button" id="actualKreditNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Report Actual Kredit" title="Buka filter Report Actual Kredit" aria-expanded="false" aria-controls="actualKreditNavbarFilterPanel">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+        </button>
+        <?php endif; ?>
+        <?php if (($page ?? '') === 'gambaran_kredit_cabang'): ?>
+        <button type="button" id="gambaranKreditNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Gambaran Kredit Cabang" title="Buka filter Gambaran Kredit Cabang" aria-expanded="false" aria-controls="gambaranKreditNavbarFilterPanel">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'recovery_npl'): ?>

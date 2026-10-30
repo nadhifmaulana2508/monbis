@@ -9,21 +9,30 @@ mb_ui_assets('.');
   .gkc-scroll { width:100%; min-width:0; max-width:100%; min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; -webkit-overflow-scrolling:touch; }
   .gkc-table { width:max-content; min-width:100%; border-collapse:separate; border-spacing:0; color:#1e293b; font-size:11px; }
   .gkc-table th,.gkc-table td { height:31px; padding:5px 9px; border-right:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
-  .gkc-table thead th { position:sticky; top:0; z-index:20; min-width:108px; background:#f1f5f9; color:#334155; font-size:9px; font-weight:800; text-align:center; }
-  .gkc-table thead tr:nth-child(2) th { top:31px; z-index:19; background:#f8fafc; font-size:9px; font-weight:600; }
-  .gkc-table .gkc-label { position:sticky !important; left:0 !important; inset-inline-start:0 !important; z-index:12; min-width:var(--gkc-label-width); text-align:left; background:#fff; background-clip:padding-box; box-shadow:4px 0 8px -8px rgba(15,23,42,.75); }
+  .gkc-table thead th { position:sticky; top:0; z-index:22; min-width:108px; background:#f1f5f9; color:#334155; font-size:9px; font-weight:800; text-align:center; }
+  .gkc-table thead tr:nth-child(2) th { top:var(--gkc-header-row-height,31px); z-index:21; background:#f8fafc; font-size:9px; font-weight:600; }
+  .gkc-table tr > :first-child { position:sticky !important; left:0 !important; inset-inline-start:0 !important; z-index:12; background-clip:padding-box; box-shadow:4px 0 8px -8px rgba(15,23,42,.75); }
+  .gkc-table tr > .gkc-label { min-width:var(--gkc-label-width); text-align:left; background:#fff; }
   .gkc-table .gkc-label:not([colspan]) { width:var(--gkc-label-width); min-width:var(--gkc-label-width); max-width:var(--gkc-label-width); overflow:hidden; text-overflow:ellipsis; }
-  .gkc-table thead .gkc-label { z-index:30; background:#eaf4ff; }
-  .gkc-table .gkc-total { position:sticky; right:0; z-index:13; min-width:120px; background:#f8fafc; font-weight:750; box-shadow:-4px 0 8px -8px rgba(15,23,42,.8); }
-  .gkc-table thead .gkc-total { z-index:31; background:#eaf4ff; }
+  .gkc-table thead tr > :first-child { z-index:45; background:#eaf4ff; }
+  .gkc-table thead tr:nth-child(2) > .gkc-label { position:sticky !important; top:var(--gkc-header-row-height,31px) !important; left:0 !important; inset-inline-start:0 !important; z-index:46 !important; width:var(--gkc-label-width) !important; min-width:var(--gkc-label-width) !important; max-width:var(--gkc-label-width) !important; background:#f8fafc; }
+  .gkc-table .gkc-total { min-width:120px; background:#f8fafc; font-weight:750; }
+  .gkc-table thead .gkc-total { background:#eaf4ff; }
   .gkc-table .gkc-section td { height:27px; background:#edf4f8; color:#35566a; font-weight:850; }
   .gkc-table .gkc-section .gkc-label { z-index:14; background:#edf4f8; }
   .gkc-table .gkc-value { text-align:right; font-variant-numeric:tabular-nums; }
   .gkc-table .gkc-empty { padding:32px 12px; color:#64748b; text-align:center; }
   .gkc-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 12px; border-bottom:1px solid #e2e8f0; }
-  .gkc-date { height:34px; width:150px; padding:0 9px; border:1px solid #cbd5e1; border-radius:8px; background:transparent; color:inherit; font-size:11px; }
-  .gkc-export-mode { height:34px; min-width:145px; padding:0 9px; border:1px solid #cbd5e1; border-radius:8px; background:transparent; color:inherit; font-size:11px; }
+  .gkc-controls { display:flex; align-items:center; flex-wrap:wrap; gap:6px; }
+  .gkc-export-wrap { position:relative; display:inline-flex; }
+  .gkc-export-menu { position:absolute; top:calc(100% + 6px); right:0; z-index:50; width:205px; padding:4px; border:1px solid #dbe3ee; border-radius:8px; background:var(--surface,#fff); box-shadow:0 8px 20px rgba(15,23,42,.14); }
+  .gkc-export-menu[hidden] { display:none; }
+  .gkc-export-option { display:block; width:100%; padding:8px 10px; border:0; border-radius:5px; background:transparent; color:inherit; text-align:left; font-size:11px; cursor:pointer; }
+  .gkc-export-option:hover,.gkc-export-option:focus-visible { background:#edf4f8; outline:none; }
   .gkc-btn { display:inline-flex; height:34px; align-items:center; gap:6px; padding:0 11px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; color:#334155; font-size:11px; font-weight:750; cursor:pointer; }
+  .gkc-export-button { width:36px; height:36px; justify-content:center; padding:0; border:0; border-radius:10px; background:#059669; color:#fff; box-shadow:0 1px 2px rgba(15,23,42,.12); }
+  .gkc-export-button:hover:not(:disabled) { background:#047857; }
+  .gkc-export-button:focus-visible { outline:2px solid #34d399; outline-offset:2px; }
   .gkc-btn:disabled { cursor:wait; opacity:.55; }
   .gkc-status { min-width:0; overflow:hidden; color:#64748b; font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
   :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #gambaranKreditPage { color:#e2e8f0; }
@@ -37,14 +46,13 @@ mb_ui_assets('.');
   :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #gambaranKreditPage .gkc-table .gkc-total { background:#172033; }
   :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #gambaranKreditPage .gkc-table .gkc-section td,:is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #gambaranKreditPage .gkc-table .gkc-section .gkc-label { background:#1d3340; color:#d4e7f0; }
   :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #gambaranKreditPage .gkc-table .gkc-empty,:is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #gambaranKreditPage .gkc-status { color:#94a3b8; }
-  :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #gambaranKreditPage .gkc-date,:is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #gambaranKreditPage .gkc-btn { border-color:#475569; background:#1e293b; color:#e2e8f0; }
-  :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #gambaranKreditPage .gkc-export-mode { border-color:#475569; background:#1e293b; color:#e2e8f0; }
+  :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #gambaranKreditPage .gkc-btn:not(.gkc-export-button) { border-color:#475569; background:#1e293b; color:#e2e8f0; }
+  :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) .gkc-export-menu { border-color:#475569; background:#1e293b; }
+  :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) .gkc-export-option:hover,:is(.mb-theme-dark,:root[data-monbis-theme="dark"]) .gkc-export-option:focus-visible { background:#334155; }
   @media(max-width:640px) {
     #gambaranKreditPage { --gkc-label-width:160px; height:calc(100dvh - 58px); padding:6px !important; }
     .gkc-toolbar { align-items:flex-start; flex-direction:column; gap:7px; }
     .gkc-controls { display:flex; width:100%; flex-wrap:wrap; gap:6px; }
-    .gkc-date { width:auto; min-width:120px; flex:1 1 120px; }
-    .gkc-export-mode { min-width:130px; flex:1 1 130px; }
     .gkc-table { font-size:9px; }
     .gkc-table th,.gkc-table td { padding:5px 7px; }
     .gkc-table .gkc-label { min-width:var(--gkc-label-width); }
@@ -61,21 +69,19 @@ mb_ui_assets('.');
         <p id="gkcMeta" class="gkc-status mt-1">Memuat tanggal nominatif…</p>
       </div>
       <div class="gkc-controls shrink-0">
-        <label class="sr-only" for="gkcDate">Bulan nominatif</label>
-        <input id="gkcDate" class="gkc-date" type="month">
-        <label class="sr-only" for="gkcExportMode">Rentang export</label>
-        <select id="gkcExportMode" class="gkc-export-mode">
-          <option value="ytd">Tahun berjalan (YTD)</option>
-          <option value="month">1 bulan</option>
-        </select>
         <button id="gkcRefresh" class="gkc-btn" type="button" title="Muat ulang data">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M5.6 9a7 7 0 0 1 11.6-2L20 12M4 12l2.8 5a7 7 0 0 0 11.6-2"/></svg>
           Update
         </button>
-        <button id="gkcExport" class="gkc-btn" type="button" disabled>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12m0 0 4-4m-4 4-4-4M5 17v4h14v-4"/></svg>
-          Export
-        </button>
+        <div class="gkc-export-wrap">
+          <button id="gkcExport" class="gkc-btn gkc-export-button" type="button" aria-label="Export Excel" title="Export Excel" aria-haspopup="menu" aria-expanded="false" aria-controls="gkcExportMenu" disabled>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 20h14"/></svg>
+          </button>
+          <div id="gkcExportMenu" class="gkc-export-menu" role="menu" hidden>
+            <button class="gkc-export-option" type="button" role="menuitem" data-export-mode="ytd">Tahun berjalan (YTD)</button>
+            <button class="gkc-export-option" type="button" role="menuitem" data-export-mode="month">1 bulan</button>
+          </div>
+        </div>
       </div>
     </header>
     <div class="gkc-scroll flex-1" id="gkcScroll" tabindex="0" aria-label="Tabel gambaran kredit per kantor">
@@ -95,7 +101,11 @@ mb_ui_assets('.');
   const meta = document.getElementById('gkcMeta');
   const refresh = document.getElementById('gkcRefresh');
   const exportButton = document.getElementById('gkcExport');
-  const exportModeSelect = document.getElementById('gkcExportMode');
+  const officeSelect = document.getElementById('gkcOffice');
+  const exportMenu = document.getElementById('gkcExportMenu');
+  const filterPanel = document.getElementById('gambaranKreditNavbarFilterPanel');
+  const filterToggle = document.getElementById('gambaranKreditNavbarFilterToggle');
+  const filterClose = document.getElementById('gambaranKreditNavbarFilterClose');
   const numberFormat = new Intl.NumberFormat('id-ID', {maximumFractionDigits:0});
   const productRows = [
     ['135','BKK Mikro'],['136','BKK Agrari'],['137','BKK Joglo'],['138','BKK Migunani'],['139','BKK Makaryo']
@@ -124,6 +134,57 @@ mb_ui_assets('.');
   const get = (office, key) => Number(office?.metrics?.[key] || 0);
   const format = (value, kind) => kind === 'count' ? numberFormat.format(Math.round(value)) : numberFormat.format(Math.round(value));
   const sum = (offices, key) => offices.reduce((total, office) => total + get(office, key), 0);
+  const syncStickyHeaderOffset = () => {
+    const firstRow = head.rows[0];
+    if (firstRow) head.style.setProperty('--gkc-header-row-height', `${firstRow.getBoundingClientRect().height}px`);
+  };
+  const requestReport = async (payload, signal) => {
+    const response = await fetch('./api/kredit/', {
+      method:'POST', credentials:'include', headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload), signal, cache:'no-store'
+    });
+    const json = await response.json();
+    if (!response.ok || Number(json.status) !== 200) throw new Error(json.message || 'Gagal memuat data laporan.');
+    return json.data;
+  };
+  const indexFlow = flow => new Map((flow?.data || []).map(row=>[String(row.kode_kantor).padStart(3,'0'),row]));
+  const officeAt = (snapshot, code) => (snapshot?.offices || []).find(office=>String(office.kode_kantor).padStart(3,'0') === code) || {kode_kantor:code,nama_kantor:'',metrics:{}};
+
+  async function loadOfficeTimeline(code, year, selectedMonth, currentOffice, signal) {
+    const priorYear = year - 1;
+    const priorYearEnd = `${priorYear}-12-31`;
+    const baseline = await requestReport({type:'gambaran_kredit_cabang',harian_date:priorYearEnd,resolve_latest_on_or_before:true},signal);
+    const timeline = [{label:`Akhir ${priorYear}`,snapshotDate:baseline.harian_date,office:officeAt(baseline,code),flow:null}];
+    const historicalMonths = Array.from({length:selectedMonth-1},(_,index)=>index+1);
+    const byMonth = new Map([[selectedMonth,{snapshotDate:currentData?.harian_date,office:currentOffice,flow:currentOffice?.flow || {}}]]);
+    for (let start=0; start<historicalMonths.length; start+=3) {
+      const batch = historicalMonths.slice(start,start+3);
+      const results = await Promise.all(batch.map(async month=>{
+        const end = new Date(year,month,0);
+        const endDate = `${year}-${String(month).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+        const previous = new Date(year,month-1,0);
+        const closingDate = `${previous.getFullYear()}-${String(previous.getMonth()+1).padStart(2,'0')}-${String(previous.getDate()).padStart(2,'0')}`;
+        const [snapshot,flow] = await Promise.all([
+          requestReport({type:'gambaran_kredit_cabang',harian_date:endDate,resolve_latest_on_or_before:true},signal),
+          requestReport({type:'rekap_realisasi_growth',closing_date:closingDate,harian_date:endDate,nominal_field:'baki_debet'},signal)
+        ]);
+        return [month,{snapshotDate:snapshot.harian_date,office:officeAt(snapshot,code),flow:indexFlow(flow).get(code) || {}}];
+      }));
+      results.forEach(([month,value])=>byMonth.set(month,value));
+    }
+    for (let month=1; month<=selectedMonth; month++) {
+      const value = byMonth.get(month) || {};
+      timeline.push({label:`${months[month-1]} ${year}`,snapshotDate:value.snapshotDate,office:value.office || {kode_kantor:code,metrics:{}},flow:value.flow || {}});
+    }
+    return timeline;
+  }
+
+  function updateOfficeOptions(offices) {
+    const selected = officeSelect.value;
+    const options = ['<option value="">Semua cabang</option>',...(offices || []).map(office=>`<option value="${escapeHtml(String(office.kode_kantor).padStart(3,'0'))}">${escapeHtml(office.kode_kantor)} · ${escapeHtml(office.nama_kantor)}</option>`)];
+    officeSelect.innerHTML = options.join('');
+    if ([...officeSelect.options].some(option=>option.value === selected)) officeSelect.value = selected;
+  }
 
   function descriptors(periodDate = currentData?.harian_date, includeFlow = true) {
     const rows = [];
@@ -161,7 +222,7 @@ mb_ui_assets('.');
     metric('ckpn_collective_total','CKPN Kolektif');
     metric('ckpn_individual_total','CKPN Individual');
     if (includeFlow) {
-      section(`PERGERAKAN BULAN ${months[Number((periodDate || '0000-01').slice(5,7)) - 1] || ''}`);
+      section(includeFlow === 'timeline' ? 'PERGERAKAN BULANAN' : `PERGERAKAN BULAN ${months[Number((periodDate || '0000-01').slice(5,7)) - 1] || ''}`);
       [
         ['noa_realisasi','NOA Realisasi Kredit','count'],['total_realisasi','Realisasi Kredit · Baki Debet','money'],
         ['noa_pelunasan','NOA Run Off Pelunasan','count'],['pelunasan','Run Off Pelunasan · Baki Debet','money'],
@@ -171,18 +232,27 @@ mb_ui_assets('.');
     return rows;
   }
 
-  function render(data) {
+  function render(data, timeline = null) {
     const offices = data.offices || [];
-    const rows = descriptors();
-    head.innerHTML = `<tr><th class="gkc-label">Kode Kantor</th>${offices.map(o=>`<th>${escapeHtml(o.kode_kantor)}</th>`).join('')}<th class="gkc-total">Total</th></tr><tr><th class="gkc-label">Nama Kantor</th>${offices.map(o=>`<th title="${escapeHtml(o.nama_kantor)}">${escapeHtml(o.nama_kantor)}</th>`).join('')}<th class="gkc-total">${offices.length} kantor</th></tr>`;
-    const hasData = offices.some(office => Object.keys(office.metrics || {}).length > 0);
+    const rows = descriptors(undefined,timeline ? 'timeline' : true);
+    if (timeline) {
+      head.innerHTML = `<tr><th class="gkc-label">Indikator</th>${timeline.map(period=>`<th title="Snapshot ${escapeHtml(period.snapshotDate || '-')}">${escapeHtml(period.label)}</th>`).join('')}</tr>`;
+    } else {
+      head.innerHTML = `<tr><th class="gkc-label">Kode Kantor</th>${offices.map(o=>`<th>${escapeHtml(o.kode_kantor)}</th>`).join('')}<th class="gkc-total">Total</th></tr><tr><th class="gkc-label">Nama Kantor</th>${offices.map(o=>`<th title="${escapeHtml(o.nama_kantor)}">${escapeHtml(o.nama_kantor)}</th>`).join('')}<th class="gkc-total">${offices.length} kantor</th></tr>`;
+    }
+    requestAnimationFrame(syncStickyHeaderOffset);
+    const hasData = timeline
+      ? timeline.some(period=>Object.keys(period.office?.metrics || {}).length > 0)
+      : offices.some(office => Object.keys(office.metrics || {}).length > 0);
     if (!hasData) {
-      body.innerHTML = `<tr><td class="gkc-empty" colspan="${offices.length + 2}">Tidak ada data untuk tanggal ${escapeHtml(data.harian_date)}.</td></tr>`;
+      body.innerHTML = `<tr><td class="gkc-empty" colspan="${timeline ? timeline.length + 1 : offices.length + 2}">Tidak ada data untuk tanggal ${escapeHtml(data.harian_date)}.</td></tr>`;
       exportButton.disabled = true;
       return;
     }
     body.innerHTML = rows.map(row => {
-      if (row.section) return `<tr class="gkc-section"><td class="gkc-label" colspan="${offices.length + 2}">${escapeHtml(row.section)}</td></tr>`;
+      const remainingCells = Array.from({length:timeline ? timeline.length : offices.length + 1},()=>'<td aria-hidden="true"></td>').join('');
+      if (row.section) return `<tr class="gkc-section"><th scope="rowgroup" class="gkc-label">${escapeHtml(row.section)}</th>${remainingCells}</tr>`;
+      if (timeline) return `<tr><th scope="row" class="gkc-label">${escapeHtml(row.label)}</th>${timeline.map(period=>`<td class="gkc-value">${row.key.startsWith('flow_') && !period.flow ? '–' : format(row.key.startsWith('flow_') ? Number(period.flow?.[row.key.slice(5)] || 0) : get(period.office,row.key),row.kind)}</td>`).join('')}</tr>`;
       return `<tr><th scope="row" class="gkc-label">${escapeHtml(row.label)}</th>${offices.map(o=>`<td class="gkc-value">${format(row.key.startsWith('flow_') ? Number(o.flow?.[row.key.slice(5)] || 0) : get(o,row.key),row.kind)}</td>`).join('')}<td class="gkc-value gkc-total">${format(row.key.startsWith('flow_') ? offices.reduce((s,o)=>s+Number(o.flow?.[row.key.slice(5)]||0),0) : sum(offices,row.key),row.kind)}</td></tr>`;
     }).join('');
     exportButton.disabled = !offices.length;
@@ -199,28 +269,26 @@ mb_ui_assets('.');
     meta.textContent = `Memuat snapshot nominatif akhir bulan ${selectedEndDate}…`;
     body.innerHTML = `<tr><td class="gkc-empty" colspan="${(currentData?.offices?.length || 28) + 2}">Memuat data…</td></tr>`;
     try {
-      const response = await fetch('./api/kredit/', {
-        method:'POST', credentials:'include', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({type:'gambaran_kredit_cabang',harian_date:selectedEndDate,resolve_latest_on_or_before:true}),
-        signal:controller.signal, cache:'no-store'
-      });
-      const json = await response.json();
-      if (!response.ok || Number(json.status) !== 200) throw new Error(json.message || 'Gagal memuat data laporan.');
+      const snapshot = await requestReport({type:'gambaran_kredit_cabang',harian_date:selectedEndDate,resolve_latest_on_or_before:true},controller.signal);
       if (id !== requestId) return;
-      currentData = json.data;
+      currentData = snapshot;
       const [year, month] = dateInput.value.split('-').map(Number);
       const closing = new Date(year, month - 1, 0);
       const closingDate = `${closing.getFullYear()}-${String(closing.getMonth()+1).padStart(2,'0')}-${String(closing.getDate()).padStart(2,'0')}`;
-      const flowResponse = await fetch('./api/kredit/', {
-        method:'POST', credentials:'include', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({type:'rekap_realisasi_growth',closing_date:closingDate,harian_date:selectedEndDate,nominal_field:'baki_debet'}),
-        signal:controller.signal, cache:'no-store'
-      });
-      const flowJson = await flowResponse.json();
-      if (!flowResponse.ok || Number(flowJson.status) !== 200) throw new Error(flowJson.message || 'Gagal memuat pergerakan kredit bulan ini.');
-      const flowByOffice = new Map((flowJson.data?.data || []).map(row=>[String(row.kode_kantor).padStart(3,'0'),row]));
+      const flowData = await requestReport({type:'rekap_realisasi_growth',closing_date:closingDate,harian_date:selectedEndDate,nominal_field:'baki_debet'},controller.signal);
+      if (id !== requestId) return;
+      const flowByOffice = indexFlow(flowData);
       currentData.offices = (currentData.offices || []).map(office=>({...office,flow:flowByOffice.get(String(office.kode_kantor).padStart(3,'0')) || {}}));
-      render(currentData);
+      updateOfficeOptions(currentData.offices);
+      const selectedOfficeCode = officeSelect.value;
+      let timeline = null;
+      if (selectedOfficeCode) {
+        meta.textContent = `Memuat riwayat ${officeSelect.selectedOptions[0]?.textContent || selectedOfficeCode}...`;
+        const selectedOffice = currentData.offices.find(office=>String(office.kode_kantor).padStart(3,'0') === selectedOfficeCode);
+        timeline = await loadOfficeTimeline(selectedOfficeCode,year,month,selectedOffice,controller.signal);
+        if (id !== requestId) return;
+      }
+      render(currentData,timeline);
       meta.textContent = `Snapshot ${currentData.harian_date} · Pergerakan ${months[month-1]} s.d. akhir bulan · nominal baki debet · EAD = Saldo Bank.`;
     } catch (error) {
       if (error.name === 'AbortError' || id !== requestId) return;
@@ -233,16 +301,16 @@ mb_ui_assets('.');
     }
   }
 
-  async function exportExcel() {
+  async function exportExcel(selectedMode = 'ytd') {
     if (!currentData?.offices?.length) return;
     const selectedYear = Number(dateInput.value.slice(0,4));
     const selectedMonth = Number(dateInput.value.slice(5,7));
     const selectedDate = dateInput.value;
-    const selectedMode = exportModeSelect.value;
+    const selectedBranchCode = officeSelect.value;
     const monthLabel = `${months[selectedMonth - 1]} ${selectedYear}`;
     const periodLabel = `akhir ${selectedYear - 1} + Januari–${months[selectedMonth - 1]} ${selectedYear}`;
     exportButton.disabled = true;
-    exportModeSelect.disabled = true;
+    closeExportMenu();
     meta.textContent = `Menyiapkan export ${periodLabel}…`;
     meta.textContent = `Menyiapkan export ${selectedMode === 'month' ? monthLabel : periodLabel}...`;
     const post = async payload => {
@@ -257,7 +325,8 @@ mb_ui_assets('.');
       const sheets = [];
       if (selectedMode === 'ytd') {
         const baseline = await post({type:'gambaran_kredit_cabang',harian_date:priorYearEnd,resolve_latest_on_or_before:true});
-        sheets.push({name:`Akhir ${priorYear}`,endDate:priorYearEnd,snapshotDate:baseline.harian_date,offices:baseline.offices || [],includeFlow:false});
+        const offices = (baseline.offices || []).filter(office=>!selectedBranchCode || String(office.kode_kantor).padStart(3,'0') === selectedBranchCode);
+        sheets.push({name:`Akhir ${priorYear}`,endDate:priorYearEnd,snapshotDate:baseline.harian_date,offices,includeFlow:false});
       }
       const exportMonths = selectedMode === 'month' ? [selectedMonth] : Array.from({length:selectedMonth},(_,index)=>index+1);
       for (let start=0; start<exportMonths.length; start+=3) {
@@ -272,11 +341,11 @@ mb_ui_assets('.');
             post({type:'rekap_realisasi_growth',closing_date:closingDate,harian_date:endDate,nominal_field:'baki_debet'})
           ]);
           const flowMap = new Map((flow.data || []).map(row=>[String(row.kode_kantor).padStart(3,'0'),row]));
-          const offices = (snapshot.offices || []).map(office=>({...office,flow:flowMap.get(String(office.kode_kantor).padStart(3,'0'))||{}}));
+          const offices = (snapshot.offices || []).filter(office=>!selectedBranchCode || String(office.kode_kantor).padStart(3,'0') === selectedBranchCode).map(office=>({...office,flow:flowMap.get(String(office.kode_kantor).padStart(3,'0'))||{}}));
           sheets.push({name:months[month-1],endDate,closingDate,snapshotDate:snapshot.harian_date,offices,includeFlow:true});
         });
         await Promise.all(batch);
-        if (dateInput.value !== selectedDate || exportModeSelect.value !== selectedMode) throw new Error('Tanggal atau rentang export berubah saat proses berlangsung. Silakan export ulang.');
+        if (dateInput.value !== selectedDate || officeSelect.value !== selectedBranchCode) throw new Error('Tanggal atau cabang berubah saat proses berlangsung. Silakan export ulang.');
         meta.textContent = `Data export ${selectedYear}: ${Math.min(start+2,selectedMonth)} dari ${selectedMonth} bulan selesai…`;
       }
       meta.textContent = `Data export ${selectedYear}: ${exportMonths.length} dari ${exportMonths.length} bulan selesai.`;
@@ -306,14 +375,59 @@ mb_ui_assets('.');
     } catch(error) {
       meta.textContent = error.message || 'Export gagal dibuat.';
     } finally {
-      exportModeSelect.disabled = false;
       exportButton.disabled = !currentData?.offices?.length;
     }
   }
 
   refresh.addEventListener('click',load);
   dateInput.addEventListener('change',load);
-  exportButton.addEventListener('click',exportExcel);
+  officeSelect.addEventListener('change',load);
+  const closeFilter = () => {
+    filterPanel?.classList.add('hidden');
+    filterToggle?.classList.remove('is-active');
+    filterToggle?.setAttribute('aria-expanded','false');
+  };
+  filterToggle?.addEventListener('click',()=>{
+    const isOpen = filterPanel.classList.contains('hidden');
+    filterPanel.classList.toggle('hidden',!isOpen);
+    filterToggle.classList.toggle('is-active',isOpen);
+    filterToggle.setAttribute('aria-expanded',String(isOpen));
+    if (isOpen) dateInput.focus();
+  });
+  filterClose?.addEventListener('click',closeFilter);
+  document.addEventListener('click',event=>{
+    if (filterPanel && !filterPanel.contains(event.target) && !filterToggle?.contains(event.target)) closeFilter();
+  });
+  document.addEventListener('keydown',event=>{
+    if (event.key === 'Escape' && filterPanel && !filterPanel.classList.contains('hidden')) {
+      closeFilter();
+      filterToggle?.focus();
+    }
+  });
+  const closeExportMenu = () => {
+    exportMenu.hidden = true;
+    exportButton.setAttribute('aria-expanded','false');
+  };
+  exportButton.addEventListener('click',()=>{
+    if (exportButton.disabled) return;
+    exportMenu.hidden = !exportMenu.hidden;
+    exportButton.setAttribute('aria-expanded',String(!exportMenu.hidden));
+    if (!exportMenu.hidden) exportMenu.querySelector('[role="menuitem"]')?.focus();
+  });
+  exportMenu.addEventListener('click',event=>{
+    const option = event.target.closest('[data-export-mode]');
+    if (option) exportExcel(option.dataset.exportMode);
+  });
+  document.addEventListener('click',event=>{
+    if (!event.target.closest('.gkc-export-wrap')) closeExportMenu();
+  });
+  document.addEventListener('keydown',event=>{
+    if (event.key === 'Escape' && !exportMenu.hidden) {
+      closeExportMenu();
+      exportButton.focus();
+    }
+  });
+  window.addEventListener('resize',syncStickyHeaderOffset);
   fetch('./api/date/',{credentials:'include',cache:'no-store'}).then(r=>r.json()).then(json=>{
     const latestDate = String(json.data?.last_created || '');
     const latestCompletedMonth = completedMonthValue(latestDate);
