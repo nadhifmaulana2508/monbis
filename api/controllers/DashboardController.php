@@ -1112,8 +1112,8 @@ class DashboardController{
      * Tren Saldo Bank berbasis snapshot nominatif.
      *
      * Hanya enam bulan terakhir yang dihitung supaya dashboard tetap ringan.
-     * Kenaikan saldo rekening dianggap realisasi, sedangkan penurunan saldo
-     * dan rekening yang hilang dari snapshot dianggap run off.
+     * Rekening baru dihitung sebagai realisasi, kenaikan saldo rekening lama
+     * dihitung sebagai restruck, keduanya memakai saldo_bank.
      */
     private function getTrenRunOffRealisasiSaldoBank(array $input): array {
         $harianDate = (string)($input['harian_date'] ?? date('Y-m-d'));
@@ -1146,26 +1146,6 @@ class DashboardController{
             if (isset($korwilBounds[$korwil])) {
                 return [
                     " AND {$alias}.kode_cabang BETWEEN :{$prefix}_korwil_start AND :{$prefix}_korwil_end",
-                    [
-                        ":{$prefix}_korwil_start" => $korwilBounds[$korwil][0],
-                        ":{$prefix}_korwil_end" => $korwilBounds[$korwil][1]
-                    ]
-                ];
-            }
-            return ['', []];
-        };
-
-        $flowFilterFor = static function (string $alias, string $prefix) use ($office, $korwil, $korwilBounds): array {
-            if ($office !== '' && $office !== '000' && strtoupper($office) !== 'ALL') {
-                $kode = ctype_digit($office) ? str_pad($office, 3, '0', STR_PAD_LEFT) : $office;
-                return [
-                    " AND {$alias}.kode_kantor = :{$prefix}_kode_kantor",
-                    [":{$prefix}_kode_kantor" => $kode]
-                ];
-            }
-            if (isset($korwilBounds[$korwil])) {
-                return [
-                    " AND {$alias}.kode_kantor BETWEEN :{$prefix}_korwil_start AND :{$prefix}_korwil_end",
                     [
                         ":{$prefix}_korwil_start" => $korwilBounds[$korwil][0],
                         ":{$prefix}_korwil_end" => $korwilBounds[$korwil][1]
@@ -1208,30 +1188,6 @@ class DashboardController{
             foreach ($snapshotStmt->fetchAll(PDO::FETCH_ASSOC) as $snapshot) {
                 $snapshotDate = (string)$snapshot['snapshot_date'];
                 $snapshotDates[substr($snapshotDate, 0, 7)] = $snapshotDate;
-            }
-
-            [$flowFilter, $flowParams] = $flowFilterFor('s', 'restruck');
-            $restruckSql = "
-                SELECT DATE_FORMAT(s.created, '%Y-%m') AS month_key,
-                       COALESCE(SUM(COALESCE(s.restrukturisasi, 0)), 0) AS restruck_kredit,
-                       COALESCE(SUM(COALESCE(s.noa_restrukturisasi, 0)), 0) AS noa_restruck
-                FROM summary_kredit_harian_update s
-                WHERE s.created >= :restruck_start
-                  AND s.created <= :restruck_end
-                  {$flowFilter}
-                GROUP BY DATE_FORMAT(s.created, '%Y-%m')
-            ";
-            $restruckStmt = $this->pdo->prepare($restruckSql);
-            $restruckStmt->execute(array_merge([
-                ':restruck_start' => $snapshotStart,
-                ':restruck_end' => $harianDate
-            ], $flowParams));
-            $restruckByMonth = [];
-            foreach ($restruckStmt->fetchAll(PDO::FETCH_ASSOC) as $restruckRow) {
-                $restruckByMonth[(string)$restruckRow['month_key']] = [
-                    'restruck_kredit' => (float)($restruckRow['restruck_kredit'] ?? 0),
-                    'noa_restruck' => (int)($restruckRow['noa_restruck'] ?? 0)
-                ];
             }
 
             // Semua pasangan snapshot dihitung dalam satu agregasi. Sebelumnya
@@ -1312,7 +1268,10 @@ class DashboardController{
                     $slot = $slotData['slot'];
                     $outerSelect[] = "COALESCE(SUM(a.{$current}), 0) AS current_total_{$slot}";
                     $outerSelect[] = "COALESCE(SUM(a.{$previous}), 0) AS previous_total_{$slot}";
-                    $outerSelect[] = "COALESCE(SUM(CASE WHEN a.{$current} > a.{$previous} THEN a.{$current} - a.{$previous} ELSE 0 END), 0) AS realisasi_{$slot}";
+                    $outerSelect[] = "COALESCE(SUM(CASE WHEN a.{$currentExists} = 1 AND a.{$previousExists} = 0 THEN a.{$current} ELSE 0 END), 0) AS realisasi_{$slot}";
+                    $outerSelect[] = "COALESCE(SUM(CASE WHEN a.{$currentExists} = 1 AND a.{$previousExists} = 1 AND a.{$current} > a.{$previous} THEN a.{$current} - a.{$previous} ELSE 0 END), 0) AS restruck_{$slot}";
+                    $outerSelect[] = "COALESCE(SUM(CASE WHEN a.{$currentExists} = 1 AND a.{$previousExists} = 0 THEN 1 ELSE 0 END), 0) AS noa_realisasi_{$slot}";
+                    $outerSelect[] = "COALESCE(SUM(CASE WHEN a.{$currentExists} = 1 AND a.{$previousExists} = 1 AND a.{$current} > a.{$previous} THEN 1 ELSE 0 END), 0) AS noa_restruck_{$slot}";
                     $outerSelect[] = "COALESCE(SUM(CASE WHEN a.{$currentExists} = 1 AND a.{$current} < a.{$previous} THEN a.{$previous} - a.{$current} ELSE 0 END), 0) AS angsuran_{$slot}";
                     $outerSelect[] = "COALESCE(SUM(CASE WHEN a.{$currentExists} = 1 AND a.{$current} < a.{$previous} THEN 1 ELSE 0 END), 0) AS noa_angsuran_{$slot}";
                     $outerSelect[] = "COALESCE(SUM(CASE WHEN a.{$currentExists} = 0 THEN a.{$previous} ELSE 0 END), 0) AS pelunasan_{$slot}";
@@ -1333,6 +1292,9 @@ class DashboardController{
                         'current_total' => (float)($bulkMetricsRow['current_total_' . $slot] ?? 0),
                         'previous_total' => (float)($bulkMetricsRow['previous_total_' . $slot] ?? 0),
                         'realisasi' => (float)($bulkMetricsRow['realisasi_' . $slot] ?? 0),
+                        'restruck' => (float)($bulkMetricsRow['restruck_' . $slot] ?? 0),
+                        'noa_realisasi' => (int)($bulkMetricsRow['noa_realisasi_' . $slot] ?? 0),
+                        'noa_restruck' => (int)($bulkMetricsRow['noa_restruck_' . $slot] ?? 0),
                         'angsuran' => (float)($bulkMetricsRow['angsuran_' . $slot] ?? 0),
                         'noa_angsuran' => (int)($bulkMetricsRow['noa_angsuran_' . $slot] ?? 0),
                         'pelunasan' => (float)($bulkMetricsRow['pelunasan_' . $slot] ?? 0),
@@ -1347,6 +1309,9 @@ class DashboardController{
                     'current_total' => 0.0,
                     'previous_total' => 0.0,
                     'realisasi' => 0.0,
+                    'restruck' => 0.0,
+                    'noa_realisasi' => 0,
+                    'noa_restruck' => 0,
                     'angsuran' => 0.0,
                     'noa_angsuran' => 0,
                     'pelunasan' => 0.0,
@@ -1356,20 +1321,21 @@ class DashboardController{
                 $currentTotal = (float)$metrics['current_total'];
                 $previousTotal = (float)$metrics['previous_total'];
                 $realisasi = (float)$metrics['realisasi'];
+                $restruck = (float)$metrics['restruck'];
                 $angsuran = (float)$metrics['angsuran'];
                 $pelunasan = (float)$metrics['pelunasan'];
                 $runoff = $angsuran + $pelunasan;
-                $restruckData = $restruckByMonth[$period['key']] ?? [];
-                $restruck = (float)($restruckData['restruck_kredit'] ?? 0);
+                $totalRealisasi = $realisasi + $restruck;
                 $result[] = [
                     'tanggal' => $period['key'],
                     'label' => $period['label'],
-                    'total_realisasi' => $realisasi,
+                    'total_realisasi' => $totalRealisasi,
                     'realisasi_kredit' => $realisasi,
+                    'realisasi' => $totalRealisasi,
                     'restruck_kredit' => $restruck,
                     'restrukturisasi' => $restruck,
-                    'noa_realisasi' => 0,
-                    'noa_restruck' => (int)($restruckData['noa_restruck'] ?? 0),
+                    'noa_realisasi' => (int)$metrics['noa_realisasi'],
+                    'noa_restruck' => (int)$metrics['noa_restruck'],
                     'total_lunas' => $pelunasan,
                     'noa_lunas' => (int)$metrics['noa_pelunasan'],
                     'total_angsuran' => $angsuran,
