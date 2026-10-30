@@ -129,6 +129,50 @@ function getSsoApiBase(): string
     return $resolved;
 }
 
+function getSsoAppCode(): string
+{
+    $value = getenv('SSO_APP_CODE');
+    if ($value === false || trim((string)$value) === '') $value = $_ENV['SSO_APP_CODE'] ?? '';
+    if (trim((string)$value) === '') {
+        $envFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
+        if (is_file($envFile) && is_readable($envFile)) {
+            $values = parse_ini_file($envFile, false, INI_SCANNER_RAW);
+            if (is_array($values)) $value = $values['SSO_APP_CODE'] ?? '';
+        }
+    }
+    $value = strtolower(trim((string)$value));
+    return preg_match('/^[a-z0-9][a-z0-9._-]{0,49}$/', $value) ? $value : 'monbis';
+}
+
+function getSsoAppToken(): string
+{
+    $value = getenv('SSO_APP_TOKEN');
+    if ($value === false || trim((string)$value) === '') $value = $_ENV['SSO_APP_TOKEN'] ?? '';
+    if (trim((string)$value) === '') {
+        $envFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
+        if (is_file($envFile) && is_readable($envFile)) {
+            foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
+                if (!preg_match('/^\s*(?:export\s+)?SSO_APP_TOKEN\s*=\s*(.*?)\s*$/', (string)$line, $match)) continue;
+                $value = trim($match[1]);
+                if (strlen($value) >= 2 && (($value[0] === '"' && substr($value, -1) === '"') || ($value[0] === "'" && substr($value, -1) === "'"))) {
+                    $value = substr($value, 1, -1);
+                } else {
+                    $value = preg_replace('/\s+#.*$/', '', $value);
+                }
+                break;
+            }
+        }
+    }
+    return trim((string)$value);
+}
+
+function getSsoAppHeaders(): array
+{
+    $token = getSsoAppToken();
+    if ($token === '' || preg_match('/[\r\n]/', $token)) return [];
+    return ['App: ' . getSsoAppCode(), 'X-App-Token: ' . $token];
+}
+
 /**
  * Optional internal address for reaching the SSO virtual host without routing
  * through this server's public IP. TLS still uses the hostname in the URL.

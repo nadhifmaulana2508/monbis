@@ -15,6 +15,10 @@ export default defineConfig(({ mode }) => ({
     port: 5174,
     strictPort: true,
     proxy: {
+      "/report-dpk/api": {
+        target: "http://localhost",
+        changeOrigin: true,
+      },
       "/api": {
         target: "http://localhost",
         changeOrigin: true,

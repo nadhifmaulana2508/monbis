@@ -93,7 +93,7 @@ function ssoWhoami(string $token): ?array
         curl_setopt_array($curl, [
             CURLOPT_RETURNTRANSFER=>true, CURLOPT_CONNECTTIMEOUT=>3, CURLOPT_TIMEOUT=>8,
             CURLOPT_RESOLVE=>getSsoCurlResolveEntries(),
-            CURLOPT_HTTPHEADER=>['Authorization: Bearer '.$token, 'Accept: application/json'],
+            CURLOPT_HTTPHEADER=>array_merge(getSsoAppHeaders(), ['Authorization: Bearer '.$token, 'Accept: application/json']),
         ]);
         $body = curl_exec($curl);
         $status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
@@ -103,7 +103,7 @@ function ssoWhoami(string $token): ?array
     } else {
         $context = stream_context_create(['http'=>[
             'method'=>'GET','timeout'=>8,'ignore_errors'=>true,
-            'header'=>"Authorization: Bearer {$token}\r\nAccept: application/json\r\n",
+            'header'=>implode("\r\n", array_merge(getSsoAppHeaders(), ["Authorization: Bearer {$token}", 'Accept: application/json'])) . "\r\n",
         ]]);
         $body = @file_get_contents($url, false, $context);
         if (!empty($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $match)) $status = (int)$match[1];

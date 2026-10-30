@@ -163,6 +163,7 @@ class KreditController {
         $harian_date  = $b['harian_date']  ?? date('Y-m-d');
         $kode_kantor  = $b['kode_kantor']  ?? null;
         $nominalField = strtolower(trim((string)($b['nominal_field'] ?? 'saldo_bank')));
+        $nominalField = $nominalField === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
         $nominalColumn = $nominalField === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
 
         // 2. Siapkan filter terpisah untuk sumber flow dan snapshot saldo bank.
@@ -347,6 +348,53 @@ class KreditController {
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+            // Untuk basis saldo bank, realisasi berasal dari nominatif aktual
+            // berdasarkan tanggal realisasi dan status non-restruk.
+            // Basis baki debet tetap memakai flow summary seperti sebelumnya.
+            $saldoBankRealisasiByUnit = [];
+            if ($nominalField === 'saldo_bank') {
+                $realisasiSql = "
+                    SELECT n.kode_cabang, n.kode_group1,
+                           COUNT(DISTINCT n.no_rekening) AS noa_realisasi,
+                           SUM(COALESCE(n.saldo_bank, 0)) AS saldo_bank
+                    FROM nominatif n
+                    WHERE n.created = :realisasi_snapshot_date
+                      AND n.tgl_realisasi > :realisasi_closing_date
+                      AND n.tgl_realisasi <= :realisasi_harian_date
+                      AND UPPER(TRIM(COALESCE(n.status_restruk, ''))) = 'NON RESTRUK'
+                      {$portfolioFilterSql}
+                      AND TRIM(COALESCE(n.no_rekening, '')) <> ''
+                    GROUP BY n.kode_cabang, n.kode_group1
+                ";
+                $realisasiStmt = $this->pdo->prepare($realisasiSql);
+                foreach (array_merge($portfolioParams, [
+                    ':realisasi_snapshot_date' => $harian_date,
+                    ':realisasi_closing_date' => $closing_date,
+                    ':realisasi_harian_date' => $harian_date,
+                ]) as $key => $value) {
+                    $realisasiStmt->bindValue($key, $value);
+                }
+                $realisasiStmt->execute();
+
+                $getUnitKey = static function (array $snapshot) use ($displayMode): string {
+                    $branch = (string)($snapshot['kode_cabang'] ?? '');
+                    if ($displayMode === 'BREAKDOWN_KANKAS') {
+                        $group = trim((string)($snapshot['kode_group1'] ?? ''));
+                        return $group !== '' ? $group : $branch . '000';
+                    }
+                    return $branch;
+                };
+
+                foreach ($realisasiStmt->fetchAll(PDO::FETCH_ASSOC) as $realisasiRow) {
+                    $unitKey = $getUnitKey($realisasiRow);
+                    if (!isset($saldoBankRealisasiByUnit[$unitKey])) {
+                        $saldoBankRealisasiByUnit[$unitKey] = ['noa' => 0, 'nominal' => 0.0];
+                    }
+                    $saldoBankRealisasiByUnit[$unitKey]['noa'] += (int)$realisasiRow['noa_realisasi'];
+                    $saldoBankRealisasiByUnit[$unitKey]['nominal'] += (float)$realisasiRow['saldo_bank'];
+                }
+            }
+
             // 5. Setup & Kalkulasi Grand Total
             $grandTotal = [
                 'kode_kantor'     => '', 
@@ -375,6 +423,13 @@ class KreditController {
                 $tot_real       = (float) $row['total_realisasi'];
                 $noa_res        = (int) $row['noa_restruck'];
                 $tot_res        = (float) $row['total_restruck'];
+                if ($nominalField === 'saldo_bank') {
+                    $saldoBankRealisasi = $saldoBankRealisasiByUnit[(string)$row['kode_kantor']] ?? [];
+                    $noa_real = (int)($saldoBankRealisasi['noa'] ?? 0);
+                    $tot_real = (float)($saldoBankRealisasi['nominal'] ?? 0);
+                    $noa_res = 0;
+                    $tot_res = 0.0;
+                }
                 $noa_lunas      = (int) $row['noa_pelunasan'];
                 $pelunasan      = (float) $row['total_pelunasan']; 
                 $noa_angsuran   = max(0, (int) $row['noa_angsuran_murni']);
@@ -389,6 +444,11 @@ class KreditController {
                 $growth         = $nominalField === 'saldo_bank'
                     ? $saldoActual - $saldoClosing
                     : (float) $row['growth'];
+                if ($nominalField === 'saldo_bank') {
+                    // Run Off menjadi selisih rekonsiliasi portofolio:
+                    // saldo awal + realisasi non-restruk - saldo akhir.
+                    $tot_run = $saldoClosing + $tot_real - $saldoActual;
+                }
 
                 $cleanedRows[] = [
                     'kode_kantor'     => $row['kode_kantor'],
@@ -456,10 +516,78 @@ class KreditController {
         $closing_date = $b['closing_date'] ?? date('Y-m-d', strtotime('last day of previous month'));
         $harian_date  = $b['harian_date']  ?? date('Y-m-d');
         $kode_trans   = $b['kode_trans']   ?? null; // 110 = Baru, 109 = Restruck
-
-        $page   = isset($b['page']) ? (int)$b['page'] : 1;
-        $limit  = isset($b['limit']) ? (int)$b['limit'] : 20; 
+        $page   = isset($b['page']) ? max(1, (int)$b['page']) : 1;
+        $limit  = isset($b['limit']) ? max(1, (int)$b['limit']) : 20;
         $offset = ($page - 1) * $limit;
+
+        if (strtolower(trim((string)($b['nominal_field'] ?? ''))) === 'saldo_bank' && (string)$kode_trans === '110') {
+            $filterData = buildBankFilters($b, 'n');
+            $filterSql = str_replace(
+                'n.kode_group1 = :kankas',
+                "COALESCE(NULLIF(TRIM(n.kode_group1), ''), CONCAT(n.kode_cabang, '000')) = :kankas",
+                $filterData['sql']
+            );
+            $paramsBind = $filterData['params'];
+            if (!empty($b['pusat_only']) && (string)($b['kode_kantor'] ?? '') === '000') {
+                $filterSql .= ' AND n.kode_cabang = :kode_kantor_pusat';
+                $paramsBind[':kode_kantor_pusat'] = '000';
+            }
+            $paramsBind[':snapshot_date'] = $harian_date;
+            $paramsBind[':closing_date'] = $closing_date;
+            $paramsBind[':harian_date'] = $harian_date;
+
+            $where = "WHERE n.created = :snapshot_date
+                      AND n.tgl_realisasi > :closing_date
+                      AND n.tgl_realisasi <= :harian_date
+                      AND UPPER(TRIM(COALESCE(n.status_restruk, ''))) = 'NON RESTRUK'
+                      AND TRIM(COALESCE(n.no_rekening, '')) <> '' {$filterSql}";
+
+            try {
+                $countStmt = $this->pdo->prepare("SELECT COUNT(DISTINCT n.no_rekening) FROM nominatif n {$where}");
+                foreach ($paramsBind as $key => $value) $countStmt->bindValue($key, $value);
+                $countStmt->execute();
+                $total_records = (int)$countStmt->fetchColumn();
+
+                $detailSql = "
+                    SELECT n.no_rekening, n.nama_nasabah,
+                           n.saldo_bank AS plafond, n.baki_debet,
+                           n.tgl_realisasi, n.tgl_jatuh_tempo,
+                           n.kode_cabang AS kode_cabang, 110 AS kode_trans,
+                           COALESCE(k.deskripsi_group1, COALESCE(NULLIF(TRIM(n.kode_group1), ''), CONCAT(n.kode_cabang, '000'))) AS nama_kankas,
+                           COALESCE(ao.nama_ao, n.kode_group2) AS nama_ao,
+                           n.alamat
+                    FROM nominatif n
+                    LEFT JOIN kankas k ON k.kode_group1 = COALESCE(NULLIF(TRIM(n.kode_group1), ''), CONCAT(n.kode_cabang, '000'))
+                    LEFT JOIN ao_kredit ao ON n.kode_group2 = ao.kode_group2 AND n.kode_cabang = ao.kode_kantor
+                    {$where}
+                    ORDER BY n.tgl_realisasi DESC, n.no_rekening ASC
+                    LIMIT :limit OFFSET :offset
+                ";
+                $detailStmt = $this->pdo->prepare($detailSql);
+                foreach ($paramsBind as $key => $value) $detailStmt->bindValue($key, $value);
+                $detailStmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+                $detailStmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+                $detailStmt->execute();
+                $data = $detailStmt->fetchAll(PDO::FETCH_ASSOC);
+                foreach ($data as &$row) {
+                    $row['plafond'] = (float)$row['plafond'];
+                    $row['baki_debet'] = (float)$row['baki_debet'];
+                }
+                unset($row);
+
+                sendResponse(200, 'Detail Realisasi Nominatif Sukses', [
+                    'total_records' => $total_records,
+                    'total_pages' => (int)ceil($total_records / $limit),
+                    'current_page' => $page,
+                    'data' => $data
+                ]);
+                return;
+            } catch (Exception $e) {
+                error_log('Error getDetailRealisasiNominatif: ' . $e->getMessage());
+                sendResponse(500, 'Error DB: ' . $e->getMessage());
+                return;
+            }
+        }
 
         // 2. Panggil Helper Filter (Prefix 't1')
         $filterData = buildBankFilters($b, 't1');
@@ -506,6 +634,7 @@ class KreditController {
                     t1.nama_nasabah,
                     t1.realisasi_pokok AS plafond,
                     t1.realisasi_pokok AS baki_debet,
+                    CASE WHEN n_actual.no_rekening IS NULL THEN 1 ELSE 0 END AS is_lunas_actual,
                     t1.tanggal_realisasi AS tgl_realisasi,
                     NULL AS tgl_jatuh_tempo, 
                     t1.kode_kantor AS kode_cabang,
@@ -515,6 +644,11 @@ class KreditController {
                     COALESCE(ao.nama_ao, t1.kode_group2) AS nama_ao,
                     t1.alamat
                 FROM update_realisasi_kredit t1
+                LEFT JOIN (
+                    SELECT DISTINCT no_rekening
+                    FROM nominatif
+                    WHERE created = :actual_snapshot_date
+                ) n_actual ON n_actual.no_rekening = t1.no_rekening
                 LEFT JOIN kankas k ON k.kode_group1 = COALESCE(NULLIF(t1.kode_group1, ''), CONCAT(t1.kode_kantor, '000'))
                 LEFT JOIN ao_kredit ao ON t1.kode_group2 = ao.kode_group2 AND t1.kode_kantor = ao.kode_kantor
                 $where
@@ -524,9 +658,11 @@ class KreditController {
             ";
 
             $stmt = $this->pdo->prepare($sql);
+            $detailParamsBind = $paramsBind;
+            $detailParamsBind[':actual_snapshot_date'] = $harian_date;
             
             // Bind Semua Parameter
-            foreach ($paramsBind as $k => $v) {
+            foreach ($detailParamsBind as $k => $v) {
                 $stmt->bindValue($k, $v);
             }
             $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
@@ -539,6 +675,7 @@ class KreditController {
             foreach ($data as &$row) {
                 $row['plafond']    = (float) $row['plafond'];
                 $row['baki_debet'] = (float) $row['baki_debet'];
+                $row['is_lunas_actual'] = (bool) $row['is_lunas_actual'];
             }
             unset($row);
 
@@ -3310,8 +3447,14 @@ class KreditController {
             $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS kredit_dpd_{$key}";
             $metrics[] = "COUNT(DISTINCT CASE WHEN {$condition} THEN x.no_rekening END) AS noa_dpd_{$key}";
             $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.saldo_bank,0) ELSE 0 END) AS ead_dpd_{$key}";
-            $metrics[] = "SUM(CASE WHEN {$condition} AND UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'COLLECTIVE' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_dpd_{$key}";
-            $metrics[] = "SUM(CASE WHEN {$condition} AND UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'INDIVIDUAL' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_individual_dpd_{$key}";
+            $ckpnDpdCondition = $condition;
+            if ((string)$key === '0') {
+                $ckpnDpdCondition = "({$condition}) AND UPPER(TRIM(COALESCE(x.status_rekening_ckpn,''))) <> 'TERDAPAT TUNGGAKAN ATAU RESTRUK'";
+            } elseif ((string)$key === '8_30') {
+                $ckpnDpdCondition = "({$condition}) OR (COALESCE(x.hari_menunggak,0) = 0 AND UPPER(TRIM(COALESCE(x.status_rekening_ckpn,''))) = 'TERDAPAT TUNGGAKAN ATAU RESTRUK')";
+            }
+            $metrics[] = "SUM(CASE WHEN ({$ckpnDpdCondition}) AND UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'COLLECTIVE' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_dpd_{$key}";
+            $metrics[] = "SUM(CASE WHEN ({$ckpnDpdCondition}) AND UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'INDIVIDUAL' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_individual_dpd_{$key}";
         }
 
         $kolekConditions = [
@@ -3335,6 +3478,7 @@ class KreditController {
             FROM (
                 SELECT n.kode_cabang, n.no_rekening, n.kolektibilitas, n.hari_menunggak,
                        n.baki_debet, n.saldo_bank, n.jml_pinjaman, n.nilai_ckpn, n.metode_hitung_ckpn,
+                       n.status_rekening_ckpn,
                        COALESCE(NULLIF(TRIM(CAST(pk.kode_baru AS CHAR)), ''), CAST(n.kode_produk AS CHAR)) AS kode_produk_laporan
                 FROM nominatif n
                 LEFT JOIN produk_kredit pk ON CAST(pk.kode_produk AS CHAR) = CAST(n.kode_produk AS CHAR)

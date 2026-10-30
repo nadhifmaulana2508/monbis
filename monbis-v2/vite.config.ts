@@ -11,6 +11,13 @@ const apiProxy = {
   },
 }
 
+const localApiProxy = {
+  '/report-dpk/api': {
+    target: 'http://localhost',
+    changeOrigin: true,
+  },
+}
+
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => ({
   base: command !== 'build'
@@ -19,8 +26,8 @@ export default defineConfig(({ command, mode }) => ({
       ? '/report-dpk/v2-react/'
       : '/v2-react/',
   plugins: [react(), tailwindcss()],
-  server: { proxy: apiProxy },
-  preview: { host: 'localhost', port: 4173, strictPort: true, proxy: apiProxy },
+  server: { proxy: { ...apiProxy, ...localApiProxy } },
+  preview: { host: 'localhost', port: 4173, strictPort: true, proxy: { ...apiProxy, ...localApiProxy } },
   resolve: {
     alias: {
       '@': path.resolve(process.cwd(), 'src'),

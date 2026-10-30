@@ -292,6 +292,7 @@ async function fetchRekap() {
     const nominalField = document.getElementById('realisasiGrowthNominalField')?.value === 'baki_debet'
         ? 'baki_debet'
         : 'saldo_bank';
+    const visibleColumnCount = 9;
 
     if (!tbody) return;
 
@@ -300,7 +301,7 @@ async function fetchRekap() {
     abortMain = new AbortController();
 
     loading?.classList.remove('hidden');
-    tbody.innerHTML = `<tr><td colspan="10" class="py-12 text-center text-slate-400 italic">Sedang mengambil data...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${visibleColumnCount}" class="py-12 text-center text-slate-400 italic">Sedang mengambil data...</td></tr>`;
 
     rekapDataCache = [];
     rekapGtCache = null;
@@ -346,7 +347,7 @@ async function fetchRekap() {
         processAndRenderTable(rekapDataCache, rekapGtCache);
     } catch (err) {
         if (err.name !== 'AbortError' && requestId === mainRequestSequence) {
-            tbody.innerHTML = `<tr><td colspan="10" class="py-12 text-center text-red-500 font-bold">Error: ${escapeHtml(err.message)}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="${visibleColumnCount}" class="py-12 text-center text-red-500 font-bold">Error: ${escapeHtml(err.message)}</td></tr>`;
         }
     } finally {
         if (requestId === mainRequestSequence) loading?.classList.add('hidden');
@@ -361,6 +362,7 @@ function renderHeaderClickable() {
     const thead = document.getElementById('headUtama');
     if (!thead) return;
 
+    const hideRestruck = true;
     const nominalLabel = nominalFieldReal === 'baki_debet' ? 'BAKI DEBET' : 'SALDO BANK';
     const closingLabel = formatHeaderDate(document.getElementById('closing_date')?.value);
     const actualLabel = formatHeaderDate(document.getElementById('harian_date')?.value);
@@ -390,6 +392,7 @@ function renderHeaderClickable() {
 
         <tr id="rowTotalAtas" class="mob-row-tot text-[9px] md:text-xs font-extrabold tracking-wide"></tr>
     `;
+    if (hideRestruck) thead.querySelector('tr:first-child')?.children[4]?.remove();
 }
 
 
@@ -435,9 +438,11 @@ window.sortMainData = function(column) {
 function processAndRenderTable(rows, gt) {
     const tbody = document.getElementById('bodyUtama');
     if (!tbody) return;
+    const hideRestruck = true;
+    const visibleColumnCount = hideRestruck ? 9 : 10;
 
     if (!rows || rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" class="py-12 text-center text-slate-400 italic">Tidak ada transaksi.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${visibleColumnCount}" class="py-12 text-center text-slate-400 italic">Tidak ada transaksi.</td></tr>`;
         const rowTotal = document.getElementById('rowTotalAtas');
         if (rowTotal) rowTotal.innerHTML = '';
         return;
@@ -480,6 +485,7 @@ function processAndRenderTable(rows, gt) {
     });
 
     tbody.innerHTML = html;
+    if (hideRestruck) Array.from(tbody.rows).forEach(row => row.children[4]?.remove());
 
     if (!gt) return;
 
@@ -516,6 +522,7 @@ function processAndRenderTable(rows, gt) {
         <th class="rkg-balance-col rkg-amount text-cyan-900 bg-cyan-100/40 font-mono font-bold pr-1.5 border-r border-blue-300" title="${fmt(gtNominalActual)}">${fmtCellNominal(gtNominalActual)}</th>
         <th class="rkg-growth-col rkg-amount font-mono font-black pr-2 ${gtColor}" title="${fmt(gtGrowth)}">${fmtGrowth(gtGrowth)}</th>
     `;
+    if (hideRestruck) rowTotalAtas.children[4]?.remove();
 }
 
 
@@ -525,6 +532,7 @@ function processAndRenderTable(rows, gt) {
 window.exportExcelRekap = function() {
     if (rekapDataCache.length === 0) return alert("Tidak ada data untuk diexport.");
 
+    const hideRestruck = true;
     let tableRows = '';
 
     rekapDataCache.forEach(r => {
@@ -536,8 +544,7 @@ window.exportExcelRekap = function() {
                 <td>${escapeExcel(r.nama_kantor || '')}</td>
                 <td class="count">${escapeExcel(fmtCellCount(r.noa_realisasi))}</td>
                 <td class="amount">${escapeExcel(fmtCellNominal(r.total_realisasi))}</td>
-                <td class="count">${escapeExcel(fmtCellCount(r.noa_restruck))}</td>
-                <td class="amount">${escapeExcel(fmtCellNominal(r.total_restruck))}</td>
+                ${hideRestruck ? '' : `<td class="count">${escapeExcel(fmtCellCount(r.noa_restruck))}</td><td class="amount">${escapeExcel(fmtCellNominal(r.total_restruck))}</td>`}
                 <td class="amount">${escapeExcel(fmtCellNominal(r.pelunasan))}</td>
                 <td class="amount">${escapeExcel(fmtCellNominal(r.angsuran_murni))}</td>
                 <td class="amount">${escapeExcel(fmtCellNominal(r.total_run_off))}</td>
@@ -568,8 +575,7 @@ window.exportExcelRekap = function() {
                             <th>Nama Kantor</th>
                             <th>NOA Realisasi</th>
                             <th>Nominal Realisasi</th>
-                            <th>NOA Restruck</th>
-                            <th>Nominal Restruck</th>
+                            ${hideRestruck ? '' : '<th>NOA Restruck</th><th>Nominal Restruck</th>'}
                             <th>Pelunasan</th>
                             <th>Angsuran Murni</th>
                             <th>Total Run Off</th>
@@ -605,6 +611,7 @@ window.openDetailModal = function(kode_area, kode_trans, nama_area, kode_kankas 
         type: "detail_realisasi_growth",
         closing_date: document.getElementById('closing_date')?.value || '',
         harian_date: document.getElementById('harian_date')?.value || '',
+        nominal_field: nominalFieldReal,
         kode_trans: String(kode_trans)
     };
 
@@ -787,6 +794,7 @@ async function populateAoModalOptions() {
 function renderDetailHeaderClickable() {
     const thead = document.getElementById('headModalDetail');
     if (!thead) return;
+    const detailNominalLabel = nominalFieldReal === 'saldo_bank' ? 'Saldo Bank' : 'Plafond';
 
     thead.innerHTML = `
         <tr>
@@ -815,7 +823,7 @@ function renderDetailHeaderClickable() {
             </th>
 
             <th class="px-2 md:px-4 py-1.5 md:py-2 border-b border-slate-300 w-[100px] md:w-[140px] text-right cursor-pointer hover:bg-slate-200 transition" onclick="sortDetailData('plafond')">
-                <div class="flex justify-end items-center">Plafond${getSortIconDetail('plafond')}</div>
+                <div class="flex justify-end items-center">${detailNominalLabel}${getSortIconDetail('plafond')}</div>
             </th>
         </tr>
     `;
@@ -838,16 +846,21 @@ function renderTableDetailBody(list) {
 
         const tgl = getRowTglRealisasi(row);
         const namaAo = getRowAoNama(row);
+        const lunasBadge = row.is_lunas_actual
+            ? '<span class="inline-block mt-0.5 rounded bg-rose-100 px-1 py-0.5 text-[8px] font-bold tracking-wide text-rose-700">LUNAS</span>'
+            : '';
 
         html += `
-            <tr class="hover:bg-slate-50 border-b border-slate-100 transition h-[42px] md:h-[48px] group">
+            <tr class="hover:bg-slate-50 border-b border-slate-100 transition min-h-[42px] md:min-h-[48px] group">
                 <td class="hidden md:table-cell px-2 md:px-3 py-1.5 md:py-2 font-mono text-[9.5px] md:text-[11px] text-slate-500 border-r border-slate-100">
                     ${escapeHtml(row.no_rekening || '')}
+                    ${lunasBadge}
                 </td>
 
                 <td class="px-2 md:px-4 py-1.5 md:py-2 font-bold text-[9.5px] md:text-[11px] text-slate-700 truncate border-r border-slate-100" title="${escapeHtml(row.nama_nasabah || '')}">
                     <div class="truncate max-w-[150px] md:max-w-none">${escapeHtml(row.nama_nasabah || '-')}</div>
                     <div class="md:hidden text-[8.5px] text-slate-400 font-mono mt-0.5">${escapeHtml(row.no_rekening || '')}</div>
+                    <div class="md:hidden">${lunasBadge}</div>
                     <div class="md:hidden text-[8.5px] text-blue-600 font-semibold mt-0.5 truncate">${escapeHtml(namaAo)}</div>
                 </td>
 
@@ -1096,6 +1109,7 @@ window.exportExcelDetailReal = async function(e) {
             return;
         }
 
+        const detailNominalLabel = nominalFieldReal === 'saldo_bank' ? 'Saldo Bank' : 'Plafond';
         let tableRows = '';
 
         rows.forEach((x, i) => {
@@ -1105,7 +1119,7 @@ window.exportExcelDetailReal = async function(e) {
             tableRows += `
                 <tr>
                     <td style="text-align:center;">${i + 1}</td>
-                    <td style="mso-number-format:'\\@';">${escapeExcel(x.no_rekening || '')}</td>
+                    <td style="mso-number-format:'\\@';">${escapeExcel(x.no_rekening || '')}${x.is_lunas_actual ? '<br>LUNAS' : ''}</td>
                     <td>${escapeExcel(x.nama_nasabah || '')}</td>
                     <td>${escapeExcel(x.alamat || '')}</td>
                     <td>${escapeExcel(x.nama_kankas || '')}</td>
@@ -1156,7 +1170,7 @@ window.exportExcelDetailReal = async function(e) {
                             <th>Kankas</th>
                             <th>AO</th>
                             <th>Tgl Realisasi</th>
-                            <th>Plafond</th>
+                            <th>${detailNominalLabel}</th>
                         </tr>
                         ${tableRows}
                     </table>

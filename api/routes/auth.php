@@ -9,6 +9,54 @@ $request = trim((string)($_GET['request'] ?? ''), '/');
 $endpoint = explode('/', $request)[1] ?? '';
 header('Cache-Control: no-store, private');
 
+function forwardSsoAuthPost(string $endpoint, array $input, string $token = ''): void
+{
+    $appHeaders = getSsoAppHeaders();
+    if (!$appHeaders) sendResponse(503, 'Token aplikasi SSO belum dikonfigurasi di api/.env.');
+
+    $url = rtrim(getSsoApiBase(), '/') . '/api/auth/' . $endpoint;
+    $headers = array_merge($appHeaders, ['Content-Type: application/json', 'Accept: application/json']);
+    if ($token !== '') $headers[] = 'Authorization: Bearer ' . $token;
+    $payload = json_encode($input);
+    $body = false;
+    $status = 0;
+    if (function_exists('curl_init')) {
+        $curl = curl_init($url);
+        curl_setopt_array($curl, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 5,
+            CURLOPT_TIMEOUT => 15,
+            CURLOPT_RESOLVE => getSsoCurlResolveEntries(),
+            CURLOPT_POST => true,
+            CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_POSTFIELDS => $payload,
+        ]);
+        $body = curl_exec($curl);
+        $status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        curl_close($curl);
+    } else {
+        $context = stream_context_create(['http' => [
+            'method' => 'POST',
+            'timeout' => 15,
+            'ignore_errors' => true,
+            'header' => implode("\r\n", $headers) . "\r\n",
+            'content' => $payload,
+        ]]);
+        $body = @file_get_contents($url, false, $context);
+        if (!empty($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $match)) {
+            $status = (int)$match[1];
+        }
+    }
+
+    if (!is_string($body) || $status < 200 || $status >= 600) {
+        sendResponse(502, 'Layanan autentikasi SSO sedang tidak dapat digunakan.');
+    }
+    http_response_code($status);
+    header('Content-Type: application/json; charset=utf-8');
+    echo $body;
+    exit;
+}
+
 if ($endpoint === 'login' && $method === 'POST') {
     $origin = trim((string)($_SERVER['HTTP_ORIGIN'] ?? ''));
     $originHost = strtolower((string)(parse_url($origin, PHP_URL_HOST) ?? ''));
@@ -23,6 +71,8 @@ if ($endpoint === 'login' && $method === 'POST') {
     if ($employeeId === '' || $password === '') {
         sendResponse(422, 'ID pegawai dan password wajib diisi.');
     }
+    $appHeaders = getSsoAppHeaders();
+    if (!$appHeaders) sendResponse(503, 'Token aplikasi SSO belum dikonfigurasi di api/.env.');
 
     $loginUrl = rtrim(getSsoApiBase(), '/') . '/api/auth/login';
     $payload = json_encode(['id_peg' => $employeeId, 'password' => $password, 'app' => 'monbis']);
@@ -38,7 +88,7 @@ if ($endpoint === 'login' && $method === 'POST') {
             CURLOPT_TIMEOUT => 15,
             CURLOPT_RESOLVE => getSsoCurlResolveEntries(),
             CURLOPT_POST => true,
-            CURLOPT_HTTPHEADER => ['Content-Type: application/json', 'Accept: application/json'],
+            CURLOPT_HTTPHEADER => array_merge($appHeaders, ['Content-Type: application/json', 'Accept: application/json']),
             CURLOPT_POSTFIELDS => $payload,
         ]);
         $body = curl_exec($curl);
@@ -51,7 +101,7 @@ if ($endpoint === 'login' && $method === 'POST') {
             'method' => 'POST',
             'timeout' => 15,
             'ignore_errors' => true,
-            'header' => "Content-Type: application/json\r\nAccept: application/json\r\n",
+            'header' => implode("\r\n", array_merge($appHeaders, ['Content-Type: application/json', 'Accept: application/json'])) . "\r\n",
             'content' => $payload,
         ]]);
         $body = @file_get_contents($loginUrl, false, $context);
@@ -142,6 +192,12 @@ if ($endpoint === 'keepalive' && $method === 'GET') {
     sendResponse(200, 'Sesi masih aktif.');
 }
 
+if (in_array($endpoint, ['forgot-password', 'verify-otp', 'reset-password'], true) && $method === 'POST') {
+    $input = json_decode((string)file_get_contents('php://input'), true);
+    if (!is_array($input)) sendResponse(400, 'Data permintaan tidak valid.');
+    forwardSsoAuthPost($endpoint, $input);
+}
+
 if (in_array($endpoint, ['update-profile', 'change-password'], true) && $method === 'POST') {
     requireAppAuth();
     $token = trim((string)($_COOKIE['monbis_session'] ?? ''));
@@ -161,11 +217,11 @@ if (in_array($endpoint, ['update-profile', 'change-password'], true) && $method 
             CURLOPT_TIMEOUT => 15,
             CURLOPT_RESOLVE => getSsoCurlResolveEntries(),
             CURLOPT_POST => true,
-            CURLOPT_HTTPHEADER => [
+            CURLOPT_HTTPHEADER => array_merge(getSsoAppHeaders(), [
                 'Content-Type: application/json',
                 'Accept: application/json',
                 'Authorization: Bearer ' . $token,
-            ],
+            ]),
             CURLOPT_POSTFIELDS => $payload,
         ]);
         $body = curl_exec($curl);
@@ -176,7 +232,7 @@ if (in_array($endpoint, ['update-profile', 'change-password'], true) && $method 
             'method' => 'POST',
             'timeout' => 15,
             'ignore_errors' => true,
-            'header' => "Content-Type: application/json\r\nAccept: application/json\r\nAuthorization: Bearer {$token}\r\n",
+            'header' => implode("\r\n", array_merge(getSsoAppHeaders(), ["Content-Type: application/json", 'Accept: application/json', "Authorization: Bearer {$token}"])) . "\r\n",
             'content' => $payload,
         ]]);
         $body = @file_get_contents($url, false, $context);

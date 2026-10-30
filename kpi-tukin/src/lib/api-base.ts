@@ -16,7 +16,7 @@ function isLocalHost() {
 function configuredApiBase() {
   const value = String(import.meta.env.VITE_API_BASE_URL || "").trim().replace(/\/$/, "")
   if (value) return value
-  if (import.meta.env.DEV) return "/api"
+  if (import.meta.env.DEV) return isLocalHost() ? "/report-dpk/api" : "/api"
   if (isLocalHost()) return LOCAL_API
   return isMonbisHost() ? "/api" : REMOTE_API
 }

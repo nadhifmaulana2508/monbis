@@ -4,14 +4,15 @@ mb_ui_assets('.');
 ?>
 
 <style>
-  #gambaranKreditPage { height:calc(100dvh - 70px); min-height:360px; }
-  .gkc-card { min-height:0; overflow:hidden; border:1px solid #dbe3ee; border-radius:12px; background:var(--surface,#fff); }
-  .gkc-scroll { min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; -webkit-overflow-scrolling:touch; }
+  #gambaranKreditPage { --gkc-label-width:205px; width:100%; min-width:0; max-width:none; box-sizing:border-box; height:calc(100dvh - 70px); min-height:360px; }
+  .gkc-card { width:100%; min-width:0; min-height:0; overflow:hidden; border:1px solid #dbe3ee; border-radius:12px; background:var(--surface,#fff); }
+  .gkc-scroll { width:100%; min-width:0; max-width:100%; min-height:0; overflow:auto; overscroll-behavior:contain; scrollbar-width:thin; -webkit-overflow-scrolling:touch; }
   .gkc-table { width:max-content; min-width:100%; border-collapse:separate; border-spacing:0; color:#1e293b; font-size:11px; }
   .gkc-table th,.gkc-table td { height:31px; padding:5px 9px; border-right:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0; white-space:nowrap; }
   .gkc-table thead th { position:sticky; top:0; z-index:20; min-width:108px; background:#f1f5f9; color:#334155; font-size:9px; font-weight:800; text-align:center; }
   .gkc-table thead tr:nth-child(2) th { top:31px; z-index:19; background:#f8fafc; font-size:9px; font-weight:600; }
-  .gkc-table .gkc-label { position:sticky; left:0; z-index:12; min-width:205px; text-align:left; background:#fff; box-shadow:4px 0 8px -8px rgba(15,23,42,.75); }
+  .gkc-table .gkc-label { position:sticky !important; left:0 !important; inset-inline-start:0 !important; z-index:12; min-width:var(--gkc-label-width); text-align:left; background:#fff; background-clip:padding-box; box-shadow:4px 0 8px -8px rgba(15,23,42,.75); }
+  .gkc-table .gkc-label:not([colspan]) { width:var(--gkc-label-width); min-width:var(--gkc-label-width); max-width:var(--gkc-label-width); overflow:hidden; text-overflow:ellipsis; }
   .gkc-table thead .gkc-label { z-index:30; background:#eaf4ff; }
   .gkc-table .gkc-total { position:sticky; right:0; z-index:13; min-width:120px; background:#f8fafc; font-weight:750; box-shadow:-4px 0 8px -8px rgba(15,23,42,.8); }
   .gkc-table thead .gkc-total { z-index:31; background:#eaf4ff; }
@@ -39,14 +40,14 @@ mb_ui_assets('.');
   :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #gambaranKreditPage .gkc-date,:is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #gambaranKreditPage .gkc-btn { border-color:#475569; background:#1e293b; color:#e2e8f0; }
   :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #gambaranKreditPage .gkc-export-mode { border-color:#475569; background:#1e293b; color:#e2e8f0; }
   @media(max-width:640px) {
-    #gambaranKreditPage { height:calc(100dvh - 58px); padding:6px !important; }
+    #gambaranKreditPage { --gkc-label-width:160px; height:calc(100dvh - 58px); padding:6px !important; }
     .gkc-toolbar { align-items:flex-start; flex-direction:column; gap:7px; }
     .gkc-controls { display:flex; width:100%; flex-wrap:wrap; gap:6px; }
     .gkc-date { width:auto; min-width:120px; flex:1 1 120px; }
     .gkc-export-mode { min-width:130px; flex:1 1 130px; }
     .gkc-table { font-size:9px; }
     .gkc-table th,.gkc-table td { padding:5px 7px; }
-    .gkc-table .gkc-label { min-width:160px; }
+    .gkc-table .gkc-label { min-width:var(--gkc-label-width); }
     .gkc-table thead th { min-width:92px; }
     .gkc-table .gkc-total { min-width:105px; }
   }
@@ -60,8 +61,8 @@ mb_ui_assets('.');
         <p id="gkcMeta" class="gkc-status mt-1">Memuat tanggal nominatif…</p>
       </div>
       <div class="gkc-controls shrink-0">
-        <label class="sr-only" for="gkcDate">Tanggal nominatif</label>
-        <input id="gkcDate" class="gkc-date" type="date">
+        <label class="sr-only" for="gkcDate">Bulan nominatif</label>
+        <input id="gkcDate" class="gkc-date" type="month">
         <label class="sr-only" for="gkcExportMode">Rentang export</label>
         <select id="gkcExportMode" class="gkc-export-mode">
           <option value="ytd">Tahun berjalan (YTD)</option>
@@ -107,6 +108,19 @@ mb_ui_assets('.');
   let requestId = 0;
 
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+  const monthEndDate = monthValue => {
+    const [year, month] = String(monthValue || '').split('-').map(Number);
+    if (!year || !month) return '';
+    const end = new Date(year, month, 0);
+    return `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+  };
+  const completedMonthValue = dateValue => {
+    const [year, month, day] = String(dateValue || '').slice(0,10).split('-').map(Number);
+    if (!year || !month || !day) return '';
+    const lastDay = new Date(year, month, 0).getDate();
+    const end = day === lastDay ? new Date(year, month, 0) : new Date(year, month - 1, 0);
+    return `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}`;
+  };
   const get = (office, key) => Number(office?.metrics?.[key] || 0);
   const format = (value, kind) => kind === 'count' ? numberFormat.format(Math.round(value)) : numberFormat.format(Math.round(value));
   const sum = (offices, key) => offices.reduce((total, office) => total + get(office, key), 0);
@@ -144,8 +158,8 @@ mb_ui_assets('.');
       metric(`ckpn_individual_kolek_${key}`,`CKPN Individual · Kolek ${label}`);
     });
     section('CKPN');
-    metric('ckpn_collective_total','CKPN Kolektif · Pinjaman ≤ Rp3 M');
-    metric('ckpn_individual_total','CKPN Individual · Pinjaman > Rp3 M');
+    metric('ckpn_collective_total','CKPN Kolektif');
+    metric('ckpn_individual_total','CKPN Individual');
     if (includeFlow) {
       section(`PERGERAKAN BULAN ${months[Number((periodDate || '0000-01').slice(5,7)) - 1] || ''}`);
       [
@@ -176,29 +190,30 @@ mb_ui_assets('.');
 
   async function load() {
     if (!dateInput.value) return;
+    const selectedEndDate = monthEndDate(dateInput.value);
     const id = ++requestId;
     controller?.abort();
     controller = new AbortController();
     refresh.disabled = true;
     exportButton.disabled = true;
-    meta.textContent = `Memuat snapshot nominatif ${dateInput.value}…`;
+    meta.textContent = `Memuat snapshot nominatif akhir bulan ${selectedEndDate}…`;
     body.innerHTML = `<tr><td class="gkc-empty" colspan="${(currentData?.offices?.length || 28) + 2}">Memuat data…</td></tr>`;
     try {
       const response = await fetch('./api/kredit/', {
         method:'POST', credentials:'include', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({type:'gambaran_kredit_cabang',harian_date:dateInput.value}),
+        body:JSON.stringify({type:'gambaran_kredit_cabang',harian_date:selectedEndDate,resolve_latest_on_or_before:true}),
         signal:controller.signal, cache:'no-store'
       });
       const json = await response.json();
       if (!response.ok || Number(json.status) !== 200) throw new Error(json.message || 'Gagal memuat data laporan.');
       if (id !== requestId) return;
       currentData = json.data;
-      const [year, month, day] = dateInput.value.split('-').map(Number);
+      const [year, month] = dateInput.value.split('-').map(Number);
       const closing = new Date(year, month - 1, 0);
       const closingDate = `${closing.getFullYear()}-${String(closing.getMonth()+1).padStart(2,'0')}-${String(closing.getDate()).padStart(2,'0')}`;
       const flowResponse = await fetch('./api/kredit/', {
         method:'POST', credentials:'include', headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({type:'rekap_realisasi_growth',closing_date:closingDate,harian_date:dateInput.value,nominal_field:'baki_debet'}),
+        body:JSON.stringify({type:'rekap_realisasi_growth',closing_date:closingDate,harian_date:selectedEndDate,nominal_field:'baki_debet'}),
         signal:controller.signal, cache:'no-store'
       });
       const flowJson = await flowResponse.json();
@@ -206,7 +221,7 @@ mb_ui_assets('.');
       const flowByOffice = new Map((flowJson.data?.data || []).map(row=>[String(row.kode_kantor).padStart(3,'0'),row]));
       currentData.offices = (currentData.offices || []).map(office=>({...office,flow:flowByOffice.get(String(office.kode_kantor).padStart(3,'0')) || {}}));
       render(currentData);
-      meta.textContent = `Snapshot ${currentData.harian_date} · Pergerakan ${months[month-1]} s.d. tanggal dipilih · nominal baki debet · EAD = Saldo Bank.`;
+      meta.textContent = `Snapshot ${currentData.harian_date} · Pergerakan ${months[month-1]} s.d. akhir bulan · nominal baki debet · EAD = Saldo Bank.`;
     } catch (error) {
       if (error.name === 'AbortError' || id !== requestId) return;
       currentData = null;
@@ -300,7 +315,14 @@ mb_ui_assets('.');
   dateInput.addEventListener('change',load);
   exportButton.addEventListener('click',exportExcel);
   fetch('./api/date/',{credentials:'include',cache:'no-store'}).then(r=>r.json()).then(json=>{
-    dateInput.value = json.data?.last_created || new Date().toISOString().slice(0,10);
-  }).catch(()=>{ dateInput.value = new Date().toISOString().slice(0,10); }).finally(load);
+    const latestDate = String(json.data?.last_created || '');
+    const latestCompletedMonth = completedMonthValue(latestDate);
+    dateInput.max = latestCompletedMonth || '';
+    dateInput.value = latestCompletedMonth || completedMonthValue(new Date().toISOString().slice(0,10));
+  }).catch(()=>{
+    const fallback = new Date();
+    fallback.setDate(0);
+    dateInput.value = completedMonthValue(`${fallback.getFullYear()}-${String(fallback.getMonth()+1).padStart(2,'0')}-${String(fallback.getDate()).padStart(2,'0')}`);
+  }).finally(load);
 })();
 </script>
