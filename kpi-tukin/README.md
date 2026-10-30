@@ -38,22 +38,22 @@ Saat build dijalankan di domain MONBIS, aplikasi memakai `/api` dari domain yang
 sama. Menu dan halaman MONBIS legacy tetap berada di aplikasi utama dan tidak
 diubah oleh aplikasi KPI Tukin.
 
-KPI Tukin tidak memiliki login sendiri. Navbar membaca sesi SSO MONBIS dari
-`dpk_user`, `dpk_token`, dan cookie `sso_token`, lalu menyegarkan profil dari
-endpoint SSO `whoami` bila token tersedia. Link profil kembali ke halaman profil
-MONBIS.
+KPI Tukin tidak memiliki login sendiri. Login dan pemeriksaan sesi diteruskan
+melalui API PHP MONBIS; token aplikasi dan token sesi dikelola server-side dengan
+cookie `HttpOnly`.
 
 ## Production
 
+Build satu kali untuk KPI, Monbis V2, dan RBB React dari root repository:
+
 ```bash
-npm run build
+bash tools/build-react-apps.sh
 ```
 
-Build menghasilkan folder `../kpi/` di root repository. Folder `kpi/` ikut
-di-commit agar server cukup melakukan `git pull`; folder tersebut disajikan
-sebagai route `/kpi/` di MONBIS. Resolver API otomatis memakai
-`https://monbis.bkkjateng.co.id/api`, atau dapat diganti dengan
-`VITE_API_BASE_URL`.
+Build menghasilkan folder `../kpi/` dan folder tersebut disajikan sebagai route
+`/kpi/` di MONBIS. Output build tidak di-commit; ikuti [panduan build server](../docs/react-server-build.md)
+setelah source di-pull. Resolver API otomatis memakai `/api` pada domain MONBIS,
+atau dapat diganti dengan `VITE_API_BASE_URL`.
 
 Jangan menambahkan rumus KPI di folder ini. React hanya fetch, memetakan, dan
 menampilkan response backend.

@@ -8,6 +8,7 @@ docs/*
 !docs/database/
 !docs/prd-refactor-ui.md
 !docs/prd-migrasi-php-react.md
+!docs/react-server-build.md
 
 api-tests
 
@@ -15,10 +16,16 @@ api-tests
 frontend/
 kpi-tukin/node_modules/
 kpi-tukin/dist/
+/kpi/
 
-# Standalone React RBB work (local only for now)
-rbb/
-rbb-bisnis/
+# React build output and dependencies generated on the target server
+monbis-v2/node_modules/
+monbis-v2/dist/
+rbb-bisnis/node_modules/
+rbb-bisnis/dist/
+
+# Standalone React RBB build output
+/rbb/
 
 # Local agent/task metadata and documentation virtual environment
 .agents/
