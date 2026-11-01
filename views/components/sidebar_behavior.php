@@ -632,6 +632,111 @@ define('MONBIS_SIDEBAR_BEHAVIOR_LOADED', true);
     box-shadow:0 10px 30px rgba(15,23,42,.12) !important;
   }
   #dropdownProfileMenu a { padding:8px 10px !important; font-size:12px !important; }
+  /* Final navigation pass: clearer targets and a steadier compact rail. */
+  #mainNavbar {
+    height:60px !important;
+    min-height:60px !important;
+    flex-basis:60px !important;
+    padding-inline:20px !important;
+    box-shadow:0 1px 0 rgba(15,23,42,.025) !important;
+  }
+  #mainNavbar #btnToggleSidebar,
+  #mainNavbar .monbis-theme-toggle,
+  #mainNavbar .dashboard-navbar-filter-toggle {
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:36px;
+    height:36px;
+    min-height:36px;
+    border-radius:9px;
+    background:#fff;
+    border-color:#dbe3ec;
+    color:#52647a;
+    transition:background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+  #mainNavbar #btnToggleSidebar { padding:0 !important; }
+  #mainNavbar #btnToggleSidebar svg { flex:0 0 auto; }
+  #mainNavbar #btnToggleSidebar:focus-visible,
+  #mainNavbar button:focus-visible,
+  #sidebar a:focus-visible,
+  #sidebar .accordion-btn:focus-visible,
+  #sidebar .monbis-sidebar-promo:focus-visible {
+    outline:2px solid #2563eb;
+    outline-offset:2px;
+  }
+  #mainNavbar #navUserName { color:#24364b !important; }
+  #mainNavbar #navBranch { color:#718096 !important; }
+  :root[data-monbis-theme="dark"] #mainNavbar #navUserName { color:#e2e8f0 !important; }
+  :root[data-monbis-theme="dark"] #mainNavbar #btnToggleSidebar,
+  :root[data-monbis-theme="dark"] #mainNavbar .monbis-theme-toggle,
+  :root[data-monbis-theme="dark"] #mainNavbar .dashboard-navbar-filter-toggle {
+    background:#111c2e;
+    border-color:#334155;
+    color:#a9bbd0;
+  }
+  .monbis-app-shell > #sidebar > .h-16 {
+    height:60px;
+    min-height:60px;
+    padding-inline:12px;
+    justify-content:center;
+  }
+  .monbis-app-shell > #sidebar > .h-16 .monbis-logo--icon {
+    width:34px;
+    height:34px;
+    padding:3px;
+    border:1px solid #e6edf4;
+    border-radius:10px;
+    background:#fff;
+    box-shadow:none;
+  }
+  .monbis-app-shell > #sidebar nav { padding:10px 8px 14px !important; }
+  .monbis-app-shell > #sidebar .accordion-group { margin:3px 0; }
+  .monbis-app-shell > #sidebar .accordion-btn,
+  .monbis-app-shell > #sidebar nav > a {
+    min-height:46px;
+    border-radius:10px !important;
+  }
+  .monbis-app-shell > #sidebar .accordion-btn > div > svg,
+  .monbis-app-shell > #sidebar nav > a > svg {
+    width:26px !important;
+    height:26px !important;
+    padding:4px;
+    border-radius:8px;
+  }
+  .monbis-app-shell > #sidebar .accordion-btn:hover,
+  .monbis-app-shell > #sidebar nav > a:hover {
+    transform:none;
+    box-shadow:none;
+  }
+  .monbis-app-shell > #sidebar nav > a.is-active::before,
+  .monbis-app-shell > #sidebar nav > a.bg-blue-50::before,
+  .monbis-app-shell > #sidebar .accordion-btn.is-active::before {
+    left:2px;
+    top:11px;
+    bottom:11px;
+    width:2px;
+    box-shadow:none;
+  }
+  .monbis-app-shell > #sidebar .monbis-sidebar-promo {
+    border-radius:12px;
+    box-shadow:none;
+  }
+  @media (min-width:768px) {
+    .monbis-app-shell > #sidebar { flex-basis:68px !important; width:68px !important; }
+    .monbis-app-shell > #sidebar.is-expanded { flex-basis:264px !important; width:264px !important; }
+    .monbis-app-shell > #sidebar:not(.is-expanded):hover,
+    .monbis-app-shell > #sidebar:not(.is-expanded):focus-within { flex-basis:68px !important; width:68px !important; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .accordion-btn,
+    .monbis-app-shell > #sidebar:not(.is-expanded) nav > a { min-height:46px; }
+    .monbis-app-shell > #sidebar.is-expanded > .h-16 { justify-content:flex-start; padding-inline:16px; }
+  }
+  @media (max-width:767px) {
+    #mainNavbar { height:56px !important; min-height:56px !important; flex-basis:56px !important; padding-inline:10px !important; }
+    #mainNavbar #btnToggleSidebar,
+    #mainNavbar .monbis-theme-toggle,
+    #mainNavbar .dashboard-navbar-filter-toggle { width:36px; height:36px; min-height:36px; }
+  }
   @media (min-width:768px) {
     .monbis-app-shell > #sidebar { flex-basis:64px !important; width:64px !important; }
     .monbis-app-shell > #sidebar.is-expanded { flex-basis:264px !important; width:264px !important; }

@@ -131,6 +131,8 @@ mb_ui_assets('.');
     const end = day === lastDay ? new Date(year, month, 0) : new Date(year, month - 1, 0);
     return `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}`;
   };
+  const localMonthValue = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
+  const previousMonthValue = date => localMonthValue(new Date(date.getFullYear(),date.getMonth()-1,1));
   const get = (office, key) => Number(office?.metrics?.[key] || 0);
   const format = (value, kind) => kind === 'count' ? numberFormat.format(Math.round(value)) : numberFormat.format(Math.round(value));
   const sum = (offices, key) => offices.reduce((total, office) => total + get(office, key), 0);
@@ -430,13 +432,18 @@ mb_ui_assets('.');
   window.addEventListener('resize',syncStickyHeaderOffset);
   fetch('./api/date/',{credentials:'include',cache:'no-store'}).then(r=>r.json()).then(json=>{
     const latestDate = String(json.data?.last_created || '');
+    const today = new Date();
+    const currentMonth = localMonthValue(today);
+    const previousMonth = previousMonthValue(today);
     const latestCompletedMonth = completedMonthValue(latestDate);
-    dateInput.max = latestCompletedMonth || '';
-    dateInput.value = latestCompletedMonth || completedMonthValue(new Date().toISOString().slice(0,10));
+    const latestSelectableMonth = latestCompletedMonth && latestCompletedMonth >= currentMonth
+      ? previousMonth
+      : latestCompletedMonth;
+    dateInput.max = latestSelectableMonth || previousMonth;
+    dateInput.value = latestSelectableMonth || previousMonth;
   }).catch(()=>{
-    const fallback = new Date();
-    fallback.setDate(0);
-    dateInput.value = completedMonthValue(`${fallback.getFullYear()}-${String(fallback.getMonth()+1).padStart(2,'0')}-${String(fallback.getDate()).padStart(2,'0')}`);
+    dateInput.max = previousMonthValue(new Date());
+    dateInput.value = dateInput.max;
   }).finally(load);
 })();
 </script>

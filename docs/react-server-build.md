@@ -25,3 +25,28 @@ bash tools/build-react-apps.sh --skip-install
 
 Jalankan script setelah `git pull` selesai. Output build dan `node_modules` tidak
 perlu di-commit; server membuatnya dari source dan lockfile.
+
+## Nginx untuk asset Monbis V2
+
+Nginx tidak membaca `.htaccess`. Pastikan file build tetap bisa diakses lewat
+URL `/v2-react/assets/...` dengan menambahkan location berikut di dalam blok
+`server` untuk host aplikasi:
+
+```nginx
+location ^~ /v2-react/assets/ {
+    alias $document_root/monbis-v2/dist/assets/;
+}
+```
+
+`$document_root` harus menunjuk ke direktori root checkout yang berisi folder
+`monbis-v2`. Pasang location ini pada konfigurasi Nginx host dev dan prod, lalu
+validasi dan muat ulang konfigurasi:
+
+```bash
+nginx -t && systemctl reload nginx
+```
+
+Setelah build, pastikan URL asset JS/CSS yang tercantum di
+`monbis-v2/dist/index.html` mengembalikan HTTP 200. Tanpa location ini, halaman
+HTML V2 bisa terbuka tetapi asset React diarahkan ke route login atau menjadi
+404, sehingga tampil kosong.

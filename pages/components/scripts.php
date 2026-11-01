@@ -417,31 +417,31 @@
                               text = `${c.dataset.label}: Rp ${fmtB(raw)}`;
                               if (c.datasetIndex === 0 && dataObj.gap_osc_total) {
                                   let isGood = dataObj.gap_osc_total > 0;
-                                  text += ` (${isGood ? '🟢 ▲' : '🔴 ▼'} ${fmtB(Math.abs(dataObj.gap_osc_total))})`;
+                                   text += ` (${isGood ? '✓ ▲' : '! ▼'} ${fmtB(Math.abs(dataObj.gap_osc_total))})`;
                               }
                               if (c.datasetIndex === 1 && dataObj.gap_osc_rr) {
                                   let isGood = dataObj.gap_osc_rr > 0;
-                                  text += ` (${isGood ? '🟢 ▲' : '🔴 ▼'} ${fmtB(Math.abs(dataObj.gap_osc_rr))})`;
+                                   text += ` (${isGood ? '✓ ▲' : '! ▼'} ${fmtB(Math.abs(dataObj.gap_osc_rr))})`;
                               }
                               if (c.datasetIndex === 2 && dataObj.gap_osc_npl) {
                                   let isGood = dataObj.gap_osc_npl < 0; 
-                                  text += ` (${isGood ? '🟢 ▼' : '🔴 ▲'} ${fmtB(Math.abs(dataObj.gap_osc_npl))})`;
+                                   text += ` (${isGood ? '✓ ▼' : '! ▲'} ${fmtB(Math.abs(dataObj.gap_osc_npl))})`;
                               }
                           } else if (tipe === 'pct') {
                               text = `${c.dataset.label}: ${Number(raw).toFixed(2)}%`;
                               if (c.datasetIndex === 0 && dataObj.gap_rr_persen) {
                                   let isGood = dataObj.gap_rr_persen > 0;
-                                  text += ` (${isGood ? '🟢 ▲' : '🔴 ▼'} ${Math.abs(dataObj.gap_rr_persen)}%)`;
+                                   text += ` (${isGood ? '✓ ▲' : '! ▼'} ${Math.abs(dataObj.gap_rr_persen)}%)`;
                               }
                               if (c.datasetIndex === 1 && dataObj.gap_npl_persen) {
                                   let isGood = dataObj.gap_npl_persen < 0; 
-                                  text += ` (${isGood ? '🟢 ▼' : '🔴 ▲'} ${Math.abs(dataObj.gap_npl_persen)}%)`;
+                                   text += ` (${isGood ? '✓ ▼' : '! ▲'} ${Math.abs(dataObj.gap_npl_persen)}%)`;
                               }
                           } else if (tipe === 'npl') {
                               text = `NPL: ${Number(raw).toFixed(2)}% (Rp ${fmtB(dataObj.osc_npl)})`;
                               if (dataObj.gap_npl_persen) {
                                   let isGood = dataObj.gap_npl_persen < 0; 
-                                  text += ` (${isGood ? '🟢 ▼' : '🔴 ▲'} ${Math.abs(dataObj.gap_npl_persen)}%)`;
+                                   text += ` (${isGood ? '✓ ▼' : '! ▲'} ${Math.abs(dataObj.gap_npl_persen)}%)`;
                               }
                           }
                           return text;
@@ -621,7 +621,7 @@
                   lines.push(`  • Angsuran: Rp ${fmtB(angsuran)} (${fmt(noaAngsuran)} NOA)`);
                   lines.push('');
                   let isGood = g >= 0;
-                  lines.push(`Growth: ${isGood ? '🟢 ▲' : '🔴 ▼'} Rp ${fmtB(Math.abs(g))}`);
+                  lines.push(`Growth: ${isGood ? '+' : '−'} Rp ${fmtB(Math.abs(g))}`);
                   return lines;
                 }
               }

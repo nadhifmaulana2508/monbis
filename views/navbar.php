@@ -1514,8 +1514,8 @@ if (is_array($rbacInitialAccess ?? null)) {
       
       <!-- Tombol buka/tutup sidebar -->
       <button id="btnToggleSidebar" type="button" class="text-slate-500 hover:text-slate-800 focus:outline-none mr-3" aria-label="Buka sidebar" title="Buka sidebar" aria-expanded="false" aria-controls="sidebar">
-        <svg data-sidebar-toggle-icon="closed" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path stroke-linecap="round" d="M9 5v14"></path></svg>
-        <svg data-sidebar-toggle-icon="open" class="hidden w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"></rect><path stroke-linecap="round" d="M15 5v14M17 9l-3 3 3 3"></path></svg>
+        <svg data-sidebar-toggle-icon="closed" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        <svg data-sidebar-toggle-icon="open" class="hidden w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6M19 5v14"></path></svg>
         <svg data-sidebar-toggle-icon="mobile" class="hidden w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
       </button>
 
@@ -2497,152 +2497,152 @@ if (is_array($rbacInitialAccess ?? null)) {
       <div class="flex items-center gap-4 sm:gap-6 ml-auto">
         <?php if (($page ?? '') === 'dashboard'): ?>
         <button type="button" id="btnToggleFilter" class="dashboard-navbar-filter-toggle" aria-label="Buka filter" title="Buka filter" aria-expanded="false">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'lap_laba_rugi'): ?>
         <button type="button" id="lnNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter laba rugi" title="Buka filter laba rugi" aria-expanded="false" aria-controls="lapLabaRugiNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'rekap_lapkeu'): ?>
         <button type="button" id="rlNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter rekap keuangan" title="Buka filter rekap keuangan" aria-expanded="false" aria-controls="rekapLapkeuNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'ikhtisar'): ?>
         <button type="button" id="ikhtisarNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter ikhtisar" title="Buka filter ikhtisar" aria-expanded="false" aria-controls="ikhtisarNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'raport_cabang'): ?>
         <button type="button" id="raportCabangNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter raport cabang" title="Buka filter raport cabang" aria-expanded="false" aria-controls="raportCabangNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'npl'): ?>
         <button type="button" id="mkNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Monitoring Kredit" title="Buka filter Monitoring Kredit" aria-expanded="false" aria-controls="nplNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'npl_25_besar'): ?>
         <button type="button" id="npl25NavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter 25 Debitur Terbesar NPL" title="Buka filter 25 Debitur Terbesar NPL" aria-expanded="false" aria-controls="npl25NavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'realisasi_ao'): ?>
         <button type="button" id="realisasiAoNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Realisasi AO" title="Buka filter Realisasi AO" aria-expanded="false" aria-controls="realisasiAoNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'realisasi_kredit_growth'): ?>
         <button type="button" id="realisasiGrowthNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Realisasi dan Growth" title="Buka filter Realisasi dan Growth" aria-expanded="false" aria-controls="realisasiGrowthNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'realisasi_rbb'): ?>
         <button type="button" id="realisasiRbbNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Realisasi vs RBB" title="Buka filter Realisasi vs RBB" aria-expanded="false" aria-controls="realisasiRbbNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'mob'): ?>
         <button type="button" id="mobNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter MOB dan FPD" title="Buka filter MOB dan FPD" aria-expanded="false" aria-controls="mobNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'rekap_rr'): ?>
         <button type="button" id="rrNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Repayment Rate" title="Buka filter Repayment Rate" aria-expanded="false" aria-controls="rrNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'otp_baru'): ?>
         <button type="button" id="otpNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter OTP" title="Buka filter OTP" aria-expanded="false" aria-controls="otpNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'otp_bucket_fe'): ?>
         <button type="button" id="otpBucketNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter OTP Migration" title="Buka filter OTP Migration" aria-expanded="false" aria-controls="otpBucketNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'migrasi_bucket'): ?>
         <button type="button" id="migrasiBucketNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Migrasi DPD" title="Buka filter Migrasi DPD" aria-expanded="false" aria-controls="migrasiBucketNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'migrasi_bucket_sc'): ?>
         <button type="button" id="migrasiBucketScNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Migrasi Bucket SC" title="Buka filter Migrasi Bucket SC" aria-expanded="false" aria-controls="migrasiBucketScNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'migrasi_kolek'): ?>
         <button type="button" id="migrasiKolekNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Migrasi Kolektibilitas" title="Buka filter Migrasi Kolektibilitas" aria-expanded="false" aria-controls="migrasiKolekNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'actual_kredit'): ?>
         <button type="button" id="actualKreditNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Report Actual Kredit" title="Buka filter Report Actual Kredit" aria-expanded="false" aria-controls="actualKreditNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'gambaran_kredit_cabang'): ?>
         <button type="button" id="gambaranKreditNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Gambaran Kredit Cabang" title="Buka filter Gambaran Kredit Cabang" aria-expanded="false" aria-controls="gambaranKreditNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'recovery_npl'): ?>
         <button type="button" id="recoveryNplNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Recovery NPL" title="Buka filter Recovery NPL" aria-expanded="false" aria-controls="recoveryNplNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'recovery_ph'): ?>
         <button type="button" id="recoveryPhNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Monitoring PH" title="Buka filter Monitoring PH" aria-expanded="false" aria-controls="recoveryPhNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'layanan_digital'): ?>
         <button type="button" id="layananDigitalNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Layanan Digital" title="Buka filter Layanan Digital" aria-expanded="false" aria-controls="layananDigitalNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'va'): ?>
         <button type="button" id="vaNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Virtual Account" title="Buka filter Virtual Account" aria-expanded="false" aria-controls="vaNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'branchless'): ?>
         <button type="button" id="branchlessNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Branchless Banking" title="Buka filter Branchless Banking" aria-expanded="false" aria-controls="branchlessNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'qris_merchant'): ?>
         <button type="button" id="qrisMerchantNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter QRIS Merchant" title="Buka filter QRIS Merchant" aria-expanded="false" aria-controls="qrisMerchantNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'potensi_npl'): ?>
         <button type="button" id="potensiNplNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Potensi NPL" title="Buka filter Potensi NPL" aria-expanded="false" aria-controls="potensiNplNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'flow_par'): ?>
         <button type="button" id="flowParNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Flow PAR" title="Buka filter Flow PAR" aria-expanded="false" aria-controls="flowParNavbarFilterForm">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'jatuh_tempo'): ?>
         <button type="button" id="jatuhTempoNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Jatuh Tempo Kredit" title="Buka filter Jatuh Tempo Kredit" aria-expanded="false" aria-controls="jatuhTempoNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (in_array(($page ?? ''), ['recom_pipelane', 'pipelane_ao_jt'], true)): ?>
         <button type="button" id="recomPipelaneNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Rekomendasi Pipelane AO Kredit" title="Buka filter Rekomendasi Pipelane AO Kredit" aria-expanded="false" aria-controls="recomPipelaneNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'search_debitur'): ?>
         <button type="button" id="searchDebiturNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Search Debitur Kredit" title="Buka filter Search Debitur Kredit" aria-expanded="false" aria-controls="searchDebiturNavbarFilterPanel">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"></path></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <button id="monbisThemeToggle" type="button" class="monbis-theme-toggle" title="Ganti mode terang / gelap" aria-label="Ganti mode terang / gelap">
