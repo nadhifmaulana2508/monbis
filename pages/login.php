@@ -131,10 +131,12 @@ require_once __DIR__ . '/../components/login-showcase.php';
   const BASE_APP = window.BASE_APP || location.origin + getBasePath();
   const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
   const requestedNextPage = new URLSearchParams(window.location.search).get('next');
-  const postLoginPage = requestedNextPage === 'tv_cabang' ? 'tv_cabang' : 'dashboard';
+  const isTvCabangNext = requestedNextPage === 'tv_cabang' || requestedNextPage === 'tv-cabang';
+  const isTvNext = requestedNextPage === 'tv';
+  const postLoginPage = isTvCabangNext || isTvNext ? requestedNextPage : 'dashboard';
 
   function getSafePostLoginTarget() {
-    if (!requestedNextPage || requestedNextPage === 'tv_cabang') return '';
+    if (!requestedNextPage || isTvCabangNext || isTvNext) return '';
     try {
       const target = new URL(requestedNextPage, location.origin);
       const basePath = getBasePath();

@@ -362,7 +362,7 @@ function renderHeaderClickable() {
     const thead = document.getElementById('headUtama');
     if (!thead) return;
 
-    const hideRestruck = true;
+    const hideRestruck = nominalFieldReal !== 'baki_debet';
     const nominalLabel = nominalFieldReal === 'baki_debet' ? 'BAKI DEBET' : 'SALDO BANK';
     const closingLabel = formatHeaderDate(document.getElementById('closing_date')?.value);
     const actualLabel = formatHeaderDate(document.getElementById('harian_date')?.value);
@@ -438,7 +438,7 @@ window.sortMainData = function(column) {
 function processAndRenderTable(rows, gt) {
     const tbody = document.getElementById('bodyUtama');
     if (!tbody) return;
-    const hideRestruck = true;
+    const hideRestruck = nominalFieldReal !== 'baki_debet';
     const visibleColumnCount = hideRestruck ? 9 : 10;
 
     if (!rows || rows.length === 0) {
@@ -532,7 +532,7 @@ function processAndRenderTable(rows, gt) {
 window.exportExcelRekap = function() {
     if (rekapDataCache.length === 0) return alert("Tidak ada data untuk diexport.");
 
-    const hideRestruck = true;
+    const hideRestruck = nominalFieldReal !== 'baki_debet';
     let tableRows = '';
 
     rekapDataCache.forEach(r => {

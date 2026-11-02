@@ -58,6 +58,27 @@ if (is_array($rbacInitialAccess ?? null)) {
     background:#fff; color:#475569; box-shadow:0 1px 2px rgba(15,23,42,.06);
     transition:background .15s,border-color .15s,color .15s,transform .15s;
   }
+  #mainNavbar #btnToggleSidebar,
+  #mainNavbar .dashboard-navbar-filter-toggle,
+  #mainNavbar .monbis-theme-toggle,
+  #mainNavbar #btnProfileMenu {
+    box-sizing:border-box;
+    width:36px !important;
+    height:36px !important;
+    flex:0 0 36px !important;
+    padding:0 !important;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+  }
+  #mainNavbar #btnToggleSidebar svg,
+  #mainNavbar .dashboard-navbar-filter-toggle svg,
+  #mainNavbar .monbis-theme-toggle svg,
+  #mainNavbar #btnProfileMenu svg {
+    width:18px !important;
+    height:18px !important;
+    flex:0 0 18px;
+  }
   .dashboard-navbar-filter-toggle:hover { transform:translateY(-1px); color:#2563eb; border-color:#bfdbfe; }
   .dashboard-navbar-filter-toggle.is-active { color:#2563eb; border-color:#93c5fd; background:#eff6ff; }
   .dashboard-navbar-filter {
@@ -809,8 +830,9 @@ if (is_array($rbacInitialAccess ?? null)) {
     }
     #btnToggleSidebar {
       margin-right:6px !important;
-      padding:7px;
+      padding:0 !important;
       border:1px solid rgba(148,163,184,.25);
+      border-radius:10px;
       background:rgba(255,255,255,.45);
     }
     #btnToggleSidebar [data-sidebar-toggle-icon="closed"],
@@ -839,10 +861,7 @@ if (is_array($rbacInitialAccess ?? null)) {
     }
     .monbis-theme-toggle,
     #btnProfileMenu {
-      width:34px !important;
-      height:34px !important;
       border-radius:12px !important;
-      flex:0 0 auto;
     }
     .monbis-event-badge {
       max-width:104px;

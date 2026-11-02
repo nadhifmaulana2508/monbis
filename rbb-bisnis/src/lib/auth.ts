@@ -1,3 +1,5 @@
+import { apiUrl } from "@/lib/api-base"
+
 export type RbbUser = {
   id?: number | string
   employee_id?: string
@@ -14,7 +16,7 @@ type ApiEnvelope<T> = { status?: number | string; message?: string; data?: T }
 async function requestAppApi<T>(path: string, init?: RequestInit) {
   let response: Response
   try {
-    response = await fetch(`/api/auth/${path}`, {
+    response = await fetch(apiUrl(`auth/${path}`), {
       cache: "no-store",
       credentials: "include",
       ...init,

@@ -65,7 +65,7 @@ function v2_route_from_request(string $baseUrl): array
 
 // Preview hanya boleh dipakai di localhost; produksi tetap wajib login.
 $previewRequested = isset($_GET['preview']) && $v2Runtime['allow_preview'];
-if ($v2Runtime['page_auth'] && empty($_COOKIE['sso_token']) && !$previewRequested) {
+if ($v2Runtime['page_auth'] && empty($_COOKIE['monbis_session']) && empty($_COOKIE['sso_token']) && !$previewRequested) {
     $loginBase = $v2Runtime['auth_base_url'] !== '' ? $v2Runtime['auth_base_url'] : $legacyBase;
     header('Location: ' . $loginBase . '/login');
     exit;

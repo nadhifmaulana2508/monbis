@@ -348,10 +348,10 @@ class KreditController {
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Untuk basis saldo bank, realisasi berasal dari nominatif aktual
-            // berdasarkan tanggal realisasi dan status non-restruk.
-            // Basis baki debet tetap memakai flow summary seperti sebelumnya.
+            // Untuk basis saldo bank, posisi dan pergerakan berasal dari
+            // perbandingan snapshot nominatif closing dan actual.
             $saldoBankRealisasiByUnit = [];
+            $saldoBankSnapshotMovementByUnit = [];
             if ($nominalField === 'saldo_bank') {
                 $realisasiSql = "
                     SELECT n.kode_cabang, n.kode_group1,
@@ -393,6 +393,87 @@ class KreditController {
                     $saldoBankRealisasiByUnit[$unitKey]['noa'] += (int)$realisasiRow['noa_realisasi'];
                     $saldoBankRealisasiByUnit[$unitKey]['nominal'] += (float)$realisasiRow['saldo_bank'];
                 }
+
+                $closingSnapshotFilter = buildBankFilters($b, 'c');
+                $actualSnapshotFilter = buildBankFilters($b, 'a');
+                [$closingSnapshotFilterSql, $closingSnapshotParams] = $renamePlaceholders(
+                    $closingSnapshotFilter['sql'],
+                    $closingSnapshotFilter['params'],
+                    'move_close_'
+                );
+                [$actualSnapshotFilterSql, $actualSnapshotParams] = $renamePlaceholders(
+                    $actualSnapshotFilter['sql'],
+                    $actualSnapshotFilter['params'],
+                    'move_actual_'
+                );
+
+                if (!empty($b['pusat_only']) && (string)$kode_kantor === '000') {
+                    $closingSnapshotFilterSql .= ' AND c.kode_cabang = :move_close_pusat';
+                    $actualSnapshotFilterSql .= ' AND a.kode_cabang = :move_actual_pusat';
+                    $closingSnapshotParams[':move_close_pusat'] = '000';
+                    $actualSnapshotParams[':move_actual_pusat'] = '000';
+                }
+
+                $snapshotMovementSql = "
+                    SELECT
+                        c.no_rekening,
+                        c.kode_cabang AS closing_kode_cabang,
+                        c.kode_group1 AS closing_kode_group1,
+                        COALESCE(c.saldo_bank, 0) AS saldo_closing,
+                        a.no_rekening AS actual_no_rekening,
+                        a.kode_cabang AS actual_kode_cabang,
+                        a.kode_group1 AS actual_kode_group1,
+                        COALESCE(a.saldo_bank, 0) AS saldo_actual
+                    FROM nominatif c
+                    LEFT JOIN nominatif a
+                        ON a.no_rekening = c.no_rekening
+                       AND a.created = :move_actual_date
+                       {$actualSnapshotFilterSql}
+                    WHERE c.created = :move_closing_date
+                      {$closingSnapshotFilterSql}
+                      AND TRIM(COALESCE(c.no_rekening, '')) <> ''
+                ";
+                $snapshotMovementStmt = $this->pdo->prepare($snapshotMovementSql);
+                foreach (array_merge(
+                    $closingSnapshotParams,
+                    $actualSnapshotParams,
+                    [':move_closing_date' => $closing_date, ':move_actual_date' => $harian_date]
+                ) as $key => $value) {
+                    $snapshotMovementStmt->bindValue($key, $value);
+                }
+                $snapshotMovementStmt->execute();
+
+                foreach ($snapshotMovementStmt->fetchAll(PDO::FETCH_ASSOC) as $movement) {
+                    $isPaidOff = $movement['actual_no_rekening'] === null;
+                    $unitKey = $getUnitKey($isPaidOff ? [
+                        'kode_cabang' => $movement['closing_kode_cabang'],
+                        'kode_group1' => $movement['closing_kode_group1'],
+                    ] : [
+                        'kode_cabang' => $movement['actual_kode_cabang'],
+                        'kode_group1' => $movement['actual_kode_group1'],
+                    ]);
+
+                    if (!isset($saldoBankSnapshotMovementByUnit[$unitKey])) {
+                        $saldoBankSnapshotMovementByUnit[$unitKey] = [
+                            'noa_pelunasan' => 0,
+                            'pelunasan' => 0.0,
+                            'noa_angsuran' => 0,
+                            'angsuran' => 0.0,
+                        ];
+                    }
+
+                    if ($isPaidOff) {
+                        $saldoBankSnapshotMovementByUnit[$unitKey]['noa_pelunasan']++;
+                        $saldoBankSnapshotMovementByUnit[$unitKey]['pelunasan'] += (float)$movement['saldo_closing'];
+                        continue;
+                    }
+
+                    $angsuran = (float)$movement['saldo_closing'] - (float)$movement['saldo_actual'];
+                    if ($angsuran != 0.0) {
+                        $saldoBankSnapshotMovementByUnit[$unitKey]['noa_angsuran']++;
+                        $saldoBankSnapshotMovementByUnit[$unitKey]['angsuran'] += $angsuran;
+                    }
+                }
             }
 
             // 5. Setup & Kalkulasi Grand Total
@@ -423,10 +504,16 @@ class KreditController {
                 $tot_real       = (float) $row['total_realisasi'];
                 $noa_res        = (int) $row['noa_restruck'];
                 $tot_res        = (float) $row['total_restruck'];
+                $runoffRestruck = $tot_res;
                 if ($nominalField === 'saldo_bank') {
                     $saldoBankRealisasi = $saldoBankRealisasiByUnit[(string)$row['kode_kantor']] ?? [];
+                    $saldoBankMovements = $saldoBankSnapshotMovementByUnit[(string)$row['kode_kantor']] ?? [];
                     $noa_real = (int)($saldoBankRealisasi['noa'] ?? 0);
                     $tot_real = (float)($saldoBankRealisasi['nominal'] ?? 0);
+                    $row['noa_pelunasan'] = (int)($saldoBankMovements['noa_pelunasan'] ?? 0);
+                    $row['total_pelunasan'] = (float)($saldoBankMovements['pelunasan'] ?? 0);
+                    $row['noa_angsuran_murni'] = (int)($saldoBankMovements['noa_angsuran'] ?? 0);
+                    $row['angsuran_murni'] = (float)($saldoBankMovements['angsuran'] ?? 0);
                     $noa_res = 0;
                     $tot_res = 0.0;
                 }
@@ -445,9 +532,10 @@ class KreditController {
                     ? $saldoActual - $saldoClosing
                     : (float) $row['growth'];
                 if ($nominalField === 'saldo_bank') {
-                    // Run Off menjadi selisih rekonsiliasi portofolio:
-                    // saldo awal + realisasi non-restruk - saldo akhir.
-                    $tot_run = $saldoClosing + $tot_real - $saldoActual;
+                    // Run Off Saldo Bank mengikuti komponen nominatif, dengan
+                    // nilai restruck summary sebagai faktor pengurang.
+                    $tot_run = $pelunasan + $angsuran_murni - $runoffRestruck;
+                    $noa_run_off = $noa_lunas + $noa_angsuran;
                 }
 
                 $cleanedRows[] = [

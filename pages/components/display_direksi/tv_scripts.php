@@ -388,7 +388,16 @@
     let tvCabangAccess = null;
     const TV_CHROME_AUTO_HIDE_DELAY = 5000;
 
-    const apiCall = (url, opt={}) => fetch(url, opt);
+    let tvLoginRedirectStarted = false;
+    const apiCall = async (url, opt={}) => {
+        const response = await fetch(url, { credentials: 'same-origin', ...opt });
+        if (response.status === 401 && !tvLoginRedirectStarted) {
+            tvLoginRedirectStarted = true;
+            const next = TV_CABANG_MODE ? 'tv-cabang' : 'tv';
+            window.location.replace(`${window.BASE_APP || ''}/login?next=${next}`);
+        }
+        return response;
+    };
 
     function readTvLoggedUser() {
         if(typeof window.getUser === 'function') {

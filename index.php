@@ -244,16 +244,20 @@ if ($url === '') {
 
 // page / param
 [$page, $param] = array_pad(explode('/', $url, 2), 2, null);
+$requestedPage = $page;
+if ($page === 'tv-cabang') {
+    $page = 'tv_cabang';
+}
 
 // =========================
 // PROTEKSI HALAMAN (AUTH GUARD)
 // =========================
-// 1. Kalau belum login tapi maksa buka halaman selain login dan atv_direksi, lempar ke login!
-// (atv_direksi di-whitelist agar bisa diakses langsung lewat URL)
+// TV konsolidasi tetap memakai akses kiosk; TV Cabang wajib melalui login SSO.
 if (!$isLoggedIn && $page !== 'login' && $page !== 'tv') {
     $loginUrl = BASE_APP . "/login";
     if ($page === 'tv_cabang') {
-        $loginUrl .= '?next=tv_cabang';
+        $nextPage = $requestedPage === 'tv-cabang' ? 'tv-cabang' : $page;
+        $loginUrl .= '?next=' . rawurlencode($nextPage);
     }
     header("Location: " . $loginUrl);
     exit;
@@ -263,8 +267,8 @@ if (!$isLoggedIn && $page !== 'login' && $page !== 'tv') {
 if ($isLoggedIn && $page === 'login') {
     $next = trim((string) ($_GET['next'] ?? ''));
     $target = null;
-    if ($next === 'tv_cabang') {
-        $target = BASE_APP . '/tv_cabang';
+    if (in_array($next, ['tv', 'tv_cabang', 'tv-cabang'], true)) {
+        $target = BASE_APP . '/' . $next;
     } elseif ($next !== '') {
         $parts = parse_url($next);
         if (is_array($parts)) {
