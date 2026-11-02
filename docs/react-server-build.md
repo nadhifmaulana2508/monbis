@@ -1,23 +1,31 @@
 # Build dan test React
 
-## Test Monbis V2 di lokal
+## Build dan test ketiga app di lokal
 
-Di Windows, buka Git Bash lalu build V2 dengan konfigurasi XAMPP:
+Di Windows, buka Git Bash lalu jalankan dari root repo. Perintah ini memasang
+dependency dan membangun KPI Tukin, Monbis V2, serta RBB dengan path XAMPP:
 
 ```bash
-cd /c/xampp/htdocs/report-dpk/monbis-v2
-npm ci
-npm run build:local
+cd /c/xampp/htdocs/report-dpk
+bash tools/build-react-apps.sh --local
 ```
 
-Build dibuat ke folder utama project `v2-react/`. Buka:
+Hasil build masuk ke folder `kpi/`, `v2-react/`, dan `rbb/` di root repo. Buka
+aplikasi lokal melalui:
 
 ```text
+http://localhost/report-dpk/kpi/
 http://localhost/report-dpk/v2-react/
+http://localhost/report-dpk/rbb/
 ```
 
-Build lokal ini hanya untuk testing. Tidak perlu menyalin folder hasilnya ke
-server.
+Build lokal hanya untuk testing; server tetap build ulang dari source setelah
+pull. Jika dependency sudah terpasang dan lockfile tidak berubah, tambahkan
+`--skip-install` agar lebih cepat:
+
+```bash
+bash tools/build-react-apps.sh --local --skip-install
+```
 
 ## Build ulang di server setelah pull
 

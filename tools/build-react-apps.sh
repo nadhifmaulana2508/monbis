@@ -3,12 +3,15 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 INSTALL_DEPS=true
+LOCAL_BUILD=false
 
-case "${1:-}" in
-  "") ;;
-  --skip-install) INSTALL_DEPS=false ;;
-  *) printf 'Usage: bash tools/build-react-apps.sh [--skip-install]\n' >&2; exit 2 ;;
-esac
+for option in "$@"; do
+  case "$option" in
+    --skip-install) INSTALL_DEPS=false ;;
+    --local) LOCAL_BUILD=true ;;
+    *) printf 'Usage: bash tools/build-react-apps.sh [--local] [--skip-install]\n' >&2; exit 2 ;;
+  esac
+done
 
 if ! command -v node >/dev/null 2>&1 || ! command -v npm >/dev/null 2>&1; then
   printf 'Node.js dan npm harus tersedia di PATH.\n' >&2
@@ -30,7 +33,11 @@ for app in "${APPS[@]}"; do
   if [[ "$INSTALL_DEPS" == true ]]; then
     (cd "$app_dir" && npm ci --no-audit --no-fund)
   fi
-  (cd "$app_dir" && npm run build)
+  if [[ "$LOCAL_BUILD" == true ]]; then
+    (cd "$app_dir" && npm run build:local)
+  else
+    (cd "$app_dir" && npm run build)
+  fi
 done
 
 printf '\nSemua aplikasi React berhasil dibuild.\n'
