@@ -21,6 +21,7 @@ kpi-tukin/dist/
 # React build output and dependencies generated on the target server
 monbis-v2/node_modules/
 monbis-v2/dist/
+/v2-react/
 rbb-bisnis/node_modules/
 rbb-bisnis/dist/
 

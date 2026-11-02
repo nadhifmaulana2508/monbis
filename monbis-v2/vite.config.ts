@@ -26,6 +26,10 @@ export default defineConfig(({ command, mode }) => ({
       ? '/report-dpk/v2-react/'
       : '/v2-react/',
   plugins: [react(), tailwindcss()],
+  build: {
+    outDir: '../v2-react',
+    emptyOutDir: true,
+  },
   server: { proxy: { ...apiProxy, ...localApiProxy } },
   preview: { host: 'localhost', port: 4173, strictPort: true, proxy: { ...apiProxy, ...localApiProxy } },
   resolve: {

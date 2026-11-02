@@ -7,9 +7,8 @@ RewriteRule ^v-2/config\.php$ - [F,END,NC]
 RewriteRule ^(?:debug|tmp_kpi_activate)\.php$ - [F,END,NC]
 RewriteRule ^img/_component_demo\.php$ - [F,END,NC]
 
-# Serve the React V2 build at /v2-react while keeping its client-side routes
-# out of the legacy PHP router. Static assets are read from the Vite dist folder.
-RewriteRule ^v2-react/(.*\.(?:js|css|svg|ico|png|jpg|jpeg|webp|woff2?|ttf|txt|json))$ monbis-v2/dist/$1 [END,NC]
+# Serve React V2 assets directly from the folder matching the /v2-react URL.
+RewriteRule ^v2-react/(.*\.(?:js|css|svg|ico|png|jpg|jpeg|webp|woff2?|ttf|txt|json))$ v2-react/$1 [END,NC]
 RewriteRule ^v2-react(?:/(.*))?$ index.php?url=v2-react/$1 [QSA,L]
 
 # Route root KPI through PHP auth guard; existing files under /kpi (assets) remain static.

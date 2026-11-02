@@ -142,8 +142,7 @@ if (preg_match('#^docs(?:/(.*))?$#i', $url, $docsMatch)) {
     exit;
 }
 
-// Fallback untuk hosting yang belum memuat aturan rewrite khusus React V2.
-// Asset tetap dilayani dari dist, sedangkan route client-side memakai index.html.
+// Fallback untuk hosting yang meneruskan route React V2 ke front controller.
 if (preg_match('#^v2-react(?:/(.*))?$#i', $url, $v2ReactMatch)) {
     $v2Route = trim((string) ($v2ReactMatch[1] ?? ''), '/');
     $v2LoginRoute = preg_match('#^login-monbis-v2(?:/|$)#i', $v2Route) === 1;
@@ -157,8 +156,8 @@ if (preg_match('#^v2-react(?:/(.*))?$#i', $url, $v2ReactMatch)) {
         exit;
     }
 
-    $distRoot = realpath(__DIR__ . '/monbis-v2/dist');
-    if ($distRoot === false || !is_file($distRoot . DIRECTORY_SEPARATOR . 'index.html')) {
+    $buildRoot = realpath(__DIR__ . '/v2-react');
+    if ($buildRoot === false || !is_file($buildRoot . DIRECTORY_SEPARATOR . 'index.html')) {
         http_response_code(503);
         echo 'Build React V2 belum tersedia. Jalankan build monbis-v2 terlebih dahulu.';
         exit;
@@ -167,12 +166,12 @@ if (preg_match('#^v2-react(?:/(.*))?$#i', $url, $v2ReactMatch)) {
     $relativePath = str_replace('\\', '/', rawurldecode((string) ($v2ReactMatch[1] ?? '')));
     $isAssetRequest = $relativePath !== ''
         && (strpos($relativePath, 'assets/') === 0 || preg_match('/\.[a-z0-9]{2,5}$/i', $relativePath));
-    $filePath = $relativePath === '' ? false : realpath($distRoot . DIRECTORY_SEPARATOR . $relativePath);
-    $distPrefix = rtrim($distRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-    $isInsideDist = $filePath !== false && strpos($filePath, $distPrefix) === 0;
+    $filePath = $relativePath === '' ? false : realpath($buildRoot . DIRECTORY_SEPARATOR . $relativePath);
+    $buildPrefix = rtrim($buildRoot, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    $isInsideBuild = $filePath !== false && strpos($filePath, $buildPrefix) === 0;
 
     if ($isAssetRequest) {
-        if (!$isInsideDist || !is_file($filePath)) {
+        if (!$isInsideBuild || !is_file($filePath)) {
             http_response_code(404);
             exit;
         }
@@ -195,7 +194,7 @@ if (preg_match('#^v2-react(?:/(.*))?$#i', $url, $v2ReactMatch)) {
         exit;
     }
 
-    readfile($distRoot . DIRECTORY_SEPARATOR . 'index.html');
+    readfile($buildRoot . DIRECTORY_SEPARATOR . 'index.html');
     exit;
 }
 

@@ -1,52 +1,60 @@
-# Build React di server
+# Build dan test React
 
-Build KPI Tukin, Monbis V2, dan RBB React dari source dengan satu perintah:
+## Test Monbis V2 di lokal
+
+Di Windows, buka Git Bash lalu build V2 dengan konfigurasi XAMPP:
+
+```bash
+cd /c/xampp/htdocs/report-dpk/monbis-v2
+npm ci
+npm run build:local
+```
+
+Build dibuat ke folder utama project `v2-react/`. Buka:
+
+```text
+http://localhost/report-dpk/v2-react/
+```
+
+Build lokal ini hanya untuk testing. Tidak perlu menyalin folder hasilnya ke
+server.
+
+## Build ulang di server setelah pull
+
+Setelah source sudah di-push dan di-pull ke server, jalankan dari document root
+project. Untuk dev:
 
 ```bash
 cd /www/wwwroot/dev.monbis.bkkjateng.co.id
+git pull --ff-only origin develop
 bash tools/build-react-apps.sh
 ```
 
-Sesuaikan direktori `cd` dengan lokasi checkout di server. Script akan memasang
-dependency memakai `npm ci` dari lockfile, lalu menjalankan `npm run build` pada
-masing-masing aplikasi. Build menghasilkan:
+Untuk production, gunakan folder checkout production dan ganti branch menjadi
+`prod`:
 
-- KPI Tukin di `kpi/`, untuk route `/kpi/`.
-- Monbis V2 di `monbis-v2/dist/`, untuk route `/v2-react/`.
-- RBB React di `rbb/`, untuk route `/rbb/`.
+```bash
+cd /www/wwwroot/monbis.bkkjateng.co.id
+git pull --ff-only origin prod
+bash tools/build-react-apps.sh
+```
 
-Server perlu Node.js 20.19 atau lebih baru pada seri 20, atau 22.12 ke atas, serta
-akses ke npm registry saat dependency dipasang. Untuk build ulang ketika dependency
-sudah tersedia, gunakan:
+Script memasang dependency dari lockfile lalu membangun KPI Tukin, Monbis V2,
+dan RBB React. Server membutuhkan Node.js 20.19+ atau 22.12+. Bila dependency
+sudah tersedia dan lockfile tidak berubah, tambahkan `--skip-install`:
 
 ```bash
 bash tools/build-react-apps.sh --skip-install
 ```
 
-Jalankan script setelah `git pull` selesai. Output build dan `node_modules` tidak
-perlu di-commit; server membuatnya dari source dan lockfile.
+Hasil build server dan URL-nya:
 
-## Nginx untuk asset Monbis V2
+| Aplikasi | Folder hasil build | URL |
+| --- | --- | --- |
+| KPI Tukin | `kpi/` | `/kpi/` |
+| Monbis V2 React | `v2-react/` | `/v2-react/` |
+| RBB React | `rbb/` | `/rbb/` |
 
-Nginx tidak membaca `.htaccess`. Pastikan file build tetap bisa diakses lewat
-URL `/v2-react/assets/...` dengan menambahkan location berikut di dalam blok
-`server` untuk host aplikasi:
-
-```nginx
-location ^~ /v2-react/assets/ {
-    alias $document_root/monbis-v2/dist/assets/;
-}
-```
-
-`$document_root` harus menunjuk ke direktori root checkout yang berisi folder
-`monbis-v2`. Pasang location ini pada konfigurasi Nginx host dev dan prod, lalu
-validasi dan muat ulang konfigurasi:
-
-```bash
-nginx -t && systemctl reload nginx
-```
-
-Setelah build, pastikan URL asset JS/CSS yang tercantum di
-`monbis-v2/dist/index.html` mengembalikan HTTP 200. Tanpa location ini, halaman
-HTML V2 bisa terbuka tetapi asset React diarahkan ke route login atau menjadi
-404, sehingga tampil kosong.
+V2 menghasilkan asset langsung di folder yang sama dengan path `/v2-react/`,
+jadi tidak perlu aturan Nginx `alias` khusus. Aturan umum website tetap harus
+meneruskan route React yang bukan file ke `index.php`.
