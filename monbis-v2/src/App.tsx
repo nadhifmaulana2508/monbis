@@ -1,21 +1,20 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { LoaderCircle } from "lucide-react"
 
 import { appRoutes } from "@/lib/routes"
 import { clearMonbisSession, validateMonbisSession } from "@/lib/monbis-auth"
 import { LoginPage } from "@/features/login/login-page"
-
-const JatuhTempoPage = lazy(() => import("@/features/jatuh-tempo/jatuh-tempo-page").then((module) => ({ default: module.JatuhTempoPage })))
-const PipelineKreditPage = lazy(() => import("@/features/pipeline-kredit/pipeline-kredit-page").then((module) => ({ default: module.PipelineKreditPage })))
-const NplPage = lazy(() => import("@/features/npl/npl-page").then((module) => ({ default: module.NplPage })))
-const RealisasiGrowthPage = lazy(() => import("@/features/realisasi-growth/realisasi-growth-page").then((module) => ({ default: module.RealisasiGrowthPage })))
-const RbbRealisasiKreditPage = lazy(() => import("@/features/rbb-realisasi-kredit/rbb-realisasi-kredit-page").then((module) => ({ default: module.RbbRealisasiKreditPage })))
-const RepaymentRatePage = lazy(() => import("@/features/repayment-rate/repayment-rate-page").then((module) => ({ default: module.RepaymentRatePage })))
-const RecoveryNplPage = lazy(() => import("@/features/recovery-npl/recovery-npl-page").then((module) => ({ default: module.RecoveryNplPage })))
-const PotensiNplPage = lazy(() => import("@/features/potensi-npl/potensi-npl-page").then((module) => ({ default: module.PotensiNplPage })))
-const UpdateKomitmenFlowPage = lazy(() => import("@/features/update-komitmen-flow/update-komitmen-flow-page").then((module) => ({ default: module.UpdateKomitmenFlowPage })))
-const FlowParPage = lazy(() => import("@/features/flow-par/flow-par-page").then((module) => ({ default: module.FlowParPage })))
-const LabaRugiPage = lazy(() => import("@/features/laba-rugi/laba-rugi-page").then((module) => ({ default: module.LabaRugiPage })))
+import { JatuhTempoPage } from "@/features/jatuh-tempo/jatuh-tempo-page"
+import { PipelineKreditPage } from "@/features/pipeline-kredit/pipeline-kredit-page"
+import { NplPage } from "@/features/npl/npl-page"
+import { RealisasiGrowthPage } from "@/features/realisasi-growth/realisasi-growth-page"
+import { RbbRealisasiKreditPage } from "@/features/rbb-realisasi-kredit/rbb-realisasi-kredit-page"
+import { RepaymentRatePage } from "@/features/repayment-rate/repayment-rate-page"
+import { RecoveryNplPage } from "@/features/recovery-npl/recovery-npl-page"
+import { PotensiNplPage } from "@/features/potensi-npl/potensi-npl-page"
+import { UpdateKomitmenFlowPage } from "@/features/update-komitmen-flow/update-komitmen-flow-page"
+import { FlowParPage } from "@/features/flow-par/flow-par-page"
+import { LabaRugiPage } from "@/features/laba-rugi/laba-rugi-page"
 
 const reportRoutes = Object.values(appRoutes).filter((route) => route !== appRoutes.loginMonbisV2)
 const routeTitles = new Map<string, string>([
@@ -53,7 +52,7 @@ function SessionCheck() {
 }
 
 function App() {
-  const pathname = window.location.pathname
+  const [pathname, setPathname] = useState(() => window.location.pathname)
   const appRoot = import.meta.env.BASE_URL
   const normalizedRoot = appRoot.replace(/\/$/, "")
   const isAppRoot = pathname === "/" || pathname === appRoot || pathname === normalizedRoot
@@ -61,6 +60,12 @@ function App() {
   const isKnownRoute = reportRoutes.includes(pathname)
   const [session, setSession] = useState<"checking" | "signed-out" | "signed-in">("checking")
   const activePath = isAppRoot ? appRoutes.realisasiGrowth : pathname
+
+  useEffect(() => {
+    const syncPathname = () => setPathname(window.location.pathname)
+    window.addEventListener("popstate", syncPathname)
+    return () => window.removeEventListener("popstate", syncPathname)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -114,7 +119,7 @@ function App() {
   if (isLoginRoute && session === "signed-out") return <LoginPage onLogin={() => setSession("signed-in")} />
   if (session !== "signed-in" || isLoginRoute || isAppRoot || !isKnownRoute) return <SessionCheck />
 
-  return <Suspense fallback={<SessionCheck />}>{page}</Suspense>
+  return page
 }
 
 export default App

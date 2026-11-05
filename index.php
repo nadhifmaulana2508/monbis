@@ -249,6 +249,53 @@ if ($page === 'tv-cabang') {
     $page = 'tv_cabang';
 }
 
+// Jika route V2 lebih dulu masuk ke halaman login PHP (misalnya karena
+// konfigurasi rewrite server), lanjutkan ke halaman login React V2.
+if (!$isLoggedIn && $page === 'login') {
+    $next = trim((string) ($_GET['next'] ?? ''));
+    if ($next === '') {
+        $referer = parse_url((string) ($_SERVER['HTTP_REFERER'] ?? ''));
+        if (is_array($referer)
+            && strtolower((string) ($referer['host'] ?? '')) === $hostOnly
+            && strtolower((string) ($referer['scheme'] ?? '')) === $scheme) {
+            $refererPath = (string) ($referer['path'] ?? '');
+            $basePrefix = rtrim($appBasePath, '/');
+            foreach (array_unique(['/v2-react', $basePrefix . '/v2-react']) as $prefix) {
+                if ($refererPath === $prefix || strpos($refererPath, $prefix . '/') === 0) {
+                    $next = $refererPath . (isset($referer['query']) ? '?' . $referer['query'] : '');
+                    break;
+                }
+            }
+        }
+    }
+    $parts = $next !== '' ? parse_url($next) : false;
+    if (is_array($parts)) {
+        $nextHost = strtolower((string) ($parts['host'] ?? ''));
+        $nextScheme = strtolower((string) ($parts['scheme'] ?? $scheme));
+        $nextPath = (string) ($parts['path'] ?? '');
+        $basePrefix = rtrim($appBasePath, '/');
+        $v2Prefixes = ['/v2-react', $basePrefix . '/v2-react'];
+        $isV2Path = false;
+        foreach (array_unique($v2Prefixes) as $prefix) {
+            if ($prefix !== '/v2-react' && $prefix === '') continue;
+            if ($nextPath === $prefix || strpos($nextPath, $prefix . '/') === 0) {
+                $isV2Path = true;
+                break;
+            }
+        }
+        $sameHost = $nextHost === '' || $nextHost === $hostOnly;
+        $sameScheme = $nextScheme === $scheme;
+        $nextPort = isset($parts['port']) ? (int) $parts['port'] : null;
+        $basePort = isset(parse_url(BASE_APP)['port']) ? (int) parse_url(BASE_APP)['port'] : null;
+        $samePort = $nextHost === '' || $nextPort === $basePort;
+        if ($isV2Path && $sameHost && $sameScheme && $samePort) {
+            $safeNext = $nextPath . (isset($parts['query']) ? '?' . $parts['query'] : '');
+            header('Location: ' . BASE_APP . '/v2-react/login-monbis-v2?next=' . rawurlencode($safeNext), true, 302);
+            exit;
+        }
+    }
+}
+
 // =========================
 // PROTEKSI HALAMAN (AUTH GUARD)
 // =========================

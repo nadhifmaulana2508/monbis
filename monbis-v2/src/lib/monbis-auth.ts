@@ -75,7 +75,7 @@ function saveUser(user: MonbisUser) {
   window.__USER = user
 }
 
-export function clearMonbisSession() {
+function clearLocalMonbisSession() {
   try {
     localStorage.removeItem("dpk_token")
     localStorage.removeItem("dpk_user")
@@ -83,7 +83,20 @@ export function clearMonbisSession() {
   } catch { /* Session cleanup should continue even when storage is blocked. */ }
   document.cookie = "sso_token=; path=/; max-age=0; SameSite=Lax"
   window.__USER = undefined
+}
+
+export function clearMonbisSession() {
+  clearLocalMonbisSession()
   void fetch(apiEndpoint("auth/logout"), { method: "POST", credentials: "include", cache: "no-store", keepalive: true }).catch(() => undefined)
+}
+
+export async function logoutMonbisSession() {
+  clearLocalMonbisSession()
+  try {
+    await fetch(apiEndpoint("auth/logout"), { method: "POST", credentials: "include", cache: "no-store" })
+  } catch {
+    // Continue to the login screen if the server cannot clear its cookie.
+  }
 }
 
 export async function loginMonbis(employeeId: string, password: string) {

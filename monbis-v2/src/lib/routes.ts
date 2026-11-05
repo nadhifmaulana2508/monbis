@@ -15,3 +15,16 @@ export const appRoutes = {
   flowPar: route("/flow-par"),
   labaRugi: route("/laba-rugi"),
 } as const
+
+export function navigateApp(path: string, replace = false) {
+  const target = new URL(path, window.location.origin)
+  if (target.origin !== window.location.origin) return
+
+  const nextUrl = `${target.pathname}${target.search}${target.hash}`
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  if (nextUrl === currentUrl) return
+
+  if (replace) window.history.replaceState({}, "", nextUrl)
+  else window.history.pushState({}, "", nextUrl)
+  window.dispatchEvent(new PopStateEvent("popstate"))
+}

@@ -118,7 +118,7 @@ export function RecoveryNplPage() {
   const attention = [...rows].filter((row) => Number(row.net_flow_recovery ?? 0) > 0).sort((a, b) => Number(b.net_flow_recovery ?? 0) - Number(a.net_flow_recovery ?? 0)).slice(0, 3)
   const detailChangeStatus = (status: string) => { setDetailRows([]); setDetailLoading(true); setDetailError(null); setDetailStatus(status) }
 
-  return <AppShell title="Recovery NPL" description="Rekap pemulihan dan flow kredit NPL." activeHref={appRoutes.recoveryNpl} legacyHref="/recovery_npl" navbarContent={filterPanel} showPageTitle={false}>
+  return <AppShell title="Recovery NPL" description="Rekap pemulihan dan flow kredit NPL." activeHref={appRoutes.recoveryNpl} navbarContent={filterPanel} showPageTitle={false}>
     <div className="density-page mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background">
         <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5 sm:px-5">

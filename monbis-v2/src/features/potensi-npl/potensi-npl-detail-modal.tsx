@@ -4,7 +4,7 @@ import { ChevronDown, Download, FilePenLine } from "lucide-react"
 import { DetailSearchToggle, ReportDetailFilters } from "@/components/report-detail-filters"
 import { ReportDetailLayer } from "@/components/report-detail-layer"
 import { ReportModalCloseButton } from "@/components/report-modal-close-button"
-import { appRoutes } from "@/lib/routes"
+import { appRoutes, navigateApp } from "@/lib/routes"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Collapsible } from "@/components/ui/collapsible"
@@ -42,7 +42,7 @@ export function PotensiNplDetailModal({ office, kankas, label, filters, rows, lo
     const payload = { source: "potensi_npl", kode_kantor: office === "000" ? "" : office, kode_kankas: detailFilters.kankas || kankas || "", kode_ao: detailFilters.ao, status_filter: detailFilters.status, commitment_filter: detailFilters.commitment, closing_date: filters.closingDate, harian_date: filters.actualDate }
     sessionStorage.setItem("flowpar_update", JSON.stringify(payload))
     sessionStorage.removeItem("potensinpl_update")
-    window.location.assign(appRoutes.updateKomitmenFlow)
+    navigateApp(appRoutes.updateKomitmenFlow)
   }
   const statusClass = (row: PotensiRow) => potensiStatus(row) === "AMAN" ? "border-signal-green/30 bg-signal-green/10 text-signal-green-foreground" : potensiStatus(row) === "FLOW KOLEK" ? "border-destructive/30 bg-destructive/10 text-destructive" : potensiStatus(row) === "JATUH TEMPO" ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300" : "border-orange-500/30 bg-orange-500/10 text-orange-700 dark:text-orange-300"
   const filtersToolbar = <div className={`grid min-w-0 gap-2 ${office === "000" ? "grid-cols-2" : "grid-cols-4"}`}>

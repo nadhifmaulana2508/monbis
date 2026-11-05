@@ -106,7 +106,7 @@ export function PipelineKreditPage() {
     return `${areaLabel} | Closing ${formatPipelineDate(filters.closingDate)} | Actual ${formatPipelineDate(filters.actualDate)}`
   }, [filters, offices])
   const title = effectiveBreakdown === "CABANG" ? "Nama Kantor" : effectiveBreakdown === "KANKAS" ? "Nama Kankas" : "Nama AO"
-  return <AppShell title="Pipeline Kredit" description="Rekap dan detail pipeline kredit berdasarkan periode terpilih." activeHref={appRoutes.pipelineKredit} legacyHref="/recom_pipelane" navbarContent={<PipelineFilterPanel filters={filters} onChange={updateFilters} disabled={userCode !== "000"} offices={offices} />} showPageTitle={false}>
+  return <AppShell title="Pipeline Kredit" description="Rekap dan detail pipeline kredit berdasarkan periode terpilih." activeHref={appRoutes.pipelineKredit} navbarContent={<PipelineFilterPanel filters={filters} onChange={updateFilters} disabled={userCode !== "000"} offices={offices} />} showPageTitle={false}>
     <div className="density-page mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background">
         <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5 sm:px-5">

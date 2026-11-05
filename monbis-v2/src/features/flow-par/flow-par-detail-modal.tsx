@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp, Download, LoaderCircle, PencilLine, X } from "l
 import { DetailSearchToggle, ReportDetailFilters } from "@/components/report-detail-filters"
 import { ReportDetailLayer } from "@/components/report-detail-layer"
 import { Button } from "@/components/ui/button"
-import { appRoutes } from "@/lib/routes"
+import { appRoutes, navigateApp } from "@/lib/routes"
 import { exportFlowParDetail, flowParDate, flowParDetailPayload, flowParHasCommitment, flowParNumber, flowParValue, requestFlowPar, type FlowParDetailSelection, type FlowParFilters, type FlowParRow } from "./flow-par-data"
 
 type Props = { selection: FlowParDetailSelection; filters: FlowParFilters; onClose: () => void }
@@ -79,7 +79,7 @@ export function FlowParDetailModal({ selection, filters, onClose }: Props) {
 
   const goToUpdate = () => {
     sessionStorage.setItem("flowpar_update", JSON.stringify({ kode_kantor: selection.kode === "000" ? "" : selection.kode.slice(0, 3), kode_kankas: kankasFilter, korwil: selection.korwil, klasifikasi_flow: selection.klasifikasi, closing_date: filters.closingDate, harian_date: filters.actualDate }))
-    window.location.assign(appRoutes.updateKomitmenFlow)
+    navigateApp(appRoutes.updateKomitmenFlow)
   }
   const exportDetail = () => exportFlowParDetail(filtered, filters)
   const changeKankas = (value: string) => { setLoading(true); setRows([]); setError(null); setKankasFilter(value) }

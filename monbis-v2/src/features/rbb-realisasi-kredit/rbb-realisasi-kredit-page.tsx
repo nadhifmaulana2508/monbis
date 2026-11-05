@@ -91,7 +91,7 @@ export function RbbRealisasiKreditPage() {
   const handleSort = (column: string) => setSort((current) => ({ column, direction: current.column === column && current.direction === "asc" ? "desc" : "asc" }))
   const exportRows = sortedRows
 
-  return <AppShell title="RBB Realisasi Kredit" description="Perbandingan realisasi produksi kredit dengan target RBB." activeHref={appRoutes.rbbRealisasiKredit} legacyHref="/realisasi_rbb" navbarContent={filterPanel} showPageTitle={false}>
+  return <AppShell title="RBB Realisasi Kredit" description="Perbandingan realisasi produksi kredit dengan target RBB." activeHref={appRoutes.rbbRealisasiKredit} navbarContent={filterPanel} showPageTitle={false}>
     <div className="density-page mx-auto flex h-full min-h-0 w-full max-w-[1600px] flex-col px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border bg-background">
         <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-4 py-2.5 sm:px-5">

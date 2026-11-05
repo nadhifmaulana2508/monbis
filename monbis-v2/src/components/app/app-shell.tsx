@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useState, type ReactNode } from "react"
+import { useEffect, useLayoutEffect, useState, type MouseEvent, type ReactNode } from "react"
 import type { LucideIcon } from "lucide-react"
 import {
   BarChart3,
   ChevronRight,
   Landmark,
+  LogOut,
   Menu,
   Moon,
   PanelLeftClose,
@@ -14,10 +15,10 @@ import {
   UserRound,
 } from "lucide-react"
 
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { appRoutes } from "@/lib/routes"
-import { clearMonbisSession } from "@/lib/monbis-auth"
+import { appRoutes, navigateApp } from "@/lib/routes"
+import { logoutMonbisSession } from "@/lib/monbis-auth"
 import { ProfileSettingsModal } from "./profile-settings-modal"
 import {
   defaultPreferences,
@@ -45,7 +46,6 @@ type AppShellProps = {
   title: string
   description: string
   activeHref: string
-  legacyHref?: string
   navbarContent?: ReactNode
   showPageTitle?: boolean
 }
@@ -66,6 +66,15 @@ function applyTheme(theme: ThemeMode, systemDark: boolean) {
   const isDark = theme === "dark" || (theme === "system" && systemDark)
   document.documentElement.classList.toggle("dark", isDark)
   document.documentElement.style.colorScheme = isDark ? "dark" : "light"
+}
+
+function handleAppLinkClick(event: MouseEvent<HTMLAnchorElement>, href: string, afterNavigate?: () => void) {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+  const target = new URL(href, window.location.href)
+  if (target.origin !== window.location.origin) return
+  event.preventDefault()
+  navigateApp(`${target.pathname}${target.search}${target.hash}`)
+  afterNavigate?.()
 }
 
 const navGroups: NavGroup[] = [
@@ -189,7 +198,7 @@ function Navigation({
                     <a
                       href={item.href}
                       aria-current={isActive ? "page" : undefined}
-                      onClick={onNavigate}
+                      onClick={(event) => handleAppLinkClick(event, item.href!, onNavigate)}
                       className={cn(
                         "group flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 sm:min-h-11",
                         compact && "justify-center px-0",
@@ -211,7 +220,7 @@ function Navigation({
                             key={child.href}
                             href={child.href}
                             aria-current={childActive ? "page" : undefined}
-                            onClick={onNavigate}
+                            onClick={(event) => handleAppLinkClick(event, child.href!, onNavigate)}
                             className={cn(
                               "flex min-h-9 min-w-0 items-center rounded-lg px-3 py-1.5 text-sm font-medium text-muted-foreground outline-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 sm:min-h-10",
                               childActive && "bg-muted text-foreground hover:bg-muted",
@@ -233,11 +242,12 @@ function Navigation({
   )
 }
 
-function Brand({ compact }: { compact: boolean }) {
+function Brand({ compact, onNavigate }: { compact: boolean; onNavigate?: () => void }) {
   return (
     <a
-      href="/pages/dashboard.php"
-      aria-label="MONBIS, buka dashboard"
+      href={appRoutes.realisasiGrowth}
+      aria-label="MONBIS, buka halaman utama"
+      onClick={(event) => handleAppLinkClick(event, appRoutes.realisasiGrowth, onNavigate)}
       className={cn(
         "flex min-h-11 items-center gap-3 rounded-lg px-2 outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
         compact && "justify-center px-0",
@@ -283,7 +293,7 @@ function Sidebar({
           compact && !mobile ? "justify-center" : "justify-between",
         )}
       >
-        <Brand compact={compact && !mobile} />
+        <Brand compact={compact && !mobile} onNavigate={onClose} />
         {mobile && (
           <Button
             type="button"
@@ -316,7 +326,6 @@ export function AppShell({
   title,
   description,
   activeHref,
-  legacyHref,
   navbarContent,
   showPageTitle = true,
 }: AppShellProps) {
@@ -330,6 +339,12 @@ export function AppShell({
   const [systemDark, setSystemDark] = useState(() => (
     typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches
   ))
+
+  async function logout() {
+    const next = `${window.location.pathname}${window.location.search}`
+    await logoutMonbisSession()
+    window.location.replace(`${appRoutes.loginMonbisV2}?next=${encodeURIComponent(next)}`)
+  }
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)")
@@ -499,12 +514,10 @@ export function AppShell({
                 >
                   <UserRound aria-hidden="true" />
                 </Button>
-                <a
-                  href={legacyHref || activeHref}
-                  className={cn(buttonVariants({ variant: "signalGray", size: "sm" }), "hidden sm:inline-flex")}
-                >
-                  Buka halaman lama
-                </a>
+                <Button type="button" variant="outline" size="sm" className="size-11 px-0 sm:h-8 sm:w-auto sm:px-2.5" onClick={() => void logout()} aria-label="Keluar dari MONBIS" title="Keluar dari MONBIS">
+                  <LogOut aria-hidden="true" />
+                  <span className="hidden sm:inline">Keluar</span>
+                </Button>
               </div>
             </div>
             {navbarContent && navbarFilterOpen && (
@@ -528,10 +541,7 @@ export function AppShell({
         preferences={appearance}
         onChange={setAppearance}
         onReset={() => setAppearance(defaultPreferences)}
-        onLogout={() => {
-          clearMonbisSession()
-          window.location.replace(`${appRoutes.loginMonbisV2}?next=${encodeURIComponent(`${window.location.pathname}${window.location.search}`)}`)
-        }}
+        onLogout={() => void logout()}
         onClose={() => setProfileOpen(false)}
       />
     </div>

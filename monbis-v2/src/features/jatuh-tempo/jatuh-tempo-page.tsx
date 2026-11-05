@@ -290,7 +290,6 @@ export function JatuhTempoPage() {
       title="Jatuh Tempo Kredit"
       description="Rekap kredit jatuh tempo berdasarkan periode dan basis nominal terpilih."
       activeHref={appRoutes.jatuhTempo}
-      legacyHref="/pages/jatuh_tempo.php"
       navbarContent={filterPanel}
       showPageTitle={false}
     >

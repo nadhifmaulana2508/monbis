@@ -238,5 +238,5 @@ export function UpdateKomitmenFlowPage() {
     {form && request && <UpdateCommitmentDialog form={form} request={request} saving={saving} error={saveError} onChange={(next) => setForm((current) => current ? { ...current, ...next } : current)} onClose={() => { if (!saving) { setForm(null); setSaveError(null) } }} onSave={() => void saveCommitment()} />}
   </div>
 
-  return <AppShell title={heading} description="Perbarui komitmen pembayaran Flow PAR atau Potensi NPL." activeHref={appRoutes.updateKomitmenFlow} legacyHref="/update_flowpar" navbarContent={navbarFilters} showPageTitle={false}>{content}</AppShell>
+  return <AppShell title={heading} description="Perbarui komitmen pembayaran Flow PAR atau Potensi NPL." activeHref={appRoutes.updateKomitmenFlow} navbarContent={navbarFilters} showPageTitle={false}>{content}</AppShell>
 }

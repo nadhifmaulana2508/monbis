@@ -263,7 +263,6 @@ export function RealisasiGrowthPage() {
       title="Realisasi Kredit & Growth"
       description="Perbandingan produksi, run off, saldo bank, dan pertumbuhan kredit."
       activeHref={appRoutes.realisasiGrowth}
-      legacyHref="/pages/realisasi_kredit_growth.php"
       navbarContent={filterPanel}
       showPageTitle={false}
     >
