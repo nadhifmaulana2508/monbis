@@ -231,6 +231,13 @@ mb_ui_assets('.');
         ['noa_angsuran_murni','NOA Run Off Angsuran','count'],['angsuran_murni','Run Off Angsuran · Baki Debet','money']
       ].forEach(([key,label,kind]) => metric(`flow_${key}`,label,kind));
     }
+    section('NILAI PPAPWD PER KOLEKTIBILITAS');
+    kolek.forEach(([key,label]) => metric(`nilai_ppapwd_kolek_${key}`,`Nilai PPAPWD · Kolek ${label}`));
+    section('KOMPONEN PEMBENTUK LOAN AT RISK (LAR)');
+    metric('lar_dpk','Kredit Dalam Perhatian Khusus · DPK / Kol 2');
+    metric('lar_npl','Kredit Bermasalah · NPL / Kol 3–5');
+    metric('lar_restruk_l','Restruk dalam Pemantauan · Kol L / Realisasi 3 Bulan');
+    metric('lar_total','Total Loan at Risk · LAR');
     return rows;
   }
 

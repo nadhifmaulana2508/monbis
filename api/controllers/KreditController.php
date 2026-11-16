@@ -3505,6 +3505,10 @@ class KreditController {
             }
         }
 
+        $larClosingDate = DateTimeImmutable::createFromFormat('!Y-m-d', $harian);
+        $larPeriodStart = $larClosingDate->modify('first day of this month')->modify('-2 months')->format('Y-m-d');
+        $larPeriodEndExclusive = $larClosingDate->modify('+1 day')->format('Y-m-d');
+
         $productCodes = ['135', '136', '137', '138', '139'];
         $nplCondition = "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) IN ('KL','D','M')";
         $productSums = [];
@@ -3558,18 +3562,31 @@ class KreditController {
             $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.saldo_bank,0) ELSE 0 END) AS ead_kolek_{$key}";
             $metrics[] = "SUM(CASE WHEN {$condition} AND UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'COLLECTIVE' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_kolek_{$key}";
             $metrics[] = "SUM(CASE WHEN {$condition} AND UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'INDIVIDUAL' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_individual_kolek_{$key}";
+            $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.nilai_ppapwd,0) ELSE 0 END) AS nilai_ppapwd_kolek_{$key}";
         }
+        $larDpkCondition = "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) IN ('DP','DPK','2')";
+        $larNplCondition = "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) IN ('KL','D','M')";
+        $larRestrukCondition = "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) IN ('L','1') AND UPPER(TRIM(COALESCE(x.status_restruk,''))) = 'RESTRUK' AND x.lar_restruk_match IS NOT NULL";
+        $metrics[] = "SUM(CASE WHEN {$larDpkCondition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS lar_dpk";
+        $metrics[] = "SUM(CASE WHEN {$larNplCondition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS lar_npl";
+        $metrics[] = "SUM(CASE WHEN {$larRestrukCondition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS lar_restruk_l";
         $metrics[] = "SUM(CASE WHEN UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'COLLECTIVE' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_total";
         $metrics[] = "SUM(CASE WHEN UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'INDIVIDUAL' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_individual_total";
 
         $sql = "SELECT x.kode_cabang, ".implode(",\n", $metrics)."
             FROM (
                 SELECT n.kode_cabang, n.no_rekening, n.kolektibilitas, n.hari_menunggak,
-                       n.baki_debet, n.saldo_bank, n.jml_pinjaman, n.nilai_ckpn, n.metode_hitung_ckpn,
-                       n.status_rekening_ckpn,
+                       n.baki_debet, n.saldo_bank, n.jml_pinjaman, n.nilai_ckpn, n.nilai_ppapwd, n.metode_hitung_ckpn,
+                       n.status_rekening_ckpn, n.status_restruk, r.no_rekening AS lar_restruk_match,
                        COALESCE(NULLIF(TRIM(CAST(pk.kode_baru AS CHAR)), ''), CAST(n.kode_produk AS CHAR)) AS kode_produk_laporan
                 FROM nominatif n
                 LEFT JOIN produk_kredit pk ON CAST(pk.kode_produk AS CHAR) = CAST(n.kode_produk AS CHAR)
+                LEFT JOIN (
+                    SELECT DISTINCT kode_kantor, no_rekening
+                    FROM update_realisasi_kredit
+                    WHERE tanggal_realisasi >= :lar_period_start
+                      AND tanggal_realisasi < :lar_period_end_exclusive
+                ) r ON r.kode_kantor = n.kode_cabang AND r.no_rekening = n.no_rekening
                 WHERE n.created = :harian
                   AND n.kode_cabang BETWEEN '001' AND '028'
                   AND COALESCE(n.baki_debet,0) > 0
@@ -3580,12 +3597,17 @@ class KreditController {
 
         try {
             $stmt = $this->pdo->prepare($sql);
-            $stmt->execute([':harian' => $harian]);
+            $stmt->execute([
+                ':harian' => $harian,
+                ':lar_period_start' => $larPeriodStart,
+                ':lar_period_end_exclusive' => $larPeriodEndExclusive,
+            ]);
             $byOffice = [];
             foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
                 $code = str_pad((string)$row['kode_cabang'], 3, '0', STR_PAD_LEFT);
                 unset($row['kode_cabang']);
                 foreach ($row as $key => $value) $row[$key] = (float)$value;
+                $row['lar_total'] = $row['lar_dpk'] + $row['lar_npl'] + $row['lar_restruk_l'];
                 $byOffice[$code] = $row;
             }
 
