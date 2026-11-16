@@ -1,14 +1,22 @@
-import { useEffect, useState, type FormEvent } from "react"
+import { useCallback, useEffect, useState, type FormEvent } from "react"
 import { BarChart3, Eye, EyeOff, LoaderCircle, ShieldCheck } from "lucide-react"
 
 import { RbbPage } from "@/features/rbb-page"
 import { Button } from "@/components/ui/button"
-import { loginWithMonbis, validateRbbSession, type RbbUser } from "@/lib/auth"
+import { clearRbbSession, loginWithMonbis, validateRbbSession, type RbbUser } from "@/lib/auth"
+import { installIdleLogout } from "../../shared/idle-session"
 
 export default function App() {
   const [user, setUser] = useState<RbbUser | null>(null)
   const [checking, setChecking] = useState(true)
   const [sessionError, setSessionError] = useState("")
+
+  const handleIdleLogout = useCallback(async () => {
+    await clearRbbSession()
+    setUser(null)
+  }, [])
+
+  useEffect(() => installIdleLogout(Boolean(user), handleIdleLogout), [handleIdleLogout, user])
 
   useEffect(() => {
     const controller = new AbortController()

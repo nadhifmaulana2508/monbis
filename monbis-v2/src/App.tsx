@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { LoaderCircle } from "lucide-react"
 
 import { appRoutes } from "@/lib/routes"
-import { clearMonbisSession, validateMonbisSession } from "@/lib/monbis-auth"
+import { logoutMonbisSession, validateMonbisSession } from "@/lib/monbis-auth"
+import { installIdleLogout } from "../../shared/idle-session"
 import { LoginPage } from "@/features/login/login-page"
 import { JatuhTempoPage } from "@/features/jatuh-tempo/jatuh-tempo-page"
 import { PipelineKreditPage } from "@/features/pipeline-kredit/pipeline-kredit-page"
@@ -61,6 +62,13 @@ function App() {
   const [session, setSession] = useState<"checking" | "signed-out" | "signed-in">("checking")
   const activePath = isAppRoot ? appRoutes.realisasiGrowth : pathname
 
+  const handleIdleLogout = useCallback(async () => {
+    await logoutMonbisSession()
+    setSession("signed-out")
+  }, [])
+
+  useEffect(() => installIdleLogout(session === "signed-in", handleIdleLogout), [handleIdleLogout, session])
+
   useEffect(() => {
     const syncPathname = () => setPathname(window.location.pathname)
     window.addEventListener("popstate", syncPathname)
@@ -74,13 +82,10 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const onExpired = () => {
-      clearMonbisSession()
-      setSession("signed-out")
-    }
+    const onExpired = () => { void handleIdleLogout() }
     window.addEventListener("monbis:session-expired", onExpired)
     return () => window.removeEventListener("monbis:session-expired", onExpired)
-  }, [])
+  }, [handleIdleLogout])
 
   useEffect(() => {
     if (session === "checking") return

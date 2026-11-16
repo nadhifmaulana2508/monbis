@@ -6,11 +6,19 @@ import { KpiModulePage } from "@/features/kpi-module-page"
 import { SettingKpiJabatanPage } from "@/features/setting-kpi-jabatan/setting-kpi-jabatan-page"
 import { KpiLoginPage } from "@/features/login/kpi-login-page"
 import { kpiRoutes, isKpiRoute } from "@/lib/routes"
-import { validateKpiSession } from "@/lib/auth"
+import { logoutKpiSession, validateKpiSession } from "@/lib/auth"
+import { installIdleLogout } from "../../shared/idle-session"
 
 function App() {
   const [pathname, setPathname] = useState(() => window.location.pathname)
   const [session, setSession] = useState<"checking" | "signed-out" | "signed-in">("checking")
+
+  const handleIdleLogout = useCallback(async () => {
+    await logoutKpiSession()
+    setSession("signed-out")
+  }, [])
+
+  useEffect(() => installIdleLogout(session === "signed-in", handleIdleLogout), [handleIdleLogout, session])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -19,10 +27,10 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const onExpired = () => setSession("signed-out")
+    const onExpired = () => handleIdleLogout()
     window.addEventListener("monbis:session-expired", onExpired)
     return () => window.removeEventListener("monbis:session-expired", onExpired)
-  }, [])
+  }, [handleIdleLogout])
 
   useEffect(() => {
     const onPopState = () => setPathname(window.location.pathname)

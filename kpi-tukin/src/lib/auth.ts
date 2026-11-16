@@ -108,6 +108,21 @@ export async function validateKpiSession(signal?: AbortSignal) {
   }
 }
 
+export function logoutKpiSession() {
+  try {
+    localStorage.removeItem("dpk_token")
+    localStorage.removeItem("dpk_user")
+    localStorage.removeItem("dpk_user_verified_at")
+  } catch { /* Continue logout even when browser storage is blocked. */ }
+  document.cookie = "sso_token=; max-age=0; path=/; SameSite=Lax"
+  const hostname = window.location.hostname.toLowerCase()
+  if (hostname === "bkkjateng.co.id" || hostname.endsWith(".bkkjateng.co.id")) {
+    document.cookie = "sso_token=; max-age=0; path=/; domain=.bkkjateng.co.id; SameSite=Lax"
+  }
+  window.AUTH_TOKEN = ""
+  return fetch(apiUrl("auth/logout"), { method: "POST", credentials: "include", cache: "no-store" }).catch(() => undefined)
+}
+
 export function userOfficeCode(user: MonbisUser | null) {
   const raw = user?.kode_kantor || user?.kode || user?.kode_cabang || "000"
   const digits = String(raw).replace(/\D/g, "")

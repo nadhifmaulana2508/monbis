@@ -9,11 +9,13 @@
       host: <?= json_encode(defined('APP_HOST') ? APP_HOST : ($_SERVER['HTTP_HOST'] ?? ''), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
       scheme: <?= json_encode(defined('APP_SCHEME') ? APP_SCHEME : (($_SERVER['HTTPS'] ?? '') !== 'off' ? 'https' : 'http'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
       baseUrl: <?= json_encode(defined('BASE_APP') ? BASE_APP : '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
+      authenticated: <?= json_encode(!empty($isLoggedIn)) ?>,
       ssoApiBase: <?= json_encode(function_exists('getSsoApiBase') ? getSsoApiBase() : 'https://apisso.bkkjateng.co.id', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
     });
     window.BASE_APP = window.MONBIS_CONFIG.baseUrl;
     try { localStorage.removeItem('dpk_token'); } catch (error) {}
   </script>
+  <script src="<?= htmlspecialchars(BASE_APP . '/assets/js/idle-session.js', ENT_QUOTES, 'UTF-8') ?>" defer></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">

@@ -56,8 +56,15 @@ export async function validateRbbSession(signal?: AbortSignal) {
 }
 
 export function clearRbbSession() {
-  return requestAppApi<unknown>("logout", {
-    method: "POST",
-    headers: { Accept: "application/json" },
-  })
+  try {
+    localStorage.removeItem("dpk_token")
+    localStorage.removeItem("dpk_user")
+    localStorage.removeItem("dpk_user_verified_at")
+  } catch { /* Continue logout even when browser storage is blocked. */ }
+  document.cookie = "sso_token=; max-age=0; path=/; SameSite=Lax"
+  const hostname = window.location.hostname.toLowerCase()
+  if (hostname === "bkkjateng.co.id" || hostname.endsWith(".bkkjateng.co.id")) {
+    document.cookie = "sso_token=; max-age=0; path=/; domain=.bkkjateng.co.id; SameSite=Lax"
+  }
+  return fetch(apiUrl("auth/logout"), { method: "POST", credentials: "include", cache: "no-store" }).catch(() => undefined)
 }
