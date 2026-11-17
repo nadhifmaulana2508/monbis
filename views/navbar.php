@@ -127,8 +127,8 @@ if (is_array($rbacInitialAccess ?? null)) {
   #raportCabangNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:minmax(0,1fr) minmax(0,1.2fr); }
   #raportCabangNavbarFilterPanel .dashboard-navbar-filter__submit { display:inline-flex !important; width:36px; min-width:36px; min-height:36px; padding:0; }
   #raportCabangNavbarFilterPanel .dashboard-navbar-filter__submit svg { width:17px; height:17px; }
-  #gambaranKreditNavbarFilterPanel { width:min(440px, calc(100vw - 24px)); }
-  #gambaranKreditNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  #gambaranKreditNavbarFilterPanel { width:min(540px, calc(100vw - 24px)); }
+  #gambaranKreditNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(3, minmax(0, 1fr)); }
   @keyframes dashboardFilterIn { from { opacity:0; transform:translateY(-5px) scale(.99); } to { opacity:1; transform:translateY(0) scale(1); } }
   :root[data-monbis-theme="dark"] .dashboard-navbar-filter-toggle { background:#0b1220; border-color:#475569; color:#cbd5e1; }
   :root[data-monbis-theme="dark"] .dashboard-navbar-filter-toggle.is-active { color:#bfdbfe; border-color:#60a5fa; background:#172554; }
@@ -151,6 +151,8 @@ if (is_array($rbacInitialAccess ?? null)) {
     #raportCabangNavbarFilterPanel { right:8px; width:calc(100vw - 16px); }
     #raportCabangNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
     #gambaranKreditNavbarFilterPanel { right:8px; width:calc(100vw - 16px); }
+    #gambaranKreditNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+    #gambaranKreditNavbarFilterPanel .dashboard-navbar-filter__field:last-child { grid-column:1 / -1; }
   }
   @media (max-width:420px) {
     .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:7px; }
@@ -2227,6 +2229,13 @@ if (is_array($rbacInitialAccess ?? null)) {
           <div class="dashboard-navbar-filter__field">
             <label for="gkcOffice">Cabang</label>
             <select id="gkcOffice" aria-label="Filter cabang"><option value="">Semua cabang</option></select>
+          </div>
+          <div class="dashboard-navbar-filter__field">
+            <label for="gkcNominalField">Basis nominal report</label>
+            <select id="gkcNominalField" aria-label="Basis nominal laporan">
+              <option value="saldo_bank" selected>Saldo Bank</option>
+              <option value="baki_debet">Baki Debet</option>
+            </select>
           </div>
         </div>
       </div>

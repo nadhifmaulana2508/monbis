@@ -102,6 +102,7 @@ mb_ui_assets('.');
   const refresh = document.getElementById('gkcRefresh');
   const exportButton = document.getElementById('gkcExport');
   const officeSelect = document.getElementById('gkcOffice');
+  const nominalFieldSelect = document.getElementById('gkcNominalField');
   const exportMenu = document.getElementById('gkcExportMenu');
   const filterPanel = document.getElementById('gambaranKreditNavbarFilterPanel');
   const filterToggle = document.getElementById('gambaranKreditNavbarFilterToggle');
@@ -134,6 +135,8 @@ mb_ui_assets('.');
   const localMonthValue = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
   const previousMonthValue = date => localMonthValue(new Date(date.getFullYear(),date.getMonth()-1,1));
   const get = (office, key) => Number(office?.metrics?.[key] || 0);
+  const getNominalField = () => nominalFieldSelect?.value === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+  const nominalLabel = nominalField => nominalField === 'baki_debet' ? 'Baki Debet' : 'Saldo Bank';
   const format = (value, kind) => kind === 'count' ? numberFormat.format(Math.round(value)) : numberFormat.format(Math.round(value));
   const sum = (offices, key) => offices.reduce((total, office) => total + get(office, key), 0);
   const syncStickyHeaderOffset = () => {
@@ -152,10 +155,10 @@ mb_ui_assets('.');
   const indexFlow = flow => new Map((flow?.data || []).map(row=>[String(row.kode_kantor).padStart(3,'0'),row]));
   const officeAt = (snapshot, code) => (snapshot?.offices || []).find(office=>String(office.kode_kantor).padStart(3,'0') === code) || {kode_kantor:code,nama_kantor:'',metrics:{}};
 
-  async function loadOfficeTimeline(code, year, selectedMonth, currentOffice, signal) {
+  async function loadOfficeTimeline(code, year, selectedMonth, currentOffice, nominalField, signal) {
     const priorYear = year - 1;
     const priorYearEnd = `${priorYear}-12-31`;
-    const baseline = await requestReport({type:'gambaran_kredit_cabang',harian_date:priorYearEnd,resolve_latest_on_or_before:true},signal);
+    const baseline = await requestReport({type:'gambaran_kredit_cabang',harian_date:priorYearEnd,resolve_latest_on_or_before:true,nominal_field:nominalField},signal);
     const timeline = [{label:`Akhir ${priorYear}`,snapshotDate:baseline.harian_date,office:officeAt(baseline,code),flow:null}];
     const historicalMonths = Array.from({length:selectedMonth-1},(_,index)=>index+1);
     const byMonth = new Map([[selectedMonth,{snapshotDate:currentData?.harian_date,office:currentOffice,flow:currentOffice?.flow || {}}]]);
@@ -167,8 +170,8 @@ mb_ui_assets('.');
         const previous = new Date(year,month-1,0);
         const closingDate = `${previous.getFullYear()}-${String(previous.getMonth()+1).padStart(2,'0')}-${String(previous.getDate()).padStart(2,'0')}`;
         const [snapshot,flow] = await Promise.all([
-          requestReport({type:'gambaran_kredit_cabang',harian_date:endDate,resolve_latest_on_or_before:true},signal),
-          requestReport({type:'rekap_realisasi_growth',closing_date:closingDate,harian_date:endDate,nominal_field:'baki_debet'},signal)
+          requestReport({type:'gambaran_kredit_cabang',harian_date:endDate,resolve_latest_on_or_before:true,nominal_field:nominalField},signal),
+          requestReport({type:'rekap_realisasi_growth',closing_date:closingDate,harian_date:endDate,nominal_field:nominalField},signal)
         ]);
         return [month,{snapshotDate:snapshot.harian_date,office:officeAt(snapshot,code),flow:indexFlow(flow).get(code) || {}}];
       }));
@@ -188,27 +191,27 @@ mb_ui_assets('.');
     if ([...officeSelect.options].some(option=>option.value === selected)) officeSelect.value = selected;
   }
 
-  function descriptors(periodDate = currentData?.harian_date, includeFlow = true) {
+  function descriptors(periodDate = currentData?.harian_date, includeFlow = true, nominalField = getNominalField()) {
     const rows = [];
     const section = label => rows.push({section:label});
     const metric = (key, label, kind='money') => rows.push({key,label,kind});
     section('PORTOFOLIO');
-    metric('kredit_total','Baki Debet');
-    metric('ead_total','EAD · Saldo Bank');
+    metric('kredit_total',nominalLabel(nominalField));
+    if (nominalField === 'baki_debet') metric('ead_total','EAD · Saldo Bank');
     metric('noa_total','NOA Kredit','count');
-    metric('kredit_npl','Kredit NPL');
+    metric('kredit_npl',`Kredit NPL · ${nominalLabel(nominalField)}`);
     metric('noa_npl','NOA NPL','count');
     section('PORTOFOLIO PER PRODUK');
     productRows.forEach(([code,name]) => {
-      metric(`kredit_produk_${code}`,`${code} · ${name} — Baki Debet`);
+      metric(`kredit_produk_${code}`,`${code} · ${name} — ${nominalLabel(nominalField)}`);
       metric(`noa_produk_${code}`,`${code} · ${name} — NOA`,'count');
-      metric(`npl_produk_${code}`,`${code} · ${name} — NPL`);
+      metric(`npl_produk_${code}`,`${code} · ${name} — NPL ${nominalLabel(nominalField)}`);
     });
     section('BREAKDOWN DPD');
     dpd.forEach(([key,label]) => {
       metric(`kredit_dpd_${key}`,`Kredit · ${label}`);
       metric(`noa_dpd_${key}`,`NOA · ${label}`,'count');
-      metric(`ead_dpd_${key}`,`EAD · ${label}`);
+      if (nominalField === 'baki_debet') metric(`ead_dpd_${key}`,`EAD · ${label}`);
       metric(`ckpn_collective_dpd_${key}`,`CKPN Kolektif · ${label}`);
       metric(`ckpn_individual_dpd_${key}`,`CKPN Individual · ${label}`);
     });
@@ -216,7 +219,7 @@ mb_ui_assets('.');
     kolek.forEach(([key,label]) => {
       metric(`kredit_kolek_${key}`,`Kredit · Kolek ${label}`);
       metric(`noa_kolek_${key}`,`NOA · Kolek ${label}`,'count');
-      metric(`ead_kolek_${key}`,`EAD · Kolek ${label}`);
+      if (nominalField === 'baki_debet') metric(`ead_kolek_${key}`,`EAD · Kolek ${label}`);
       metric(`ckpn_collective_kolek_${key}`,`CKPN Kolektif · Kolek ${label}`);
       metric(`ckpn_individual_kolek_${key}`,`CKPN Individual · Kolek ${label}`);
     });
@@ -226,9 +229,9 @@ mb_ui_assets('.');
     if (includeFlow) {
       section(includeFlow === 'timeline' ? 'PERGERAKAN BULANAN' : `PERGERAKAN BULAN ${months[Number((periodDate || '0000-01').slice(5,7)) - 1] || ''}`);
       [
-        ['noa_realisasi','NOA Realisasi Kredit','count'],['total_realisasi','Realisasi Kredit · Baki Debet','money'],
-        ['noa_pelunasan','NOA Run Off Pelunasan','count'],['pelunasan','Run Off Pelunasan · Baki Debet','money'],
-        ['noa_angsuran_murni','NOA Run Off Angsuran','count'],['angsuran_murni','Run Off Angsuran · Baki Debet','money']
+        ['noa_realisasi','NOA Realisasi Kredit','count'],['total_realisasi',`Realisasi Kredit · ${nominalLabel(nominalField)}`,'money'],
+        ['noa_pelunasan','NOA Run Off Pelunasan','count'],['pelunasan',`Run Off Pelunasan · ${nominalLabel(nominalField)}`,'money'],
+        ['noa_angsuran_murni','NOA Run Off Angsuran','count'],['angsuran_murni',`Run Off Angsuran · ${nominalLabel(nominalField)}`,'money']
       ].forEach(([key,label,kind]) => metric(`flow_${key}`,label,kind));
     }
     section('NILAI PPAPWD PER KOLEKTIBILITAS');
@@ -243,7 +246,7 @@ mb_ui_assets('.');
 
   function render(data, timeline = null) {
     const offices = data.offices || [];
-    const rows = descriptors(undefined,timeline ? 'timeline' : true);
+    const rows = descriptors(undefined,timeline ? 'timeline' : true,getNominalField());
     if (timeline) {
       head.innerHTML = `<tr><th class="gkc-label">Indikator</th>${timeline.map(period=>`<th title="Snapshot ${escapeHtml(period.snapshotDate || '-')}">${escapeHtml(period.label)}</th>`).join('')}</tr>`;
     } else {
@@ -269,6 +272,7 @@ mb_ui_assets('.');
 
   async function load() {
     if (!dateInput.value) return;
+    const nominalField = getNominalField();
     const selectedEndDate = monthEndDate(dateInput.value);
     const id = ++requestId;
     controller?.abort();
@@ -278,13 +282,13 @@ mb_ui_assets('.');
     meta.textContent = `Memuat snapshot nominatif akhir bulan ${selectedEndDate}…`;
     body.innerHTML = `<tr><td class="gkc-empty" colspan="${(currentData?.offices?.length || 28) + 2}">Memuat data…</td></tr>`;
     try {
-      const snapshot = await requestReport({type:'gambaran_kredit_cabang',harian_date:selectedEndDate,resolve_latest_on_or_before:true},controller.signal);
+      const snapshot = await requestReport({type:'gambaran_kredit_cabang',harian_date:selectedEndDate,resolve_latest_on_or_before:true,nominal_field:nominalField},controller.signal);
       if (id !== requestId) return;
       currentData = snapshot;
       const [year, month] = dateInput.value.split('-').map(Number);
       const closing = new Date(year, month - 1, 0);
       const closingDate = `${closing.getFullYear()}-${String(closing.getMonth()+1).padStart(2,'0')}-${String(closing.getDate()).padStart(2,'0')}`;
-      const flowData = await requestReport({type:'rekap_realisasi_growth',closing_date:closingDate,harian_date:selectedEndDate,nominal_field:'baki_debet'},controller.signal);
+      const flowData = await requestReport({type:'rekap_realisasi_growth',closing_date:closingDate,harian_date:selectedEndDate,nominal_field:nominalField},controller.signal);
       if (id !== requestId) return;
       const flowByOffice = indexFlow(flowData);
       currentData.offices = (currentData.offices || []).map(office=>({...office,flow:flowByOffice.get(String(office.kode_kantor).padStart(3,'0')) || {}}));
@@ -294,11 +298,11 @@ mb_ui_assets('.');
       if (selectedOfficeCode) {
         meta.textContent = `Memuat riwayat ${officeSelect.selectedOptions[0]?.textContent || selectedOfficeCode}...`;
         const selectedOffice = currentData.offices.find(office=>String(office.kode_kantor).padStart(3,'0') === selectedOfficeCode);
-        timeline = await loadOfficeTimeline(selectedOfficeCode,year,month,selectedOffice,controller.signal);
+        timeline = await loadOfficeTimeline(selectedOfficeCode,year,month,selectedOffice,nominalField,controller.signal);
         if (id !== requestId) return;
       }
       render(currentData,timeline);
-      meta.textContent = `Snapshot ${currentData.harian_date} · Pergerakan ${months[month-1]} s.d. akhir bulan · nominal baki debet · EAD = Saldo Bank.`;
+    meta.textContent = `Snapshot ${currentData.harian_date} · Pergerakan ${months[month-1]} s.d. akhir bulan · basis nominal ${nominalLabel(nominalField)}${nominalField === 'baki_debet' ? ' · EAD tetap Saldo Bank' : ''}.`;
     } catch (error) {
       if (error.name === 'AbortError' || id !== requestId) return;
       currentData = null;
@@ -316,6 +320,8 @@ mb_ui_assets('.');
     const selectedMonth = Number(dateInput.value.slice(5,7));
     const selectedDate = dateInput.value;
     const selectedBranchCode = officeSelect.value;
+    const nominalField = getNominalField();
+    const nominalText = nominalLabel(nominalField);
     const monthLabel = `${months[selectedMonth - 1]} ${selectedYear}`;
     const periodLabel = `akhir ${selectedYear - 1} + Januari–${months[selectedMonth - 1]} ${selectedYear}`;
     exportButton.disabled = true;
@@ -333,7 +339,7 @@ mb_ui_assets('.');
       const priorYearEnd = `${priorYear}-12-31`;
       const sheets = [];
       if (selectedMode === 'ytd') {
-        const baseline = await post({type:'gambaran_kredit_cabang',harian_date:priorYearEnd,resolve_latest_on_or_before:true});
+        const baseline = await post({type:'gambaran_kredit_cabang',harian_date:priorYearEnd,resolve_latest_on_or_before:true,nominal_field:nominalField});
         const offices = (baseline.offices || []).filter(office=>!selectedBranchCode || String(office.kode_kantor).padStart(3,'0') === selectedBranchCode);
         sheets.push({name:`Akhir ${priorYear}`,endDate:priorYearEnd,snapshotDate:baseline.harian_date,offices,includeFlow:false});
       }
@@ -346,24 +352,24 @@ mb_ui_assets('.');
           const previous = new Date(selectedYear,month-1,0);
           const closingDate = `${previous.getFullYear()}-${String(previous.getMonth()+1).padStart(2,'0')}-${String(previous.getDate()).padStart(2,'0')}`;
           const [snapshot, flow] = await Promise.all([
-            post({type:'gambaran_kredit_cabang',harian_date:endDate,resolve_latest_on_or_before:true}),
-            post({type:'rekap_realisasi_growth',closing_date:closingDate,harian_date:endDate,nominal_field:'baki_debet'})
+            post({type:'gambaran_kredit_cabang',harian_date:endDate,resolve_latest_on_or_before:true,nominal_field:nominalField}),
+            post({type:'rekap_realisasi_growth',closing_date:closingDate,harian_date:endDate,nominal_field:nominalField})
           ]);
           const flowMap = new Map((flow.data || []).map(row=>[String(row.kode_kantor).padStart(3,'0'),row]));
           const offices = (snapshot.offices || []).filter(office=>!selectedBranchCode || String(office.kode_kantor).padStart(3,'0') === selectedBranchCode).map(office=>({...office,flow:flowMap.get(String(office.kode_kantor).padStart(3,'0'))||{}}));
           sheets.push({name:months[month-1],endDate,closingDate,snapshotDate:snapshot.harian_date,offices,includeFlow:true});
         });
         await Promise.all(batch);
-        if (dateInput.value !== selectedDate || officeSelect.value !== selectedBranchCode) throw new Error('Tanggal atau cabang berubah saat proses berlangsung. Silakan export ulang.');
+        if (dateInput.value !== selectedDate || officeSelect.value !== selectedBranchCode || getNominalField() !== nominalField) throw new Error('Filter berubah saat proses berlangsung. Silakan export ulang.');
         meta.textContent = `Data export ${selectedYear}: ${Math.min(start+2,selectedMonth)} dari ${selectedMonth} bulan selesai…`;
       }
       meta.textContent = `Data export ${selectedYear}: ${exportMonths.length} dari ${exportMonths.length} bulan selesai.`;
       const xml = value => String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
       const spreadsheetCell = (value, type='Number') => `<Cell><Data ss:Type="${type}">${type==='String'?xml(value):String(Number(value)||0)}</Data></Cell>`;
       const worksheets = sheets.map(sheet=>{
-        const rows = descriptors(sheet.endDate,sheet.includeFlow);
+        const rows = descriptors(sheet.endDate,sheet.includeFlow,nominalField);
         let table = `<Row>${spreadsheetCell('Snapshot nominatif','String')}${spreadsheetCell(sheet.snapshotDate || 'Data tidak tersedia','String')}</Row>`;
-        if (sheet.includeFlow) table += `<Row>${spreadsheetCell('Pergerakan','String')}${spreadsheetCell(`${sheet.closingDate} s.d. ${sheet.endDate} (nominal baki debet)`,'String')}</Row>`;
+        if (sheet.includeFlow) table += `<Row>${spreadsheetCell('Pergerakan','String')}${spreadsheetCell(`${sheet.closingDate} s.d. ${sheet.endDate} (basis ${nominalText})`,'String')}</Row>`;
         table += '<Row>'+spreadsheetCell('Indikator','String')+sheet.offices.map(o=>spreadsheetCell(`${o.kode_kantor} · ${o.nama_kantor}`,'String'))+spreadsheetCell('Total','String')+'</Row>';
         rows.forEach(row=>{
           if (row.section) { table += `<Row>${spreadsheetCell(row.section,'String')}</Row>`; return; }
@@ -379,8 +385,8 @@ mb_ui_assets('.');
         ? `Gambaran_Kredit_Cabang_${months[selectedMonth-1]}-${selectedYear}.xls`
         : `Gambaran_Kredit_Cabang_Akhir-${priorYear}_Jan-${months[selectedMonth-1]}-${selectedYear}.xls`;
       document.body.appendChild(link); link.click(); link.remove(); setTimeout(()=>URL.revokeObjectURL(link.href),1000);
-      meta.textContent = `Export selesai: pijakan akhir ${priorYear} dan Januari–${months[selectedMonth-1]} ${selectedYear}; realisasi tidak termasuk restrukturisasi.`;
-      if (selectedMode === 'month') meta.textContent = `Export selesai: 1 sheet untuk ${monthLabel}; realisasi tidak termasuk restrukturisasi.`;
+      meta.textContent = `Export selesai: pijakan akhir ${priorYear} dan Januari–${months[selectedMonth-1]} ${selectedYear}; basis pergerakan ${nominalText}.`;
+      if (selectedMode === 'month') meta.textContent = `Export selesai: 1 sheet untuk ${monthLabel}; basis pergerakan ${nominalText}.`;
     } catch(error) {
       meta.textContent = error.message || 'Export gagal dibuat.';
     } finally {
@@ -391,6 +397,7 @@ mb_ui_assets('.');
   refresh.addEventListener('click',load);
   dateInput.addEventListener('change',load);
   officeSelect.addEventListener('change',load);
+  nominalFieldSelect?.addEventListener('change',load);
   const closeFilter = () => {
     filterPanel?.classList.add('hidden');
     filterToggle?.classList.remove('is-active');

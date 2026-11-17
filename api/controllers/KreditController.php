@@ -3505,6 +3505,9 @@ class KreditController {
             }
         }
 
+        $nominalField = strtolower(trim((string)($b['nominal_field'] ?? 'saldo_bank')));
+        $nominalColumn = $nominalField === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
+
         $larClosingDate = DateTimeImmutable::createFromFormat('!Y-m-d', $harian);
         $larPeriodStart = $larClosingDate->modify('first day of this month')->modify('-2 months')->format('Y-m-d');
         $larPeriodEndExclusive = $larClosingDate->modify('+1 day')->format('Y-m-d');
@@ -3513,16 +3516,16 @@ class KreditController {
         $nplCondition = "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) IN ('KL','D','M')";
         $productSums = [];
         foreach ($productCodes as $code) {
-            $productSums[] = "SUM(CASE WHEN x.kode_produk_laporan = '{$code}' THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS kredit_produk_{$code}";
+            $productSums[] = "SUM(CASE WHEN x.kode_produk_laporan = '{$code}' THEN COALESCE(x.{$nominalColumn},0) ELSE 0 END) AS kredit_produk_{$code}";
             $productSums[] = "COUNT(DISTINCT CASE WHEN x.kode_produk_laporan = '{$code}' THEN x.no_rekening END) AS noa_produk_{$code}";
-            $productSums[] = "SUM(CASE WHEN x.kode_produk_laporan = '{$code}' AND {$nplCondition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS npl_produk_{$code}";
+            $productSums[] = "SUM(CASE WHEN x.kode_produk_laporan = '{$code}' AND {$nplCondition} THEN COALESCE(x.{$nominalColumn},0) ELSE 0 END) AS npl_produk_{$code}";
         }
 
         $metrics = [
             "COUNT(DISTINCT x.no_rekening) AS noa_total",
-            "SUM(COALESCE(x.baki_debet,0)) AS kredit_total",
+            "SUM(COALESCE(x.{$nominalColumn},0)) AS kredit_total",
             "SUM(COALESCE(x.saldo_bank,0)) AS ead_total",
-            "SUM(CASE WHEN {$nplCondition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS kredit_npl",
+            "SUM(CASE WHEN {$nplCondition} THEN COALESCE(x.{$nominalColumn},0) ELSE 0 END) AS kredit_npl",
             "COUNT(DISTINCT CASE WHEN {$nplCondition} THEN x.no_rekening END) AS noa_npl",
         ];
         $metrics = array_merge($metrics, $productSums);
@@ -3536,7 +3539,7 @@ class KreditController {
             '91_plus' => 'x.hari_menunggak > 90',
         ];
         foreach ($dpdBuckets as $key => $condition) {
-            $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS kredit_dpd_{$key}";
+            $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.{$nominalColumn},0) ELSE 0 END) AS kredit_dpd_{$key}";
             $metrics[] = "COUNT(DISTINCT CASE WHEN {$condition} THEN x.no_rekening END) AS noa_dpd_{$key}";
             $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.saldo_bank,0) ELSE 0 END) AS ead_dpd_{$key}";
             $ckpnDpdCondition = $condition;
@@ -3557,7 +3560,7 @@ class KreditController {
             'm' => "UPPER(TRIM(CAST(x.kolektibilitas AS CHAR))) = 'M'",
         ];
         foreach ($kolekConditions as $key => $condition) {
-            $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.baki_debet,0) ELSE 0 END) AS kredit_kolek_{$key}";
+            $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.{$nominalColumn},0) ELSE 0 END) AS kredit_kolek_{$key}";
             $metrics[] = "COUNT(DISTINCT CASE WHEN {$condition} THEN x.no_rekening END) AS noa_kolek_{$key}";
             $metrics[] = "SUM(CASE WHEN {$condition} THEN COALESCE(x.saldo_bank,0) ELSE 0 END) AS ead_kolek_{$key}";
             $metrics[] = "SUM(CASE WHEN {$condition} AND UPPER(TRIM(COALESCE(x.metode_hitung_ckpn,''))) = 'COLLECTIVE' THEN COALESCE(x.nilai_ckpn,0) ELSE 0 END) AS ckpn_collective_kolek_{$key}";
@@ -3589,7 +3592,7 @@ class KreditController {
                 ) r ON r.kode_kantor = n.kode_cabang AND r.no_rekening = n.no_rekening
                 WHERE n.created = :harian
                   AND n.kode_cabang BETWEEN '001' AND '028'
-                  AND COALESCE(n.baki_debet,0) > 0
+                  AND (COALESCE(n.baki_debet,0) > 0 OR COALESCE(n.saldo_bank,0) > 0)
             ) x
             WHERE x.kode_produk_laporan IN ('135','136','137','138','139')
             GROUP BY x.kode_cabang
@@ -3620,6 +3623,7 @@ class KreditController {
 
             return sendResponse(200, 'Berhasil mengambil gambaran kredit cabang.', [
                 'harian_date' => $harian,
+                'nominal_field' => $nominalColumn,
                 'produk' => [
                     ['kode_produk' => '135', 'nama_produk' => 'BKK Mikro'],
                     ['kode_produk' => '136', 'nama_produk' => 'BKK Agrari'],
