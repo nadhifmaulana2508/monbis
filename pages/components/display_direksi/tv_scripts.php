@@ -427,7 +427,9 @@
 
     let tvLoginRedirectStarted = false;
     const apiCall = async (url, opt={}) => {
-        const response = await fetch(url, { credentials: 'same-origin', ...opt });
+        const headers = new Headers(opt.headers || {});
+        headers.set('X-Monbis-TV-Request', 'kiosk');
+        const response = await fetch(url, { credentials: 'same-origin', ...opt, headers });
         if (response.status === 401 && !tvLoginRedirectStarted) {
             tvLoginRedirectStarted = true;
             if (TV_CABANG_MODE) {
@@ -487,7 +489,8 @@
         if(!user) {
             try {
                 const response = await fetch(`${window.BASE_APP || ''}/api/auth/whoami`, {
-                    credentials: 'same-origin'
+                    credentials: 'same-origin',
+                    headers: { 'X-Monbis-TV-Request': 'kiosk' }
                 });
                 const result = await response.json();
                 if(response.ok && result?.data) {

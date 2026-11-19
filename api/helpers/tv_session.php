@@ -111,6 +111,10 @@ function monbisTvBranchScope(array $user): ?array
 
 function getMonbisTvSessionUserForApi(): ?array
 {
+    if (strtolower(trim((string)($_SERVER['HTTP_X_MONBIS_TV_REQUEST'] ?? ''))) !== 'kiosk') {
+        return null;
+    }
+
     $tvSession = getMonbisTvSession();
     if (!$tvSession) return null;
 
