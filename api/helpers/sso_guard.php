@@ -2,6 +2,7 @@
 require_once __DIR__ . '/response.php';
 require_once __DIR__ . '/JWT.php';
 require_once __DIR__ . '/sso_config.php';
+require_once __DIR__ . '/tv_session.php';
 
 function getAppAuthToken(): string
 {
@@ -140,6 +141,9 @@ function ssoWhoami(string $token): ?array
 
 function requireAppAuth(): array
 {
+    $tvUser = getMonbisTvSessionUserForApi();
+    if (is_array($tvUser)) return $tvUser;
+
     // Cookie HttpOnly Monbis menjadi sumber autentikasi utama; cookie/header lama
     // tetap menjadi fallback selama masa migrasi.
     $cookieToken = trim((string)preg_replace('/^Bearer\s+/i', '', (string)($_COOKIE['monbis_session'] ?? '')));

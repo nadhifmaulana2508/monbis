@@ -14,6 +14,13 @@ $method = $_SERVER['REQUEST_METHOD'];
 // Ambil input dari JSON Body (Trik Sakti Postman)
 $input = json_decode(file_get_contents("php://input"), true) ?? [];
 
+if (!empty($_SERVER['MONBIS_TV_SESSION_ACTIVE'])) {
+    if (!monbisTvPayloadTypeAllowed('lapkeu', $input)) {
+        sendResponse(403, 'Jenis data tidak tersedia untuk sesi TV.');
+    }
+    $input = constrainMonbisTvCabangInput($input);
+}
+
 switch ($method) {
     case 'POST':
         $type = $input['type'] ?? '';

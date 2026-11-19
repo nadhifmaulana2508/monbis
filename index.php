@@ -1,9 +1,11 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.gc_maxlifetime', '86400');
     session_start();
 }
 
 require_once __DIR__ . '/api/helpers/sso_config.php';
+require_once __DIR__ . '/api/helpers/tv_session.php';
 
 /**
  * =========================
@@ -88,8 +90,18 @@ if ($webToken !== '') {
     $webAuthUser = verifyAppToken($webToken) ?? ssoWhoami($webToken);
 }
 $isLoggedIn = is_array($webAuthUser) && !empty($webAuthUser['employee_id']);
+$isTvCabangRoute = in_array($url, ['tv-cabang', 'tv_cabang'], true);
+$usingTvCabangSession = false;
+if (!$isLoggedIn && $isTvCabangRoute) {
+    $tvCabangUser = getMonbisTvSessionUser('cabang');
+    if (is_array($tvCabangUser) && !empty($tvCabangUser['employee_id'])) {
+        $webAuthUser = $tvCabangUser;
+        $isLoggedIn = true;
+        $usingTvCabangSession = true;
+    }
+}
 $forcePasswordChange = false;
-if ($isLoggedIn) {
+if ($isLoggedIn && !$usingTvCabangSession) {
     refreshAppSessionCookie($webToken);
     try {
         require_once __DIR__ . '/api/helpers/password_policy.php';
@@ -103,6 +115,14 @@ if ($isLoggedIn) {
         error_log('Password change session validation failed for page access.');
         http_response_code(503);
         exit('Validasi sesi keamanan akun sedang tidak tersedia. Silakan coba lagi.');
+    }
+}
+
+if ($isLoggedIn && $isTvCabangRoute && !$usingTvCabangSession && !$forcePasswordChange) {
+    try {
+        createMonbisTvSession('cabang', $webAuthUser, 12 * 60 * 60);
+    } catch (Throwable $tvSessionError) {
+        error_log('TV Cabang session could not be created.');
     }
 }
 

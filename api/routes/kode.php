@@ -11,6 +11,12 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // POST body
 $input = json_decode(file_get_contents("php://input"), true);
+if (!is_array($input)) $input = [];
+
+if (!empty($_SERVER['MONBIS_TV_SESSION_ACTIVE'])
+    && !monbisTvPayloadTypeAllowed('kode', $input)) {
+    sendResponse(403, 'Jenis data tidak tersedia untuk sesi TV.');
+}
 
 switch ($method) {
     case 'POST':

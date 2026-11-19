@@ -172,6 +172,35 @@ function monbisLogPasswordChangeRequest(PDO $pdo, array $user, int $httpStatus):
     }
 }
 
+if ($endpoint === 'tv-kiosk-login' && $method === 'POST') {
+    $origin = trim((string)($_SERVER['HTTP_ORIGIN'] ?? ''));
+    $originHost = strtolower((string)(parse_url($origin, PHP_URL_HOST) ?? ''));
+    $requestHost = strtolower((string)preg_replace('/:\d+$/', '', (string)($_SERVER['HTTP_HOST'] ?? '')));
+    if ($originHost !== '' && !hash_equals($requestHost, $originHost)) {
+        sendResponse(403, 'Asal permintaan TV tidak diizinkan.');
+    }
+
+    $input = json_decode((string)file_get_contents('php://input'), true);
+    if (!is_array($input)) sendResponse(400, 'Data PIN tidak valid.');
+
+    $configuredPin = getSsoConfigValue('TV_DIREKSI_PIN');
+    if (!preg_match('/^\d{6}$/', $configuredPin)) {
+        sendResponse(503, 'PIN TV Direksi belum dikonfigurasi di server.');
+    }
+    $pin = (string)($input['pin'] ?? '');
+    if (!preg_match('/^\d{6}$/', $pin) || !hash_equals($configuredPin, $pin)) {
+        sendResponse(401, 'Kode PIN salah.');
+    }
+
+    try {
+        $expiresAt = createMonbisTvSession('direksi', [], 24 * 60 * 60);
+    } catch (Throwable $tvSessionError) {
+        error_log('TV Direksi session could not be created.');
+        sendResponse(503, 'Sesi TV tidak dapat dibuat. Silakan coba lagi.');
+    }
+    sendResponse(200, 'Akses TV Direksi berhasil.', ['expires_at' => $expiresAt]);
+}
+
 if ($endpoint === 'login' && $method === 'POST') {
     $origin = trim((string)($_SERVER['HTTP_ORIGIN'] ?? ''));
     $originHost = strtolower((string)(parse_url($origin, PHP_URL_HOST) ?? ''));
@@ -279,6 +308,7 @@ if ($endpoint === 'login' && $method === 'POST') {
 
 if ($endpoint === 'logout' && $method === 'POST') {
     passwordPolicyClearRequired();
+    clearMonbisTvSession();
     $appBaseUrl = getCurrentAppBaseUrl();
     $appPath = (string)(parse_url($appBaseUrl, PHP_URL_PATH) ?? '/');
     $cookiePath = $appPath === '' ? '/' : rtrim($appPath, '/') . '/';

@@ -3,7 +3,8 @@
     // 1. KIOSK LOGIN & NAVIGATION SYSTEM
     // ==========================================
     const TV_CABANG_MODE = window.TV_CABANG_MODE === true;
-    const TV_PIN = "123456"; 
+    const TV_DIREKSI_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+    const TV_DIREKSI_EXPIRES_KEY = 'tv_kiosk_expires_at';
     let currentSlide = 0;
     let slideIntervalId = null;
     let totalSlides = 0;
@@ -21,7 +22,10 @@
             initTvDashboard();
             return;
         }
-        if (localStorage.getItem('tv_kiosk_authorized') !== 'true') {
+        const expiresAt = Number(localStorage.getItem(TV_DIREKSI_EXPIRES_KEY) || 0);
+        if (localStorage.getItem('tv_kiosk_authorized') !== 'true' || expiresAt <= Date.now()) {
+            localStorage.removeItem('tv_kiosk_authorized');
+            localStorage.removeItem(TV_DIREKSI_EXPIRES_KEY);
             document.getElementById('tvLoginModal').classList.remove('hidden');
             document.getElementById('tvPinInput').focus();
         } else {
@@ -29,14 +33,47 @@
         }
     }
 
-    function verifyTvPin() {
-        if (document.getElementById('tvPinInput').value === TV_PIN) {
-            localStorage.setItem('tv_kiosk_authorized', 'true'); 
+    async function verifyTvPin() {
+        const pinInput = document.getElementById('tvPinInput');
+        const errorLabel = document.getElementById('tvLoginError');
+        const button = document.querySelector('#tvLoginModal button');
+        const pin = pinInput.value.trim();
+        errorLabel.classList.add('hidden');
+        if (!/^\d{6}$/.test(pin)) {
+            errorLabel.textContent = 'Masukkan PIN 6 digit.';
+            errorLabel.classList.remove('hidden');
+            return;
+        }
+
+        button.disabled = true;
+        try {
+            const response = await fetch('./api/auth/tv-kiosk-login', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin })
+            });
+            let result = {};
+            try { result = await response.json(); } catch (error) {}
+            if (!response.ok) throw new Error(result.message || 'Kode PIN salah.');
+
+            const serverExpiry = Number(result?.data?.expires_at || 0) * 1000;
+            localStorage.setItem('tv_kiosk_authorized', 'true');
+            localStorage.setItem(
+                TV_DIREKSI_EXPIRES_KEY,
+                String(serverExpiry > Date.now() ? serverExpiry : Date.now() + TV_DIREKSI_SESSION_TTL_MS)
+            );
+            tvLoginRedirectStarted = false;
+            pinInput.value = '';
             document.getElementById('tvLoginModal').classList.add('hidden');
             initTvDashboard();
-        } else {
-            document.getElementById('tvLoginError').classList.remove('hidden');
-            setTimeout(() => document.getElementById('tvLoginError').classList.add('hidden'), 3000);
+        } catch (error) {
+            errorLabel.textContent = error instanceof TypeError
+                ? 'Server TV tidak dapat dihubungi. Coba lagi.'
+                : (error.message || 'PIN TV belum dapat diverifikasi.');
+            errorLabel.classList.remove('hidden');
+        } finally {
+            button.disabled = false;
         }
     }
 
@@ -393,8 +430,21 @@
         const response = await fetch(url, { credentials: 'same-origin', ...opt });
         if (response.status === 401 && !tvLoginRedirectStarted) {
             tvLoginRedirectStarted = true;
-            const next = TV_CABANG_MODE ? 'tv-cabang' : 'tv';
-            window.location.replace(`${window.BASE_APP || ''}/login?next=${next}`);
+            if (TV_CABANG_MODE) {
+                window.location.replace(`${window.BASE_APP || ''}/login?next=tv-cabang`);
+            } else {
+                localStorage.removeItem('tv_kiosk_authorized');
+                localStorage.removeItem(TV_DIREKSI_EXPIRES_KEY);
+                const modal = document.getElementById('tvLoginModal');
+                const input = document.getElementById('tvPinInput');
+                const error = document.getElementById('tvLoginError');
+                if (modal && input && error) {
+                    error.textContent = 'Sesi TV berakhir. Masukkan PIN kembali.';
+                    error.classList.remove('hidden');
+                    modal.classList.remove('hidden');
+                    input.focus();
+                }
+            }
         }
         return response;
     };
