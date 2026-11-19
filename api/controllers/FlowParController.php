@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../helpers/LoanInstallmentHelper.php';
+require_once __DIR__ . '/../helpers/rbac.php';
 
 class FlowParController {
     private $pdo;
@@ -1064,7 +1065,7 @@ class FlowParController {
         sendResponse(200, "Top 50 debitur flow PAR konsolidasi", $data);
     }
 
-    public function updateKomitmenKlBaru($input) {
+    public function updateKomitmenKlBaru($input, array $actor = []) {
         $rekening        = $input['rekening'] ?? null;
         $komitmen        = $input['komitmen'] ?? null;
         $alasan          = $input['alasan'] ?? null;
@@ -1115,6 +1116,7 @@ class FlowParController {
                 ':id' => $existing['id']
             ]);
 
+            rbacLogAuditEvent($this->pdo, $actor, 'update_flowpar', 'update', 'Update komitmen berhasil', (string)$rekening);
             sendResponse(200, "Data komitmen berhasil diupdate");
         } else {
             // Data belum ada → lakukan INSERT baru termasuk nominal
@@ -1132,7 +1134,8 @@ class FlowParController {
                 ':tgl_pembayaran' => $tgl_pembayaran,
                 ':nominal' => $nominal // Bind parameter nominal
             ]);
-            
+
+            rbacLogAuditEvent($this->pdo, $actor, 'update_flowpar', 'update', 'Update komitmen berhasil', (string)$rekening);
             sendResponse(200, "Data komitmen berhasil disimpan");
         }
     }

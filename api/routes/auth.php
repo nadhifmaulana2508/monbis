@@ -3,6 +3,8 @@ if (!defined('API_ROUTER_ENTRY')) { http_response_code(404); exit; }
 require_once __DIR__ . '/../helpers/response.php';
 require_once __DIR__ . '/../helpers/sso_guard.php';
 require_once __DIR__ . '/../helpers/sso_config.php';
+require_once __DIR__ . '/../helpers/password_policy.php';
+passwordPolicyEnsureSession();
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $request = trim((string)($_GET['request'] ?? ''), '/');
@@ -35,17 +37,9 @@ function forwardSsoAuthPost(string $endpoint, array $input, string $token = ''):
         $status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
     } else {
-        $context = stream_context_create(['http' => [
-            'method' => 'POST',
-            'timeout' => 15,
-            'ignore_errors' => true,
-            'header' => implode("\r\n", $headers) . "\r\n",
-            'content' => $payload,
-        ]]);
-        $body = @file_get_contents($url, false, $context);
-        if (!empty($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $match)) {
-            $status = (int)$match[1];
-        }
+        $result = ssoStreamRequest($url, 'POST', $headers, (string)$payload, 15);
+        $body = $result['body'];
+        $status = $result['status'];
     }
 
     if (!is_string($body) || $status < 200 || $status >= 600) {
@@ -55,6 +49,26 @@ function forwardSsoAuthPost(string $endpoint, array $input, string $token = ''):
     header('Content-Type: application/json; charset=utf-8');
     echo $body;
     exit;
+}
+
+function monbisLogPasswordChangeRequest(PDO $pdo, array $user, int $httpStatus): void
+{
+    try {
+        $ipAddress = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+        if (!filter_var($ipAddress, FILTER_VALIDATE_IP)) $ipAddress = null;
+        $auditStmt = $pdo->prepare("INSERT INTO rbac_menu_access_log
+            (employee_id, employee_name, feature_key, request_path, request_method, http_status, ip_address, action_type, action_label, access_result, accessed_at)
+            VALUES (:employee_id, :employee_name, 'page:profile', '/api/auth/change-password [page=profile]', 'POST', :http_status, :ip_address, 'detail', 'Ganti password', 'allowed', :accessed_at)");
+        $auditStmt->execute([
+            'employee_id' => (string)($user['employee_id'] ?? ''),
+            'employee_name' => trim((string)($user['full_name'] ?? $user['name'] ?? '')) ?: null,
+            'http_status' => max(100, min(599, $httpStatus)),
+            'ip_address' => $ipAddress,
+            'accessed_at' => gmdate('Y-m-d H:i:s'),
+        ]);
+    } catch (Throwable $auditError) {
+        error_log('Password change audit logging failed.');
+    }
 }
 
 if ($endpoint === 'login' && $method === 'POST') {
@@ -97,17 +111,16 @@ if ($endpoint === 'login' && $method === 'POST') {
         $curlErrorMessage = curl_error($curl);
         curl_close($curl);
     } else {
-        $context = stream_context_create(['http' => [
-            'method' => 'POST',
-            'timeout' => 15,
-            'ignore_errors' => true,
-            'header' => implode("\r\n", array_merge($appHeaders, ['Content-Type: application/json', 'Accept: application/json'])) . "\r\n",
-            'content' => $payload,
-        ]]);
-        $body = @file_get_contents($loginUrl, false, $context);
-        if (!empty($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $match)) {
-            $status = (int)$match[1];
-        }
+        $result = ssoStreamRequest(
+            $loginUrl,
+            'POST',
+            array_merge($appHeaders, ['Content-Type: application/json', 'Accept: application/json']),
+            (string)$payload,
+            15
+        );
+        $body = $result['body'];
+        $status = $result['status'];
+        $curlErrorMessage = $result['error'];
     }
 
     $loginData = is_string($body) ? json_decode($body, true) : null;
@@ -132,6 +145,18 @@ if ($endpoint === 'login' && $method === 'POST') {
         sendResponse(502, 'Data pegawai dari SSO tidak dapat diverifikasi.');
     }
 
+    try {
+        if (hash_equals(MONBIS_DEFAULT_PASSWORD, $password) || !empty($user['must_change_password'])) {
+            passwordPolicyMarkRequired((string)$user['employee_id']);
+        } else {
+            passwordPolicyClearRequired();
+        }
+        $user['must_change_password'] = passwordPolicyIsRequired((string)$user['employee_id']);
+    } catch (Throwable $passwordPolicyError) {
+        error_log('Password change session state could not be saved.');
+        sendResponse(503, 'Status keamanan sesi tidak dapat dipastikan. Silakan coba lagi.');
+    }
+
     $appBaseUrl = getCurrentAppBaseUrl();
     $appPath = (string)(parse_url($appBaseUrl, PHP_URL_PATH) ?? '/');
     $cookiePath = $appPath === '' ? '/' : rtrim($appPath, '/') . '/';
@@ -152,6 +177,7 @@ if ($endpoint === 'login' && $method === 'POST') {
 }
 
 if ($endpoint === 'logout' && $method === 'POST') {
+    passwordPolicyClearRequired();
     $appBaseUrl = getCurrentAppBaseUrl();
     $appPath = (string)(parse_url($appBaseUrl, PHP_URL_PATH) ?? '/');
     $cookiePath = $appPath === '' ? '/' : rtrim($appPath, '/') . '/';
@@ -199,11 +225,30 @@ if (in_array($endpoint, ['forgot-password', 'verify-otp', 'reset-password'], tru
 }
 
 if (in_array($endpoint, ['update-profile', 'change-password'], true) && $method === 'POST') {
-    requireAppAuth();
+    $user = requireAppAuth();
     $token = trim((string)($_COOKIE['monbis_session'] ?? ''));
     if ($token === '') $token = getAppAuthToken();
     $input = json_decode((string)file_get_contents('php://input'), true);
     if (!is_array($input)) sendResponse(400, 'Data permintaan tidak valid.');
+
+    try {
+        $passwordChangeRequired = passwordPolicyIsRequired((string)($user['employee_id'] ?? ''));
+    } catch (Throwable $passwordPolicyError) {
+        error_log('Password change session validation failed for auth update.');
+        sendResponse(503, 'Validasi keamanan akun sedang tidak tersedia. Silakan coba lagi.');
+    }
+    if ($endpoint === 'change-password') {
+        require_once __DIR__ . '/../controllers/config/database.php';
+        require_once __DIR__ . '/../helpers/rbac.php';
+        rbacEnsureSchema($pdo);
+    }
+    if ($passwordChangeRequired && $endpoint !== 'change-password') {
+        sendResponse(403, 'Ganti password wajib diselesaikan sebelum memperbarui profil.');
+    }
+    if ($passwordChangeRequired && hash_equals(MONBIS_DEFAULT_PASSWORD, (string)($input['new_password'] ?? ''))) {
+        monbisLogPasswordChangeRequest($pdo, $user, 422);
+        sendResponse(422, 'Password baru harus berbeda dari password sementara.');
+    }
 
     $url = rtrim(getSsoApiBase(), '/') . '/api/auth/' . $endpoint;
     $payload = json_encode($input);
@@ -228,21 +273,35 @@ if (in_array($endpoint, ['update-profile', 'change-password'], true) && $method 
         $status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
         curl_close($curl);
     } else {
-        $context = stream_context_create(['http' => [
-            'method' => 'POST',
-            'timeout' => 15,
-            'ignore_errors' => true,
-            'header' => implode("\r\n", array_merge(getSsoAppHeaders(), ["Content-Type: application/json", 'Accept: application/json', "Authorization: Bearer {$token}"])) . "\r\n",
-            'content' => $payload,
-        ]]);
-        $body = @file_get_contents($url, false, $context);
-        if (!empty($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $match)) {
-            $status = (int)$match[1];
-        }
+        $result = ssoStreamRequest(
+            $url,
+            'POST',
+            array_merge(getSsoAppHeaders(), [
+                'Content-Type: application/json',
+                'Accept: application/json',
+                'Authorization: Bearer ' . $token,
+            ]),
+            (string)$payload,
+            15
+        );
+        $body = $result['body'];
+        $status = $result['status'];
     }
 
     if (!is_string($body) || $status < 200 || $status >= 600) {
+        if ($endpoint === 'change-password') {
+            monbisLogPasswordChangeRequest($pdo, $user, 502);
+        }
         sendResponse(502, 'Layanan autentikasi SSO sedang tidak dapat digunakan.');
+    }
+    $responseData = json_decode($body, true);
+    $upstreamStatus = (int)($responseData['status'] ?? $status);
+    if ($endpoint === 'change-password') {
+        $passwordChangeSucceeded = $status >= 200 && $status < 300 && $upstreamStatus >= 200 && $upstreamStatus < 300;
+        if ($passwordChangeSucceeded) {
+            passwordPolicyClearRequired((string)($user['employee_id'] ?? ''));
+        }
+        monbisLogPasswordChangeRequest($pdo, $user, $status);
     }
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');

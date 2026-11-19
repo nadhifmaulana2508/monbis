@@ -88,8 +88,27 @@ if ($webToken !== '') {
     $webAuthUser = verifyAppToken($webToken) ?? ssoWhoami($webToken);
 }
 $isLoggedIn = is_array($webAuthUser) && !empty($webAuthUser['employee_id']);
+$forcePasswordChange = false;
 if ($isLoggedIn) {
     refreshAppSessionCookie($webToken);
+    try {
+        require_once __DIR__ . '/api/helpers/password_policy.php';
+        passwordPolicyEnsureSession();
+        passwordPolicyAdoptUpstreamRequirement(
+            (string)$webAuthUser['employee_id'],
+            !empty($webAuthUser['must_change_password'])
+        );
+        $forcePasswordChange = passwordPolicyIsRequired((string)$webAuthUser['employee_id']);
+    } catch (Throwable $passwordPolicyError) {
+        error_log('Password change session validation failed for page access.');
+        http_response_code(503);
+        exit('Validasi sesi keamanan akun sedang tidak tersedia. Silakan coba lagi.');
+    }
+}
+
+if ($isLoggedIn && $forcePasswordChange && preg_match('#^profile(?:/|$)#i', $url) !== 1) {
+    header('Location: ' . BASE_APP . '/profile?force_password_change=1', true, 302);
+    exit;
 }
 
 // Sajikan dokumen internal hanya melalui jalur yang memverifikasi token SSO.
@@ -359,17 +378,21 @@ if ($isLoggedIn && !in_array($page, ['login', 'tv', 'tv_cabang'], true)) {
     try {
         require_once __DIR__ . '/api/controllers/config/database.php';
         require_once __DIR__ . '/api/helpers/rbac.php';
+        rbacEnsureSchema($pdo);
         $rbacInitialUser = rbacFindUserByEmployeeId($pdo, $webAuthUser['employee_id']);
         if ($rbacInitialUser) {
             $rbacInitialAccess = rbacEffectivePermissions($pdo, $rbacInitialUser);
             $rbacPageAccess = $page === 'setting_rbac'
                 ? rbacCanManageMatrix($pdo, $rbacInitialUser)
-                : rbacIsAdmin($rbacInitialUser)
-                    || !empty($rbacInitialAccess['permissions']['page:' . trim($page)]['can_view']);
+                : ((!isset($rbacInitialAccess['permissions']['page:' . trim($page)])
+                    && rbacIsAdmin($rbacInitialUser))
+                    || !empty($rbacInitialAccess['permissions']['page:' . trim($page)]['can_view']));
         } else {
             $rbacPageAccess = false;
         }
         if (!$rbacPageAccess) {
+            $auditEmployeeName = (string) ($rbacInitialUser['full_name'] ?? $webAuthUser['full_name'] ?? $webAuthUser['name'] ?? '');
+            rbacLogMenuAccess($pdo, (string) ($webAuthUser['employee_id'] ?? ''), $page, 'denied', $auditEmployeeName, $param, 403);
             http_response_code(403);
             echo '<!doctype html><html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Akses ditolak</title><style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:#f5f8fb;color:#17324d;font:15px Arial,sans-serif}.box{width:min(440px,calc(100% - 32px));padding:28px;border:1px solid #dce6ed;border-radius:14px;background:#fff;box-shadow:0 8px 24px rgba(23,50,77,.08)}h1{margin:0 0 8px;font-size:22px}p{margin:0 0 20px;color:#6e8294;line-height:1.5}a{display:inline-flex;align-items:center;min-height:40px;padding:0 14px;border-radius:8px;background:#1565d8;color:#fff;text-decoration:none;font-weight:700}</style></head><body><main class="box"><h1>Akses belum diberikan</h1><p>Halaman ini belum termasuk matrix akses jabatan, divisi, atau override pegawai Anda.</p><a href="' . htmlspecialchars(BASE_APP . '/dashboard', ENT_QUOTES, 'UTF-8') . '">Kembali ke dashboard</a></main></body></html>';
             exit;
@@ -378,6 +401,29 @@ if ($isLoggedIn && !in_array($page, ['login', 'tv', 'tv_cabang'], true)) {
         error_log('RBAC page guard failed: ' . $rbacError->getMessage());
         http_response_code(503);
         exit('Validasi akses sedang tidak tersedia. Silakan coba kembali.');
+    }
+}
+
+if ($isLoggedIn && !in_array($page, ['login', 'tv', 'tv_cabang'], true) && is_array($rbacInitialUser)) {
+    rbacScheduleMenuAccessLog(
+        $pdo,
+        (string) ($webAuthUser['employee_id'] ?? ''),
+        $page,
+        (string) ($rbacInitialUser['full_name'] ?? ''),
+        $param
+    );
+}
+
+if ($isLoggedIn && in_array($page, ['tv', 'tv_cabang'], true)) {
+    try {
+        require_once __DIR__ . '/api/controllers/config/database.php';
+        require_once __DIR__ . '/api/helpers/rbac.php';
+        rbacEnsureSchema($pdo);
+        $auditUser = rbacFindUserByEmployeeId($pdo, $webAuthUser['employee_id'] ?? '');
+        $auditEmployeeName = (string) ($auditUser['full_name'] ?? $webAuthUser['full_name'] ?? $webAuthUser['name'] ?? '');
+        rbacScheduleMenuAccessLog($pdo, (string) ($webAuthUser['employee_id'] ?? ''), $page, $auditEmployeeName, $param);
+    } catch (Throwable $auditError) {
+        error_log('Full-screen menu audit failed: ' . $auditError->getMessage());
     }
 }
 

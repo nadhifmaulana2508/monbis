@@ -1,12 +1,27 @@
-<?php /* pages/profile.php */ ?>
+<?php /* pages/profile.php */ $isForcedPasswordChange = !empty($forcePasswordChange); ?>
+<?php if ($isForcedPasswordChange): ?>
+<style>
+  body.monbis-force-password-change #sidebar,
+  body.monbis-force-password-change #sidebarOverlay,
+  body.monbis-force-password-change #mainNavbar { display:none !important; }
+  body.monbis-force-password-change .monbis-app-shell { height:auto !important; min-height:100vh; overflow:visible !important; }
+</style>
+<?php endif; ?>
 <div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8 font-sans">
   <div class="max-w-6xl mx-auto">
     
     <!-- Header -->
     <div class="mb-6">
-      <h1 class="text-3xl font-extrabold text-gray-900">Profil Saya</h1>
-      <p class="text-gray-500 mt-1">Kelola informasi pribadi dan keamanan akun Anda.</p>
+      <h1 class="text-3xl font-extrabold text-gray-900"><?= $isForcedPasswordChange ? 'Ganti Password Wajib' : 'Profil Saya' ?></h1>
+      <p class="text-gray-500 mt-1"><?= $isForcedPasswordChange ? 'Untuk melanjutkan, buat password baru untuk akun Anda.' : 'Kelola informasi pribadi dan keamanan akun Anda.' ?></p>
     </div>
+
+    <?php if ($isForcedPasswordChange): ?>
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950" role="alert">
+      <div><strong class="block text-sm">Password sementara masih digunakan.</strong><span class="text-xs">Ganti password sekarang sebelum membuka menu Monbis lainnya.</span></div>
+      <button type="button" onclick="logoutSSO(event)" class="shrink-0 rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-bold text-amber-900 hover:bg-amber-100">Keluar</button>
+    </div>
+    <?php endif; ?>
 
     <!-- Alert Global -->
     <div id="alertBox" class="hidden mb-6 p-4 rounded-lg flex items-center shadow-sm transition-all" role="alert">
@@ -54,19 +69,19 @@
         
         <!-- NAVIGASI TAB -->
         <div class="bg-gray-50/50 border-b border-gray-100 px-2 pt-2 sm:px-6 sm:pt-4 flex space-x-1 sm:space-x-4 overflow-x-auto">
-          <button onclick="switchTab('detail')" id="btnTab-detail" class="tab-btn active px-4 py-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap hover:text-blue-700 transition-colors">
+          <button onclick="switchTab('detail')" id="btnTab-detail" class="tab-btn active px-4 py-3 text-sm font-bold border-b-2 border-blue-600 text-blue-600 whitespace-nowrap hover:text-blue-700 transition-colors <?= $isForcedPasswordChange ? 'hidden' : '' ?>">
             Detail Profil
           </button>
-          <button onclick="switchTab('kontak')" id="btnTab-kontak" class="tab-btn px-4 py-3 text-sm font-bold border-b-2 border-transparent text-gray-500 whitespace-nowrap hover:text-gray-700 hover:border-gray-300 transition-colors">
+          <button onclick="switchTab('kontak')" id="btnTab-kontak" class="tab-btn px-4 py-3 text-sm font-bold border-b-2 border-transparent text-gray-500 whitespace-nowrap hover:text-gray-700 hover:border-gray-300 transition-colors <?= $isForcedPasswordChange ? 'hidden' : '' ?>">
             Edit Kontak
           </button>
-          <button onclick="switchTab('password')" id="btnTab-password" class="tab-btn px-4 py-3 text-sm font-bold border-b-2 border-transparent text-gray-500 whitespace-nowrap hover:text-gray-700 hover:border-gray-300 transition-colors">
+          <button onclick="switchTab('password')" id="btnTab-password" class="tab-btn px-4 py-3 text-sm font-bold border-b-2 border-transparent text-gray-500 whitespace-nowrap hover:text-gray-700 hover:border-gray-300 transition-colors <?= $isForcedPasswordChange ? 'active border-blue-600 text-blue-600' : '' ?>">
             Ganti Password
           </button>
         </div>
 
         <!-- ISI TAB 1: DETAIL PROFIL LENGKAP -->
-        <div id="tab-detail" class="tab-content p-6 flex-grow">
+        <div id="tab-detail" class="tab-content <?= $isForcedPasswordChange ? 'hidden' : '' ?> p-6 flex-grow">
           
           <!-- 🔥 HEADER DENGAN TOMBOL WHATSAPP 🔥 -->
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5 gap-3">
@@ -120,7 +135,7 @@
         </div>
 
         <!-- ISI TAB 3: GANTI PASSWORD -->
-        <div id="tab-password" class="tab-content hidden p-6 flex-grow">
+        <div id="tab-password" class="tab-content <?= $isForcedPasswordChange ? '' : 'hidden' ?> p-6 flex-grow">
           <h3 class="text-lg font-bold text-gray-900 mb-1">Ganti Password</h3>
           <p class="text-sm text-gray-500 mb-6">Gunakan kombinasi huruf dan angka agar akun Anda lebih aman.</p>
           <form id="formPassword" class="space-y-6 max-w-lg">
@@ -194,6 +209,7 @@
   // CONFIG & UTILS
   // ==========================================
   const BASE_APP = window.BASE_APP || '';
+  const forcePasswordChange = <?= $isForcedPasswordChange ? 'true' : 'false' ?>;
   const API_UPDATE_PROFILE = `${BASE_APP}/api/auth/update-profile`;
   const API_CHANGE_PASS    = `${BASE_APP}/api/auth/change-password`;
 
@@ -321,6 +337,10 @@
           const json = await res.json();
           if (!res.ok) throw new Error(json.message || 'Gagal mengubah password');
 
+          if (forcePasswordChange) {
+              window.location.href = `${BASE_APP}/dashboard`;
+              return;
+          }
           showAlert('Password berhasil diubah! Silakan gunakan password baru untuk login berikutnya.', 'success');
           document.getElementById('formPassword').reset();
       } catch (error) {

@@ -77,6 +77,7 @@ function rbacFeatureCatalog(): array
         ['raport_cabang', 'Raport Cabang', 'KPI Bisnis'],
         ['event_theme_admin', 'Setting Event', 'Admin'],
         ['setting_rbac', 'Matrix Akses Menu', 'Admin'],
+        ['audit_log', 'Audit Log', 'Admin'],
     ];
 
     $catalog = [];
@@ -121,6 +122,7 @@ function rbacEnsureSchema(PDO $pdo): void
         'rbac_menu',
         'rbac_jabatan_permission',
         'rbac_user_permission',
+        'rbac_menu_access_log',
     ];
     $tableList = implode(', ', array_map(
         static fn(string $table): string => $pdo->quote($table),
@@ -133,6 +135,34 @@ function rbacEnsureSchema(PDO $pdo): void
            AND table_name IN ({$tableList})"
     )->fetchAll(PDO::FETCH_COLUMN);
     if (count(array_intersect($requiredTables, $existingTables)) === count($requiredTables)) {
+        $auditColumns = $pdo->query("SHOW COLUMNS FROM rbac_menu_access_log")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('employee_name', $auditColumns, true)) {
+            $pdo->exec("ALTER TABLE rbac_menu_access_log ADD COLUMN employee_name VARCHAR(180) NULL AFTER employee_id");
+            $auditColumns[] = 'employee_name';
+        }
+        if (!in_array('action_type', $auditColumns, true)) {
+            $pdo->exec("ALTER TABLE rbac_menu_access_log ADD COLUMN action_type ENUM('menu_view', 'detail', 'download', 'update') NOT NULL DEFAULT 'menu_view' AFTER feature_key");
+            $auditColumns[] = 'action_type';
+        }
+        $actionTypeColumn = $pdo->query("SHOW COLUMNS FROM rbac_menu_access_log LIKE 'action_type'")->fetch(PDO::FETCH_ASSOC);
+        if (is_array($actionTypeColumn) && stripos((string)($actionTypeColumn['Type'] ?? ''), "'update'") === false) {
+            $pdo->exec("ALTER TABLE rbac_menu_access_log MODIFY action_type ENUM('menu_view', 'detail', 'download', 'update') NOT NULL DEFAULT 'menu_view'");
+        }
+        if (!in_array('action_label', $auditColumns, true)) {
+            $pdo->exec("ALTER TABLE rbac_menu_access_log ADD COLUMN action_label VARCHAR(180) NULL AFTER action_type");
+        }
+        $auditMetadataColumns = [
+            'request_path' => 'VARCHAR(255) NULL',
+            'request_method' => 'VARCHAR(10) NULL',
+            'http_status' => 'SMALLINT UNSIGNED NULL',
+            'ip_address' => 'VARCHAR(45) NULL',
+        ];
+        foreach ($auditMetadataColumns as $column => $definition) {
+            if (!in_array($column, $auditColumns, true)) {
+                $pdo->exec("ALTER TABLE rbac_menu_access_log ADD COLUMN {$column} {$definition}");
+            }
+        }
+
         rbacRetireUnusedOtherMenu($pdo);
         $catalogKeys = array_column(rbacFeatureCatalog(), 'feature_key');
         $existingFeatureKeys = $pdo->query("SELECT feature_key FROM rbac_menu")->fetchAll(PDO::FETCH_COLUMN);
@@ -248,6 +278,25 @@ function rbacEnsureSchema(PDO $pdo): void
         UNIQUE KEY uq_rbac_user_menu (employee_id, menu_id),
         KEY idx_rbac_user_lookup (employee_id, is_active),
         KEY idx_rbac_user_menu (menu_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS rbac_menu_access_log (
+        id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+        employee_id VARCHAR(50) NOT NULL,
+        employee_name VARCHAR(180) NULL,
+        feature_key VARCHAR(120) NOT NULL,
+        request_path VARCHAR(255) NULL,
+        request_method VARCHAR(10) NULL,
+        http_status SMALLINT UNSIGNED NULL,
+        ip_address VARCHAR(45) NULL,
+        action_type ENUM('menu_view', 'detail', 'download', 'update') NOT NULL DEFAULT 'menu_view',
+        action_label VARCHAR(180) NULL,
+        access_result ENUM('allowed', 'denied') NOT NULL DEFAULT 'allowed',
+        accessed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY idx_rbac_access_time (accessed_at),
+        KEY idx_rbac_access_user_time (employee_id, accessed_at),
+        KEY idx_rbac_access_menu_time (feature_key, accessed_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
     $insert = $pdo->prepare("INSERT INTO rbac_menu
@@ -425,6 +474,23 @@ function rbacEffectivePermissions(PDO $pdo, array $user): array
         $permissionMap[$menu['feature_key']] = rbacEmptyPermission();
     }
 
+    $applyRows = static function (array $rows, bool $viewOnly = false) use (&$permissionMap): void {
+        foreach ($rows as $row) {
+            $key = (string)($row['feature_key'] ?? '');
+            if (!isset($permissionMap[$key])) {
+                continue;
+            }
+            foreach (rbacPermissionColumns() as $column) {
+                if ($viewOnly && $column !== 'can_view') {
+                    continue;
+                }
+                if (array_key_exists($column, $row)) {
+                    $permissionMap[$key][$column] = (int)$row[$column];
+                }
+            }
+        }
+    };
+
     if (rbacIsAdmin($user)) {
         foreach ($permissionMap as &$permission) {
             $permission['can_view'] = 1;
@@ -434,8 +500,20 @@ function rbacEffectivePermissions(PDO $pdo, array $user): array
             $permission['can_export'] = 1;
         }
         unset($permission);
+
+        $userStmt = $pdo->prepare("SELECT m.feature_key, up.can_view
+            FROM rbac_user_permission up
+            INNER JOIN rbac_menu m ON m.id = up.menu_id AND m.is_active = 1
+            WHERE up.is_active = 1 AND up.employee_id = :employee_id");
+        $userStmt->execute(['employee_id' => rbacNormalizeEmployeeId($user['employee_id'] ?? '')]);
+        $userRows = $userStmt->fetchAll(PDO::FETCH_ASSOC);
+        $applyRows($userRows, true);
+        if (isset($permissionMap['page:setting_rbac'])) {
+            $permissionMap['page:setting_rbac']['can_view'] = 1;
+        }
+
         return [
-            'admin' => true,
+            'admin' => count($userRows) === 0,
             'configured' => true,
             'legacy_fallback' => false,
             'permissions' => $permissionMap,
@@ -446,18 +524,6 @@ function rbacEffectivePermissions(PDO $pdo, array $user): array
     $group = trim((string)($user['group_jabatan'] ?? ''));
     $unit = trim((string)($user['unit_kerja'] ?? ''));
     $office = rbacUserOffice($user);
-
-    $applyRows = static function (array $rows) use (&$permissionMap): void {
-        foreach ($rows as $row) {
-            $key = (string)($row['feature_key'] ?? '');
-            if (!isset($permissionMap[$key])) {
-                continue;
-            }
-            foreach (rbacPermissionColumns() as $column) {
-                $permissionMap[$key][$column] = (int)$row[$column];
-            }
-        }
-    };
 
     $divisionRows = [];
     if ($unit !== '') {
@@ -524,12 +590,148 @@ function rbacEffectivePermissions(PDO $pdo, array $user): array
 
 function rbacCanAccessPage(PDO $pdo, array $user, string $page): bool
 {
-    if (rbacIsAdmin($user)) {
-        return true;
-    }
     $access = rbacEffectivePermissions($pdo, $user);
     $key = 'page:' . trim($page);
+    if (rbacIsAdmin($user) && !isset($access['permissions'][$key])) {
+        return true;
+    }
     return !empty($access['permissions'][$key]['can_view']);
+}
+
+function rbacLogMenuAccess(
+    PDO $pdo,
+    string $employeeId,
+    string $pageSlug,
+    string $result = 'allowed',
+    string $employeeName = '',
+    ?string $routeParam = null,
+    ?int $httpStatus = null
+): void
+{
+    $employeeId = trim($employeeId);
+    $employeeName = trim($employeeName);
+    $pageSlug = strtolower(trim($pageSlug));
+    if ($employeeId === '' || $pageSlug === '' || !in_array($result, ['allowed', 'denied'], true)) {
+        return;
+    }
+
+    $featureKey = 'page:' . $pageSlug;
+    $knownKeys = array_column(rbacFeatureCatalog(), 'feature_key');
+    if (!in_array($featureKey, $knownKeys, true)) {
+        return;
+    }
+
+    $requestPath = rbacAuditPageData($pageSlug, $routeParam);
+    $requestMethod = rbacAuditRequestMethod((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    $httpStatus = $httpStatus ?? ($result === 'denied' ? 403 : (int)(http_response_code() ?: 200));
+    $ipAddress = rbacAuditClientIpAddress();
+
+    try {
+        $stmt = $pdo->prepare("INSERT INTO rbac_menu_access_log
+            (employee_id, employee_name, feature_key, request_path, request_method, http_status, ip_address, action_type, access_result, accessed_at)
+            VALUES (:employee_id, :employee_name, :feature_key, :request_path, :request_method, :http_status, :ip_address, 'menu_view', :access_result, :accessed_at)");
+        $stmt->execute([
+            'employee_id' => $employeeId,
+            'employee_name' => $employeeName !== '' ? $employeeName : null,
+            'feature_key' => $featureKey,
+            'request_path' => $requestPath,
+            'request_method' => $requestMethod,
+            'http_status' => $httpStatus,
+            'ip_address' => $ipAddress,
+            'access_result' => $result,
+            'accessed_at' => gmdate('Y-m-d H:i:s'),
+        ]);
+    } catch (Throwable $error) {
+        error_log('Menu access audit logging failed: ' . $error->getMessage());
+    }
+}
+
+function rbacScheduleMenuAccessLog(
+    PDO $pdo,
+    string $employeeId,
+    string $pageSlug,
+    string $employeeName = '',
+    ?string $routeParam = null
+): void
+{
+    register_shutdown_function(static function () use ($pdo, $employeeId, $pageSlug, $employeeName, $routeParam): void {
+        $status = http_response_code();
+        rbacLogMenuAccess(
+            $pdo,
+            $employeeId,
+            $pageSlug,
+            'allowed',
+            $employeeName,
+            $routeParam,
+            is_int($status) && $status >= 100 ? $status : 200
+        );
+    });
+}
+
+function rbacAuditPageData(string $pageSlug, ?string $routeParam = null): string
+{
+    $pageSlug = strtolower(trim($pageSlug, " /\\\t\n\r\0\x0B"));
+    $path = '/' . $pageSlug;
+    $routeParam = trim((string)$routeParam, " /\\\t\n\r\0\x0B");
+    if ($routeParam !== '') {
+        $routeParam = preg_replace('/[\x00-\x1F\x7F?#]+/u', '', $routeParam) ?? '';
+        if ($routeParam !== '') $path .= '/' . $routeParam;
+    }
+    $path .= ' [page=' . $pageSlug . ']';
+    return function_exists('mb_substr') ? mb_substr($path, 0, 255, 'UTF-8') : substr($path, 0, 255);
+}
+
+function rbacAuditRequestMethod(string $method): string
+{
+    $method = strtoupper(trim($method));
+    return preg_match('/^[A-Z]{3,10}$/', $method) ? $method : 'GET';
+}
+
+function rbacAuditClientIpAddress(): ?string
+{
+    $ipAddress = trim((string)($_SERVER['REMOTE_ADDR'] ?? ''));
+    return filter_var($ipAddress, FILTER_VALIDATE_IP) ? $ipAddress : null;
+}
+
+function rbacLogAuditEvent(PDO $pdo, array $user, string $pageSlug, string $actionType, string $actionLabel, ?string $routeParam = null): void
+{
+    $employeeId = trim((string)($user['employee_id'] ?? $user['id_peg'] ?? ''));
+    $pageSlug = strtolower(trim($pageSlug));
+    $actionType = strtolower(trim($actionType));
+    $featureKey = 'page:' . $pageSlug;
+    if ($employeeId === ''
+        || !in_array($featureKey, array_column(rbacFeatureCatalog(), 'feature_key'), true)
+        || !in_array($actionType, ['detail', 'download', 'update'], true)) {
+        return;
+    }
+
+    $employeeName = trim((string)($user['full_name'] ?? $user['name'] ?? ''));
+    $actionLabel = trim(strip_tags($actionLabel));
+    $actionLabel = preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $actionLabel) ?? '';
+    $actionLabel = preg_replace('/\s+/u', ' ', $actionLabel) ?? trim($actionLabel);
+    $actionLabel = function_exists('mb_substr')
+        ? mb_substr($actionLabel, 0, 180, 'UTF-8')
+        : substr($actionLabel, 0, 180);
+
+    try {
+        rbacEnsureSchema($pdo);
+        $stmt = $pdo->prepare("INSERT INTO rbac_menu_access_log
+            (employee_id, employee_name, feature_key, request_path, request_method, http_status, ip_address, action_type, action_label, access_result, accessed_at)
+            VALUES (:employee_id, :employee_name, :feature_key, :request_path, :request_method, 200, :ip_address, :action_type, :action_label, 'allowed', :accessed_at)");
+        $stmt->execute([
+            'employee_id' => $employeeId,
+            'employee_name' => $employeeName !== '' ? $employeeName : null,
+            'feature_key' => $featureKey,
+            'request_path' => rbacAuditPageData($pageSlug, $routeParam),
+            'request_method' => rbacAuditRequestMethod((string)($_SERVER['REQUEST_METHOD'] ?? 'POST')),
+            'ip_address' => rbacAuditClientIpAddress(),
+            'action_type' => $actionType,
+            'action_label' => $actionLabel !== '' ? $actionLabel : null,
+            'accessed_at' => gmdate('Y-m-d H:i:s'),
+        ]);
+    } catch (Throwable $error) {
+        error_log('Audit event logging failed: ' . $error->getMessage());
+    }
 }
 
 function rbacCanManageMatrix(PDO $pdo, array $user): bool
@@ -710,7 +912,10 @@ function rbacSaveUsers(PDO $pdo, array $input, array $actor): void
         sendResponse(422, 'Pilih minimal satu ID pegawai.');
     }
     $keys = rbacPermissionKeysFromInput($input);
-    $allowed = array_fill_keys($keys, true);
+    $employeeFeatureKeys = $input['employee_feature_keys'] ?? [];
+    if (!is_array($employeeFeatureKeys)) {
+        $employeeFeatureKeys = [];
+    }
     $menus = rbacMenuRows($pdo);
     $actorId = rbacNormalizeEmployeeId($actor['employee_id'] ?? '');
 
@@ -721,12 +926,19 @@ function rbacSaveUsers(PDO $pdo, array $input, array $actor): void
             (employee_id, menu_id, can_view, updated_by)
             VALUES (:employee_id, :menu_id, :can_view, :updated_by)");
         foreach ($ids as $employeeId) {
+            $employeeKeys = isset($employeeFeatureKeys[$employeeId]) && is_array($employeeFeatureKeys[$employeeId])
+                ? rbacPermissionKeysFromInput(['feature_keys' => $employeeFeatureKeys[$employeeId]])
+                : $keys;
+            if ($employeeId === '102-119') {
+                $employeeKeys[] = 'page:setting_rbac';
+            }
+            $employeeAllowed = array_fill_keys($employeeKeys, true);
             $delete->execute(['employee_id' => $employeeId]);
             foreach ($menus as $menu) {
                 $insert->execute([
                     'employee_id' => $employeeId,
                     'menu_id' => (int)$menu['id'],
-                    'can_view' => isset($allowed[$menu['feature_key']]) ? 1 : 0,
+                    'can_view' => isset($employeeAllowed[$menu['feature_key']]) ? 1 : 0,
                     'updated_by' => $actorId,
                 ]);
             }

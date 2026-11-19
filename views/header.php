@@ -10,7 +10,7 @@
       scheme: <?= json_encode(defined('APP_SCHEME') ? APP_SCHEME : (($_SERVER['HTTPS'] ?? '') !== 'off' ? 'https' : 'http'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
       baseUrl: <?= json_encode(defined('BASE_APP') ? BASE_APP : '', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>,
       authenticated: <?= json_encode(!empty($isLoggedIn)) ?>,
-      ssoApiBase: <?= json_encode(function_exists('getSsoApiBase') ? getSsoApiBase() : 'https://apisso.bkkjateng.co.id', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
+      ssoApiBase: <?= json_encode(function_exists('getSsoApiBase') ? getSsoApiBase() : 'https://devsso.bkkjateng.co.id', JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>
     });
     window.BASE_APP = window.MONBIS_CONFIG.baseUrl;
     try { localStorage.removeItem('dpk_token'); } catch (error) {}
@@ -40,6 +40,6 @@
   <?php endif; ?>
   <title>MONBIS</title>
 </head>
-<body class="bg-sky-50">
+<body class="bg-sky-50<?= !empty($forcePasswordChange) ? ' monbis-force-password-change' : '' ?>">
   <!-- Swiper JS -->
 <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>

@@ -1468,7 +1468,7 @@
       
       sessionStorage.setItem("flowpar_update", JSON.stringify(payload));
       sessionStorage.removeItem("potensinpl_update");
-      window.location.assign('/update-komitmen-flow');
+      window.location.assign(`${window.BASE_APP || ''}/update_flowpar`);
   };
 
   const closePoModal = () => { document.getElementById('modalDebiturPotensi').classList.add('hidden'); document.body.style.overflow = ''; };

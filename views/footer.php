@@ -1138,5 +1138,69 @@
     })();
 </script>
 
+<script>
+(() => {
+    const isAuthenticated = <?= !empty($isLoggedIn) ? 'true' : 'false' ?>;
+    const pageSlug = <?= json_encode((string)($page ?? ''), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>;
+    if (!isAuthenticated || !pageSlug) return;
+
+    const auditEndpoint = './api/index.php?request=audit_log';
+    const actionPattern = /(detail|rincian)/i;
+    const downloadPattern = /(download|unduh|export|excel|xlsx|xls|csv)/i;
+    const downloadHintPattern = /(download|unduh|export|excel|xlsx|xls|csv)/i;
+    const detailHintPattern = /(detail|rincian)/i;
+
+    document.addEventListener('click', event => {
+        if (!event.isTrusted) return;
+        const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+        const control = target?.closest('a[href], button, [role="button"], [onclick], [data-action], [data-audit-action], input[type="submit"], input[type="button"]');
+        if (!control || control.disabled || control.getAttribute('aria-disabled') === 'true') return;
+        if (control.closest('[data-audit-ignore]')) return;
+
+        const tagName = String(control.tagName || '').toLowerCase();
+        const controlText = ['a', 'button', 'input'].includes(tagName) ? control.innerText : '';
+        const label = [
+            control.getAttribute('data-audit-label'),
+            control.getAttribute('aria-label'),
+            control.getAttribute('title'),
+            controlText,
+            tagName === 'input' ? control.value : ''
+        ].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+        const href = control.getAttribute('href') || '';
+        const declaredAction = (control.getAttribute('data-audit-action') || control.getAttribute('data-action') || '').toLowerCase();
+        const classHints = typeof control.className === 'string' ? control.className : '';
+        const actionHints = [control.id, classHints, control.getAttribute('onclick')].filter(Boolean).join(' ');
+        const opensDetailModal = /modal/i.test(actionHints)
+            && /(open|show|load)/i.test(actionHints)
+            && Array.from(document.querySelectorAll('[id]')).some(node => {
+                const id = node.id.toLowerCase();
+                return id.includes('modal') && id.includes('detail');
+            });
+        const downloadAttribute = control.hasAttribute('download');
+        let actionType = '';
+        if (declaredAction === 'download' || downloadAttribute || control.hasAttribute('data-download') || downloadPattern.test(label) || downloadHintPattern.test(href) || downloadHintPattern.test(actionHints)) {
+            actionType = 'download';
+        } else if (declaredAction === 'detail' || actionPattern.test(label) || detailHintPattern.test(actionHints) || opensDetailModal) {
+            actionType = 'detail';
+        }
+        if (!actionType) return;
+
+        const evidence = [label, href, actionHints].join(' ');
+        const downloadQualifiers = [];
+        if (/(excel|xlsx|xls)/i.test(evidence)) downloadQualifiers.push('Excel');
+        if (/csv/i.test(evidence)) downloadQualifiers.push('CSV');
+        if (/(rekap|summary)/i.test(evidence)) downloadQualifiers.push('Rekap');
+        const actionLabel = actionType === 'download' ? ['Download', ...downloadQualifiers].join(' ') : 'Detail';
+        fetch(auditEndpoint, {
+            method: 'POST',
+            credentials: 'same-origin',
+            keepalive: true,
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ page_slug: pageSlug, action_type: actionType, action_label: actionLabel })
+        }).catch(() => {});
+    }, true);
+})();
+</script>
+
 </body>
 </html>

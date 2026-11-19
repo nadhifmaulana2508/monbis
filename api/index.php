@@ -1,5 +1,9 @@
 <?php
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 require_once __DIR__ . '/helpers/response.php';
 require_once __DIR__ . '/helpers/cors.php';
 applyApiCors();
@@ -13,6 +17,18 @@ if ($endpoint !== '' && $endpoint !== 'auth') {
     // Semua API selain endpoint autentikasi wajib melewati verifikasi SSO.
     require_once __DIR__ . '/helpers/sso_guard.php';
     $user = requireAppAuth();
+    require_once __DIR__ . '/helpers/password_policy.php';
+    try {
+        passwordPolicyEnsureSession();
+        $employeeId = (string)($user['employee_id'] ?? '');
+        passwordPolicyAdoptUpstreamRequirement($employeeId, !empty($user['must_change_password']));
+        if (passwordPolicyIsRequired($employeeId)) {
+            sendResponse(403, 'Ganti password wajib diselesaikan sebelum menggunakan menu Monbis.');
+        }
+    } catch (Throwable $passwordPolicyError) {
+        error_log('Password change session validation failed.');
+        sendResponse(503, 'Validasi keamanan akun sedang tidak tersedia. Silakan coba lagi.');
+    }
 }
 if (!defined('API_ROUTER_ENTRY')) define('API_ROUTER_ENTRY', true);
 
@@ -130,6 +146,9 @@ switch ($endpoint) {
         break;
     case 'rbac':
         require __DIR__ . '/routes/rbac.php';
+        break;
+    case 'audit_log':
+        require __DIR__ . '/routes/audit_log.php';
         break;
 
     default:

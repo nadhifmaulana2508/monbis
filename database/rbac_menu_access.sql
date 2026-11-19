@@ -58,3 +58,22 @@ CREATE TABLE IF NOT EXISTS rbac_user_permission (
   KEY idx_rbac_user_lookup (employee_id, is_active),
   KEY idx_rbac_user_menu (menu_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS rbac_menu_access_log (
+  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  employee_id VARCHAR(50) NOT NULL,
+  employee_name VARCHAR(180) NULL,
+  feature_key VARCHAR(120) NOT NULL,
+  request_path VARCHAR(255) NULL,
+  request_method VARCHAR(10) NULL,
+  http_status SMALLINT UNSIGNED NULL,
+  ip_address VARCHAR(45) NULL,
+  action_type ENUM('menu_view', 'detail', 'download', 'update') NOT NULL DEFAULT 'menu_view',
+  action_label VARCHAR(180) NULL,
+  access_result ENUM('allowed', 'denied') NOT NULL DEFAULT 'allowed',
+  accessed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_rbac_access_time (accessed_at),
+  KEY idx_rbac_access_user_time (employee_id, accessed_at),
+  KEY idx_rbac_access_menu_time (feature_key, accessed_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

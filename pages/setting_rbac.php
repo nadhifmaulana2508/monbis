@@ -107,6 +107,8 @@ mb_ui_assets('.');
 <script>
 (() => {
   const API = './api/index.php?request=rbac';
+  const ADMIN_EMPLOYEE_ID = '102-119';
+  const ADMIN_MATRIX_FEATURE = 'page:setting_rbac';
   const el = id => document.getElementById(id);
   const state = { mode:'role', menus:[], roles:[], roleOptions:[], offices:[], divisions:[], divisionOptions:[], users:[], selectedUsers:new Set(), currentKeys:new Set(), roleMatrix:null, userMatrix:null };
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
@@ -281,6 +283,9 @@ mb_ui_assets('.');
   function updateSelectionInfo() {
     const count = state.selectedUsers.size;
     el('rbacSelectionInfo').textContent = count ? `${count} pegawai dipilih` : 'Belum ada pegawai dipilih';
+    el('rbacUserNote').textContent = state.selectedUsers.has(ADMIN_EMPLOYEE_ID)
+      ? 'Matrix menampilkan akses efektif pegawai. Simpan untuk membuat override. Akses Matrix Akses Menu admin 102-119 tetap aktif agar pengaturan tidak terkunci.'
+      : 'Matrix menampilkan akses efektif pegawai. Simpan untuk membuat override pegawai; reset mengembalikan ke jabatan dan divisi.';
   }
 
   function renderMatrix(rows = []) {
@@ -319,6 +324,15 @@ mb_ui_assets('.');
       const status = [...el('rbacFeatureBody').querySelectorAll('[data-module-status]')].find(node => node.dataset.moduleStatus === moduleKey);
       if (status) status.textContent = `${checkedCount}/${children.length}`;
     });
+  }
+
+  function preserveAdminMatrixAccess() {
+    if (state.mode !== 'user' || !state.selectedUsers.has(ADMIN_EMPLOYEE_ID)) return false;
+    const matrixAccess = [...el('rbacFeatureBody').querySelectorAll('input[data-feature-key]')]
+      .find(input => input.dataset.featureKey === ADMIN_MATRIX_FEATURE);
+    if (!matrixAccess || matrixAccess.checked) return false;
+    matrixAccess.checked = true;
+    return true;
   }
 
   async function loadScopeMatrix() {
@@ -389,7 +403,11 @@ mb_ui_assets('.');
       } else {
         const ids = selectedUserIds();
         if (!ids.length) throw new Error('Pilih minimal satu ID pegawai.');
-        await post({type:'save_users', employee_ids:ids, feature_keys:keys});
+        const includesAdmin = ids.includes(ADMIN_EMPLOYEE_ID);
+        const sharedKeys = includesAdmin ? keys.filter(key => key !== ADMIN_MATRIX_FEATURE) : keys;
+        const payload = {type:'save_users', employee_ids:ids, feature_keys:sharedKeys};
+        if (includesAdmin) payload.employee_feature_keys = {[ADMIN_EMPLOYEE_ID]:keys};
+        await post(payload);
       }
       await loadMatrix();
       const message = state.mode === 'user' ? 'Override pegawai berhasil disimpan.' : state.mode === 'role' ? 'Akses jabatan berhasil disimpan.' : 'Akses divisi berhasil disimpan.';
@@ -477,7 +495,9 @@ mb_ui_assets('.');
         if (input.dataset.moduleKey === moduleKey && input.dataset.matrixVisible !== '0') input.checked = moduleToggle.checked;
       });
     }
+    const adminAccessRestored = preserveAdminMatrixAccess();
     syncModuleToggles();
+    if (adminAccessRestored) showToast('Akses Matrix Akses Menu admin tetap aktif agar pengaturan tidak terkunci.', 'info');
   });
   el('rbacSave').addEventListener('click', save);
   el('rbacResetUsers').addEventListener('click', resetUsers);

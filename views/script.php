@@ -35,7 +35,7 @@
     
     // --- 1. UPDATE URL API KE SSO ---
     const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-    const API_SSO_BASE = isLocal ? 'http://localhost/rest_api_sso' : 'https://apisso.bkkjateng.co.id';
+    const API_SSO_BASE = window.MONBIS_CONFIG?.ssoApiBase || 'https://devsso.bkkjateng.co.id';
     const API_WHOAMI = `${API_SSO_BASE}/api/auth/whoami`;
 
     const TOKEN_KEY  = 'dpk_token';

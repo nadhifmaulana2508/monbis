@@ -2734,7 +2734,7 @@
           harian_date: currentFilter.harian
       };
       sessionStorage.setItem("flowpar_update", JSON.stringify(payload));
-      window.location.assign('/update-komitmen-flow');
+      window.location.assign(`${window.BASE_APP || ''}/update_flowpar`);
   };
 
   const closeFlowParDetailModal = () => {

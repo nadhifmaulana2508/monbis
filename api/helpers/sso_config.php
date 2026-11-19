@@ -125,7 +125,7 @@ function getSsoApiBase(): string
         $candidate = preg_replace('#/api/?$#i', '', $candidate) ?: $candidate;
     }
 
-    $resolved = $valid ? $candidate : 'https://apisso.bkkjateng.co.id';
+    $resolved = $valid ? $candidate : 'https://devsso.bkkjateng.co.id';
     return $resolved;
 }
 
@@ -200,4 +200,102 @@ function getSsoCurlResolveEntries(): array
     $port = (int)($parts['port'] ?? (strtolower((string)$parts['scheme']) === 'https' ? 443 : 80));
     $address = filter_var($connectIp, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) ? '[' . $connectIp . ']' : $connectIp;
     return [$host . ':' . $port . ':' . $address];
+}
+
+/**
+ * Stream fallback for Apache PHP installations without the cURL extension.
+ * It connects to SSO_API_CONNECT_IP when configured while preserving the SSO
+ * hostname for HTTP Host, TLS SNI, and certificate verification.
+ *
+ * @return array{body:string|false,status:int,error:string}
+ */
+function ssoStreamRequest(string $url, string $method, array $headers, string $payload = '', int $timeout = 15): array
+{
+    $parts = parse_url($url);
+    if (!is_array($parts) || empty($parts['scheme']) || empty($parts['host'])) {
+        return ['body' => false, 'status' => 0, 'error' => 'invalid_url'];
+    }
+
+    $scheme = strtolower((string)$parts['scheme']);
+    $host = strtolower((string)$parts['host']);
+    $port = (int)($parts['port'] ?? ($scheme === 'https' ? 443 : 80));
+    $connectHost = $host;
+    foreach (getSsoCurlResolveEntries() as $entry) {
+        $entryParts = explode(':', (string)$entry, 3);
+        if (count($entryParts) !== 3
+            || strtolower($entryParts[0]) !== $host
+            || (int)$entryParts[1] !== $port) {
+            continue;
+        }
+        $connectHost = trim($entryParts[2], '[]');
+        break;
+    }
+
+    $urlHost = filter_var($connectHost, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)
+        ? '[' . $connectHost . ']'
+        : $connectHost;
+    $defaultPort = $scheme === 'https' ? 443 : 80;
+    $requestUrl = $scheme . '://' . $urlHost . ($port !== $defaultPort ? ':' . $port : '')
+        . (string)($parts['path'] ?? '/')
+        . (isset($parts['query']) ? '?' . $parts['query'] : '');
+
+    $hostHeader = $host . ($port !== $defaultPort ? ':' . $port : '');
+    $safeHeaders = [];
+    foreach ($headers as $header) {
+        $header = trim((string)$header);
+        if ($header === '' || preg_match('/[\r\n]/', $header)) {
+            continue;
+        }
+        if (stripos($header, 'Host:') === 0
+            || stripos($header, 'Connection:') === 0
+            || stripos($header, 'Content-Length:') === 0
+            || stripos($header, 'Accept-Encoding:') === 0) {
+            continue;
+        }
+        $safeHeaders[] = $header;
+    }
+    $safeHeaders[] = 'Host: ' . $hostHeader;
+    $safeHeaders[] = 'Connection: close';
+    $safeHeaders[] = 'Accept-Encoding: identity';
+    if (strtoupper($method) !== 'GET' && strtoupper($method) !== 'HEAD') {
+        $safeHeaders[] = 'Content-Length: ' . strlen($payload);
+    }
+
+    $options = [
+        'http' => [
+            'method' => strtoupper($method),
+            'timeout' => max(1, $timeout),
+            'ignore_errors' => true,
+            'follow_location' => 0,
+            'header' => implode("\r\n", $safeHeaders) . "\r\n",
+        ],
+    ];
+    if (strtoupper($method) !== 'GET' && strtoupper($method) !== 'HEAD') {
+        $options['http']['content'] = $payload;
+    }
+    if ($scheme === 'https') {
+        $options['ssl'] = [
+            'peer_name' => $host,
+            'verify_peer' => true,
+            'verify_peer_name' => true,
+            'SNI_enabled' => true,
+        ];
+    }
+
+    $context = stream_context_create($options);
+    $body = @file_get_contents($requestUrl, false, $context);
+    $status = 0;
+    foreach ($http_response_header ?? [] as $responseHeader) {
+        if (preg_match('/^HTTP\/\S+\s+(\d{3})\b/i', (string)$responseHeader, $match)) {
+            $status = (int)$match[1];
+            break;
+        }
+    }
+    $lastError = error_get_last();
+
+    return [
+        'body' => is_string($body) ? $body : false,
+        'status' => $status,
+        'error' => is_string($body) ? '' : (string)($lastError['message'] ?? 'request_failed'),
+    ];
 }

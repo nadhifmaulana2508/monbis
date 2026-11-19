@@ -16,8 +16,8 @@ RewriteRule ^kpi/?$ index.php?url=kpi [QSA,L]
 
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-# FE modules have their own router. Keep both the local subfolder path
-# (/report-dpk/v-2) and other standalone modules out of the legacy Monbis router.
-RewriteCond %{REQUEST_URI} !^/(?:[^/]+/)?(?:v-2|rbb|goRbb|simpeg)(?:/|$) [NC]
+# The API and FE modules have their own routers. Keep them out of the legacy
+# Monbis router under both a local subfolder and a domain-root deployment.
+RewriteCond %{REQUEST_URI} !^/(?:[^/]+/)?(?:api|v-2|rbb|goRbb|simpeg)(?:/|$) [NC]
 
 RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]

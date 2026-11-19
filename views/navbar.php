@@ -371,6 +371,16 @@ if (is_array($rbacInitialAccess ?? null)) {
   @media (max-width:420px) {
     #searchDebiturNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:1fr; gap:7px; }
   }
+  #auditFilters { width:min(1120px, calc(100vw - 24px)); }
+  #auditFilters .dashboard-navbar-filter__fields { grid-template-columns:repeat(5, minmax(120px, 1fr)) auto; }
+  #auditFilters .dashboard-navbar-filter__submit { display:inline-flex !important; width:40px; min-width:40px; min-height:38px; padding:0; }
+  #auditFilters .dashboard-navbar-filter__submit svg { width:17px; height:17px; }
+  :root[data-monbis-theme="dark"] #auditFilters .dashboard-navbar-filter__field label { color:#94a3b8; }
+  @media (max-width:767px) {
+    #auditFilters { right:8px; width:calc(100vw - 16px); }
+    #auditFilters .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; }
+    #auditFilters .audit-filter-submit { grid-column:1 / -1; width:100%; }
+  }
   :root {
     --monbis-event-accent:#2563eb;
     --monbis-event-header-bg:#ffffff;
@@ -1464,7 +1474,7 @@ if (is_array($rbacInitialAccess ?? null)) {
         </div>
       </div>
 
-      <!-- Parent Admin: pengaturan event dan matrix akses menu -->
+      <!-- Parent Admin: pengaturan event, akses menu, dan audit -->
       <div id="menuEventAdmin" class="accordion-group" style="display: none;">
         <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
           <div class="flex items-center shrink-0">
@@ -1476,6 +1486,7 @@ if (is_array($rbacInitialAccess ?? null)) {
         <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
           <a href="event_theme_admin" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Setting Event</a>
           <a id="menuRbacAdmin" href="setting_rbac" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50" style="display: none;">Matrix Menu</a>
+          <a href="audit_log" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Audit Log</a>
         </div>
       </div>
     </nav>
@@ -1551,6 +1562,53 @@ if (is_array($rbacInitialAccess ?? null)) {
       </div>
 
       <div class="flex-1"></div>
+
+      <?php if (($page ?? '') === 'audit_log'): ?>
+      <form id="auditFilters" class="dashboard-navbar-filter hidden flex-col" aria-label="Filter audit log">
+        <div class="dashboard-navbar-filter__head">
+          <div>
+            <span class="dashboard-navbar-filter__eyebrow">Filter</span>
+            <strong class="dashboard-navbar-filter__title">Atur filter Audit Log</strong>
+          </div>
+          <div class="dashboard-navbar-filter__head-actions">
+            <button type="submit" class="dashboard-navbar-filter__submit audit-filter-submit" aria-label="Terapkan filter" title="Terapkan filter">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg>
+            </button>
+            <button type="button" id="auditFilterClose" class="dashboard-navbar-filter__close" aria-label="Tutup filter" title="Tutup filter">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+            </button>
+          </div>
+        </div>
+        <div class="dashboard-navbar-filter__fields">
+          <div class="dashboard-navbar-filter__field">
+            <label for="auditDateFrom">Dari tanggal</label>
+            <input id="auditDateFrom" name="date_from" type="date" required>
+          </div>
+          <div class="dashboard-navbar-filter__field">
+            <label for="auditDateTo">Sampai tanggal</label>
+            <input id="auditDateTo" name="date_to" type="date" required>
+          </div>
+          <div class="dashboard-navbar-filter__field">
+            <label for="auditEmployeeId">ID pegawai</label>
+            <input id="auditEmployeeId" name="employee_id" type="search" maxlength="50" placeholder="Semua pegawai">
+          </div>
+          <div class="dashboard-navbar-filter__field">
+            <label for="auditMenu">Menu</label>
+            <select id="auditMenu" name="menu_key"><option value="">Semua menu</option></select>
+          </div>
+          <div class="dashboard-navbar-filter__field">
+            <label for="auditAction">Aktivitas</label>
+            <select id="auditAction" name="action_type">
+              <option value="">Semua aktivitas</option>
+              <option value="menu_view">Buka menu</option>
+              <option value="detail">Detail</option>
+              <option value="update">Update</option>
+              <option value="download">Download</option>
+            </select>
+          </div>
+        </div>
+      </form>
+      <?php endif; ?>
 
       <?php if (($page ?? '') === 'dashboard'): ?>
       <form id="formFilterMaster" class="dashboard-navbar-filter hidden flex-col" aria-label="Filter dashboard">
@@ -2525,6 +2583,11 @@ if (is_array($rbacInitialAccess ?? null)) {
       <div class="flex items-center gap-4 sm:gap-6 ml-auto">
         <?php if (($page ?? '') === 'dashboard'): ?>
         <button type="button" id="btnToggleFilter" class="dashboard-navbar-filter-toggle" aria-label="Buka filter" title="Buka filter" aria-expanded="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
+        </button>
+        <?php endif; ?>
+        <?php if (($page ?? '') === 'audit_log'): ?>
+        <button type="button" id="auditNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Audit Log" title="Buka filter Audit Log" aria-expanded="false" aria-controls="auditFilters">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>

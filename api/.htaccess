@@ -1,12 +1,10 @@
 RewriteEngine On
-RewriteBase /report-dpk/api/
+# Keep rewrite targets relative so this router works under any application base path.
 
 # Jangan sajikan dotfile API sebagai file statis.
 RewriteRule (^|/)\.(?!well-known(?:/|$)) - [F,END,NC]
 # Folder source hanya boleh dipanggil melalui api/index.php.
 RewriteRule ^(?:controllers|helpers|middlewares|routes)(?:/|$) - [F,END,NC]
-
-# RewriteBase /api/
 
 # RewriteCond %{REQUEST_FILENAME} !-f
 # RewriteCond %{REQUEST_FILENAME} !-d

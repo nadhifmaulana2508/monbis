@@ -1087,7 +1087,7 @@
           hintAO.className = "text-[9px] font-bold ml-1 italic text-slate-500";
 
           try {
-              const ssoApiUrl = `${window.MONBIS_CONFIG?.ssoApiBase || 'https://apisso.bkkjateng.co.id'}/api/ao/list`;
+              const ssoApiUrl = `${window.MONBIS_CONFIG?.ssoApiBase || 'https://devsso.bkkjateng.co.id'}/api/ao/list`;
 
               // TANPA TOKEN UNTUK REMEDIAL SSO
               const resRem = await fetch(`${ssoApiUrl}?tipe=remedial&kode_cabang=${kode_cabang}`);

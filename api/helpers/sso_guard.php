@@ -101,12 +101,16 @@ function ssoWhoami(string $token): ?array
         $curlErrorMessage = curl_error($curl);
         curl_close($curl);
     } else {
-        $context = stream_context_create(['http'=>[
-            'method'=>'GET','timeout'=>8,'ignore_errors'=>true,
-            'header'=>implode("\r\n", array_merge(getSsoAppHeaders(), ["Authorization: Bearer {$token}", 'Accept: application/json'])) . "\r\n",
-        ]]);
-        $body = @file_get_contents($url, false, $context);
-        if (!empty($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $match)) $status = (int)$match[1];
+        $result = ssoStreamRequest(
+            $url,
+            'GET',
+            array_merge(getSsoAppHeaders(), ['Authorization: Bearer ' . $token, 'Accept: application/json']),
+            '',
+            8
+        );
+        $body = $result['body'];
+        $status = $result['status'];
+        $curlErrorMessage = $result['error'];
     }
     if ($status !== 200 || !is_string($body)) {
         error_log(sprintf(

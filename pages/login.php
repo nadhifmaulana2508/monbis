@@ -156,14 +156,12 @@ require_once __DIR__ . '/../components/login-showcase.php';
   const safePostLoginTarget = getSafePostLoginTarget();
   
   // 1. DETEKSI ENVIRONMENT 
-  const API_SSO_BASE = window.MONBIS_CONFIG?.ssoApiBase || 'https://apisso.bkkjateng.co.id';
-  
   const API_LOGIN = `${BASE_APP}/api/auth/login`;
   
-  // 🔥 API SSO RESET PASSWORD 🔥
-  const API_FORGOT = `${API_SSO_BASE}/api/auth/forgot-password`;
-  const API_VERIFY = `${API_SSO_BASE}/api/auth/verify-otp`;
-  const API_RESET  = `${API_SSO_BASE}/api/auth/reset-password`;
+  // Proxy lokal menjaga token aplikasi tetap di server, body endpoint SSO tetap sama.
+  const API_FORGOT = `${BASE_APP}/api/auth/forgot-password`;
+  const API_VERIFY = `${BASE_APP}/api/auth/verify-otp`;
+  const API_RESET  = `${BASE_APP}/api/auth/reset-password`;
 
   // STATE UNTUK TOKEN SEMENTARA
   let tempOtpToken = "";
@@ -207,7 +205,7 @@ require_once __DIR__ . '/../components/login-showcase.php';
         if (res.status === 401 || json?.status === 401) {
             throw new Error(invalidLoginMessage);
         }
-        if (!res.ok) throw new Error('Layanan login sedang tidak dapat digunakan. Silakan coba lagi beberapa saat.');
+        if (!res.ok) throw new Error(json?.message || 'Layanan login sedang tidak dapat digunakan. Silakan coba lagi beberapa saat.');
 
         if (json?.status !== 200 || !json?.data?.employee_id) {
             throw new Error(invalidLoginMessage);
@@ -222,7 +220,9 @@ require_once __DIR__ . '/../components/login-showcase.php';
         saveUser(userData);
 
         try { sessionStorage.setItem('monbis_login_announcement_pending', '1'); } catch (error) {}
-        location.href = safePostLoginTarget || `${BASE_APP}/${postLoginPage}`;
+        location.href = userData.must_change_password
+          ? `${BASE_APP}/profile?force_password_change=1`
+          : (safePostLoginTarget || `${BASE_APP}/${postLoginPage}`);
 
     } catch (error) {
         errMsg.textContent = error.message.includes("Failed to fetch") 

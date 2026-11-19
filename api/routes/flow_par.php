@@ -47,7 +47,7 @@ switch ($method) {
         } elseif ($input['type'] === '50 Besar') {
             $controller->getTop50FlowPar($input);
         } elseif ($input['type'] === 'Update KL Baru') {
-            $controller->updateKomitmenKlBaru($input);
+            $controller->updateKomitmenKlBaru($input, is_array($user ?? null) ? $user : []);
         } elseif ($input['type'] === 'detail debitur') {
             $controller->getDetailDebitur($input);
         } elseif ($input['type'] === 'cari debitur') {
