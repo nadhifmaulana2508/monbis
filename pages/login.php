@@ -251,6 +251,16 @@ require_once __DIR__ . '/../components/login-showcase.php';
       modalAlert.textContent = msg;
   }
 
+  function getForgotPasswordErrorMessage(message) {
+      const text = String(message || 'Gagal mengirim OTP.');
+      const mentionsAccount = /\b(?:e-?mail|akun|account|user|pengguna|pegawai|simpeg)\b/i.test(text);
+      const indicatesUnavailable = /\b(?:not found|not registered|does not exist|doesn't exist|unknown|invalid|no record|tidak ditemukan|tidak terdaftar|belum terdaftar|tidak sesuai|tidak cocok|tidak dikenal|tidak ada|tidak valid)\b/i.test(text);
+
+      return mentionsAccount && indicatesUnavailable
+          ? 'Email belum terdaftar di SIMPEG.'
+          : text;
+  }
+
   // Buka Modal
   document.getElementById('btnOpenForgot').addEventListener('click', () => {
       modal.classList.remove('hidden');
@@ -295,7 +305,7 @@ require_once __DIR__ . '/../components/login-showcase.php';
           step1.classList.add('hidden');
           step2.classList.remove('hidden'); // Lanjut Step 2
       } catch (error) {
-          showModalAlert(error.message);
+          showModalAlert(getForgotPasswordErrorMessage(error.message));
       } finally {
           btn.disabled = false;
           txt.textContent = "Kirim OTP";

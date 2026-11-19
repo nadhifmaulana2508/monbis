@@ -45,9 +45,26 @@ function forwardSsoAuthPost(string $endpoint, array $input, string $token = ''):
     if (!is_string($body) || $status < 200 || $status >= 600) {
         sendResponse(502, 'Layanan autentikasi SSO sedang tidak dapat digunakan.');
     }
+
+    $responsePayload = json_decode($body, true);
+    if (!is_array($responsePayload)) {
+        $jsonStart = strpos($body, '{');
+        if ($jsonStart !== false) {
+            $responsePayload = json_decode(substr($body, $jsonStart), true);
+        }
+    }
+    if (!is_array($responsePayload)) {
+        sendResponse(502, 'Layanan autentikasi SSO memberikan respons yang tidak valid. Silakan coba lagi.');
+    }
+
+    $upstreamStatus = (int)($responsePayload['status'] ?? 0);
+    if ($endpoint === 'forgot-password' && max($status, $upstreamStatus) >= 500) {
+        $responsePayload['message'] = 'Pengiriman OTP sedang bermasalah di server. Silakan coba lagi nanti.';
+    }
+
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
-    echo $body;
+    echo json_encode($responsePayload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
