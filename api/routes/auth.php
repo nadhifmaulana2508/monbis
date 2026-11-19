@@ -11,38 +11,111 @@ $request = trim((string)($_GET['request'] ?? ''), '/');
 $endpoint = explode('/', $request)[1] ?? '';
 header('Cache-Control: no-store, private');
 
+function logSsoAuthForwardFailure(string $failure, array $context): void
+{
+    $parts = parse_url((string)($context['url'] ?? '')) ?: [];
+    $scheme = strtolower((string)($parts['scheme'] ?? 'https'));
+    $host = preg_replace('/[^a-zA-Z0-9.\-:\[\]]/', '', (string)($parts['host'] ?? 'unknown')) ?: 'unknown';
+    $port = isset($parts['port']) ? ':' . (int)$parts['port'] : '';
+    $path = (string)($parts['path'] ?? '/');
+    $path = preg_replace('/[^a-zA-Z0-9._\/\-]/', '', $path) ?: '/';
+    $target = $scheme . '://' . $host . $port . $path;
+    $resolve = !empty($context['resolve']) ? implode(',', $context['resolve']) : 'dns';
+    $resolve = preg_replace('/[^a-zA-Z0-9.,:\-\[\]]/', '', $resolve) ?: 'invalid';
+    $error = preg_replace('/[\x00-\x1F\x7F]+/', ' ', (string)($context['transport_error'] ?? ''));
+    $error = substr((string)$error, 0, 400);
+    $contentType = preg_replace('/[\x00-\x1F\x7F]+/', ' ', (string)($context['content_type'] ?? 'unknown'));
+
+    error_log(sprintf(
+        '[Monbis SSO proxy] request_id=%s endpoint=%s failure=%s target=%s base_source=%s connect_ip_source=%s resolve=%s app_code=%s app_token_configured=%s http_status=%d upstream_status=%d transport=%s transport_errno=%d transport_error=%s content_type=%s',
+        (string)($context['request_id'] ?? 'unknown'),
+        (string)($context['endpoint'] ?? 'unknown'),
+        $failure,
+        $target,
+        (string)($context['base_source'] ?? 'unknown'),
+        (string)($context['connect_ip_source'] ?? 'unknown'),
+        $resolve,
+        getSsoAppCode(),
+        !empty($context['app_headers']) ? 'yes' : 'no',
+        (int)($context['http_status'] ?? 0),
+        (int)($context['upstream_status'] ?? 0),
+        (string)($context['transport'] ?? 'unknown'),
+        (int)($context['transport_errno'] ?? 0),
+        $error !== '' ? $error : 'none',
+        $contentType !== '' ? $contentType : 'unknown'
+    ));
+}
+
 function forwardSsoAuthPost(string $endpoint, array $input, string $token = ''): void
 {
-    $appHeaders = getSsoAppHeaders();
-    if (!$appHeaders) sendResponse(503, 'Token aplikasi SSO belum dikonfigurasi di api/.env.');
+    $requestId = bin2hex(random_bytes(8));
+    header('X-Request-ID: ' . $requestId);
 
-    $url = rtrim(getSsoApiBase(), '/') . '/api/auth/' . $endpoint;
-    $headers = array_merge($appHeaders, ['Content-Type: application/json', 'Accept: application/json']);
+    $baseSource = null;
+    $base = getSsoApiBase($baseSource);
+    $connectIpSource = null;
+    $resolveEntries = getSsoCurlResolveEntries($connectIpSource);
+    $url = rtrim($base, '/') . '/api/auth/' . $endpoint;
+    $appHeaders = getSsoAppHeaders();
+    $context = [
+        'request_id' => $requestId,
+        'endpoint' => $endpoint,
+        'url' => $url,
+        'base_source' => $baseSource,
+        'connect_ip_source' => $connectIpSource,
+        'resolve' => $resolveEntries,
+        'app_headers' => (bool)$appHeaders,
+    ];
+    if (!$appHeaders) {
+        logSsoAuthForwardFailure('app_token_missing', $context);
+        sendResponse(503, 'Token aplikasi SSO belum dikonfigurasi di api/.env.');
+    }
+
+    $headers = array_merge($appHeaders, [
+        'Content-Type: application/json',
+        'Accept: application/json',
+        'X-Request-ID: ' . $requestId,
+    ]);
     if ($token !== '') $headers[] = 'Authorization: Bearer ' . $token;
     $payload = json_encode($input);
     $body = false;
     $status = 0;
+    $transport = 'stream';
+    $transportErrorNumber = 0;
+    $transportErrorMessage = '';
+    $contentType = 'unknown';
     if (function_exists('curl_init')) {
+        $transport = 'curl';
         $curl = curl_init($url);
         curl_setopt_array($curl, [
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_TIMEOUT => 15,
-            CURLOPT_RESOLVE => getSsoCurlResolveEntries(),
+            CURLOPT_RESOLVE => $resolveEntries,
             CURLOPT_POST => true,
             CURLOPT_HTTPHEADER => $headers,
             CURLOPT_POSTFIELDS => $payload,
         ]);
         $body = curl_exec($curl);
         $status = (int)curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $transportErrorNumber = curl_errno($curl);
+        $transportErrorMessage = curl_error($curl);
+        $contentType = (string)(curl_getinfo($curl, CURLINFO_CONTENT_TYPE) ?: 'unknown');
         curl_close($curl);
     } else {
         $result = ssoStreamRequest($url, 'POST', $headers, (string)$payload, 15);
         $body = $result['body'];
         $status = $result['status'];
+        $transportErrorMessage = $result['error'];
     }
+    $context['http_status'] = $status;
+    $context['transport'] = $transport;
+    $context['transport_errno'] = $transportErrorNumber;
+    $context['transport_error'] = $transportErrorMessage;
+    $context['content_type'] = $contentType;
 
     if (!is_string($body) || $status < 200 || $status >= 600) {
+        logSsoAuthForwardFailure('transport_failure', $context);
         sendResponse(502, 'Layanan autentikasi SSO sedang tidak dapat digunakan.');
     }
 
@@ -54,10 +127,21 @@ function forwardSsoAuthPost(string $endpoint, array $input, string $token = ''):
         }
     }
     if (!is_array($responsePayload)) {
+        $failure = in_array($status, [401, 403], true)
+            ? 'app_auth_rejected_invalid_response'
+            : ($status >= 500 ? 'upstream_server_error_invalid_response' : 'invalid_upstream_response');
+        logSsoAuthForwardFailure($failure, $context);
         sendResponse(502, 'Layanan autentikasi SSO memberikan respons yang tidak valid. Silakan coba lagi.');
     }
 
     $upstreamStatus = (int)($responsePayload['status'] ?? 0);
+    $context['upstream_status'] = $upstreamStatus;
+    $reportedStatus = $upstreamStatus > 0 ? $upstreamStatus : $status;
+    if (in_array($reportedStatus, [401, 403], true)) {
+        logSsoAuthForwardFailure('app_auth_rejected', $context);
+    } elseif (max($status, $upstreamStatus) >= 500) {
+        logSsoAuthForwardFailure('upstream_server_error', $context);
+    }
     if ($endpoint === 'forgot-password' && max($status, $upstreamStatus) >= 500) {
         $responsePayload['message'] = 'Pengiriman OTP sedang bermasalah di server. Silakan coba lagi nanti.';
     }

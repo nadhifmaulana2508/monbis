@@ -76,31 +76,50 @@ function getCurrentAppBaseUrl(): string
     return $scheme . '://' . $httpHost . $basePath;
 }
 
-function getSsoApiBase(): string
+function getSsoConfigValue(string $key, ?string &$source = null): string
+{
+    $source = 'default';
+    $value = getenv($key);
+    if ($value !== false && trim((string)$value) !== '') {
+        $source = 'getenv';
+        return (string)$value;
+    }
+
+    $value = $_ENV[$key] ?? '';
+    if (trim((string)$value) !== '') {
+        $source = '_ENV';
+        return (string)$value;
+    }
+
+    $envFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
+    if (!is_file($envFile) || !is_readable($envFile)) return '';
+
+    $keyPattern = preg_quote($key, '/');
+    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
+        if (!preg_match('/^\s*(?:export\s+)?' . $keyPattern . '\s*=\s*(.*?)\s*$/', (string)$line, $match)) continue;
+        $value = trim($match[1]);
+        if (strlen($value) >= 2 && (($value[0] === '"' && substr($value, -1) === '"') || ($value[0] === "'" && substr($value, -1) === "'"))) {
+            $value = substr($value, 1, -1);
+        } else {
+            $value = preg_replace('/\s+#.*$/', '', $value);
+        }
+        if (trim((string)$value) !== '') $source = 'api/.env';
+        return (string)$value;
+    }
+
+    return '';
+}
+
+function getSsoApiBase(?string &$source = null): string
 {
     static $resolved = null;
-    if (is_string($resolved)) return $resolved;
-
-    $candidate = getenv('SSO_API_BASE');
-    if ($candidate === false || trim((string)$candidate) === '') {
-        $candidate = $_ENV['SSO_API_BASE'] ?? '';
+    static $resolvedSource = 'default';
+    if (is_string($resolved)) {
+        $source = $resolvedSource;
+        return $resolved;
     }
 
-    if (trim((string)$candidate) === '') {
-        $envFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
-        if (is_file($envFile) && is_readable($envFile)) {
-            foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
-                if (!preg_match('/^\s*(?:export\s+)?SSO_API_BASE\s*=\s*(.*?)\s*$/', (string)$line, $match)) continue;
-                $candidate = trim($match[1]);
-                if (strlen($candidate) >= 2 && (($candidate[0] === '"' && substr($candidate, -1) === '"') || ($candidate[0] === "'" && substr($candidate, -1) === "'"))) {
-                    $candidate = substr($candidate, 1, -1);
-                } else {
-                    $candidate = preg_replace('/\s+#.*$/', '', $candidate);
-                }
-                break;
-            }
-        }
-    }
+    $candidate = getSsoConfigValue('SSO_API_BASE', $candidateSource);
 
     $candidate = rtrim(trim((string)$candidate), '/');
     $parts = $candidate !== '' ? parse_url($candidate) : false;
@@ -123,46 +142,27 @@ function getSsoApiBase(): string
         // Terima base URL SSO dalam bentuk host atau host/api. Pemanggil
         // menambahkan /api/auth/... sehingga suffix /api harus dinormalkan.
         $candidate = preg_replace('#/api/?$#i', '', $candidate) ?: $candidate;
+        $resolved = $candidate;
+        $resolvedSource = $candidateSource;
+    } else {
+        $resolved = 'https://devsso.bkkjateng.co.id';
+        $resolvedSource = $candidateSource === 'default' ? 'default' : 'fallback';
     }
 
-    $resolved = $valid ? $candidate : 'https://devsso.bkkjateng.co.id';
+    $source = $resolvedSource;
     return $resolved;
 }
 
 function getSsoAppCode(): string
 {
-    $value = getenv('SSO_APP_CODE');
-    if ($value === false || trim((string)$value) === '') $value = $_ENV['SSO_APP_CODE'] ?? '';
-    if (trim((string)$value) === '') {
-        $envFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
-        if (is_file($envFile) && is_readable($envFile)) {
-            $values = parse_ini_file($envFile, false, INI_SCANNER_RAW);
-            if (is_array($values)) $value = $values['SSO_APP_CODE'] ?? '';
-        }
-    }
+    $value = getSsoConfigValue('SSO_APP_CODE');
     $value = strtolower(trim((string)$value));
     return preg_match('/^[a-z0-9][a-z0-9._-]{0,49}$/', $value) ? $value : 'monbis';
 }
 
 function getSsoAppToken(): string
 {
-    $value = getenv('SSO_APP_TOKEN');
-    if ($value === false || trim((string)$value) === '') $value = $_ENV['SSO_APP_TOKEN'] ?? '';
-    if (trim((string)$value) === '') {
-        $envFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
-        if (is_file($envFile) && is_readable($envFile)) {
-            foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [] as $line) {
-                if (!preg_match('/^\s*(?:export\s+)?SSO_APP_TOKEN\s*=\s*(.*?)\s*$/', (string)$line, $match)) continue;
-                $value = trim($match[1]);
-                if (strlen($value) >= 2 && (($value[0] === '"' && substr($value, -1) === '"') || ($value[0] === "'" && substr($value, -1) === "'"))) {
-                    $value = substr($value, 1, -1);
-                } else {
-                    $value = preg_replace('/\s+#.*$/', '', $value);
-                }
-                break;
-            }
-        }
-    }
+    $value = getSsoConfigValue('SSO_APP_TOKEN');
     return trim((string)$value);
 }
 
@@ -177,19 +177,9 @@ function getSsoAppHeaders(): array
  * Optional internal address for reaching the SSO virtual host without routing
  * through this server's public IP. TLS still uses the hostname in the URL.
  */
-function getSsoCurlResolveEntries(): array
+function getSsoCurlResolveEntries(?string &$source = null): array
 {
-    $connectIp = getenv('SSO_API_CONNECT_IP');
-    if ($connectIp === false || trim((string)$connectIp) === '') {
-        $connectIp = $_ENV['SSO_API_CONNECT_IP'] ?? '';
-    }
-    if (trim((string)$connectIp) === '') {
-        $envFile = dirname(__DIR__) . DIRECTORY_SEPARATOR . '.env';
-        if (is_file($envFile) && is_readable($envFile)) {
-            $values = parse_ini_file($envFile, false, INI_SCANNER_RAW);
-            if (is_array($values)) $connectIp = $values['SSO_API_CONNECT_IP'] ?? '';
-        }
-    }
+    $connectIp = getSsoConfigValue('SSO_API_CONNECT_IP', $source);
 
     $connectIp = trim(trim((string)$connectIp), " \t\n\r\0\x0B\"'");
     if ($connectIp === '' || filter_var($connectIp, FILTER_VALIDATE_IP) === false) return [];
