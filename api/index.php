@@ -95,6 +95,9 @@ switch ($endpoint) {
     case 'rr':
         require __DIR__ . '/routes/rr.php';
         break;
+    case 'proyeksi_rr':
+        require __DIR__ . '/routes/proyeksi_rr.php';
+        break;
     case 'pipelane':
         require __DIR__ . '/routes/pipelane.php';
         break;

@@ -33,6 +33,7 @@ function rbacFeatureCatalog(): array
         ['mob', 'MOB 6 Bulan', 'Monitoring'],
         ['otp_baru', 'Ontime Payment (OTP)', 'Monitoring'],
         ['rekap_rr', 'Repayment Rate (RR)', 'Monitoring'],
+        ['proyeksi_rr', 'Proyeksi RR & NPL', 'Kalkulator'],
         ['potensi_npl', 'Potensi NPL', 'Monitoring'],
         ['flow_par', 'Flow PAR', 'Monitoring'],
         ['otp_bucket_fe', 'OTP Bucket FE', 'Monitoring'],

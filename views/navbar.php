@@ -344,6 +344,12 @@ if (is_array($rbacInitialAccess ?? null)) {
   @media (max-width:420px) {
     #flowParNavbarFilterForm .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:7px; }
   }
+  #proyeksiRrNavbarFilterPanel { width:min(560px, calc(100vw - 24px)); }
+  #proyeksiRrNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  @media (max-width:767px) {
+    #proyeksiRrNavbarFilterPanel { right:8px; width:calc(100vw - 16px); }
+    #proyeksiRrNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  }
   #jatuhTempoNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(6, minmax(0, 1fr)); }
   @media (max-width:767px) {
     #jatuhTempoNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
@@ -1333,6 +1339,20 @@ if (is_array($rbacInitialAccess ?? null)) {
           <a href="potensi_npl" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Potensi NPL</a>
           <a href="flow_par" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Flow Par</a>
           <a href="otp_bucket_fe" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Otp Bucket FE (31-90)</a>
+        </div>
+      </div>
+
+      <!-- Parent Kalkulator -->
+      <div class="accordion-group">
+        <button class="accordion-btn w-full flex items-center justify-between px-3 py-2.5 text-slate-700 rounded-lg hover:bg-slate-100 font-medium transition-colors whitespace-nowrap focus:outline-none">
+          <div class="flex items-center shrink-0">
+            <svg class="w-6 h-6 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2" stroke-width="1.8"></rect><path stroke-linecap="round" stroke-width="1.8" d="M8 7h8M8 11h2m4 0h2m-8 4h2m4 0h2m-8 3h2m4 0h2"></path></svg>
+            <span class="ml-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">Kalkulator</span>
+          </div>
+          <svg class="caret w-4 h-4 shrink-0 transition-transform text-slate-400 opacity-100 md:opacity-0 md:group-hover:opacity-100" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+        <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
+          <a href="proyeksi_rr" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Proyeksi RR &amp; NPL</a>
         </div>
       </div>
 
@@ -2488,6 +2508,18 @@ if (is_array($rbacInitialAccess ?? null)) {
       </form>
       <?php endif; ?>
 
+      <?php if (($page ?? '') === 'proyeksi_rr'): ?>
+    <form id="proyeksiRrNavbarFilterPanel" class="dashboard-navbar-filter hidden flex-col" aria-label="Filter Proyeksi RR dan NPL">
+      <div class="dashboard-navbar-filter__head"><div><span class="dashboard-navbar-filter__eyebrow">Filter</span><strong class="dashboard-navbar-filter__title">Atur posisi closing dan actual</strong></div>
+        <button type="button" id="proyeksiRrNavbarFilterClose" class="dashboard-navbar-filter__close" aria-label="Tutup filter" title="Tutup filter"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      </div>
+      <div class="dashboard-navbar-filter__fields">
+        <div class="dashboard-navbar-filter__field"><label for="prClosing">Closing (M-1)</label><input type="date" id="prClosing" required disabled onclick="this.showPicker && this.showPicker()"></div>
+        <div class="dashboard-navbar-filter__field"><label for="prActual">Harian / Actual</label><input type="date" id="prActual" required disabled onclick="this.showPicker && this.showPicker()"></div>
+      </div>
+    </form>
+      <?php endif; ?>
+
       <?php if (($page ?? '') === 'jatuh_tempo'): ?>
       <form id="jatuhTempoNavbarFilterPanel" class="dashboard-navbar-filter hidden flex-col" aria-label="Filter Jatuh Tempo Kredit" onsubmit="event.preventDefault(); fetchRekapJT();">
         <div class="dashboard-navbar-filter__head">
@@ -2718,6 +2750,11 @@ if (is_array($rbacInitialAccess ?? null)) {
         <?php endif; ?>
         <?php if (($page ?? '') === 'flow_par'): ?>
         <button type="button" id="flowParNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Flow PAR" title="Buka filter Flow PAR" aria-expanded="false" aria-controls="flowParNavbarFilterForm">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
+        </button>
+        <?php endif; ?>
+        <?php if (($page ?? '') === 'proyeksi_rr'): ?>
+        <button type="button" id="proyeksiRrNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Proyeksi RR dan NPL" title="Buka filter Proyeksi RR dan NPL" aria-expanded="false" aria-controls="proyeksiRrNavbarFilterPanel">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
