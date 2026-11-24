@@ -4,17 +4,13 @@ mb_ui_assets('.');
 ?>
 
 <style>
-  #proyeksiRr { --pr-border:#dde6f1; --pr-muted:#64748b; --pr-ink:#0f172a; width:100%; min-height:calc(100dvh - 64px); height:auto; margin:0; padding:8px 10px 20px; gap:10px; overflow:visible; color:#334155; background:#f8fafc; }
+  #proyeksiRr { --pr-border:#dde6f1; --pr-muted:#64748b; --pr-ink:#0f172a; width:100%; min-width:0; max-width:100%; min-height:calc(100vh - 64px); min-height:calc(100dvh - 64px); height:auto; margin:0; padding:8px 10px 20px; gap:10px; overflow:visible; color:#334155; background:#f8fafc; }
   #proyeksiRr * { box-sizing:border-box; }
   #proyeksiRr .pr-page-header { position:relative; z-index:20; align-items:center; flex-direction:row; margin:0; }
-  #proyeksiRr .pr-page-header__copy { flex:1 1 auto; min-width:210px; }
+  #proyeksiRr .pr-page-header .mb-page-header__copy { flex:1 1 auto; min-width:210px; }
   #proyeksiRr .pr-page-header .mb-page-header__title { font-size:17px; }
   #proyeksiRr .pr-page-header .mb-page-header__subtitle { max-width:none; white-space:normal; }
   #proyeksiRr .pr-header-controls { display:flex; flex:0 1 auto; min-width:0; align-items:center; justify-content:flex-end; gap:8px; }
-  #proyeksiRr .pr-header-filter-fields { display:grid; grid-template-columns:repeat(2,minmax(135px,1fr)); gap:8px; }
-  #proyeksiRr .pr-header-filter-field { display:flex; min-width:0; flex-direction:column; gap:4px; }
-  #proyeksiRr .pr-header-filter-field label { color:#64748b; font-size:8px; font-weight:850; }
-  #proyeksiRr .pr-header-filter-field select { width:100%; min-width:0; min-height:36px; padding:0 9px; border:1px solid #dbe3ee; border-radius:8px; background:#f8fafc; color:#1e3a5f; font-size:10px; font-weight:800; }
   #proyeksiRr .pr-header-controls .pr-status { white-space:nowrap; }
   #proyeksiRr .pr-card { min-width:0; border:1px solid var(--pr-border); border-radius:10px; background:#fff; box-shadow:0 10px 24px rgba(15,23,42,.045); }
   #proyeksiRr .pr-section { padding:0; overflow:hidden; }
@@ -48,10 +44,10 @@ mb_ui_assets('.');
   #proyeksiRr .pr-status { display:inline-flex; min-height:23px; align-items:center; border-radius:999px; padding:2px 9px; background:#e2e8f0; color:#334155; font-size:10px; font-weight:850; }
   #proyeksiRr .pr-status-ok { background:#dcfce7; color:#166534; }
   #proyeksiRr .pr-status-bad { background:#fee2e2; color:#991b1b; }
-  #proyeksiRr .pr-table-wrap { width:100%; height:auto; min-height:0; overflow:auto; border:1px solid #e2e8f0; border-radius:8px; background:#fff; }
+  #proyeksiRr .pr-table-wrap { width:100%; min-width:0; max-width:100%; height:auto; min-height:0; overflow:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; scrollbar-width:thin; border:1px solid #e2e8f0; border-radius:8px; background:#fff; }
   #proyeksiRr .pr-table { width:100%; min-width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; color:#334155; font-size:10px; }
   #proyeksiRr .pr-table th,#proyeksiRr .pr-table td { height:34px; padding:5px 7px; border-right:1px solid #e8eef5; border-bottom:1px solid #edf2f7; text-align:left; vertical-align:middle; white-space:nowrap; }
-  #proyeksiRr .pr-table th { background:#f8fafc; color:#334155; font-size:9px; font-weight:950; line-height:1.15; letter-spacing:.02em; text-transform:uppercase; box-shadow:0 1px 0 #dbe3ee; }
+  #proyeksiRr .pr-table th { position:sticky; top:0; z-index:1; background:#f8fafc; color:#334155; font-size:9px; font-weight:950; line-height:1.15; letter-spacing:.02em; text-transform:uppercase; box-shadow:0 1px 0 #dbe3ee; }
   #proyeksiRr .pr-table tr:last-child td { border-bottom:0; }
   #proyeksiRr .pr-table th:last-child,#proyeksiRr .pr-table td:last-child { border-right:0; }
   #proyeksiRr .pr-table tbody tr:hover td { background:#f8fafc; }
@@ -84,7 +80,7 @@ mb_ui_assets('.');
   #proyeksiRr .pr-inline-link { border:0; padding:5px 0; background:none; color:#1d4ed8; font-size:10px; font-weight:800; text-decoration:underline; text-underline-offset:3px; cursor:pointer; }
   #proyeksiRr .pr-inline-link:hover { color:#1e40af; }
   #proyeksiRr .pr-actions { display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
-  #proyeksiRr .pr-dialog { position:fixed; inset:auto; top:50%; left:50%; transform:translate(-50%,-50%); margin:0; width:min(1180px,calc(100vw - 28px)); max-width:none; max-height:calc(100dvh - 40px); overflow:auto; padding:16px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; color:#1e293b; box-shadow:0 18px 55px rgba(15,23,42,.22); }
+  #proyeksiRr .pr-dialog { position:fixed; inset:auto; top:50%; left:50%; transform:translate(-50%,-50%); margin:0; width:min(1180px,calc(100vw - 28px)); max-width:none; max-height:calc(100vh - 40px); max-height:calc(100dvh - 40px); overflow:auto; padding:16px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; color:#1e293b; box-shadow:0 18px 55px rgba(15,23,42,.22); }
   #proyeksiRr .pr-dialog::backdrop { background:rgba(15,23,42,.48); }
   #proyeksiRr .pr-dialog-head,#proyeksiRr .pr-detail-footer { display:flex; align-items:center; justify-content:space-between; gap:12px; }
   #proyeksiRr .pr-dialog-head { margin-bottom:12px; }
@@ -93,7 +89,7 @@ mb_ui_assets('.');
   #proyeksiRr .pr-detail-search-row { display:flex; gap:7px; }
   #proyeksiRr .pr-detail-search-row input { flex:1; }
   #proyeksiRr .pr-detail-summary { min-height:24px; color:#475569; font-size:10px; }
-  #proyeksiRr .pr-detail-table-wrap { max-height:58dvh; }
+  #proyeksiRr .pr-detail-table-wrap { max-height:58vh; max-height:58dvh; }
   #proyeksiRr .pr-detail-table-wrap .pr-table { min-width:1080px; }
   #proyeksiRr .pr-empty { padding:24px; color:#64748b; text-align:center; }
   #proyeksiRr .pr-detail-footer { margin-top:11px; }
@@ -126,9 +122,62 @@ mb_ui_assets('.');
   :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #proyeksiRr .pr-recommendation-card.is-recommended { border-color:#a16207; background:#1c1917; }
   :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #proyeksiRr .pr-recommendation-title,:is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #proyeksiRr .pr-recommendation-list { color:#e2e8f0; }
   :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #proyeksiRr .pr-recommendation-result strong { color:#f8fafc; }
-  @media(max-width:850px) { #proyeksiRr .pr-page-header { align-items:flex-start; flex-wrap:wrap; } #proyeksiRr .pr-header-controls { width:100%; justify-content:flex-end; } #proyeksiRr .pr-grid,#proyeksiRr .pr-recommendation-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-  @media(max-width:560px) { #proyeksiRr { padding:8px 7px 16px; } #proyeksiRr .pr-page-header { align-items:stretch; } #proyeksiRr .pr-page-header__copy { min-width:0; } #proyeksiRr .pr-header-controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; } #proyeksiRr .pr-header-filter-fields { display:contents; } #proyeksiRr .pr-header-controls .pr-btn { width:100%; } #proyeksiRr .pr-header-controls .pr-status { justify-self:end; align-self:center; } #proyeksiRr .pr-grid,#proyeksiRr .pr-recommendation-grid { grid-template-columns:1fr; } #proyeksiRr .pr-section-content { padding:8px; } #proyeksiRr input,#proyeksiRr select,#proyeksiRr .pr-btn { min-height:40px; } #proyeksiRr .pr-inline-link { display:inline-flex; min-height:40px; align-items:center; } #proyeksiRr .pr-detail-search { grid-template-columns:1fr; gap:5px; } #proyeksiRr .pr-dialog { width:calc(100vw - 12px); max-height:calc(100dvh - 12px); padding:11px; } #proyeksiRr .pr-dialog-head h2 { font-size:14px; } #proyeksiRr .pr-detail-footer { align-items:flex-start; flex-direction:column; } }
-  @media(max-width:560px) { #proyeksiRr .pr-field small { min-height:0; } }
+  @media (max-width:850px) {
+    #proyeksiRr .pr-page-header { align-items:flex-start; flex-wrap:wrap; gap:10px; }
+    #proyeksiRr .pr-header-controls { width:100%; justify-content:flex-end; }
+    #proyeksiRr .pr-grid,#proyeksiRr .pr-recommendation-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  }
+  @media (max-width:560px) {
+    #proyeksiRr { padding:8px 7px 16px; }
+    #proyeksiRr .pr-page-header { align-items:stretch; gap:9px; }
+    #proyeksiRr .pr-page-header .mb-page-header__copy { flex-basis:100%; min-width:0; }
+    #proyeksiRr .pr-page-header .mb-page-header__title { font-size:18px; line-height:1.2; }
+    #proyeksiRr .pr-header-controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
+    #proyeksiRr .pr-header-controls .pr-btn { width:100%; min-height:44px; }
+    #proyeksiRr .pr-header-controls .pr-status { justify-self:end; align-self:center; max-width:100%; white-space:normal; }
+    #proyeksiRr .pr-grid,#proyeksiRr .pr-recommendation-grid { grid-template-columns:1fr; }
+    #proyeksiRr .pr-section-head { align-items:flex-start; flex-wrap:wrap; gap:6px; }
+    #proyeksiRr .pr-section-heading { flex:1 1 100%; }
+    #proyeksiRr .pr-section-content { padding:8px; }
+    #proyeksiRr input,#proyeksiRr select,#proyeksiRr .pr-btn { min-height:44px; }
+    #proyeksiRr input,#proyeksiRr select { font-size:16px; }
+    #proyeksiRr .pr-field label,#proyeksiRr .pr-detail-search label { font-size:10px; }
+    #proyeksiRr .pr-field small { min-height:0; font-size:10px; }
+    #proyeksiRr .pr-recommendation-head { flex-wrap:wrap; }
+    #proyeksiRr .pr-recommendation-title { min-width:0; overflow-wrap:anywhere; }
+    #proyeksiRr .pr-recommendation-status { white-space:normal; }
+    #proyeksiRr .pr-recommendation-footer { align-items:stretch; flex-wrap:wrap; }
+    #proyeksiRr .pr-recommendation-result { flex:1 1 100%; }
+    #proyeksiRr .pr-recommendation-footer .pr-btn { width:100%; }
+    #proyeksiRr .pr-inline-link { display:inline-flex; min-height:44px; align-items:center; }
+    #proyeksiRr .pr-movements-table { width:100%; min-width:0; table-layout:fixed; }
+    #proyeksiRr .pr-movements-table thead { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    #proyeksiRr .pr-movements-table tbody { display:block; width:100%; }
+    #proyeksiRr .pr-movements-table tbody tr { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:4px 8px; padding:8px; border-bottom:1px solid #edf2f7; }
+    #proyeksiRr .pr-movements-table tbody tr:last-child { border-bottom:0; }
+    #proyeksiRr .pr-movements-table tbody td { display:block; min-width:0; height:auto; border:0; padding:0; white-space:normal; }
+    #proyeksiRr .pr-movements-table tbody td:first-child { grid-column:1 / -1; }
+    #proyeksiRr .pr-movement-label { font-size:11px; }
+    #proyeksiRr .pr-movement-note { font-size:10px; }
+    #proyeksiRr .pr-movements-table tbody td:nth-child(2) { text-align:left; font-size:11px; font-weight:800; }
+    #proyeksiRr .pr-movements-table tbody td:nth-child(2)::before { display:block; margin-bottom:2px; color:#64748b; content:'Nominal actual'; font-size:8px; font-weight:700; }
+    #proyeksiRr .pr-movements-table tbody td:nth-child(3) { justify-self:end; text-align:right; }
+    #proyeksiRr .pr-movements-table .pr-inline-link { min-height:44px; padding:0 8px; }
+    #proyeksiRr .pr-breakdown-table { min-width:840px; }
+    #proyeksiRr .pr-breakdown-table th:first-child,#proyeksiRr .pr-breakdown-table td:first-child { width:112px; }
+    #proyeksiRr .pr-detail-search { grid-template-columns:1fr; gap:5px; }
+    #proyeksiRr .pr-dialog { width:calc(100vw - 16px); max-height:calc(100vh - 16px); max-height:calc(100dvh - 16px); padding:11px; }
+    #proyeksiRr .pr-dialog-head { align-items:flex-start; }
+    #proyeksiRr .pr-dialog-head h2 { font-size:14px; }
+    #proyeksiRr .pr-detail-footer { align-items:flex-start; flex-direction:column; }
+    #proyeksiRr .pr-detail-footer > div { display:flex; width:100%; }
+    #proyeksiRr .pr-detail-footer .pr-btn { flex:1; }
+  }
+  @media (max-width:360px) {
+    #proyeksiRr { padding-right:5px; padding-left:5px; }
+    #proyeksiRr .pr-section-content { padding:6px; }
+    #proyeksiRr .pr-header-controls { gap:5px; }
+  }
 </style>
 
 <main id="proyeksiRr" class="mb-report-page mb-report-standard pr-page">
@@ -138,10 +187,6 @@ mb_ui_assets('.');
       <p class="mb-page-header__subtitle">Bandingkan posisi closing, actual, dan proyeksi akhir bulan.</p>
     </div>
     <div class="pr-header-controls">
-      <div class="pr-header-filter-fields">
-        <div class="pr-header-filter-field"><label for="prBranch">Area / Cabang</label><select id="prBranch"><option value="ALL">ALL - konsolidasi</option></select></div>
-        <div class="pr-header-filter-field"><label for="prBasis">Nominal</label><select id="prBasis"><option value="saldo_bank">Saldo Bank</option><option value="baki_debet">Baki Debet</option></select></div>
-      </div>
       <button type="submit" form="proyeksiRrNavbarFilterPanel" id="prLoad" class="pr-btn pr-btn-primary">Proyeksi</button>
       <span id="prLoadState" class="pr-status">Menyiapkan</span>
     </div>
@@ -157,7 +202,7 @@ mb_ui_assets('.');
       <div class="pr-subsection">
         <div class="pr-subsection-heading"><h3 class="pr-subsection-title">Rincian flow aktual</h3><span id="prMovementState" class="pr-meta" aria-live="polite"></span></div>
         <div class="mb-table-wrap pr-table-wrap"><table class="mb-table pr-table pr-movements-table"><thead><tr><th>Pergerakan</th><th class="pr-number">Nominal actual</th><th>Rincian</th></tr></thead><tbody id="prActualMovements"></tbody></table></div>
-        <p class="pr-meta">Flow PAR actual hanya menghitung rekening closing DP yang menjadi KL. Nilai proyeksi Flow PAR menggantikan flow aktual pada periode closing sampai akhir bulan.</p>
+        <p class="pr-meta">Flow PAR actual menghitung rekening closing L atau DP yang menjadi KL, D, atau M. Nilai proyeksi Flow PAR menggantikan flow aktual pada periode closing sampai akhir bulan.</p>
       </div>
     </div>
   </section>
@@ -334,7 +379,7 @@ mb_ui_assets('.');
   function renderActualMovements(movements,loading=false,error=false){
     const movementRows=[
       {key:'growth',label:'Growth bersih KYD',amount:movements.growth_net,accounts:null,note:'Selisih total KYD actual dan closing'},
-      {key:'flow_par',label:'Flow PAR actual',amount:movements.flow_par,accounts:movements.flow_par_noa,note:'DP closing menjadi KL actual'},
+      {key:'flow_par',label:'Flow PAR actual',amount:movements.flow_par,accounts:movements.flow_par_noa,note:'Closing L/DP menjadi KL, D, atau M actual'},
       {key:'recovery_npl',label:'Penyelesaian / recovery NPL',amount:movements.recovery_npl,accounts:movements.recovery_npl_noa,note:'Lunas, turun saldo NPL, atau kembali ke L/DP'},
       {key:'btc',label:'BTC aktual',amount:movements.btc,accounts:movements.btc_noa,note:'Closing DPD > 0, actual DPD 0 dan kolektibilitas L'},
       {key:'migration_d0',label:'Migrasi DPD 0 ke PAR',amount:movements.migration_d0,accounts:movements.migration_d0_noa,note:'Closing DPD 0, actual DPD > 0 di L/DP'}

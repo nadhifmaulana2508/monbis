@@ -100,6 +100,7 @@
   let trenPortoDataGlobal = [];
   let dashboardLoadVersion = 0;
   let dashboardChartTimer = null;
+  let dashboardChartResolve = null;
   let dashboardRequestController = null;
 
   function getDashboardChartTheme() {
@@ -231,7 +232,6 @@
     updateDashboardFilterSummary();
 
     fetchDashboardUtama();
-    scheduleDashboardCharts();
   });
 
   document.getElementById('formFilterMaster').addEventListener('submit', e => {
@@ -241,7 +241,6 @@
     updateDashboardFilterSummary();
     updateDashboardSimpananDate();
     fetchDashboardUtama();
-    scheduleDashboardCharts();
     if(window.innerWidth < 1024) {
         document.getElementById('formFilterMaster').classList.add('hidden');
         document.getElementById('formFilterMaster').classList.remove('flex');
@@ -460,9 +459,15 @@
 
   function scheduleDashboardCharts() {
     clearTimeout(dashboardChartTimer);
-    dashboardChartTimer = setTimeout(() => {
-      Promise.all([fetchTrenPortofolio(), fetchTrenRunoff()]);
-    }, 80);
+    dashboardChartResolve?.();
+    return new Promise(resolve => {
+      dashboardChartResolve = resolve;
+      dashboardChartTimer = setTimeout(() => {
+        Promise.allSettled([fetchTrenPortofolio(), fetchTrenRunoff()]);
+        if (dashboardChartResolve === resolve) dashboardChartResolve = null;
+        resolve();
+      }, 80);
+    });
   }
 
   // ==========================================
@@ -795,14 +800,24 @@
     // const pLaba = fetchLabaSebelumPajak();
     const pRealProduk   = fetchWidgetData('realisasi_by_produk');
     const pRrCabang     = fetchWidgetData('test rr cabang', false, { year_end_date: KPI_YEAR_END_DATE });
-    const pRunoffKorwil = fetchWidgetData('test runoff korwil');
-    const pFlowKorwil   = fetchWidgetData('test flow recovery npl');
-    const pTopReal      = fetchWidgetData('test top realisasi');
-    const pDeltaNpl     = fetchWidgetData('test delta npl');
     const simpananDate  = document.getElementById('filter_harian').value;
     const tabunganDate  = getDashboardTabunganDate();
     const pDeposito     = fetchWidgetData('test perkembangan deposito', false, { harian_date: simpananDate });
     const pTabungan     = fetchWidgetData('test perkembangan tabungan', false, { harian_date: tabunganDate });
+    // Dahulukan KPI dan chart yang terlihat; daftar bagian bawah menyusul setelah request utama dimulai.
+    const pPriorityReady = Promise.all([
+      pSaldoBank,
+      pAccHistoryKpi,
+      pRealProduk,
+      pRrCabang,
+      pDeposito,
+      pTabungan,
+      scheduleDashboardCharts()
+    ]).then(() => loadVersion === dashboardLoadVersion, () => false);
+    const pRunoffKorwil = pPriorityReady.then(ready => ready ? fetchWidgetData('test runoff korwil') : null);
+    const pFlowKorwil   = pPriorityReady.then(ready => ready ? fetchWidgetData('test flow recovery npl') : null);
+    const pTopReal      = pPriorityReady.then(ready => ready ? fetchWidgetData('test top realisasi') : null);
+    const pDeltaNpl     = pPriorityReady.then(ready => ready ? fetchWidgetData('test delta npl') : null);
     // Rumus lama Simpanan: nominatif_deposito + nominatif_tabungan.
     // const pDepositoYearEnd = fetchWidgetData('test perkembangan deposito', false, { closing_date: KPI_YEAR_END_DATE });
     // const pTabunganYearEnd = fetchWidgetData('test perkembangan tabungan', false, { closing_date: KPI_YEAR_END_DATE });

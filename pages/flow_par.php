@@ -1377,6 +1377,33 @@
   .fp-mobile-commit { color:var(--fp-muted) !important; }
   #modalProjectionSummary,
   #modalScroll { border-color:var(--fp-line) !important; background:var(--fp-surface-soft) !important; }
+   #fpDetailPagination {
+       display:flex;
+       align-items:center;
+       justify-content:space-between;
+       gap:8px;
+       min-height:42px;
+       padding:5px 10px;
+       border-top:1px solid var(--fp-line);
+       background:var(--fp-surface);
+       color:var(--fp-muted);
+       font-size:10px;
+       font-weight:700;
+   }
+   #fpDetailPagination .fp-pagination-actions { display:flex; align-items:center; gap:6px; }
+   #fpDetailPagination button {
+       min-width:62px;
+       height:30px;
+       padding:0 9px;
+       border:1px solid var(--fp-line);
+       border-radius:7px;
+       background:var(--fp-surface);
+       color:var(--fp-ink);
+       font:inherit;
+       cursor:pointer;
+   }
+   #fpDetailPagination button:hover:not(:disabled) { border-color:var(--fp-accent); color:var(--fp-accent); }
+   #fpDetailPagination button:disabled { cursor:not-allowed; opacity:.45; }
   .fp-projection-card,
   .fp-mobile-card,
   .fp-mobile-metric { border-color:var(--fp-line) !important; background:var(--fp-surface) !important; }
@@ -1393,6 +1420,10 @@
   .fp-mobile-card-head,
   .fp-mobile-address,
   .fp-mobile-commit { border-color:var(--fp-line) !important; background:var(--fp-surface-soft) !important; }
+   @media (max-width:767px) {
+       #fpDetailPagination { min-height:36px; padding:4px 8px; font-size:8px; }
+       #fpDetailPagination button { min-width:52px; height:27px; padding:0 7px; }
+   }
   .fp-mobile-name,
   .fp-mobile-value { color:var(--fp-ink) !important; }
   .fp-guide-item,
@@ -1626,7 +1657,7 @@
         <div class="fp-modal-toolbar">
           <div class="fp-modal-tool-field kankas">
             <label class="lbl">Kankas</label>
-            <select id="modalFilterKankas" class="inp" onchange="fetchDetailFlowPar()">
+            <select id="modalFilterKankas" class="inp" onchange="resetDetailFlowParFilters()">
               <option value="">Semua Kankas</option>
             </select>
           </div>
@@ -1634,12 +1665,12 @@
             <label class="lbl">Cari Debitur</label>
             <div class="fp-modal-search-wrap">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
-              <input type="search" id="modalSearchFP" class="inp" placeholder="Nama, rekening, alamat, komitmen..." autocomplete="off" oninput="renderDetailFlowPar()">
+              <input type="search" id="modalSearchFP" class="inp" placeholder="Nama, rekening, alamat, komitmen..." autocomplete="off" oninput="queueDetailFlowParSearch()">
             </div>
           </div>
           <div class="fp-modal-tool-field status">
             <label class="lbl">Status Komitmen</label>
-            <select id="modalCommitmentFilterFP" class="inp" onchange="renderDetailFlowPar()">
+            <select id="modalCommitmentFilterFP" class="inp" onchange="resetDetailFlowParFilters()">
               <option value="all">Semua Status</option>
               <option value="committed">Sudah Komitmen</option>
               <option value="none">Belum Komitmen</option>
@@ -1725,6 +1756,13 @@
       </table>
       <div id="modalMobileCardsFP"></div>
     </div>
+    <div id="fpDetailPagination" aria-live="polite">
+      <span id="fpDetailPaginationInfo">Belum ada data.</span>
+      <div class="fp-pagination-actions">
+        <button id="fpDetailPrev" type="button" onclick="changeDetailFlowParPage(-1)" disabled>Sebelumnya</button>
+        <button id="fpDetailNext" type="button" onclick="changeDetailFlowParPage(1)" disabled>Berikutnya</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1801,6 +1839,13 @@
   window.fpGtRaw = null;
   let detailDataRaw = [];
   let detailDataView = []; 
+  let detailPage = 1;
+  const detailPageSize = 50;
+  let detailPagination = { current_page:1, page_size:detailPageSize, total_records:0, total_pages:1 };
+  let detailSummary = null;
+  let detailAbort = null;
+  let detailSearchTimer = null;
+  let detailRenderIsMobile = window.innerWidth < 768;
   let sortState = { column: null, direction: 1 };
   let currentFilter = { closing:'', harian:'', nominal:'saldo_bank' };
   let currentDetailKode = ''; 
@@ -2003,7 +2048,15 @@
   }
   window.addEventListener('resize', () => {
       clearTimeout(window.__fpResizeDebounce);
-      window.__fpResizeDebounce = setTimeout(() => syncFlowParResponsiveView(false), 120);
+      window.__fpResizeDebounce = setTimeout(() => {
+          syncFlowParResponsiveView(false);
+          const mobileNow = window.innerWidth < 768;
+          const detailModal = document.getElementById('modalDebiturFlowPar');
+          if (mobileNow !== detailRenderIsMobile && detailModal && !detailModal.classList.contains('hidden')) {
+              detailRenderIsMobile = mobileNow;
+              renderDetailFlowPar();
+          }
+      }, 120);
   });
 
   // --- INIT ---
@@ -2013,10 +2066,10 @@
     const uKode = user?.kode ? String(user.kode).padStart(3,'0') : '000';
     window.currentUser = { kode: uKode };
 
-    await populateKantorOptionsFP(uKode);
+    const kantorOptionsPromise = populateKantorOptionsFP(uKode);
 
     try { 
-        const res = await fetch('./api/date/');
+        const [res] = await Promise.all([fetch('./api/date/'), kantorOptionsPromise]);
         const j = await res.json();
         if(j?.data){
             document.getElementById('closing_date').value = j.data.last_closing;
@@ -2026,6 +2079,7 @@
             fetchFlowPar();
         }
     } catch(e) { 
+        await kantorOptionsPromise.catch(() => {});
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('closing_date').value = today;
         document.getElementById('harian_date').value = today;
@@ -2410,7 +2464,7 @@
       const statusFP = document.getElementById('modalCommitmentFilterFP');
       if (searchFP) searchFP.value = '';
       if (statusFP) statusFP.value = 'all';
-      fetchDetailFlowPar();
+      fetchDetailFlowPar(1);
   }
 
   function fpEscape(value) {
@@ -2445,34 +2499,68 @@
   }
 
   function getFilteredDetailFlowPar() {
-      const query = String(document.getElementById('modalSearchFP')?.value || '').trim().toLowerCase();
-      const status = document.getElementById('modalCommitmentFilterFP')?.value || 'all';
-
-      return detailDataRaw.filter(item => {
-          const committed = hasFlowCommitment(item);
-          if (status === 'committed' && !committed) return false;
-          if (status === 'none' && committed) return false;
-          if (!query) return true;
-          const haystack = [
-              item.no_rekening,
-              item.nama_nasabah,
-              item.alamat,
-              getFlowKolek(item),
-              item.komitmen,
-              item.tgl_pembayaran
-          ].join(' ').toLowerCase();
-          return haystack.includes(query);
-      });
+      return Array.isArray(detailDataRaw) ? detailDataRaw : [];
   }
 
-  function renderProjectionSummaryFP(rows) {
-      const committed = rows.filter(hasFlowCommitment);
-      const promise = committed.reduce((sum, item) => sum + num(item.nominal), 0);
-      document.getElementById('fpSummaryCandidate').textContent = `${fmtInt(rows.length)} Debitur`;
-      document.getElementById('fpSummaryCommitted').textContent = `${fmtInt(committed.length)} Debitur`;
-      document.getElementById('fpSummaryUncommitted').textContent = `${fmtInt(rows.length - committed.length)} Debitur`;
-      document.getElementById('fpSummaryPromise').textContent = `Rp ${fmtNom(promise)}`;
+  function renderProjectionSummaryFP(source) {
+      let candidateCount = 0;
+      let committedCount = 0;
+      let promiseAmount = 0;
+      if (Array.isArray(source)) {
+          const committed = source.filter(hasFlowCommitment);
+          candidateCount = source.length;
+          committedCount = committed.length;
+          promiseAmount = committed.reduce((sum, item) => sum + num(item.nominal), 0);
+      } else if (source && typeof source === 'object') {
+          candidateCount = Number(source.candidate_count || 0);
+          committedCount = Number(source.committed_count || 0);
+          promiseAmount = Number(source.promise_amount || 0);
+      }
+      document.getElementById('fpSummaryCandidate').textContent = `${fmtInt(candidateCount)} Debitur`;
+      document.getElementById('fpSummaryCommitted').textContent = `${fmtInt(committedCount)} Debitur`;
+      document.getElementById('fpSummaryUncommitted').textContent = `${fmtInt(Math.max(0, candidateCount - committedCount))} Debitur`;
+      document.getElementById('fpSummaryPromise').textContent = `Rp ${fmtNom(promiseAmount)}`;
   }
+
+  function updateDetailPaginationFP() {
+      const total = Math.max(0, Number(detailPagination.total_records || 0));
+      const page = Math.max(1, Number(detailPagination.current_page || 1));
+      const limit = Math.max(1, Number(detailPagination.page_size || detailPageSize));
+      const pages = Math.max(1, Number(detailPagination.total_pages || 1));
+      const start = total ? ((page - 1) * limit) + 1 : 0;
+      const end = Math.min(page * limit, total);
+      const info = document.getElementById('fpDetailPaginationInfo');
+      const prev = document.getElementById('fpDetailPrev');
+      const next = document.getElementById('fpDetailNext');
+      if (info) info.textContent = total
+          ? `Menampilkan ${fmtInt(start)}–${fmtInt(end)} dari ${fmtInt(total)} debitur · Halaman ${page}/${pages}`
+          : 'Tidak ada data yang sesuai.';
+      if (prev) prev.disabled = page <= 1 || total === 0;
+      if (next) next.disabled = page >= pages || total === 0;
+  }
+
+  window.changeDetailFlowParPage = function(direction) {
+      clearTimeout(detailSearchTimer);
+      const nextPage = Math.max(1, Math.min(
+          Number(detailPagination.total_pages || 1),
+          Number(detailPagination.current_page || 1) + Number(direction || 0)
+      ));
+      if (nextPage !== detailPage) fetchDetailFlowPar(nextPage);
+  };
+
+  window.resetDetailFlowParFilters = function() {
+      clearTimeout(detailSearchTimer);
+      detailPage = 1;
+      fetchDetailFlowPar(1);
+  };
+
+  window.queueDetailFlowParSearch = function() {
+      clearTimeout(detailSearchTimer);
+      detailSearchTimer = setTimeout(() => {
+          detailPage = 1;
+          fetchDetailFlowPar(1);
+      }, 250);
+  };
 
   function renderDetailMobileCardsFP(rows) {
       const target = document.getElementById('modalMobileCardsFP');
@@ -2521,37 +2609,38 @@
       const tbody = document.getElementById('modalBodyRows');
       const ttot = document.getElementById('modalTotalRow');
       detailDataView = getFilteredDetailFlowPar();
-      renderProjectionSummaryFP(detailDataView);
-      renderDetailMobileCardsFP(detailDataView);
+      const isMobile = window.innerWidth < 768;
+      const mobileCards = document.getElementById('modalMobileCardsFP');
+      const totals = detailSummary?.totals || { bd:0, tp:0, tb:0, tt:0, sa:0, ap:0, ab:0 };
+      renderProjectionSummaryFP(detailSummary || detailDataView);
+      updateDetailPaginationFP();
+
+      if (isMobile) {
+          tbody.innerHTML = '';
+          ttot.innerHTML = '';
+          renderDetailMobileCardsFP(detailDataView);
+      } else {
+          if (mobileCards) mobileCards.innerHTML = '';
+      }
 
       if (!detailDataView.length) {
-          tbody.innerHTML = `<tr><td colspan="20" class="p-10 text-center text-slate-400">Data tidak ditemukan.</td></tr>`;
-          ttot.innerHTML = '';
+          if (!isMobile) {
+              tbody.innerHTML = `<tr><td colspan="20" class="p-10 text-center text-slate-400">Data tidak ditemukan.</td></tr>`;
+              ttot.innerHTML = '';
+          }
           return;
       }
 
-      let totals = { bd:0, tp:0, tb:0, tt:0, sa:0, ap:0, ab:0, promise:0, committed:0 };
       const refDate = currentFilter.harian ? new Date(currentFilter.harian) : new Date();
       const eom = endOfMonth(refDate) || endOfMonth(new Date());
 
-      tbody.innerHTML = detailDataView.map(item => {
+      tbody.innerHTML = isMobile ? '' : detailDataView.map(item => {
           const hari = Number.isFinite(+item.hari_menunggak) ? +item.hari_menunggak : calcHariMenunggak(item.tgl_jatuh_tempo);
           const jt = item.tgl_jatuh_tempo ? startOfDay(new Date(item.tgl_jatuh_tempo)) : null;
           const overdue = jt && jt.getTime() <= eom.getTime();
           const dpdTP = Number.isFinite(+item.hari_menunggak_pokok) ? +item.hari_menunggak_pokok : 0;
           const dpdTB = Number.isFinite(+item.hari_menunggak_bunga) ? +item.hari_menunggak_bunga : 0;
           const totalTunggakan = num(item.total_tunggakan) > 0 ? num(item.total_tunggakan) : num(item.tunggakan_pokok) + num(item.tunggakan_bunga);
-          const committed = hasFlowCommitment(item);
-
-          totals.bd += num(item.baki_debet);
-          totals.tp += num(item.tunggakan_pokok);
-          totals.tb += num(item.tunggakan_bunga);
-          totals.tt += totalTunggakan;
-          totals.sa += num(item.saldo_akhir);
-          totals.ap += num(item.angsuran_pokok);
-          totals.ab += num(item.angsuran_bunga);
-          totals.promise += num(item.nominal);
-          totals.committed += committed ? 1 : 0;
 
           return `
             <tr class="${overdue ? 'overdue' : ''}">
@@ -2582,7 +2671,7 @@
       ttot.innerHTML = `
         <tr class="modal-total-row">
           <td class="modal-freeze-1">TOTAL</td>
-          <td class="modal-freeze-2">${fmtInt(detailDataView.length)} Debitur</td>
+          <td class="modal-freeze-2">${fmtInt(detailPagination.total_records)} Debitur</td>
           <td class="text-center">-</td>
           <td></td>
           <td class="text-right">${fmtNom(totals.bd)}</td>
@@ -2594,66 +2683,119 @@
           <td class="text-right">${fmtNom(totals.ap)}</td>
           <td class="text-right">${fmtNom(totals.ab)}</td>
           <td></td>
-          <td class="text-center">${fmtInt(totals.committed)} Komitmen</td>
+          <td class="text-center">${fmtInt(detailSummary?.committed_count || 0)} Komitmen</td>
           <td></td>
           <td></td>
-          <td class="text-right">${fmtNom(totals.promise)}</td>
+          <td class="text-right">${fmtNom(detailSummary?.promise_amount || 0)}</td>
         </tr>
       `;
   };
 
-  async function fetchDetailFlowPar() {
+  function buildFlowParDetailPayload(options = {}) {
+      return {
+          type:'KL Baru',
+          kode_kantor:currentDetailKode === '000' ? '' : currentDetailKode,
+          korwil:currentDetailKorwil,
+          kode_kankas:document.getElementById('modalFilterKankas')?.value || '',
+          closing_date:currentFilter.closing,
+          harian_date:currentFilter.harian,
+          hitung_berdasarkan:currentFilter.nominal || selectedFpNominal(),
+          klasifikasi_flow:currentDetailKlasifikasi,
+          server_pagination:true,
+          page:Number(options.page || detailPage),
+          limit:detailPageSize,
+          search:String(document.getElementById('modalSearchFP')?.value || '').trim(),
+          commitment_filter:document.getElementById('modalCommitmentFilterFP')?.value || 'all',
+          export_all:options.exportAll ? true : false
+      };
+  }
+
+  async function fetchDetailFlowPar(page = detailPage) {
+      detailPage = Math.max(1, Number(page || 1));
+      if (detailAbort) detailAbort.abort();
+      detailAbort = new AbortController();
       const tbody = document.getElementById('modalBodyRows');
       const ttot = document.getElementById('modalTotalRow');
       const mobileCards = document.getElementById('modalMobileCardsFP');
-      const kankas = document.getElementById('modalFilterKankas').value || '';
 
       if (window.innerWidth < 768) {
           document.getElementById('modalFilterPanel').classList.add('hidden');
       }
 
-      tbody.innerHTML = `<tr><td colspan="20"><div class="fp-detail-loading"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mb-3"></div><span>Sedang mengambil data...</span></div></td></tr>`;
+      const isMobile = window.innerWidth < 768;
+      if (isMobile) {
+          tbody.innerHTML = '';
+          if (mobileCards) mobileCards.innerHTML = `<div class="fp-detail-loading"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mb-3"></div><span>Sedang mengambil data...</span></div>`;
+      } else {
+          if (mobileCards) mobileCards.innerHTML = '';
+          tbody.innerHTML = `<tr><td colspan="20"><div class="fp-detail-loading"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mb-3"></div><span>Sedang mengambil data...</span></div></td></tr>`;
+      }
       ttot.innerHTML = '';
-      if (mobileCards) mobileCards.innerHTML = `<div class="fp-detail-loading"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mb-3"></div><span>Sedang mengambil data...</span></div>`;
+      detailSummary = null;
       renderProjectionSummaryFP([]);
 
       try {
-          const payload = {
-              type:'KL Baru',
-              kode_kantor:currentDetailKode === '000' ? '' : currentDetailKode,
-              korwil:currentDetailKorwil,
-              kode_kankas:kankas,
-              closing_date:currentFilter.closing,
-              harian_date:currentFilter.harian,
-              hitung_berdasarkan:currentFilter.nominal || selectedFpNominal(),
-              klasifikasi_flow:currentDetailKlasifikasi
-          };
-
           const res = await fetch('./api/flow_par/', {
               method:'POST',
               headers:{'Content-Type':'application/json'},
-              body:JSON.stringify(payload)
+              body:JSON.stringify(buildFlowParDetailPayload({page:detailPage})),
+              signal:detailAbort.signal
           });
           const json = await res.json();
-          detailDataRaw = Array.isArray(json.data) ? json.data : [];
+          if (!res.ok || Number(json.status) >= 400) throw new Error(json.message || 'Gagal memuat data detail.');
+          if (Array.isArray(json.data)) {
+              detailDataRaw = json.data;
+              detailPagination = { current_page:1, page_size:detailPageSize, total_records:detailDataRaw.length, total_pages:1 };
+              detailSummary = null;
+          } else {
+              const responseData = json.data || {};
+              detailDataRaw = Array.isArray(responseData.rows) ? responseData.rows : [];
+              detailPagination = responseData.pagination || { current_page:detailPage, page_size:detailPageSize, total_records:0, total_pages:1 };
+              detailSummary = responseData.summary || null;
+              detailPage = Number(detailPagination.current_page || detailPage);
+          }
+          detailRenderIsMobile = isMobile;
           renderDetailFlowPar();
 
           const scroll = document.getElementById('modalScroll');
-          if (scroll) { scroll.scrollTop = 0; scroll.scrollLeft = 0; }
+          if (scroll && detailPage === 1) { scroll.scrollTop = 0; scroll.scrollLeft = 0; }
       } catch (error) {
+          if (error.name === 'AbortError') return;
           console.error(error);
           detailDataRaw = [];
           detailDataView = [];
-          tbody.innerHTML = `<tr><td colspan="20"><div class="fp-detail-empty text-red-500"><b>Gagal memuat data</b><span class="mt-1 text-[9px]">${fpEscape(error.message)}</span></div></td></tr>`;
+          detailSummary = null;
+          detailPagination = { current_page:1, page_size:detailPageSize, total_records:0, total_pages:1 };
+          updateDetailPaginationFP();
+          if (window.innerWidth < 768) {
+              tbody.innerHTML = '';
+              if (mobileCards) mobileCards.innerHTML = `<div class="fp-detail-empty text-red-500"><b>Gagal memuat data</b><span class="mt-1 text-[9px]">${fpEscape(error.message)}</span></div>`;
+          } else {
+              tbody.innerHTML = `<tr><td colspan="20"><div class="fp-detail-empty text-red-500"><b>Gagal memuat data</b><span class="mt-1 text-[9px]">${fpEscape(error.message)}</span></div></td></tr>`;
+              if (mobileCards) mobileCards.innerHTML = '';
+          }
           ttot.innerHTML = '';
-          if (mobileCards) mobileCards.innerHTML = `<div class="fp-detail-empty text-red-500"><b>Gagal memuat data</b></div>`;
           renderProjectionSummaryFP([]);
       }
   }
 
   // --- EXPORT EXCEL DETAIL ---
-  function exportDetailExcel() {
-      const rows = detailDataView;
+  async function exportDetailExcel() {
+      if (!Number(detailPagination.total_records || 0)) { alert('Tidak ada detail untuk diexport!'); return; }
+      let rows = [];
+      try {
+          const response = await fetch('./api/flow_par/', {
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body:JSON.stringify(buildFlowParDetailPayload({page:1, exportAll:true}))
+          });
+          const json = await response.json();
+          if (!response.ok || Number(json.status) >= 400) throw new Error(json.message || 'Gagal menyiapkan Excel.');
+          rows = Array.isArray(json.data) ? json.data : [];
+      } catch (error) {
+          alert(error.message || 'Gagal menyiapkan Excel.');
+          return;
+      }
       if (!rows.length) { alert('Tidak ada detail untuk diexport!'); return; }
 
       let table = `<table border="1">
@@ -2741,8 +2883,14 @@
     const modal = document.getElementById('modalDebiturFlowPar');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    if (detailAbort) detailAbort.abort();
+    clearTimeout(detailSearchTimer);
     detailDataRaw = [];
     detailDataView = [];
+    detailSummary = null;
+    detailPage = 1;
+    detailPagination = { current_page:1, page_size:detailPageSize, total_records:0, total_pages:1 };
+    updateDetailPaginationFP();
   };
   document.getElementById('btnCloseFP').onclick = closeFlowParDetailModal;
   document.getElementById('modalDebiturFlowPar').addEventListener('click', e => {

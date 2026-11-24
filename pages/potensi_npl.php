@@ -163,6 +163,11 @@
   .po-summary-item strong { display:block; margin-top:2px; overflow:hidden; color:#0f172a; font-size:12px; font-weight:900; text-overflow:ellipsis; white-space:nowrap; }
   .po-summary-item.blue strong { color:#1d4ed8; } .po-summary-item.orange strong { color:#c2410c; } .po-summary-item.green strong { color:#047857; }
   .po-modal-content { position:relative; flex:1; min-height:0; overflow:auto; background:#fff; -webkit-overflow-scrolling:touch; }
+  .po-detail-pagination { display:flex; flex:none; align-items:center; justify-content:flex-end; gap:10px; min-height:42px; padding:5px 10px; border-top:1px solid #e2e8f0; background:#f8fafc; color:#64748b; font-size:9px; font-weight:750; }
+  .po-detail-pagination-info { margin-right:auto; }
+  .po-page-btn { display:inline-flex; align-items:center; justify-content:center; min-width:30px; height:28px; padding:0 8px; border:1px solid #cbd5e1; border-radius:7px; background:#fff; color:#334155; font:inherit; cursor:pointer; }
+  .po-page-btn:disabled { opacity:.45; cursor:not-allowed; }
+  .po-page-btn:not(:disabled):hover { border-color:#2563eb; color:#1d4ed8; }
   #modalTablePO { width:max-content; min-width:2540px; table-layout:fixed; }
   #modalTablePO th { height:36px; padding:5px 7px; font-size:8px; }
   #modalTablePO td { height:36px; padding:5px 7px; font-size:9px; }
@@ -419,6 +424,7 @@
   :root[data-monbis-theme="dark"] .po-modal-header,
   :root[data-monbis-theme="dark"] .po-modal-toolbar,
   :root[data-monbis-theme="dark"] .po-modal-content,
+  :root[data-monbis-theme="dark"] .po-detail-pagination,
   :root[data-monbis-theme="dark"] .po-detail-card,
   :root[data-monbis-theme="dark"] .po-summary-item,
   :root[data-monbis-theme="dark"] .po-help-card,
@@ -428,6 +434,20 @@
       color:#e2e8f0 !important;
       border-color:#334155 !important;
   }
+  :root[data-monbis-theme="dark"] .po-page-btn { background:#1e293b; color:#cbd5e1; border-color:#475569; }
+  :root[data-monbis-theme="dark"] #modalTablePO th { background:#1e293b; color:#cbd5e1; border-color:#334155; }
+  :root[data-monbis-theme="dark"] #modalTablePO td { background:#111827; color:#e2e8f0; border-color:#263449; }
+  :root[data-monbis-theme="dark"] #modalTablePO td.modal-freeze-1,
+  :root[data-monbis-theme="dark"] #modalTablePO td.modal-freeze-2 { background:#111827; color:#e2e8f0; }
+  :root[data-monbis-theme="dark"] #modalTablePO .modal-total-row td { background:#1e293b; color:#e2e8f0; border-color:#475569; }
+  :root[data-monbis-theme="dark"] .po-detail-card-head,
+  :root[data-monbis-theme="dark"] .po-detail-card-metrics { border-color:#334155; background:#1e293b; }
+  :root[data-monbis-theme="dark"] .po-detail-card-metric { background:#111827; }
+  :root[data-monbis-theme="dark"] .po-detail-card-metric strong { color:#e2e8f0; }
+  :root[data-monbis-theme="dark"] .po-detail-card-address,
+  :root[data-monbis-theme="dark"] .po-detail-card-rek,
+  :root[data-monbis-theme="dark"] .po-detail-card-meta { color:#94a3b8; }
+  :root[data-monbis-theme="dark"] .po-detail-card-meta b { color:#cbd5e1; }
   :root[data-monbis-theme="dark"] #poPage .po-title-line h1,
   :root[data-monbis-theme="dark"] .po-modal-title-copy h3,
   :root[data-monbis-theme="dark"] .po-summary-item strong,
@@ -548,7 +568,7 @@
         <button type="button" onclick="gotoUpdatePotensiNPL()" class="po-modal-btn primary" title="Update komitmen" aria-label="Update komitmen">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg><span>Update</span>
         </button>
-        <button type="button" onclick="exportDetailPotensiExcel()" class="po-modal-btn excel" title="Export Excel" aria-label="Export Excel">
+        <button id="btnExportDetailPO" type="button" onclick="exportDetailPotensiExcel()" class="po-modal-btn excel" title="Export Excel" aria-label="Export Excel">
           <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14a2 2 0 0 0 2-2v-3"></path><path d="M3 16v3a2 2 0 0 0 2 2"></path></svg><span>Excel</span>
         </button>
         <button id="btnClosePO" type="button" class="po-modal-close" title="Tutup" aria-label="Tutup">
@@ -560,22 +580,22 @@
     <section class="po-modal-toolbar">
       <label class="po-modal-search">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>
-        <input type="search" id="modalSearchPO" placeholder="Cari nama, rekening, AO, alamat..." autocomplete="off" oninput="renderDetailRows()">
+        <input type="search" id="modalSearchPO" placeholder="Cari nama, rekening, AO, alamat..." autocomplete="off" oninput="handlePOSearchInput()">
       </label>
-      <select id="modalFilterStatus" class="po-modal-select" onchange="handlePOStatusChange()">
+      <select id="modalFilterStatus" class="po-modal-select" onchange="handlePOFilterChange()">
         <option value="ALL">Semua Status Potensi</option>
         <option value="AMAN">Aman / Lunas / Backflow</option>
         <option value="JATUH TEMPO">Jatuh Tempo</option>
         <option value="FLOW KOLEK">Flow Kolek</option>
         <option value="MASIH POTENSI">Masih Potensi</option>
       </select>
-      <select id="modalFilterCommitment" class="po-modal-select" onchange="renderDetailRows()">
+      <select id="modalFilterCommitment" class="po-modal-select" onchange="handlePOFilterChange()">
         <option value="ALL">Semua Komitmen</option>
         <option value="SUDAH">Sudah Komitmen</option>
         <option value="BELUM">Belum Komitmen</option>
       </select>
-      <select id="modalFilterKankas" class="po-modal-select" onchange="fetchDetailPotensiNpl()"><option value="">Semua Kankas</option></select>
-      <select id="modalFilterAo" class="po-modal-select" onchange="fetchDetailPotensiNpl()"><option value="">Semua AO</option></select>
+      <select id="modalFilterKankas" class="po-modal-select" onchange="handlePOFilterChange()"><option value="">Semua Kankas</option></select>
+      <select id="modalFilterAo" class="po-modal-select" onchange="handlePOFilterChange()"><option value="">Semua AO</option></select>
     </section>
 
     <section id="poDetailSummary" class="po-detail-summary">
@@ -611,6 +631,7 @@
       </table>
       <div id="modalMobileCardsPO" class="po-mobile-detail-list"></div>
     </div>
+    <footer id="poDetailPagination" class="po-detail-pagination" aria-label="Halaman detail debitur"></footer>
   </div>
 </div>
 
@@ -738,6 +759,12 @@
   let currentDetailKode = '';
   let currentDetailStatus = 'ALL'; 
   let poAbort;
+  let detailPoAbortController = null;
+  let detailPoPage = 1;
+  const detailPoPageSize = 50;
+  let detailPoPagination = { page:1, page_size:detailPoPageSize, total:0, total_pages:1 };
+  let detailPoSummary = null;
+  let detailPoSearchTimer = null;
   window.currentUserKode = '000';
 
   function selectedPoNominal(){ return document.getElementById('potensiNplNominal')?.value === 'baki_debet' ? 'baki_debet' : 'saldo_bank'; }
@@ -1186,6 +1213,8 @@
       
       currentDetailKode = targetCabang;
       currentDetailStatus = statusFilter || 'ALL'; 
+      detailPoPage = 1;
+      detailPoSummary = null;
       
       const modal = document.getElementById('modalDebiturPotensi');
       const title = document.getElementById('modalTitlePotensi');
@@ -1209,17 +1238,29 @@
       // POPULATE DROPDOWN KANKAS DI DALAM MODAL
       const selKankas = document.getElementById('modalFilterKankas');
       selKankas.innerHTML = '<option value="">Semua Kankas</option>';
-      
+      let kankasRequest = Promise.resolve();
       if(targetCabang !== '000') {
           selKankas.classList.remove('hidden');
-          try {
-              const r = await fetch('./api/kode/', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_kankas', kode_kantor:targetCabang}) });
-              const j = await r.json();
-              (j.data||[]).forEach(k => { 
-                  const isSelected = (targetKankas === k.kode_group1) ? 'selected' : '';
-                  selKankas.innerHTML += `<option value="${k.kode_group1}" ${isSelected}>${k.kode_group1} - ${k.deskripsi_group1}</option>`; 
-              });
-          } catch(e){}
+          if (targetKankas) {
+              const pendingOption = document.createElement('option');
+              pendingOption.value = targetKankas;
+              pendingOption.textContent = targetKankas;
+              pendingOption.selected = true;
+              selKankas.appendChild(pendingOption);
+          }
+          kankasRequest = fetch('./api/kode/', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_kankas', kode_kantor:targetCabang}) })
+              .then(r => r.json())
+              .then(j => {
+                  selKankas.innerHTML = '<option value="">Semua Kankas</option>';
+                  (j.data||[]).forEach(k => {
+                      const option = document.createElement('option');
+                      option.value = k.kode_group1;
+                      option.textContent = `${k.kode_group1} - ${k.deskripsi_group1}`;
+                      option.selected = String(targetKankas) === String(k.kode_group1);
+                      selKankas.appendChild(option);
+                  });
+              })
+              .catch(() => {});
       } else {
           selKankas.classList.add('hidden');
       }
@@ -1227,74 +1268,142 @@
       // 🔥 POPULATE DROPDOWN AO DI DALAM MODAL 🔥
       const selAo = document.getElementById('modalFilterAo');
       selAo.innerHTML = '<option value="">Semua AO</option>';
+      let aoRequest = Promise.resolve();
       if(targetCabang !== '000') {
           selAo.classList.remove('hidden');
-          try {
-              const r = await fetch('./api/kode/', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_ao_kredit', kode_kantor:targetCabang}) });
-              const j = await r.json();
-              (j.data||[]).forEach(k => {
-                  const namaAo = k.nama_ao || k.kode_group2;
-                  selAo.innerHTML += `<option value="${k.kode_group2}">${namaAo}</option>`; 
-              });
-          } catch(e){}
+          aoRequest = fetch('./api/kode/', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({type:'kode_ao_kredit', kode_kantor:targetCabang}) })
+              .then(r => r.json())
+              .then(j => {
+                  (j.data||[]).forEach(k => {
+                      const namaAo = k.nama_ao || k.kode_group2;
+                      const option = document.createElement('option');
+                      option.value = k.kode_group2;
+                      option.textContent = namaAo;
+                      selAo.appendChild(option);
+                  });
+              })
+              .catch(() => {});
       } else {
           selAo.classList.add('hidden');
       }
 
-      fetchDetailPotensiNpl();
+      await Promise.all([fetchDetailPotensiNpl(), kankasRequest, aoRequest]);
+  }
+
+  function buildDetailPotensiPayload(extra = {}) {
+      return {
+          type: 'Debitur Potensi NPL',
+          kode_kantor: currentDetailKode === '000' ? '' : currentDetailKode,
+          korwil: currentFilter.korwil || selectedPoKorwil(),
+          kode_kankas: document.getElementById('modalFilterKankas')?.value || '',
+          kode_ao: document.getElementById('modalFilterAo')?.value || '',
+          closing_date: currentFilter.closing,
+          harian_date: currentFilter.harian,
+          hitung_berdasarkan: currentFilter.nominal || selectedPoNominal(),
+          status_filter: 'ALL',
+          status_potensi: document.getElementById('modalFilterStatus')?.value || 'ALL',
+          commitment_filter: document.getElementById('modalFilterCommitment')?.value || 'ALL',
+          search: document.getElementById('modalSearchPO')?.value || '',
+          server_pagination: 1,
+          page: detailPoPage,
+          page_size: detailPoPageSize,
+          include_lunas: 1,
+          include_aman_backflow: 1,
+          ...extra
+      };
   }
 
   async function fetchDetailPotensiNpl() {
       const tbody = document.getElementById('modalBodyRowsPO');
       const ttot  = document.getElementById('modalTotalRowPO');
-      const kankas = document.getElementById('modalFilterKankas')?.value || ''; 
-      const aoFilter = document.getElementById('modalFilterAo')?.value || ''; 
-
-      tbody.innerHTML = `<tr><td colspan="24" class="p-12 text-center"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mx-auto mb-3"></div><span class="text-slate-500 font-medium">Sedang mengambil data detail...</span></td></tr>`;
+      const mobile = document.getElementById('modalMobileCardsPO');
+      const pager = document.getElementById('poDetailPagination');
+      detailPoAbortController?.abort();
+      detailPoAbortController = new AbortController();
+      const { signal } = detailPoAbortController;
+      tbody.innerHTML = `<tr><td colspan="16" class="p-12 text-center"><div class="animate-spin h-8 w-8 border-4 border-slate-200 border-t-blue-600 rounded-full mx-auto mb-3"></div><span class="text-slate-500 font-medium">Sedang mengambil data detail...</span></td></tr>`;
       ttot.innerHTML = '';
+      if (mobile) mobile.innerHTML = '<div class="p-8 text-center text-slate-500">Sedang mengambil data detail...</div>';
+      if (pager) pager.innerHTML = '<span class="po-detail-pagination-info">Memuat halaman...</span>';
 
       try {
-          console.log("Request Detail Potensi NPL:", currentDetailKode, "Kankas:", kankas, "AO:", aoFilter);
-          
-          const payload = { 
-              type: 'Debitur Potensi NPL', 
-              kode_kantor: currentDetailKode === '000' ? '' : currentDetailKode, 
-              korwil: currentFilter.korwil || selectedPoKorwil(),
-              kode_kankas: kankas,             
-              kode_ao: aoFilter,             
-              closing_date: currentFilter.closing, 
-              harian_date: currentFilter.harian,
-              hitung_berdasarkan: currentFilter.nominal || selectedPoNominal(),
-              status_filter: 'ALL',
-              include_lunas: 1,
-              include_aman_backflow: 1
-          };
-          
           const res = await fetch('./api/npl/', {
               method:'POST', headers:{'Content-Type':'application/json'},
-              body: JSON.stringify(payload)
+              body: JSON.stringify(buildDetailPotensiPayload()),
+              signal
           });
           const json = await res.json();
-          detailPoRaw = Array.isArray(json.data) ? json.data : []; 
-          
-          console.log("Berhasil load detail:", detailPoRaw.length, "baris");
+          if (!res.ok || json.status !== 200) throw new Error(json.message || 'Gagal mengambil data detail.');
+          if (Array.isArray(json.data)) {
+              detailPoRaw = json.data;
+              detailPoPagination = { page:1, page_size:detailPoPageSize, total:detailPoRaw.length, total_pages:1 };
+              detailPoSummary = null;
+          } else {
+              detailPoRaw = Array.isArray(json.data?.rows) ? json.data.rows : [];
+              detailPoPagination = json.data?.pagination || { page:detailPoPage, page_size:detailPoPageSize, total:0, total_pages:1 };
+              detailPoSummary = json.data?.summary || null;
+          }
+          if (detailPoSummary && detailPoRaw.length === 0 && detailPoPage > 1) {
+              detailPoPage = 1;
+              return fetchDetailPotensiNpl();
+          }
 
           renderDetailRows(); 
 
       } catch(e){
+          if (e.name === 'AbortError') return;
           console.error("Error saat fetch Detail Potensi:", e); 
-          tbody.innerHTML = `<tr><td colspan="24" class="p-10 text-center text-red-500">Gagal memuat data detail. ${e.message}</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="16" class="p-10 text-center text-red-500">Gagal memuat data detail. ${poEscape(e.message)}</td></tr>`;
+          if (mobile) mobile.innerHTML = `<div class="p-8 text-center text-red-500">Gagal memuat data detail. ${poEscape(e.message)}</div>`;
+          if (pager) pager.innerHTML = '';
       }
   }
 
   // --- RENDER DETAIL + KOMITMEN ---
-  function handlePOStatusChange() {
+  function handlePOFilterChange() {
       currentDetailStatus = document.getElementById('modalFilterStatus')?.value || 'ALL';
-      renderDetailRows();
+      detailPoPage = 1;
+      fetchDetailPotensiNpl();
   }
-  window.handlePOStatusChange = handlePOStatusChange;
+  window.handlePOFilterChange = handlePOFilterChange;
+  window.handlePOStatusChange = handlePOFilterChange;
+
+  function handlePOSearchInput() {
+      detailPoAbortController?.abort();
+      clearTimeout(detailPoSearchTimer);
+      detailPoSearchTimer = setTimeout(() => {
+          detailPoPage = 1;
+          fetchDetailPotensiNpl();
+      }, 250);
+  }
+  window.handlePOSearchInput = handlePOSearchInput;
+
+  function changeDetailPoPage(delta) {
+      const nextPage = Math.max(1, Math.min(detailPoPagination.total_pages || 1, detailPoPage + delta));
+      if (nextPage === detailPoPage) return;
+      detailPoPage = nextPage;
+      fetchDetailPotensiNpl();
+      document.getElementById('modalScroll')?.scrollTo({ top:0, left:0, behavior:'smooth' });
+  }
+  window.changeDetailPoPage = changeDetailPoPage;
+
+  function renderDetailPagination() {
+      const el = document.getElementById('poDetailPagination');
+      if (!el) return;
+      const total = Number(detailPoPagination.total || 0);
+      const page = Number(detailPoPagination.page || detailPoPage);
+      const pageSize = Number(detailPoPagination.page_size || detailPoPageSize);
+      const pageCount = Math.max(1, Number(detailPoPagination.total_pages || 1));
+      const from = total ? ((page - 1) * pageSize) + 1 : 0;
+      const to = Math.min(page * pageSize, total);
+      el.innerHTML = `<span class="po-detail-pagination-info">Menampilkan ${fmtInt(from)}–${fmtInt(to)} dari ${fmtInt(total)} debitur</span>
+        <button type="button" class="po-page-btn" onclick="changeDetailPoPage(-1)" ${page <= 1 ? 'disabled' : ''} aria-label="Halaman sebelumnya">‹</button>
+        <span>Halaman ${fmtInt(page)} dari ${fmtInt(pageCount)}</span>
+        <button type="button" class="po-page-btn" onclick="changeDetailPoPage(1)" ${page >= pageCount ? 'disabled' : ''} aria-label="Halaman berikutnya">›</button>`;
+  }
 
   function getFilteredDetailRows() {
+      if (detailPoSummary) return detailPoRaw;
       const statusFilter = document.getElementById('modalFilterStatus')?.value || 'ALL';
       const commitmentFilter = document.getElementById('modalFilterCommitment')?.value || 'ALL';
       const query = String(document.getElementById('modalSearchPO')?.value || '').trim().toLowerCase();
@@ -1311,6 +1420,16 @@
   }
 
   function renderDetailSummary(rows) {
+      if (detailPoSummary) {
+          const count = Number(detailPoSummary.candidates || 0);
+          const committed = Number(detailPoSummary.committed || 0);
+          document.getElementById('poSumCandidates').textContent = fmtInt(count);
+          document.getElementById('poSumSafe').textContent = fmtInt(detailPoSummary.safe || 0);
+          document.getElementById('poSumCommitted').textContent = fmtInt(committed);
+          document.getElementById('poSumUncommitted').textContent = fmtInt(Math.max(0, count - committed));
+          document.getElementById('poSumPromise').textContent = `Rp ${fmtNom(detailPoSummary.promise || 0)}`;
+          return;
+      }
       const committed = rows.filter(poHasCommitment).length;
       const safe = rows.filter(d => poStatusKind(d) === 'AMAN').length;
       const promise = rows.reduce((sum,d) => sum + poCommitment(d).nominal, 0);
@@ -1370,15 +1489,26 @@
   window.renderDetailRows = function() {
       const tbody = document.getElementById('modalBodyRowsPO');
       const ttot = document.getElementById('modalTotalRowPO');
+      const mobile = document.getElementById('modalMobileCardsPO');
+      const isMobile = window.matchMedia('(max-width: 767px)').matches;
       detailPoFiltered = getFilteredDetailRows();
       renderDetailSummary(detailPoFiltered);
-      renderDetailMobileCards(detailPoFiltered);
+      renderDetailPagination();
+      if (isMobile) {
+          tbody.innerHTML = '';
+          ttot.innerHTML = '';
+          renderDetailMobileCards(detailPoFiltered);
+      } else if (mobile) {
+          mobile.innerHTML = '';
+      }
 
       if(detailPoFiltered.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="16" class="p-10 text-center text-slate-400">Data tidak ditemukan pada filter ini.</td></tr>`;
-          ttot.innerHTML = '';
+          if (isMobile && mobile) mobile.innerHTML = '<div class="p-8 text-center text-slate-400">Data tidak ditemukan pada filter ini.</div>';
+          else tbody.innerHTML = `<tr><td colspan="16" class="p-10 text-center text-slate-400">Data tidak ditemukan pada filter ini.</td></tr>`;
+          if (!isMobile) ttot.innerHTML = '';
           return;
       }
+      if (isMobile) return;
 
       let totals = { bd_c:0, bd_h:0, tp:0, tb:0, sa:0, ap:0, ab:0, promise:0 };
       const rowsHtml = detailPoFiltered.map(d => {
@@ -1412,7 +1542,7 @@
       }).join('');
 
       ttot.innerHTML = `<tr class="modal-total-row">
-        <td class="modal-freeze-1">TOTAL</td><td class="modal-freeze-2">${fmtInt(detailPoFiltered.length)} Debitur</td>
+        <td class="modal-freeze-1">TOTAL HALAMAN</td><td class="modal-freeze-2">${fmtInt(detailPoFiltered.length)} Debitur</td>
         <td colspan="2"></td><td class="text-right">${fmtNom(totals.bd_c)}</td><td class="text-right text-red-700">${fmtNom(totals.bd_h)}</td>
         <td class="text-right"><div class="po-stacked"><strong>${fmtNom(totals.tp)}</strong><small>B: ${fmtNom(totals.tb)}</small></div></td>
         <td class="text-right text-green-700">${fmtNom(totals.sa)}</td><td colspan="2"></td>
@@ -1421,10 +1551,26 @@
       </tr>`;
       tbody.innerHTML = rowsHtml;
   }
+  let detailPoResizeTimer = null;
+  window.addEventListener('resize', () => {
+      clearTimeout(detailPoResizeTimer);
+      detailPoResizeTimer = setTimeout(() => {
+          if (!document.getElementById('modalDebiturPotensi')?.classList.contains('hidden')) renderDetailRows();
+      }, 120);
+  });
 
   // --- EXPORT EXCEL DETAIL DARI MODAL ---
-  function exportDetailPotensiExcel() {
-      const filteredData = getFilteredDetailRows();
+  async function exportDetailPotensiExcel() {
+      const button = document.getElementById('btnExportDetailPO');
+      if (button) button.disabled = true;
+      try {
+      const res = await fetch('./api/npl/', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(buildDetailPotensiPayload({ export_all:1 }))
+      });
+      const json = await res.json();
+      if (!res.ok || json.status !== 200) throw new Error(json.message || 'Gagal menyiapkan data Excel.');
+      const filteredData = Array.isArray(json.data) ? json.data : (Array.isArray(json.data?.rows) ? json.data.rows : []);
       if(filteredData.length === 0) return alert('Tidak ada detail untuk diexport!');
       let table = `<table border="1"><thead><tr>
         <th>NO REKENING</th><th>NAMA NASABAH</th><th>ALAMAT</th><th>NAMA AO</th><th>STATUS POTENSI</th>
@@ -1447,6 +1593,11 @@
       const status = document.getElementById('modalFilterStatus')?.value || 'ALL';
       a.download = `Detail_Potensi_NPL_${currentDetailKode}_${status}.xls`;
       document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+      } catch (e) {
+          alert(`Gagal export detail: ${e.message}`);
+      } finally {
+          if (button) button.disabled = false;
+      }
   }
 
   // --- TRIGGER UPDATE BULK (TOMBOL UPDATE DI MODAL POTENSI NPL) ---

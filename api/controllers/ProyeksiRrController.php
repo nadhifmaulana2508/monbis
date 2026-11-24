@@ -147,7 +147,7 @@ final class ProyeksiRrController
 
         $movement = strtolower(trim((string)($input['movement'] ?? '')));
         $movementRules = [
-            'flow_par' => "c.kolek_closing IN ('DP','DPK','2') AND c.kolek_actual = 'KL' AND c.saldo_actual > 0",
+            'flow_par' => "c.kolek_closing IN ('L','1','DP','DPK','2') AND c.kolek_actual IN ('KL','D','M') AND c.saldo_actual > 0",
             'recovery_npl' => "c.kolek_closing IN ('KL','D','M') AND (
                 c.kolek_actual IS NULL OR c.kolek_actual IN ('L','1','DP','DPK','2') OR
                 (c.kolek_actual IN ('KL','D','M') AND c.saldo_closing > c.saldo_actual)
@@ -376,8 +376,8 @@ final class ProyeksiRrController
             $actualIsNpl = in_array($actualCollection, ['KL', 'D', 'M'], true);
             $actualIsGood = in_array($actualCollection, $goodCollections, true);
 
-            if (in_array($closingCollection, ['DP', 'DPK', '2'], true)
-                && $actualCollection === 'KL' && $actualBalance > 0) {
+            if (in_array($closingCollection, $goodCollections, true)
+                && $actualIsNpl && $actualBalance > 0) {
                 $movements['flow_par'] += $actualBalance;
                 $movements['flow_par_noa']++;
             }

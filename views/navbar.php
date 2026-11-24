@@ -26,6 +26,8 @@ if (is_array($rbacInitialAccess ?? null)) {
   document.documentElement.classList.toggle('monbis-rbac-pending', !window.__RBAC_INITIAL__);
 </script>
 <style id="monbisGlobalThemeStyle">
+  :root { color-scheme:light; }
+  :root[data-monbis-theme="dark"] { color-scheme:dark; }
   :root[data-monbis-theme="dark"] body { background:#0f172a; color:#e5e7eb; }
   :root[data-monbis-theme="dark"] .bg-slate-50 { background-color:#0b1220 !important; }
   :root[data-monbis-theme="dark"] .bg-white { background-color:#111827 !important; }
@@ -349,6 +351,9 @@ if (is_array($rbacInitialAccess ?? null)) {
   @media (max-width:767px) {
     #proyeksiRrNavbarFilterPanel { right:8px; width:calc(100vw - 16px); }
     #proyeksiRrNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width:420px) {
+    #proyeksiRrNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:1fr; gap:7px; }
   }
   #jatuhTempoNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(6, minmax(0, 1fr)); }
   @media (max-width:767px) {
@@ -936,46 +941,43 @@ if (is_array($rbacInitialAccess ?? null)) {
       return values.includes('dev') || values.some(value => value.includes('divisi operasional'));
     }
 
-    function sync(user) {
+    function readSavedTheme() {
+      try { return localStorage.getItem(key) === 'dark' ? 'dark' : 'light'; }
+      catch (error) { return 'light'; }
+    }
+    let activeTheme = readSavedTheme();
+
+    function sync() {
       const button = document.getElementById('monbisThemeToggle');
-      const allowed = isOperasional(user || readUser());
-      if (button) button.style.display = allowed ? 'inline-flex' : 'none';
-      if (!allowed) {
-        root.setAttribute('data-monbis-theme', 'light');
-        localStorage.setItem(key, 'light');
-        return;
+      root.setAttribute('data-monbis-theme', activeTheme);
+      if (button) {
+        button.style.display = 'inline-flex';
+        button.setAttribute('aria-pressed', activeTheme === 'dark' ? 'true' : 'false');
       }
-      const saved = localStorage.getItem(key) || 'light';
-      root.setAttribute('data-monbis-theme', saved === 'dark' ? 'dark' : 'light');
     }
 
-    root.setAttribute('data-monbis-theme', 'light');
+    root.setAttribute('data-monbis-theme', activeTheme);
     window.MonbisTheme = window.MonbisTheme || {};
     window.MonbisTheme.sync = sync;
     window.MonbisTheme.isOperasional = isOperasional;
 
     document.addEventListener('click', function (event) {
-      const button = event.target.closest('#monbisThemeToggle');
+      const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+      const button = target?.closest('#monbisThemeToggle');
       if (!button) return;
-      if (!isOperasional(readUser())) {
-        sync(readUser());
-        return;
-      }
-      const next = root.getAttribute('data-monbis-theme') === 'dark' ? 'light' : 'dark';
+      const next = activeTheme === 'dark' ? 'light' : 'dark';
+      activeTheme = next;
       root.setAttribute('data-monbis-theme', next);
-      localStorage.setItem(key, next);
+      button.setAttribute('aria-pressed', next === 'dark' ? 'true' : 'false');
+      try { localStorage.setItem(key, next); } catch (error) {}
       document.dispatchEvent(new CustomEvent('monbis-theme-change', { detail:{ theme:next } }));
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
-      let tries = 0;
-      sync(readUser());
-      const timer = setInterval(() => {
-        tries += 1;
-        sync(readUser());
-        if (readUser() || tries >= 25) clearInterval(timer);
-      }, 200);
-    });
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', sync, { once:true });
+    } else {
+      sync();
+    }
   })();
 
   /*
@@ -2510,12 +2512,14 @@ if (is_array($rbacInitialAccess ?? null)) {
 
       <?php if (($page ?? '') === 'proyeksi_rr'): ?>
     <form id="proyeksiRrNavbarFilterPanel" class="dashboard-navbar-filter hidden flex-col" aria-label="Filter Proyeksi RR dan NPL">
-      <div class="dashboard-navbar-filter__head"><div><span class="dashboard-navbar-filter__eyebrow">Filter</span><strong class="dashboard-navbar-filter__title">Atur posisi closing dan actual</strong></div>
+      <div class="dashboard-navbar-filter__head"><div><span class="dashboard-navbar-filter__eyebrow">Filter</span><strong class="dashboard-navbar-filter__title">Atur tanggal, area, dan nominal</strong></div>
         <button type="button" id="proyeksiRrNavbarFilterClose" class="dashboard-navbar-filter__close" aria-label="Tutup filter" title="Tutup filter"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
       </div>
       <div class="dashboard-navbar-filter__fields">
         <div class="dashboard-navbar-filter__field"><label for="prClosing">Closing (M-1)</label><input type="date" id="prClosing" required disabled onclick="this.showPicker && this.showPicker()"></div>
         <div class="dashboard-navbar-filter__field"><label for="prActual">Harian / Actual</label><input type="date" id="prActual" required disabled onclick="this.showPicker && this.showPicker()"></div>
+        <div class="dashboard-navbar-filter__field"><label for="prBranch">Area / Cabang</label><select id="prBranch"><option value="ALL">ALL - konsolidasi</option></select></div>
+        <div class="dashboard-navbar-filter__field"><label for="prBasis">Nominal</label><select id="prBasis"><option value="saldo_bank">Saldo Bank</option><option value="baki_debet">Baki Debet</option></select></div>
       </div>
     </form>
       <?php endif; ?>

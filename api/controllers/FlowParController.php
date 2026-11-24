@@ -404,6 +404,16 @@ class FlowParController {
         $nominalColumn = $modeHitung === 'baki_debet' ? 'baki_debet' : 'saldo_bank';
         $month_start  = date('Y-m-01', strtotime($harian_date));
         $next_month_start = date('Y-m-01', strtotime('+1 month', strtotime($harian_date)));
+        $serverPagination = !empty($input['server_pagination']);
+        $exportAll = $serverPagination && !empty($input['export_all']);
+        $page = min(100000, max(1, (int)($input['page'] ?? 1)));
+        $pageSize = min(100, max(10, (int)($input['limit'] ?? 50)));
+        $offset = ($page - 1) * $pageSize;
+        $search = trim((string)($input['search'] ?? ''));
+        $search = function_exists('mb_substr') ? mb_substr($search, 0, 100, 'UTF-8') : substr($search, 0, 100);
+        $commitmentFilter = in_array(($input['commitment_filter'] ?? 'all'), ['committed', 'none'], true)
+            ? $input['commitment_filter']
+            : 'all';
 
         $filterCabang = "";
         $filterKankas = "";
@@ -429,6 +439,42 @@ class FlowParController {
         }
 
         $filterHarian = $filterCabang . $filterKankas . $filterKlasifikasi;
+        $hasCommitmentSql = "((TRIM(COALESCE(km_last.komitmen, '')) <> ''
+            AND LOWER(TRIM(km_last.komitmen)) NOT IN ('-', 'belum ada', 'belum komitmen', 'tidak ada'))
+            OR km_last.tgl_pembayaran IS NOT NULL
+            OR COALESCE(km_last.nominal, 0) > 0)";
+        $filterCommitment = '';
+        if ($serverPagination && $commitmentFilter === 'committed') {
+            $filterCommitment = " AND $hasCommitmentSql";
+        } elseif ($serverPagination && $commitmentFilter === 'none') {
+            $filterCommitment = " AND NOT $hasCommitmentSql";
+        }
+
+        $filterSearch = '';
+        if ($serverPagination && $search !== '') {
+            $filterSearch = " AND (
+                LOWER(COALESCE(h.no_rekening, '')) LIKE :search_rekening ESCAPE '!'
+                OR LOWER(COALESCE(h.nama_nasabah, '')) LIKE :search_nama ESCAPE '!'
+                OR LOWER(COALESCE(h.alamat, '')) LIKE :search_alamat ESCAPE '!'
+                OR LOWER(COALESCE(h.kolektibilitas, '')) LIKE :search_kolek ESCAPE '!'
+                OR LOWER(COALESCE(km_last.komitmen, '')) LIKE :search_komitmen ESCAPE '!'
+                OR LOWER(COALESCE(CAST(km_last.tgl_pembayaran AS CHAR), '')) LIKE :search_tanggal ESCAPE '!'
+            )";
+        }
+
+        $summarySelect = $serverPagination ? ",
+                COUNT(*) OVER() AS __summary_candidates,
+                SUM(CASE WHEN $hasCommitmentSql THEN 1 ELSE 0 END) OVER() AS __summary_committed,
+                SUM(CASE WHEN $hasCommitmentSql THEN COALESCE(km_last.nominal, 0) ELSE 0 END) OVER() AS __summary_promise,
+                SUM(COALESCE(h.$nominalColumn, 0)) OVER() AS __summary_bd,
+                SUM(COALESCE(h.tunggakan_pokok, 0)) OVER() AS __summary_tp,
+                SUM(COALESCE(h.tunggakan_bunga, 0)) OVER() AS __summary_tb,
+                SUM(COALESCE(h.tunggakan_pokok, 0) + COALESCE(h.tunggakan_bunga, 0)) OVER() AS __summary_tt,
+                SUM(COALESCE(tb.saldo_akhir, 0)) OVER() AS __summary_sa,
+                SUM(COALESCE(trx.angsuran_pokok, 0)) OVER() AS __summary_ap,
+                SUM(COALESCE(trx.angsuran_bunga, 0)) OVER() AS __summary_ab
+            " : '';
+        $pageLimit = $serverPagination && !$exportAll ? " LIMIT $pageSize OFFSET $offset" : '';
 
         $sql = "
             SELECT
@@ -457,6 +503,7 @@ class FlowParController {
                 km_last.tgl_pembayaran,
                 km_last.nominal,
                 km_last.alasan
+                $summarySelect
             FROM nominatif h
             JOIN nominatif c
                 ON c.created = :closing_date
@@ -488,7 +535,10 @@ class FlowParController {
             WHERE h.created = :harian_date
               AND h.kolektibilitas IN ('KL','D','M')
               $filterHarian
-            ORDER BY h.$nominalColumn DESC
+              $filterCommitment
+              $filterSearch
+            ORDER BY h.$nominalColumn DESC, h.no_rekening ASC
+            $pageLimit
         ";
 
         try {
@@ -509,9 +559,60 @@ class FlowParController {
             if ($kode_kankas !== '') {
                 $stmt->bindValue(':kankas1', $kode_kankas);
             }
+            if ($serverPagination && $search !== '') {
+                $searchTerm = function_exists('mb_strtolower') ? mb_strtolower($search, 'UTF-8') : strtolower($search);
+                $searchTerm = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $searchTerm);
+                $searchPattern = '%' . $searchTerm . '%';
+                foreach (['rekening', 'nama', 'alamat', 'kolek', 'komitmen', 'tanggal'] as $key) {
+                    $stmt->bindValue(':search_' . $key, $searchPattern);
+                }
+            }
 
             $stmt->execute();
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if ($serverPagination) {
+                $summaryFields = [
+                    '__summary_candidates', '__summary_committed', '__summary_promise',
+                    '__summary_bd', '__summary_tp', '__summary_tb', '__summary_tt',
+                    '__summary_sa', '__summary_ap', '__summary_ab',
+                ];
+                $firstRow = $data[0] ?? [];
+                $totalRecords = (int)($firstRow['__summary_candidates'] ?? 0);
+                $summary = [
+                    'candidate_count' => $totalRecords,
+                    'committed_count' => (int)($firstRow['__summary_committed'] ?? 0),
+                    'promise_amount' => (float)($firstRow['__summary_promise'] ?? 0),
+                    'totals' => [
+                        'bd' => (float)($firstRow['__summary_bd'] ?? 0),
+                        'tp' => (float)($firstRow['__summary_tp'] ?? 0),
+                        'tb' => (float)($firstRow['__summary_tb'] ?? 0),
+                        'tt' => (float)($firstRow['__summary_tt'] ?? 0),
+                        'sa' => (float)($firstRow['__summary_sa'] ?? 0),
+                        'ap' => (float)($firstRow['__summary_ap'] ?? 0),
+                        'ab' => (float)($firstRow['__summary_ab'] ?? 0),
+                    ],
+                ];
+                foreach ($data as &$row) {
+                    foreach ($summaryFields as $field) unset($row[$field]);
+                }
+                unset($row);
+
+                if ($exportAll) {
+                    sendResponse(200, "Detail debitur flow PAR", $data);
+                }
+
+                sendResponse(200, "Detail debitur flow PAR", [
+                    'rows' => $data,
+                    'pagination' => [
+                        'current_page' => $page,
+                        'page_size' => $pageSize,
+                        'total_records' => $totalRecords,
+                        'total_pages' => max(1, (int)ceil($totalRecords / $pageSize)),
+                    ],
+                    'summary' => $summary,
+                ]);
+            }
 
             sendResponse(200, "Detail debitur flow PAR", $data);
         } catch (Exception $e) {

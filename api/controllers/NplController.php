@@ -903,6 +903,7 @@ public function getTop25NplPerCabang($input) {
 
         // --- LOGIC HARI DINAMIS ---
         $hari_bulan = (int) date('t', strtotime($harian_date)); // Total hari di bulan ini (misal 30 atau 31)
+        $ambang_npl = 90 - $hari_bulan;
         $tgl_harian = (int) date('d', strtotime($harian_date)); // Tanggal hari ini
         $sisa_hari  = $hari_bulan - $tgl_harian;                // Sisa hari menuju akhir bulan
         if ($sisa_hari < 0) $sisa_hari = 0;
@@ -991,9 +992,9 @@ public function getTop25NplPerCabang($input) {
                     AND n.kolektibilitas IN ('L', 'DP')
                     $filterClosing
                     AND (
-                           (COALESCE(n.hari_menunggak,0) + :hb1) >= 90
-                        OR (COALESCE(n.hari_menunggak_pokok,0) + :hb2) >= 90
-                        OR (COALESCE(n.hari_menunggak_bunga,0) + :hb3) >= 90
+                           n.hari_menunggak >= :ambang1
+                        OR n.hari_menunggak_pokok >= :ambang2
+                        OR n.hari_menunggak_bunga >= :ambang3
                         OR n.tgl_jatuh_tempo BETWEEN :jt_start AND :jt_end
                     )
                 GROUP BY h.$colKey
@@ -1005,9 +1006,9 @@ public function getTop25NplPerCabang($input) {
             $stmt = $this->pdo->prepare($sql);
             $stmt->bindValue(':closing',     $closing_date);
             $stmt->bindValue(':harian_date', $harian_date);
-            $stmt->bindValue(':hb1', $hari_bulan, PDO::PARAM_INT);
-            $stmt->bindValue(':hb2', $hari_bulan, PDO::PARAM_INT);
-            $stmt->bindValue(':hb3', $hari_bulan, PDO::PARAM_INT);
+            $stmt->bindValue(':ambang1', $ambang_npl, PDO::PARAM_INT);
+            $stmt->bindValue(':ambang2', $ambang_npl, PDO::PARAM_INT);
+            $stmt->bindValue(':ambang3', $ambang_npl, PDO::PARAM_INT);
             $stmt->bindValue(':jt_start', $jt_start);
             $stmt->bindValue(':jt_end',   $jt_end);
 
@@ -1137,6 +1138,72 @@ public function getTop25NplPerCabang($input) {
         } elseif ($statusPotensi === 'LUNAS / AMAN') {
             $statusFilter = " AND h.baki_debet_harian <= 0 ";
         }
+
+        $serverPagination = filter_var($input['server_pagination'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $exportAll = $serverPagination && filter_var($input['export_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $page = max(1, min(100000, (int)($input['page'] ?? 1)));
+        $pageSize = max(10, min(100, (int)($input['page_size'] ?? 50)));
+        $detailSearch = trim((string)($input['search'] ?? ''));
+        if (function_exists('mb_substr')) {
+            $detailSearch = mb_substr($detailSearch, 0, 100, 'UTF-8');
+        } else {
+            $detailSearch = substr($detailSearch, 0, 100);
+        }
+        $commitmentFilter = strtoupper(trim((string)($input['commitment_filter'] ?? 'ALL')));
+        if (!in_array($commitmentFilter, ['ALL', 'SUDAH', 'BELUM'], true)) {
+            $commitmentFilter = 'ALL';
+        }
+
+        // Pagination hanya opt-in dari modal Potensi NPL agar pemanggil lama
+        // tetap menerima array penuh dengan bentuk response yang sama.
+        $commitmentExistsSql = "(
+            (km.komitmen IS NOT NULL AND TRIM(km.komitmen) <> '')
+            OR km.tgl_pembayaran IS NOT NULL
+            OR COALESCE(km.nominal, 0) > 0
+        )";
+        $serverFilterSql = '';
+        if ($serverPagination && $commitmentFilter === 'SUDAH') {
+            $serverFilterSql .= " AND {$commitmentExistsSql} ";
+        } elseif ($serverPagination && $commitmentFilter === 'BELUM') {
+            $serverFilterSql .= " AND NOT {$commitmentExistsSql} ";
+        }
+        if ($serverPagination && $detailSearch !== '') {
+            $escapedSearch = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $detailSearch);
+            $serverFilterSql .= " AND (
+                LOWER(CONCAT_WS(' ', kd.no_rekening, kd.nama_nasabah, kd.alamat, a.nama_ao,
+                    CASE
+                    WHEN h.no_rekening IS NULL OR h.baki_debet_harian <= 0 THEN 'LUNAS / AMAN'
+                    WHEN h.kolek_harian IN ('KL','D','M') THEN 'FLOW KOLEK'
+                    WHEN h.jt_harian BETWEEN :search_bulan_awal AND :search_bulan_akhir THEN 'JATUH TEMPO'
+                    WHEN (h.hm_harian + :search_sisa_hari1) < 90
+                     AND (h.hmp_harian + :search_sisa_hari2) < 90
+                     AND (h.hmb_harian + :search_sisa_hari3) < 90 THEN 'AMAN'
+                    ELSE 'MASIH POTENSI'
+                    END, km.komitmen, km.alasan)) LIKE :detail_search ESCAPE '!'
+            ) ";
+        }
+
+        $includePageMeta = $serverPagination && !$exportAll;
+        $pageMetaSelect = '';
+        if ($includePageMeta) {
+            $pageMetaSelect = ",
+                COUNT(*) OVER() AS _page_total,
+                SUM(CASE WHEN (
+                    h.no_rekening IS NULL OR h.baki_debet_harian <= 0 OR (
+                        h.kolek_harian NOT IN ('KL','D','M')
+                        AND NOT (h.jt_harian BETWEEN :summary_bulan_awal AND :summary_bulan_akhir)
+                        AND (h.hm_harian + :summary_sisa_hari1) < 90
+                        AND (h.hmp_harian + :summary_sisa_hari2) < 90
+                        AND (h.hmb_harian + :summary_sisa_hari3) < 90
+                    )
+                ) THEN 1 ELSE 0 END) OVER() AS _summary_safe,
+                SUM(CASE WHEN {$commitmentExistsSql} THEN 1 ELSE 0 END) OVER() AS _summary_committed,
+                SUM(COALESCE(km.nominal, 0)) OVER() AS _summary_promise";
+        }
+        $pageLimitSql = $includePageMeta
+            ? ' LIMIT ' . $pageSize . ' OFFSET ' . (($page - 1) * $pageSize)
+            : '';
+
         // Harus sama dengan rentang jatuh tempo yang dipakai rekap flow:
         // rekening JT mulai tanggal 15 bulan sebelumnya sampai akhir bulan actual
         // tetap menjadi kandidat apabila sampai posisi actual belum selesai.
@@ -1235,7 +1302,7 @@ public function getTop25NplPerCabang($input) {
                 h.jt_harian,
                 tb.saldo_akhir,
                 CASE 
-                    WHEN h.no_rekening IS NULL OR h.baki_debet_harian = 0 THEN 'LUNAS / AMAN'
+                    WHEN h.no_rekening IS NULL OR h.baki_debet_harian <= 0 THEN 'LUNAS / AMAN'
                     WHEN h.kolek_harian IN ('KL','D','M') THEN 'FLOW KOLEK'
                     WHEN h.jt_harian BETWEEN :bulan_awal2 AND :bulan_akhir2 THEN 'JATUH TEMPO'
                     WHEN (h.hm_harian + :sisa_hari1) < 90 AND (h.hmp_harian + :sisa_hari2) < 90 AND (h.hmb_harian + :sisa_hari3) < 90 THEN 'AMAN'
@@ -1249,6 +1316,7 @@ public function getTop25NplPerCabang($input) {
                 km.tgl_pembayaran,
                 km.nominal,
                 km.alasan
+                {$pageMetaSelect}
             FROM kandidat kd
             JOIN harian h ON kd.no_rekening = h.no_rekening
             LEFT JOIN trx    tr ON kd.no_rekening = tr.no_rekening
@@ -1269,7 +1337,9 @@ public function getTop25NplPerCabang($input) {
             WHERE kk.kode_kantor <> '000'
               {$weekFilter}
               {$statusFilter}
+              {$serverFilterSql}
             ORDER BY kd.baki_debet_closing DESC, kd.no_rekening
+            {$pageLimitSql}
         ";
 
         try {
@@ -1280,6 +1350,21 @@ public function getTop25NplPerCabang($input) {
             $st->bindValue(':harian_date_trx', $harian_date);
             $st->bindValue(':month_start_km', $bulan_awal);
             $st->bindValue(':next_month_start_km', date('Y-m-01', strtotime('+1 month', strtotime($harian_date))));
+            if ($serverPagination && $detailSearch !== '') {
+                $st->bindValue(':detail_search', '%' . strtolower($escapedSearch) . '%');
+                $st->bindValue(':search_bulan_awal', $bulan_awal);
+                $st->bindValue(':search_bulan_akhir', $bulan_akhir);
+                $st->bindValue(':search_sisa_hari1', $sisa_hari, PDO::PARAM_INT);
+                $st->bindValue(':search_sisa_hari2', $sisa_hari, PDO::PARAM_INT);
+                $st->bindValue(':search_sisa_hari3', $sisa_hari, PDO::PARAM_INT);
+            }
+            if ($includePageMeta) {
+                $st->bindValue(':summary_bulan_awal', $bulan_awal);
+                $st->bindValue(':summary_bulan_akhir', $bulan_akhir);
+                $st->bindValue(':summary_sisa_hari1', $sisa_hari, PDO::PARAM_INT);
+                $st->bindValue(':summary_sisa_hari2', $sisa_hari, PDO::PARAM_INT);
+                $st->bindValue(':summary_sisa_hari3', $sisa_hari, PDO::PARAM_INT);
+            }
             
             $st->bindValue(':jml_hari1', $jml_hari_bulan, PDO::PARAM_INT);
             $st->bindValue(':jml_hari2', $jml_hari_bulan, PDO::PARAM_INT);
@@ -1321,6 +1406,29 @@ public function getTop25NplPerCabang($input) {
 
             $st->execute();
             $rows = $st->fetchAll(PDO::FETCH_ASSOC);
+
+            $pagination = null;
+            $summary = null;
+            if ($includePageMeta) {
+                $firstRow = $rows[0] ?? [];
+                $totalRows = (int)($firstRow['_page_total'] ?? 0);
+                $summary = [
+                    'candidates' => $totalRows,
+                    'safe' => (int)($firstRow['_summary_safe'] ?? 0),
+                    'committed' => (int)($firstRow['_summary_committed'] ?? 0),
+                    'promise' => (float)($firstRow['_summary_promise'] ?? 0),
+                ];
+                $pagination = [
+                    'page' => $page,
+                    'page_size' => $pageSize,
+                    'total' => $totalRows,
+                    'total_pages' => max(1, (int)ceil($totalRows / $pageSize)),
+                ];
+                foreach ($rows as &$row) {
+                    unset($row['_page_total'], $row['_summary_safe'], $row['_summary_committed'], $row['_summary_promise']);
+                }
+                unset($row);
+            }
             
             $numericFields = [
                 'baki_debet_closing', 'baki_debet_harian', 'tunggakan_pokok', 'tunggakan_bunga', 
@@ -1333,7 +1441,15 @@ public function getTop25NplPerCabang($input) {
             }
             unset($r);
 
-            sendResponse(200, 'Detail potensi NPL', $rows);
+            if ($includePageMeta) {
+                sendResponse(200, 'Detail potensi NPL', [
+                    'rows' => $rows,
+                    'pagination' => $pagination,
+                    'summary' => $summary,
+                ]);
+            } else {
+                sendResponse(200, 'Detail potensi NPL', $rows);
+            }
         } catch (Throwable $e) {
             sendResponse(500, 'Gagal ambil detail potensi NPL: '.$e->getMessage());
         }
