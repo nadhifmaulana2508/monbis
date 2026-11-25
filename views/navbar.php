@@ -43,17 +43,6 @@ if (is_array($rbacInitialAccess ?? null)) {
   :root[data-monbis-theme="dark"] .bg-blue-50 { background-color:#172554 !important; }
   :root[data-monbis-theme="dark"] .shadow-sm,
   :root[data-monbis-theme="dark"] .shadow-lg { box-shadow:0 14px 32px rgba(0,0,0,.35) !important; }
-  .monbis-theme-toggle {
-    display:none; align-items:center; justify-content:center;
-    width:36px; height:36px; border:1px solid #dbe3ee; border-radius:10px;
-    background:#fff; color:#475569; box-shadow:0 1px 2px rgba(15,23,42,.06);
-    transition:background .15s,border-color .15s,color .15s,transform .15s;
-  }
-  .monbis-theme-toggle:hover { transform:translateY(-1px); color:#2563eb; border-color:#bfdbfe; }
-  :root[data-monbis-theme="dark"] .monbis-theme-toggle { background:#0b1220; border-color:#475569; color:#cbd5e1; }
-  .monbis-theme-toggle .monbis-theme-icon-sun { display:none; }
-  :root[data-monbis-theme="dark"] .monbis-theme-toggle .monbis-theme-icon-moon { display:none; }
-  :root[data-monbis-theme="dark"] .monbis-theme-toggle .monbis-theme-icon-sun { display:block; }
   .dashboard-navbar-filter-toggle {
     display:inline-flex; align-items:center; justify-content:center;
     width:36px; height:36px; border:1px solid #dbe3ee; border-radius:10px;
@@ -62,7 +51,6 @@ if (is_array($rbacInitialAccess ?? null)) {
   }
   #mainNavbar #btnToggleSidebar,
   #mainNavbar .dashboard-navbar-filter-toggle,
-  #mainNavbar .monbis-theme-toggle,
   #mainNavbar #btnProfileMenu {
     box-sizing:border-box;
     width:36px !important;
@@ -75,7 +63,6 @@ if (is_array($rbacInitialAccess ?? null)) {
   }
   #mainNavbar #btnToggleSidebar svg,
   #mainNavbar .dashboard-navbar-filter-toggle svg,
-  #mainNavbar .monbis-theme-toggle svg,
   #mainNavbar #btnProfileMenu svg {
     width:18px !important;
     height:18px !important;
@@ -684,12 +671,12 @@ if (is_array($rbacInitialAccess ?? null)) {
   #mainNavbar .text-slate-800,
   #mainNavbar .text-slate-700 { color:var(--monbis-event-text) !important; }
   #btnToggleSidebar,
-  #mainNavbar button:not(#btnProfileMenu):not(#monbisThemeToggle) {
+  #mainNavbar button:not(#btnProfileMenu) {
     border-radius:12px;
     transition:background .16s ease, color .16s ease, transform .16s ease, box-shadow .16s ease;
   }
   #btnToggleSidebar:hover,
-  #mainNavbar button:not(#btnProfileMenu):not(#monbisThemeToggle):hover {
+  #mainNavbar button:not(#btnProfileMenu):hover {
     background:rgba(37,99,235,.08);
     color:var(--monbis-event-accent) !important;
     transform:translateY(-1px);
@@ -882,7 +869,6 @@ if (is_array($rbacInitialAccess ?? null)) {
     #mainNavbar button.relative.text-slate-500 {
       display:none !important;
     }
-    .monbis-theme-toggle,
     #btnProfileMenu {
       border-radius:12px !important;
     }
@@ -948,30 +934,13 @@ if (is_array($rbacInitialAccess ?? null)) {
     let activeTheme = readSavedTheme();
 
     function sync() {
-      const button = document.getElementById('monbisThemeToggle');
       root.setAttribute('data-monbis-theme', activeTheme);
-      if (button) {
-        button.style.display = 'inline-flex';
-        button.setAttribute('aria-pressed', activeTheme === 'dark' ? 'true' : 'false');
-      }
     }
 
     root.setAttribute('data-monbis-theme', activeTheme);
     window.MonbisTheme = window.MonbisTheme || {};
     window.MonbisTheme.sync = sync;
     window.MonbisTheme.isOperasional = isOperasional;
-
-    document.addEventListener('click', function (event) {
-      const target = event.target instanceof Element ? event.target : event.target?.parentElement;
-      const button = target?.closest('#monbisThemeToggle');
-      if (!button) return;
-      const next = activeTheme === 'dark' ? 'light' : 'dark';
-      activeTheme = next;
-      root.setAttribute('data-monbis-theme', next);
-      button.setAttribute('aria-pressed', next === 'dark' ? 'true' : 'false');
-      try { localStorage.setItem(key, next); } catch (error) {}
-      document.dispatchEvent(new CustomEvent('monbis-theme-change', { detail:{ theme:next } }));
-    });
 
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', sync, { once:true });
@@ -2779,11 +2748,6 @@ if (is_array($rbacInitialAccess ?? null)) {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
-        <button id="monbisThemeToggle" type="button" class="monbis-theme-toggle" title="Ganti mode terang / gelap" aria-label="Ganti mode terang / gelap">
-          <svg class="monbis-theme-icon-moon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path></svg>
-          <svg class="monbis-theme-icon-sun w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.364-6.364-1.414 1.414M7.05 16.95l-1.414 1.414m12.728 0-1.414-1.414M7.05 7.05 5.636 5.636M12 8a4 4 0 100 8 4 4 0 000-8z"></path></svg>
-        </button>
-
         <div class="h-8 border-l border-slate-200"></div>
         
         <div class="relative flex items-center gap-3">
