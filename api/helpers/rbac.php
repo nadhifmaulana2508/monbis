@@ -34,6 +34,8 @@ function rbacFeatureCatalog(): array
         ['otp_baru', 'Ontime Payment (OTP)', 'Monitoring'],
         ['rekap_rr', 'Repayment Rate (RR)', 'Monitoring'],
         ['proyeksi_rr', 'Proyeksi RR & NPL', 'Kalkulator'],
+        ['komitmen_rekap', 'Rekap Komitmen', 'Kalkulator'],
+        ['komitmen_kalkulator', 'Kalkulator Komitmen', 'Kalkulator'],
         ['potensi_npl', 'Potensi NPL', 'Monitoring'],
         ['flow_par', 'Flow PAR', 'Monitoring'],
         ['otp_bucket_fe', 'OTP Bucket FE', 'Monitoring'],
@@ -311,6 +313,27 @@ function rbacEnsureSchema(PDO $pdo): void
           is_active = 1");
     foreach (rbacFeatureCatalog() as $feature) {
         $insert->execute($feature);
+    }
+    $commitmentMenus = $pdo->prepare("SELECT feature_key, id FROM rbac_menu
+        WHERE feature_key IN ('page:komitmen_rekap', 'page:komitmen_kalkulator') AND is_active = 1");
+    $commitmentMenus->execute();
+    $menuIds = $commitmentMenus->fetchAll(PDO::FETCH_KEY_PAIR);
+    $sourceId = $pdo->query("SELECT id FROM rbac_menu WHERE feature_key = 'page:proyeksi_rr' AND is_active = 1 LIMIT 1")->fetchColumn();
+    if ($sourceId !== false) {
+        foreach ($menuIds as $targetId) {
+            $copyRoleAccess = $pdo->prepare("INSERT IGNORE INTO rbac_jabatan_permission
+                (unit_kerja, job_position, group_jabatan, kode_kantor, menu_id, can_view, can_create, can_update, can_delete, can_export, is_active, updated_by)
+                SELECT unit_kerja, job_position, group_jabatan, kode_kantor, :target_menu, can_view,
+                    CASE WHEN can_view = 1 THEN 1 ELSE 0 END, can_update, can_delete, can_export, is_active, updated_by
+                FROM rbac_jabatan_permission WHERE menu_id = :source_menu AND is_active = 1");
+            $copyRoleAccess->execute(['target_menu' => $targetId, 'source_menu' => $sourceId]);
+            $copyUserAccess = $pdo->prepare("INSERT IGNORE INTO rbac_user_permission
+                (employee_id, menu_id, can_view, can_create, can_update, can_delete, can_export, is_active, updated_by)
+                SELECT employee_id, :target_menu, can_view,
+                    CASE WHEN can_view = 1 THEN 1 ELSE 0 END, can_update, can_delete, can_export, is_active, updated_by
+                FROM rbac_user_permission WHERE menu_id = :source_menu AND is_active = 1");
+            $copyUserAccess->execute(['target_menu' => $targetId, 'source_menu' => $sourceId]);
+        }
     }
     rbacRetireUnusedOtherMenu($pdo);
 

@@ -6,16 +6,20 @@ require_once __DIR__ . '/../helpers/response.php';
 final class ProyeksiRrController
 {
     private PDO $pdo;
+    private ?string $branchScope;
 
-    public function __construct(PDO $pdo)
+    public function __construct(PDO $pdo, string $userOffice)
     {
         $this->pdo = $pdo;
+        $office = str_pad(strtoupper(trim($userOffice)), 3, '0', STR_PAD_LEFT);
+        $this->branchScope = $office === '000' ? null : $this->normalizeBranch($office);
+        if ($this->branchScope === 'ALL') sendResponse(403, 'Akses kantor akun tidak dapat ditentukan.');
     }
 
     public function getMetadata(string $requestedBranch = 'ALL'): void
     {
         try {
-            $branch = $this->normalizeBranch($requestedBranch);
+            $branch = $this->resolveBranch($requestedBranch);
             $scope = "WHERE kode_cabang BETWEEN '001' AND '028'";
             $params = [];
             if ($branch !== 'ALL') {
@@ -45,16 +49,24 @@ final class ProyeksiRrController
                 }
             }
 
-            $branches = $this->pdo->query(
+            $branchParams = [];
+            $branchScope = "WHERE kode_kantor BETWEEN '001' AND '028'";
+            if ($this->branchScope !== null) {
+                $branchScope .= ' AND kode_kantor = :branch';
+                $branchParams[':branch'] = $this->branchScope;
+            }
+            $branchStmt = $this->pdo->prepare(
                 "SELECT kode_kantor AS code, COALESCE(nama_kantor, CONCAT('CABANG ', kode_kantor)) AS name
-                 FROM kode_kantor
-                 WHERE kode_kantor BETWEEN '001' AND '028'
+                 FROM kode_kantor {$branchScope}
                  ORDER BY CAST(kode_kantor AS UNSIGNED)"
-            )->fetchAll(PDO::FETCH_ASSOC);
+            );
+            $branchStmt->execute($branchParams);
+            $branches = $branchStmt->fetchAll(PDO::FETCH_ASSOC);
 
             sendResponse(200, 'Metadata proyeksi berhasil dimuat.', [
                 'branches' => $branches,
                 'selected_branch' => $branch,
+                'allow_branch_selection' => $this->branchScope === null,
                 'latest_actual_date' => $latestDate,
                 'default_closing_date' => $defaultClosingDate,
                 'default_projection_date' => $latestDate === null ? null : $this->parseDate($latestDate)?->modify('last day of this month')->format('Y-m-d'),
@@ -80,7 +92,7 @@ final class ProyeksiRrController
             sendResponse(422, 'Basis nominal harus Saldo Bank atau Baki Debet.');
         }
 
-        $branch = $this->normalizeBranch((string)($input['kode_cabang'] ?? 'ALL'));
+        $branch = $this->resolveBranch((string)($input['kode_cabang'] ?? 'ALL'));
 
         try {
             $summary = $this->aggregateSnapshots($closingDate->format('Y-m-d'), $actualDate->format('Y-m-d'), $nominalField, $branch);
@@ -109,6 +121,133 @@ final class ProyeksiRrController
         }
     }
 
+    public function snapshotForCommitment(string $date, string $nominalField, string $requestedBranch): array
+    {
+        $snapshotDate = $this->validDate($date, 'Tanggal posisi')->format('Y-m-d');
+        $nominalField = strtolower(trim($nominalField));
+        if (!in_array($nominalField, ['saldo_bank', 'baki_debet'], true)) {
+            sendResponse(422, 'Basis nominal harus Saldo Bank atau Baki Debet.');
+        }
+        $branch = $this->resolveBranch($requestedBranch);
+        $snapshots = $this->branchSnapshotsForCommitment($snapshotDate, $nominalField, $branch);
+        $snapshot = $snapshots[$branch] ?? null;
+        if (!is_array($snapshot) || (int)($snapshot['row_count'] ?? 0) === 0) {
+            sendResponse(422, 'Snapshot posisi tidak tersedia untuk cabang dan tanggal yang dipilih.');
+        }
+        return $snapshot;
+    }
+
+    public function commitmentMovementDefaults(string $closingDate, string $actualDate, string $nominalField, string $requestedBranch, array $closing, array $actual): array
+    {
+        $branch = $this->resolveBranch($requestedBranch);
+        if ($branch === 'ALL') sendResponse(422, 'Pilih satu cabang untuk menghitung realisasi pergerakan.');
+        $movements = $this->aggregateMovements($closingDate, $actualDate, $nominalField, $branch);
+        $closingKyd = (float)$closing['l'] + (float)$closing['dp'] + (float)$closing['kl'] + (float)$closing['d'] + (float)$closing['m'];
+        $actualKyd = (float)$actual['l'] + (float)$actual['dp'] + (float)$actual['kl'] + (float)$actual['d'] + (float)$actual['m'];
+        $recovery = (float)$movements['commitment_recovery_npl'];
+
+        return [
+            'growth' => $actualKyd - $closingKyd + $recovery,
+            'btc' => (float)$movements['btc'],
+            'migration' => (float)$movements['migration_d0'],
+            'flow_par' => (float)$movements['flow_par'],
+            'recovery_npl' => $recovery,
+            'npl_upgrade' => (float)$movements['commitment_npl_upgrade'],
+            'npl_backflow' => (float)$movements['commitment_npl_backflow'],
+        ];
+    }
+
+    public function branchSnapshotsForCommitment(string $date, string $nominalField, string $requestedBranch = 'ALL'): array
+    {
+        $snapshotDate = $this->validDate($date, 'Tanggal posisi')->format('Y-m-d');
+        $nominalField = strtolower(trim($nominalField));
+        if (!in_array($nominalField, ['saldo_bank', 'baki_debet'], true)) {
+            sendResponse(422, 'Basis nominal harus Saldo Bank atau Baki Debet.');
+        }
+        $branch = $this->resolveBranch($requestedBranch);
+        $scope = "WHERE created = :snapshot_date AND kode_cabang BETWEEN '001' AND '028'";
+        $params = [':snapshot_date' => $snapshotDate];
+        if ($branch !== 'ALL') {
+            $scope .= ' AND kode_cabang = :branch';
+            $params[':branch'] = $branch;
+        }
+        $stmt = $this->pdo->prepare("SELECT kode_cabang AS branch_code, COUNT(*) AS row_count,
+                SUM(CASE WHEN COALESCE({$nominalField},0) < 0 THEN 1 ELSE 0 END) AS negative_rows,
+                SUM(CASE WHEN UPPER(TRIM(CAST(kolektibilitas AS CHAR))) IN ('L','1') THEN COALESCE({$nominalField},0) ELSE 0 END) AS l,
+                SUM(CASE WHEN UPPER(TRIM(CAST(kolektibilitas AS CHAR))) IN ('DP','DPK','2') THEN COALESCE({$nominalField},0) ELSE 0 END) AS dp,
+                SUM(CASE WHEN UPPER(TRIM(CAST(kolektibilitas AS CHAR))) = 'KL' THEN COALESCE({$nominalField},0) ELSE 0 END) AS kl,
+                SUM(CASE WHEN UPPER(TRIM(CAST(kolektibilitas AS CHAR))) = 'D' THEN COALESCE({$nominalField},0) ELSE 0 END) AS d,
+                SUM(CASE WHEN UPPER(TRIM(CAST(kolektibilitas AS CHAR))) = 'M' THEN COALESCE({$nominalField},0) ELSE 0 END) AS m,
+                SUM(CASE WHEN UPPER(TRIM(CAST(kolektibilitas AS CHAR))) IN ('L','1') AND COALESCE(hari_menunggak,0) = 0 THEN COALESCE({$nominalField},0) ELSE 0 END) AS dpd0
+            FROM nominatif {$scope} GROUP BY kode_cabang");
+        $stmt->execute($params);
+        $rows = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $code = str_pad((string)$row['branch_code'], 3, '0', STR_PAD_LEFT);
+            $rows[$code] = [
+                'row_count' => (int)($row['row_count'] ?? 0),
+                'negative_rows' => (int)($row['negative_rows'] ?? 0),
+                'l' => (float)($row['l'] ?? 0), 'dp' => (float)($row['dp'] ?? 0),
+                'kl' => (float)($row['kl'] ?? 0), 'd' => (float)($row['d'] ?? 0),
+                'm' => (float)($row['m'] ?? 0), 'dpd0' => (float)($row['dpd0'] ?? 0),
+            ];
+        }
+        return $rows;
+    }
+
+    public function branchSnapshotsOnOrBeforeForCommitment(string $monthStart, string $asOfDate, string $nominalField, string $requestedBranch = 'ALL'): array
+    {
+        $start = $this->validDate($monthStart, 'Awal periode')->format('Y-m-d');
+        $endDate = $this->validDate($asOfDate, 'Tanggal actual')->format('Y-m-d');
+        $nominalField = strtolower(trim($nominalField));
+        if (!in_array($nominalField, ['saldo_bank', 'baki_debet'], true)) {
+            sendResponse(422, 'Basis nominal harus Saldo Bank atau Baki Debet.');
+        }
+        if ($endDate < $start) sendResponse(422, 'Tanggal actual harus berada di dalam periode yang dipilih.');
+        $branch = $this->resolveBranch($requestedBranch);
+        $latestScope = "AND kode_cabang BETWEEN '001' AND '028'";
+        $rowsScope = "AND n.kode_cabang BETWEEN '001' AND '028'";
+        $params = [
+            ':latest_start' => $start, ':latest_end' => (new DateTimeImmutable($endDate))->modify('+1 day')->format('Y-m-d'),
+            ':rows_start' => $start, ':rows_end' => (new DateTimeImmutable($endDate))->modify('+1 day')->format('Y-m-d'),
+        ];
+        if ($branch !== 'ALL') {
+            $latestScope .= ' AND kode_cabang = :latest_branch';
+            $rowsScope .= ' AND n.kode_cabang = :rows_branch';
+            $params[':latest_branch'] = $branch;
+            $params[':rows_branch'] = $branch;
+        }
+        $stmt = $this->pdo->prepare("SELECT n.kode_cabang AS branch_code, DATE(n.created) AS snapshot_date, COUNT(*) AS row_count,
+                SUM(CASE WHEN COALESCE(n.{$nominalField},0) < 0 THEN 1 ELSE 0 END) AS negative_rows,
+                SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('L','1') THEN COALESCE(n.{$nominalField},0) ELSE 0 END) AS l,
+                SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('DP','DPK','2') THEN COALESCE(n.{$nominalField},0) ELSE 0 END) AS dp,
+                SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) = 'KL' THEN COALESCE(n.{$nominalField},0) ELSE 0 END) AS kl,
+                SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) = 'D' THEN COALESCE(n.{$nominalField},0) ELSE 0 END) AS d,
+                SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) = 'M' THEN COALESCE(n.{$nominalField},0) ELSE 0 END) AS m,
+                SUM(CASE WHEN UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('L','1') AND COALESCE(n.hari_menunggak,0) = 0 THEN COALESCE(n.{$nominalField},0) ELSE 0 END) AS dpd0
+            FROM nominatif n
+            INNER JOIN (
+                SELECT kode_cabang, MAX(DATE(created)) AS snapshot_date
+                FROM nominatif WHERE created >= :latest_start AND created < :latest_end {$latestScope}
+                GROUP BY kode_cabang
+            ) latest ON latest.kode_cabang = n.kode_cabang AND latest.snapshot_date = DATE(n.created)
+            WHERE n.created >= :rows_start AND n.created < :rows_end {$rowsScope}
+            GROUP BY n.kode_cabang, DATE(n.created)");
+        $stmt->execute($params);
+        $rows = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $code = str_pad((string)$row['branch_code'], 3, '0', STR_PAD_LEFT);
+            $rows[$code] = [
+                'snapshot_date' => (string)$row['snapshot_date'], 'row_count' => (int)($row['row_count'] ?? 0),
+                'negative_rows' => (int)($row['negative_rows'] ?? 0),
+                'l' => (float)($row['l'] ?? 0), 'dp' => (float)($row['dp'] ?? 0),
+                'kl' => (float)($row['kl'] ?? 0), 'd' => (float)($row['d'] ?? 0),
+                'm' => (float)($row['m'] ?? 0), 'dpd0' => (float)($row['dpd0'] ?? 0),
+            ];
+        }
+        return $rows;
+    }
+
     public function getMovementSummary(array $input): void
     {
         $closingDate = $this->validDate($input['closing_date'] ?? null, 'Closing date');
@@ -123,7 +262,7 @@ final class ProyeksiRrController
         if (!in_array($nominalField, ['saldo_bank', 'baki_debet'], true)) {
             sendResponse(422, 'Basis nominal harus Saldo Bank atau Baki Debet.');
         }
-        $branch = $this->normalizeBranch((string)($input['kode_cabang'] ?? 'ALL'));
+        $branch = $this->resolveBranch((string)($input['kode_cabang'] ?? 'ALL'));
 
         try {
             sendResponse(200, 'Ringkasan pergerakan actual berhasil dimuat.', $this->aggregateMovements(
@@ -164,7 +303,7 @@ final class ProyeksiRrController
         if (!in_array($nominalField, ['saldo_bank', 'baki_debet'], true)) {
             sendResponse(422, 'Basis nominal harus Saldo Bank atau Baki Debet.');
         }
-        $branch = $this->normalizeBranch((string)($input['kode_cabang'] ?? 'ALL'));
+        $branch = $this->resolveBranch((string)($input['kode_cabang'] ?? 'ALL'));
         $page = max(1, (int)($input['page'] ?? 1));
         $pageSize = min(100, max(10, (int)($input['page_size'] ?? 25)));
         $offset = ($page - 1) * $pageSize;
@@ -360,6 +499,9 @@ final class ProyeksiRrController
             'recovery_npl' => 0.0, 'recovery_npl_noa' => 0,
             'btc' => 0.0, 'btc_noa' => 0,
             'migration_d0' => 0.0, 'migration_d0_noa' => 0,
+            'commitment_recovery_npl' => 0.0,
+            'commitment_npl_upgrade' => 0.0,
+            'commitment_npl_backflow' => 0.0,
         ];
         $goodCollections = ['L', '1', 'DP', 'DPK', '2'];
         $closingStmt = $selectRows($closingDate);
@@ -385,12 +527,23 @@ final class ProyeksiRrController
                 if ($actual === null) {
                     $movements['recovery_npl'] += $closingBalance;
                     $movements['recovery_npl_noa']++;
+                    $movements['commitment_recovery_npl'] += $closingBalance;
                 } elseif ($actualIsGood) {
                     $movements['recovery_npl'] += $actualBalance;
                     $movements['recovery_npl_noa']++;
+                    $movements['commitment_recovery_npl'] += max(0, $closingBalance - $actualBalance);
+                    if ($actualBalance > 0) {
+                        if (in_array($actualCollection, ['L', '1'], true) && $actualDpd === 0) {
+                            $movements['commitment_npl_upgrade'] += $actualBalance;
+                        } else {
+                            $movements['commitment_npl_backflow'] += $actualBalance;
+                        }
+                    }
                 } elseif ($actualIsNpl && $closingBalance > $actualBalance) {
-                    $movements['recovery_npl'] += $closingBalance - $actualBalance;
+                    $recovered = $closingBalance - $actualBalance;
+                    $movements['recovery_npl'] += $recovered;
                     $movements['recovery_npl_noa']++;
+                    $movements['commitment_recovery_npl'] += $recovered;
                 }
             }
             if ($closingDpd > 0 && in_array($actualCollection, ['L', '1'], true) && $actualDpd === 0 && $actualBalance > 0) {
@@ -426,6 +579,12 @@ final class ProyeksiRrController
             sendResponse(422, 'Cabang tidak valid.');
         }
         return $branch;
+    }
+
+    private function resolveBranch(string $requestedBranch): string
+    {
+        if ($this->branchScope !== null) return $this->branchScope;
+        return $this->normalizeBranch($requestedBranch);
     }
 
     private function parseDate(string $value): ?DateTimeImmutable

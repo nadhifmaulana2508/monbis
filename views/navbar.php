@@ -1355,6 +1355,8 @@ if (is_array($rbacInitialAccess ?? null)) {
         </button>
         <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
           <a href="proyeksi_rr" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Proyeksi RR &amp; NPL</a>
+          <a href="komitmen_rekap" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Rekap Komitmen</a>
+          <a href="komitmen_kalkulator" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Kalkulator Komitmen</a>
         </div>
       </div>
 
@@ -2518,7 +2520,7 @@ if (is_array($rbacInitialAccess ?? null)) {
       <div class="dashboard-navbar-filter__fields">
         <div class="dashboard-navbar-filter__field"><label for="prClosing">Closing (M-1)</label><input type="date" id="prClosing" required disabled onclick="this.showPicker && this.showPicker()"></div>
         <div class="dashboard-navbar-filter__field"><label for="prActual">Harian / Actual</label><input type="date" id="prActual" required disabled onclick="this.showPicker && this.showPicker()"></div>
-        <div class="dashboard-navbar-filter__field"><label for="prBranch">Area / Cabang</label><select id="prBranch"><option value="ALL">ALL - konsolidasi</option></select></div>
+        <div class="dashboard-navbar-filter__field"><label for="prBranch">Area / Cabang</label><select id="prBranch" disabled><option value="">Memuat cabang…</option></select></div>
         <div class="dashboard-navbar-filter__field"><label for="prBasis">Nominal</label><select id="prBasis"><option value="saldo_bank">Saldo Bank</option><option value="baki_debet">Baki Debet</option></select></div>
       </div>
     </form>

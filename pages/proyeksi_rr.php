@@ -10,8 +10,6 @@ mb_ui_assets('.');
   #proyeksiRr .pr-page-header .mb-page-header__copy { flex:1 1 auto; min-width:210px; }
   #proyeksiRr .pr-page-header .mb-page-header__title { font-size:17px; }
   #proyeksiRr .pr-page-header .mb-page-header__subtitle { max-width:none; white-space:normal; }
-  #proyeksiRr .pr-header-controls { display:flex; flex:0 1 auto; min-width:0; align-items:center; justify-content:flex-end; gap:8px; }
-  #proyeksiRr .pr-header-controls .pr-status { white-space:nowrap; }
   #proyeksiRr .pr-card { min-width:0; border:1px solid var(--pr-border); border-radius:10px; background:#fff; box-shadow:0 10px 24px rgba(15,23,42,.045); }
   #proyeksiRr .pr-section { padding:0; overflow:hidden; }
   #proyeksiRr .pr-section-head { min-height:40px; }
@@ -124,17 +122,13 @@ mb_ui_assets('.');
   :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #proyeksiRr .pr-recommendation-result strong { color:#f8fafc; }
   @media (max-width:850px) {
     #proyeksiRr .pr-page-header { align-items:flex-start; flex-wrap:wrap; gap:10px; }
-    #proyeksiRr .pr-header-controls { width:100%; justify-content:flex-end; }
     #proyeksiRr .pr-grid,#proyeksiRr .pr-recommendation-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
   }
   @media (max-width:560px) {
     #proyeksiRr { padding:8px 7px 16px; }
-    #proyeksiRr .pr-page-header { align-items:stretch; gap:9px; }
-    #proyeksiRr .pr-page-header .mb-page-header__copy { flex-basis:100%; min-width:0; }
+    #proyeksiRr .pr-page-header { align-items:center; flex-wrap:nowrap; gap:8px; }
+    #proyeksiRr .pr-page-header .mb-page-header__copy { flex:1 1 auto; flex-basis:auto; min-width:0; }
     #proyeksiRr .pr-page-header .mb-page-header__title { font-size:18px; line-height:1.2; }
-    #proyeksiRr .pr-header-controls { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; }
-    #proyeksiRr .pr-header-controls .pr-btn { width:100%; min-height:44px; }
-    #proyeksiRr .pr-header-controls .pr-status { justify-self:end; align-self:center; max-width:100%; white-space:normal; }
     #proyeksiRr .pr-grid,#proyeksiRr .pr-recommendation-grid { grid-template-columns:1fr; }
     #proyeksiRr .pr-section-head { align-items:flex-start; flex-wrap:wrap; gap:6px; }
     #proyeksiRr .pr-section-heading { flex:1 1 100%; }
@@ -176,7 +170,6 @@ mb_ui_assets('.');
   @media (max-width:360px) {
     #proyeksiRr { padding-right:5px; padding-left:5px; }
     #proyeksiRr .pr-section-content { padding:6px; }
-    #proyeksiRr .pr-header-controls { gap:5px; }
   }
 </style>
 
@@ -186,12 +179,8 @@ mb_ui_assets('.');
       <div class="mb-page-header__title-row"><h1 class="mb-page-header__title">Proyeksi RR &amp; NPL</h1></div>
       <p class="mb-page-header__subtitle">Bandingkan posisi closing, actual, dan proyeksi akhir bulan.</p>
     </div>
-    <div class="pr-header-controls">
-      <button type="submit" form="proyeksiRrNavbarFilterPanel" id="prLoad" class="pr-btn pr-btn-primary">Proyeksi</button>
-      <span id="prLoadState" class="pr-status">Menyiapkan</span>
-    </div>
   </header>
-  <div id="prMessage" class="pr-alert pr-message hidden" role="status" aria-live="polite"></div>
+  <div id="prMessage" class="pr-alert pr-message" role="status" aria-live="polite">Memuat posisi berdasarkan akses kantor Anda…</div>
 
   <section id="prSnapshotSection" class="mb-report-card pr-card pr-section hidden" aria-labelledby="prSnapshotTitle">
     <div class="mb-report-toolbar pr-section-head">
@@ -272,7 +261,7 @@ mb_ui_assets('.');
   let recommendationActions={};
   const movementNames={growth:'Growth bersih KYD',flow_par:'Flow PAR actual',recovery_npl:'Penyelesaian / recovery NPL',btc:'BTC aktual',migration_d0:'Migrasi DPD 0 ke PAR'};
   const setStatus=(node,type,text)=>{node.className=`pr-status ${type?`pr-status-${type}`:''}`;node.textContent=text;};
-  const setMessage=(text,isError=false)=>{const box=el('prMessage');box.textContent=text;box.classList.remove('hidden');box.classList.toggle('pr-error',isError);if(isError)setStatus(el('prLoadState'),'bad','Perlu perhatian');};
+  const setMessage=(text,isError=false)=>{const box=el('prMessage');if(!text){box.classList.add('hidden');return;}box.textContent=text;box.classList.remove('hidden');box.classList.toggle('pr-error',isError);};
   const setInputWarning=(id,message)=>{const warning=el(id);warning.textContent=message;warning.hidden=!message;};
   function setProyeksiNavbarFilter(open){
     const panel=el('proyeksiRrNavbarFilterPanel'),toggle=el('proyeksiRrNavbarFilterToggle');
@@ -285,18 +274,21 @@ mb_ui_assets('.');
 
   function fillMetadata(data){
     state.metadata=data;
-    const closing=el('prClosing'),actual=el('prActual'),branch=el('prBranch'),selected=String(branch.value||data.selected_branch||'ALL');
-    branch.replaceChildren();addOption(branch,'ALL','ALL  -  konsolidasi');
-    data.branches.forEach(row=>{const code=String(row.code).padStart(3,'0');addOption(branch,code,`${code}  -  ${row.name}`);});
+    const closing=el('prClosing'),actual=el('prActual'),branch=el('prBranch'),selected=String(data.selected_branch||branch.value||'ALL');
+    branch.replaceChildren();
+    if(data.allow_branch_selection)addOption(branch,'ALL','ALL - konsolidasi');
+    (Array.isArray(data.branches)?data.branches:[]).forEach(row=>{const code=String(row.code).padStart(3,'0');addOption(branch,code,`${code} - ${row.name}`);});
+    if(![...branch.options].some(option=>option.value===selected)&&selected!=='ALL')addOption(branch,selected,`${selected} - Cabang Anda`);
     if([...branch.options].some(option=>option.value===selected))branch.value=selected;
+    branch.disabled=!data.allow_branch_selection;
     const latestActual=String(data.latest_actual_date||'');
     actual.max=latestActual;actual.value=latestActual;
     closing.max=latestActual?previousMonthEnd(latestActual):'';
     closing.value=String(data.default_closing_date||'');
     closing.disabled=!latestActual;actual.disabled=!latestActual;
-    if(!latestActual){setMessage('Snapshot nominatif belum tersedia untuk cabang ini.',true);return;}
-    setStatus(el('prLoadState'),'ok','Siap');
-    setMessage(data.default_closing_date?'Pilih basis saldo, lalu klik Proyeksi untuk memuat posisi. Tanggal snapshot akan diperiksa server.':'Snapshot closing M-1 belum ditemukan; pilih tanggal closing dan actual yang tersedia.');
+    if(!latestActual){setMessage('Snapshot nominatif belum tersedia untuk kantor Anda.',true);return;}
+    if(data.default_closing_date){setMessage('Memuat posisi sesuai filter…');loadSnapshot();}
+    else setMessage('Snapshot closing M-1 belum ditemukan; pilih tanggal closing dan actual yang tersedia.');
   }
 
   function syncClosingToActual(){
@@ -317,7 +309,7 @@ mb_ui_assets('.');
   }
 
   async function loadMetadata(branch=el('prBranch').value||'ALL'){
-    setStatus(el('prLoadState'),'','Memuat snapshot');
+    setMessage('Memuat posisi sesuai akses kantor…');
     el('prClosing').disabled=true;el('prActual').disabled=true;
     try{
       const response=await apiCall(`${apiBase}/metadata?kode_cabang=${encodeURIComponent(branch)}`,{cache:'no-store'});
@@ -332,17 +324,16 @@ mb_ui_assets('.');
     if(!closingDate||!actualDate){setMessage('Pilih tanggal closing dan actual yang tersedia.',true);return;}
     if(!isMonthEnd(closingDate)){setMessage('Closing M-1 harus tanggal akhir bulan.',true);return;}
     if(previousMonthEnd(actualDate)!==closingDate){setMessage('Tanggal actual harus berada pada bulan setelah closing M-1.',true);return;}
-    el('prLoad').disabled=true;setStatus(el('prLoadState'),'','Memuat data');
+    setMessage('Memuat posisi sesuai filter…');
     try{
       const response=await apiCall(`${apiBase}/snapshot`,{method:'POST',headers:{'Content-Type':'application/json'},cache:'no-store',body:JSON.stringify({closing_date:closingDate,harian_date:actualDate,kode_cabang:el('prBranch').value,nominal_field:el('prBasis').value})});
       const json=await response.json();
       if(!response.ok||Number(json.status)>=400)throw new Error(json.message||'Snapshot gagal dimuat.');
       state.snapshot=json.data;renderSnapshot();calculate();
       setProyeksiNavbarFilter(false);
-      setStatus(el('prLoadState'),'ok','Posisi dimuat');setMessage('Posisi closing dan actual berhasil dimuat. Proyeksi memakai saldo closing M-1 sebagai dasar.');
+      setMessage('');
       loadMovementSummary();
     }catch(error){setMessage(error.message||'Gagal memuat snapshot.',true);}
-    finally{el('prLoad').disabled=false;}
   }
 
   function renderSnapshot(){
@@ -638,9 +629,9 @@ mb_ui_assets('.');
   el('proyeksiRrNavbarFilterClose')?.addEventListener('click',()=>setProyeksiNavbarFilter(false));
   el('proyeksiRrNavbarFilterPanel')?.addEventListener('submit',event=>{event.preventDefault();loadSnapshot();});
   el('prBranch').addEventListener('change',()=>{invalidate();loadMetadata(el('prBranch').value);});
-  el('prBasis').addEventListener('change',invalidate);
-  el('prClosing').addEventListener('change',()=>{syncActualToClosing();invalidate();if(!el('prActual').value)setMessage('Pilih closing akhir bulan yang memiliki snapshot actual di bulan berikutnya.',true);else setMessage('Tanggal actual terpilih untuk closing ini.');});
-  el('prActual').addEventListener('change',()=>{syncClosingToActual();invalidate();if(!el('prClosing').value)setMessage('Closing M-1 untuk tanggal actual ini belum tersedia.',true);else setMessage('Closing M-1 mengikuti tanggal actual yang dipilih.');});
+  el('prBasis').addEventListener('change',()=>{invalidate();if(el('prClosing').value&&el('prActual').value)loadSnapshot();});
+  el('prClosing').addEventListener('change',()=>{syncActualToClosing();invalidate();if(!el('prActual').value)setMessage('Pilih closing akhir bulan yang memiliki snapshot actual di bulan berikutnya.',true);else loadSnapshot();});
+  el('prActual').addEventListener('change',()=>{syncClosingToActual();invalidate();if(!el('prClosing').value)setMessage('Closing M-1 untuk tanggal actual ini belum tersedia.',true);else loadSnapshot();});
 
   el('prReset').addEventListener('click',()=>{['prGrowth','prBtc','prMigration','prSettlement','prNplUpgrade','prNplBackflow'].forEach(id=>el(id).value='0');el('prTargetRr').value='74.15';el('prTargetNpl').value='14.90';const flowInput=el('prFlowPar');const flowActual=Number(state.snapshot?.actual_movements?.flow_par);flowInput.value=Number.isFinite(flowActual)?nominalNumber.format(flowActual):'';delete flowInput.dataset.userEdited;if(state.snapshot)calculate();});
   el('proyeksiRr').addEventListener('input',event=>{const input=event.target.closest('[data-pr-nominal]');if(input){input.dataset.userEdited='1';formatNominalInput(input);if(state.snapshot)calculate();}});
