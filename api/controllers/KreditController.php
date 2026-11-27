@@ -1558,8 +1558,9 @@ class KreditController {
             }
 
             if (!empty($kode_ao) && strtoupper((string)$kode_ao) !== 'ALL') {
-                $aoWhere[] = "ao.kode_group2 = :ao_kode_ao";
+                $aoWhere[] = "(ao.kode_group2 = :ao_kode_ao OR TRIM(ao.id_peg) = TRIM(:ao_id_peg))";
                 $aoParams[':ao_kode_ao'] = $kode_ao;
+                $aoParams[':ao_id_peg'] = $kode_ao;
             }
 
             if ($is_bulan_berjalan) {
@@ -1594,8 +1595,21 @@ class KreditController {
             }
 
             if (!empty($kode_ao) && strtoupper((string)$kode_ao) !== 'ALL') {
-                $trxWhere[] = "COALESCE(n.kode_group2, t1.kode_group2) = :trx_kode_ao";
+                $trxAoSourceSql = "COALESCE(NULLIF(TRIM(n.kode_group2), ''), NULLIF(TRIM(t1.kode_group2), ''))";
+                $trxAoOfficeSql = "COALESCE(LPAD(CAST(n.kode_cabang AS CHAR), 3, '0'), LPAD(CAST(t1.kode_kantor AS CHAR), 3, '0'))";
+                $trxWhere[] = "(
+                    {$trxAoSourceSql} = :trx_kode_ao
+                    OR EXISTS (
+                        SELECT 1
+                        FROM ao_kredit ao_filter
+                        WHERE (ao_filter.kode_group2 = :trx_kode_ao_master OR TRIM(ao_filter.id_peg) = TRIM(:trx_kode_ao_id_peg))
+                          AND (TRIM(ao_filter.id_peg) = TRIM({$trxAoSourceSql}) OR TRIM(ao_filter.kode_group2) = TRIM({$trxAoSourceSql}))
+                          AND LPAD(CAST(ao_filter.kode_kantor AS CHAR), 3, '0') = {$trxAoOfficeSql}
+                    )
+                )";
                 $trxParams[':trx_kode_ao'] = $kode_ao;
+                $trxParams[':trx_kode_ao_master'] = $kode_ao;
+                $trxParams[':trx_kode_ao_id_peg'] = $kode_ao;
             }
 
             $trxWhereSql = implode(" AND ", $trxWhere);
@@ -1613,6 +1627,7 @@ class KreditController {
                     SELECT
                         LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') AS kode_kantor,
                         ao.kode_group2 AS kode_ao,
+                        MAX(NULLIF(TRIM(ao.id_peg), '')) AS id_peg,
                         MAX(NULLIF(TRIM(ao.nama_ao), '')) AS nama_ao
                     FROM ao_kredit ao
                     {$aoWhereSql}
@@ -1623,20 +1638,29 @@ class KreditController {
                             LPAD(CAST(n.kode_cabang AS CHAR), 3, '0'),
                             LPAD(CAST(t1.kode_kantor AS CHAR), 3, '0')
                         ) AS kode_kantor,
-                        COALESCE(NULLIF(TRIM(n.kode_group2), ''), NULLIF(TRIM(t1.kode_group2), '')) AS kode_ao,
+                        COALESCE(a.kode_ao, COALESCE(NULLIF(TRIM(n.kode_group2), ''), NULLIF(TRIM(t1.kode_group2), ''))) AS kode_ao,
                         COUNT(*) AS total_noa,
                         COALESCE(SUM(t1.realisasi_pokok), 0) AS total_realisasi
                     FROM update_realisasi_kredit t1
                     LEFT JOIN nominatif n
                         ON t1.no_rekening = n.no_rekening
                         AND DATE(n.created) = :posisi_date
+                    LEFT JOIN ao_master a
+                        ON a.kode_kantor = COALESCE(
+                            LPAD(CAST(n.kode_cabang AS CHAR), 3, '0'),
+                            LPAD(CAST(t1.kode_kantor AS CHAR), 3, '0')
+                        )
+                        AND (
+                            TRIM(a.kode_ao) = COALESCE(NULLIF(TRIM(n.kode_group2), ''), NULLIF(TRIM(t1.kode_group2), ''))
+                            OR TRIM(a.id_peg) = COALESCE(NULLIF(TRIM(n.kode_group2), ''), NULLIF(TRIM(t1.kode_group2), ''))
+                        )
                     WHERE {$trxWhereSql}
                     GROUP BY
                         COALESCE(
                             LPAD(CAST(n.kode_cabang AS CHAR), 3, '0'),
                             LPAD(CAST(t1.kode_kantor AS CHAR), 3, '0')
                         ),
-                        COALESCE(NULLIF(TRIM(n.kode_group2), ''), NULLIF(TRIM(t1.kode_group2), ''))
+                        COALESCE(a.kode_ao, COALESCE(NULLIF(TRIM(n.kode_group2), ''), NULLIF(TRIM(t1.kode_group2), '')))
                 ), daftar_ao AS (
                     SELECT kode_kantor, kode_ao FROM ao_master
                     UNION
@@ -1663,6 +1687,7 @@ class KreditController {
                     COALESCE(kk.nama_kantor, d.kode_kantor) AS nama_kantor,
                     d.kode_ao,
                     COALESCE(NULLIF(a.nama_ao, ''), d.kode_ao) AS nama_ao,
+                    NULLIF(TRIM(a.id_peg), '') AS id_peg,
                     CASE WHEN a.kode_ao IS NULL THEN 0 ELSE 1 END AS is_ao_master,
                     COALESCE(r.total_noa, 0) AS total_noa,
                     COALESCE(r.total_realisasi, 0) AS total_realisasi
@@ -1793,10 +1818,20 @@ class KreditController {
             ), ao_master AS (
                 SELECT kode_group2,nama_ao,LPAD(CAST(kode_kantor AS CHAR),3,'0') kode_kantor,id_peg,status
                 FROM ao_ranked WHERE urutan=1
+            ), ao_key_map AS (
+                SELECT kode_kantor,TRIM(kode_group2) kode_sumber,kode_group2
+                FROM ao_master
+                UNION
+                SELECT kode_kantor,TRIM(id_peg) kode_sumber,kode_group2
+                FROM ao_master
+                WHERE NULLIF(TRIM(id_peg),'') IS NOT NULL
             ), closing_accounts AS (
-                SELECT LPAD(CAST(n.kode_cabang AS CHAR),3,'0') kode_cabang,n.kode_group2,
+                SELECT LPAD(CAST(n.kode_cabang AS CHAR),3,'0') kode_cabang,COALESCE(am.kode_group2,n.kode_group2) kode_group2,
                     n.no_rekening,COALESCE(n.baki_debet,0) baki_debet,COALESCE(n.nilai_ckpn,0) nilai_ckpn
                 FROM nominatif n
+                LEFT JOIN ao_key_map am
+                    ON am.kode_kantor=LPAD(CAST(n.kode_cabang AS CHAR),3,'0')
+                    AND am.kode_sumber=TRIM(n.kode_group2)
                 WHERE n.created=:closing_date {$closingDpdScope} {$scopeClosing}
             ), porto_closing AS (
                 SELECT kode_cabang,kode_group2,COUNT(*) noa_closing,SUM(baki_debet) porto_closing,SUM(nilai_ckpn) ckpn_closing
@@ -1818,23 +1853,25 @@ class KreditController {
                 LEFT JOIN nominatif n ON n.no_rekening=c.no_rekening AND n.created=:actual_cohort
                 GROUP BY c.kode_cabang,c.kode_group2
             ), realisasi_ao AS (
-                SELECT LPAD(CAST(n.kode_cabang AS CHAR),3,'0') kode_cabang,n.kode_group2,
+                SELECT LPAD(CAST(n.kode_cabang AS CHAR),3,'0') kode_cabang,COALESCE(am.kode_group2,n.kode_group2) kode_group2,
                     COUNT(DISTINCT n.no_rekening) noa_realisasi,
                     SUM(COALESCE(n.jml_pinjaman,0)) realisasi,
                     SUM(COALESCE(n.baki_debet,0)) bd_realisasi_actual,
                     SUM(COALESCE(n.nilai_ckpn,0)) ckpn_realisasi_actual
-                FROM nominatif n WHERE n.created=:actual_realisasi_date {$scopeActual}
+                FROM nominatif n
+                LEFT JOIN ao_key_map am
+                    ON am.kode_kantor=LPAD(CAST(n.kode_cabang AS CHAR),3,'0')
+                    AND am.kode_sumber=TRIM(n.kode_group2)
+                WHERE n.created=:actual_realisasi_date {$scopeActual}
                     AND STR_TO_DATE(REPLACE(CAST(n.tgl_realisasi AS CHAR),'-',''),'%Y%m%d')>:closing_realisasi
                     AND STR_TO_DATE(REPLACE(CAST(n.tgl_realisasi AS CHAR),'-',''),'%Y%m%d')<=:actual_realisasi
-                GROUP BY LPAD(CAST(n.kode_cabang AS CHAR),3,'0'),n.kode_group2
+                GROUP BY LPAD(CAST(n.kode_cabang AS CHAR),3,'0'),COALESCE(am.kode_group2,n.kode_group2)
             ), daftar_ao AS (
                 SELECT kode_cabang,kode_group2 FROM porto_closing
                 UNION SELECT kode_cabang,kode_group2 FROM realisasi_ao WHERE realisasi<>0
             )
             SELECT d.kode_cabang,COALESCE(kk.nama_kantor,d.kode_cabang) nama_kantor,d.kode_group2,
-                CASE WHEN a.kode_group2 IS NULL THEN 'AO BELUM TERDAFTAR (SEGERA CLEANSING)'
-                     WHEN COALESCE(a.status,0)=0 THEN CONCAT(COALESCE(a.nama_ao,'AO TIDAK AKTIF'),' (SEGERA CLEANSING)')
-                     ELSE a.nama_ao END nama_ao,
+                COALESCE(NULLIF(TRIM(a.nama_ao),''),d.kode_group2) nama_ao,
                 a.id_peg,COALESCE(a.status,0) status_ao,
                 COALESCE(c.noa_closing,0) noa_closing,COALESCE(c.porto_closing,0) porto_closing,
                 COALESCE(r.noa_realisasi,0) noa_realisasi,COALESCE(r.realisasi,0) realisasi,
@@ -1886,7 +1923,16 @@ class KreditController {
         $status=strtoupper((string)($b['status_bayar']??'ALL'));
         $kelolaanScope=strtoupper(trim((string)($b['kelolaan_scope']??'SC')));
         if($kode===''||$kode==='000'||$ao===''||$ao==='ALL') return sendResponse(400,'Kode kantor dan AO wajib diisi');
-        $where=["c.created=:closing_posisi","LPAD(CAST(c.kode_cabang AS CHAR),3,'0')=:kode","c.kode_group2=:ao"];
+        $where=[
+            "c.created=:closing_posisi",
+            "LPAD(CAST(c.kode_cabang AS CHAR),3,'0')=:kode",
+            "(TRIM(c.kode_group2)=:ao_code OR EXISTS (
+                SELECT 1 FROM ao_kredit ao_match
+                WHERE (ao_match.kode_group2=:ao_master_code OR TRIM(ao_match.id_peg)=TRIM(:ao_master_id_peg))
+                  AND (TRIM(ao_match.kode_group2)=TRIM(c.kode_group2) OR TRIM(ao_match.id_peg)=TRIM(c.kode_group2))
+                  AND LPAD(CAST(ao_match.kode_kantor AS CHAR),3,'0')=LPAD(CAST(c.kode_cabang AS CHAR),3,'0')
+            ))"
+        ];
         if($kelolaanScope!=='ALL')$where[]="COALESCE(c.hari_menunggak,0) BETWEEN 0 AND 30";
         if($bucket==='0_7')$where[]="UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('L','1') AND COALESCE(n.hari_menunggak,0) BETWEEN 0 AND 7";
         elseif($bucket==='8_30')$where[]="UPPER(TRIM(CAST(n.kolektibilitas AS CHAR))) IN ('L','1') AND COALESCE(n.hari_menunggak,0) BETWEEN 8 AND 30";
@@ -1927,7 +1973,7 @@ class KreditController {
               WHERE ".implode(' AND ',$where)." ORDER BY FIELD(status_flow,'FLOW KE FE','TETAP KELOLAAN','LUNAS'),status_bayar ASC,COALESCE(n.baki_debet,c.baki_debet) DESC,c.no_rekening";
         try {
             $stmt=$this->pdo->prepare($sql);
-            foreach([':actual_posisi'=>$actual,':closing_posisi'=>$closing,':va_position'=>$vaPosition,':closing_transaksi'=>$closing,':actual_transaksi'=>$actual,':actual_due_status'=>$actual,':actual_cohort_label'=>$actual,':actual_cohort_mob'=>$actual,':actual_cohort_existing'=>$actual,':kode'=>$kode,':ao'=>$ao] as $key=>$value)$stmt->bindValue($key,$value);
+            foreach([':actual_posisi'=>$actual,':closing_posisi'=>$closing,':va_position'=>$vaPosition,':closing_transaksi'=>$closing,':actual_transaksi'=>$actual,':actual_due_status'=>$actual,':actual_cohort_label'=>$actual,':actual_cohort_mob'=>$actual,':actual_cohort_existing'=>$actual,':kode'=>$kode,':ao_code'=>$ao,':ao_master_code'=>$ao,':ao_master_id_peg'=>$ao] as $key=>$value)$stmt->bindValue($key,$value);
             $stmt->execute();
             $data=$stmt->fetchAll(PDO::FETCH_ASSOC);
             $bucketDpd=static function($value):array{
@@ -2022,12 +2068,12 @@ class KreditController {
                     LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') AS kode_kantor,
                     COALESCE(kk.nama_kantor, LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0')) AS nama_kantor,
                     ao.kode_group2 AS kode_ao,
-                    COALESCE(ao.nama_ao, ao.kode_group2) AS nama_ao,
+                    COALESCE(NULLIF(TRIM(ao.nama_ao), ''), ao.kode_group2) AS nama_ao,
                     ao.status
                 FROM ao_kredit ao
                 LEFT JOIN kode_kantor kk
                     ON LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0') = kk.kode_kantor
-                WHERE ao.kode_group2 = :master_kode_ao
+                WHERE (ao.kode_group2 = :master_kode_ao OR TRIM(ao.id_peg) = TRIM(:master_id_peg))
             ";
 
             if (!$is_konsolidasi) {
@@ -2040,6 +2086,7 @@ class KreditController {
 
             $stmtAo = $this->pdo->prepare($sqlAo);
             $stmtAo->bindValue(':master_kode_ao', $kode_ao);
+            $stmtAo->bindValue(':master_id_peg', $kode_ao);
 
             if (!$is_konsolidasi) {
                 $stmtAo->bindValue(':master_kode_kantor', $kode_kantor_norm);
@@ -2063,11 +2110,23 @@ class KreditController {
             $where[] = "t1.tanggal_realisasi > :closing_date";
             $where[] = "t1.tanggal_realisasi <= :harian_date";
             $where[] = "t1.kode_trans = 110";
-            $where[] = "COALESCE(n.kode_group2, t1.kode_group2) = :kode_ao";
+            $aoSourceSql = "COALESCE(NULLIF(TRIM(n.kode_group2), ''), NULLIF(TRIM(t1.kode_group2), ''))";
+            $aoOfficeSql = "COALESCE(LPAD(CAST(n.kode_cabang AS CHAR), 3, '0'), LPAD(CAST(t1.kode_kantor AS CHAR), 3, '0'))";
+            $where[] = "(
+                {$aoSourceSql} = :kode_ao
+                OR EXISTS (
+                    SELECT 1 FROM ao_kredit ao_filter
+                    WHERE (ao_filter.kode_group2 = :kode_ao_master OR TRIM(ao_filter.id_peg) = TRIM(:kode_ao_id_peg))
+                      AND (TRIM(ao_filter.id_peg) = TRIM({$aoSourceSql}) OR TRIM(ao_filter.kode_group2) = TRIM({$aoSourceSql}))
+                      AND LPAD(CAST(ao_filter.kode_kantor AS CHAR), 3, '0') = {$aoOfficeSql}
+                )
+            )";
 
             $params[':closing_date'] = $closing_date;
             $params[':harian_date']  = $harian_date;
             $params[':kode_ao']      = $kode_ao;
+            $params[':kode_ao_master'] = $kode_ao;
+            $params[':kode_ao_id_peg'] = $kode_ao;
 
             if (!$is_konsolidasi) {
                 $where[] = "LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') = :kode_kantor";
@@ -2094,8 +2153,8 @@ class KreditController {
                     n.kode_group1 AS kode_kankas,
                     COALESCE(kks.deskripsi_group1, n.kode_group1) AS nama_kankas,
 
-                    COALESCE(n.kode_group2, t1.kode_group2) AS kode_ao,
-                    COALESCE(ao.nama_ao, :kode_ao_nama_fallback) AS nama_ao,
+                    COALESCE(ao.kode_group2, {$aoSourceSql}) AS kode_ao,
+                    COALESCE(NULLIF(TRIM(ao.nama_ao), ''), NULLIF(TRIM(:kode_ao_nama_fallback), ''), {$aoSourceSql}) AS nama_ao,
 
                     n.kode_produk,
                  
@@ -2108,8 +2167,12 @@ class KreditController {
                 LEFT JOIN kode_kantor k
                     ON LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') = k.kode_kantor
                 LEFT JOIN ao_kredit ao
-                    ON COALESCE(n.kode_group2, t1.kode_group2) = ao.kode_group2
-                    AND LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') = LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0')
+                    ON (ao.kode_group2 = :ao_master_join OR TRIM(ao.id_peg) = TRIM(:ao_master_id_peg))
+                    AND (
+                        {$aoSourceSql} = TRIM(ao.kode_group2)
+                        OR {$aoSourceSql} = TRIM(ao.id_peg)
+                    )
+                    AND {$aoOfficeSql} = LPAD(CAST(ao.kode_kantor AS CHAR), 3, '0')
                 LEFT JOIN kankas kks
                     ON n.kode_group1 = kks.kode_group1
                     AND LPAD(CAST(n.kode_cabang AS CHAR), 3, '0') = LPAD(CAST(kks.kode_kantor AS CHAR), 3, '0')
@@ -2124,6 +2187,8 @@ class KreditController {
 
             $stmt->bindValue(':posisi_date', $harian_date);
             $stmt->bindValue(':kode_ao_nama_fallback', $masterAo['nama_ao'] ?? $kode_ao);
+            $stmt->bindValue(':ao_master_join', $kode_ao);
+            $stmt->bindValue(':ao_master_id_peg', $kode_ao);
 
             foreach ($params as $key => $val) {
                 $stmt->bindValue($key, $val);

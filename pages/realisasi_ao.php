@@ -723,8 +723,13 @@
       const namaKantor = row.nama_kantor || row.nama_cabang || "CABANG";
       const kodeAO = row.kode_ao || row.kode_group2 || "";
       const aoTerdaftar = Number(row.is_ao_master ?? 1) === 1;
-      const namaAO = aoTerdaftar ? (row.nama_ao || kodeAO || "TANPA AO") : (kodeAO || "TANPA AO");
-      const kodeAOInline = aoTerdaftar && kodeAO ? `<span>${escapeExcel(kodeAO)}</span>` : "";
+      const idPeg = String(row.id_peg || "").trim();
+      const idPegValid = idPeg && idPeg.toLocaleLowerCase() !== String(kodeAO).toLocaleLowerCase();
+      const namaAOMaster = String(row.nama_ao || "").trim();
+      const namaAOIsCode = !namaAOMaster || [kodeAO, idPeg].some(value => value && namaAOMaster.toLocaleLowerCase() === value.toLocaleLowerCase());
+      const namaAO = aoTerdaftar && namaAOMaster && !namaAOIsCode ? namaAOMaster : (kodeAO || "TANPA AO");
+      const aoIdentifier = idPegValid ? idPeg : kodeAO;
+      const aoIdentifierInline = aoIdentifier ? `<span>${escapeExcel(aoIdentifier)}</span>` : "";
 
       tbody.insertAdjacentHTML("beforeend", `
         <tr class="transition hover:bg-blue-50/40">
@@ -753,7 +758,7 @@
             </button>
 
             <div class="mt-0.5 flex items-center gap-1 font-mono text-[9px] font-bold text-slate-400">
-              ${kodeAOInline}
+              ${aoIdentifierInline}
               <span class="md:hidden">•</span>
               <span class="max-w-[80px] truncate md:hidden" title="${escapeAttr(namaKantor)}">${namaKantor}</span>
             </div>
@@ -932,7 +937,16 @@
         const kodeKantor = row.kode_kantor || row.kode_cabang || "";
         const namaKantor = row.nama_kantor || row.nama_cabang || "";
         const kodeAO = row.kode_ao || row.kode_group2 || "";
-        const namaAO = row.nama_ao || "";
+        const idPeg = String(row.id_peg || "").trim();
+        const idPegValid = idPeg && idPeg.toLocaleLowerCase() !== String(kodeAO).toLocaleLowerCase();
+        const aoIdentifier = idPegValid ? idPeg : kodeAO;
+        const namaAO = String(row.nama_ao || "").trim();
+        const namaAOIsCode = [kodeAO, idPeg].some(value => value && namaAO.toLocaleLowerCase() === value.toLocaleLowerCase());
+        const namaAOValid = namaAO && !namaAOIsCode;
+        const aoNameLabel = namaAOValid && aoIdentifier
+          ? `${aoIdentifier} - ${namaAO}`
+          : (namaAOValid || aoIdentifier || kodeAO);
+        const labelAO = aoNameLabel;
         const noa = Number(row.total_noa || 0);
         const realisasi = Number(row.total_realisasi || 0);
 
@@ -940,7 +954,7 @@
           <tr>
             <td style="text-align:center;">${index + 1}</td>
             <td>${escapeExcel(kodeKantor)} - ${escapeExcel(namaKantor)}</td>
-            <td>${escapeExcel(kodeAO)} - ${escapeExcel(namaAO)}</td>
+            <td>${escapeExcel(labelAO)}</td>
             <td style="text-align:center;">${noa}</td>
             <td style="text-align:right;">${realisasi}</td>
           </tr>
