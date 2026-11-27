@@ -1,12 +1,6 @@
 <?php
 require_once __DIR__ . '/../components/bootstrap.php';
 mb_ui_assets('.');
-$requestedId = max(0, (int)($_GET['id'] ?? 0));
-$requestedPeriod = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', (string)($_GET['period'] ?? '')) ? (string)$_GET['period'] : date('Y-m');
-$requestedBranch = preg_match('/^0(?:0[1-9]|1[0-9]|2[0-8])$/', str_pad((string)($_GET['kode_cabang'] ?? ''), 3, '0', STR_PAD_LEFT)) ? str_pad((string)$_GET['kode_cabang'], 3, '0', STR_PAD_LEFT) : '';
-$requestedCycleId = max(0, (int)($_GET['cycle_id'] ?? 0));
-$requestedActualDate = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)($_GET['actual_date'] ?? '')) ? (string)$_GET['actual_date'] : '';
-$requestedBasis = in_array((string)($_GET['nominal_field'] ?? ''), ['saldo_bank', 'baki_debet'], true) ? (string)$_GET['nominal_field'] : 'saldo_bank';
 $canCreateCalculator = !empty($rbacInitialAccess['permissions']['page:komitmen_kalkulator']['can_create']);
 ?>
 <style>
@@ -176,12 +170,133 @@ $canCreateCalculator = !empty($rbacInitialAccess['permissions']['page:komitmen_k
     #komitmenKalkulator .kc-filter,#komitmenKalkulator .kc-grid { grid-template-columns:1fr; }
     #komitmenKalkulator .kc-scenario-field { grid-column:auto; }
   }
+  /* Finance-ledger sizing keeps the forecast prominent and amounts easy to scan. */
+  #komitmenKalkulator { padding:14px; font-size:14px; background:#f3f6fa; }
+  #komitmenKalkulator .kc-card { margin-bottom:12px; border-color:#d9e2ec; border-radius:10px; box-shadow:none; }
+  #komitmenKalkulator .kc-head { gap:12px; padding:15px 16px; }
+  #komitmenKalkulator .kc-head h2 { font-size:16px; letter-spacing:-.01em; }
+  #komitmenKalkulator .kc-head p,#komitmenKalkulator .kc-meta { font-size:13px; line-height:1.5; }
+  #komitmenKalkulator .kc-head .mb-page-header__title { color:#17243a; font-size:23px; line-height:1.2; letter-spacing:-.025em; }
+  #komitmenKalkulator .kc-head .mb-page-header__subtitle { margin-top:5px; font-size:13px; }
+  #komitmenKalkulator .kc-filter { grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; padding:16px; }
+  #komitmenKalkulator .kc-scenario-field { grid-column:1/-1; }
+  #komitmenKalkulator .kc-layout { grid-template-columns:minmax(0,1.25fr) minmax(360px,.9fr); gap:14px; }
+  #komitmenKalkulator .kc-column { gap:12px; }
+  #komitmenKalkulator .kc-step { gap:9px; font-size:14px; }
+  #komitmenKalkulator .kc-step span { width:24px; height:24px; font-size:11px; }
+  #komitmenKalkulator .kc-subhead { margin:14px 16px 2px; font-size:12px; }
+  #komitmenKalkulator .kc-grid { gap:12px; padding:14px 16px 16px; }
+  #komitmenKalkulator .kc-field { gap:6px; }
+  #komitmenKalkulator .kc-field label,#komitmenKalkulator .kc-note-wrap label { font-size:12px; }
+  #komitmenKalkulator input,#komitmenKalkulator select,#komitmenKalkulator button { min-height:44px; border-radius:7px; padding:0 12px; font-size:14px; }
+  #komitmenKalkulator .kc-field small { min-height:0; font-size:12px; line-height:1.45; }
+  #komitmenKalkulator .kc-alert { margin:0 16px 12px; padding:11px 14px; border-radius:7px; font-size:12px; }
+  #komitmenKalkulator .kc-results { gap:10px; padding:0 16px 14px; }
+  #komitmenKalkulator .kc-result { padding:12px; border-radius:8px; background:#f8fafc; }
+  #komitmenKalkulator .kc-result span,#komitmenKalkulator .kc-result small { font-size:12px; }
+  #komitmenKalkulator .kc-result strong { font-size:21px; }
+  #komitmenKalkulator .kc-progress-list { gap:11px; padding:0 16px 16px; }
+  #komitmenKalkulator .kc-progress-head { font-size:12px; }
+  #komitmenKalkulator .kc-meter { height:8px; border-radius:5px; }
+  #komitmenKalkulator .kc-projection-card { border-top:3px solid #2563eb; }
+  #komitmenKalkulator .kc-balance-bars { gap:11px; padding:0 16px 12px; }
+  #komitmenKalkulator .kc-bar-row { grid-template-columns:100px minmax(0,1fr); gap:10px; }
+  #komitmenKalkulator .kc-bar-label,#komitmenKalkulator .kc-legend { font-size:11px; }
+  #komitmenKalkulator .kc-bar { height:19px; }
+  #komitmenKalkulator .kc-legend { gap:14px; padding:0 16px 16px; }
+  #komitmenKalkulator .kc-strategies { gap:10px; padding:0 16px 16px; }
+  #komitmenKalkulator .kc-strategy { padding:13px; border-radius:8px; }
+  #komitmenKalkulator .kc-strategy h3 { font-size:13px; }
+  #komitmenKalkulator .kc-strategy-status { padding:4px 7px; border-radius:5px; font-size:10px; }
+  #komitmenKalkulator .kc-strategy p,#komitmenKalkulator .kc-strategy ul { font-size:12px; }
+  #komitmenKalkulator .kc-strategy .kc-strategy-footer { gap:9px; padding-top:9px; }
+  #komitmenKalkulator .kc-strategy button { min-height:38px; font-size:12px; }
+  #komitmenKalkulator .kc-table-wrap { overflow-x:auto; overscroll-behavior-x:contain; }
+  #komitmenKalkulator table { min-width:680px; font-size:12px; }
+  #komitmenKalkulator .kc-comparison-table { min-width:1080px; }
+  #komitmenKalkulator th { padding:11px 10px; font-size:11px; }
+  #komitmenKalkulator td { padding:10px; }
+  #komitmenKalkulator th:first-child,#komitmenKalkulator td:first-child { min-width:140px; }
+  #komitmenKalkulator .kc-note-wrap { gap:7px; padding:0 16px 16px; }
+  #komitmenKalkulator .kc-note { min-height:120px; border-radius:7px; font-size:14px; }
+  #komitmenKalkulator .kc-status { padding:6px 9px; border-radius:6px; font-size:11px; }
+  #komitmenKalkulator .kc-save-footer { padding:14px 16px; }
+  #komitmenKalkulator .kc-actions { gap:8px; padding:0; }
+  #komitmenKalkulator .kc-actions button { min-height:42px; }
+  #komitmenKalkulator .kc-link { font-size:13px; }
+  #komitmenKalkulator :is(button,input,select,textarea,a):focus-visible { outline-offset:2px; }
+  @media(max-width:1120px) {
+    #komitmenKalkulator .kc-layout { grid-template-columns:minmax(0,1fr); }
+    #komitmenKalkulator .kc-right { grid-row:1; grid-column:1; grid-template-columns:1fr; gap:12px; }
+    #komitmenKalkulator .kc-comparison-table { min-width:0; }
+    #komitmenKalkulator .kc-comparison-table thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+    #komitmenKalkulator .kc-comparison-table tbody { display:grid; gap:9px; padding:10px 14px 14px; }
+    #komitmenKalkulator .kc-comparison-table tr { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); overflow:hidden; border:1px solid #e1e8f0; border-radius:8px; background:#fff; }
+    #komitmenKalkulator .kc-comparison-table td { min-width:0; white-space:normal; overflow-wrap:anywhere; }
+    #komitmenKalkulator .kc-comparison-table td:first-child { grid-column:1/-1; position:static; min-width:0; padding:10px 12px; border-bottom:1px solid #e1e8f0; background:#f8fafc; font-size:13px; font-weight:800; }
+    #komitmenKalkulator .kc-comparison-table td:not(:first-child) { display:grid; align-content:start; gap:4px; position:static; padding:9px 10px; text-align:left; }
+    #komitmenKalkulator .kc-comparison-table td:not(:first-child)::before { content:attr(data-label); color:#64748b; font-size:11px; font-weight:700; }
+    #komitmenKalkulator .kc-comparison-table td:not(:first-child) { font-size:12px; }
+  }
+  @media(max-width:760px) {
+    #komitmenKalkulator { padding:10px 8px 18px; }
+    #komitmenKalkulator .kc-filter { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:12px; }
+    #komitmenKalkulator .kc-grid { grid-template-columns:1fr; gap:12px; padding:12px; }
+    #komitmenKalkulator .kc-right { grid-template-columns:1fr; }
+    #komitmenKalkulator .kc-opening-table { display:block; min-width:0; }
+    #komitmenKalkulator .kc-opening-table thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+    #komitmenKalkulator .kc-opening-table tbody { display:block; padding:4px 12px 10px; }
+    #komitmenKalkulator .kc-opening-table tr { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); border-bottom:1px solid #e9eef5; }
+    #komitmenKalkulator .kc-opening-table td { min-width:0; white-space:normal; overflow-wrap:anywhere; }
+    #komitmenKalkulator .kc-opening-table td:first-child { grid-column:1/-1; position:static; min-width:0; padding:9px 4px 4px; background:transparent; font-size:12px; }
+    #komitmenKalkulator .kc-opening-table td:not(:first-child) { display:grid; gap:3px; position:static; padding:6px 4px 9px; text-align:left; }
+    #komitmenKalkulator .kc-opening-table td:not(:first-child)::before { content:attr(data-label); color:#64748b; font-size:10px; }
+    #komitmenKalkulator .kc-head { padding:13px 14px; }
+    #komitmenKalkulator .kc-head .mb-page-header__title { font-size:21px; }
+    #komitmenKalkulator .kc-head p,#komitmenKalkulator .kc-meta { font-size:12px; }
+    #komitmenKalkulator .kc-subhead { margin-right:12px; margin-left:12px; }
+    #komitmenKalkulator .kc-results { padding-right:12px; padding-left:12px; }
+    #komitmenKalkulator .kc-result strong { font-size:19px; }
+    #komitmenKalkulator .kc-progress-list,#komitmenKalkulator .kc-balance-bars,#komitmenKalkulator .kc-legend { padding-right:12px; padding-left:12px; }
+    #komitmenKalkulator .kc-bar-row { grid-template-columns:94px minmax(0,1fr); }
+    #komitmenKalkulator .kc-note-wrap { padding-right:12px; padding-left:12px; }
+    #komitmenKalkulator .kc-table-wrap { overflow:visible; }
+  }
+  @media(max-width:560px) {
+    #komitmenKalkulator .kc-head { align-items:flex-start; }
+    #komitmenKalkulator .kc-head .mb-page-header__copy { min-width:0; }
+    #komitmenKalkulator .kc-status { white-space:normal; text-align:center; }
+    #komitmenKalkulator .kc-scenario-field { grid-column:1/-1; }
+    #komitmenKalkulator .kc-results { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+    #komitmenKalkulator .kc-result { padding:10px; }
+    #komitmenKalkulator .kc-result strong { font-size:18px; overflow-wrap:anywhere; }
+    #komitmenKalkulator .kc-progress-head { align-items:flex-start; font-size:11px; }
+    #komitmenKalkulator .kc-progress-head strong { text-align:right; }
+    #komitmenKalkulator .kc-save-footer { align-items:stretch; flex-direction:column; gap:10px; padding:12px; }
+    #komitmenKalkulator .kc-save-footer .kc-actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+    #komitmenKalkulator .kc-save-footer .kc-actions button { min-height:44px; padding:0 8px; font-size:12px; }
+    #komitmenKalkulator .kc-link { display:inline-flex; align-items:center; min-height:40px; }
+    #komitmenKalkulator .kc-comparison-table tbody { padding:8px 10px 10px; }
+    #komitmenKalkulator .kc-comparison-table td:not(:first-child) { padding:8px; }
+    #komitmenKalkulator .kc-comparison-table td:not(:first-child)::before { font-size:10px; }
+  }
+  @media(max-width:380px) {
+    #komitmenKalkulator .kc-filter { grid-template-columns:1fr; }
+    #komitmenKalkulator .kc-scenario-field { grid-column:auto; }
+    #komitmenKalkulator .kc-results { grid-template-columns:1fr; }
+    #komitmenKalkulator .kc-bar-row { grid-template-columns:78px minmax(0,1fr); }
+  }
+  :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #komitmenKalkulator .kc-comparison-table tr { border-color:#334155; background:#0f172a; }
+  :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #komitmenKalkulator .kc-comparison-table td:first-child { border-color:#334155; background:#1e293b; }
+  :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #komitmenKalkulator .kc-comparison-table td:not(:first-child)::before,
+  :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #komitmenKalkulator .kc-opening-table td:not(:first-child)::before { color:#a7b4c5; }
+  :is(.mb-theme-dark,:root[data-monbis-theme="dark"]) #komitmenKalkulator .kc-opening-table tr { border-color:#334155; }
   @media(prefers-reduced-motion:reduce) { #komitmenKalkulator *,#komitmenKalkulator *::before,#komitmenKalkulator *::after { scroll-behavior:auto !important; transition:none !important; animation:none !important; } }
 </style>
 
 <main id="komitmenKalkulator" class="mb-report-page">
   <header class="mb-page-header kc-card kc-head">
-    <div class="mb-page-header__copy"><h1 class="mb-page-header__title">Kalkulator Komitmen</h1><p class="mb-page-header__subtitle">Masukkan asumsi; saldo akhir, RR, dan NPL dihitung otomatis sebelum disimpan.</p></div>
+    <div class="mb-page-header__copy"><h1 class="mb-page-header__title">Komitmen Kredit</h1><p class="mb-page-header__subtitle">Masukkan asumsi; saldo akhir, RR, dan NPL dihitung otomatis sebelum disimpan.</p></div>
     <span id="kcStatus" class="kc-status">MEMUAT POSISI</span>
   </header>
   <div id="kcMessage" class="kc-alert" role="status" aria-live="polite">Memuat filter dan posisi saldo…</div>
@@ -199,8 +314,8 @@ $canCreateCalculator = !empty($rbacInitialAccess['permissions']['page:komitmen_k
   <div class="kc-layout">
     <div class="kc-column kc-left">
       <section class="kc-card" aria-labelledby="kcOpeningTitle">
-        <div class="kc-head"><div><h2 id="kcOpeningTitle" class="kc-step"><span>1</span> Closing M-1 dan actual posisi komitmen</h2><p id="kcOpeningMeta">Saldo closing dan actual tanggal pilihan akan tampil setelah posisi dimuat.</p></div></div>
-        <div class="kc-table-wrap"><table class="kc-opening-table"><thead><tr><th>Komponen</th><th>Closing M-1</th><th>Actual posisi</th></tr></thead><tbody id="kcOpeningRows"><tr><td colspan="3" style="text-align:center;color:#64748b">Memuat posisi…</td></tr></tbody></table></div>
+        <div class="kc-head"><div><h2 id="kcOpeningTitle" class="kc-step"><span>1</span> Closing M-1, proyeksi, dan actual posisi komitmen</h2><p id="kcOpeningMeta">Saldo closing, proyeksi EOM, dan actual tanggal pilihan akan tampil setelah posisi dimuat.</p></div></div>
+        <div class="kc-table-wrap"><table class="kc-opening-table"><thead><tr><th>Komponen</th><th>Closing M-1</th><th>Proyeksi EOM</th><th>Actual posisi</th></tr></thead><tbody id="kcOpeningRows"><tr><td colspan="4" style="text-align:center;color:#64748b">Memuat posisi…</td></tr></tbody></table></div>
       </section>
       <section id="kcInputSection" class="kc-card" aria-labelledby="kcInputTitle">
         <div class="kc-head"><div><h2 id="kcInputTitle" class="kc-step"><span>2</span> Rencana proyeksi sampai EOM</h2><p id="kcInputSubtitle">Proyeksi dimulai dari Closing M-1. Asumsi actual menjadi angka awal yang bisa disesuaikan.</p></div></div>
@@ -267,13 +382,14 @@ $canCreateCalculator = !empty($rbacInitialAccess['permissions']['page:komitmen_k
   const apiBase=`${window.BASE_APP||''}/api/komitmen`;
   const apiCall=(url,options={})=>window.apiFetch?window.apiFetch(url,options):fetch(url,{credentials:'include',...options});
   const canCreate=<?= $canCreateCalculator ? 'true' : 'false' ?>;
+  const initial={period:<?= json_encode(date('Y-m')) ?>,branch:'',cycleId:0,actualDate:'',basis:'saldo_bank',recordId:0};
+  try{const saved=JSON.parse(sessionStorage.getItem('monbis.komitmenKredit.context')||'null');if(saved&&typeof saved==='object')Object.assign(initial,saved);}catch(error){}
   const numberFmt=new Intl.NumberFormat('id-ID',{maximumFractionDigits:0});
   const pct=v=>v==null||!Number.isFinite(Number(v))?'-':`${(Number(v)*100).toLocaleString('id-ID',{minimumFractionDigits:2,maximumFractionDigits:2})}%`;
   const money=v=>numberFmt.format(Number(v||0));
   const signedDifference=(value,type)=>{if(value==null||!Number.isFinite(Number(value)))return '-';const delta=Number(value),arrow=delta>0?'↑ ':delta<0?'↓ ':'→ ';return arrow+(type==='ratio'?pct(Math.abs(delta)):money(Math.abs(delta)));};
-  const state={metadata:null,cycle:null,snapshot:null,projection:null,busy:false,recordId:<?= $requestedId ?>,recommendations:{}};
-  const initial={period:<?= json_encode($requestedPeriod) ?>,branch:<?= json_encode($requestedBranch) ?>,cycleId:<?= $requestedCycleId ?>,actualDate:<?= json_encode($requestedActualDate) ?>,basis:<?= json_encode($requestedBasis) ?>};
-  function syncPageUrl(){const params=new URLSearchParams({period:el('kcPeriod').value,kode_cabang:el('kcBranch').value,cycle_id:el('kcCycle').value,actual_date:el('kcActualDate').value,nominal_field:el('kcBasis').value});if(state.recordId)params.set('id',String(state.recordId));history.replaceState(null,'',`${location.pathname}?${params}`);}
+  const state={metadata:null,cycle:null,snapshot:null,projection:null,busy:false,recordId:Math.max(0,Number(initial.recordId)||0),recommendations:{}};
+  function persistPageContext(){Object.assign(initial,{period:el('kcPeriod').value,branch:el('kcBranch').value,cycleId:Number(el('kcCycle').value||0),actualDate:el('kcActualDate').value,basis:el('kcBasis').value,recordId:state.recordId});try{sessionStorage.setItem('monbis.komitmenKredit.context',JSON.stringify(initial));}catch(error){}if(location.search||location.hash)history.replaceState(null,'',location.pathname);}
   function clearAssumptions(){document.querySelectorAll('#komitmenKalkulator [data-nominal]').forEach(input=>input.value='0');el('kcScenario').value='';el('kcCommitmentNote').value='';}
   function setInputsEnabled(enabled){document.querySelectorAll('#komitmenKalkulator [data-nominal]').forEach(input=>input.disabled=!enabled);el('kcScenario').disabled=!enabled;el('kcCommitmentNote').disabled=!enabled;}
   const read=id=>{const raw=String(el(id).value||'');const digits=raw.replace(/\D/g,'');const value=digits?Number(digits):0;return id==='kcGrowth'&&raw.trim().startsWith('-')?-value:value;};
@@ -288,16 +404,17 @@ $canCreateCalculator = !empty($rbacInitialAccess['permissions']['page:komitmen_k
   function ratio(val,base){return base>0?val/base:null;}
   function renderOpening(){
     if(!state.snapshot)return;
-    const closing=state.snapshot.closing,position=state.snapshot.position;
+    const closing=state.snapshot.closing,position=state.snapshot.position,projection=state.projection?.balances,ratios=state.projection?.ratios;
     const rows=[
-      ['DPD 0',closing.dpd0,position.dpd0],['DPD 1–30 (L)',Number(closing.l||0)-Number(closing.dpd0||0),Number(position.l||0)-Number(position.dpd0||0)],
-      ['Lancar (L)',closing.l,position.l],['Perhatian (DP)',closing.dp,position.dp],['KL',closing.kl,position.kl],['Diragukan (D)',closing.d,position.d],['Macet (M)',closing.m,position.m],
-      ['NPL Gross',posNpl(closing),posNpl(position)],['Total KYD',posKyd(closing),posKyd(position)],
-      ['RR',ratio(Number(closing.dpd0||0),posKyd(closing)),ratio(Number(position.dpd0||0),posKyd(position)),'ratio'],
-      ['NPL Gross (%)',ratio(posNpl(closing),posKyd(closing)),ratio(posNpl(position),posKyd(position)),'ratio']
+      ['DPD 0',closing.dpd0,projection?.dpd0,position.dpd0],['DPD 1–30 (L)',Number(closing.l||0)-Number(closing.dpd0||0),projection?.dpd1_30,Number(position.l||0)-Number(position.dpd0||0)],
+      ['Lancar (L)',closing.l,projection?.l,position.l],['Perhatian (DP)',closing.dp,projection?.dp,position.dp],['KL',closing.kl,projection?.kl,position.kl],['Diragukan (D)',closing.d,projection?.d,position.d],['Macet (M)',closing.m,projection?.m,position.m],
+      ['NPL Gross',posNpl(closing),projection?.npl,posNpl(position)],['Total KYD',posKyd(closing),projection?.kyd,posKyd(position)],
+      ['RR',ratio(Number(closing.dpd0||0),posKyd(closing)),ratios?.rr,ratio(Number(position.dpd0||0),posKyd(position)),'ratio'],
+      ['NPL Gross (%)',ratio(posNpl(closing),posKyd(closing)),ratios?.npl,ratio(posNpl(position),posKyd(position)),'ratio']
     ];
     const body=el('kcOpeningRows');body.replaceChildren();
-    for(const [label,closeValue,positionValue,type] of rows){const tr=document.createElement('tr');const name=document.createElement('td');name.textContent=label;tr.append(name);for(const value of [closeValue,positionValue]){const cell=document.createElement('td');cell.textContent=value==null?'-':type==='ratio'?pct(value):money(value);tr.append(cell);}body.append(tr);}
+    const labels=['Closing M-1','Proyeksi EOM','Actual posisi'];
+    for(const [label,closeValue,projectionValue,positionValue,type] of rows){const tr=document.createElement('tr');const name=document.createElement('td');name.textContent=label;tr.append(name);for(const [index,value] of [closeValue,projectionValue,positionValue].entries()){const cell=document.createElement('td');cell.dataset.label=labels[index];cell.textContent=value==null?'-':type==='ratio'?pct(value):money(value);tr.append(cell);}body.append(tr);}
   }
   function renderBalanceBars(){
     if(!state.snapshot)return;
@@ -348,7 +465,8 @@ $canCreateCalculator = !empty($rbacInitialAccess['permissions']['page:komitmen_k
       ['NPL Gross (%)',ratio(posNpl(closing),closeKyd),projection?.ratios?.npl,ratio(posNpl(position),positionKyd),'ratio']
     ];
     const body=el('kcComparisonRows');body.replaceChildren();
-    for(const [label,closeValue,projectionValue,actualValue,type] of values){const tr=document.createElement('tr');const name=document.createElement('td');name.textContent=label;tr.append(name);for(const value of [closeValue,projectionValue,actualValue]){const td=document.createElement('td');td.textContent=value==null?'-':type==='ratio'?pct(value):money(value);tr.append(td);}for(const delta of [actualValue==null||closeValue==null?null:Number(actualValue)-Number(closeValue),projectionValue==null||closeValue==null?null:Number(projectionValue)-Number(closeValue),projectionValue==null||actualValue==null?null:Number(projectionValue)-Number(actualValue)]){const td=document.createElement('td');td.textContent=signedDifference(delta,type);tr.append(td);}body.append(tr);}
+    const columnLabels=['Closing M-1','Proyeksi EOM','Actual posisi','Actual vs closing','Proyeksi vs closing','Proyeksi vs actual'];
+    for(const [label,closeValue,projectionValue,actualValue,type] of values){const tr=document.createElement('tr');const name=document.createElement('td');name.textContent=label;tr.append(name);let column=0;for(const value of [closeValue,projectionValue,actualValue]){const td=document.createElement('td');td.dataset.label=columnLabels[column++];td.textContent=value==null?'-':type==='ratio'?pct(value):money(value);tr.append(td);}for(const delta of [actualValue==null||closeValue==null?null:Number(actualValue)-Number(closeValue),projectionValue==null||closeValue==null?null:Number(projectionValue)-Number(closeValue),projectionValue==null||actualValue==null?null:Number(projectionValue)-Number(actualValue)]){const td=document.createElement('td');td.dataset.label=columnLabels[column++];td.textContent=signedDifference(delta,type);tr.append(td);}body.append(tr);}
     el('kcComparisonMeta').textContent=`Closing ${state.snapshot.closing_date} · actual ${state.snapshot.position_date} · proyeksi ${state.snapshot.projection_date}`;
   }
   function renderRecommendations(targetRr,targetNpl,base,upgradeCapacity,issues){
@@ -452,6 +570,7 @@ $canCreateCalculator = !empty($rbacInitialAccess['permissions']['page:komitmen_k
     const rr=projectedKyd>0?dpd0/projectedKyd:null,nplRatio=projectedKyd>0?npl/projectedKyd:null;
     const projection={balances:{dpd0,dpd1_30:dpd1,l,dp,kl,d,m,npl,kyd:projectedKyd},ratios:{rr,npl:nplRatio},targets:{rr:inputs.target_rr,npl:inputs.target_npl,rr_met:rr!==null&&rr>=inputs.target_rr/100,npl_met:nplRatio!==null&&nplRatio<=inputs.target_npl/100,dpd0_needed:rr===null?null:Math.max(0,inputs.target_rr/100*projectedKyd-dpd0),npl_reduction_needed:nplRatio===null?null:Math.max(0,npl-inputs.target_npl/100*projectedKyd)},applied:{recovery_npl:inputs.recovery_npl-remaining,npl_upgrade:upgradeApplied,npl_backflow:backflowApplied},issues:[...new Set(issues)]};
     state.projection=projection;
+    renderOpening();
     el('kcRR').textContent=pct(rr);el('kcNPL').textContent=pct(nplRatio);el('kcDPD0').textContent=money(dpd0);el('kcKYD').textContent=money(projectedKyd);
     el('kcRrTarget').textContent=`Target ${pct(inputs.target_rr/100)} · ${projection.targets.rr_met?'tercapai':'belum tercapai'}`;
     el('kcNplTarget').textContent=`Target maks. ${pct(inputs.target_npl/100)} · ${projection.targets.npl_met?'tercapai':'belum tercapai'}`;
@@ -476,30 +595,30 @@ $canCreateCalculator = !empty($rbacInitialAccess['permissions']['page:komitmen_k
     if(state.busy)return;state.busy=true;state.snapshot=null;state.projection=null;el('kcSaveDraft').disabled=true;el('kcSubmit').disabled=true;
     setInputsEnabled(false);
     for(const id of ['kcPeriod','kcBranch','kcCycle','kcActualDate','kcBasis'])el(id).disabled=true;
-    el('kcOpeningRows').innerHTML='<tr><td colspan="3" style="text-align:center;color:#64748b">Memuat posisi...</td></tr>';
+    el('kcOpeningRows').innerHTML='<tr><td colspan="4" style="text-align:center;color:#64748b">Memuat posisi...</td></tr>';
     el('kcComparisonRows').innerHTML='<tr><td colspan="7" style="text-align:center;color:#64748b">Memuat posisi...</td></tr>';
     el('kcBalanceBars').replaceChildren();el('kcRecommendations').replaceChildren();
     for(const id of ['kcRR','kcNPL','kcDPD0','kcKYD','kcRrTarget','kcNplTarget','kcRRProgressLabel','kcNplProgressLabel'])el(id).textContent='-';
     el('kcRRProgress').style.width='0';el('kcNPLProgress').style.width='0';
     el('kcStatus').textContent='MEMUAT POSISI';el('kcStatus').classList.remove('is-bad','is-warn','is-muted');
-    const params=new URLSearchParams({period:el('kcPeriod').value,kode_cabang:el('kcBranch').value,cycle_id:el('kcCycle').value,actual_date:el('kcActualDate').value,nominal_field:el('kcBasis').value});
+    const requestBody={period:el('kcPeriod').value,kode_cabang:el('kcBranch').value,cycle_id:el('kcCycle').value,actual_date:el('kcActualDate').value,nominal_field:el('kcBasis').value};
     message('Memuat closing dan posisi dasar komitmen…');
     try{
-      const data=await apiData(`${apiBase}/position?${params}`);state.snapshot=data;
+      const data=await apiData(`${apiBase}/position`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(requestBody)});state.snapshot=data;
       setCycle(data.cycle);el('kcCycle').value=String(data.cycle.id);el('kcActualDate').value=data.selected_actual_date;
       el('kcPositionMeta').textContent=`Siklus ${data.cycle.cycle_no} · ${data.cycle.cycle_name} · target RR ${pct(Number(data.cycle.target_rr)/100)} · batas NPL ${pct(Number(data.cycle.target_npl)/100)}. Actual dipilih ${data.selected_actual_date}; snapshot yang dipakai ${data.position_date}.`;
       el('kcOpeningMeta').textContent=`Closing M-1 ${data.closing_date} dibandingkan dengan actual posisi ${data.position_date}.`;
       el('kcInputSubtitle').textContent=`Pijakan proyeksi Closing M-1 ${data.closing_date}. Asumsi awal mengikuti realisasi actual sampai ${data.position_date}; sesuaikan untuk rencana sampai EOM.`;
       if(!state.recordId)applyActualMovementDefaults(data.actual_movements);
       const writable=canCreate&&data.cycle.status==='open';setInputsEnabled(writable);el('kcSaveDraft').disabled=!writable;el('kcSubmit').disabled=!writable;
-      message(writable?'Siklus dibuka pusat. Proyeksi dihitung dari Closing M-1; asumsi actual bisa kamu sesuaikan.':canCreate?'Siklus ditutup pusat. Posisi dan komitmen hanya dapat dilihat.':'Akun ini hanya dapat melihat posisi komitmen.');renderOpening();calculate();syncPageUrl();
-    }catch(error){const detail=error.message||'Posisi gagal dimuat.';const noCycle=detail.includes('Pusat belum membuka siklus');setInputsEnabled(false);el('kcSaveDraft').disabled=true;el('kcSubmit').disabled=true;el('kcPositionMeta').textContent=noCycle?'Belum ada siklus untuk periode ini. Buka Rekap Komitmen untuk melihat statusnya.':'Posisi belum dapat dihitung.';for(const [id,columns] of [['kcOpeningRows',3],['kcComparisonRows',7]]){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=columns;td.textContent=noCycle?'Belum ada posisi. Kantor Pusat perlu membuka siklus komitmen terlebih dahulu.':detail;td.style.textAlign='center';td.style.color=noCycle?'#64748b':'#991b1b';tr.append(td);el(id).replaceChildren(tr);}message(noCycle?'Kantor Pusat belum membuka siklus komitmen untuk bulan ini.':detail,noCycle?'warn':'error');el('kcStatus').textContent=noCycle?'SIKLUS BELUM DIBUKA':'POSISI BELUM SIAP';el('kcStatus').classList.toggle('is-bad',!noCycle);el('kcStatus').classList.toggle('is-warn',noCycle);el('kcStatus').classList.remove('is-muted');}
+      message(writable?'Siklus dibuka pusat. Proyeksi dihitung dari Closing M-1; asumsi actual bisa kamu sesuaikan.':canCreate?'Siklus ditutup pusat. Posisi dan komitmen hanya dapat dilihat.':'Akun ini hanya dapat melihat posisi komitmen.');renderOpening();calculate();persistPageContext();
+    }catch(error){const detail=error.message||'Posisi gagal dimuat.';const noCycle=detail.includes('Pusat belum membuka siklus');setInputsEnabled(false);el('kcSaveDraft').disabled=true;el('kcSubmit').disabled=true;el('kcPositionMeta').textContent=noCycle?'Belum ada siklus untuk periode ini. Buka Rekap Komitmen untuk melihat statusnya.':'Posisi belum dapat dihitung.';for(const [id,columns] of [['kcOpeningRows',4],['kcComparisonRows',7]]){const tr=document.createElement('tr'),td=document.createElement('td');td.colSpan=columns;td.textContent=noCycle?'Belum ada posisi. Kantor Pusat perlu membuka siklus komitmen terlebih dahulu.':detail;td.style.textAlign='center';td.style.color=noCycle?'#64748b':'#991b1b';tr.append(td);el(id).replaceChildren(tr);}message(noCycle?'Kantor Pusat belum membuka siklus komitmen untuk bulan ini.':detail,noCycle?'warn':'error');el('kcStatus').textContent=noCycle?'SIKLUS BELUM DIBUKA':'POSISI BELUM SIAP';el('kcStatus').classList.toggle('is-bad',!noCycle);el('kcStatus').classList.toggle('is-warn',noCycle);el('kcStatus').classList.remove('is-muted');}
     finally{state.busy=false;for(const id of ['kcPeriod','kcCycle','kcActualDate','kcBasis'])el(id).disabled=false;el('kcBranch').disabled=!state.metadata?.allow_branch_selection;}
   }
   async function loadMetadata(){
     try{
-      const params=new URLSearchParams({period:initial.period,kode_cabang:initial.branch||'ALL',cycle_id:initial.cycleId||'',nominal_field:initial.basis});const data=await apiData(`${apiBase}/metadata?${params}`);fillMetadata(data);
-      if(state.recordId){const record=await apiData(`${apiBase}/detail?id=${encodeURIComponent(state.recordId)}`);fillRecord(record);}
+      const requestBody={period:initial.period,kode_cabang:initial.branch||'ALL',cycle_id:initial.cycleId||'',nominal_field:initial.basis};const data=await apiData(`${apiBase}/metadata`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(requestBody)});fillMetadata(data);
+      if(state.recordId){const record=await apiData(`${apiBase}/detail`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:state.recordId})});fillRecord(record);}
       await loadPosition();
     }catch(error){message(error.message||'Filter gagal dimuat.','error');el('kcStatus').textContent='GAGAL MEMUAT';el('kcStatus').classList.add('is-bad');el('kcStatus').classList.remove('is-warn','is-muted');}
   }
@@ -510,21 +629,22 @@ $canCreateCalculator = !empty($rbacInitialAccess['permissions']['page:komitmen_k
     const inputs={growth:read('kcGrowth'),btc:read('kcBtc'),migration:read('kcMigration'),flow_par:read('kcFlowPar'),recovery_npl:read('kcRecovery'),npl_upgrade:read('kcUpgrade'),npl_backflow:read('kcBackflow'),target_rr:el('kcTargetRr').value.trim()===''?null:Number(el('kcTargetRr').value),target_npl:el('kcTargetNpl').value.trim()===''?null:Number(el('kcTargetNpl').value),commitment_note:el('kcCommitmentNote').value};
     try{
       const data=await apiData(`${apiBase}/save`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({period:el('kcPeriod').value,kode_cabang:el('kcBranch').value,cycle_id:el('kcCycle').value,actual_date:el('kcActualDate').value,nominal_field:el('kcBasis').value,scenario_name:el('kcScenario').value,status,inputs})});
-      state.recordId=data.id;syncPageUrl();message(`${status==='draft'?'Draf':'Komitmen'} tersimpan sebagai rekaman #${data.id}. Rekaman lama tetap tersimpan.`);
+      state.recordId=data.id;persistPageContext();message(`${status==='draft'?'Draf':'Komitmen'} tersimpan sebagai rekaman #${data.id}. Rekaman lama tetap tersimpan.`);
     }catch(error){message(error.message||'Komitmen gagal disimpan.','error');}
     finally{state.busy=false;const writable=canCreate&&state.cycle?.status==='open'&&!!state.snapshot;setInputsEnabled(writable);for(const id of ['kcPeriod','kcCycle','kcActualDate','kcBasis'])el(id).disabled=false;el('kcBranch').disabled=!state.metadata?.allow_branch_selection;el('kcSaveDraft').disabled=!writable;el('kcSubmit').disabled=!writable;}
   }
-  el('kcPeriod').addEventListener('change',()=>{state.recordId=0;initial.period=el('kcPeriod').value;initial.cycleId=0;initial.actualDate='';clearAssumptions();syncPageUrl();loadMetadata();});
-  el('kcBranch').addEventListener('change',()=>{state.recordId=0;initial.branch=el('kcBranch').value;clearAssumptions();syncPageUrl();loadPosition();});
-  el('kcBasis').addEventListener('change',()=>{state.recordId=0;initial.basis=el('kcBasis').value;syncPageUrl();loadPosition();});
-  el('kcActualDate').addEventListener('change',()=>{state.recordId=0;initial.actualDate=el('kcActualDate').value;syncPageUrl();loadPosition();});
-  el('kcCycle').addEventListener('change',()=>{state.recordId=0;initial.cycleId=Number(el('kcCycle').value||0);clearAssumptions();setCycle(state.metadata?.cycles?.find(cycle=>String(cycle.id)===el('kcCycle').value));el('kcScenario').value=state.cycle?.cycle_name||'';syncPageUrl();loadPosition();});
+  el('kcPeriod').addEventListener('change',()=>{state.recordId=0;initial.period=el('kcPeriod').value;initial.cycleId=0;initial.actualDate='';clearAssumptions();persistPageContext();loadMetadata();});
+  el('kcBranch').addEventListener('change',()=>{state.recordId=0;initial.branch=el('kcBranch').value;clearAssumptions();persistPageContext();loadPosition();});
+  el('kcBasis').addEventListener('change',()=>{state.recordId=0;initial.basis=el('kcBasis').value;persistPageContext();loadPosition();});
+  el('kcActualDate').addEventListener('change',()=>{state.recordId=0;initial.actualDate=el('kcActualDate').value;persistPageContext();loadPosition();});
+  el('kcCycle').addEventListener('change',()=>{state.recordId=0;initial.cycleId=Number(el('kcCycle').value||0);clearAssumptions();setCycle(state.metadata?.cycles?.find(cycle=>String(cycle.id)===el('kcCycle').value));el('kcScenario').value=state.cycle?.cycle_name||'';persistPageContext();loadPosition();});
   document.querySelectorAll('#komitmenKalkulator [data-nominal]').forEach(input=>{
     input.addEventListener('input',()=>{formatNominalInput(input);calculate();});
     input.addEventListener('blur',()=>{const value=read(input.id);input.value=money(value);calculate();});
   });
   ['kcTargetRr','kcTargetNpl'].forEach(id=>el(id).addEventListener('input',calculate));
   el('kcSaveDraft').addEventListener('click',()=>save('draft'));el('kcSubmit').addEventListener('click',()=>save('diajukan'));
+  if(location.search||location.hash)history.replaceState(null,'',location.pathname);
   setInputsEnabled(false);loadMetadata();
 })();
 </script>

@@ -414,16 +414,28 @@ class KreditController {
                     $actualSnapshotParams[':move_actual_pusat'] = '000';
                 }
 
+                $closingUnitSql = $displayMode === 'BREAKDOWN_KANKAS'
+                    ? "COALESCE(NULLIF(TRIM(c.kode_group1), ''), CONCAT(c.kode_cabang, '000'))"
+                    : 'c.kode_cabang';
+                $actualUnitSql = $displayMode === 'BREAKDOWN_KANKAS'
+                    ? "COALESCE(NULLIF(TRIM(a.kode_group1), ''), CONCAT(a.kode_cabang, '000'))"
+                    : 'a.kode_cabang';
                 $snapshotMovementSql = "
                     SELECT
-                        c.no_rekening,
-                        c.kode_cabang AS closing_kode_cabang,
-                        c.kode_group1 AS closing_kode_group1,
-                        COALESCE(c.saldo_bank, 0) AS saldo_closing,
-                        a.no_rekening AS actual_no_rekening,
-                        a.kode_cabang AS actual_kode_cabang,
-                        a.kode_group1 AS actual_kode_group1,
-                        COALESCE(a.saldo_bank, 0) AS saldo_actual
+                        CASE WHEN a.no_rekening IS NULL THEN {$closingUnitSql} ELSE {$actualUnitSql} END AS unit_key,
+                        SUM(CASE WHEN a.no_rekening IS NULL THEN 1 ELSE 0 END) AS noa_pelunasan,
+                        SUM(CASE WHEN a.no_rekening IS NULL THEN COALESCE(c.saldo_bank, 0) ELSE 0 END) AS pelunasan,
+                        SUM(CASE
+                            WHEN a.no_rekening IS NOT NULL
+                             AND COALESCE(c.saldo_bank, 0) <> COALESCE(a.saldo_bank, 0)
+                            THEN 1 ELSE 0
+                        END) AS noa_angsuran,
+                        SUM(CASE
+                            WHEN a.no_rekening IS NOT NULL
+                             AND COALESCE(c.saldo_bank, 0) <> COALESCE(a.saldo_bank, 0)
+                            THEN COALESCE(c.saldo_bank, 0) - COALESCE(a.saldo_bank, 0)
+                            ELSE 0
+                        END) AS angsuran
                     FROM nominatif c
                     LEFT JOIN nominatif a
                         ON a.no_rekening = c.no_rekening
@@ -432,6 +444,7 @@ class KreditController {
                     WHERE c.created = :move_closing_date
                       {$closingSnapshotFilterSql}
                       AND TRIM(COALESCE(c.no_rekening, '')) <> ''
+                    GROUP BY unit_key
                 ";
                 $snapshotMovementStmt = $this->pdo->prepare($snapshotMovementSql);
                 foreach (array_merge(
@@ -444,35 +457,12 @@ class KreditController {
                 $snapshotMovementStmt->execute();
 
                 foreach ($snapshotMovementStmt->fetchAll(PDO::FETCH_ASSOC) as $movement) {
-                    $isPaidOff = $movement['actual_no_rekening'] === null;
-                    $unitKey = $getUnitKey($isPaidOff ? [
-                        'kode_cabang' => $movement['closing_kode_cabang'],
-                        'kode_group1' => $movement['closing_kode_group1'],
-                    ] : [
-                        'kode_cabang' => $movement['actual_kode_cabang'],
-                        'kode_group1' => $movement['actual_kode_group1'],
-                    ]);
-
-                    if (!isset($saldoBankSnapshotMovementByUnit[$unitKey])) {
-                        $saldoBankSnapshotMovementByUnit[$unitKey] = [
-                            'noa_pelunasan' => 0,
-                            'pelunasan' => 0.0,
-                            'noa_angsuran' => 0,
-                            'angsuran' => 0.0,
-                        ];
-                    }
-
-                    if ($isPaidOff) {
-                        $saldoBankSnapshotMovementByUnit[$unitKey]['noa_pelunasan']++;
-                        $saldoBankSnapshotMovementByUnit[$unitKey]['pelunasan'] += (float)$movement['saldo_closing'];
-                        continue;
-                    }
-
-                    $angsuran = (float)$movement['saldo_closing'] - (float)$movement['saldo_actual'];
-                    if ($angsuran != 0.0) {
-                        $saldoBankSnapshotMovementByUnit[$unitKey]['noa_angsuran']++;
-                        $saldoBankSnapshotMovementByUnit[$unitKey]['angsuran'] += $angsuran;
-                    }
+                    $saldoBankSnapshotMovementByUnit[(string)$movement['unit_key']] = [
+                        'noa_pelunasan' => (int)$movement['noa_pelunasan'],
+                        'pelunasan' => (float)$movement['pelunasan'],
+                        'noa_angsuran' => (int)$movement['noa_angsuran'],
+                        'angsuran' => (float)$movement['angsuran'],
+                    ];
                 }
             }
 

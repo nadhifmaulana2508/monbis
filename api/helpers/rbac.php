@@ -35,7 +35,7 @@ function rbacFeatureCatalog(): array
         ['rekap_rr', 'Repayment Rate (RR)', 'Monitoring'],
         ['proyeksi_rr', 'Proyeksi RR & NPL', 'Kalkulator'],
         ['komitmen_rekap', 'Rekap Komitmen', 'Kalkulator'],
-        ['komitmen_kalkulator', 'Kalkulator Komitmen', 'Kalkulator'],
+        ['komitmen_kalkulator', 'Komitmen Kredit', 'Kalkulator'],
         ['potensi_npl', 'Potensi NPL', 'Monitoring'],
         ['flow_par', 'Flow PAR', 'Monitoring'],
         ['otp_bucket_fe', 'OTP Bucket FE', 'Monitoring'],

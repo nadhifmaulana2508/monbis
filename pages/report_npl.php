@@ -33,15 +33,6 @@ mb_render_report_page([
         'title'=>'Monitoring Kredit',
         'subtitle'=>'Rekap kolektibilitas kredit dan perbandingan NPL closing vs actual.',
         'info_modal_id'=>'reportNplInfo',
-        'filters'=>[
-            ['id'=>'reportNplSaldo','label'=>'Tipe Saldo','type'=>'select','width'=>'132px','options'=>[
-                'baki_debet'=>'Baki Debet',
-                'saldo_bank'=>'Saldo Bank',
-            ]],
-            ['id'=>'reportNplClosing','label'=>'Closing (M-1)','type'=>'date','width'=>'126px','attrs'=>['onclick'=>'this.showPicker && this.showPicker()']],
-            ['id'=>'reportNplActual','label'=>'Actual (Harian)','type'=>'date','width'=>'126px','attrs'=>['onclick'=>'this.showPicker && this.showPicker()']],
-            ['id'=>'reportNplArea','label'=>'Area / Cabang','type'=>'select','width'=>'260px','options'=>['ALL'=>'Konsolidasi']],
-        ],
         'actions'=>[],
     ],
     'toolbar'=>[
@@ -91,6 +82,86 @@ mb_render_info_modal([
       </div>'
 ]);
 ?>
+
+<style>
+  #reportNplPage .mb-report-toolbar__title {
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:3px;
+    min-width:0;
+    overflow:visible;
+    white-space:normal;
+  }
+  #reportNplPage .report-npl__title-line { display:flex; align-items:center; gap:6px; min-width:0; }
+  #reportNplPage .report-npl__title-line .mb-info-button { transform:translateY(-3px); }
+  #reportNplPage .report-npl__title-text { margin:0; color:#0f172a; font-size:13px; font-weight:900; line-height:1.1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #reportNplPage .report-npl__subtitle { margin:0; color:#64748b; font-size:8px; font-weight:650; line-height:1.2; white-space:normal; }
+  #reportNplInfo .mb-npl-brief__alert { border-color:#e2e8f0; background:#f8fafc; color:#475569; }
+  #reportNplInfo .mb-npl-brief__alert strong { color:#0f172a; }
+  #reportNplInfo .mb-info-warning { border-color:#e2e8f0; background:#f8fafc; color:#475569; }
+  #reportNplInfo .mb-info-warning span { color:#334155; }
+  #reportNplInfo .mb-npl-brief__priority { border:1px solid #e2e8f0; background:#fff; }
+  #reportNplInfo .mb-npl-brief__priority b { background:#f1f5f9; color:#475569; }
+  :root[data-monbis-theme="dark"] #reportNplInfo .mb-npl-brief__alert,
+  :root[data-monbis-theme="dark"] #reportNplInfo .mb-info-warning { border-color:#334155; background:#111827; color:#cbd5e1; }
+  :root[data-monbis-theme="dark"] #reportNplInfo .mb-npl-brief__alert strong,
+  :root[data-monbis-theme="dark"] #reportNplInfo .mb-info-warning span { color:#f8fafc; }
+  :root[data-monbis-theme="dark"] #reportNplInfo .mb-npl-brief__priority { border-color:#334155; background:#111827; }
+  :root[data-monbis-theme="dark"] #reportNplInfo .mb-npl-brief__priority b { background:#1f2937; color:#cbd5e1; }
+  #reportNplPage.mb-report-grouped-head .mb-table thead th { text-align:center !important; }
+  main:has(> #reportNplPage) {
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+    padding-block:0 !important;
+    overflow:hidden !important;
+  }
+  #reportNplPage {
+    flex:1 1 auto;
+    height:100% !important;
+    min-height:0;
+    box-sizing:border-box;
+    overflow:hidden;
+  }
+  #reportNplPage .mb-report-card--grow {
+    flex:1 1 0%;
+    height:auto !important;
+    min-height:0 !important;
+  }
+  #reportNplPage .mb-table-region { min-height:0; overflow:hidden; }
+  #reportNplPage .mb-table-wrap { height:100%; min-height:0; overflow:auto; }
+  @media (max-width:1023px) {
+    #reportNplPage .mb-report-toolbar__tools { grid-template-columns:132px repeat(2,34px); }
+  }
+  @media (max-width:767px) {
+    #reportNplPage .mb-report-toolbar__tools { grid-template-columns:84px repeat(2,29px); gap:4px; }
+    #reportNplPage .report-npl__title-line { gap:5px; }
+    #reportNplPage .report-npl__title-line .mb-info-button { transform:translateY(-2px); }
+    #reportNplPage .report-npl__title-text { font-size:10.5px; }
+    #reportNplPage .report-npl__subtitle { font-size:7.3px; line-height:1.15; }
+    #reportNplPage .mb-info-button { width:19px; height:19px; flex-basis:19px; }
+    #reportNplPage.mb-report-grouped-head .mb-table { min-width:500px; }
+    #reportNplPage.mb-report-grouped-head .mb-table thead tr:first-child th:nth-child(2),
+    #reportNplPage.mb-report-grouped-head .mb-table tbody td:nth-child(2) { width:88px !important; }
+    #reportNplPage.mb-report-grouped-head .mb-table thead tr:first-child th:nth-child(3),
+    #reportNplPage.mb-report-grouped-head .mb-table thead tr:first-child th:nth-child(4) { width:108px !important; }
+    #reportNplPage.mb-report-grouped-head .mb-table thead tr:first-child th:nth-child(5) { width:100px !important; }
+    #reportNplPage.mb-report-grouped-head .mb-table thead tr:first-child th:nth-child(6) { width:38px !important; }
+    #reportNplPage.mb-report-grouped-head .mb-table thead tr:nth-child(2) th:nth-child(odd) { width:64px !important; }
+    #reportNplPage.mb-report-grouped-head .mb-table thead tr:nth-child(2) th:nth-child(even) { width:44px !important; }
+    #reportNplPage.mb-report-grouped-head .mb-table thead tr:nth-child(2) th:nth-child(5) { width:56px !important; }
+    #reportNplPage.mb-report-grouped-head .mb-table tbody td:nth-child(4),
+    #reportNplPage.mb-report-grouped-head .mb-table tbody td:nth-child(6),
+    #reportNplPage.mb-report-grouped-head .mb-table tbody td:nth-child(8) { width:44px !important; }
+    #reportNplPage.mb-report-grouped-head .mb-table tbody td:nth-child(3),
+    #reportNplPage.mb-report-grouped-head .mb-table tbody td:nth-child(5) { width:64px !important; }
+    #reportNplPage.mb-report-grouped-head .mb-table tbody td:nth-child(7) { width:56px !important; }
+    #reportNplPage.mb-report-grouped-head .mb-table tbody td:nth-child(9) { width:38px !important; }
+    #reportNplPage.mb-report-grouped-head .mb-table th,
+    #reportNplPage.mb-report-grouped-head .mb-table td { padding:3px 2px; }
+  }
+</style>
 
 <script>
 (function () {
@@ -195,6 +266,35 @@ mb_render_info_modal([
     if (value.startsWith('CAB-')) payload.kode_kantor = value.replace('CAB-', '');
     if (value.startsWith('KOR-')) payload.korwil = value.replace('KOR-', '');
     return payload;
+  }
+
+  function prepareReportNplToolbar() {
+    const header = el('reportNplHeader');
+    const title = el('reportNplTableTitle');
+    if (!header || !title) return;
+
+    const titleText = header.querySelector('.mb-page-header__title');
+    if (!titleText) return;
+    titleText.id = 'reportNplTableTitleText';
+    titleText.className = 'report-npl__title-text';
+    titleText.textContent = title.textContent.trim();
+    const titleLine = document.createElement('span');
+    titleLine.className = 'report-npl__title-line';
+    titleLine.append(titleText);
+
+    const infoButton = header.querySelector('.mb-info-button');
+    if (infoButton) {
+      infoButton.setAttribute('aria-label', `Informasi ${titleText.textContent}`);
+      titleLine.append(infoButton);
+    }
+    title.replaceChildren(titleLine);
+
+    const subtitle = header.querySelector('.mb-page-header__subtitle');
+    if (subtitle) {
+      subtitle.classList.add('report-npl__subtitle');
+      title.append(subtitle);
+    }
+    header.remove();
   }
 
   function buildAreaOptions() {
@@ -397,10 +497,13 @@ mb_render_info_modal([
       switchBtn.title = view === 'kolek' ? 'Ganti ke Perbandingan NPL' : 'Ganti ke Kolektibilitas';
       switchBtn.setAttribute('aria-label', switchBtn.title);
     }
-    el('reportNplClosing')?.closest('.mb-field')?.classList.toggle('is-hidden', view === 'kolek');
-    el('reportNplTableTitle').textContent = view === 'kolek'
-      ? 'Kolektibilitas'
-      : 'Perbandingan NPL';
+    el('reportNplClosingField')?.classList.toggle('hidden', view === 'kolek');
+    const titleText = el('reportNplTableTitleText');
+    if (titleText) {
+      titleText.textContent = view === 'kolek' ? 'Kolektibilitas' : 'Perbandingan NPL';
+      const infoButton = document.querySelector('#reportNplTableTitle .mb-info-button');
+      if (infoButton) infoButton.setAttribute('aria-label', `Informasi ${titleText.textContent}`);
+    }
     if (view === 'kolek') renderKolekHead();
     else renderNplHead();
     fetchData();
@@ -484,6 +587,7 @@ mb_render_info_modal([
   }
 
   async function init() {
+    prepareReportNplToolbar();
     if (!(await ensureDevReportAccess())) return;
     state.userKode = currentUserKode();
     try {
@@ -519,6 +623,34 @@ mb_render_info_modal([
     el('reportNplViewSwitch')?.addEventListener('click', () => setView(state.view === 'kolek' ? 'npl' : 'kolek'));
     el('reportNplSearch')?.addEventListener('input', MonbisUI.debounce(renderTable, 150));
     el('reportNplExport')?.addEventListener('click', exportTable);
+    const navbarFilter = el('reportNplNavbarFilterPanel');
+    const navbarFilterToggle = el('reportNplNavbarFilterToggle');
+    const setNavbarFilterOpen = open => {
+      if (!navbarFilter || !navbarFilterToggle) return;
+      navbarFilter.classList.toggle('hidden', !open);
+      navbarFilterToggle.classList.toggle('is-active', open);
+      navbarFilterToggle.setAttribute('aria-expanded', String(open));
+      const label = open ? 'Tutup filter report NPL' : 'Buka filter report NPL';
+      navbarFilterToggle.setAttribute('aria-label', label);
+      navbarFilterToggle.title = label;
+    };
+    navbarFilterToggle?.addEventListener('click', event => {
+      event.stopPropagation();
+      setNavbarFilterOpen(navbarFilter?.classList.contains('hidden'));
+    });
+    el('reportNplNavbarFilterClose')?.addEventListener('click', () => {
+      setNavbarFilterOpen(false);
+      navbarFilterToggle?.focus();
+    });
+    document.addEventListener('click', event => {
+      if (!navbarFilter || navbarFilter.classList.contains('hidden')) return;
+      if (!navbarFilter.contains(event.target) && !navbarFilterToggle?.contains(event.target)) setNavbarFilterOpen(false);
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key !== 'Escape' || !navbarFilter || navbarFilter.classList.contains('hidden')) return;
+      setNavbarFilterOpen(false);
+      navbarFilterToggle?.focus();
+    });
     init();
   });
 })();

@@ -632,126 +632,390 @@ define('MONBIS_SIDEBAR_BEHAVIOR_LOADED', true);
     box-shadow:0 10px 30px rgba(15,23,42,.12) !important;
   }
   #dropdownProfileMenu a { padding:8px 10px !important; font-size:12px !important; }
-  /* Final navigation pass: clearer targets and a steadier compact rail. */
-  #mainNavbar {
-    height:60px !important;
-    min-height:60px !important;
-    flex-basis:60px !important;
-    padding-inline:20px !important;
-    box-shadow:0 1px 0 rgba(15,23,42,.025) !important;
+  /* Final shell system: quiet surfaces, clear hierarchy, consistent controls. */
+  :root:not([data-monbis-theme="dark"]) #sidebar,
+  :root:not([data-monbis-theme="dark"]) #mainNavbar {
+    --nav-surface:#ffffff;
+    --nav-border:#e5e7eb;
+    --nav-text:#111827;
+    --nav-muted:#64748b;
+    --nav-hover:#f8fafc;
+    --nav-active:#f1f2f4;
+    --nav-active-text:#111827;
+    --nav-subline:#e5e7eb;
   }
-  #mainNavbar #btnToggleSidebar,
-  #mainNavbar .monbis-theme-toggle,
-  #mainNavbar .dashboard-navbar-filter-toggle {
-    display:inline-flex;
+  :root[data-monbis-theme="dark"] #sidebar,
+  :root[data-monbis-theme="dark"] #mainNavbar {
+    --nav-surface:#0f172a;
+    --nav-border:#1e293b;
+    --nav-text:#e2e8f0;
+    --nav-muted:#94a3b8;
+    --nav-hover:#172033;
+    --nav-active:#1e293b;
+    --nav-active-text:#e2e8f0;
+    --nav-subline:#334155;
+  }
+
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar {
+    min-height:0;
+    overflow:hidden !important;
+    color:var(--nav-text) !important;
+    background:var(--nav-surface) !important;
+    border-right:1px solid var(--nav-border) !important;
+    box-shadow:none !important;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar > .h-16 {
+    display:flex;
+    height:56px;
+    min-height:56px;
     align-items:center;
-    justify-content:center;
-    width:36px;
-    height:36px;
-    min-height:36px;
-    border-radius:9px;
-    background:#fff;
-    border-color:#dbe3ec;
-    color:#52647a;
+    justify-content:space-between;
+    gap:8px;
+    padding:0 10px;
+    background:var(--nav-surface) !important;
+    border-bottom:1px solid var(--nav-border) !important;
+  }
+  .sidebar-brand { display:flex; flex:1 1 auto; align-items:center; min-width:0; overflow:hidden; }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar > .h-16 .monbis-logo--icon {
+    width:32px;
+    height:32px;
+    padding:2px;
+    border:1px solid var(--nav-border);
+    border-radius:8px;
+    background:var(--nav-surface);
+    box-shadow:none;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar > .h-16 .monbis-logo--wordmark {
+    width:148px;
+    max-height:34px;
+    padding:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav {
+    min-height:0;
+    padding:10px 8px 12px !important;
+    gap:2px;
+    scrollbar-width:thin;
+    scrollbar-color:#cbd5e1 transparent;
+  }
+  .sidebar-section-label {
+    padding:10px 12px 4px;
+    color:var(--nav-muted);
+    font-size:11px;
+    font-weight:500;
+    letter-spacing:.01em;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-group { margin:2px 0; }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-btn,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a {
+    display:flex;
+    min-height:44px;
+    align-items:center;
+    border:1px solid transparent;
+    border-radius:8px !important;
+    color:var(--nav-text) !important;
+    font-size:13px;
+    font-weight:500 !important;
+    letter-spacing:0;
+    box-shadow:none !important;
+    transform:none !important;
     transition:background-color .15s ease, border-color .15s ease, color .15s ease;
   }
-  #mainNavbar #btnToggleSidebar { padding:0 !important; }
-  #mainNavbar #btnToggleSidebar svg { flex:0 0 auto; }
-  #mainNavbar #btnToggleSidebar:focus-visible,
-  #mainNavbar button:focus-visible,
-  #sidebar a:focus-visible,
-  #sidebar .accordion-btn:focus-visible,
-  #sidebar .monbis-sidebar-promo:focus-visible {
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-btn:hover,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a:hover {
+    background:var(--nav-hover) !important;
+    border-color:var(--nav-border) !important;
+    color:var(--nav-text) !important;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a.is-active,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a.bg-blue-50,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-btn.is-active,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-btn.is-open {
+    background:var(--nav-active) !important;
+    border-color:transparent !important;
+    color:var(--nav-active-text) !important;
+    box-shadow:none !important;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-btn > div > svg,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a > svg {
+    width:20px !important;
+    height:20px !important;
+    padding:1px;
+    border-radius:5px;
+    color:var(--nav-muted) !important;
+    background:transparent !important;
+    box-shadow:none !important;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-btn:hover > div > svg,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a:hover > svg,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-btn.is-active > div > svg,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a.is-active > svg,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a.bg-blue-50 > svg {
+    color:var(--nav-active-text) !important;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a.is-active::before,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a.bg-blue-50::before,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-btn.is-active::before {
+    display:none;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-content {
+    margin:3px 0 5px 12px !important;
+    padding:3px 0 3px 12px !important;
+    border-left:1px solid var(--nav-subline) !important;
+    border-radius:0;
+    background:transparent !important;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-content a {
+    display:flex;
+    min-height:36px;
+    align-items:center;
+    padding:5px 9px !important;
+    border-radius:6px !important;
+    color:var(--nav-muted) !important;
+    font-size:12px !important;
+    font-weight:500;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-content > a + a { margin-top:2px !important; }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-content a:hover,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-content a.is-active {
+    background:var(--nav-hover) !important;
+    color:var(--nav-active-text) !important;
+    transform:none;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .monbis-sidebar-promo {
+    min-height:48px;
+    margin:8px;
+    border:1px solid transparent;
+    border-radius:8px;
+    background:transparent !important;
+    box-shadow:none !important;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .monbis-sidebar-promo:hover { background:var(--nav-hover) !important; }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .monbis-sidebar-promo__inner {
+    min-height:48px;
+    padding:6px 8px;
+    background:transparent !important;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .monbis-sidebar-promo__spark {
+    width:30px;
+    height:30px;
+    border-radius:8px;
+    box-shadow:none;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .monbis-sidebar-promo__text strong { color:var(--nav-text) !important; font-size:11px; }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .monbis-sidebar-promo__text span { color:var(--nav-muted) !important; font-size:10px; }
+  #sidebarOverlay { background:rgba(15,23,42,.42) !important; backdrop-filter:none; }
+
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar {
+    height:56px !important;
+    min-height:56px !important;
+    flex-basis:56px !important;
+    padding:0 16px !important;
+    background:var(--nav-surface, #fff) !important;
+    border-bottom:1px solid var(--nav-border, #e5e7eb) !important;
+    box-shadow:none !important;
+    backdrop-filter:none !important;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar::after { display:none; }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .sidebar-toggle-control,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .dashboard-navbar-filter-toggle {
+    width:44px;
+    height:44px;
+    min-width:44px;
+    min-height:44px;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    border:1px solid var(--nav-border);
+    border-radius:8px;
+    background:var(--nav-surface);
+    color:var(--nav-muted);
+    box-shadow:none;
+    transform:none;
+    transition:background-color .15s ease, border-color .15s ease, color .15s ease;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .sidebar-toggle-control,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .dashboard-navbar-filter-toggle { display:inline-flex; }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .sidebar-mobile-toggle {
+    width:44px;
+    height:44px;
+    min-width:44px;
+    min-height:44px;
+    align-items:center;
+    justify-content:center;
+    padding:0;
+    border:1px solid var(--nav-border);
+    border-radius:8px;
+    background:var(--nav-surface);
+    color:var(--nav-muted);
+    box-shadow:none;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .sidebar-toggle-control:hover,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .sidebar-mobile-toggle:hover,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .dashboard-navbar-filter-toggle:hover,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .dashboard-navbar-filter-toggle.is-active {
+    background:var(--nav-hover);
+    border-color:var(--nav-border);
+    color:var(--nav-active-text) !important;
+    box-shadow:none;
+    transform:none;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .sidebar-toggle-control svg,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .sidebar-mobile-toggle svg { flex:0 0 auto; }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .border-l { height:20px; border-color:var(--nav-border) !important; }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar #navUserName { color:var(--nav-text) !important; font-size:12px !important; font-weight:600 !important; }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar #navBranch { color:var(--nav-muted) !important; font-size:10px !important; }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar #btnProfileMenu {
+    width:44px !important;
+    height:44px !important;
+    border:1px solid var(--nav-border) !important;
+    border-radius:8px !important;
+    background:var(--nav-hover) !important;
+    color:var(--nav-muted) !important;
+    box-shadow:none !important;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar #btnProfileMenu:hover { background:var(--nav-active) !important; color:var(--nav-active-text) !important; }
+  #dropdownProfileMenu {
+    width:192px !important;
+    margin-top:6px;
+    border:1px solid var(--nav-border) !important;
+    border-radius:8px !important;
+    box-shadow:0 10px 28px rgba(15,23,42,.12) !important;
+  }
+  #dropdownProfileMenu a { min-height:44px; padding:9px 10px !important; font-size:12px !important; }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar button:focus-visible,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar a:focus-visible,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-btn:focus-visible,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .monbis-sidebar-promo:focus-visible {
     outline:2px solid #2563eb;
     outline-offset:2px;
   }
-  #mainNavbar #navUserName { color:#24364b !important; }
-  #mainNavbar #navBranch { color:#718096 !important; }
-  :root[data-monbis-theme="dark"] #mainNavbar #navUserName { color:#e2e8f0 !important; }
-  :root[data-monbis-theme="dark"] #mainNavbar #btnToggleSidebar,
-  :root[data-monbis-theme="dark"] #mainNavbar .monbis-theme-toggle,
-  :root[data-monbis-theme="dark"] #mainNavbar .dashboard-navbar-filter-toggle {
-    background:#111c2e;
-    border-color:#334155;
-    color:#a9bbd0;
-  }
-  .monbis-app-shell > #sidebar > .h-16 {
-    height:60px;
-    min-height:60px;
-    padding-inline:12px;
-    justify-content:center;
-  }
-  .monbis-app-shell > #sidebar > .h-16 .monbis-logo--icon {
-    width:34px;
-    height:34px;
-    padding:3px;
-    border:1px solid #e6edf4;
-    border-radius:10px;
-    background:#fff;
-    box-shadow:none;
-  }
-  .monbis-app-shell > #sidebar nav { padding:10px 8px 14px !important; }
-  .monbis-app-shell > #sidebar .accordion-group { margin:3px 0; }
-  .monbis-app-shell > #sidebar .accordion-btn,
-  .monbis-app-shell > #sidebar nav > a {
-    min-height:46px;
-    border-radius:10px !important;
-  }
-  .monbis-app-shell > #sidebar .accordion-btn > div > svg,
-  .monbis-app-shell > #sidebar nav > a > svg {
-    width:26px !important;
-    height:26px !important;
-    padding:4px;
-    border-radius:8px;
-  }
-  .monbis-app-shell > #sidebar .accordion-btn:hover,
-  .monbis-app-shell > #sidebar nav > a:hover {
-    transform:none;
-    box-shadow:none;
-  }
-  .monbis-app-shell > #sidebar nav > a.is-active::before,
-  .monbis-app-shell > #sidebar nav > a.bg-blue-50::before,
-  .monbis-app-shell > #sidebar .accordion-btn.is-active::before {
-    left:2px;
-    top:11px;
-    bottom:11px;
-    width:2px;
-    box-shadow:none;
-  }
-  .monbis-app-shell > #sidebar .monbis-sidebar-promo {
-    border-radius:12px;
-    box-shadow:none;
-  }
-  @media (min-width:768px) {
-    .monbis-app-shell > #sidebar { flex-basis:68px !important; width:68px !important; }
-    .monbis-app-shell > #sidebar.is-expanded { flex-basis:264px !important; width:264px !important; }
-    .monbis-app-shell > #sidebar:not(.is-expanded):hover,
-    .monbis-app-shell > #sidebar:not(.is-expanded):focus-within { flex-basis:68px !important; width:68px !important; }
-    .monbis-app-shell > #sidebar:not(.is-expanded) .accordion-btn,
-    .monbis-app-shell > #sidebar:not(.is-expanded) nav > a { min-height:46px; }
-    .monbis-app-shell > #sidebar.is-expanded > .h-16 { justify-content:flex-start; padding-inline:16px; }
-  }
-  @media (max-width:767px) {
-    #mainNavbar { height:56px !important; min-height:56px !important; flex-basis:56px !important; padding-inline:10px !important; }
-    #mainNavbar #btnToggleSidebar,
-    #mainNavbar .monbis-theme-toggle,
-    #mainNavbar .dashboard-navbar-filter-toggle { width:36px; height:36px; min-height:36px; }
-  }
+
   @media (min-width:768px) {
     .monbis-app-shell > #sidebar { flex-basis:64px !important; width:64px !important; }
-    .monbis-app-shell > #sidebar.is-expanded { flex-basis:264px !important; width:264px !important; }
+    .monbis-app-shell > #sidebar.is-expanded { flex-basis:240px !important; width:240px !important; }
     .monbis-app-shell > #sidebar:not(.is-expanded):hover,
     .monbis-app-shell > #sidebar:not(.is-expanded):focus-within { flex-basis:64px !important; width:64px !important; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) > .sidebar-header {
+      height:104px;
+      min-height:104px;
+      flex-direction:column;
+      justify-content:center;
+      gap:8px;
+      padding:8px;
+    }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .sidebar-brand { display:flex; flex:0 0 auto; justify-content:center; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .monbis-logo--icon { width:30px; height:30px; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .monbis-logo--wordmark { display:none; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .sidebar-toggle-control { margin:0; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .accordion-content { display:none !important; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .accordion-btn,
+    .monbis-app-shell > #sidebar:not(.is-expanded) nav > a { justify-content:center; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .accordion-btn > div { width:100%; justify-content:center; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .accordion-btn > div > span,
+    .monbis-app-shell > #sidebar:not(.is-expanded) nav > a > span,
+    .monbis-app-shell > #sidebar:not(.is-expanded) .caret { width:0; margin-left:0 !important; overflow:hidden; opacity:0 !important; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .accordion-btn > .caret { display:none; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .monbis-sidebar-promo__text { display:none; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) .monbis-sidebar-promo__inner { justify-content:center; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) > .h-16 .monbis-logo--icon { display:block; }
+    .monbis-app-shell > #sidebar:not(.is-expanded) > .h-16 .monbis-logo--wordmark { display:none; }
+    .monbis-app-shell > #sidebar.is-expanded .accordion-btn,
+    .monbis-app-shell > #sidebar.is-expanded nav > a { justify-content:flex-start; }
+    .monbis-app-shell > #sidebar.is-expanded .accordion-btn > div { width:auto; justify-content:flex-start; }
+    .monbis-app-shell > #sidebar.is-expanded .accordion-btn > div > span,
+    .monbis-app-shell > #sidebar.is-expanded nav > a > span,
+    .monbis-app-shell > #sidebar.is-expanded .caret { width:auto; margin-left:.75rem !important; overflow:visible; opacity:1 !important; }
+    .monbis-app-shell > #sidebar.is-expanded .accordion-btn > .caret { display:block; margin-left:auto !important; }
+    .monbis-app-shell > #sidebar.is-expanded > .sidebar-header {
+      height:56px;
+      min-height:56px;
+      flex-direction:row;
+      justify-content:space-between;
+      gap:8px;
+      padding-inline:10px;
+    }
+    .monbis-app-shell > #sidebar.is-expanded .sidebar-brand { display:flex; }
+    .monbis-app-shell > #sidebar.is-expanded > .h-16 .monbis-logo--icon { display:none; }
+    .monbis-app-shell > #sidebar.is-expanded > .h-16 .monbis-logo--wordmark { display:block; width:148px; max-height:34px; }
   }
   @media (max-width:767px) {
-    #mainNavbar { padding:0 10px !important; }
-    #sidebar { width:min(88vw, 288px) !important; border-radius:0 14px 14px 0; }
-    #sidebar > .h-16 { padding:0 12px; }
-    #sidebar > .h-16 .monbis-logo--icon { display:none; }
-    #sidebar > .h-16 .monbis-logo--wordmark { display:block; }
+    :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar { padding-inline:10px !important; }
+    :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar { width:min(82vw, 264px) !important; border-radius:0 12px 12px 0; }
+    :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar > .sidebar-header {
+      height:56px;
+      min-height:56px;
+      flex-direction:row;
+      justify-content:space-between;
+      padding-inline:12px;
+    }
+    :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .sidebar-brand { display:flex; }
+    :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .sidebar-section-label { display:block; }
+    :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar > .h-16 .monbis-logo--icon { display:none; }
+    :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar > .h-16 .monbis-logo--wordmark { display:block; width:128px; }
+    :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .sidebar-mobile-toggle { display:inline-flex; }
+    :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > :not([hidden]) ~ :not([hidden]) { margin-top:2px !important; }
+    :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-group { margin:1px 0; }
+    :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-btn,
+    :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a {
+      box-sizing:border-box;
+      min-height:44px;
+      padding-block:0 !important;
+    }
+  }
+  @media (min-width:768px) {
+    .monbis-app-shell > #sidebar:not(.is-expanded) .sidebar-section-label { display:none; }
   }
   @media (prefers-reduced-motion:reduce) {
-    #sidebar *, #mainNavbar * { transition-duration:0.01ms !important; animation-duration:0.01ms !important; }
+    :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar *, #mainNavbar * { transition-duration:0.01ms !important; animation-duration:0.01ms !important; }
+  }
+  /* Icon controls use color and position for state, not a filled tile. */
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .dashboard-navbar-filter-toggle,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .sidebar-mobile-toggle,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar #btnProfileMenu,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .sidebar-toggle-control,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) .dashboard-navbar-filter__close,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) .dashboard-navbar-filter__submit,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) .npl-navbar-filter-panel__close {
+    border-color:transparent !important;
+    border-radius:0 !important;
+    background:transparent !important;
+    color:var(--nav-muted) !important;
+    box-shadow:none !important;
+    transform:none !important;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .dashboard-navbar-filter-toggle:hover,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .dashboard-navbar-filter-toggle.is-active,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar .sidebar-mobile-toggle:hover,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #mainNavbar #btnProfileMenu:hover,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .sidebar-toggle-control:hover,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) .dashboard-navbar-filter__close:hover,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) .dashboard-navbar-filter__submit:hover,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) .npl-navbar-filter-panel__close:hover {
+    border-color:transparent !important;
+    background:transparent !important;
+    color:var(--monbis-event-accent, #2563eb) !important;
+    box-shadow:none !important;
+    transform:none !important;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-btn > div > svg,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a > svg {
+    padding:0 !important;
+    border-radius:0 !important;
+    background:transparent !important;
+    box-shadow:none !important;
+    transition:color .15s ease;
+  }
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-btn:hover > div > svg,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a:hover > svg,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar .accordion-btn.is-active > div > svg,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a.is-active > svg,
+  :root:is(:not([data-monbis-theme="dark"]), [data-monbis-theme="dark"]) #sidebar nav > a.bg-blue-50 > svg {
+    background:transparent !important;
+    box-shadow:none !important;
+    color:var(--monbis-event-accent, #2563eb) !important;
   }
 </style>
-<script src="./assets/js/sidebar.js?v=4" defer></script>
+<script src="./assets/js/sidebar.js?v=6" defer></script>

@@ -318,15 +318,19 @@ $calculatorUrl = rtrim((string)BASE_APP, '/') . '/komitmen_kalkulator';
     const link = document.createElement('a');
     const record = row.commitment;
     link.textContent = record ? (canCreateCalculator && state.cycle.status === 'open' ? 'Revisi komitmen' : 'Lihat komitmen') : (canCreateCalculator && state.cycle.status === 'open' ? 'Input komitmen' : 'Belum diisi');
-    const query = new URLSearchParams({
-      period: el('kmPeriod').value,
-      kode_cabang: row.branch_code,
-      cycle_id: String(state.cycle.id),
-      actual_date: el('kmActualDate').value,
-      nominal_field: el('kmBasis').value
+    link.href = calcBase;
+    link.addEventListener('click', () => {
+      try {
+        sessionStorage.setItem('monbis.komitmenKredit.context', JSON.stringify({
+          period: el('kmPeriod').value,
+          branch: row.branch_code,
+          cycleId: Number(state.cycle.id),
+          actualDate: el('kmActualDate').value,
+          basis: el('kmBasis').value,
+          recordId: Number(record?.id || 0)
+        }));
+      } catch (error) {}
     });
-    if (record && record.id) query.set('id', String(record.id));
-    link.href = calcBase + '?' + query.toString();
     if (!record && (state.cycle.status !== 'open' || !canCreateCalculator)) {
       link.removeAttribute('href');
       link.setAttribute('aria-disabled', 'true');
@@ -346,7 +350,7 @@ $calculatorUrl = rtrim((string)BASE_APP, '/') . '/komitmen_kalkulator';
     }
     if (commitment.rr == null || commitment.npl == null) {
       box.append(text('strong', 'Proyeksi belum bisa dievaluasi', 'km-result-pending'));
-      box.append(text('small', 'Periksa asumsi pada kalkulator komitmen.'));
+      box.append(text('small', 'Periksa asumsi pada Komitmen Kredit.'));
       return box;
     }
     if (!actual || actual.rr == null || actual.npl == null) {
@@ -484,10 +488,11 @@ $calculatorUrl = rtrim((string)BASE_APP, '/') . '/komitmen_kalkulator';
     el('kmShow').disabled = true;
     showMessage('Memuat rekap dan actual…');
     try {
-      const query = new URLSearchParams({ period: el('kmPeriod').value, kode_cabang: el('kmBranch').value || 'ALL', nominal_field: el('kmBasis').value });
-      if (el('kmCycle').value) query.set('cycle_id', el('kmCycle').value);
-      if (el('kmActualDate').value) query.set('actual_date', el('kmActualDate').value);
-      const request = window.apiFetch ? window.apiFetch(apiBase + '/list?' + query) : fetch(apiBase + '/list?' + query, { credentials: 'include' });
+      const body = { period: el('kmPeriod').value, kode_cabang: el('kmBranch').value || 'ALL', nominal_field: el('kmBasis').value };
+      if (el('kmCycle').value) body.cycle_id = el('kmCycle').value;
+      if (el('kmActualDate').value) body.actual_date = el('kmActualDate').value;
+      const options = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+      const request = window.apiFetch ? window.apiFetch(apiBase + '/list', options) : fetch(apiBase + '/list', { credentials: 'include', ...options });
       const response = await request;
       const json = await response.json();
       if (!response.ok || json.status !== 200) throw new Error(json.message || 'Rekap komitmen gagal dimuat.');

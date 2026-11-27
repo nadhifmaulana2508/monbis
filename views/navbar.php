@@ -185,6 +185,17 @@ if (is_array($rbacInitialAccess ?? null)) {
     #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form { grid-template-columns:repeat(2, minmax(0, 1fr)); gap:7px; }
     #nplNavbarFilterPanel #mkFilterForm.npl-navbar-filter-form .npl-navbar-filter-panel__submit-wrap { grid-column:auto; }
   }
+  #reportNplNavbarFilterPanel {
+    display:flex;
+    flex-direction:column;
+    width:min(760px, calc(100vw - 24px));
+  }
+  #reportNplNavbarFilterPanel.hidden { display:none !important; }
+  #reportNplNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(4, minmax(0, 1fr)); }
+  @media (max-width:767px) {
+    #reportNplNavbarFilterPanel { right:8px; width:calc(100vw - 16px); padding:13px; }
+    #reportNplNavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  }
   #npl25NavbarFilterPanel { width:min(440px, calc(100vw - 24px)); }
   #npl25NavbarFilterPanel .dashboard-navbar-filter__fields { grid-template-columns:minmax(0, 1fr); }
   @media (max-width:767px) {
@@ -1253,14 +1264,21 @@ if (is_array($rbacInitialAccess ?? null)) {
   <!-- z-[100] Jalan Tengah: Menang telak dari Tabel, tapi tetap di bawah Modal aplikasi (z-1050) -->
   <aside id="sidebar" class="absolute md:relative z-[100] h-full flex flex-col bg-white border-r border-slate-200 shrink-0 transition-all duration-300 ease-in-out -translate-x-full md:translate-x-0 w-64 md:w-[4.5rem]">
     
-    <!-- Bagian Logo (Di Sidebar) -->
-    <div class="h-16 flex items-center px-4 border-b border-slate-200 shrink-0 whitespace-nowrap">
-      <img src="./img/monbis-icon.webp?v=1" class="monbis-logo--icon h-8 w-8 object-contain shrink-0" alt="Monbis">
-      <img src="./img/monbis-judul.webp?v=1" class="monbis-logo--wordmark object-contain shrink-0" alt="Monbis Monitoring Bisnis">
+    <!-- Header sidebar: identitas dan kontrol rail -->
+    <div class="sidebar-header h-16 flex items-center px-4 border-b border-slate-200 shrink-0 whitespace-nowrap">
+      <div class="sidebar-brand flex items-center min-w-0">
+        <img src="./img/monbis-icon.webp?v=1" class="monbis-logo--icon h-8 w-8 object-contain shrink-0" alt="Monbis">
+        <img src="./img/monbis-judul.webp?v=1" class="monbis-logo--wordmark object-contain shrink-0" alt="Monbis Monitoring Bisnis">
+      </div>
+      <button id="btnToggleSidebarInside" data-sidebar-toggle-control type="button" class="sidebar-toggle-control" aria-label="Buka sidebar" title="Buka sidebar" aria-expanded="false" aria-controls="sidebar">
+        <svg data-sidebar-toggle-icon="closed" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16m4-11 3 3-3 3"></path></svg>
+        <svg data-sidebar-toggle-icon="open" class="hidden w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M16 9l-3 3 3 3"></path></svg>
+      </button>
     </div>
 
     <!-- Navigasi Menu -->
     <nav class="flex-1 min-h-0 overflow-y-auto overflow-x-hidden py-4 px-2 space-y-1 custom-scrollbar" aria-label="Navigasi utama">
+      <div class="sidebar-section-label">Ruang kerja</div>
       
       <!-- Menu Single -->
       <a href="dashboard" class="flex items-center px-3 py-2.5 text-blue-600 bg-blue-50 rounded-lg font-medium transition-colors whitespace-nowrap">
@@ -1325,7 +1343,7 @@ if (is_array($rbacInitialAccess ?? null)) {
         <div class="accordion-content hidden pl-[3.25rem] pr-2 py-1 space-y-1">
           <a href="proyeksi_rr" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Proyeksi RR &amp; NPL</a>
           <a href="komitmen_rekap" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Rekap Komitmen</a>
-          <a href="komitmen_kalkulator" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Kalkulator Komitmen</a>
+          <a href="komitmen_kalkulator" class="block px-2 py-2 text-[11px] truncate text-slate-600 rounded-md hover:text-blue-600 hover:bg-blue-50">Komitmen Kredit</a>
         </div>
       </div>
 
@@ -1537,11 +1555,10 @@ if (is_array($rbacInitialAccess ?? null)) {
     <!-- z-[80] biar Navbar Header aman nutupin konten, tapi di bawah Overlay & Sidebar -->
     <header id="mainNavbar" class="relative h-16 bg-white border-b border-slate-200 flex items-center px-4 sm:px-6 z-[80] shadow-sm shrink-0">
       
-      <!-- Tombol buka/tutup sidebar -->
-      <button id="btnToggleSidebar" type="button" class="text-slate-500 hover:text-slate-800 focus:outline-none mr-3" aria-label="Buka sidebar" title="Buka sidebar" aria-expanded="false" aria-controls="sidebar">
-        <svg data-sidebar-toggle-icon="closed" class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
-        <svg data-sidebar-toggle-icon="open" class="hidden w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6M19 5v14"></path></svg>
-        <svg data-sidebar-toggle-icon="mobile" class="hidden w-6 h-6" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+      <!-- Pemicu mobile tetap terlihat saat drawer sedang tertutup -->
+      <button id="btnToggleSidebarMobile" data-sidebar-toggle-control type="button" class="sidebar-mobile-toggle md:hidden" aria-label="Buka sidebar" title="Buka sidebar" aria-expanded="false" aria-controls="sidebar">
+        <svg data-sidebar-toggle-icon="closed" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16m4-11 3 3-3 3"></path></svg>
+        <svg data-sidebar-toggle-icon="open" class="hidden w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M9 4v16M16 9l-3 3 3 3"></path></svg>
       </button>
 
       <!-- Logo Monbis Mobile -->
@@ -1800,6 +1817,41 @@ if (is_array($rbacInitialAccess ?? null)) {
             <select id="optAreaCredit" class="mk-input" data-monbis-global-area><option value="ALL">Memuat...</option></select>
           </div>
         </form>
+      </div>
+      <?php endif; ?>
+
+      <?php if (($page ?? '') === 'report_npl'): ?>
+      <div id="reportNplNavbarFilterPanel" class="dashboard-navbar-filter hidden" role="region" aria-label="Filter report NPL">
+        <div class="dashboard-navbar-filter__head">
+          <div>
+            <span class="dashboard-navbar-filter__eyebrow">Filter</span>
+            <strong class="dashboard-navbar-filter__title">Atur filter report NPL</strong>
+          </div>
+          <button type="button" id="reportNplNavbarFilterClose" class="dashboard-navbar-filter__close" aria-label="Tutup filter" title="Tutup filter">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+          </button>
+        </div>
+        <div class="dashboard-navbar-filter__fields" role="group" aria-label="Filter report NPL">
+          <div class="dashboard-navbar-filter__field">
+            <label for="reportNplSaldo">Tipe Saldo</label>
+            <select id="reportNplSaldo">
+              <option value="baki_debet" selected>Baki Debet</option>
+              <option value="saldo_bank">Saldo Bank</option>
+            </select>
+          </div>
+          <div id="reportNplClosingField" class="dashboard-navbar-filter__field hidden">
+            <label for="reportNplClosing">Closing (M-1)</label>
+            <input type="date" id="reportNplClosing" onclick="this.showPicker && this.showPicker()">
+          </div>
+          <div class="dashboard-navbar-filter__field">
+            <label for="reportNplActual">Actual (Harian)</label>
+            <input type="date" id="reportNplActual" onclick="this.showPicker && this.showPicker()">
+          </div>
+          <div class="dashboard-navbar-filter__field">
+            <label for="reportNplArea">Area / Cabang</label>
+            <select id="reportNplArea"><option value="ALL">Konsolidasi</option></select>
+          </div>
+        </div>
       </div>
       <?php endif; ?>
 
@@ -2621,6 +2673,11 @@ if (is_array($rbacInitialAccess ?? null)) {
         <?php if (($page ?? '') === 'npl'): ?>
         <button type="button" id="mkNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter Monitoring Kredit" title="Buka filter Monitoring Kredit" aria-expanded="false" aria-controls="nplNavbarFilterPanel">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
+        </button>
+        <?php endif; ?>
+        <?php if (($page ?? '') === 'report_npl'): ?>
+        <button type="button" id="reportNplNavbarFilterToggle" class="dashboard-navbar-filter-toggle" aria-label="Buka filter report NPL" title="Buka filter report NPL" aria-expanded="false" aria-controls="reportNplNavbarFilterPanel">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 4h16l-6.5 7.5v6l-3 2v-8L4 4Z"></path></svg>
         </button>
         <?php endif; ?>
         <?php if (($page ?? '') === 'npl_25_besar'): ?>

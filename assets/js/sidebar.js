@@ -2,7 +2,6 @@
   'use strict';
 
   const BREAKPOINT = 768;
-  const COLLAPSE_DELAY = 3000;
 
   const initSidebar = () => {
     const sidebar = document.getElementById('sidebar');
@@ -12,7 +11,7 @@
     sidebar.dataset.sidebarReady = '1';
     const shell = sidebar.closest('.monbis-app-shell');
     const overlay = document.getElementById('sidebarOverlay');
-    const toggleButton = document.getElementById('btnToggleSidebar');
+    const toggleButtons = [...document.querySelectorAll('[data-sidebar-toggle-control]')];
     const groups = [...nav.querySelectorAll(':scope > .accordion-group')];
     const parts = (group) => ({
       button: group?.querySelector(':scope > .accordion-btn'),
@@ -22,22 +21,18 @@
 
     let expanded = false;
     let desktopMode = isDesktop();
-    let closeTimer = 0;
     let openGroup = null;
     const groupScrollPositions = new WeakMap();
 
-    const clearCloseTimer = () => {
-      window.clearTimeout(closeTimer);
-      closeTimer = 0;
-    };
-
     const syncToggleControl = (open) => {
       const label = open ? 'Tutup sidebar' : 'Buka sidebar';
-      toggleButton?.setAttribute('aria-expanded', open ? 'true' : 'false');
-      toggleButton?.setAttribute('aria-label', label);
-      toggleButton?.setAttribute('title', label);
-      toggleButton?.querySelector('[data-sidebar-toggle-icon="closed"]')?.classList.toggle('hidden', open);
-      toggleButton?.querySelector('[data-sidebar-toggle-icon="open"]')?.classList.toggle('hidden', !open);
+      toggleButtons.forEach((button) => {
+        button.setAttribute('aria-expanded', open ? 'true' : 'false');
+        button.setAttribute('aria-label', label);
+        button.setAttribute('title', label);
+        button.querySelector('[data-sidebar-toggle-icon="closed"]')?.classList.toggle('hidden', open);
+        button.querySelector('[data-sidebar-toggle-icon="open"]')?.classList.toggle('hidden', !open);
+      });
     };
 
     const setExpanded = (value) => {
@@ -51,15 +46,6 @@
       sidebar.dataset.sidebarState = expanded ? 'open' : 'closed';
       shell?.classList.toggle('sidebar-expanded', expanded);
       syncToggleControl(expanded);
-    };
-
-    const scheduleClose = () => {
-      clearCloseTimer();
-      if (!isDesktop() || !expanded) return;
-      closeTimer = window.setTimeout(() => {
-        closeTimer = 0;
-        if (expanded && !sidebar.matches(':hover')) setExpanded(false);
-      }, COLLAPSE_DELAY);
     };
 
     const setGroupState = (group, open) => {
@@ -168,12 +154,7 @@
 
     const toggleSidebar = () => {
       if (isDesktop()) {
-        clearCloseTimer();
-        if (expanded) setExpanded(false);
-        else {
-          setExpanded(true);
-          scheduleClose();
-        }
+        setExpanded(!expanded);
         return;
       }
       if (sidebar.classList.contains('-translate-x-full')) openMobile();
@@ -206,35 +187,23 @@
       if (event.target.closest('a[href]') && !isDesktop()) closeMobile();
     });
 
-    sidebar.addEventListener('mouseenter', clearCloseTimer, {passive: true});
-    sidebar.addEventListener('mouseleave', scheduleClose, {passive: true});
     sidebar.addEventListener('focusin', () => {
-      if (isDesktop()) {
-        clearCloseTimer();
-        if (!expanded) setExpanded(true);
-      }
+      if (isDesktop() && !expanded) setExpanded(true);
     });
-    sidebar.addEventListener('focusout', (event) => {
-      if (isDesktop() && !sidebar.contains(event.relatedTarget)) scheduleClose();
-    });
-    toggleButton?.addEventListener('click', toggleSidebar);
+    toggleButtons.forEach((button) => button.addEventListener('click', toggleSidebar));
     overlay?.addEventListener('click', closeMobile);
     syncToggleControl(false);
 
     document.addEventListener('keydown', (event) => {
       if (event.key !== 'Escape') return;
       if (!isDesktop()) closeMobile();
-      else {
-        clearCloseTimer();
-        setExpanded(false);
-      }
+      else setExpanded(false);
     });
 
     const syncViewportMode = () => {
       const nextDesktopMode = isDesktop();
       if (nextDesktopMode === desktopMode) return;
       desktopMode = nextDesktopMode;
-      clearCloseTimer();
       if (nextDesktopMode) {
         closeMobile(true);
         setExpanded(false);

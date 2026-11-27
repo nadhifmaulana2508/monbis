@@ -6,6 +6,7 @@ RewriteRule ^(?:pages|views|components|api/(?:controllers|helpers|middlewares|ro
 RewriteRule ^v-2/config\.php$ - [F,END,NC]
 RewriteRule ^(?:debug|tmp_kpi_activate)\.php$ - [F,END,NC]
 RewriteRule ^img/_component_demo\.php$ - [F,END,NC]
+RewriteRule ^LocalValetDriver\.php$ - [F,END,NC]
 
 # Serve React V2 assets directly from the folder matching the /v2-react URL.
 RewriteRule ^v2-react/(.*\.(?:js|css|svg|ico|png|jpg|jpeg|webp|woff2?|ttf|txt|json))$ v2-react/$1 [END,NC]

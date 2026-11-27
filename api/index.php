@@ -33,6 +33,14 @@ if ($endpoint !== '' && $endpoint !== 'auth') {
         }
     }
 }
+
+// Dashboard memuat beberapa endpoint bersamaan. Lepas kunci sesi setelah
+// autentikasi selesai agar request tersebut tidak antre sampai query selesai.
+if (in_array($endpoint, ['date', 'kode', 'dashboard', 'lapkeu'], true)
+    && session_status() === PHP_SESSION_ACTIVE) {
+    session_write_close();
+}
+
 if (!defined('API_ROUTER_ENTRY')) define('API_ROUTER_ENTRY', true);
 
 switch ($endpoint) {

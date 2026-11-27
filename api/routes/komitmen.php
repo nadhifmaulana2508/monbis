@@ -35,8 +35,8 @@ if ($office !== '000' && !preg_match('/^0(?:0[1-9]|1[0-9]|2[0-8])$/', $office)) 
     sendResponse(403, 'Akses kantor akun tidak dapat ditentukan.');
 }
 
-if ($method === 'GET' && in_array($action, ['metadata', 'position'], true) && !$canViewCalculator) {
-    sendResponse(403, 'Anda tidak memiliki akses ke Kalkulator Komitmen.');
+if (in_array($method, ['GET', 'POST'], true) && in_array($action, ['metadata', 'position'], true) && !$canViewCalculator) {
+    sendResponse(403, 'Anda tidak memiliki akses ke Komitmen Kredit.');
 }
 if ($method === 'POST' && $action === 'save' && (!$canViewCalculator || !$canCreateCalculator)) {
     sendResponse(403, 'Anda tidak memiliki hak untuk menyimpan komitmen.');
@@ -44,10 +44,10 @@ if ($method === 'POST' && $action === 'save' && (!$canViewCalculator || !$canCre
 if ($method === 'POST' && in_array($action, ['cycle-open', 'cycle-close'], true) && (!$canViewRecap || !$canManageCycles)) {
     sendResponse(403, 'Hanya Kantor Pusat dan divisi yang berwenang dapat membuka atau menutup siklus komitmen.');
 }
-if ($method === 'GET' && $action === 'list' && !$canViewRecap) {
+if (in_array($method, ['GET', 'POST'], true) && $action === 'list' && !$canViewRecap) {
     sendResponse(403, 'Anda tidak memiliki akses ke Rekap Komitmen.');
 }
-if ($method === 'GET' && $action === 'detail' && !$canViewRecap && !$canViewCalculator) {
+if (in_array($method, ['GET', 'POST'], true) && $action === 'detail' && !$canViewRecap && !$canViewCalculator) {
     sendResponse(403, 'Anda tidak memiliki akses untuk melihat detail komitmen.');
 }
 
@@ -57,17 +57,17 @@ if ($method === 'POST') {
     $decoded = json_decode((string)file_get_contents('php://input'), true);
     $input = is_array($decoded) ? $decoded : [];
 }
-if ($method === 'GET' && $action === 'metadata') {
-    $controller->getMetadata($_GET);
+if (in_array($method, ['GET', 'POST'], true) && $action === 'metadata') {
+    $controller->getMetadata($method === 'POST' ? ($input ?? []) : $_GET);
 }
-if ($method === 'GET' && $action === 'position') {
-    $controller->getCyclePosition($_GET);
+if (in_array($method, ['GET', 'POST'], true) && $action === 'position') {
+    $controller->getCyclePosition($method === 'POST' ? ($input ?? []) : $_GET);
 }
-if ($method === 'GET' && $action === 'list') {
-    $controller->getCycleList($_GET);
+if (in_array($method, ['GET', 'POST'], true) && $action === 'list') {
+    $controller->getCycleList($method === 'POST' ? ($input ?? []) : $_GET);
 }
-if ($method === 'GET' && $action === 'detail') {
-    $controller->getDetail((int)($_GET['id'] ?? 0));
+if (in_array($method, ['GET', 'POST'], true) && $action === 'detail') {
+    $controller->getDetail((int)($method === 'POST' ? (($input ?? [])['id'] ?? 0) : ($_GET['id'] ?? 0)));
 }
 if ($method === 'POST' && $action === 'save') {
     $controller->saveCycle($input ?? [], $actor);

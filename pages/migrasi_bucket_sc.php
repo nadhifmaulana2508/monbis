@@ -2302,9 +2302,9 @@ function renderMatrix(data){
 
             if(c.os > 0 && m1.os_m1 > 0){
                 if (j > i) { 
-                    bgClass = 'bg-red-50/70 border-red-100';
+                    bgClass = 'bg-red-100/80 border-red-200';
                 } else if (j < i) {
-                    bgClass = 'bg-emerald-50/70 border-emerald-100';
+                    bgClass = 'bg-emerald-100/80 border-emerald-200';
                 }
             }
 
